@@ -5,6 +5,10 @@ Full notes for each version are on the
 
 ## Unreleased
 
+- App: the tablet can be held either way round in landscape — the picture and
+  the pen follow a 180° flip like in any other app, so drawing with the camera
+  at the bottom works (requested in
+  [discussion #7](https://github.com/majmichu1/UScreen/discussions/7)).
 - Fix: after leaving graphics-tablet mode the pen and touch could stay mapped
   to the laptop screen. The daemon now waits for the virtual display to be
   enabled before mapping the input devices and verifies the mapping instead of

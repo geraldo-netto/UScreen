@@ -74,6 +74,7 @@ help the next Linux user find it.
 | --- | --- | --- |
 | Bazzite, KDE Plasma 6 Wayland, NVIDIA RTX 5060 | Galaxy Tab S9 Ultra, Android 14 | works — reference setup, all benchmarks |
 | Arch Linux, KDE Plasma Wayland | — | works — externally verified on a real system twice: the v1.0.2 installer ([report](https://github.com/majmichu1/UScreen/issues/2#issuecomment-5478643599)) and the v1.1.0 PKGBUILD via `makepkg -si`, with menu entry, tray and settings working out of the box ([report](https://github.com/majmichu1/UScreen/issues/3#issuecomment-5494961262)) |
+| Fedora 44, KDE Plasma | Galaxy Tab S9 FE | works — "near perfectly", external report ([discussion #7](https://github.com/majmichu1/UScreen/discussions/7)) |
 | Debian 12 · Fedora 42 · openSUSE Tumbleweed | — | packages install and run (container-tested, no tablet) |
 
 Any Android 8.1+ tablet with a hardware H.264 decoder should work — the
