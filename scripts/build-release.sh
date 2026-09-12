@@ -51,6 +51,7 @@ cp target-deb12/evdi-src/library/libevdi.so.1.15.0 "$D/bin/"
 ln -sf libevdi.so.1.15.0 "$D/bin/libevdi.so.1"
 cp scripts/install.sh scripts/uscreen.desktop scripts/uscreen.service "$D/scripts/"
 cp packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules "$D/packaging/"
+mkdir -p "$D/packaging/icons" && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg "$D/packaging/icons/"
 cp README.md "$D/"
 ( cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk "../$D/uscreen.apk" )
 tar -C dist -czf "dist/uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION"

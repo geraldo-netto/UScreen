@@ -5,6 +5,17 @@ Full notes for each version are on the
 
 ## Unreleased
 
+- Performance: ffmpeg was converting every frame through RGB on the CPU
+  because the BT.709 tags were given as output options, which ffmpeg 7+
+  reads as a request to convert. Tagging the input instead drops the
+  encoder process from about four cores to under half a core at 60 fps and
+  removes a needless colour round-trip.
+- Icons: the app, the menu entry, the settings window and the tray now share
+  one UScreen icon (amber tablet and stylus on charcoal) instead of the stock
+  Android tile and a generic display glyph; the tray shows a dimmed variant
+  in graphics-tablet mode.
+- `uscreen doctor` warns when Samsung's Motion smoothness is on Standard,
+  which holds the panel at 60 Hz whatever the app asks for.
 - App: the tablet can be held either way round in landscape — the picture and
   the pen follow a 180° flip like in any other app, so drawing with the camera
   at the bottom works (requested in

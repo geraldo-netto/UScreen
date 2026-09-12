@@ -33,6 +33,8 @@ package() {
   install -Dm755 "$srcdir/evdi-${_evdi#v}/library/libevdi.so.1.15.0" "$pkgdir/usr/lib/uscreen/libevdi.so.1.15.0"
   ln -sf libevdi.so.1.15.0 "$pkgdir/usr/lib/uscreen/libevdi.so.1"
   install -Dm644 scripts/uscreen.desktop    "$pkgdir/usr/share/applications/uscreen.desktop"
+  install -Dm644 packaging/icons/uscreen.svg     "$pkgdir/usr/share/icons/hicolor/scalable/apps/uscreen.svg"
+  install -Dm644 packaging/icons/uscreen-pen.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/uscreen-pen.svg"
   install -Dm644 packaging/uscreen.service  "$pkgdir/usr/lib/systemd/user/uscreen.service"
   install -Dm644 packaging/uscreen-evdi.conf "$pkgdir/usr/lib/modprobe.d/uscreen-evdi.conf"
   install -Dm644 packaging/uscreen-modules.conf "$pkgdir/usr/lib/modules-load.d/uscreen.conf"

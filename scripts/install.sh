@@ -168,6 +168,15 @@ install_files() {
     sed "s|^Exec=.*|Exec=$BIN_DIR/uscreen-gui|" "$SCRIPT_DIR/uscreen.desktop" > "$APP_DIR/uscreen.desktop" \
         && info "Desktop entry installed (UScreen in the app menu)"
 
+    # The menu entry and the tray look the icon up by name in the hicolor
+    # theme; without this they fall back to a generic or blank picture.
+    ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
+    if [ -f "$PROJECT_DIR/packaging/icons/uscreen.svg" ]; then
+        mkdir -p "$ICON_DIR"
+        cp "$PROJECT_DIR/packaging/icons/uscreen.svg" "$PROJECT_DIR/packaging/icons/uscreen-pen.svg" "$ICON_DIR/"
+        command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
+    fi
+
     mkdir -p "${HOME}/.config/systemd/user"
     cp "$SCRIPT_DIR/uscreen.service" "${HOME}/.config/systemd/user/" 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true

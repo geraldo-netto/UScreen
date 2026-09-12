@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same geometry as packaging/icons/uscreen.svg on the 108dp adaptive canvas:
+     the tablet and stylus sit inside the 66dp safe zone, so every launcher
+     mask (circle, squircle, rounded square) keeps them whole. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- tablet body -->
+    <path
+        android:fillColor="#F0A742"
+        android:pathData="M32,34 h44 a6,6 0 0 1 6,6 v28 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-28 a6,6 0 0 1 6,-6 z" />
+    <!-- screen -->
+    <path
+        android:fillColor="#1C1B18"
+        android:pathData="M34,39 h40 a3,3 0 0 1 3,3 v24 a3,3 0 0 1 -3,3 h-40 a3,3 0 0 1 -3,-3 v-24 a3,3 0 0 1 3,-3 z" />
+    <!-- two window bars: the desktop that spilled onto the second screen -->
+    <path
+        android:fillColor="#F0A742"
+        android:fillAlpha="0.55"
+        android:pathData="M37.5,45 h15 a1.5,1.5 0 0 1 0,3 h-15 a1.5,1.5 0 0 1 0,-3 z" />
+    <path
+        android:fillColor="#F0A742"
+        android:fillAlpha="0.35"
+        android:pathData="M37.5,52 h23 a1.5,1.5 0 0 1 0,3 h-23 a1.5,1.5 0 0 1 0,-3 z" />
+    <!-- stylus -->
+    <path
+        android:fillColor="#ECE8DF"
+        android:pathData="M64.5,63.5 L82,46 a3.2,3.2 0 0 1 4.5,4.5 L69,68 L62.5,69.5 Z" />
+    <path
+        android:fillColor="#F0A742"
+        android:pathData="M64.5,63.5 L69,68 L62.5,69.5 Z" />
+</vector>

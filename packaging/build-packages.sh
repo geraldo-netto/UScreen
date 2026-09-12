@@ -21,6 +21,8 @@ distrobox enter "${USCREEN_BUILD_CONTAINER:-uscreen-build}" -- bash -lc '
   install -Dm755 $D/bin/libevdi.so.1.15.0 $R/usr/lib/uscreen/libevdi.so.1.15.0
   ln -sf libevdi.so.1.15.0 $R/usr/lib/uscreen/libevdi.so.1
   install -Dm644 scripts/uscreen.desktop $R/usr/share/applications/uscreen.desktop
+  install -Dm644 packaging/icons/uscreen.svg     $R/usr/share/icons/hicolor/scalable/apps/uscreen.svg
+  install -Dm644 packaging/icons/uscreen-pen.svg $R/usr/share/icons/hicolor/scalable/apps/uscreen-pen.svg
   install -Dm644 packaging/uscreen.service $R/usr/lib/systemd/user/uscreen.service
   install -Dm644 packaging/uscreen-evdi.conf    $R/usr/lib/modprobe.d/uscreen-evdi.conf
   install -Dm644 packaging/uscreen-modules.conf $R/usr/lib/modules-load.d/uscreen.conf

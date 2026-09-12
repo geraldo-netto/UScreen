@@ -30,7 +30,9 @@ install: build edid
 	@echo "✓ Installed to $(BIN_DIR)/uscreen, $(BIN_DIR)/uscreen-gui and $(BIN_DIR)/evdi_helper"
 	mkdir -p ${HOME}/.local/share/applications
 	cp scripts/uscreen.desktop ${HOME}/.local/share/applications/ 2>/dev/null || true
-	@echo "✓ Desktop entry installed (UScreen in the app menu)"
+	mkdir -p ${HOME}/.local/share/icons/hicolor/scalable/apps
+	cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg ${HOME}/.local/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
+	@echo "✓ Desktop entry and icons installed (UScreen in the app menu)"
 	mkdir -p ${HOME}/.config/systemd/user/ 2>/dev/null || true
 	cp scripts/uscreen.service ${HOME}/.config/systemd/user/ 2>/dev/null || true
 	systemctl --user daemon-reload 2>/dev/null || true
@@ -110,6 +112,7 @@ dist-local: build
 	cp target/release/uscreen target/release/uscreen-gui host/evdi/evdi_helper dist/uscreen-$(VERSION)/bin/
 	cp scripts/install.sh scripts/uscreen.desktop scripts/uscreen.service dist/uscreen-$(VERSION)/scripts/
 	cp packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules dist/uscreen-$(VERSION)/packaging/
+	mkdir -p dist/uscreen-$(VERSION)/packaging/icons && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg dist/uscreen-$(VERSION)/packaging/icons/
 	cp README.md dist/uscreen-$(VERSION)/
 	cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk ../dist/uscreen-$(VERSION)/uscreen.apk 2>/dev/null || true
 	tar -C dist -czf dist/uscreen-$(VERSION)-linux-x86_64.tar.gz uscreen-$(VERSION)

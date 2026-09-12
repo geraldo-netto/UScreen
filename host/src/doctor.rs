@@ -538,6 +538,26 @@ async fn check_colour(r: &mut Report) {
         }
     }
 
+    // Samsung's "Motion smoothness" setting. On "Standard" the panel only
+    // offers apps its 60 Hz modes, so the app's request for the fastest one
+    // gets 60 and every frame waits an average of 8 ms for vsync instead of
+    // 4. Seen on a Tab S9 Ultra: the app asked for the best mode and was
+    // handed 60 Hz until this was switched to Adaptive.
+    if let Some(v) = output_of("adb", &["shell", "settings", "get", "secure", "refresh_rate_mode"]).await
+    {
+        let v = v.trim().to_string();
+        if v == "0" {
+            r.line(
+                Level::Warn,
+                "tablet refresh rate",
+                "Motion smoothness is Standard — the panel is held at 60 Hz",
+            );
+            r.hint("tablet: Settings → Display → Motion smoothness → Adaptive (120 Hz)");
+        } else if !v.is_empty() && v != "null" {
+            r.line(Level::Ok, "tablet refresh rate", "Motion smoothness: adaptive");
+        }
+    }
+
     // KWin can colour-manage the virtual output, but only once a profile is
     // attached to it.
     let names: Vec<String> = vdisplay::evdi_connectors()

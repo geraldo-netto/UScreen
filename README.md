@@ -186,8 +186,15 @@ icon, any-side placement, several tablets, HEVC and 10-bit, Wi-Fi fallback,
 packages for five distribution families, `uscreen doctor`, measured latency.
 
 Next: **AOA transport** — removing the USB-debugging requirement, the last
-step between this and simply plugging a cable in. Explored: HDR, currently
-blocked by EVDI providing only 8-bit framebuffers.
+step between this and simply plugging a cable in. Then input mapping on
+GNOME and X11 ([#4](https://github.com/majmichu1/UScreen/issues/4)).
+
+Explored: HDR, currently blocked by EVDI providing only 8-bit framebuffers.
+Considered, not scheduled: **iPad**. The Linux side would carry over (the
+virtual display, the encoder, the input devices), but the transport would
+have to move from adb to usbmuxd and the app would have to be rebuilt in
+Swift and signed through Apple, which needs a Mac and a developer account.
+It is on the list; it is not next.
 
 ## Contributing
 

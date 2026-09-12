@@ -830,6 +830,13 @@ async fn adb_monitor(
     let mut relaunches: u32 = 0;
     let mut relaunch_wait = std::time::Duration::from_secs(5);
     const RELAUNCH_WAIT_MAX: std::time::Duration = std::time::Duration::from_secs(600);
+    // Polls since the app process was last checked. A tablet that is plugged
+    // in but whose app has gone (swiped out of recents, killed by Android to
+    // free memory, crashed) used to stay a blank screen until the cable was
+    // pulled and put back; now the app comes back by itself. Checked every
+    // fifth poll, so a missing app costs one `adb shell` every ten seconds.
+    let mut polls_since_check: u32 = 0;
+    const APP_CHECK_EVERY: u32 = 5;
     // Further tablets, by serial.
     let mut extras: std::collections::HashMap<String, ExtraSession> = std::collections::HashMap::new();
 
@@ -943,7 +950,34 @@ async fn adb_monitor(
             futures_util::future::select_all(futs).await;
         };
         tokio::select! {
-            _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)) => {}
+            _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)) => {
+                polls_since_check += 1;
+                if polls_since_check < APP_CHECK_EVERY {
+                    continue;
+                }
+                polls_since_check = 0;
+                let Some(serial) = current.as_deref() else { continue };
+                if !auto_launch || is_fake_serial(serial) {
+                    continue;
+                }
+                match app_running(serial).await {
+                    Some(true) => {
+                        // Seen alive: the next disappearance starts the
+                        // backoff from the beginning again.
+                        relaunch_wait = std::time::Duration::from_secs(5);
+                    }
+                    Some(false) if last_relaunch.elapsed() >= relaunch_wait => {
+                        last_relaunch = std::time::Instant::now();
+                        info!(
+                            "The app is not running on the tablet — launching it again (next try in {:?} if it does not stay up)",
+                            (relaunch_wait * 2).min(RELAUNCH_WAIT_MAX)
+                        );
+                        launch_app(serial, token.as_deref()).await;
+                        relaunch_wait = (relaunch_wait * 2).min(RELAUNCH_WAIT_MAX);
+                    }
+                    _ => {}
+                }
+            }
             _ = relaunch.notified() => {
                 if let Some(serial) = current.as_deref() {
                     if last_relaunch.elapsed() >= relaunch_wait {
@@ -971,6 +1005,23 @@ async fn adb_monitor(
             }
         }
     }
+}
+
+/// Whether the app's process exists on the tablet. `None` when adb could not
+/// answer (cable pulled mid-check, adb restarting), so the caller does nothing
+/// rather than launching on a guess.
+async fn app_running(serial: &str) -> Option<bool> {
+    let out = tokio::process::Command::new("adb")
+        .args(["-s", serial, "shell", "pidof", "com.uscreen"])
+        .output()
+        .await
+        .ok()?;
+    // pidof exits 1 with no output when nothing matches; adb itself failing
+    // shows up as a non-empty stderr.
+    if !out.stderr.is_empty() {
+        return None;
+    }
+    Some(!String::from_utf8_lossy(&out.stdout).trim().is_empty())
 }
 
 /// Measured on a quiet network: the median roughly doubles, but the 95th

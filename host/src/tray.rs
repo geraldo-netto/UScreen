@@ -14,10 +14,26 @@ use ksni::{Handle, Status, ToolTip, Tray, TrayMethods};
 use tokio::sync::watch;
 use tracing::{info, warn};
 
-/// Theme icons rather than shipped assets, matching what uscreen.desktop
-/// already uses. They also carry the mode at a glance without a tooltip.
-const ICON_SCREEN: &str = "video-display";
-const ICON_TABLET: &str = "input-tablet";
+/// The project's own icons, installed into the hicolor theme by the packages
+/// and the installer. The pen variant carries the mode at a glance without a
+/// tooltip. The same pictures are also embedded as pixmaps below, so a tray
+/// that cannot find the theme icon (a build run from the source tree, a
+/// desktop with an odd icon path) still shows something recognisable.
+const ICON_SCREEN: &str = "uscreen";
+const ICON_TABLET: &str = "uscreen-pen";
+const PIXMAP_SCREEN: &[u8] = include_bytes!("../../packaging/icons/uscreen-64.rgba");
+const PIXMAP_TABLET: &[u8] = include_bytes!("../../packaging/icons/uscreen-pen-64.rgba");
+const PIXMAP_SIDE: i32 = 64;
+
+/// RGBA as ImageMagick wrote it → ARGB32 in network byte order, which is
+/// what StatusNotifierItem expects.
+fn pixmap(rgba: &[u8]) -> ksni::Icon {
+    let mut data = Vec::with_capacity(rgba.len());
+    for px in rgba.chunks_exact(4) {
+        data.extend_from_slice(&[px[3], px[0], px[1], px[2]]);
+    }
+    ksni::Icon { width: PIXMAP_SIDE, height: PIXMAP_SIDE, data }
+}
 
 struct UScreenTray {
     pen_only: bool,
@@ -55,6 +71,10 @@ impl Tray for UScreenTray {
         } else {
             ICON_SCREEN.into()
         }
+    }
+
+    fn icon_pixmap(&self) -> Vec<ksni::Icon> {
+        vec![pixmap(if self.pen_only { PIXMAP_TABLET } else { PIXMAP_SCREEN })]
     }
 
     /// Always visible. Passive lets the desktop hide the icon, and an icon you
