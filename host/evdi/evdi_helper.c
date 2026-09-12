@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <stdint.h>
 /* Only the public client API. The headers are upstream libevdi 1.15's, kept
    in sync with the library: the previous copies predated the
@@ -116,6 +117,23 @@ static volatile int g_update_pending = 0;  /* request_update sent, waiting for u
 static volatile int g_writer_busy = 0;     /* writer is streaming g_write to the FIFO */
 static volatile int g_mode_generation = 0; /* bumped on every mode change */
 static volatile long long g_grab_count = 0;
+
+/* Where the capture cycle spends its time, printed with the 5s stats. The
+   two halves of the cycle are the wait for the compositor to answer a
+   request and the copy out of the framebuffer; knowing both is what tells
+   a slow compositor from a slow helper. */
+static long long g_req_us = 0;          /* when the outstanding request was sent */
+static long long g_wait_sum_us = 0;     /* request → update_ready */
+static int g_wait_n = 0;
+static long long g_grab_sum_us = 0;     /* evdi_grab_pixels duration */
+static int g_grab_n = 0;
+static int g_immediate_n = 0;           /* requests the kernel answered at once */
+static int g_empty_n = 0;               /* grabs that returned no damaged rects */
+/* Request the next frame as soon as the previous one has been grabbed
+   instead of waiting for the next period tick. USCREEN_NO_PIPELINE=1 restores
+   the strictly paced cycle for comparison. */
+static int g_pipeline = 1;
+static volatile long long g_last_request_ms = 0;
 
 static void handle_signal(int sig) {
     (void)sig;
@@ -444,7 +462,25 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     }
 
     free(g_framebuffer);
-    g_framebuffer = malloc(g_fb_size);
+    /* The kernel copies the damaged part of the scanout buffer into this
+       on every grab — the whole 22 MB when the compositor reports full
+       damage, which KWin does for this output. That copy is a large share
+       of the capture cycle (measured 4-7 ms at 2960x1848), and copy_to_user
+       into ordinary 4 KiB pages pays a TLB miss every page. Ask for
+       transparent huge pages and touch the memory once now, so the copies
+       run over 2 MiB mappings that are already faulted in. */
+    {
+        size_t huge = 2u << 20;
+        size_t len = ((size_t)g_fb_size + huge - 1) / huge * huge;
+        void *p = NULL;
+        if (posix_memalign(&p, huge, len) == 0 && p) {
+            madvise(p, len, MADV_HUGEPAGE);
+            memset(p, 0, len);
+            g_framebuffer = p;
+        } else {
+            g_framebuffer = malloc(g_fb_size);
+        }
+    }
 
     /* Stream dimensions: source divided by the scale, forced even because
        NV12 chroma covers 2x2 luma samples. */
@@ -505,7 +541,11 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
 static void grab_now(void) {
     struct evdi_rect rects[64];
     int num_rects = 64;
+    long long t0 = now_us();
     evdi_grab_pixels(g_handle, rects, &num_rects);
+    g_grab_sum_us += now_us() - t0;
+    g_grab_n++;
+    if (num_rects <= 0) g_empty_n++;
     if (num_rects > 0) {
         g_grab_count++;
         g_grab_us = now_us();
@@ -526,8 +566,26 @@ static void grab_now(void) {
 static void on_update_ready(int buffer_to_be_updated, void *user_data) {
     (void)user_data;
     (void)buffer_to_be_updated;
+    if (g_update_pending) {
+        g_wait_sum_us += now_us() - g_req_us;
+        g_wait_n++;
+    }
     g_update_pending = 0;
     grab_now();
+    /* Ask for the next frame straight away rather than at the next tick of
+       the target period. The cycle is serial by the driver's design — the
+       compositor's flip only completes once we have copied the frame out,
+       and it renders the next one after that — so at 2960x1848 the two
+       halves (about 9 ms in KWin, 6 ms in the grab) already take a frame
+       period or more. Gating the request on the period as well pushed the
+       next request past the compositor's vblank slot, so a 30 fps target
+       delivered 24 and a 90 fps target 50-ish. The mode's refresh rate is
+       what paces the compositor; nothing here needs to hold it back. Asking
+       first from inside this handler, before the grab, was tried and is
+       worse (16 fps): the driver answers at once with the not-yet-grabbed
+       damage and the cycle falls apart. */
+    if (g_pipeline)
+        g_last_request_ms = 0;
 }
 
 static void on_crtc_state(int state, void *user_data) {
@@ -732,8 +790,8 @@ static void run_event_loop(evdi_handle handle) {
     fds[0].events = POLLIN;
 
     long long last_stats_ms = now_ms();
-    long long last_request_ms = 0;
     long long last_fallback_grab_ms = 0;
+    if (getenv("USCREEN_NO_PIPELINE")) g_pipeline = 0;
     long long stats_grab_base = 0;
     long request_period_ms = 1000 / (g_fps > 0 ? g_fps : 60);
     if (request_period_ms < 1) request_period_ms = 1;
@@ -760,10 +818,10 @@ static void run_event_loop(evdi_handle handle) {
                Sleep until the watchdog is due instead. update_ready wakes poll
                the moment it arrives, so nothing is delayed when the
                compositor is actually running. */
-            long long left = last_request_ms + 250 - now_ms();
+            long long left = g_last_request_ms + 250 - now_ms();
             timeout_ms = left < 0 ? 0 : (left > 250 ? 250 : (int)left);
         } else {
-            long long due = last_request_ms + request_period_ms;
+            long long due = g_last_request_ms + request_period_ms;
             timeout_ms = (int)(due - now_ms());
             if (timeout_ms < 0) timeout_ms = 0;
             if (timeout_ms > 4) timeout_ms = 4;   /* stay responsive to events */
@@ -789,9 +847,11 @@ static void run_event_loop(evdi_handle handle) {
         /* Core capture cycle: request a fresh frame from the compositor at
            the target fps. If the kernel says pixels are ready right away,
            grab immediately; otherwise update_ready will fire and grab. */
-        if (!g_update_pending && (now - last_request_ms) >= request_period_ms) {
-            last_request_ms = now;
+        if (!g_update_pending && (now - g_last_request_ms) >= request_period_ms) {
+            g_last_request_ms = now;
+            g_req_us = now_us();
             if (evdi_request_update(handle, 0)) {
+                g_immediate_n++;
                 grab_now();
             } else {
                 g_update_pending = 1;
@@ -800,7 +860,7 @@ static void run_event_loop(evdi_handle handle) {
 
         /* Watchdog: if a request got lost (compositor hiccup), don't stay
            stuck waiting for update_ready forever. */
-        if (g_update_pending && (now - last_request_ms) > 250) {
+        if (g_update_pending && (now - g_last_request_ms) > 250) {
             g_update_pending = 0;
             grab_now();
         }
@@ -818,6 +878,11 @@ static void run_event_loop(evdi_handle handle) {
             fprintf(stderr, "[evdi-helper] %.1f grabs/s (total %lld), mode:%d dpms:%d pending:%d\n",
                     elapsed > 0 ? grabs / elapsed : 0,
                     g_grab_count, g_have_mode, g_dpms_on, g_update_pending);
+            fprintf(stderr, "[evdi-helper] cycle: request→ready avg %.1fms (%d waited, %d immediate), grab avg %.1fms (%d, %d empty)\n",
+                    g_wait_n ? g_wait_sum_us / 1000.0 / g_wait_n : 0.0, g_wait_n, g_immediate_n,
+                    g_grab_n ? g_grab_sum_us / 1000.0 / g_grab_n : 0.0, g_grab_n, g_empty_n);
+            g_wait_sum_us = 0; g_wait_n = 0; g_grab_sum_us = 0; g_grab_n = 0;
+            g_immediate_n = 0; g_empty_n = 0;
 
             /* Capture-side latency: grab → convert → into the encoder's FIFO. */
             pthread_mutex_lock(&g_swap_mutex);

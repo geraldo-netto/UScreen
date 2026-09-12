@@ -10,6 +10,13 @@ Full notes for each version are on the
   reads as a request to convert. Tagging the input instead drops the
   encoder process from about four cores to under half a core at 60 fps and
   removes a needless colour round-trip.
+- Capture: the helper asks the compositor for the next frame as soon as the
+  previous one is copied out instead of waiting for the next period tick,
+  and keeps the framebuffer on huge pages, which cuts the copy from about
+  6.5 ms to 4.5 ms at 2960×1848. Under motion that is 58–63 frames/s where
+  it was 52–57 (at a 90 fps target), and a 30 fps target no longer lands
+  at 24. The 5-second stats line now also shows how long the compositor
+  took to answer and how long the copy took, which is how this was found.
 - Icons: the app, the menu entry, the settings window and the tray now share
   one UScreen icon (amber tablet and stylus on charcoal) instead of the stock
   Android tile and a generic display glyph; the tray shows a dimmed variant

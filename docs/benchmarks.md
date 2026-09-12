@@ -75,6 +75,31 @@ Capture helper while the output is disabled (tablet unplugged, or graphics-
 tablet mode): 96 % of a core before 0.4.0 (a poll loop with a deadline in the
 past), 1.6 % after.
 
+With ffmpeg 8 the encoder process was found at ~280 % of a core: the BT.709
+tags passed as output options made ffmpeg convert every frame through RGB on
+the CPU. Tagging the input instead (1.2.0) brings it to ~12 % at 90 fps.
+
+### Frame rate ceiling of the EVDI capture cycle
+
+The cycle is serial by the driver's design: the compositor renders the
+virtual output and copies it out of the GPU into the EVDI framebuffer, the
+helper copies that into its own buffer, and only then does the compositor
+start the next frame. Measured on the reference laptop at 2960×1848 under
+continuous motion (the helper prints both halves every 5 s):
+
+| half of the cycle | 1.1.0 | 1.2.0 |
+| --- | --- | --- |
+| compositor answers a request | 9–11 ms | 9–11 ms |
+| helper copies the frame (`evdi_grab_pixels`) | 6.3–6.7 ms | 4.0–5.0 ms (huge pages) |
+| frames delivered at a 90 fps target | 52–57 /s | 58–63 /s |
+
+So native resolution tops out around 60 frames/s on this hardware whatever
+the target is, and the compositor's copy is the part nothing on our side can
+shorten. `stream_scale` does not help here (it scales after the grab); a
+smaller virtual mode does. A capture path that takes the frame from the
+compositor as a GPU buffer (PipeWire/dmabuf) would remove both copies and is
+on the roadmap.
+
 ## Limitations
 
 - One host, one tablet model. The tablet's decoder dominates the budget, so

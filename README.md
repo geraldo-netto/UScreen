@@ -187,7 +187,12 @@ packages for five distribution families, `uscreen doctor`, measured latency.
 
 Next: **AOA transport** — removing the USB-debugging requirement, the last
 step between this and simply plugging a cable in. Then input mapping on
-GNOME and X11 ([#4](https://github.com/majmichu1/UScreen/issues/4)).
+GNOME and X11 ([#4](https://github.com/majmichu1/UScreen/issues/4)), and a
+**PipeWire/dmabuf capture path**: the EVDI cycle is serial by design (the
+compositor copies the frame out of the GPU, then the helper copies it again,
+then the compositor renders the next one), which caps native 2960×1848 at
+about 60 frames/s on the reference laptop whatever the target; taking the
+frame straight from the compositor as a GPU buffer would remove both copies.
 
 Explored: HDR, currently blocked by EVDI providing only 8-bit framebuffers.
 Considered, not scheduled: **iPad**. The Linux side would carry over (the
