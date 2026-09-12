@@ -3,7 +3,7 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
-## Unreleased
+## 1.2.0 — 2026-09-12
 
 - Performance: ffmpeg was converting every frame through RGB on the CPU
   because the BT.709 tags were given as output options, which ffmpeg 7+
