@@ -174,7 +174,10 @@ install_files() {
     if [ -f "$PROJECT_DIR/packaging/icons/uscreen.svg" ]; then
         mkdir -p "$ICON_DIR"
         cp "$PROJECT_DIR/packaging/icons/uscreen.svg" "$PROJECT_DIR/packaging/icons/uscreen-pen.svg" "$ICON_DIR/"
+        # KDE keys its icon cache on the theme directory's mtime.
+        touch "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
         command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
+        command -v kbuildsycoca6 >/dev/null 2>&1 && kbuildsycoca6 >/dev/null 2>&1 || true
     fi
 
     mkdir -p "${HOME}/.config/systemd/user"

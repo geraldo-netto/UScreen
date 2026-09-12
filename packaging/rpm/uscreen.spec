@@ -45,6 +45,10 @@ if lsmod | grep -q '^evdi'; then
 else
     modprobe evdi 2>/dev/null || true
 fi
+# Icon caches go by directory mtime; touch the theme so menus pick the
+# icon up without a logout.
+touch /usr/share/icons/hicolor 2>/dev/null || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t /usr/share/icons/hicolor 2>/dev/null || true
 modprobe uinput 2>/dev/null || true
 udevadm control --reload 2>/dev/null || true
 udevadm trigger --name-match=uinput 2>/dev/null || true

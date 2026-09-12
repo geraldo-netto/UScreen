@@ -12,5 +12,9 @@ if [ "$1" = "configure" ]; then
     modprobe uinput 2>/dev/null || true
     udevadm control --reload 2>/dev/null || true
     udevadm trigger --name-match=uinput 2>/dev/null || true
+    # The desktop caches icon lookups by directory mtime; touch the theme so
+    # the new icon shows up in menus without a logout.
+    touch /usr/share/icons/hicolor 2>/dev/null || true
+    command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t /usr/share/icons/hicolor 2>/dev/null || true
     echo "uscreen: enable at login with:  systemctl --user enable --now uscreen"
 fi
