@@ -783,6 +783,25 @@ impl CaptureManager {
             "nobuffer".into(),
             "-flags".into(),
             "low_delay".into(),
+            // The helper emits BT.709 limited-range NV12. Say so on the
+            // INPUT side, before -i. Given as output options (where they used
+            // to be), ffmpeg 7+ treats them as a request to *convert* an
+            // untagged input to BT.709, auto-inserts a scale filter and runs
+            // every frame through swscale via an RGB intermediate on the CPU:
+            // measured ~4 cores at 60 fps, 2960x1848, against 0.4 without,
+            // plus a full-frame conversion's worth of latency and a colour
+            // shift from treating 709 data as 601. Tagged on the input, the
+            // stream still carries bt709/tv in the SPS and nothing is
+            // converted. Full range was tried and reverted — see the note in
+            // evdi_helper.c.
+            "-color_primaries".into(),
+            "bt709".into(),
+            "-color_trc".into(),
+            "bt709".into(),
+            "-colorspace".into(),
+            "bt709".into(),
+            "-color_range".into(),
+            "tv".into(),
             "-f".into(),
             "rawvideo".into(),
             "-pix_fmt".into(),
@@ -834,17 +853,6 @@ impl CaptureManager {
                 "0".into(),
                 "-multipass".into(),
                 "0".into(),
-                "-color_primaries".into(),
-                "bt709".into(),
-                "-color_trc".into(),
-                "bt709".into(),
-                "-colorspace".into(),
-                "bt709".into(),
-                // Helper emits BT.709 limited-range NV12; tag it so the
-                // decoder expands the range correctly. Full range was tried
-                // and reverted — see the note in evdi_helper.c.
-                "-color_range".into(),
-                "tv".into(),
                 // Constant-quality VBR, not CBR.
                 //
                 // CBR pads every frame to hit the target rate, so a completely
