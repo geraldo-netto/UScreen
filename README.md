@@ -131,6 +131,8 @@ Everything lives in `~/.config/uscreen/config.toml` and is reachable from
   streamed, the pen drives your own screen, zero display latency. Switch back
   the same way; no restart.
 - **Position** — `right` (default), `left`, `above`, `below` your real screens.
+- **Orientation** — in the tablet's ⚙ sheet: rotate automatically with the
+  tilt sensor, or pin *camera up* / *camera down*.
 - **Codec** — `h264_nvenc` by default because every device decodes it;
   `hevc_nvenc` is sharper at the same bitrate and was faster on the reference
   tablet. `ten_bit` (HEVC Main10) smooths gradient banding — the desktop is
@@ -198,8 +200,11 @@ Explored: HDR, currently blocked by EVDI providing only 8-bit framebuffers.
 Considered, not scheduled: **iPad**. The Linux side would carry over (the
 virtual display, the encoder, the input devices), but the transport would
 have to move from adb to usbmuxd and the app would have to be rebuilt in
-Swift and signed through Apple, which needs a Mac and a developer account.
-It is on the list; it is not next.
+Swift. Since iOS 17.4 the EU's Digital Markets Act allows distribution
+outside the App Store, which removes the review step, but not the rest: the
+app still has to be notarised by Apple, which needs a paid developer account
+and a Mac to build on, and outside the EU it stays App Store only. It is on
+the list; it is not next.
 
 ## Contributing
 

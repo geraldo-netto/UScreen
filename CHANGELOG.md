@@ -23,10 +23,13 @@ Full notes for each version are on the
   in graphics-tablet mode.
 - `uscreen doctor` warns when Samsung's Motion smoothness is on Standard,
   which holds the panel at 60 Hz whatever the app asks for.
-- App: the tablet can be held either way round in landscape — the picture and
-  the pen follow a 180° flip like in any other app, so drawing with the camera
-  at the bottom works (requested in
-  [discussion #7](https://github.com/majmichu1/UScreen/discussions/7)).
+- App: *Rotate automatically* in the ⚙ sheet follows the tilt sensor between
+  the two landscape directions, so the tablet can be held camera-down for
+  drawing (requested in
+  [discussion #7](https://github.com/majmichu1/UScreen/discussions/7)); with
+  it off, *Camera up* / *Camera down* pin the direction. The app reads the
+  sensor itself because the system's own sensor mode never flipped the
+  reference tablet.
 - Fix: after leaving graphics-tablet mode the pen and touch could stay mapped
   to the laptop screen. The daemon now waits for the virtual display to be
   enabled before mapping the input devices and verifies the mapping instead of

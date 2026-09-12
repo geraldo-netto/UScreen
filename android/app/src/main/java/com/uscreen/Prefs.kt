@@ -22,6 +22,11 @@ class Prefs(context: Context) {
         /** Kept in sync with `config::MAX_BITRATE_KBPS` on the host. */
         const val MAX_BITRATE_KBPS = 60_000
         const val MIN_BITRATE_KBPS = 5_000
+
+        /** Values of [orientation]. */
+        const val ORIENTATION_AUTO = 0
+        const val ORIENTATION_CAMERA_UP = 1
+        const val ORIENTATION_CAMERA_DOWN = 2
     }
 
     var bitrateKbps: Int
@@ -36,6 +41,18 @@ class Prefs(context: Context) {
     var showStats: Boolean
         get() = sp.getBoolean("show_stats", false)
         set(v) = sp.edit().putBoolean("show_stats", v).apply()
+
+    /**
+     * Which way round the tablet is held: [ORIENTATION_AUTO] follows the
+     * sensor between the two landscape directions, the other two pin it.
+     * Pinning exists because the sensor path does not work everywhere — a
+     * Galaxy Tab S9 Ultra with auto-rotate on never left "camera up" — and
+     * because people who draw with the camera at the bottom do not want the
+     * picture flipping when the tablet is lifted.
+     */
+    var orientation: Int
+        get() = sp.getInt("orientation", ORIENTATION_AUTO)
+        set(v) = sp.edit().putInt("orientation", v).apply()
 
     /**
      * True once the user has actually applied settings from the sheet.

@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
         requestHighestRefreshRate()
 
         prefs = Prefs(this)
+        applyOrientation()
         videoReceiver = VideoReceiver()
         touchCapture = TouchCapture()
         applyToken(intent, restart = false)
@@ -130,7 +131,11 @@ class MainActivity : ComponentActivity() {
                         videoReceiver?.setSurface(surfaceView)
                         touchCapture?.setSurfaceView(surfaceView)
                     },
-                    onSurfaceDestroyed = { videoReceiver?.onSurfaceDestroyed() }
+                    onSurfaceDestroyed = { videoReceiver?.onSurfaceDestroyed() },
+                    onOrientationChange = { choice ->
+                        prefs.orientation = choice
+                        applyOrientation()
+                    }
                 )
             }
         }
@@ -182,6 +187,59 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             android.util.Log.w("UScreen", "Could not request a refresh rate: ${e.message}")
         }
+    }
+
+    /**
+     * Which way round the tablet is held.
+     *
+     * The manifest's sensorLandscape ought to flip between the two landscape
+     * directions on its own, but on the reference tablet (Tab S9 Ultra, One
+     * UI, auto-rotate on) it never left "camera up". So the automatic mode
+     * reads the tilt sensor itself and pins the direction explicitly, which
+     * the system does honour; the manual modes pin it and ignore the sensor.
+     */
+    private var tiltListener: android.view.OrientationEventListener? = null
+
+    private fun applyOrientation() {
+        when (prefs.orientation) {
+            Prefs.ORIENTATION_CAMERA_UP -> {
+                stopTiltListener()
+                requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+            Prefs.ORIENTATION_CAMERA_DOWN -> {
+                stopTiltListener()
+                requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+            }
+            else -> {
+                requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                startTiltListener()
+            }
+        }
+    }
+
+    private fun startTiltListener() {
+        if (tiltListener != null) return
+        tiltListener = object : android.view.OrientationEventListener(this) {
+            // Degrees clockwise from the panel's natural (portrait) upright.
+            // Held sideways one way the sensor reads about 270, the other
+            // about 90; those map to LANDSCAPE and REVERSE_LANDSCAPE. Only
+            // act inside ±35° of either so a tablet lying almost flat, or
+            // held upright, does not flip back and forth.
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+                val want = when (orientation) {
+                    in 235..305 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    in 55..125 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                    else -> return
+                }
+                if (requestedOrientation != want) requestedOrientation = want
+            }
+        }.also { if (it.canDetectOrientation()) it.enable() else tiltListener = null }
+    }
+
+    private fun stopTiltListener() {
+        tiltListener?.disable()
+        tiltListener = null
     }
 
     private fun enableImmersiveMode() {
@@ -310,6 +368,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopTiltListener()
         stopService(Intent(this, StreamingService::class.java))
     }
 }
@@ -345,6 +404,7 @@ fun UScreenMain(
     onSurfaceDestroyed: () -> Unit = {},
     videoReceiver: VideoReceiver? = null,
     touchCapture: TouchCapture? = null,
+    onOrientationChange: (Int) -> Unit = {},
     prefs: Prefs? = null,
 ) {
     var isConnected by remember { mutableStateOf(false) }
@@ -353,6 +413,7 @@ fun UScreenMain(
     var showOverlay by remember { mutableStateOf(true) }
     var showSettings by remember { mutableStateOf(false) }
     var showStats by remember { mutableStateOf(prefs?.showStats ?: false) }
+    var orientationChoice by remember { mutableStateOf(prefs?.orientation ?: Prefs.ORIENTATION_AUTO) }
 
     val context = LocalContext.current
 
@@ -550,6 +611,11 @@ fun UScreenMain(
                     showStats = it
                     prefs?.showStats = it
                 },
+                orientation = orientationChoice,
+                onOrientationChange = {
+                    orientationChoice = it
+                    onOrientationChange(it)
+                },
                 onApply = { bitrateKbps, newFps ->
                     prefs?.bitrateKbps = bitrateKbps
                     prefs?.fps = newFps
@@ -665,6 +731,8 @@ private fun SettingsSheet(
     onPenOnlyChange: (Boolean) -> Unit,
     showStats: Boolean,
     onShowStatsChange: (Boolean) -> Unit,
+    orientation: Int,
+    onOrientationChange: (Int) -> Unit,
     onApply: (bitrateKbps: Int, fps: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -729,6 +797,59 @@ private fun SettingsSheet(
                     checked = penOnly,
                     onCheckedChange = onPenOnlyChange,
                     colors = SwitchDefaults.colors(checkedTrackColor = Accent)
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+
+            // Which way round the tablet is held. Applies at once, in both
+            // modes, and needs no Apply: it is the tablet's own business, the
+            // host never sees it. Automatic uses the tilt sensor directly;
+            // with it off, the two pinned directions appear.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Rotate automatically", fontSize = 14.sp, color = Color(0xFFB0B0C0))
+                    Text(
+                        "Follow the tilt sensor between the two landscape directions",
+                        fontSize = 11.sp,
+                        color = Color(0xFF6A6A7E)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Switch(
+                    checked = orientation == Prefs.ORIENTATION_AUTO,
+                    onCheckedChange = { auto ->
+                        onOrientationChange(
+                            if (auto) Prefs.ORIENTATION_AUTO else Prefs.ORIENTATION_CAMERA_DOWN
+                        )
+                    },
+                    colors = SwitchDefaults.colors(checkedTrackColor = Accent)
+                )
+            }
+            if (orientation != Prefs.ORIENTATION_AUTO) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        Prefs.ORIENTATION_CAMERA_UP to "Camera up",
+                        Prefs.ORIENTATION_CAMERA_DOWN to "Camera down",
+                    ).forEach { (value, label) ->
+                        FilterChip(
+                            selected = orientation == value,
+                            onClick = { onOrientationChange(value) },
+                            label = { Text(label) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Accent,
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+                Text(
+                    "Camera down is the usual way to hold it for drawing.",
+                    fontSize = 11.sp,
+                    color = Color(0xFF6A6A7E)
                 )
             }
             Spacer(Modifier.height(20.dp))
