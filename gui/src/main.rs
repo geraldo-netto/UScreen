@@ -844,7 +844,7 @@ fn main() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 600.0])
             .with_min_inner_size([360.0, 520.0])
-            .with_app_id("uscreen-gui")
+            .with_app_id("uscreen")
             // Window icon from the same picture as the launcher and tray, so
             // the task bar shows it even where the theme icon is not installed.
             .with_icon(egui::IconData {

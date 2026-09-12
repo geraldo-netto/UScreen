@@ -3,6 +3,12 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
+## Unreleased
+
+- The settings window now identifies itself to the desktop as `uscreen`, the
+  same name as its menu entry, so the KDE task bar shows the UScreen icon for
+  it instead of a generic monitor.
+
 ## 1.2.0 — 2026-09-12
 
 - Performance: ffmpeg was converting every frame through RGB on the CPU
