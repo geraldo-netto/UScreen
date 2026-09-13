@@ -5,6 +5,16 @@ Full notes for each version are on the
 
 ## Unreleased
 
+- Fix: on Debian- and Ubuntu-based Plasma systems the daemon never mapped the
+  tablet's touch and pen onto the virtual display, so they drove the wrong
+  screen — plain `qdbus` is Qt5's and is often not installed there, only
+  `qdbus-qt6`. KWin is now reached through systemd's `busctl`, which every
+  target distribution has, with the whole qdbus family as a fallback
+  ([#9](https://github.com/majmichu1/UScreen/issues/9),
+  [#10](https://github.com/majmichu1/UScreen/issues/10)). The same call path
+  carries on-screen-keyboard suppression, which was silently off there too.
+- `uscreen doctor` reports whether KWin can be reached at all, instead of
+  leaving the Desktop section empty when it cannot.
 - The settings window now identifies itself to the desktop as `uscreen`, the
   same name as its menu entry, so the KDE task bar shows the UScreen icon for
   it instead of a generic monitor.

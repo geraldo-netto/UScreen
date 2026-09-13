@@ -4,6 +4,7 @@ mod doctor;
 mod edid;
 #[cfg(feature = "inproc-encoder")]
 mod encoder;
+mod kwin;
 mod input;
 mod latency;
 mod osk;

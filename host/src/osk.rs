@@ -29,39 +29,14 @@ fn state_path() -> PathBuf {
 }
 
 async fn get_mode() -> Option<String> {
-    let out = tokio::process::Command::new("qdbus")
-        .args([
-            "--literal",
-            "org.kde.KWin",
-            OBJECT,
-            "org.freedesktop.DBus.Properties.Get",
-            IFACE,
-            "mode",
-        ])
-        .output()
-        .await
-        .ok()?;
-    let text = String::from_utf8_lossy(&out.stdout);
-    // qdbus --literal prints e.g. [Variant(int): 1]
-    let digits: String = text.chars().filter(|c| c.is_ascii_digit()).collect();
+    let raw = crate::kwin::get_property(OBJECT, IFACE, "mode").await?;
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
     (!digits.is_empty()).then_some(digits)
 }
 
 async fn set_mode(mode: &str) -> bool {
-    tokio::process::Command::new("qdbus")
-        .args([
-            "--literal",
-            "org.kde.KWin",
-            OBJECT,
-            "org.freedesktop.DBus.Properties.Set",
-            IFACE,
-            "mode",
-            mode,
-        ])
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    // `mode` is a D-Bus int32; busctl needs to be told so.
+    crate::kwin::set_property(OBJECT, IFACE, "mode", "i", mode).await
 }
 
 /// Turn the on-screen keyboard off, remembering how it was set.

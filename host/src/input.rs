@@ -678,26 +678,12 @@ async fn primary_non_evdi_output() -> Option<String> {
 }
 
 async fn kwin_device_property(sysname: &str, property: &str) -> Option<String> {
-    let out = tokio::process::Command::new("qdbus")
-        .args([
-            "--literal",
-            "org.kde.KWin",
-            &format!("/org/kde/KWin/InputDevice/{}", sysname),
-            "org.freedesktop.DBus.Properties.Get",
-            KWIN_INPUT_IFACE,
-            property,
-        ])
-        .output()
-        .await
-        .ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    // qdbus --literal prints: [Variant(QString): "value"]
-    let text = String::from_utf8_lossy(&out.stdout);
-    let start = text.find('"')? + 1;
-    let end = text.rfind('"')?;
-    (end > start).then(|| text[start..end].to_string())
+    crate::kwin::get_property(
+        &format!("/org/kde/KWin/InputDevice/{}", sysname),
+        KWIN_INPUT_IFACE,
+        property,
+    )
+    .await
 }
 
 /// Pin the virtual input devices to the virtual display.
@@ -733,25 +719,19 @@ async fn map_devices_to_output(pen_only: bool, ident: &DeviceIdentity, card: Opt
             tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         }
 
-        let Ok(list) = tokio::process::Command::new("qdbus")
-            .args([
-                "org.kde.KWin",
-                "/org/kde/KWin/InputDevice",
-                "org.kde.KWin.InputDeviceManager.devicesSysNames",
-            ])
-            .output()
-            .await
+        let Some(devices) = crate::kwin::list_strings(
+            "/org/kde/KWin/InputDevice",
+            "org.kde.KWin.InputDeviceManager",
+            "devicesSysNames",
+        )
+        .await
         else {
-            warn!("qdbus unavailable — input devices stay unmapped");
+            warn!("KWin did not answer — input devices stay unmapped");
             return;
         };
 
         let mut mapped = 0;
-        for sysname in String::from_utf8_lossy(&list.stdout)
-            .split_whitespace()
-            .map(str::to_string)
-            .collect::<Vec<_>>()
-        {
+        for sysname in devices {
             let Some(name) = kwin_device_property(&sysname, "name").await else {
                 continue;
             };
@@ -759,20 +739,16 @@ async fn map_devices_to_output(pen_only: bool, ident: &DeviceIdentity, card: Opt
             {
                 continue;
             }
-            let r = tokio::process::Command::new("qdbus")
-                .args([
-                    "--literal",
-                    "org.kde.KWin",
-                    &format!("/org/kde/KWin/InputDevice/{}", sysname),
-                    "org.freedesktop.DBus.Properties.Set",
-                    KWIN_INPUT_IFACE,
-                    "outputName",
-                    &output,
-                ])
-                .output()
-                .await;
-            match r {
-                Ok(o) if o.status.success() => {
+            let ok = crate::kwin::set_property(
+                &format!("/org/kde/KWin/InputDevice/{}", sysname),
+                KWIN_INPUT_IFACE,
+                "outputName",
+                "s",
+                &output,
+            )
+            .await;
+            match ok {
+                true => {
                     // A successful Set is not proof: KWin answers ok and then
                     // keeps the old value when the output is not usable yet.
                     // Only what reads back counts, so a lost mapping is
@@ -790,12 +766,7 @@ async fn map_devices_to_output(pen_only: bool, ident: &DeviceIdentity, card: Opt
                         ),
                     }
                 }
-                Ok(o) => warn!(
-                    "Could not map '{}': {}",
-                    name,
-                    String::from_utf8_lossy(&o.stderr).trim()
-                ),
-                Err(e) => warn!("Could not map '{}': {}", name, e),
+                false => warn!("Could not map '{}': KWin refused the outputName property", name),
             }
         }
 

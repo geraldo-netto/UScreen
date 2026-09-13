@@ -456,20 +456,29 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
 /// Reported because it is a global desktop setting, not something the daemon
 /// should quietly decide on the user's behalf.
 async fn check_osk(r: &mut Report) {
+    // Whether we can reach KWin at all decides whether touch and pen land on
+    // the tablet's screen, so it is reported first and in its own right.
+    match crate::kwin::backend().await {
+        Some(b) => r.line(Level::Ok, "KWin D-Bus", &format!("reachable via {}", b.name())),
+        None => {
+            r.line(
+                Level::Fail,
+                "KWin D-Bus",
+                "unreachable — touch and pen will drive the wrong screen",
+            );
+            r.hint(
+                "the daemon maps the tablet's input onto the virtual display over KWin's \
+                 D-Bus interface, using busctl (systemd) or qdbus. Install systemd's busctl, \
+                 or a qdbus package (qdbus-qt6 on Debian/Ubuntu, qt6-tools elsewhere).",
+            );
+            return;
+        }
+    }
+
     // The live value, not the one in kwinrc: KWin does not re-read that file,
     // so the two disagree routinely and only this one reflects what happens.
-    let Some(raw) = output_of(
-        "qdbus",
-        &[
-            "--literal",
-            "org.kde.KWin",
-            "/VirtualKeyboard",
-            "org.freedesktop.DBus.Properties.Get",
-            "org.kde.kwin.VirtualKeyboard",
-            "mode",
-        ],
-    )
-    .await
+    let Some(raw) =
+        crate::kwin::get_property("/VirtualKeyboard", "org.kde.kwin.VirtualKeyboard", "mode").await
     else {
         return;
     };
