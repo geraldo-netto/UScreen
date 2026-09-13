@@ -3,7 +3,7 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
-## Unreleased
+## 1.2.1 — 2026-09-13
 
 - `uscreen wifi` sets the tablet up for wireless use in one step — it switches
   its adb to the network, remembers the address and the daemon reconnects to
