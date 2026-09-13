@@ -140,8 +140,10 @@ Everything lives in `~/.config/uscreen/config.toml` and is reachable from
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a
   ~6 ms lower decode time at the cost of softer text.
 - **Several tablets** — `max_tablets` up to 4, each its own screen.
-- **Wi-Fi** — `adb tcpip 5555` and `adb connect <ip>:5555`; the daemon
-  prefers the cable when both are there.
+- **Wi-Fi** — `uscreen wifi` once, with the cable in: it switches the tablet
+  over, remembers the address and reconnects to it by itself whenever the
+  cable is out. `uscreen wifi --off` undoes it. The daemon prefers the cable
+  when both are there, and the stutter is [quantified](docs/benchmarks.md).
 - **Updates** — the app, the GUI and the tray tell you when a newer release
   exists; nothing installs itself. `check_updates = false` turns it off.
 

@@ -52,6 +52,7 @@ host/              Rust daemon
   src/update.rs      release check (report only)
   src/doctor.rs      `uscreen doctor`
   src/osk.rs         KDE on-screen keyboard suppression over D-Bus
+  src/kwin.rs        KWin D-Bus calls, through busctl or qdbus
   src/vdisplay.rs    EVDI discovery via sysfs
   src/edid.rs        EDID generation for the virtual display
   evdi/              C helper: EVDI framebuffer capture → NV12 → FIFO
@@ -72,6 +73,7 @@ COMMANDS
   stop            stop the daemon
   status          show daemon status
   list-displays   list EVDI displays
+  wifi            put the tablet on the network (--off to undo)
   doctor          diagnose the setup and print fixes
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)

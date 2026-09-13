@@ -82,6 +82,11 @@ pub struct FileConfig {
     /// screen. Needs that many EVDI devices: the installer sets
     /// initial_device_count to match. 1 keeps everything exactly as before.
     pub max_tablets: u32,
+    /// The tablet's address on the network, as `ip:port`, remembered by
+    /// `uscreen wifi`. When the cable is not plugged in the daemon tries to
+    /// reconnect to it by itself, so the tablet comes back as a screen
+    /// without anyone typing an adb command. Empty disables that.
+    pub wifi_address: String,
     /// Match the virtual display to whatever resolution the tablet reports
     pub auto_resolution: bool,
     pub video_port: u16,
@@ -106,6 +111,7 @@ impl Default for FileConfig {
             require_token: true,
             check_updates: true,
             max_tablets: 1,
+            wifi_address: String::new(),
             auto_resolution: true,
             video_port: 8890,
             input_port: 8891,

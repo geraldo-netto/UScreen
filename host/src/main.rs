@@ -93,6 +93,12 @@ enum Commands {
     Status,
     /// List available displays
     ListDisplays,
+    /// Set the tablet up to connect over Wi-Fi, so the cable becomes optional
+    Wifi {
+        /// Forget the remembered address and stop reconnecting
+        #[arg(long = "off")]
+        off: bool,
+    },
     /// Diagnose the whole setup and report what is wrong
     Doctor,
 }
@@ -110,6 +116,7 @@ async fn main() -> Result<()> {
         Some(Commands::Stop) => stop_daemon().await?,
         Some(Commands::Status) => show_status().await?,
         Some(Commands::ListDisplays) => list_displays().await?,
+        Some(Commands::Wifi { off }) => setup_wifi(*off).await?,
         Some(Commands::Doctor) => doctor::run().await?,
     }
 
@@ -458,8 +465,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         mode_tx: mode_tx.clone(),
         shutdown_rx: shutdown_tx.subscribe(),
     };
+    let wifi_address = file_cfg.wifi_address.clone();
     let adb_handle = tokio::spawn(async move {
-        adb_monitor(video_port, input_port, auto_launch, tablet_tx, adb_token, relaunch, extra).await;
+        adb_monitor(video_port, input_port, auto_launch, tablet_tx, adb_token, relaunch, extra, wifi_address).await;
     });
 
     println!();
@@ -809,6 +817,7 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
 ///
 /// Presence is published on `tablet_tx` so the capture manager can bring the
 /// virtual display up and down along with the tablet.
+#[allow(clippy::too_many_arguments)]
 async fn adb_monitor(
     video_port: u16,
     input_port: u16,
@@ -817,6 +826,8 @@ async fn adb_monitor(
     token: Option<String>,
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
+    // `ip:port` remembered by `uscreen wifi`, or empty.
+    wifi_address: String,
 ) {
     let mut current: Option<String> = None;
     let mut last_relaunch = std::time::Instant::now() - std::time::Duration::from_secs(60);
@@ -838,6 +849,8 @@ async fn adb_monitor(
     // fifth poll, so a missing app costs one `adb shell` every ten seconds.
     let mut polls_since_check: u32 = 0;
     const APP_CHECK_EVERY: u32 = 5;
+    // Said once per disappearance, not every ten seconds.
+    let mut wifi_announced = false;
     // Further tablets, by serial.
     let mut extras: std::collections::HashMap<String, ExtraSession> = std::collections::HashMap::new();
 
@@ -957,6 +970,23 @@ async fn adb_monitor(
                     continue;
                 }
                 polls_since_check = 0;
+                // Nothing attached, but this tablet has been set up for
+                // Wi-Fi: try to get it back. adb answers instantly when the
+                // tablet is not reachable, so this costs nothing while it is
+                // off or out of range.
+                if current.is_none() && !wifi_address.is_empty() {
+                    let out = tokio::process::Command::new("adb")
+                        .args(["connect", &wifi_address])
+                        .output()
+                        .await;
+                    if let Ok(o) = out {
+                        let said = String::from_utf8_lossy(&o.stdout);
+                        if said.contains("connected") && !wifi_announced {
+                            info!("Reconnected to the tablet over Wi-Fi ({})", wifi_address);
+                            wifi_announced = true;
+                        }
+                    }
+                }
                 let Some(serial) = current.as_deref() else { continue };
                 if !auto_launch || is_fake_serial(serial) {
                     continue;
@@ -1006,6 +1036,110 @@ async fn adb_monitor(
             }
         }
     }
+}
+
+/// Switch the tablet's adb to TCP and remember where it lives, so the daemon
+/// can pick it up over Wi-Fi on its own from then on.
+///
+/// This is deliberately the adb route rather than a port of our own. The
+/// video and input ports stay on loopback, reachable only through the tunnel
+/// adb builds, so nothing new is exposed to the network and the tablet still
+/// has to be a device this computer is authorised to talk to.
+async fn setup_wifi(off: bool) -> Result<()> {
+    let mut cfg = config::FileConfig::load();
+
+    if off {
+        if !cfg.wifi_address.is_empty() {
+            let _ = tokio::process::Command::new("adb")
+                .args(["disconnect", &cfg.wifi_address])
+                .output()
+                .await;
+        }
+        cfg.wifi_address = String::new();
+        cfg.save()?;
+        println!("Wi-Fi off. Plug the cable in to use the tablet again.");
+        return Ok(());
+    }
+
+    let Some(serial) = adb_devices().await.into_iter().find(|s| transport_of(s) == Transport::Usb)
+    else {
+        anyhow::bail!(
+            "No tablet on USB. Plug the cable in for this one step — the tablet has to be told \
+             to listen on the network, and only the cable can tell it."
+        );
+    };
+
+    println!("Switching {} to Wi-Fi…", serial);
+    let out = tokio::process::Command::new("adb")
+        .args(["-s", &serial, "tcpip", "5555"])
+        .output()
+        .await?;
+    if !out.status.success() {
+        anyhow::bail!("adb tcpip failed: {}", String::from_utf8_lossy(&out.stderr).trim());
+    }
+    // adbd restarts, taking the USB connection with it for a moment.
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let Some(ip) = tablet_ip(&serial).await else {
+        anyhow::bail!(
+            "The tablet is listening, but its address could not be read. Find it under \
+             Settings → About tablet → Status, then put `wifi_address = \"<ip>:5555\"` in \
+             ~/.config/uscreen/config.toml."
+        );
+    };
+    let address = format!("{}:5555", ip);
+
+    let out = tokio::process::Command::new("adb").args(["connect", &address]).output().await?;
+    let said = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if !said.contains("connected") {
+        anyhow::bail!("adb connect {} did not take: {}", address, said);
+    }
+
+    cfg.wifi_address = address.clone();
+    cfg.save()?;
+    println!("Connected to {}. The cable can come out.", address);
+    println!(
+        "The daemon reconnects to this address by itself whenever the cable is not in, \
+         so this is a one-off — until the tablet reboots, which puts its adb back on USB \
+         and means running this once more.\n\
+         Wi-Fi is a fallback: the median latency matches the cable but single frames \
+         arrive much later. `uscreen wifi --off` forgets the address."
+    );
+    Ok(())
+}
+
+/// The tablet's own address on the wireless network.
+async fn tablet_ip(serial: &str) -> Option<String> {
+    // `ip route` is present on every Android that adb can reach, and the
+    // route to the default gateway carries the source address we want.
+    // Asked for wlan0 first, since a tablet on USB may also have a tethering
+    // interface whose address is useless here.
+    for args in [
+        vec!["-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0"],
+        vec!["-s", serial, "shell", "ip", "route", "get", "1.1.1.1"],
+        vec!["-s", serial, "shell", "ip", "-f", "inet", "addr"],
+    ] {
+        let Ok(out) = tokio::process::Command::new("adb").args(&args).output().await else {
+            continue;
+        };
+        let text = String::from_utf8_lossy(&out.stdout);
+        // "inet 192.168.1.42/24 …" or "… src 192.168.1.42 …"
+        let mut words = text.split_whitespace().peekable();
+        while let Some(w) = words.next() {
+            if w != "inet" && w != "src" {
+                continue;
+            }
+            let Some(value) = words.peek() else { continue };
+            let ip = value.split('/').next().unwrap_or(value);
+            if ip.starts_with("127.") || !ip.contains('.') {
+                continue;
+            }
+            if ip.split('.').count() == 4 && ip.split('.').all(|o| o.parse::<u8>().is_ok()) {
+                return Some(ip.to_string());
+            }
+        }
+    }
+    None
 }
 
 /// Whether the app's process exists on the tablet. `None` when adb could not

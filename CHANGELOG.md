@@ -5,6 +5,11 @@ Full notes for each version are on the
 
 ## Unreleased
 
+- `uscreen wifi` sets the tablet up for wireless use in one step — it switches
+  its adb to the network, remembers the address and the daemon reconnects to
+  it by itself whenever the cable is out, so the adb dance is not something to
+  repeat by hand ([#8](https://github.com/majmichu1/UScreen/issues/8)).
+  `uscreen wifi --off` forgets it. The video and input ports stay on loopback.
 - Fix: on Debian- and Ubuntu-based Plasma systems the daemon never mapped the
   tablet's touch and pen onto the virtual display, so they drove the wrong
   screen — plain `qdbus` is Qt5's and is often not installed there, only

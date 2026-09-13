@@ -17,8 +17,17 @@ It uses the adb connection that USB debugging provides; no special cable and
 no USB tethering.
 
 **Does UScreen require USB tethering or Wi-Fi?**
-No. USB tethering is not needed; USB debugging is. Wi-Fi works as a fallback
-(`adb tcpip`), with noticeably more stutter — see the benchmarks.
+No. USB tethering is not needed; USB debugging is. Wi-Fi works as a fallback,
+with noticeably more stutter — see the benchmarks.
+
+**Can I use it without the cable?**
+Yes, as a fallback. Run `uscreen wifi` once with the cable plugged in: it puts
+the tablet's adb on the network, remembers the address, and from then on the
+daemon reconnects on its own whenever the cable is out. The tablet goes back
+to USB-only when it reboots, so that one command has to be repeated after a
+tablet restart. `uscreen wifi --off` forgets it. Nothing new is exposed on
+your network by UScreen itself: the video and input ports stay on loopback,
+reached through the tunnel adb builds.
 
 **Does UScreen support Samsung S Pen pressure and tilt?**
 Yes: pressure, tilt, the eraser end and the stylus button are all forwarded
