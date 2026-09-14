@@ -869,7 +869,7 @@ async fn adb_monitor(
                 }
             }
         }
-        let found = devices.first().cloned();
+        let found = pick_device(&devices, current.as_deref()).await;
 
         match (&current, &found) {
             // Newly attached, or a different tablet than before.
@@ -1272,6 +1272,52 @@ fn is_fake_serial(serial: &str) -> bool {
     std::env::var("USCREEN_FAKE_TABLET")
         .map(|f| f.split(',').any(|x| x.trim() == serial))
         .unwrap_or(false)
+}
+
+/// Which of the attached devices to drive.
+///
+/// Stay with the one already in use for as long as it is still attached.
+/// adb lists two devices in no fixed order, and taking `first()` on every
+/// poll meant that any reshuffle — a phone's USB re-enumerating when its
+/// screen sleeps is enough — looked like a different tablet being plugged in:
+/// the port forwards moved, the stream on the real tablet froze on its last
+/// frame, and the app went black when it reconnected. That is the shape of
+/// the black screen in #10, reported with two Samsung devices attached.
+///
+/// For a fresh pick, prefer USB over the network, and among USB devices the
+/// one that actually has the app installed: a phone charging next to the
+/// tablet normally does not, and it is almost never the one meant.
+async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String> {
+    if let Some(cur) = current {
+        if devices.iter().any(|d| d == cur) {
+            return Some(cur.to_string());
+        }
+    }
+    let usb: Vec<&String> = devices.iter().filter(|d| transport_of(d) == Transport::Usb).collect();
+    if usb.len() > 1 {
+        for d in &usb {
+            if is_fake_serial(d) {
+                continue;
+            }
+            let has_app = tokio::process::Command::new("adb")
+                .args(["-s", d, "shell", "pm", "path", "com.uscreen"])
+                .output()
+                .await
+                .map(|o| !o.stdout.is_empty())
+                .unwrap_or(false);
+            if has_app {
+                info!("{} Android devices attached; using {} — it has the UScreen app", devices.len(), d);
+                return Some((*d).clone());
+            }
+        }
+        warn!(
+            "{} Android devices attached and none has the app installed; using {}. \
+             Unplug the others, or raise max_tablets to give each its own screen.",
+            devices.len(),
+            usb[0]
+        );
+    }
+    devices.first().cloned()
 }
 
 /// Every device in state "device", USB entries first.

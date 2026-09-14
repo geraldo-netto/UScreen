@@ -3,6 +3,16 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
+## Unreleased
+
+- Fix: with two Android devices attached the daemon took whichever one adb
+  listed first on every check, so any reshuffle of that list looked like a
+  different tablet being plugged in — the port forwards moved, the stream on
+  the real tablet froze on its last frame and the app went black when it
+  reconnected. The daemon now stays with the device it is driving for as long
+  as it is attached, and when it has to choose it prefers the one that has
+  the UScreen app installed ([#10](https://github.com/majmichu1/UScreen/issues/10)).
+
 ## 1.2.2 — 2026-09-14
 
 - Fix: the pen's tilt axes were the wrong way round — a pen leaning right
