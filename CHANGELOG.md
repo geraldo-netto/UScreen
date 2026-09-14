@@ -3,7 +3,7 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
-## Unreleased
+## 1.2.2 — 2026-09-14
 
 - Fix: the pen's tilt axes were the wrong way round — a pen leaning right
   reported as leaning towards the user and vice versa. Android measures the
