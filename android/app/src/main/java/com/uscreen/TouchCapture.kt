@@ -383,8 +383,18 @@ class TouchCapture {
     private fun decomposeTilt(tiltRad: Double, orientationRad: Double): Pair<Double, Double> {
         val sinTilt = sin(tiltRad)
         val cosTilt = cos(tiltRad)
-        val tx = atan2(sinTilt * cos(orientationRad), cosTilt)
-        val ty = atan2(sinTilt * sin(orientationRad), cosTilt)
+        // Android's AXIS_ORIENTATION is measured clockwise from the top of the
+        // screen: 0 points up, +pi/2 points right. So the direction the pen
+        // leans, in screen coordinates with y downwards, is
+        // (sin(orientation), -cos(orientation)).
+        //
+        // libinput wants tilt_x positive towards the right edge and tilt_y
+        // positive towards the user, which is the bottom edge — hence the
+        // minus on the y component. These two were the other way round until
+        // 1.2.2, so a pen leaning right reported as leaning down; reported by
+        // a Lenovo Tab Pen Plus user in issue #11.
+        val tx = atan2(sinTilt * sin(orientationRad), cosTilt)
+        val ty = atan2(-sinTilt * cos(orientationRad), cosTilt)
         return Math.toDegrees(tx) to Math.toDegrees(ty)
     }
 

@@ -3,6 +3,18 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
+## Unreleased
+
+- Fix: the pen's tilt axes were the wrong way round — a pen leaning right
+  reported as leaning towards the user and vice versa. Android measures the
+  stylus direction clockwise from the top of the screen, and that was
+  decomposed into x and y the other way round
+  ([#11](https://github.com/majmichu1/UScreen/issues/11)).
+- `uscreen doctor` tells two Android devices apart from one device reachable
+  two ways, and names them with their model. The daemon drives the first and
+  launches the app there, so a second device sitting next to it shows nothing
+  — which is worth saying rather than reporting "reachable 2 ways".
+
 ## 1.2.1 — 2026-09-13
 
 - `uscreen wifi` sets the tablet up for wireless use in one step — it switches

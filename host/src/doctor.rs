@@ -297,15 +297,40 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
             report_transport(r, devices[0]);
         }
         n => {
-            // Usually one tablet reachable two ways rather than two tablets:
-            // `adb tcpip` leaves the cable working alongside the network
-            // device. The daemon prefers the cable, so say which one wins.
             let pick = chosen.unwrap_or(devices[0]);
-            r.line(
-                Level::Ok,
-                "tablet",
-                &format!("{} reachable {} ways: {:?}", pick, n, devices),
-            );
+            // Two entries can mean one tablet reachable two ways — `adb tcpip`
+            // leaves the cable working alongside the network device — or two
+            // different Android devices plugged in, which is a different
+            // situation entirely: the daemon drives the first and the app is
+            // launched there, so watching the other one shows a black screen.
+            // Only the second kind has more than one USB serial.
+            let usb: Vec<&&str> = devices.iter().filter(|d| !d.contains(':')).collect();
+            if usb.len() > 1 {
+                let mut named = Vec::new();
+                for d in &devices {
+                    match output_of("adb", &["-s", d, "shell", "getprop", "ro.product.model"]).await {
+                        Some(m) if !m.trim().is_empty() => named.push(format!("{} ({})", d, m.trim())),
+                        _ => named.push(d.to_string()),
+                    }
+                }
+                r.line(
+                    Level::Warn,
+                    "tablet",
+                    &format!("{} Android devices attached — using {}", n, pick),
+                );
+                r.hint(&format!(
+                    "attached: {}. The daemon drives the first one and launches the app there, \
+                     so a second device shows nothing. Unplug the others, or raise max_tablets \
+                     to give each its own screen.",
+                    named.join(", ")
+                ));
+            } else {
+                r.line(
+                    Level::Ok,
+                    "tablet",
+                    &format!("{} reachable {} ways: {:?}", pick, n, devices),
+                );
+            }
             report_transport(r, pick);
         }
     }
