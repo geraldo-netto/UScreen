@@ -164,6 +164,63 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 #[cfg(test)]
 mod cli_tests {
     #[tokio::test]
+    async fn t110_extra_token_delivery_is_targeted_and_rate_limited() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let adb = dir.path().join("adb");
+        std::fs::write(
+            &adb,
+            "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' \"$2\" >> \"$0.log\"\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut policies = std::collections::HashMap::from([
+            ("tablet-A".into(), RelaunchBackoff::default()),
+            ("tablet-B".into(), RelaunchBackoff::default()),
+        ]);
+        let now = std::time::Instant::now();
+        for _ in 0..10 {
+            deliver_extra_token(
+                "tablet-A",
+                Some("deadbeef"),
+                &mut policies,
+                now,
+                adb.to_str().unwrap(),
+            )
+            .await;
+        }
+        assert_eq!(
+            std::fs::read_to_string(adb.with_extension("log")).unwrap(),
+            "tablet-A\n"
+        );
+        deliver_extra_token(
+            "tablet-A",
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(5),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        deliver_extra_token(
+            "tablet-A",
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(6),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        assert_eq!(
+            std::fs::read_to_string(adb.with_extension("log")).unwrap(),
+            "tablet-A\ntablet-A\n"
+        );
+        deliver_extra_token("tablet-B", None, &mut policies, now, adb.to_str().unwrap()).await;
+        assert_eq!(
+            std::fs::read_to_string(adb.with_extension("log")).unwrap(),
+            "tablet-A\ntablet-A\ntablet-B\n"
+        );
+    }
+
+    #[tokio::test]
     async fn t105_live_wifi_off_and_address_changes_reach_adb() {
         use std::os::unix::fs::PermissionsExt;
         let dir = tempfile::tempdir().unwrap();
@@ -1282,6 +1339,7 @@ async fn adb_monitor(
     let mut daemon_stop = extra.shutdown_rx.clone();
     let mut current: Option<String> = None;
     let mut identities = std::collections::HashMap::new();
+    let mut extra_backoff = std::collections::HashMap::new();
     let mut last_relaunch = std::time::Instant::now() - std::time::Duration::from_secs(60);
     // How many times the token has been re-delivered to this tablet. An app
     // too old to send one fails auth on every reconnect, and without a cap
@@ -1405,6 +1463,7 @@ async fn adb_monitor(
                 .cloned()
                 .collect();
             for serial in gone {
+                extra_backoff.remove(&serial);
                 if let Some(sess) = extras.remove(&serial) {
                     info!("Tablet {} disconnected ({})", sess.instance + 1, serial);
                     sess.stop().await;
@@ -1450,6 +1509,7 @@ async fn adb_monitor(
                     .await;
                 }
                 let _ = sess.tablet_tx.send(true);
+                extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
                 extras.insert(serial, sess);
             }
         }
@@ -1458,13 +1518,21 @@ async fn adb_monitor(
         // without the token: the app was started by hand, and launching it
         // again over adb is how it gets one. Rate-limited so a misbehaving
         // client cannot make us hammer adb.
-        let extra_relaunch = async {
-            let notifies: Vec<_> = extras.values().map(|s| s.relaunch.clone()).collect();
-            if notifies.is_empty() {
-                std::future::pending::<()>().await;
+        let requests: Vec<_> = extras
+            .iter()
+            .map(|(serial, session)| (serial.clone(), session.relaunch.clone()))
+            .collect();
+        let extra_relaunch = async move {
+            if requests.is_empty() {
+                return std::future::pending::<String>().await;
             }
-            let futs = notifies.iter().map(|n| Box::pin(n.notified()));
-            futures_util::future::select_all(futs).await;
+            let futures = requests.iter().map(|(serial, notify)| {
+                Box::pin(async move {
+                    notify.notified().await;
+                    serial.clone()
+                })
+            });
+            futures_util::future::select_all(futures).await.0
         };
         tokio::select! {
             _ = daemon_stop.changed() => break,
@@ -1526,16 +1594,51 @@ async fn adb_monitor(
                     }
                 }
             }
-            _ = extra_relaunch => {
-                // Deliver the token to every extra tablet; cheap and rare.
-                for serial in extras.keys() {
-                    if std::env::var("USCREEN_FAKE_TABLET").map(|f| f.split(',').any(|x| x.trim() == serial)).unwrap_or(false) { continue; }
-                    launch_app(serial, token.as_deref()).await;
-                }
+            serial = extra_relaunch => {
+                deliver_extra_token(&serial, token.as_deref(), &mut extra_backoff, std::time::Instant::now(), "adb").await;
             }
         }
     }
     futures_util::future::join_all(extras.into_values().map(ExtraSession::stop)).await;
+}
+
+struct RelaunchBackoff {
+    next: Option<std::time::Instant>,
+    delay: std::time::Duration,
+}
+impl Default for RelaunchBackoff {
+    fn default() -> Self {
+        Self {
+            next: None,
+            delay: std::time::Duration::from_secs(5),
+        }
+    }
+}
+impl RelaunchBackoff {
+    fn allow(&mut self, now: std::time::Instant) -> bool {
+        if self.next.is_some_and(|next| now < next) {
+            return false;
+        }
+        self.next = Some(now + self.delay);
+        self.delay = (self.delay * 2).min(std::time::Duration::from_secs(600));
+        true
+    }
+}
+
+async fn deliver_extra_token(
+    requested: &str,
+    token: Option<&str>,
+    policies: &mut std::collections::HashMap<String, RelaunchBackoff>,
+    now: std::time::Instant,
+    adb: &str,
+) {
+    if !is_fake_serial(requested)
+        && policies
+            .get_mut(requested)
+            .is_some_and(|policy| policy.allow(now))
+    {
+        launch_app_using(requested, token, adb).await;
+    }
 }
 
 struct WifiReconnect {
@@ -1769,10 +1872,14 @@ fn app_launch_command(token: Option<&str>) -> String {
 }
 
 async fn launch_app(serial: &str, token: Option<&str>) {
+    launch_app_using(serial, token, "adb").await;
+}
+
+async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
     use tokio::io::AsyncWriteExt;
     let cmd = app_launch_command(token);
 
-    let child = tokio::process::Command::new("adb")
+    let child = tokio::process::Command::new(adb)
         .kill_on_drop(true)
         .args(["-s", serial, "shell"])
         .stdin(std::process::Stdio::piped())
