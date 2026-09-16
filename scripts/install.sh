@@ -135,10 +135,10 @@ build_if_needed() {
     if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
         return
     fi
-    if [ ! -f "$PROJECT_DIR/target/release/uscreen" ]; then
-        info "Building from source (needs rust + gcc)..."
-        make -C "$PROJECT_DIR" build
-    fi
+    # Cargo tracks source/dependency changes; make also rebuilds the helper.
+    # A daemon binary alone says nothing about the other outputs or freshness.
+    info "Building from source (needs rust + gcc)..."
+    make -C "$PROJECT_DIR" build
 }
 
 install_files() {

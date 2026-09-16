@@ -185,3 +185,43 @@ fn t103_fake_tablet_handles_partial_tcp_io() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files() {
+    let sandbox = Sandbox::new("source-rebuild");
+    let source = std::fs::read_to_string(repo().join("scripts/install.sh")).unwrap();
+    let source = source.strip_suffix("main \"$@\"\n").unwrap();
+    let script = sandbox.script(
+        "scripts/install.sh",
+        &format!("{source}\nbuild_if_needed\n"),
+    );
+    sandbox.script(
+        "bin/make",
+        "#!/bin/sh\nprintf 'build\\n' >> \"$USCREEN_TEST_LOG\"\n",
+    );
+    let log = sandbox.0.join("builds");
+    // A lone stale daemon, complete but outdated binaries, then a release bundle.
+    sandbox.write("target/release/uscreen", "old");
+    for expected in [1, 2, 2] {
+        let output = Command::new(&script)
+            .env("PATH", sandbox.path())
+            .env("USCREEN_TEST_LOG", &log)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let count = std::fs::read_to_string(&log)
+            .unwrap_or_default()
+            .lines()
+            .count();
+        assert_eq!(
+            count, expected,
+            "source install skipped incremental rebuild"
+        );
+        sandbox.write("target/release/uscreen-gui", "old");
+        sandbox.write("host/evdi/evdi_helper", "old");
+        sandbox.write("host/src/main.rs", "new source");
+        if expected == 2 {
+            sandbox.write("bin/uscreen", "release");
+        }
+    }
+}
