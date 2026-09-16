@@ -354,22 +354,23 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                         if (rendered <= 2) Log.i(TAG, "Rendered output frame #$rendered")
                     }
                 } catch (e: IllegalStateException) {
-                    if (codecAlive) Log.w(TAG, "Output thread: codec gone", e)
-                    synchronized(this@VideoReceiver) {
-                        if (mediaCodec === codec) resetCodec()
-                    }
+                    retireFailedOutput(codec, "Output thread: codec gone", e)
                     break
                 } catch (e: Exception) {
-                    if (codecAlive) Log.w(TAG, "Output thread error", e)
-                    synchronized(this@VideoReceiver) {
-                        if (mediaCodec === codec) resetCodec()
-                    }
+                    retireFailedOutput(codec, "Output thread error", e)
                     break
                 }
             }
         }, "uscreen-render").apply {
             priority = Thread.MAX_PRIORITY
             start()
+        }
+    }
+
+    private fun retireFailedOutput(codec: MediaCodec, message: String, error: Exception) {
+        if (codecAlive) Log.w(TAG, message, error)
+        synchronized(this) {
+            if (mediaCodec === codec) resetCodec()
         }
     }
 
