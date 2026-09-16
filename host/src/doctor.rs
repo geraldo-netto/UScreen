@@ -95,7 +95,7 @@ fn parse_pids(out: Option<String>) -> Vec<u32> {
         .collect()
 }
 
-fn check_modules(r: &mut Report) {
+fn check_modules(r: &mut Report, cfg: &FileConfig) {
     match std::fs::read_to_string("/sys/devices/evdi/count") {
         Ok(text) => {
             let count: i32 = text.trim().parse().unwrap_or(-1);
@@ -122,8 +122,11 @@ fn check_modules(r: &mut Report) {
     }
 
     let uinput = Path::new("/dev/uinput");
+    // With every input device switched off the daemon never opens uinput,
+    // so a problem here is worth knowing about but blocks nothing.
+    let uinput_level = if cfg.input_touch || cfg.input_pen { Level::Fail } else { Level::Warn };
     if !uinput.exists() {
-        r.line(Level::Fail, "uinput device", "/dev/uinput missing");
+        r.line(uinput_level, "uinput device", "/dev/uinput missing");
         r.hint("sudo modprobe uinput");
     } else {
         // Existence is not enough — the daemon runs unprivileged and needs to
@@ -131,7 +134,7 @@ fn check_modules(r: &mut Report) {
         match std::fs::OpenOptions::new().write(true).open(uinput) {
             Ok(_) => r.line(Level::Ok, "uinput device", "writable"),
             Err(e) => {
-                r.line(Level::Fail, "uinput device", &format!("not writable: {}", e));
+                r.line(uinput_level, "uinput device", &format!("not writable: {}", e));
                 r.hint("sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput");
             }
         }
@@ -691,6 +694,32 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             "second screen (switchable from the tablet)"
         },
     );
+    let mut on: Vec<&str> = Vec::new();
+    if cfg.input_touch { on.push("touch"); }
+    if cfg.input_pen { on.push("pen"); }
+    if cfg.input_pen && cfg.input_pointer { on.push("pointer"); }
+    if on.is_empty() {
+        // A deliberate choice, not a fault: opting out is what the switches
+        // are for.
+        r.line(
+            Level::Ok,
+            "input devices",
+            "none — the tablet is display-only (touch and pen are ignored)",
+        );
+    } else {
+        r.line(Level::Ok, "input devices", &format!("{} (created while a tablet is attached)", on.join(", ")));
+    }
+    if cfg.pen_only && !cfg.input_pen {
+        r.line(
+            Level::Warn,
+            "input devices",
+            "graphics-tablet mode needs the pen device — the daemon will start as a second screen instead",
+        );
+        r.hint("enable the pen in the settings panel, or set input_pen = true in config.toml");
+    }
+    if cfg.input_pointer && !cfg.input_pen {
+        r.hint("input_pointer only takes effect together with input_pen");
+    }
 
     let raw_bitrate = on_disk.as_ref().map(|c| c.bitrate).unwrap_or(cfg.bitrate);
     if raw_bitrate > MAX_BITRATE_KBPS {
@@ -747,7 +776,7 @@ pub async fn run() -> Result<()> {
     let cfg = FileConfig::load();
 
     section("Kernel modules");
-    check_modules(&mut r);
+    check_modules(&mut r, &cfg);
 
     section("Tools");
     check_tools(&mut r, &cfg).await;
