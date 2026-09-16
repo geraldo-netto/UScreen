@@ -2,7 +2,6 @@
 
 | id | status | severity | effort | description |
 |---|---|---|---|---|
-| T151 | open | low | small | Refactor `android/app/src/main/java/com/uscreen/CodecReportReceiver.kt::decoderReport` (baseline line 17): SonarQube cyclomatic complexity 15 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T152 | open | low | small | Refactor `android/app/src/main/java/com/uscreen/MainActivity.kt::onCreate` (baseline line 48): SonarQube cyclomatic complexity 12 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T153 | open | low | small | Refactor `android/app/src/main/java/com/uscreen/MainActivity.kt::UScreenMain` (baseline line 412): SonarQube cyclomatic complexity 13 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T154 | open | low | small | Refactor `android/app/src/main/java/com/uscreen/TouchCapture.kt::onMessage` (baseline line 112): SonarQube cyclomatic complexity 11 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
