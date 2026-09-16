@@ -10,7 +10,7 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-73 items: 4 high, 29 medium, 40 low.
+72 items: 4 high, 28 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
@@ -20,7 +20,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T006 | open | high | S | Rewrite pkgver in the shipped PKGBUILD; it is still 1.1.0 while everything else is 1.2.3 ([build-packages.sh:47](packaging/build-packages.sh#L47)) |
 | T007 | open | medium | S | Make the GitHub update check optional or correct SECURITY.md, which says it can be turned off ([MainActivity.kt:343](android/app/src/main/java/com/uscreen/MainActivity.kt#L343)) |
 | T008 | open | medium | S | Use START_NOT_STICKY and tie wake/Wi-Fi locks to onStart/onStop, not activity lifetime ([StreamingService.kt:112](android/app/src/main/java/com/uscreen/StreamingService.kt#L112)) |
-| T009 | open | medium | S | Send pen action 1 on ACTION_CANCEL for stylus pointers instead of a touch up ([TouchCapture.kt:302](android/app/src/main/java/com/uscreen/TouchCapture.kt#L302)) |
 | T010 | open | medium | S | Do not build the decoder in setSurface() while the receiver is stopped ([VideoReceiver.kt:204](android/app/src/main/java/com/uscreen/VideoReceiver.kt#L204)) |
 | T011 | open | medium | S | Stop claiming the tarball installer enables the systemd unit; install.sh never does ([installation.md:40](docs/installation.md#L40)) |
 | T012 | open | medium | S | Scale-1 conversion writes with g_mode_w stride into buffers sized by g_out_w: heap overflow on odd width ([evdi_helper.c:328](host/evdi/evdi_helper.c#L328)) |
@@ -101,8 +100,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **T007** — SECURITY.md (and README/faq) state the app's update check is off with check_updates = false, but that is a host config key; the app calls api.github.com unconditionally on every process start. Add a Prefs toggle, or change the docs.
 
 **T008** — START_STICKY makes the system restart the service after process death with no activity, re-acquiring a 4 h partial wake lock and an untimed Wi-Fi lock. MainActivity.onStop stops streaming but the locks stay held until onDestroy, so a backgrounded app keeps CPU and radio awake. Return START_NOT_STICKY and release the locks from onStop.
-
-**T009** — ACTION_CANCEL emits a touch 'up' for every pointer regardless of tool type, so a cancelled stylus stroke leaves the host pen device with BTN_TOUCH=1 until the pen leaves proximity. Check isPenLike(event, i) in the cancel loop and emit pen action 1 for those pointers.
 
 **T010** — setSurface() calls setupCodec() whenever mediaCodec is null, independent of isRunning, so every surfaceCreated/surfaceChanged (launch with no host, rotation in pen-only mode) creates a hardware decoder plus a MAX_PRIORITY thread polling every 10 ms that nothing releases until the next stop(). Guard with isRunning.
 
