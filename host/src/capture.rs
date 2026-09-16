@@ -1554,8 +1554,7 @@ struct H264AnnexBPacketizer {
     pending_has_vcl: bool,
     pending_has_idr: bool,
     config: Vec<u8>,
-    has_sps: bool,
-    has_pps: bool,
+    parameter_sets: std::collections::BTreeMap<u8, Vec<u8>>,
     next_seq: u32,
     codec: Codec,
 }
@@ -1569,8 +1568,7 @@ impl H264AnnexBPacketizer {
             pending_has_vcl: false,
             pending_has_idr: false,
             config: Vec::new(),
-            has_sps: false,
-            has_pps: false,
+            parameter_sets: std::collections::BTreeMap::new(),
             next_seq: 0,
             codec,
         }
@@ -1589,8 +1587,18 @@ impl H264AnnexBPacketizer {
         out
     }
 
+    fn config_ready(&self) -> bool {
+        let required: &[u8] = match self.codec {
+            Codec::H264 => &[NAL_TYPE_SPS, NAL_TYPE_PPS],
+            Codec::Hevc => &[HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS],
+        };
+        required
+            .iter()
+            .all(|kind| self.parameter_sets.contains_key(kind))
+    }
+
     fn codec_config(&self) -> Option<Bytes> {
-        if self.has_sps && self.has_pps {
+        if self.config_ready() {
             Some(Bytes::copy_from_slice(&self.config))
         } else {
             None
@@ -1677,13 +1685,26 @@ impl H264AnnexBPacketizer {
         };
 
         match kind {
-            NalKind::Sps => {
-                self.has_sps = true;
-                self.config.extend_from_slice(nal);
-            }
-            NalKind::Pps => {
-                self.has_pps = true;
-                self.config.extend_from_slice(nal);
+            NalKind::Sps | NalKind::Pps => {
+                // Parameter sets precede the following picture. Finish the old
+                // picture using its configuration before replacing that state.
+                if self.pending_has_vcl {
+                    if let Some(packet) = self.take_pending_access_unit() {
+                        out.push(packet);
+                    }
+                }
+                let nal_type = match self.codec {
+                    Codec::H264 => nal[header_offset] & 0x1f,
+                    Codec::Hevc => (nal[header_offset] >> 1) & 0x3f,
+                };
+                // These single-layer encoders emit one current set per type.
+                // Normalize Annex B prefixes so equivalent headers stay equal.
+                let mut set = vec![0, 0, 0, 1];
+                set.extend_from_slice(&nal[header_offset..]);
+                if self.parameter_sets.get(&nal_type) != Some(&set) {
+                    self.parameter_sets.insert(nal_type, set);
+                    self.config = self.parameter_sets.values().flatten().copied().collect();
+                }
             }
             NalKind::Aud => {
                 if let Some(access_unit) = self.take_pending_access_unit() {
@@ -1737,7 +1758,7 @@ impl H264AnnexBPacketizer {
 
         // Prepend SPS/PPS to IDR frames so the decoder can always decode them,
         // even if it missed the initial config packet or reconnected mid-stream.
-        let data = if was_idr && self.has_sps && self.has_pps {
+        let data = if was_idr && self.config_ready() {
             let mut full = Vec::with_capacity(self.config.len() + au_data.len());
             full.extend_from_slice(&self.config);
             full.extend_from_slice(&au_data);
@@ -1808,6 +1829,48 @@ impl<'a> ExpGolombReader<'a> {
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t079_parameter_sets_replace_without_growing_or_resending() {
+        for (codec, mut sets) in [
+            (
+                Codec::H264,
+                vec![
+                    nal(NAL_TYPE_SPS, &[0x64, 0, 0x80]),
+                    nal(NAL_TYPE_PPS, &[0x80]),
+                ],
+            ),
+            (
+                Codec::Hevc,
+                vec![
+                    hevc_nal(HEVC_NAL_VPS, &[0x80]),
+                    hevc_nal(HEVC_NAL_SPS, &[0x80]),
+                    hevc_nal(HEVC_NAL_PPS, &[0x80]),
+                ],
+            ),
+        ] {
+            let mut packetizer = H264AnnexBPacketizer::new(codec);
+            let mut packets = Vec::new();
+            for set in &sets {
+                packetizer.process_nal(set, &mut packets);
+            }
+            let initial = packetizer.codec_config().unwrap();
+            for _ in 0..1000 {
+                for set in &sets {
+                    packetizer.process_nal(set, &mut packets);
+                }
+                assert_eq!(
+                    packetizer.codec_config().as_ref(),
+                    Some(&initial),
+                    "unchanged sets must not resend config"
+                );
+            }
+            *sets[0].last_mut().unwrap() = 0x81;
+            packetizer.process_nal(&sets[0], &mut packets);
+            assert_eq!(packetizer.codec_config().unwrap().as_ref(), sets.concat());
+            assert_eq!(packetizer.config.len(), initial.len());
+        }
+    }
 
     fn test_manager() -> CaptureManager {
         static INSTANCE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(100_000);
