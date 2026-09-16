@@ -275,3 +275,39 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         "installed"
     );
 }
+
+#[test]
+fn t097_make_setup_creates_missing_configuration_directories() {
+    let sandbox = Sandbox::new("minimal-setup");
+    let makefile = std::fs::read_to_string(repo().join("Makefile"))
+        .unwrap()
+        .replace("/etc/", &format!("{}/etc/", sandbox.0.display()))
+        .replace("/sys/", &format!("{}/sys/", sandbox.0.display()));
+    sandbox.write("Makefile", &makefile);
+    sandbox.write("sys/devices/evdi/count", "2");
+    sandbox.write(
+        "packaging/60-uscreen-uinput.rules",
+        &std::fs::read_to_string(repo().join("packaging/60-uscreen-uinput.rules")).unwrap(),
+    );
+    sandbox.script("bin/sudo", "#!/bin/sh\nexec \"$@\"\n");
+    for name in ["modprobe", "udevadm"] {
+        sandbox.script(&format!("bin/{name}"), "#!/bin/sh\nexit 0\n");
+    }
+    let output = Command::new("make")
+        .arg("setup-system")
+        .current_dir(&sandbox.0)
+        .env("PATH", sandbox.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(sandbox.0.join("etc/modprobe.d/uscreen-evdi.conf").is_file());
+    assert!(sandbox.0.join("etc/modules-load.d/uscreen.conf").is_file());
+    assert!(sandbox
+        .0
+        .join("etc/udev/rules.d/60-uscreen-uinput.rules")
+        .is_file());
+}

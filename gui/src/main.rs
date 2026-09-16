@@ -145,7 +145,7 @@ fn poll_status() -> Status {
 /// One-time privileged setup via the desktop's graphical password prompt:
 /// pre-create an EVDI device now and at every boot.
 fn system_setup_script(root: &std::path::Path) -> String {
-    let script = "set -e; \
+    let script = "set -e; mkdir -p /etc/modprobe.d /etc/modules-load.d; \
         echo 'options evdi initial_device_count=2' > /etc/modprobe.d/uscreen-evdi.conf; \
         printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf; \
         modprobe evdi || true; modprobe uinput || true; \
@@ -1123,6 +1123,35 @@ mod tests {
         let trace = std::fs::read_to_string(trace).unwrap();
         assert!(trace.contains("control --reload"));
         assert!(trace.contains("trigger --name-match=uinput"));
+    }
+
+    #[test]
+    fn t097_gui_setup_creates_missing_configuration_directories() {
+        let sandbox = Sandbox::new();
+        std::fs::create_dir_all(sandbox.0.join("sys/devices/evdi")).unwrap();
+        std::fs::write(sandbox.0.join("sys/devices/evdi/count"), "2").unwrap();
+        sandbox.script("bin/modprobe", "exit 0");
+        sandbox.script("bin/udevadm", "exit 0");
+        let output = Command::new("sh")
+            .args(["-c", &system_setup_script(&sandbox.0)])
+            .env(
+                "PATH",
+                format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),
+            )
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        for file in [
+            "etc/modprobe.d/uscreen-evdi.conf",
+            "etc/modules-load.d/uscreen.conf",
+            "etc/udev/rules.d/60-uscreen-uinput.rules",
+        ] {
+            assert!(sandbox.0.join(file).is_file(), "missing {file}");
+        }
     }
 
     #[test]

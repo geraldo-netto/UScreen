@@ -40,6 +40,7 @@ install: build
 # One-time system setup (needs sudo): pre-create an EVDI device at boot so
 # the daemon never needs root, and load the required modules.
 setup-system:
+	sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
 	echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/uscreen-evdi.conf
 	printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf
 	sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
