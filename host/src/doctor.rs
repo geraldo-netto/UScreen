@@ -435,44 +435,27 @@ async fn check_tablet_session(
         Some(reverse) => report_forwarding(r, cfg, &session.serial, &reverse),
         None => r.line(Level::Warn, "adb reverse", "could not query"),
     }
-    // Whether this tablet can decode HEVC, and in 10 bits. Measured on one
-    // Tab S9 Ultra, HEVC was slightly faster than H.264 and Main10 cost
-    // nothing on top — but only where the hardware decoder exists, which is
-    // exactly what this asks. H.264 stays the default because it is the one
-    // every device has.
-    let mut codec_args: Vec<&str> = vec!["-s", &session.serial];
-    codec_args.extend_from_slice(&["shell", "dumpsys", "media.player"]);
-    if let Some(out) = output_of(adb, &codec_args).await {
-        let hevc = out.contains("video/hevc");
-        let main10 = out.contains("Main10");
-        match (hevc, main10, cfg.encoder.contains("hevc")) {
-            (_, _, true) => r.line(
-                Level::Ok,
-                "tablet codec",
-                "HEVC, and the host is sending it",
-            ),
-            (true, true, false) => {
-                r.line(
-                    Level::Ok,
-                    "tablet codec",
-                    "HEVC Main10 supported in hardware",
-                );
-                r.hint(
-                    "optional: switch the encoder to hevc_nvenc for sharper text at the same \
-                     bitrate, and tick 10-bit to smooth gradients",
-                );
-            }
-            (true, false, false) => {
-                r.line(Level::Ok, "tablet codec", "HEVC supported (8-bit)");
-                r.hint("optional: switch the encoder to hevc_nvenc for sharper text");
-            }
-            (false, _, false) => r.line(
-                Level::Ok,
-                "tablet codec",
-                "H.264 only — leave the encoder as it is",
-            ),
-        }
-    }
+    // dumpsys media.player lists active playback, not decoder capabilities.
+    // The installed app queries MediaCodecList behind its shell-only receiver.
+    let codec_output = tokio::process::Command::new(adb)
+        .args([
+            "-s",
+            &session.serial,
+            "shell",
+            "am",
+            "broadcast",
+            "--include-stopped-packages",
+            "-n",
+            "com.uscreen/.CodecReportReceiver",
+            "-a",
+            "com.uscreen.DECODER_CAPABILITIES",
+        ])
+        .output_bounded()
+        .await
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).into_owned());
+    report_codec(r, cfg, codec_output.as_deref());
 
     let mut pm_args: Vec<&str> = vec!["-s", &session.serial];
     pm_args.extend_from_slice(&["shell", "pm", "list", "packages", "com.uscreen"]);
@@ -486,6 +469,66 @@ async fn check_tablet_session(
                 crate::update::RELEASES_PAGE,
                 session.serial
             ));
+        }
+    }
+}
+
+fn report_codec(r: &mut Report, cfg: &FileConfig, out: Option<&str>) {
+    let report = out
+        .and_then(|text| text.split_once("USCREEN_CODECS_V1:").map(|(_, tail)| tail))
+        .map(|tail| tail.split(['"', '\r', '\n']).next().unwrap_or("").trim());
+    let entries: Vec<_> = report.unwrap_or("").split(',').collect();
+    let valid = entries.iter().all(|entry| {
+        matches!(
+            *entry,
+            "hw8" | "hw10" | "sw8" | "sw10" | "unknown8" | "unknown10"
+        )
+    });
+    let hevc = cfg.encoder.contains("hevc");
+    if report == Some("none") {
+        r.line(
+            if hevc { Level::Fail } else { Level::Ok },
+            "tablet codec",
+            "no HEVC decoder reported by MediaCodecList",
+        );
+    } else if !valid {
+        r.line(
+            Level::Warn,
+            "tablet codec",
+            "HEVC capability unknown (no valid decoder inventory)",
+        );
+        r.hint("install the current tablet APK, then rerun doctor; host encoder selection does not prove tablet support");
+    } else if hevc && cfg.ten_bit && !entries.iter().any(|entry| entry.ends_with("10")) {
+        r.line(
+            Level::Fail,
+            "tablet codec",
+            "HEVC Main10 not reported; 10-bit host stream is unsupported by this inventory",
+        );
+    } else {
+        let usable: Vec<_> = entries
+            .iter()
+            .copied()
+            .filter(|entry| !hevc || !cfg.ten_bit || entry.ends_with("10"))
+            .collect();
+        if usable.iter().any(|entry| entry.starts_with("hw")) {
+            let detail = if usable.contains(&"hw10") {
+                "hardware HEVC Main10 reported by Android"
+            } else {
+                "hardware HEVC reported by Android (8-bit)"
+            };
+            r.line(Level::Ok, "tablet codec", detail);
+        } else if usable.iter().any(|entry| entry.starts_with("unknown")) {
+            r.line(
+                Level::Warn,
+                "tablet codec",
+                "HEVC decoder reported; acceleration unknown",
+            );
+        } else {
+            r.line(
+                Level::Warn,
+                "tablet codec",
+                "HEVC software decoder only; real-time performance is not guaranteed",
+            );
         }
     }
 }
@@ -1057,6 +1100,74 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t098_codec_report_requires_decoder_evidence() {
+        let cfg = FileConfig {
+            encoder: "hevc_nvenc".into(),
+            ..Default::default()
+        };
+        for (raw, ten_bit, warnings, failures, message) in [
+            (None, false, 1, 0, "unknown"),
+            (Some("video/hevc Main10"), false, 1, 0, "unknown"),
+            (
+                Some("data=\"USCREEN_CODECS_V1:none\""),
+                false,
+                0,
+                1,
+                "no HEVC decoder",
+            ),
+            (
+                Some("data=\"USCREEN_CODECS_V1:sw10\""),
+                false,
+                1,
+                0,
+                "software",
+            ),
+            (
+                Some("data=\"USCREEN_CODECS_V1:hw8\""),
+                true,
+                0,
+                1,
+                "Main10 not reported",
+            ),
+            (
+                Some("data=\"USCREEN_CODECS_V1:hw10\""),
+                true,
+                0,
+                0,
+                "hardware HEVC Main10",
+            ),
+            (
+                Some("data=\"USCREEN_CODECS_V1:unknown10\""),
+                false,
+                1,
+                0,
+                "acceleration unknown",
+            ),
+        ] {
+            let mut report = Report::new();
+            report_codec(
+                &mut report,
+                &FileConfig {
+                    ten_bit,
+                    ..cfg.clone()
+                },
+                raw,
+            );
+            assert_eq!(
+                (report.warnings, report.failures),
+                (warnings, failures),
+                "{raw:?}"
+            );
+            let text = report.messages.borrow().join("\n");
+            assert!(text.contains(message), "{text}");
+            assert!(
+                !text.contains("switch the encoder") && !text.contains("tick 10-bit"),
+                "{text}"
+            );
+        }
+    }
+
     #[tokio::test]
     async fn t099_doctor_targets_active_sessions_and_actual_ports() {
         let temp = tempfile::tempdir().unwrap();

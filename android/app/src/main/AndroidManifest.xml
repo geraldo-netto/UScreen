@@ -54,6 +54,11 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoDisplay" />
 
+        <receiver
+            android:name=".CodecReportReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
         <service
             android:name=".StreamingService"
             android:foregroundServiceType="connectedDevice"
