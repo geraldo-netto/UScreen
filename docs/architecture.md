@@ -12,8 +12,14 @@
    range) and writes whole frames into a FIFO in the per-user runtime
    directory. Only rows the compositor reported as damaged are converted.
 3. **Encode.** `ffmpeg` (or libavcodec in-process) encodes with NVENC, VAAPI or
-   libx264 in constant-quality mode, no B-frames, no lookahead, one keyframe
-   per second plus keyframes on demand when a client joins.
+   libx264 in constant-quality mode, no B-frames, no lookahead. The default
+   FFmpeg CLI schedules an IDR every second using capture wall-clock timestamps,
+   including at the 5 fps idle floor. Join/recovery then waits at most one
+   scheduled interval plus capture, packetization, encoding and transport time
+   (the software-encoder regression checks under 1.6 seconds at idle). The
+   optional in-process encoder also honors a next-frame keyframe request on
+   join; its periodic GOP is counted in frames. The CLI cannot accept those
+   live requests and uses its wall-clock schedule instead.
 4. **Stream.** A TCP server on loopback sends length-prefixed Annex B access
    units; `adb reverse` carries the port to the tablet over USB. A client that
    falls behind is skipped forward to the newest keyframe rather than fed a

@@ -8,8 +8,8 @@
 //!
 //! Encoding here removes that process boundary, and with it the ability to ask
 //! for a keyframe on demand stops being impossible: the CLI has no way to force
-//! one mid-stream, which is why a client reconnecting to an idle screen can wait
-//! seconds for a picture.
+//! one mid-stream. The CLI instead schedules periodic wall-clock IDRs;
+//! this path can respond on the next captured frame.
 //!
 //! Built only with the `inproc-encoder` feature; see host/Cargo.toml for why.
 
@@ -48,8 +48,8 @@ impl Encoder {
         ctx.set_format(ffmpeg_next::format::Pixel::NV12);
         ctx.set_time_base(ffmpeg_next::Rational(1, fps.max(1) as i32));
         ctx.set_frame_rate(Some(ffmpeg_next::Rational(fps.max(1) as i32, 1)));
-        // One second between keyframes. Long, because with an on-demand IDR
-        // available there is no reason to spend bits on periodic ones.
+        // One nominal second in frames; longer at idle. Client joins can
+        // request an IDR on the next captured frame.
         ctx.set_gop(fps.max(1));
         ctx.set_max_b_frames(0);
         ctx.set_bit_rate(0);

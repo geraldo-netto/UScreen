@@ -796,8 +796,8 @@ impl CaptureManager {
                 encoder
             );
         }
-        // Keyframe every second: enough for fast client joins without
-        // burning the whole bitrate budget on IDR frames.
+        // Frame-count GOP bounds busy streams; wall-clock forced IDRs below
+        // also bound join/recovery when the helper drops to its 5 fps idle floor.
         let gop = fps.max(1);
 
         let mut encoder_args: Vec<String> = vec!["-hide_banner".into()];
@@ -842,6 +842,8 @@ impl CaptureManager {
             format!("{}x{}", w, h),
             "-framerate".into(),
             fps.to_string(),
+            "-use_wallclock_as_timestamps".into(),
+            "1".into(),
             "-i".into(),
             fifo_path_for(self.config.instance),
         ]);
@@ -866,7 +868,14 @@ impl CaptureManager {
             encoder_args.extend_from_slice(&["-vf".into(), "format=p010le".into()]);
         }
 
-        encoder_args.extend_from_slice(&["-c:v".into(), encoder.clone()]);
+        encoder_args.extend_from_slice(&[
+            "-c:v".into(),
+            encoder.clone(),
+            "-fps_mode".into(),
+            "passthrough".into(),
+            "-force_key_frames".into(),
+            "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into(),
+        ]);
 
         if encoder.ends_with("_nvenc") {
             let bitrate_m = bitrate as f64 / 1000.0;
@@ -935,7 +944,7 @@ impl CaptureManager {
                 "-g".into(),
                 gop.to_string(),
                 "-idr_interval".into(),
-                "1".into(),
+                "0".into(),
             ]);
         } else if encoder == "libx264" {
             let bufsize_k = (bitrate * 2 / fps.max(1)).max(200);
@@ -2141,6 +2150,116 @@ mod tests {
                     .await
                     .expect("cancelled helper not reaped");
                 }
+            }
+        }
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    #[tokio::test]
+    async fn t116_idle_stream_provides_regular_decodable_join_points() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        for fps in [60, 90] {
+            let mut manager = test_manager();
+            manager.config.width = 32;
+            manager.config.height = 32;
+            manager.config.fps = fps;
+            manager
+                .start_encoder_with(|command| {
+                    let mut args: Vec<_> =
+                        command.as_std().get_args().map(|a| a.to_owned()).collect();
+                    let input = args.iter().position(|a| a == "-i").unwrap() + 1;
+                    args[input] = "pipe:0".into();
+                    Command::new("ffmpeg")
+                        .args(args)
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .stderr(Stdio::null())
+                        .kill_on_drop(true)
+                        .spawn()
+                })
+                .unwrap();
+            let child = manager.encoder_child.as_mut().unwrap();
+            let mut input = child.stdin.take().unwrap();
+            let mut output = child.stdout.take().unwrap();
+            let started = Instant::now();
+            let writer = async move {
+                let frame = vec![128; 32 * 32 * 3 / 2];
+                for _ in 0..18 {
+                    input.write_all(&frame).await.unwrap();
+                    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                }
+            };
+            let reader = async move {
+                let mut parser = H264AnnexBPacketizer::new(Codec::H264);
+                let mut keyframes = Vec::new();
+                let mut buffer = [0; 16384];
+                loop {
+                    let n = output.read(&mut buffer).await.unwrap();
+                    if n == 0 {
+                        break;
+                    }
+                    for packet in parser.push(&buffer[..n]) {
+                        if packet.is_idr {
+                            keyframes.push((started.elapsed(), packet.data));
+                        }
+                    }
+                }
+                keyframes
+            };
+            let (_, keyframes) = tokio::time::timeout(std::time::Duration::from_secs(6), async {
+                tokio::join!(writer, reader)
+            })
+            .await
+            .unwrap();
+            assert!(child.wait().await.unwrap().success());
+            assert!(
+                keyframes.len() >= 3,
+                "{fps} fps target produced only {} idle join points",
+                keyframes.len()
+            );
+            for pair in keyframes.windows(2) {
+                assert!(pair[1].0 - pair[0].0 < std::time::Duration::from_millis(1600));
+            }
+            assert!(
+                started.elapsed() - keyframes.last().unwrap().0
+                    < std::time::Duration::from_millis(1600)
+            );
+            // Every join point must carry current SPS/PPS and decode independently.
+            for (_, data) in keyframes {
+                let mut decoder = Command::new("ffmpeg")
+                    .args([
+                        "-v",
+                        "error",
+                        "-f",
+                        "h264",
+                        "-i",
+                        "pipe:0",
+                        "-frames:v",
+                        "1",
+                        "-f",
+                        "rawvideo",
+                        "pipe:1",
+                    ])
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .kill_on_drop(true)
+                    .spawn()
+                    .unwrap();
+                decoder
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(&data)
+                    .await
+                    .unwrap();
+                let decoded = decoder.wait_with_output().await.unwrap();
+                assert!(
+                    decoded.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&decoded.stderr)
+                );
+                assert_eq!(decoded.stdout.len(), 32 * 32 * 3 / 2);
             }
         }
     }

@@ -42,9 +42,8 @@ pub struct StreamServer {
     config: StreamConfig,
     running: Arc<AtomicBool>,
     codec_config: Arc<Mutex<Option<Bytes>>>,
-    /// Raised when a client attaches so the encoder makes the next frame a
-    /// keyframe. Without it a client joining an idle screen waits for the
-    /// scheduled one, which on a mostly-static desktop can be seconds of black.
+    /// Raised on attachment for the optional in-process encoder's next-frame
+    /// keyframe request. The CLI uses its one-second wall-clock IDR schedule.
     idr_wanted: Arc<AtomicBool>,
 }
 
@@ -97,8 +96,8 @@ impl StreamServer {
             };
 
             info!("Client connected: {}", peer);
-            // Ask for a keyframe now rather than letting this client stare at
-            // nothing until the next scheduled one.
+            // The optional in-process encoder honors this next-frame request;
+            // the CLI path supplies periodic wall-clock IDRs.
             self.idr_wanted.store(true, Ordering::SeqCst);
             let rx = video_tx.subscribe();
             let cc = self.codec_config.clone();
