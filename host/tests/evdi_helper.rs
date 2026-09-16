@@ -155,3 +155,8 @@ fn t113_stalled_fifo_obeys_deadline_mode_change_and_shutdown() {
 fn t082_small_modes_never_exceed_scaled_source_bounds() {
     Harness::build("T082").run("T082");
 }
+
+#[test]
+fn t108_helpers_reserve_distinct_cards_and_find_new_devices() {
+    Harness::build("T108").run("T108");
+}

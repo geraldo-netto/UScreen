@@ -163,6 +163,16 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 
 #[cfg(test)]
 mod cli_tests {
+    #[test]
+    fn t108_extra_slot_requires_its_own_assigned_card() {
+        let mut config = capture::CaptureConfig::default();
+        assert!(assign_slot_card(&mut config, &[0], 1).is_err());
+        assign_slot_card(&mut config, &[0, 3], 1).unwrap();
+        assert_eq!(config.card, Some(3));
+        assign_slot_card(&mut config, &[0, 3], 0).unwrap();
+        assert_eq!(config.card, Some(0));
+    }
+
     #[tokio::test]
     async fn t110_extra_token_delivery_is_targeted_and_rate_limited() {
         use std::os::unix::fs::PermissionsExt;
@@ -1198,6 +1208,22 @@ impl ExtraSession {
     }
 }
 
+/// A multi-tablet slot must have an assigned card before any task starts.
+fn assign_slot_card(
+    config: &mut capture::CaptureConfig,
+    cards: &[u32],
+    instance: u32,
+) -> Result<()> {
+    config.card = Some(*cards.get(instance as usize).with_context(|| {
+        format!(
+            "tablet slot {} needs its own EVDI card; only {} available",
+            instance + 1,
+            cards.len()
+        )
+    })?);
+    Ok(())
+}
+
 /// Bring up capture, stream and input for tablet number `instance`.
 /// Ports are the base ports plus 2 per instance; the tablet side keeps
 /// using 8890/8891, since `adb reverse` maps them per device.
@@ -1208,16 +1234,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
     let cards = vdisplay::evdi_cards();
     let mut cfg = t.cap_template.clone();
     cfg.instance = instance;
-    cfg.card = cards.get(instance as usize).copied();
-    if cfg.card.is_none() {
-        warn!(
-            "Tablet {} needs an EVDI device of its own but only {} exist — set \
-             initial_device_count={} in /etc/modprobe.d/uscreen-evdi.conf and reload evdi",
-            instance + 1,
-            cards.len(),
-            t.max_tablets
-        );
-    }
+    assign_slot_card(&mut cfg, &cards, instance)?;
 
     let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
         encoder: cfg.encoder.clone(),

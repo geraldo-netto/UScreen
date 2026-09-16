@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <stdint.h>
@@ -955,7 +956,7 @@ static void run_event_loop(evdi_handle handle) {
     }
 }
 
-static int find_evdi_device_in(const char *root) {
+static int find_evdi_device_after(const char *root, int after) {
     DIR *dir = opendir(root);
     if (!dir) return -1;
 
@@ -978,7 +979,7 @@ static int find_evdi_device_in(const char *root) {
             const char *digits = drm_entry->d_name + 4;
             char *end = NULL;
             long card = strtol(digits, &end, 10);
-            if (end != digits && *end == '\0' && card >= 0 && card <= INT_MAX
+            if (end != digits && *end == '\0' && card > after && card <= INT_MAX
                     && (found < 0 || card < found)) {
                 found = (int)card;
             }
@@ -989,8 +990,57 @@ static int find_evdi_device_in(const char *root) {
     return found;
 }
 
-static int find_evdi_device(void) {
-    return find_evdi_device_in("/sys/devices/platform");
+static int find_evdi_device_in(const char *root) {
+    return find_evdi_device_after(root, -1);
+}
+
+static int card_connected_in(const char *root, int card) {
+    DIR *devices = opendir(root);
+    if (!devices) return 0;
+    int connected = 0;
+    struct dirent *device;
+    while (!connected && (device = readdir(devices)) != NULL) {
+        if (strncmp(device->d_name, "evdi.", 5) != 0) continue;
+        char path[4096];
+        snprintf(path, sizeof(path), "%s/%s/drm/card%d", root, device->d_name, card);
+        DIR *connectors = opendir(path);
+        if (!connectors) continue;
+        struct dirent *connector;
+        while ((connector = readdir(connectors)) != NULL) {
+            if (strncmp(connector->d_name, "card", 4) != 0 || !strchr(connector->d_name, '-')) continue;
+            char status_path[8192];
+            snprintf(status_path, sizeof(status_path), "%s/%s/status", path, connector->d_name);
+            FILE *status = fopen(status_path, "r");
+            if (status) {
+                char value[32] = {0};
+                if (fgets(value, sizeof(value), status) && strcmp(value, "connected\n") == 0) connected = 1;
+                fclose(status);
+            }
+        }
+        closedir(connectors);
+    }
+    closedir(devices);
+    return connected;
+}
+
+static evdi_handle open_available_device_in(const char *root, int pinned, int *index) {
+    int card = pinned >= 0 ? pinned : find_evdi_device_in(root);
+    while (card >= 0) {
+        *index = card;
+        if (!card_connected_in(root, card)) {
+            evdi_handle handle = evdi_open(card);
+            if (handle != EVDI_INVALID_HANDLE) {
+                /* libevdi permits multiple opens. Hold a kernel-backed lease
+                   on the DRM inode until evdi_close closes this handle. */
+                if (flock(evdi_get_event_ready(handle), LOCK_EX | LOCK_NB) == 0 &&
+                        !card_connected_in(root, card)) return handle;
+                evdi_close(handle);
+            }
+        }
+        if (pinned >= 0) break;
+        card = find_evdi_device_after(root, card);
+    }
+    return EVDI_INVALID_HANDLE;
 }
 
 static int request_evdi_device(void) {
@@ -1002,16 +1052,13 @@ static int request_evdi_device(void) {
     return 1;
 }
 
-static int wait_for_device(int timeout_ms) {
-    int waited = 0;
-    const int step = 100;
-    while (waited < timeout_ms) {
-        int idx = find_evdi_device();
-        if (idx >= 0) return idx;
-        usleep(step * 1000);
-        waited += step;
+static evdi_handle wait_for_available_device(const char *root, int timeout_ms, int *index) {
+    for (int waited = 0; waited < timeout_ms && g_running; waited += 100) {
+        evdi_handle handle = open_available_device_in(root, -1, index);
+        if (handle != EVDI_INVALID_HANDLE) return handle;
+        usleep(100000);
     }
-    return -1;
+    return EVDI_INVALID_HANDLE;
 }
 
 int main(int argc, char *argv[]) {
@@ -1029,8 +1076,7 @@ int main(int argc, char *argv[]) {
             if (g_scale > 4) g_scale = 4;
         } else if (strcmp(argv[i], "--card") == 0 && i + 1 < argc) {
             /* Pin a specific EVDI card. With several virtual displays each
-               helper must own its own; find_evdi_device() would hand every
-               one of them the same card. */
+               helper must use its assigned card or fail, never another slot. */
             g_pin_card = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--fps") == 0 && i + 1 < argc) {
             g_fps = atoi(argv[++i]);
@@ -1061,23 +1107,24 @@ int main(int argc, char *argv[]) {
     /* Reuse an existing EVDI device if one is free (e.g. from a previous
        run) — adding a new DRM card on every restart floods the compositor
        with display hotplug events. */
-    evdi_handle handle = EVDI_INVALID_HANDLE;
-    int dev_idx = g_pin_card >= 0 ? g_pin_card : find_evdi_device();
-    if (dev_idx >= 0) {
-        handle = evdi_open(dev_idx);
-        if (handle != EVDI_INVALID_HANDLE) {
-            fprintf(stderr, "[evdi-helper] Reusing EVDI device /dev/dri/card%d\n", dev_idx);
-        }
+    int dev_idx = -1;
+    evdi_handle handle = open_available_device_in("/sys/devices/platform", g_pin_card, &dev_idx);
+    if (handle != EVDI_INVALID_HANDLE) {
+        fprintf(stderr, "[evdi-helper] Reusing EVDI device /dev/dri/card%d\n", dev_idx);
     }
 
     if (handle == EVDI_INVALID_HANDLE) {
+        if (g_pin_card >= 0) {
+            fprintf(stderr, "[evdi-helper] Assigned card%d is unavailable; refusing another slot's card\n", g_pin_card);
+            return 1;
+        }
         fprintf(stderr, "[evdi-helper] Creating EVDI device...\n");
         if (!request_evdi_device()) return 1;
 
         fprintf(stderr, "[evdi-helper] Waiting for EVDI device...\n");
-        dev_idx = wait_for_device(5000);
-        if (dev_idx < 0) {
-            fprintf(stderr, "[evdi-helper] EVDI device did not appear within timeout.\n"
+        handle = wait_for_available_device("/sys/devices/platform", 5000, &dev_idx);
+        if (handle == EVDI_INVALID_HANDLE) {
+            fprintf(stderr, "[evdi-helper] No free EVDI device appeared within timeout.\n"
                             "[evdi-helper] Either the evdi kernel module is not loaded, or no device exists\n"
                             "[evdi-helper] and /sys/devices/evdi/add is root-only. Check `lsmod | grep evdi`;\n"
                             "[evdi-helper] then, once: echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf\n"
@@ -1086,12 +1133,6 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", dev_idx);
-
-        handle = evdi_open(dev_idx);
-        if (handle == EVDI_INVALID_HANDLE) {
-            fprintf(stderr, "[evdi-helper] Failed to open EVDI device /dev/dri/card%d\n", dev_idx);
-            return 1;
-        }
     }
     g_device_index = dev_idx;
     g_handle = handle;

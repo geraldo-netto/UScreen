@@ -37,6 +37,30 @@ static int mock_poll(struct pollfd *fds, nfds_t n, int timeout) {
 }
 int evdi_add_device(void) { return add_result; }
 
+static char mock_card_root[4096];
+struct evdi_device_context { int fd; };
+evdi_handle evdi_open(int card) {
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/card%d", mock_card_root, card);
+    int fd = open(path, O_RDWR);
+    if (fd < 0) return EVDI_INVALID_HANDLE;
+    evdi_handle handle = malloc(sizeof(*handle));
+    assert(handle);
+    handle->fd = fd;
+    return handle;
+}
+void evdi_close(evdi_handle handle) { close(handle->fd); free(handle); }
+evdi_selectable evdi_get_event_ready(evdi_handle handle) { return handle->fd; }
+
+static void make_test_card(const char *root, int card) {
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/evdi.%d", root, card); assert(mkdir(path, 0700) == 0);
+    snprintf(path, sizeof(path), "%s/evdi.%d/drm", root, card); assert(mkdir(path, 0700) == 0);
+    snprintf(path, sizeof(path), "%s/evdi.%d/drm/card%d", root, card, card); assert(mkdir(path, 0700) == 0);
+    snprintf(path, sizeof(path), "%s/card%d", root, card);
+    int fd = open(path, O_CREAT | O_RDWR, 0600); assert(fd >= 0); close(fd);
+}
+
 static atomic_int sample_started = 0;
 static atomic_int sample_finished = 0;
 static void *sample_latency(void *arg) {
@@ -180,7 +204,44 @@ static void test_stalled_fifo(int cancel) {
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T082") == 0) {
+    if (strcmp(argv[1], "T108") == 0) {
+        char root[] = "/tmp/uscreen-card-lease-test-XXXXXX";
+        assert(mkdtemp(root));
+        snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
+        make_test_card(root, 0); make_test_card(root, 2);
+        int index = -1;
+        evdi_handle first = open_available_device_in(root, -1, &index);
+        assert(first && index == 0);
+        evdi_handle second = open_available_device_in(root, -1, &index);
+        assert(second && index == 2 && "T108: another helper already owns the lowest card");
+        assert(!open_available_device_in(root, 0, &index) && "T108: pinned busy card must not fall back");
+        make_test_card(root, 4);
+        evdi_handle added = open_available_device_in(root, -1, &index);
+        assert(added && index == 4 && "T108: discover newly added free card after busy cards");
+        evdi_close(first); evdi_close(second); evdi_close(added);
+        evdi_handle reclaimed = open_available_device_in(root, -1, &index);
+        assert(reclaimed && index == 0);
+        evdi_close(reclaimed);
+        char path[4096];
+        snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root);
+        assert(mkdir(path, 0700) == 0);
+        strncat(path, "/status", sizeof(path) - strlen(path) - 1);
+        FILE *status = fopen(path, "w"); assert(status);
+        fputs("connected\n", status); fclose(status);
+        evdi_handle external = open_available_device_in(root, -1, &index);
+        assert(external && index == 2 && "T108: do not steal another EVDI application's output");
+        evdi_close(external);
+        assert(!open_available_device_in(root, 0, &index));
+        unlink(path);
+        snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root); rmdir(path);
+        for (int card = 0; card <= 4; card += 2) {
+            snprintf(path, sizeof(path), "%s/card%d", root, card); unlink(path);
+            snprintf(path, sizeof(path), "%s/evdi.%d/drm/card%d", root, card, card); rmdir(path);
+            snprintf(path, sizeof(path), "%s/evdi.%d/drm", root, card); rmdir(path);
+            snprintf(path, sizeof(path), "%s/evdi.%d", root, card); rmdir(path);
+        }
+        assert(rmdir(root) == 0);
+    } else if (strcmp(argv[1], "T082") == 0) {
         pthread_cond_init(&g_frame_ready, NULL);
         for (int scale = 1; scale <= 4; scale++) {
             g_scale = scale;
