@@ -697,22 +697,35 @@ static int try_open_fifo(void) {
 
    FIFO backpressure never stalls capture, and the FIFO is reopened
    automatically when the encoder restarts. */
+enum fifo_wait_result { FIFO_STOP, FIFO_RETRY, FIFO_READY };
+
+static enum fifo_wait_result wait_fifo_writable(long long deadline) {
+    long long wait_ms = deadline - now_ms();
+    if (wait_ms <= 0) return FIFO_STOP;
+    struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
+    int pr = poll(&wfd, 1, wait_ms < 250 ? (int)wait_ms : 250);
+    if (pr < 0 && errno == EINTR) return FIFO_RETRY;
+    if (pr == 0 && now_ms() < deadline) return FIFO_RETRY;
+    if (pr <= 0 || (wfd.revents & (POLLERR | POLLHUP | POLLNVAL))) return FIFO_STOP;
+    return FIFO_READY;
+}
+
+static int fifo_write_retryable(ssize_t written) {
+    return written < 0 && (errno == EINTR || errno == EAGAIN);
+}
+
 /* A live reader may stall briefly under load. Keep the same frame across
    poll timeouts, but bound a continuous stall and notice mode changes. */
 static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
     long long deadline = now_ms() + 1000;
     unsigned generation = g_mode_generation;
     while (remaining > 0 && g_running && generation == g_mode_generation) {
-        long long wait_ms = deadline - now_ms();
-        if (wait_ms <= 0) break;
-        struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
-        int pr = poll(&wfd, 1, wait_ms < 250 ? (int)wait_ms : 250);
-        if (pr < 0 && errno == EINTR) continue;
-        if (pr == 0 && now_ms() < deadline) continue;
-        if (pr <= 0 || (wfd.revents & (POLLERR | POLLHUP | POLLNVAL))) break;
+        enum fifo_wait_result ready = wait_fifo_writable(deadline);
+        if (ready == FIFO_RETRY) continue;
+        if (ready == FIFO_STOP) break;
         ssize_t written = write(g_capture_fifo_fd, ptr, remaining);
         if (written <= 0) {
-            if (written < 0 && (errno == EINTR || errno == EAGAIN)) continue;
+            if (fifo_write_retryable(written)) continue;
             break;
         }
         ptr += written;
