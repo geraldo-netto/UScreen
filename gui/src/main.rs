@@ -28,10 +28,19 @@ struct FileConfig {
     require_token: bool,
     check_updates: bool,
     max_tablets: u32,
+    /// `ip:port` remembered by `uscreen wifi`. The GUI never edits it, but
+    /// it has to carry it: save() writes the whole struct, so a field missing
+    /// here is erased from the file on the next Apply.
+    wifi_address: String,
     auto_resolution: bool,
     video_port: u16,
     input_port: u16,
     auto_launch_app: bool,
+    /// Which virtual input devices the daemon creates while a tablet is
+    /// attached. Defaults on, as in host/src/config.rs; keep the two in step.
+    input_touch: bool,
+    input_pen: bool,
+    input_pointer: bool,
 }
 
 impl Default for FileConfig {
@@ -50,10 +59,14 @@ impl Default for FileConfig {
             require_token: true,
             check_updates: true,
             max_tablets: 1,
+            wifi_address: String::new(),
             auto_resolution: true,
             video_port: 8890,
             input_port: 8891,
             auto_launch_app: true,
+            input_touch: true,
+            input_pen: true,
+            input_pointer: true,
         }
     }
 }
@@ -744,6 +757,35 @@ impl eframe::App for App {
                                 "Nothing is streamed: the pen drives this machine's own \
                                  screen, so there is no display latency at all. Pressure, \
                                  tilt and the eraser still work.",
+                            )
+                            .weak()
+                            .size(11.0),
+                        );
+                    });
+                    ui.end_row();
+
+                    ui.label("Input devices");
+                    ui.vertical(|ui| {
+                        ui.checkbox(&mut self.cfg.input_touch, "Touchscreen (taps on the tablet)");
+                        ui.checkbox(&mut self.cfg.input_pen, "Pen tablet (stylus, pressure, tilt)");
+                        // The pointer exists only to serve the pen; a greyed-out
+                        // box must not keep a value the daemon would act on.
+                        if !self.cfg.input_pen {
+                            self.cfg.input_pointer = false;
+                        }
+                        ui.add_enabled(
+                            self.cfg.input_pen,
+                            egui::Checkbox::new(
+                                &mut self.cfg.input_pointer,
+                                "Pointer that stays where the pen lifted",
+                            ),
+                        );
+                        ui.label(
+                            egui::RichText::new(
+                                "Each one is a virtual input device the desktop sees while a \
+                                 tablet is attached. Turn off what you do not use: on \
+                                 Cinnamon/GNOME under X11 a touchscreen device can make the \
+                                 mouse cursor hide. Restart the daemon to apply.",
                             )
                             .weak()
                             .size(11.0),
