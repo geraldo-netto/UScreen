@@ -262,6 +262,99 @@ mod cli_tests {
     }
 
     #[tokio::test]
+    async fn t143_crashed_extra_apps_recover_with_per_device_backoff() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(
+            &adb,
+            r#"#!/bin/sh
+if [ "$4" = pidof ]; then
+    if [ "$2" = LIVE ] || [ -e "$0.$2.alive" ]; then echo 123; exit 0; fi
+    exit 1
+fi
+cat >/dev/null
+printf '%s\n' "$2" >> "$0.log"
+[ "$2" != FAILED ]
+"#,
+        )
+        .unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let assigned = ["LIVE", "DEAD", "FAILED"].map(String::from);
+        let mut policies = std::collections::HashMap::new();
+        let now = std::time::Instant::now();
+        recover_assigned_apps(
+            &assigned,
+            true,
+            None,
+            &mut policies,
+            now,
+            adb.to_str().unwrap(),
+        )
+        .await;
+        let log = adb.with_extension("log");
+        assert_eq!(
+            std::fs::read_to_string(&log).unwrap_or_default(),
+            "DEAD\nFAILED\n"
+        );
+        recover_assigned_apps(
+            &assigned,
+            true,
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(1),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        assert_eq!(std::fs::read_to_string(&log).unwrap(), "DEAD\nFAILED\n");
+        recover_assigned_apps(
+            &assigned,
+            true,
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(5),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        assert_eq!(
+            std::fs::read_to_string(&log).unwrap(),
+            "DEAD\nFAILED\nDEAD\nFAILED\n"
+        );
+        std::fs::write(adb.with_extension("DEAD.alive"), "").unwrap();
+        recover_assigned_apps(
+            &assigned,
+            true,
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(6),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        std::fs::remove_file(adb.with_extension("DEAD.alive")).unwrap();
+        recover_assigned_apps(
+            &assigned,
+            true,
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(7),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        let expected = "DEAD\nFAILED\nDEAD\nFAILED\nDEAD\n";
+        assert_eq!(std::fs::read_to_string(&log).unwrap(), expected);
+        recover_assigned_apps(
+            &assigned,
+            false,
+            None,
+            &mut policies,
+            now + std::time::Duration::from_secs(1000),
+            adb.to_str().unwrap(),
+        )
+        .await;
+        assert_eq!(std::fs::read_to_string(&log).unwrap(), expected);
+    }
+
+    #[tokio::test]
     async fn t142_every_slot_and_wifi_setup_require_the_app() {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
@@ -1498,6 +1591,7 @@ async fn adb_monitor(
                 }
                 let _ = tablet_tx.send(true);
                 current = found.clone();
+                extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
                 relaunches = 0;
                 relaunch_wait = std::time::Duration::from_secs(5);
             }
@@ -1526,6 +1620,7 @@ async fn adb_monitor(
                 .await;
                 let _ = tablet_tx.send(true);
                 current = found.clone();
+                extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
                 relaunches = 0;
                 relaunch_wait = std::time::Duration::from_secs(5);
             }
@@ -1598,6 +1693,9 @@ async fn adb_monitor(
             }
         }
 
+        extra_backoff
+            .retain(|serial, _| current.as_ref() == Some(serial) || extras.contains_key(serial));
+
         if let Some(ledger) = &mut ledger {
             let mut sessions: Vec<_> = current
                 .iter()
@@ -1663,27 +1761,9 @@ async fn adb_monitor(
                         }
                     }
                 }
-                let Some(serial) = current.as_deref() else { continue };
-                if !auto_launch || is_fake_serial(serial) {
-                    continue;
-                }
-                match app_running(serial).await {
-                    Some(true) => {
-                        // Seen alive: the next disappearance starts the
-                        // backoff from the beginning again.
-                        relaunch_wait = std::time::Duration::from_secs(5);
-                    }
-                    Some(false) if last_relaunch.elapsed() >= relaunch_wait => {
-                        last_relaunch = std::time::Instant::now();
-                        info!(
-                            "The app is not running on the tablet — launching it again (next try in {:?} if it does not stay up)",
-                            (relaunch_wait * 2).min(RELAUNCH_WAIT_MAX)
-                        );
-                        launch_app(serial, token.as_deref()).await;
-                        relaunch_wait = (relaunch_wait * 2).min(RELAUNCH_WAIT_MAX);
-                    }
-                    _ => {}
-                }
+                let assigned: Vec<_> = current.iter().chain(extras.keys()).cloned().collect();
+                recover_assigned_apps(&assigned, auto_launch, token.as_deref(),
+                    &mut extra_backoff, std::time::Instant::now(), "adb").await;
             }
             _ = relaunch.notified() => {
                 if let Some(serial) = current.as_deref() {
@@ -1747,6 +1827,30 @@ async fn deliver_extra_token(
             .is_some_and(|policy| policy.allow(now))
     {
         launch_app_using(requested, token, adb).await;
+    }
+}
+
+async fn recover_assigned_apps(
+    assigned: &[String],
+    auto_launch: bool,
+    token: Option<&str>,
+    policies: &mut std::collections::HashMap<String, RelaunchBackoff>,
+    now: std::time::Instant,
+    adb: &str,
+) {
+    if !auto_launch {
+        return;
+    }
+    for serial in assigned {
+        if is_fake_serial(serial) {
+            continue;
+        }
+        let policy = policies.entry(serial.clone()).or_default();
+        match app_running_with(serial, adb).await {
+            Some(true) => *policy = RelaunchBackoff::default(),
+            Some(false) if policy.allow(now) => launch_app_using(serial, token, adb).await,
+            _ => {}
+        }
     }
 }
 
@@ -1903,8 +2007,8 @@ async fn tablet_ip(serial: &str) -> Option<String> {
 /// Whether the app's process exists on the tablet. `None` when adb could not
 /// answer (cable pulled mid-check, adb restarting), so the caller does nothing
 /// rather than launching on a guess.
-async fn app_running(serial: &str) -> Option<bool> {
-    let out = tokio::process::Command::new("adb")
+async fn app_running_with(serial: &str, adb: &str) -> Option<bool> {
+    let out = tokio::process::Command::new(adb)
         .args(["-s", serial, "shell", "pidof", "com.uscreen"])
         .output_bounded()
         .await
