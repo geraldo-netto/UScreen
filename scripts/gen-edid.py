@@ -47,13 +47,17 @@ def encode_manufacturer_id(s):
 MIN_FPS, MAX_FPS = 10, 90
 
 
-def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm=194):
+def validate_dimensions(width, height, refresh, width_mm, height_mm):
     if not (1 <= width <= 4095 and 1 <= height <= 4095):
         raise ValueError("EDID active dimensions must fit 12 bits and be positive")
     if not MIN_FPS <= refresh <= MAX_FPS:
         raise ValueError(f"EDID refresh must be within {MIN_FPS}..{MAX_FPS} Hz")
     if not (1 <= width_mm <= 4095 and 1 <= height_mm <= 4095):
         raise ValueError("EDID physical dimensions must fit 12 bits and be positive")
+
+
+def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm=194):
+    validate_dimensions(width, height, refresh, width_mm, height_mm)
     edid = bytearray(128)
 
     # Header
