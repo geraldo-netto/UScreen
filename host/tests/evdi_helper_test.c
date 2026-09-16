@@ -180,7 +180,30 @@ static void test_stalled_fifo(int cancel) {
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T113") == 0) {
+    if (strcmp(argv[1], "T082") == 0) {
+        pthread_cond_init(&g_frame_ready, NULL);
+        for (int scale = 1; scale <= 4; scale++) {
+            g_scale = scale;
+            for (int small = 1; small < 2 * scale; small++) {
+                for (int axis = 0; axis < 2; axis++) {
+                    g_running = 1;
+                    struct evdi_mode mode = {axis ? 2 * scale : small, axis ? small : 2 * scale, 60, 32, 0x34325258};
+                    on_mode_changed(mode, NULL);
+                    assert(!g_have_mode && !g_buffers_ready && !g_running && "T082: undersized mode reaches conversion");
+                }
+            }
+            g_running = 1;
+            struct evdi_mode mode = {2 * scale, 2 * scale, 60, 32, 0x34325258};
+            on_mode_changed(mode, NULL);
+            assert(g_out_w == 2 && g_out_h == 2 && g_have_mode);
+            test_conversion(2 * scale, 2 * scale, scale);
+            test_conversion(2 * scale + 1, 2 * scale + 1, scale);
+        }
+        free(g_framebuffer);
+        free(g_fill); free(g_latest); free(g_write);
+        free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
+        pthread_cond_destroy(&g_frame_ready);
+    } else if (strcmp(argv[1], "T113") == 0) {
         test_stalled_fifo(0);
         test_stalled_fifo(1);
         test_stalled_fifo(2);

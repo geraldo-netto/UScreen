@@ -430,6 +430,19 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
         g_running = 0;
         return;
     }
+    /* Each output chroma sample reads a complete 2*scale source block.
+       Enlarging a tiny output to 2x2 would read outside the source image. */
+    if (g_scale < 1 || g_scale > 4 || mode.width < 2 * g_scale || mode.height < 2 * g_scale ||
+            mode.width > (INT_MAX - 63) / 4 ||
+            (((long long)mode.width * 4 + 63) & ~63LL) * mode.height > INT_MAX) {
+        fprintf(stderr, "[evdi-helper] Mode dimensions cannot be safely converted at scale %d\n", g_scale);
+        g_have_mode = 0;
+        pthread_mutex_lock(&g_swap_mutex);
+        g_buffers_ready = 0;
+        pthread_mutex_unlock(&g_swap_mutex);
+        g_running = 0;
+        return;
+    }
     printf("MODE_CHANGED %d %d %d\n", mode.width, mode.height, mode.refresh_rate);
     fflush(stdout);
 
@@ -509,8 +522,6 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
        NV12 chroma covers 2x2 luma samples. */
     g_out_w = (g_mode_w / g_scale) & ~1;
     g_out_h = (g_mode_h / g_scale) & ~1;
-    if (g_out_w < 2) g_out_w = 2;
-    if (g_out_h < 2) g_out_h = 2;
     printf("STREAM_SIZE %d %d\n", g_out_w, g_out_h);
     fflush(stdout);
 

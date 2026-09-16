@@ -15,6 +15,8 @@ impl Harness {
         let mut compiler = Command::new("cc");
         if case == "T083" {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
+        } else if case == "T082" {
+            compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler
             .args([
@@ -147,4 +149,9 @@ fn t083_mode_changes_and_signal_shutdown_are_race_free() {
 #[test]
 fn t113_stalled_fifo_obeys_deadline_mode_change_and_shutdown() {
     Harness::build("T113").run("T113");
+}
+
+#[test]
+fn t082_small_modes_never_exceed_scaled_source_bounds() {
+    Harness::build("T082").run("T082");
 }
