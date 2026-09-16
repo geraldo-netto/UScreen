@@ -298,86 +298,65 @@ class TouchCapture {
 
     @Synchronized fun handleMotionEvent(event: MotionEvent, width: Int, height: Int): Boolean {
         if (!isConnected || (!touchEnabled && !penEnabled)) return false
-
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()
-
-        val pointerCount = event.pointerCount
-        val actionIndex = event.actionIndex
-        val maskedAction = event.actionMasked
-
-        if (maskedAction == MotionEvent.ACTION_DOWN) releaseTouches()
-        when (maskedAction) {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) releaseTouches()
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN,
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                // Drop palm contacts — Samsung sends TOOL_TYPE_PALM for
-                // unintentional palm-rest touches; forwarding them causes
-                // phantom scrolling on the Linux side.
-                if (isPalm(event, actionIndex)) {
-                    return true
-                }
-                if (isPenLike(event, actionIndex)) {
-                    sendPenEvent(event, actionIndex, 0, vw, vh)
-                } else {
-                    sendFinger(event, actionIndex, 0, vw, vh)
-                }
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                for (i in 0 until pointerCount) {
-                    if (isPalm(event, i)) continue
-                    if (isPenLike(event, i) && !penEnabled) continue
-                    if (!isPenLike(event, i) && !touchEnabled) continue
-                    if (isPenLike(event, i)) {
-                        // Android batches several samples between frames.
-                        // Forward the historical points too, otherwise fast
-                        // pen strokes look jagged in GIMP.
-                        val hist = event.historySize
-                        for (h in 0 until hist) {
-                            val hx = event.getHistoricalX(i, h) / vw
-                            val hy = event.getHistoricalY(i, h) / vh
-                            val hp = event.getHistoricalPressure(i, h).toDouble()
-                            val (htx, hty) = decomposeTilt(
-                                getHistoricalAxis(event, MotionEvent.AXIS_TILT, i, h),
-                                getHistoricalAxis(event, MotionEvent.AXIS_ORIENTATION, i, h))
-                            emitPen(hx.toDouble(), hy.toDouble(), hp, htx, hty,
-                                isEraser(event, i), 2)
-                        }
-                        sendPenEvent(event, i, 2, vw, vh)
-                    } else {
-                        sendFinger(event, i, 2, vw, vh)
-                    }
-                }
-            }
-
+            MotionEvent.ACTION_POINTER_DOWN -> sendContact(event, event.actionIndex, 0, vw, vh)
+            MotionEvent.ACTION_MOVE -> sendMotionSamples(event, vw, vh)
             MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (isPalm(event, actionIndex)) {
-                    return true
-                }
-                if (isPenLike(event, actionIndex)) {
-                    sendPenEvent(event, actionIndex, 1, vw, vh)
-                } else {
-                    sendFinger(event, actionIndex, 1, vw, vh)
-                }
-            }
-
-            MotionEvent.ACTION_CANCEL -> {
-                // Every pointer is lifted, each on its own device: a cancelled
-                // stylus stroke released as a touch would leave the host's pen
-                // pressed until the pen next left proximity.
-                for (i in 0 until pointerCount) {
-                    if (isPalm(event, i)) continue
-                    if (isPenLike(event, i) && !penEnabled) continue
-                    if (!isPenLike(event, i) && !touchEnabled) continue
-                    if (isPenLike(event, i)) {
-                        sendPenEvent(event, i, 1, vw, vh)
-                    }
-                }
-                releaseTouches()
-            }
+            MotionEvent.ACTION_POINTER_UP -> sendContact(event, event.actionIndex, 1, vw, vh)
+            MotionEvent.ACTION_CANCEL -> cancelContacts(event, vw, vh)
         }
         return true
+    }
+
+    private fun sendContact(event: MotionEvent, index: Int, action: Int, vw: Float, vh: Float) {
+        // Samsung marks unintended palm-rest contacts separately. Never forward them.
+        if (isPalm(event, index)) return
+        if (isPenLike(event, index)) {
+            sendPenEvent(event, index, action, vw, vh)
+        } else {
+            sendFinger(event, index, action, vw, vh)
+        }
+    }
+
+    private fun canForwardPointer(event: MotionEvent, index: Int): Boolean {
+        if (isPalm(event, index)) return false
+        return if (isPenLike(event, index)) penEnabled else touchEnabled
+    }
+
+    private fun sendMotionSamples(event: MotionEvent, vw: Float, vh: Float) {
+        for (i in 0 until event.pointerCount) {
+            if (!canForwardPointer(event, i)) continue
+            if (isPenLike(event, i)) sendPenHistory(event, i, vw, vh)
+            sendContact(event, i, 2, vw, vh)
+        }
+    }
+
+    private fun sendPenHistory(event: MotionEvent, index: Int, vw: Float, vh: Float) {
+        // Android batches samples between frames. Forward history too so fast
+        // pen strokes retain their shape in drawing applications.
+        for (h in 0 until event.historySize) {
+            val hx = event.getHistoricalX(index, h) / vw
+            val hy = event.getHistoricalY(index, h) / vh
+            val hp = event.getHistoricalPressure(index, h).toDouble()
+            val (htx, hty) = decomposeTilt(
+                getHistoricalAxis(event, MotionEvent.AXIS_TILT, index, h),
+                getHistoricalAxis(event, MotionEvent.AXIS_ORIENTATION, index, h))
+            emitPen(hx.toDouble(), hy.toDouble(), hp, htx, hty,
+                isEraser(event, index), 2)
+        }
+    }
+
+    private fun cancelContacts(event: MotionEvent, vw: Float, vh: Float) {
+        // Release each device independently: a touch release cannot lift a pen.
+        for (i in 0 until event.pointerCount) {
+            if (!canForwardPointer(event, i)) continue
+            if (isPenLike(event, i)) sendPenEvent(event, i, 1, vw, vh)
+        }
+        releaseTouches()
     }
 
     // Android pointer IDs can be sparse and exceed the host's 10 slots.
