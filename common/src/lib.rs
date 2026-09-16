@@ -118,8 +118,8 @@ pub struct FileConfig {
     /// manager. One HTTPS request a day to api.github.com.
     pub check_updates: bool,
     /// How many tablets may be attached at once, each as its own virtual
-    /// screen. Needs that many EVDI devices: the installer sets
-    /// initial_device_count to match. 1 keeps everything exactly as before.
+    /// screen. Installers prepare two EVDI devices by default; GUI system
+    /// setup provisions the configured count now and at subsequent boots.
     pub max_tablets: u32,
     /// The tablet's address on the network, as `ip:port`, remembered by
     /// `uscreen wifi`. When the cable is not plugged in the daemon tries to

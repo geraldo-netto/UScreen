@@ -46,7 +46,8 @@ struct Status {
 }
 
 fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
-    status.evdi_count <= 0 || ((config.input_touch || config.input_pen) && !status.uinput_ok)
+    status.evdi_count < config.max_tablets.clamp(1, 4) as i32
+        || ((config.input_touch || config.input_pen) && !status.uinput_ok)
 }
 
 fn home() -> String {
@@ -144,12 +145,20 @@ fn poll_status() -> Status {
 
 /// One-time privileged setup via the desktop's graphical password prompt:
 /// pre-create an EVDI device now and at every boot.
-fn system_setup_script(root: &std::path::Path) -> String {
-    let script = "set -e; mkdir -p /etc/modprobe.d /etc/modules-load.d; \
-        echo 'options evdi initial_device_count=2' > /etc/modprobe.d/uscreen-evdi.conf; \
-        printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf; \
-        modprobe evdi || true; modprobe uinput || true; \
-        if [ \"$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)\" = \"0\" ]; then echo 1 > /sys/devices/evdi/add; fi";
+fn system_setup_script(root: &std::path::Path, max_tablets: u32) -> String {
+    let count = max_tablets.clamp(1, 4);
+    let script = format!(
+        r#"set -e
+mkdir -p /etc/modprobe.d /etc/modules-load.d
+echo 'options evdi initial_device_count={count}' > /etc/modprobe.d/uscreen-evdi.conf
+printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf
+modprobe evdi || true
+modprobe uinput || true
+existing=$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)
+if [ "$existing" -lt {count} ]; then
+    echo "$(({count} - existing))" > /sys/devices/evdi/add
+fi"#
+    );
     let script = format!("{}\nmkdir -p /etc/udev/rules.d\ncat > /etc/udev/rules.d/60-uscreen-uinput.rules <<'USCREEN_RULE'\n{}USCREEN_RULE\nudevadm control --reload\nudevadm trigger --name-match=uinput\n", script,
         include_str!("../../packaging/60-uscreen-uinput.rules"));
     script
@@ -157,8 +166,8 @@ fn system_setup_script(root: &std::path::Path) -> String {
         .replace("/sys/", &format!("{}/sys/", root.display()))
 }
 
-fn run_system_setup() -> Result<(), String> {
-    let script = system_setup_script(std::path::Path::new("/"));
+fn run_system_setup(max_tablets: u32) -> Result<(), String> {
+    let script = system_setup_script(std::path::Path::new("/"), max_tablets);
     let out = Command::new("pkexec")
         .args(["sh", "-c", &script])
         .output_timeout(Duration::from_secs(120))
@@ -583,14 +592,15 @@ impl eframe::App for App {
                             if needs_setup {
                                 ui.label(if status.evdi_count < 0 {
                                     "The EVDI kernel module is not loaded (install evdi/evdi-dkms)."
-                                } else if status.evdi_count == 0 {
-                                    "The virtual display device needs to be enabled (one time)."
+                                } else if status.evdi_count < self.cfg.max_tablets as i32 {
+                                    "More virtual display devices are needed for the configured tablet count."
                                 } else {
                                     "Touch and pen input need permission to access /dev/uinput."
                                 });
                                 if ui.button("Set up display and input (asks for password)").clicked()
                                 {
-                                    self.run_action(|| run_system_setup().map(|_| "System setup complete".into()).unwrap_or_else(|e| e));
+                                    let max_tablets = self.cfg.max_tablets;
+                                    self.run_action(move || run_system_setup(max_tablets).map(|_| "System setup complete".into()).unwrap_or_else(|e| e));
                                 }
                             }
                         });
@@ -1101,7 +1111,7 @@ mod tests {
         );
         let trace = sandbox.0.join("trace");
         let output = Command::new("sh")
-            .args(["-c", &system_setup_script(&sandbox.0)])
+            .args(["-c", &system_setup_script(&sandbox.0, 2)])
             .env(
                 "PATH",
                 format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),
@@ -1126,6 +1136,69 @@ mod tests {
     }
 
     #[test]
+    fn t136_setup_readiness_requires_all_configured_tablets() {
+        let status = Status {
+            evdi_count: 2,
+            uinput_ok: true,
+            ..Default::default()
+        };
+        assert!(needs_system_setup(
+            &status,
+            &FileConfig {
+                max_tablets: 4,
+                ..Default::default()
+            }
+        ));
+        assert!(!needs_system_setup(
+            &status,
+            &FileConfig {
+                max_tablets: 2,
+                ..Default::default()
+            }
+        ));
+    }
+
+    #[test]
+    fn t136_setup_adds_missing_devices_and_persists_capacity() {
+        for (existing, wanted) in [(2, 4), (0, 3), (4, 2)] {
+            let sandbox = Sandbox::new();
+            std::fs::create_dir_all(sandbox.0.join("sys/devices/evdi")).unwrap();
+            std::fs::write(
+                sandbox.0.join("sys/devices/evdi/count"),
+                existing.to_string(),
+            )
+            .unwrap();
+            sandbox.script("bin/modprobe", "exit 0");
+            sandbox.script("bin/udevadm", "exit 0");
+            let output = Command::new("sh")
+                .args(["-c", &system_setup_script(&sandbox.0, wanted)])
+                .env(
+                    "PATH",
+                    format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),
+                )
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let boot = std::fs::read_to_string(sandbox.0.join("etc/modprobe.d/uscreen-evdi.conf"))
+                .unwrap();
+            assert_eq!(
+                boot.trim(),
+                format!("options evdi initial_device_count={wanted}")
+            );
+            let added = std::fs::read_to_string(sandbox.0.join("sys/devices/evdi/add"));
+            if wanted > existing {
+                assert_eq!(added.unwrap().trim(), (wanted - existing).to_string());
+            } else {
+                assert!(added.is_err(), "must preserve existing active devices");
+            }
+        }
+    }
+
+    #[test]
     fn t097_gui_setup_creates_missing_configuration_directories() {
         let sandbox = Sandbox::new();
         std::fs::create_dir_all(sandbox.0.join("sys/devices/evdi")).unwrap();
@@ -1133,7 +1206,7 @@ mod tests {
         sandbox.script("bin/modprobe", "exit 0");
         sandbox.script("bin/udevadm", "exit 0");
         let output = Command::new("sh")
-            .args(["-c", &system_setup_script(&sandbox.0)])
+            .args(["-c", &system_setup_script(&sandbox.0, 2)])
             .env(
                 "PATH",
                 format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),

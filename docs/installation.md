@@ -66,7 +66,7 @@ something is.
 
 ## What gets changed on the system
 
-- `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package), with `options evdi initial_device_count=2`
+- `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package), with `options evdi initial_device_count=2` by default. After changing the tablet count, GUI system setup creates missing devices without unloading active displays and saves the chosen count for boot
 - `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package), loading `evdi` and `uinput`
 - a udev rule opening `/dev/uinput` to the logged-in user
 - a systemd *user* unit (never a system service, never root)
