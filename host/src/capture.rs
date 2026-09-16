@@ -2132,7 +2132,7 @@ mod tests {
     #[cfg(not(feature = "inproc-encoder"))]
     #[tokio::test]
     async fn t116_idle_stream_provides_regular_decodable_join_points() {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        use tokio::io::AsyncWriteExt;
         for fps in [60, 90] {
             let mut manager = test_manager();
             manager.config.width = 32;
@@ -2155,7 +2155,7 @@ mod tests {
                 .unwrap();
             let child = manager.encoder_child.as_mut().unwrap();
             let mut input = child.stdin.take().unwrap();
-            let mut output = child.stdout.take().unwrap();
+            let output = child.stdout.take().unwrap();
             let started = Instant::now();
             let writer = async move {
                 let frame = vec![128; 32 * 32 * 3 / 2];
@@ -2164,23 +2164,7 @@ mod tests {
                     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
                 }
             };
-            let reader = async move {
-                let mut parser = H264AnnexBPacketizer::new(Codec::H264);
-                let mut keyframes = Vec::new();
-                let mut buffer = [0; 16384];
-                loop {
-                    let n = output.read(&mut buffer).await.unwrap();
-                    if n == 0 {
-                        break;
-                    }
-                    for packet in parser.push(&buffer[..n]) {
-                        if packet.is_idr {
-                            keyframes.push((started.elapsed(), packet.data));
-                        }
-                    }
-                }
-                keyframes
-            };
+            let reader = collect_idle_join_points(output, started);
             let (_, keyframes) = tokio::time::timeout(std::time::Duration::from_secs(6), async {
                 tokio::join!(writer, reader)
             })
@@ -2237,6 +2221,29 @@ mod tests {
                 assert_eq!(decoded.stdout.len(), 32 * 32 * 3 / 2);
             }
         }
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    async fn collect_idle_join_points(
+        mut output: tokio::process::ChildStdout,
+        started: Instant,
+    ) -> Vec<(std::time::Duration, Bytes)> {
+        use tokio::io::AsyncReadExt;
+        let mut parser = H264AnnexBPacketizer::new(Codec::H264);
+        let mut keyframes = Vec::new();
+        let mut buffer = [0; 16384];
+        loop {
+            let n = output.read(&mut buffer).await.unwrap();
+            if n == 0 {
+                break;
+            }
+            for packet in parser.push(&buffer[..n]) {
+                if packet.is_idr {
+                    keyframes.push((started.elapsed(), packet.data));
+                }
+            }
+        }
+        keyframes
     }
 
     fn test_manager() -> CaptureManager {
