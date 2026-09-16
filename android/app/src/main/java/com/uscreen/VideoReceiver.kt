@@ -597,24 +597,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                         flags
                     )
                     if (!isConfig) {
-                        val queued = queuedSinceOutput.incrementAndGet()
-                        val silentNs = System.nanoTime() - lastOutputNanos
-                        if (queued >= 4 && silentNs > 1_500_000_000L) {
-                            outputStalls++
-                            val dropHints = outputStalls >= 2 && lowLatencyHints
-                            Log.w(
-                                TAG,
-                                "Decoder took $queued frames and showed none for " +
-                                    "${silentNs / 1_000_000} ms — restarting" +
-                                    (if (dropHints) " without low-latency hints" else "")
-                            )
-                            if (dropHints) lowLatencyHints = false
-                            // A fresh decoder needs the codec config and a
-                            // keyframe again, and the host sends both to a
-                            // client that (re)connects — so drop the socket
-                            // too, and let the read loop come back.
-                            resetCodec()
-                        }
+                        checkOutputProgress()
                     }
                     return
                 }
@@ -630,6 +613,27 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             resetCodec()
         } catch (e: Exception) {
             Log.w(TAG, "Decoder feed error", e)
+            resetCodec()
+        }
+    }
+
+    private fun checkOutputProgress() {
+        val queued = queuedSinceOutput.incrementAndGet()
+        val silentNs = System.nanoTime() - lastOutputNanos
+        if (queued >= 4 && silentNs > 1_500_000_000L) {
+            outputStalls++
+            val dropHints = outputStalls >= 2 && lowLatencyHints
+            Log.w(
+                TAG,
+                "Decoder took $queued frames and showed none for " +
+                    "${silentNs / 1_000_000} ms — restarting" +
+                    (if (dropHints) " without low-latency hints" else "")
+            )
+            if (dropHints) lowLatencyHints = false
+            // A fresh decoder needs the codec config and a
+            // keyframe again, and the host sends both to a
+            // client that (re)connects — so drop the socket
+            // too, and let the read loop come back.
             resetCodec()
         }
     }
