@@ -23,6 +23,45 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t133_tokenRotationRestartsActiveReconnectsOnly() {
+        val prefs = Prefs(app).apply { checkUpdates = false; hostToken = "a".repeat(64) }
+        val controller = Robolectric.buildActivity(MainActivity::class.java).create()
+        val activity = controller.get()
+        val capture = get(activity, "touchCapture") as TouchCapture
+        val receiver = get(activity, "videoReceiver") as VideoReceiver
+        val apply = MainActivity::class.java.getDeclaredMethod("applyToken", Boolean::class.javaPrimitiveType).apply { isAccessible = true }
+        try {
+            set(activity, "started", true)
+            receiver.start() // No surface; session waits without real video I/O.
+            assertFalse(capture.isControlConnected())
+            val generation = capture.connectionGeneration
+            val oldJob = get(receiver, "job") as kotlinx.coroutines.Job
+            prefs.hostToken = "b".repeat(64)
+            apply.invoke(activity, true)
+            assertTrue("Disconnected control session must rotate", capture.connectionGeneration > generation)
+            assertTrue("Video retry must retire captured old token", oldJob.isCancelled)
+            assertNotSame(oldJob, get(receiver, "job"))
+            assertEquals(prefs.hostToken, receiver.token)
+            assertEquals(prefs.hostToken, capture.token)
+
+            set(activity, "started", false)
+            capture.disconnect()
+            receiver.stop()
+            val stoppedGeneration = capture.connectionGeneration
+            val stoppedJob = get(receiver, "job")
+            prefs.hostToken = "c".repeat(64)
+            apply.invoke(activity, true)
+            assertEquals(stoppedGeneration, capture.connectionGeneration)
+            assertSame(stoppedJob, get(receiver, "job"))
+            assertFalse(get(receiver, "isRunning") as Boolean)
+        } finally {
+            set(activity, "started", false)
+            capture.disconnect()
+            receiver.stop()
+            controller.destroy()
+        }
+    }
+
     @Test fun t123_updateVersionsFollowSharedValidationAndPrecedence() {
         val fixture = javaClass.classLoader!!.getResourceAsStream("version-comparisons.tsv")!!
         fixture.bufferedReader().useLines { lines -> lines.forEach { line ->

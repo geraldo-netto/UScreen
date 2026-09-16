@@ -294,10 +294,10 @@ class MainActivity : ComponentActivity() {
         val changed = touchCapture?.token != token
         touchCapture?.token = token
         videoReceiver?.token = token
-        // Only rebuild live connections. If we are in the background, onStart
-        // will connect with the new token anyway; reconnecting here as well
-        // would leave a second socket behind.
-        if (started && restart && changed && touchCapture?.isControlConnected() == true) {
+        // Active reconnect loops also captured the previous token. Retire them
+        // even when control is temporarily disconnected. Background sessions
+        // stay stopped; onStart connects with the updated credentials.
+        if (started && restart && changed) {
             Log.i("UScreen", "New session token — reconnecting")
             touchCapture?.disconnect()
             touchCapture?.connect()
