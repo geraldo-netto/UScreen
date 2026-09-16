@@ -1650,10 +1650,14 @@ impl H264AnnexBPacketizer {
 
     fn finish(&mut self) -> Vec<VideoPacket> {
         let mut out = self.process_complete_nals(true);
-        if let Some(access_unit) = self.take_pending_access_unit() {
-            out.push(access_unit);
-        }
+        self.emit_pending_access_unit(&mut out);
         out
+    }
+
+    fn emit_pending_access_unit(&mut self, out: &mut Vec<VideoPacket>) {
+        if let Some(packet) = self.take_pending_access_unit() {
+            out.push(packet);
+        }
     }
 
     fn config_ready(&self) -> bool {
@@ -1713,9 +1717,7 @@ impl H264AnnexBPacketizer {
         // that the preceding access unit is complete. Keep all trailing bytes
         // buffered; publish only the previous picture.
         if self.pending_has_vcl && self.trailing_nal_starts_picture() {
-            if let Some(packet) = self.take_pending_access_unit() {
-                out.push(packet);
-            }
+            self.emit_pending_access_unit(&mut out);
         }
         out
     }
