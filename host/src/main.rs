@@ -262,6 +262,66 @@ mod cli_tests {
     }
 
     #[tokio::test]
+    async fn t144_primary_and_extra_wait_for_both_reverse_mappings_and_retry() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(
+            &adb,
+            r#"#!/bin/sh
+printf '%s\n' "$*" >> "$0.log"
+if [ "$3" = reverse ]; then
+    case "$2:$4" in PRIMARY:tcp:8890|EXTRA:tcp:8891)
+        if [ ! -e "$0.$2.failed" ]; then touch "$0.$2.failed"; exit 1; fi;;
+    esac
+else
+    cat >/dev/null
+fi
+"#,
+        )
+        .unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let now = std::time::Instant::now();
+        for (serial, port) in [("PRIMARY", 19000), ("EXTRA", 19002)] {
+            let request = TabletConnection {
+                serial,
+                video_port: port,
+                input_port: port + 1,
+                auto_launch: true,
+                token: None,
+                adb: adb.to_str().unwrap(),
+            };
+            let mut retry = RelaunchBackoff::default();
+            let mut ready = request.prepare(&mut retry, now).await;
+            assert!(!ready, "T144 {serial} became ready after a failed reverse");
+            let log = adb.with_extension("log");
+            let failed = std::fs::read_to_string(&log).unwrap();
+            assert!(!failed.contains(&format!("-s {serial} shell")));
+            if !ready {
+                ready = request
+                    .prepare(&mut retry, now + std::time::Duration::from_secs(1))
+                    .await;
+            }
+            assert!(!ready);
+            assert_eq!(
+                std::fs::read_to_string(&log).unwrap(),
+                failed,
+                "retry must back off"
+            );
+            if !ready {
+                ready = request
+                    .prepare(&mut retry, now + std::time::Duration::from_secs(5))
+                    .await;
+            }
+            assert!(ready, "unchanged serial never recovered");
+            let passed = std::fs::read_to_string(&log).unwrap();
+            assert!(passed.contains(&format!("-s {serial} reverse tcp:8890 tcp:{port}")));
+            assert!(passed.contains(&format!("-s {serial} reverse tcp:8891 tcp:{}", port + 1)));
+            assert_eq!(passed.matches(&format!("-s {serial} shell")).count(), 1);
+        }
+    }
+
+    #[tokio::test]
     async fn t143_crashed_extra_apps_recover_with_per_device_backoff() {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
@@ -1516,6 +1576,7 @@ async fn adb_monitor(
     let mut current: Option<String> = None;
     let mut identities = std::collections::HashMap::new();
     let mut extra_backoff = std::collections::HashMap::new();
+    let mut forwarding_backoff = std::collections::HashMap::<String, RelaunchBackoff>::new();
     let mut last_relaunch = std::time::Instant::now() - std::time::Duration::from_secs(60);
     // How many times the token has been re-delivered to this tablet. An app
     // too old to send one fails auth on every reconnect, and without a cap
@@ -1570,71 +1631,47 @@ async fn adb_monitor(
         let preferred = current_transport(&devices, current.as_deref(), &identities);
         let found = select_tablet(&devices, preferred.as_deref());
 
-        match (&current, &found) {
-            // Newly attached, or a different tablet than before.
-            (None, Some(serial)) => {
-                info!(
-                    "Tablet connected over {} ({})",
-                    transport_of(serial).label(),
-                    serial
-                );
-                announce_transport(serial);
-                if !is_fake_serial(serial) {
-                    on_tablet_connected(
-                        serial,
-                        video_port,
-                        input_port,
-                        auto_launch,
-                        token.as_deref(),
-                    )
-                    .await;
-                }
-                let _ = tablet_tx.send(true);
-                current = found.clone();
-                extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
-                relaunches = 0;
-                relaunch_wait = std::time::Duration::from_secs(5);
+        forwarding_backoff.retain(|serial, _| devices.contains(serial));
+        if current != found {
+            if let Some(old) = current.as_ref() {
+                info!("Tablet disconnected or changing transport ({old})");
+                let _ = tablet_tx.send(false);
+                disconnected_primary(&mut current, &mut wifi_announced);
             }
-            (Some(old), Some(serial)) if old != serial => {
-                // Usually not a different tablet at all: pulling the cable on a
-                // tablet that also has `adb tcpip` running swaps one serial for
-                // another on the same device.
-                if transport_of(old) != transport_of(serial) {
-                    info!(
-                        "Tablet moved from {} to {} ({})",
-                        transport_of(old).label(),
-                        transport_of(serial).label(),
-                        serial
-                    );
-                } else {
-                    info!("Different tablet connected ({} → {})", old, serial);
-                }
-                announce_transport(serial);
-                on_tablet_connected(
+            if let Some(serial) = found.as_deref() {
+                let request = TabletConnection {
                     serial,
                     video_port,
                     input_port,
                     auto_launch,
-                    token.as_deref(),
-                )
-                .await;
-                let _ = tablet_tx.send(true);
-                current = found.clone();
-                extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
-                relaunches = 0;
-                relaunch_wait = std::time::Duration::from_secs(5);
+                    token: token.as_deref(),
+                    adb: "adb",
+                };
+                if request
+                    .prepare(
+                        forwarding_backoff.entry(serial.to_string()).or_default(),
+                        std::time::Instant::now(),
+                    )
+                    .await
+                {
+                    info!(
+                        "Tablet connected over {} ({serial})",
+                        transport_of(serial).label()
+                    );
+                    announce_transport(serial);
+                    let _ = tablet_tx.send(true);
+                    current = found.clone();
+                    extra_backoff.insert(serial.to_string(), RelaunchBackoff::default());
+                    relaunches = 0;
+                    relaunch_wait = std::time::Duration::from_secs(5);
+                }
             }
-            (Some(old), None) => {
-                info!("Tablet disconnected ({})", old);
-                let _ = tablet_tx.send(false);
-                disconnected_primary(&mut current, &mut wifi_announced);
-            }
-            _ => {}
         }
 
         // Further tablets. Anything beyond the first that has a free slot.
         if extra.max_tablets > 1 {
-            let others = extra_devices(&devices, current.as_deref());
+            // Reserve the selected primary even while its forwarding is pending.
+            let others = extra_devices(&devices, found.as_deref());
             // Gone
             let gone: Vec<String> = extras
                 .keys()
@@ -1650,7 +1687,11 @@ async fn adb_monitor(
             }
             // New
             for serial in others {
-                if extras.contains_key(&serial) {
+                if extras.contains_key(&serial)
+                    || forwarding_backoff
+                        .get(&serial)
+                        .is_some_and(|retry| !retry.ready(std::time::Instant::now()))
+                {
                     continue;
                 }
                 let used: Vec<u32> = extras.values().map(|s| s.instance).collect();
@@ -1674,18 +1715,23 @@ async fn adb_monitor(
                         continue;
                     }
                 };
-                let is_fake = std::env::var("USCREEN_FAKE_TABLET")
-                    .map(|f| f.split(',').any(|x| x.trim() == serial))
-                    .unwrap_or(false);
-                if !is_fake {
-                    on_tablet_connected(
-                        &serial,
-                        sess.video_port,
-                        sess.input_port,
-                        auto_launch,
-                        token.as_deref(),
+                let request = TabletConnection {
+                    serial: &serial,
+                    video_port: sess.video_port,
+                    input_port: sess.input_port,
+                    auto_launch,
+                    token: token.as_deref(),
+                    adb: "adb",
+                };
+                if !request
+                    .prepare(
+                        forwarding_backoff.entry(serial.clone()).or_default(),
+                        std::time::Instant::now(),
                     )
-                    .await;
+                    .await
+                {
+                    sess.stop().await;
+                    continue;
                 }
                 let _ = sess.tablet_tx.send(true);
                 extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
@@ -1804,8 +1850,12 @@ impl Default for RelaunchBackoff {
     }
 }
 impl RelaunchBackoff {
+    fn ready(&self, now: std::time::Instant) -> bool {
+        self.next.is_none_or(|next| now >= next)
+    }
+
     fn allow(&mut self, now: std::time::Instant) -> bool {
-        if self.next.is_some_and(|next| now < next) {
+        if !self.ready(now) {
             return false;
         }
         self.next = Some(now + self.delay);
@@ -2031,24 +2081,45 @@ fn announce_transport(serial: &str) {
     }
 }
 
-async fn on_tablet_connected(
-    serial: &str,
+struct TabletConnection<'a> {
+    serial: &'a str,
     video_port: u16,
     input_port: u16,
     auto_launch: bool,
-    token: Option<&str>,
-) {
-    match setup_adb_forwarding(serial, video_port, input_port).await {
-        Ok(_) => {
-            info!(
-                "ADB port forwarding set up ({}, {})",
-                video_port, input_port
-            );
-            if auto_launch {
-                launch_app(serial, token).await;
+    token: Option<&'a str>,
+    adb: &'a str,
+}
+
+impl TabletConnection<'_> {
+    async fn prepare(&self, retry: &mut RelaunchBackoff, now: std::time::Instant) -> bool {
+        if is_fake_serial(self.serial) {
+            return true;
+        }
+        if !retry.allow(now) {
+            return false;
+        }
+        match setup_adb_forwarding_with(self.serial, self.video_port, self.input_port, self.adb)
+            .await
+        {
+            Ok(()) => {
+                *retry = RelaunchBackoff::default();
+                info!(
+                    "ADB forwarding ready for {} ({}, {})",
+                    self.serial, self.video_port, self.input_port
+                );
+                if self.auto_launch {
+                    launch_app_using(self.serial, self.token, self.adb).await;
+                }
+                true
+            }
+            Err(error) => {
+                warn!(
+                    "ADB forwarding failed for {}: {error}; retry scheduled",
+                    self.serial
+                );
+                false
             }
         }
-        Err(e) => warn!("ADB forwarding failed: {}", e),
     }
 }
 
@@ -2319,11 +2390,16 @@ async fn adb_devices() -> Vec<String> {
 const APP_VIDEO_PORT: u16 = 8890;
 const APP_INPUT_PORT: u16 = 8891;
 
-async fn setup_adb_forwarding(serial: &str, video_port: u16, input_port: u16) -> Result<()> {
+async fn setup_adb_forwarding_with(
+    serial: &str,
+    video_port: u16,
+    input_port: u16,
+    adb: &str,
+) -> Result<()> {
     for (remote, local) in [(APP_VIDEO_PORT, video_port), (APP_INPUT_PORT, input_port)] {
         let remote = format!("tcp:{}", remote);
         let local = format!("tcp:{}", local);
-        let r = tokio::process::Command::new("adb")
+        let r = tokio::process::Command::new(adb)
             .args(["-s", serial, "reverse", &remote, &local])
             .output_bounded()
             .await?;
