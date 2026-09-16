@@ -37,7 +37,8 @@ sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput
 The app is older than the daemon. Since 1.1.0 a session token is required;
 install the APK from the same release as the Linux side. The daemon retries
 delivering the token with an increasing interval, so after updating the app
-it connects within seconds without re-plugging.
+the next retry can take up to ten minutes without re-plugging. Reconnect
+the cable to trigger immediate delivery.
 
 ## Black screen on the tablet
 
@@ -67,9 +68,9 @@ xrandr --setprovideroutputsource <evdi provider index> 0
 
 ## The on-screen keyboard pops up
 
-The daemon turns KDE's virtual keyboard off while it runs and restores the
-setting on exit. If it stays off after a crash, run the daemon once more and
-stop it normally, or set it back in System Settings → Virtual Keyboard.
+The daemon suppresses KDE's virtual keyboard while UScreen touch devices
+exist, then restores the setting when the last device is removed or on exit.
+If it stays off after a crash, run the daemon once more and stop it normally, or set it back in System Settings → Virtual Keyboard.
 
 ## Wi-Fi is stuttery
 

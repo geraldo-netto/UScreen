@@ -1,4 +1,4 @@
-//! Suppressing the desktop's on-screen keyboard while uscreen is running.
+//! Suppressing the desktop's on-screen keyboard while UScreen touch devices exist.
 //!
 //! The tablet's touch device is a genuine touchscreen as far as the desktop is
 //! concerned, so KDE offers the virtual keyboard whenever a text field takes
@@ -62,7 +62,7 @@ pub async fn disable() {
     }
 
     if set_mode(MODE_MANUAL).await {
-        info!("On-screen keyboard suppressed while uscreen runs");
+        info!("On-screen keyboard suppressed while UScreen touch devices exist");
     }
 }
 

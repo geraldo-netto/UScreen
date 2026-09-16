@@ -15,7 +15,9 @@ Status: design notes only, nothing implemented. Written 2026-09-16 against
   `h264_nvenc` (NVIDIA), `h264_amf` (AMD), `h264_qsv` (Intel), `libx264`
   as the CPU fallback. The argument builder in `capture.rs` gains three
   more branches.
-- **Config, stream server, latency tracking, update check.** Portable.
+- **Settings schema, protocol, latency tracking, update parsing.** Reusable.
+  `common/src/runtime.rs`, process checks in `common/src/lib.rs`, and the
+  stream socket-buffer tuning contain Linux/Unix APIs that need replacements.
 
 ## What has to be replaced
 
@@ -50,4 +52,5 @@ Status: design notes only, nothing implemented. Written 2026-09-16 against
   attestation signing) or depend on the user installing Virtual-Display-Driver
   separately? Depending on it is the realistic first version.
 - `ffmpeg-next` on Windows: prebuilt ffmpeg via vcpkg or a bundled DLL set.
-- Wi-Fi mode has no adb dependency and would work unchanged.
+- Wi-Fi mode still depends on adb (`tcpip`, `connect`, and `reverse`);
+  Windows needs adb installed for both USB and wireless transport.

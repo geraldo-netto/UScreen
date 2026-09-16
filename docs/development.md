@@ -93,8 +93,8 @@ host/              Rust daemon
   src/encoder.rs     optional in-process libavcodec encoder
   src/stream.rs      TCP video server, session token, IDR-aware backlog skipping
   src/input.rs       WebSocket input server, uinput devices, KWin mapping
-  src/config.rs      ~/.config/uscreen/config.toml
-  src/runtime.rs     per-user runtime dir: FIFO, session token
+  src/config.rs      re-exports shared settings
+  src/runtime.rs     re-exports shared runtime state
   src/latency.rs     encoded-packet-to-render-acknowledgement timing
   src/tray.rs        StatusNotifierItem tray icon
   src/update.rs      release check (report only)
@@ -104,6 +104,7 @@ host/              Rust daemon
   src/vdisplay.rs    EVDI discovery via sysfs
   src/edid.rs        EDID generation for the virtual display
   evdi/              C helper: EVDI framebuffer capture → NV12 → FIFO
+common/            settings, commands, version parsing, runtime session ledger
 gui/               egui desktop app: status, settings, start/stop
 android/           Kotlin/Compose app: MediaCodec decoder, touch/pen capture
 packaging/         deb control/postinst, rpm spec, PKGBUILD, udev/modprobe files
@@ -157,9 +158,10 @@ bursts. On a static desktop the stream sits far below it.
 cargo build --release --manifest-path host/Cargo.toml --features inproc-encoder
 ```
 
-Encodes through libavcodec in-process instead of an `ffmpeg` child: same
-latency, about one CPU core less, and keyframes on demand. Needs the ffmpeg
-development headers (`ffmpeg-devel` from RPM Fusion on Fedora,
+Encodes through libavcodec in-process instead of an `ffmpeg` child. Measured
+encoded-packet-to-acknowledgement latency was similar, with about one CPU
+core less and keyframes on demand; that metric excludes encoding time. Needs
+the ffmpeg development headers (`ffmpeg-devel` from RPM Fusion on Fedora,
 `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev` on Debian). On
 atomic distributions build inside a container (`distrobox`); the binary links
 against the host's ffmpeg at runtime. `ten_bit` is not available on this path.

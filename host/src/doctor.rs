@@ -695,7 +695,7 @@ async fn check_osk(r: &mut Report) {
     match mode.trim() {
         "1" | "2" => {
             r.line(Level::Warn, "on-screen keyboard", "pops up on touch input");
-            r.hint("the daemon turns this off while it runs and puts it back on exit");
+            r.hint("the daemon suppresses this while its touch devices exist, then restores the saved setting");
         }
         "0" => r.line(Level::Ok, "on-screen keyboard", "only when asked for"),
         _ => {}
