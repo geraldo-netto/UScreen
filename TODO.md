@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-66 items: 0 high, 26 medium, 40 low.
+65 items: 0 high, 25 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T010 | open | medium | S | Do not build the decoder in setSurface() while the receiver is stopped ([VideoReceiver.kt:204](android/app/src/main/java/com/uscreen/VideoReceiver.kt#L204)) |
 | T011 | open | medium | S | Stop claiming the tarball installer enables the systemd unit; install.sh never does ([installation.md:40](docs/installation.md#L40)) |
 | T012 | open | medium | S | Scale-1 conversion writes with g_mode_w stride into buffers sized by g_out_w: heap overflow on odd width ([evdi_helper.c:328](host/evdi/evdi_helper.c#L328)) |
 | T013 | open | medium | S | Print STREAM_SIZE after computing g_out_w/g_out_h; capture.rs waits 3s for it on every start ([evdi_helper.c:493](host/evdi/evdi_helper.c#L493)) |
@@ -82,8 +81,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T010** — setSurface() calls setupCodec() whenever mediaCodec is null, independent of isRunning, so every surfaceCreated/surfaceChanged (launch with no host, rotation in pen-only mode) creates a hardware decoder plus a MAX_PRIORITY thread polling every 10 ms that nothing releases until the next stop(). Guard with isRunning.
 
 **T011** — This line and README.md:55 say install.sh runs `systemctl --user enable --now`, but scripts/install.sh:183-185 only copies the unit and runs daemon-reload. Either add the enable step to install.sh or correct both docs.
 

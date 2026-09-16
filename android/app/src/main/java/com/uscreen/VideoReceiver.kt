@@ -200,8 +200,13 @@ class VideoReceiver {
         surfaceReady.set(true)
         Log.i(TAG, "Surface stored, ready for codec setup")
 
+        // Only while receiving. Building a decoder for a surface that shows
+        // nothing (no host yet, or pen-only mode, where this receiver is
+        // stopped on purpose) costs a hardware codec and a polling thread
+        // that nothing releases until the next stop(); start() sets the
+        // codec up itself once it runs.
         synchronized(this) {
-            if (mediaCodec == null && surfaceReady.get()) {
+            if (isRunning && mediaCodec == null && surfaceReady.get()) {
                 setupCodec(surface)
             }
         }
