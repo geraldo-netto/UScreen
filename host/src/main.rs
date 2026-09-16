@@ -149,6 +149,65 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 #[cfg(test)]
 mod cli_tests {
     #[test]
+    fn t200_runtime_persistence_preserves_cli_and_unchanged_fields() {
+        let cli =
+            Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi", "--width", "1280"]).unwrap();
+        let overrides = CliOverrides::new(&cli);
+        let previous = capture::EncoderSettings {
+            encoder: "h264_vaapi".into(),
+            fps: 90,
+            bitrate: 10000,
+            width: 1280,
+            height: 1080,
+            quality: 20,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+        };
+        let changed = capture::EncoderSettings {
+            encoder: "h264_nvenc".into(),
+            bitrate: 12000,
+            width: 2560,
+            height: 1200,
+            quality: 25,
+            stream_scale: 2,
+            ..previous.clone()
+        };
+        let saved = config::FileConfig {
+            encoder: "libx264".into(),
+            width: 1920,
+            fps: 60,
+            pen_only: true,
+            ..Default::default()
+        };
+        let mut updated = saved.clone();
+        overrides.apply_encoder(&mut updated, &changed, &previous);
+        overrides.apply_geometry(&mut updated, &changed, &previous);
+        assert_eq!(
+            (updated.encoder.as_str(), updated.width, updated.fps),
+            ("libx264", 1920, 60)
+        );
+        assert_eq!(
+            (
+                updated.bitrate,
+                updated.height,
+                updated.quality,
+                updated.stream_scale
+            ),
+            (12000, 1200, 25, 2)
+        );
+        assert!(updated.pen_only);
+
+        let mut unchanged = saved.clone();
+        overrides.apply_encoder(&mut unchanged, &changed, &changed);
+        overrides.apply_geometry(&mut unchanged, &changed, &changed);
+        assert_eq!(
+            unchanged, saved,
+            "unchanged stream fields must not overwrite newer disk settings"
+        );
+    }
+
+    #[test]
     fn t108_extra_slot_requires_its_own_assigned_card() {
         let mut config = capture::CaptureConfig::default();
         assert!(assign_slot_card(&mut config, &[0], 1).is_err());
@@ -771,32 +830,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         let _ = std::fs::create_dir_all(parent);
     }
 
-    // Refuse to start a second daemon on top of a live one: the PID file is
-    // a single slot, so `uscreen stop` only ever kills the most recently
-    // started process — any earlier instance still running would become
-    // permanently untracked, and both would keep writing/reading the same
-    // EVDI FIFO, corrupting frames and starving the encoder.
-    if let Ok(existing) = std::fs::read_to_string(&pid_path) {
-        if let Ok(existing_pid) = existing.trim().parse::<i32>() {
-            let alive = config::daemon_is_running(existing_pid as u32);
-            if alive {
-                anyhow::bail!(
-                    "uscreen daemon already running (PID: {}). Run `uscreen stop` first.",
-                    existing_pid
-                );
-            }
-        }
-    }
-
-    // A daemon that lost its PID file (see remove_pid_file_if_ours) is still
-    // a daemon; two of them fight over the EVDI device and the FIFO.
-    let others = other_daemons();
-    if !others.is_empty() {
-        anyhow::bail!(
-            "uscreen daemon already running (PID {:?}, untracked). Run `uscreen stop` first.",
-            others
-        );
-    }
+    ensure_single_daemon(&pid_path)?;
 
     // Validate the complete effective range before claiming resources.
     let file_cfg = config::FileConfig::load();
@@ -811,23 +845,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let pid = std::process::id();
     std::fs::write(&pid_path, pid.to_string())?;
 
-    // `load()` clamps unusable values, but leaving the bad number on disk means
-    // the GUI keeps showing it and writes it straight back. Heal the file once,
-    // here, so every tool agrees on what the settings actually are.
-    {
-        let raw: Option<config::FileConfig> = std::fs::read_to_string(config::config_path())
-            .ok()
-            .and_then(|t| toml::from_str(&t).ok());
-        if raw.is_some_and(|r| r != file_cfg) {
-            match config::FileConfig::update(|_| Ok(())) {
-                Ok(_) => info!(
-                    "Rewrote out-of-range settings in {:?}",
-                    config::config_path()
-                ),
-                Err(e) => warn!("Could not rewrite the config file: {}", e),
-            }
-        }
-    }
+    heal_config(&file_cfg);
     let encoder = effective.encoder.clone();
     let fps = effective.fps;
     let bitrate = effective.bitrate;
@@ -837,11 +855,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let input_port = effective.input_port;
     let quality = effective.quality;
     let stream_scale = effective.stream_scale;
-    let mut pen_only = cli.pen_only || file_cfg.pen_only;
-    if pen_only && !file_cfg.input_pen {
-        warn!("Pen-only mode needs the pen device, but input_pen is off in config.toml — starting as a second screen");
-        pen_only = false;
-    }
+    let pen_only = initial_pen_only(cli.pen_only, &file_cfg);
 
     let cap_config = capture::CaptureConfig {
         helper_path: helper_path.clone(),
@@ -869,24 +883,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         },
     };
 
-    // One secret per daemon run. Handed to the app over adb when it is
-    // launched; anything connecting to the loopback ports without it gets
-    // nothing. See config::FileConfig::require_token.
-    let token: Option<String> = if file_cfg.require_token {
-        // Fail closed. Running without a token because the runtime dir was
-        // unwritable would quietly turn a required check into no check.
-        match runtime::new_session_token() {
-            Ok(t) => Some(t),
-            Err(e) => anyhow::bail!(
-                "require_token is on but no session token could be created: {}. \
-                 Fix the runtime directory, or set require_token = false.",
-                e
-            ),
-        }
-    } else {
-        warn!("require_token = false: any local process can read the screen and inject input");
-        None
-    };
+    let token = create_session_token(file_cfg.require_token)?;
     let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
 
     let stream_config = stream::StreamConfig {
@@ -928,7 +925,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     });
 
     // Tablet presence, published by the ADB monitor.
-    let (tablet_tx, mut tablet_rx) = watch::channel(false);
+    let (tablet_tx, tablet_rx) = watch::channel(false);
     let tray_tablet_rx = tablet_tx.subscribe();
 
     let mut capture_mgr = capture::CaptureManager::new(cap_config);
@@ -972,21 +969,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // signal, and cannot tell the difference between an unplugged tablet and
     // one that is currently a drawing surface.
     let (gate_tx, gate_rx) = watch::channel(false);
-    let mut mode_rx_gate = mode_tx.subscribe();
-    tokio::spawn(async move {
-        let mut last = false;
-        loop {
-            let active = *tablet_rx.borrow() && !*mode_rx_gate.borrow();
-            if active != last {
-                last = active;
-                let _ = gate_tx.send(active);
-            }
-            tokio::select! {
-                r = tablet_rx.changed() => if r.is_err() { break },
-                r = mode_rx_gate.changed() => if r.is_err() { break },
-            }
-        }
-    });
+    spawn_display_gate(gate_tx, tablet_rx, mode_tx.subscribe());
 
     // Cooperative shutdown: the capture task must get a chance to kill and reap
     // ffmpeg/evdi_helper before the process exits, or they linger holding the
@@ -1018,70 +1001,13 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Fields the user overrode on the command line for this run only. They
     // must not be written back: a flag is not a settings change, and
     // persisting one silently rewrites the user's configuration behind them.
-    let cli_overrides = (
-        cli.encoder.is_some(),
-        cli.fps.is_some(),
-        cli.bitrate.is_some(),
-        cli.width.is_some(),
-        cli.height.is_some(),
-        cli.quality.is_some(),
-        cli.stream_scale.is_some(),
-    );
-
-    // Persist settings changes pushed at runtime back to the config file
-    let mut settings_rx_save = settings_rx.clone();
-    let save_handle = tokio::spawn(async move {
-        let mut previous = settings_rx_save.borrow().clone();
-        while settings_rx_save.changed().await.is_ok() {
-            let s = settings_rx_save.borrow().clone();
-            let result = config::FileConfig::update(|cfg| {
-                if !cli_overrides.0 && s.encoder != previous.encoder {
-                    cfg.encoder = s.encoder.clone();
-                }
-                if !cli_overrides.1 && s.fps != previous.fps {
-                    cfg.fps = s.fps;
-                }
-                if !cli_overrides.2 && s.bitrate != previous.bitrate {
-                    cfg.bitrate = s.bitrate;
-                }
-                if !cli_overrides.3 && s.width != previous.width {
-                    cfg.width = s.width;
-                }
-                if !cli_overrides.4 && s.height != previous.height {
-                    cfg.height = s.height;
-                }
-                if !cli_overrides.5 && s.quality != previous.quality {
-                    cfg.quality = s.quality;
-                }
-                if !cli_overrides.6 && s.stream_scale != previous.stream_scale {
-                    cfg.stream_scale = s.stream_scale;
-                }
-                Ok(())
-            });
-            previous = s;
-            if let Err(e) = result {
-                warn!("Failed to persist settings: {}", e);
-            } else {
-                info!("Settings saved to {:?}", config::config_path());
-            }
-        }
-    });
+    let cli_overrides = CliOverrides::new(&cli);
+    let save_handle = tokio::spawn(persist_settings(settings_rx.clone(), cli_overrides));
 
     // Remember which mode the tablet was left in. Unlike the --pen-only flag,
     // which is a one-off for this run and never written back, a switch made
     // from the tablet is a deliberate choice and should survive a restart.
-    let mut mode_rx_save = mode_tx.subscribe();
-    let mode_save_handle = tokio::spawn(async move {
-        while mode_rx_save.changed().await.is_ok() {
-            let pen_only = *mode_rx_save.borrow();
-            if let Err(e) = config::FileConfig::update(|cfg| {
-                cfg.pen_only = pen_only;
-                Ok(())
-            }) {
-                warn!("Failed to persist mode: {}", e);
-            }
-        }
-    });
+    let mode_save_handle = tokio::spawn(persist_mode(mode_tx.subscribe()));
 
     // The daemon's only face on the desktop. It follows the same channels the
     // rest of the daemon does, so it cannot drift out of step with what is
@@ -1221,6 +1147,200 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     info!("uscreen daemon stopped");
     Ok(())
+}
+
+fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
+    // Refuse to start a second daemon on top of a live one: the PID file is
+    // a single slot, so `uscreen stop` only ever kills the most recently
+    // started process — any earlier instance still running would become
+    // permanently untracked, and both would keep writing/reading the same
+    // EVDI FIFO, corrupting frames and starving the encoder.
+    if let Ok(existing) = std::fs::read_to_string(pid_path) {
+        if let Ok(existing_pid) = existing.trim().parse::<i32>() {
+            let alive = config::daemon_is_running(existing_pid as u32);
+            if alive {
+                anyhow::bail!(
+                    "uscreen daemon already running (PID: {}). Run `uscreen stop` first.",
+                    existing_pid
+                );
+            }
+        }
+    }
+
+    // A daemon that lost its PID file (see remove_pid_file_if_ours) is still
+    // a daemon; two of them fight over the EVDI device and the FIFO.
+    let others = other_daemons();
+    if !others.is_empty() {
+        anyhow::bail!(
+            "uscreen daemon already running (PID {:?}, untracked). Run `uscreen stop` first.",
+            others
+        );
+    }
+
+    Ok(())
+}
+
+fn heal_config(file_cfg: &config::FileConfig) {
+    // `load()` clamps unusable values, but leaving the bad number on disk means
+    // the GUI keeps showing it and writes it straight back. Heal the file once,
+    // here, so every tool agrees on what the settings actually are.
+    let raw: Option<config::FileConfig> = std::fs::read_to_string(config::config_path())
+        .ok()
+        .and_then(|t| toml::from_str(&t).ok());
+    if raw.is_some_and(|r| &r != file_cfg) {
+        match config::FileConfig::update(|_| Ok(())) {
+            Ok(_) => info!(
+                "Rewrote out-of-range settings in {:?}",
+                config::config_path()
+            ),
+            Err(e) => warn!("Could not rewrite the config file: {}", e),
+        }
+    }
+}
+
+fn initial_pen_only(requested: bool, file_cfg: &config::FileConfig) -> bool {
+    let mut pen_only = requested || file_cfg.pen_only;
+    if pen_only && !file_cfg.input_pen {
+        warn!("Pen-only mode needs the pen device, but input_pen is off in config.toml — starting as a second screen");
+        pen_only = false;
+    }
+
+    pen_only
+}
+
+fn create_session_token(required: bool) -> Result<Option<String>> {
+    // One secret per daemon run. Handed to the app over adb when it is
+    // launched; anything connecting to the loopback ports without it gets
+    // nothing. See config::FileConfig::require_token.
+    let token: Option<String> = if required {
+        // Fail closed. Running without a token because the runtime dir was
+        // unwritable would quietly turn a required check into no check.
+        match runtime::new_session_token() {
+            Ok(t) => Some(t),
+            Err(e) => anyhow::bail!(
+                "require_token is on but no session token could be created: {}. \
+                 Fix the runtime directory, or set require_token = false.",
+                e
+            ),
+        }
+    } else {
+        warn!("require_token = false: any local process can read the screen and inject input");
+        None
+    };
+    Ok(token)
+}
+
+fn spawn_display_gate(
+    gate_tx: watch::Sender<bool>,
+    mut tablet_rx: watch::Receiver<bool>,
+    mut mode_rx: watch::Receiver<bool>,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut last = false;
+        loop {
+            let active = *tablet_rx.borrow() && !*mode_rx.borrow();
+            if active != last {
+                last = active;
+                let _ = gate_tx.send(active);
+            }
+            tokio::select! {
+                r = tablet_rx.changed() => if r.is_err() { break },
+                r = mode_rx.changed() => if r.is_err() { break },
+            }
+        }
+    })
+}
+
+async fn persist_settings(
+    mut settings_rx: watch::Receiver<capture::EncoderSettings>,
+    cli_overrides: CliOverrides,
+) {
+    let mut previous = settings_rx.borrow().clone();
+    while settings_rx.changed().await.is_ok() {
+        let s = settings_rx.borrow().clone();
+        let result = config::FileConfig::update(|cfg| {
+            cli_overrides.apply_encoder(cfg, &s, &previous);
+            cli_overrides.apply_geometry(cfg, &s, &previous);
+            Ok(())
+        });
+        previous = s;
+        if let Err(e) = result {
+            warn!("Failed to persist settings: {}", e);
+        } else {
+            info!("Settings saved to {:?}", config::config_path());
+        }
+    }
+}
+
+struct CliOverrides {
+    encoder: bool,
+    fps: bool,
+    bitrate: bool,
+    width: bool,
+    height: bool,
+    quality: bool,
+    stream_scale: bool,
+}
+
+impl CliOverrides {
+    fn new(cli: &Cli) -> Self {
+        Self {
+            encoder: cli.encoder.is_some(),
+            fps: cli.fps.is_some(),
+            bitrate: cli.bitrate.is_some(),
+            width: cli.width.is_some(),
+            height: cli.height.is_some(),
+            quality: cli.quality.is_some(),
+            stream_scale: cli.stream_scale.is_some(),
+        }
+    }
+    fn apply_encoder(
+        &self,
+        cfg: &mut config::FileConfig,
+        s: &capture::EncoderSettings,
+        previous: &capture::EncoderSettings,
+    ) {
+        if !self.encoder && s.encoder != previous.encoder {
+            cfg.encoder = s.encoder.clone();
+        }
+        if !self.fps && s.fps != previous.fps {
+            cfg.fps = s.fps;
+        }
+        if !self.bitrate && s.bitrate != previous.bitrate {
+            cfg.bitrate = s.bitrate;
+        }
+        if !self.quality && s.quality != previous.quality {
+            cfg.quality = s.quality;
+        }
+    }
+    fn apply_geometry(
+        &self,
+        cfg: &mut config::FileConfig,
+        s: &capture::EncoderSettings,
+        previous: &capture::EncoderSettings,
+    ) {
+        if !self.width && s.width != previous.width {
+            cfg.width = s.width;
+        }
+        if !self.height && s.height != previous.height {
+            cfg.height = s.height;
+        }
+        if !self.stream_scale && s.stream_scale != previous.stream_scale {
+            cfg.stream_scale = s.stream_scale;
+        }
+    }
+}
+
+async fn persist_mode(mut mode_rx: watch::Receiver<bool>) {
+    while mode_rx.changed().await.is_ok() {
+        let pen_only = *mode_rx.borrow();
+        if let Err(e) = config::FileConfig::update(|cfg| {
+            cfg.pen_only = pen_only;
+            Ok(())
+        }) {
+            warn!("Failed to persist mode: {}", e);
+        }
+    }
 }
 
 /// PIDs of every other `uscreen start` process of this user, found by
@@ -1437,7 +1557,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
         height_mm: cfg.height_mm,
         stream_scale: cfg.stream_scale,
     });
-    let (tablet_tx, mut tablet_rx) = watch::channel(false);
+    let (tablet_tx, tablet_rx) = watch::channel(false);
     let mut cap = capture::CaptureManager::new(cfg.clone());
     let card_rx = cap.card_rx();
     let codec_config = cap.codec_config_arc();
@@ -1473,25 +1593,15 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
 
     let (gate_tx, gate_rx) = watch::channel(false);
     let (stop_tx, stop_rx) = watch::channel(false);
-    let mut mode_rx = t.mode_tx.subscribe();
     let (video_tx, _) = broadcast::channel(8);
     let (stream_handle, input_handle) =
         start_servers(stream_srv, input_srv, video_tx.clone()).await?;
     let mut tasks = vec![stream_handle, input_handle];
-    tasks.push(tokio::spawn(async move {
-        let mut last = false;
-        loop {
-            let active = *tablet_rx.borrow() && !*mode_rx.borrow();
-            if active != last {
-                last = active;
-                let _ = gate_tx.send(active);
-            }
-            tokio::select! {
-                r = tablet_rx.changed() => if r.is_err() { break },
-                r = mode_rx.changed() => if r.is_err() { break },
-            }
-        }
-    }));
+    tasks.push(spawn_display_gate(
+        gate_tx,
+        tablet_rx,
+        t.mode_tx.subscribe(),
+    ));
     // Either the whole daemon stopping or this session being torn down
     // must wind the capture pipeline down cleanly.
     let mut daemon_stop = t.shutdown_rx.clone();
