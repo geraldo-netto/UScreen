@@ -41,8 +41,11 @@
 - `uscreen` — the daemon: adb monitor, per-tablet sessions, tray icon, config.
 - `evdi_helper` — one per tablet slot, owns one EVDI card.
 - `ffmpeg` — one per slot (unless built with the in-process encoder).
-- `uscreen-gui` — optional settings window, talks to the daemon through the
-  config file and the PID file.
+- `uscreen-gui` — optional settings window. Apply & Restart saves the config
+  file and restarts the daemon; the PID file supplies process status for
+  unmanaged launches. Encoder/display file edits take effect on daemon restart.
+  Tablet control messages update the running encoder directly. The Wi-Fi
+  reconnect address is a separate exception: each attempt reads it from disk.
 
 ## Protocol
 

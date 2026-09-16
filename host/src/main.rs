@@ -703,8 +703,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // the capture manager and the config writer all follow.
     let (mode_tx, _) = watch::channel(pen_only);
 
-    // Live-tunable settings (from the tablet app or by editing the config
-    // file). A change restarts the encoder on the fly.
+    // Tablet control messages update these settings and restart the encoder.
+    // config.toml is read at daemon startup; file edits require a daemon restart
+    // (the GUI's Apply & Restart does this). Wi-Fi reconnect reads its address
+    // from disk separately on each attempt.
     let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
         encoder: encoder.clone(),
         fps,
