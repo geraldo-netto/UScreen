@@ -311,3 +311,21 @@ fn t097_make_setup_creates_missing_configuration_directories() {
         .join("etc/udev/rules.d/60-uscreen-uinput.rules")
         .is_file());
 }
+
+fn release_tests(pattern: &str) {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_release.py"))
+        .args(["-k", pattern])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn t100_release_requires_matching_head_local_and_remote_tags() {
+    release_tests("t100");
+}

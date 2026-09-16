@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build and publish a GitHub release with the complete set of files.
 #
-# The set is checked before anything touches the network: a release with a
+# The set is checked before any release API writes: a release with a
 # file missing is exactly how the PKGBUILD got left out of 1.1.0, so this
 # script would rather fail than publish half a release.
 #
@@ -19,7 +19,21 @@ RELEASE_DATE="${RELEASE_DATE:-$(date +%F)}"
 NOTES="${1:-}"
 [ -n "$NOTES" ] && [ -f "$NOTES" ] || { echo "usage: $0 <release-notes.md>  (tag v$VERSION must exist on origin)"; exit 1; }
 
-git rev-parse "v$VERSION" >/dev/null 2>&1 || { echo "!! tag v$VERSION does not exist — create and push it first"; exit 1; }
+git rev-parse --verify "refs/tags/v$VERSION" >/dev/null 2>&1 || { echo "!! tag v$VERSION does not exist — create and push it first"; exit 1; }
+
+# Match the immutable tag object too: annotated tags must not be replaced even
+# when their peeled commit is unchanged. ls-remote does not mutate local refs.
+check_release_refs() {
+  local tag="refs/tags/v$VERSION" head commit local_tag remote_tag
+  head=$(git rev-parse HEAD)
+  commit=$(git rev-parse "$tag^{commit}")
+  [ "$head" = "$commit" ] || { echo "!! HEAD differs from $tag"; exit 1; }
+  local_tag=$(git rev-parse "$tag")
+  remote_tag=$(git ls-remote --exit-code --refs origin "$tag" | awk '{print $1}') \
+    || { echo "!! $tag missing or unreadable on origin"; exit 1; }
+  [ "$local_tag" = "$remote_tag" ] || { echo "!! local and origin $tag differ"; exit 1; }
+}
+check_release_refs
 
 # Every place that repeats the version has to agree with the Makefile before
 # anything is built, so the public page never advertises the previous release.
@@ -60,6 +74,8 @@ echo "All $(( ${#ASSETS[@]} )) files present."
     "uscreen-$VERSION-1.x86_64.rpm" "uscreen-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \
   && cp "uscreen-$VERSION/uscreen.apk" . && sha256sum uscreen.apk >> SHA256SUMS && rm uscreen.apk )
 ASSETS+=("dist/SHA256SUMS:text/plain")
+
+check_release_refs
 
 # The release title is what shows up in feeds and search results, so it says
 # what the project is rather than just the tag.
