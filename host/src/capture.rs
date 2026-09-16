@@ -98,7 +98,7 @@ const NAL_TYPE_SPS: u8 = 7;
 #[cfg(not(feature = "inproc-encoder"))]
 const NAL_TYPE_PPS: u8 = 8;
 
-/// One H.264 access unit, tagged so the stream server can drop frames
+/// One encoded access unit, tagged so the stream server can drop frames
 /// safely (resume only at an IDR).
 #[derive(Clone)]
 pub struct VideoPacket {
@@ -345,7 +345,7 @@ impl CaptureManager {
         Ok(())
     }
 
-    /// Enable the EVDI output and place it to the right of every other screen.
+    /// Enable the EVDI output at the configured edge of the existing desktop.
     ///
     /// The output is identified by the DRM connector names sysfs reports for
     /// EVDI cards, not by whether the name happens to contain "DVI": a real DVI
