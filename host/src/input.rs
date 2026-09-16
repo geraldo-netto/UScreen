@@ -932,44 +932,7 @@ async fn map_devices_using(
 
         let mut mapped = 0;
         for sysname in devices {
-            let Some(name) = kwin_device_property(&sysname, "name").await else {
-                continue;
-            };
-            if !ident.owns(&name) {
-                continue;
-            }
-            let ok = crate::kwin::set_property(
-                &format!("/org/kde/KWin/InputDevice/{}", sysname),
-                KWIN_INPUT_IFACE,
-                "outputName",
-                "s",
-                &output,
-            )
-            .await;
-            match ok {
-                true => {
-                    // A successful Set is not proof: KWin answers ok and then
-                    // keeps the old value when the output is not usable yet.
-                    // Only what reads back counts, so a lost mapping is
-                    // retried on the next pass instead of logged as done.
-                    match kwin_device_property(&sysname, "outputName").await {
-                        Some(now) if now == output => {
-                            info!("Mapped '{}' ({}) to output {}", name, sysname, output);
-                            mapped += 1;
-                        }
-                        now => warn!(
-                            "Mapping '{}' to {} did not take (KWin reports {:?}) — retrying",
-                            name,
-                            output,
-                            now.unwrap_or_default()
-                        ),
-                    }
-                }
-                false => warn!(
-                    "Could not map '{}': KWin refused the outputName property",
-                    name
-                ),
-            }
+            mapped += usize::from(map_kwin_device(&sysname, ident, &output).await);
         }
 
         if mapped >= expected {
@@ -978,6 +941,48 @@ async fn map_devices_using(
     }
 
     warn!("Input devices did not appear in KWin within 5s — mapping skipped");
+}
+
+async fn map_kwin_device(sysname: &str, ident: &DeviceIdentity, output: &str) -> bool {
+    let Some(name) = kwin_device_property(sysname, "name").await else {
+        return false;
+    };
+    if !ident.owns(&name) {
+        return false;
+    }
+    let ok = crate::kwin::set_property(
+        &format!("/org/kde/KWin/InputDevice/{}", sysname),
+        KWIN_INPUT_IFACE,
+        "outputName",
+        "s",
+        output,
+    )
+    .await;
+    match ok {
+        true => {
+            // A successful Set is not proof: KWin answers ok and then
+            // keeps the old value when the output is not usable yet.
+            // Only what reads back counts, so a lost mapping is
+            // retried on the next pass instead of logged as done.
+            match kwin_device_property(sysname, "outputName").await {
+                Some(now) if now == output => {
+                    info!("Mapped '{}' ({}) to output {}", name, sysname, output);
+                    return true;
+                }
+                now => warn!(
+                    "Mapping '{}' to {} did not take (KWin reports {:?}) — retrying",
+                    name,
+                    output,
+                    now.unwrap_or_default()
+                ),
+            }
+        }
+        false => warn!(
+            "Could not map '{}': KWin refused the outputName property",
+            name
+        ),
+    }
+    false
 }
 
 fn x11_connector_matches(output: &str, connector: &str) -> bool {
