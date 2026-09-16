@@ -343,7 +343,14 @@ impl FileConfig {
 
     fn update_at(path: &Path, edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
         let _lock = Self::lock_at(path)?;
-        let mut config = Self::load_at(path);
+        // A partial edit must never replace unreadable preferences with defaults.
+        // Only a genuinely absent file starts a new configuration.
+        let mut config: Self = match std::fs::read_to_string(path) {
+            Ok(text) => toml::from_str(&text).context("parse config before update")?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Self::default(),
+            Err(error) => return Err(error).context("read config before update"),
+        };
+        config.sanitize();
         edit(&mut config)?;
         config.sanitize();
         config.write_at(path)?;
@@ -397,6 +404,40 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t137_partial_updates_preserve_invalid_existing_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        let original = "encoder = 'libx264'\nbitrate = broken\n";
+        std::fs::write(&path, original).unwrap();
+        let result = FileConfig::update_at(&path, |config| {
+            config.fps = 30;
+            Ok(())
+        });
+        assert!(result.is_err(), "invalid config must reject partial edits");
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), original);
+
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        let mut edited = false;
+        assert!(FileConfig::update_at(&path, |_| {
+            edited = true;
+            Ok(())
+        })
+        .is_err());
+        assert!(!edited, "read failure must be detected before editing");
+        assert!(path.is_dir());
+
+        std::fs::remove_dir(&path).unwrap();
+        let initialized = FileConfig::update_at(&path, |config| {
+            config.fps = 30;
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(initialized.fps, 30);
+        assert_eq!(FileConfig::load_at(&path).fps, 30);
+    }
 
     #[test]
     fn t093_all_slot_ports_are_unique_nonzero_and_representable() {
