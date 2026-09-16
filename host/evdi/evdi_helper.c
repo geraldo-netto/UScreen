@@ -892,6 +892,111 @@ static void *writer_thread(void *arg) {
     return NULL;
 }
 
+static long capture_period_ms(void) {
+    long request_period_ms = 1000 / (g_fps > 0 ? g_fps : 60);
+    if (request_period_ms < 1) request_period_ms = 1;
+    return request_period_ms;
+}
+
+static int capture_poll_timeout(long request_period_ms) {
+    /* Sleep exactly until the next capture request is due instead of a
+       fixed 4ms tick. The fixed tick quantised every request to a 4ms grid,
+       adding up to 4ms of jitter per frame — a quarter of the entire budget
+       at 60fps, and half of it at 120.
+       With no mode there is nothing to request, and the deadline below
+       would sit permanently in the past — poll would return instantly and
+       the loop would spin at 100% of a core. Wait on events only. */
+    int timeout_ms;
+    if (!g_have_mode) {
+        timeout_ms = 100;
+    } else if (g_update_pending) {
+        /* Waiting for update_ready. The capture deadline below has already
+           passed and cannot advance until the request completes, so
+           deriving a timeout from it yields 0 forever and poll returns
+           instantly — the loop then burns a whole core. This is not a
+           rare state: disabling the virtual output leaves a mode set with
+           nothing rendering to it, which is exactly what happens when the
+           tablet is unplugged or switched to pen-only.
+           Sleep until the watchdog is due instead. update_ready wakes poll
+           the moment it arrives, so nothing is delayed when the
+           compositor is actually running. */
+        long long left = g_last_request_ms + 250 - now_ms();
+        timeout_ms = left < 0 ? 0 : (left > 250 ? 250 : (int)left);
+    } else {
+        long long due = g_last_request_ms + request_period_ms;
+        timeout_ms = (int)(due - now_ms());
+        if (timeout_ms < 0) timeout_ms = 0;
+        if (timeout_ms > 4) timeout_ms = 4;   /* stay responsive to events */
+    }
+
+    return timeout_ms;
+}
+
+static void request_capture_if_due(evdi_handle handle, long long now, long request_period_ms) {
+    /* Core capture cycle: request a fresh frame from the compositor at
+       the target fps. If the kernel says pixels are ready right away,
+       grab immediately; otherwise update_ready will fire and grab. */
+    if (!g_update_pending && (now - g_last_request_ms) >= request_period_ms) {
+        g_last_request_ms = now;
+        g_req_us = now_us();
+        if (evdi_request_update(handle, 0)) {
+            g_immediate_n++;
+            grab_now();
+        } else {
+            g_update_pending = 1;
+        }
+    }
+
+}
+
+static void recover_capture_if_stalled(long long now, long long *last_fallback_grab_ms) {
+    /* Watchdog: if a request got lost (compositor hiccup), don't stay
+       stuck waiting for update_ready forever. */
+    if (g_update_pending && (now - g_last_request_ms) > 250) {
+        g_update_pending = 0;
+        grab_now();
+    }
+
+    /* Fallback grab once a second in case no events flow at all */
+    if ((now - (*last_fallback_grab_ms)) >= 1000) {
+        (*last_fallback_grab_ms) = now;
+        if (!g_update_pending)
+            grab_now();
+    }
+
+}
+
+static void report_capture_stats(long long now, long long *last_stats_ms, long long *stats_grab_base) {
+    double elapsed = (now - (*last_stats_ms)) / 1000.0;
+    long long grabs = g_grab_count - (*stats_grab_base);
+    fprintf(stderr, "[evdi-helper] %.1f grabs/s (total %lld), mode:%d dpms:%d pending:%d\n",
+            elapsed > 0 ? grabs / elapsed : 0,
+            g_grab_count, g_have_mode, g_dpms_on, g_update_pending);
+    fprintf(stderr, "[evdi-helper] cycle: request→ready avg %.1fms (%d waited, %d immediate), grab avg %.1fms (%d, %d empty)\n",
+            g_wait_n ? g_wait_sum_us / 1000.0 / g_wait_n : 0.0, g_wait_n, g_immediate_n,
+            g_grab_n ? g_grab_sum_us / 1000.0 / g_grab_n : 0.0, g_grab_n, g_empty_n);
+    g_wait_sum_us = 0; g_wait_n = 0; g_grab_sum_us = 0; g_grab_n = 0;
+    g_immediate_n = 0; g_empty_n = 0;
+
+    /* Capture-side latency: grab → convert → into the encoder's FIFO. */
+    pthread_mutex_lock(&g_swap_mutex);
+    int n = g_lat_count;
+    int snapshot[LAT_SAMPLES];
+    if (n > 0) memcpy(snapshot, g_lat_us, (size_t)n * sizeof(int));
+    g_lat_count = 0;
+    pthread_mutex_unlock(&g_swap_mutex);
+    if (n > 0) {
+        qsort(snapshot, (size_t)n, sizeof(int), cmp_int);
+        fprintf(stderr,
+                "[evdi-helper] capture→fifo p50 %.1fms p95 %.1fms (%d frames)\n",
+                snapshot[n / 2] / 1000.0,
+                snapshot[(int)((n - 1) * 0.95)] / 1000.0, n);
+    }
+
+    (*stats_grab_base) = g_grab_count;
+    (*last_stats_ms) = now;
+}
+
 static void run_event_loop(evdi_handle handle) {
     struct evdi_event_context evtctx = {
         .dpms_handler = on_dpms,
@@ -911,39 +1016,10 @@ static void run_event_loop(evdi_handle handle) {
     long long last_fallback_grab_ms = 0;
     if (getenv("USCREEN_NO_PIPELINE")) g_pipeline = 0;
     long long stats_grab_base = 0;
-    long request_period_ms = 1000 / (g_fps > 0 ? g_fps : 60);
-    if (request_period_ms < 1) request_period_ms = 1;
+    long request_period_ms = capture_period_ms();
 
     while (g_running) {
-        /* Sleep exactly until the next capture request is due instead of a
-           fixed 4ms tick. The fixed tick quantised every request to a 4ms grid,
-           adding up to 4ms of jitter per frame — a quarter of the entire budget
-           at 60fps, and half of it at 120.
-           With no mode there is nothing to request, and the deadline below
-           would sit permanently in the past — poll would return instantly and
-           the loop would spin at 100% of a core. Wait on events only. */
-        int timeout_ms;
-        if (!g_have_mode) {
-            timeout_ms = 100;
-        } else if (g_update_pending) {
-            /* Waiting for update_ready. The capture deadline below has already
-               passed and cannot advance until the request completes, so
-               deriving a timeout from it yields 0 forever and poll returns
-               instantly — the loop then burns a whole core. This is not a
-               rare state: disabling the virtual output leaves a mode set with
-               nothing rendering to it, which is exactly what happens when the
-               tablet is unplugged or switched to pen-only.
-               Sleep until the watchdog is due instead. update_ready wakes poll
-               the moment it arrives, so nothing is delayed when the
-               compositor is actually running. */
-            long long left = g_last_request_ms + 250 - now_ms();
-            timeout_ms = left < 0 ? 0 : (left > 250 ? 250 : (int)left);
-        } else {
-            long long due = g_last_request_ms + request_period_ms;
-            timeout_ms = (int)(due - now_ms());
-            if (timeout_ms < 0) timeout_ms = 0;
-            if (timeout_ms > 4) timeout_ms = 4;   /* stay responsive to events */
-        }
+        int timeout_ms = capture_poll_timeout(request_period_ms);
 
         int ret = poll(fds, 1, timeout_ms);
         if (ret < 0) {
@@ -962,63 +1038,12 @@ static void run_event_loop(evdi_handle handle) {
 
         long long now = now_ms();
 
-        /* Core capture cycle: request a fresh frame from the compositor at
-           the target fps. If the kernel says pixels are ready right away,
-           grab immediately; otherwise update_ready will fire and grab. */
-        if (!g_update_pending && (now - g_last_request_ms) >= request_period_ms) {
-            g_last_request_ms = now;
-            g_req_us = now_us();
-            if (evdi_request_update(handle, 0)) {
-                g_immediate_n++;
-                grab_now();
-            } else {
-                g_update_pending = 1;
-            }
-        }
+        request_capture_if_due(handle, now, request_period_ms);
 
-        /* Watchdog: if a request got lost (compositor hiccup), don't stay
-           stuck waiting for update_ready forever. */
-        if (g_update_pending && (now - g_last_request_ms) > 250) {
-            g_update_pending = 0;
-            grab_now();
-        }
-
-        /* Fallback grab once a second in case no events flow at all */
-        if ((now - last_fallback_grab_ms) >= 1000) {
-            last_fallback_grab_ms = now;
-            if (!g_update_pending)
-                grab_now();
-        }
+        recover_capture_if_stalled(now, &last_fallback_grab_ms);
 
         if (now - last_stats_ms >= 5000) {
-            double elapsed = (now - last_stats_ms) / 1000.0;
-            long long grabs = g_grab_count - stats_grab_base;
-            fprintf(stderr, "[evdi-helper] %.1f grabs/s (total %lld), mode:%d dpms:%d pending:%d\n",
-                    elapsed > 0 ? grabs / elapsed : 0,
-                    g_grab_count, g_have_mode, g_dpms_on, g_update_pending);
-            fprintf(stderr, "[evdi-helper] cycle: request→ready avg %.1fms (%d waited, %d immediate), grab avg %.1fms (%d, %d empty)\n",
-                    g_wait_n ? g_wait_sum_us / 1000.0 / g_wait_n : 0.0, g_wait_n, g_immediate_n,
-                    g_grab_n ? g_grab_sum_us / 1000.0 / g_grab_n : 0.0, g_grab_n, g_empty_n);
-            g_wait_sum_us = 0; g_wait_n = 0; g_grab_sum_us = 0; g_grab_n = 0;
-            g_immediate_n = 0; g_empty_n = 0;
-
-            /* Capture-side latency: grab → convert → into the encoder's FIFO. */
-            pthread_mutex_lock(&g_swap_mutex);
-            int n = g_lat_count;
-            int snapshot[LAT_SAMPLES];
-            if (n > 0) memcpy(snapshot, g_lat_us, (size_t)n * sizeof(int));
-            g_lat_count = 0;
-            pthread_mutex_unlock(&g_swap_mutex);
-            if (n > 0) {
-                qsort(snapshot, (size_t)n, sizeof(int), cmp_int);
-                fprintf(stderr,
-                        "[evdi-helper] capture→fifo p50 %.1fms p95 %.1fms (%d frames)\n",
-                        snapshot[n / 2] / 1000.0,
-                        snapshot[(int)((n - 1) * 0.95)] / 1000.0, n);
-            }
-
-            stats_grab_base = g_grab_count;
-            last_stats_ms = now;
+            report_capture_stats(now, &last_stats_ms, &stats_grab_base);
         }
     }
 }
