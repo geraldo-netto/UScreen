@@ -63,6 +63,9 @@ scripts/           install.sh, release build, fake tablet
 docs/              this documentation and the GitHub Pages site
 ```
 
+Design notes for a Windows host, nothing implemented, are in
+[windows-port.md](windows-port.md).
+
 ## Command line
 
 ```

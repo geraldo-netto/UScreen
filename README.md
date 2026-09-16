@@ -140,6 +140,10 @@ Everything lives in `~/.config/uscreen/config.toml` and is reachable from
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a
   ~6 ms lower decode time at the cost of softer text.
 - **Several tablets** — `max_tablets` up to 4, each its own screen.
+- **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
+  virtual devices the desktop sees while a tablet is attached. All on by
+  default; turn off what you do not use (on Cinnamon/GNOME under X11 a
+  touchscreen device can hide the mouse cursor).
 - **Wi-Fi** — `uscreen wifi` once, with the cable in: it switches the tablet
   over, remembers the address and reconnects to it by itself whenever the
   cable is out. `uscreen wifi --off` undoes it. The daemon prefers the cable

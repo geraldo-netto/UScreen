@@ -3,6 +3,24 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
+## Unreleased
+
+- The virtual input devices (touchscreen, pen tablet, parking pointer) now
+  exist only while a tablet is attached. They used to be created for the
+  daemon's whole lifetime, tablet or not, and merely having a touchscreen
+  device present changes desktop behaviour — on Cinnamon (X11) the mouse
+  cursor went missing. KDE's on-screen keyboard is likewise only suppressed
+  while a touch device exists.
+- Each device can be switched off: `input_touch`, `input_pen`,
+  `input_pointer` in config.toml, with checkboxes in the settings panel. All
+  on by default, so nothing changes on upgrade. The pointer follows the pen.
+  Graphics-tablet mode is refused while the pen device is off, instead of
+  leaving the tablet blank. `uscreen doctor` reports which devices are on.
+- `scripts/map-input-x11.sh` maps the devices onto the virtual output on X11
+  desktops, where the daemon cannot do it through KWin.
+- Fix: the settings panel no longer erases the Wi-Fi address remembered by
+  `uscreen wifi` when it saves.
+
 ## 1.2.3 — 2026-09-15
 
 - Fix: the virtual monitor no longer exists while no tablet is attached. The

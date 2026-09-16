@@ -24,7 +24,9 @@ Requirements that follow from the design:
 - **Other desktops** (GNOME, Sway, X11): the virtual display and the stream
   work wherever EVDI does, but output placement and input mapping are not
   automated — assign the "UScreen Pen"/"UScreen Touch" devices to the UScreen
-  output in your desktop's settings. Reports welcome.
+  output in your desktop's settings. On X11 `scripts/map-input-x11.sh` does it
+  with `xinput` (see [troubleshooting](troubleshooting.md#touch-or-pen-land-on-the-wrong-screen)).
+  Reports welcome.
 - **NVIDIA** uses NVENC; **AMD/Intel** use VAAPI (`h264_vaapi`); anything can
   fall back to `libx264` on the CPU.
 - The evdi kernel module must be available: in the image (Bazzite, Nobara),

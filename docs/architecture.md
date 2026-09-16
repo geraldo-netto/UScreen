@@ -23,7 +23,8 @@
    device offers it.
 6. **Input.** Touch and pen events go back over a WebSocket on a second port
    and are injected through three uinput devices (touchscreen, pen tablet with
-   pressure/tilt/eraser/button, absolute pointer). On KDE the daemon maps
+   pressure/tilt/eraser/button, absolute pointer), created while a tablet is
+   attached and removed when it goes. On KDE the daemon maps
    these devices onto the virtual output over KWin's D-Bus interface so
    coordinates land on the right screen.
 7. **Latency loop.** Every frame carries a sequence number; the app echoes it

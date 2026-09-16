@@ -55,6 +55,27 @@ the daemon with the tablet attached. On non-KDE desktops mapping is not done;
 use your desktop's tablet settings to assign "UScreen Pen" to the UScreen
 output.
 
+On **X11** (Cinnamon, XFCE, MATE, GNOME on Xorg) there is usually no such
+settings page, but `xinput` can do it. With the tablet connected as a screen:
+
+```sh
+scripts/map-input-x11.sh              # finds the EVDI output (DVI-I-*) itself
+scripts/map-input-x11.sh DVI-I-1-1    # or name the output from `xrandr --query`
+```
+
+It runs `xinput map-to-output` for every "UScreen Touch/Pen/Pointer" device.
+The devices exist only while a tablet is attached and X11 forgets the mapping
+when they go away, so run it again after the tablet reconnects or the daemon
+restarts.
+
+If `xrandr` shows no `DVI-I-*` output at all while the tablet is streaming,
+Xorg has not linked the evdi GPU provider yet:
+
+```sh
+xrandr --listproviders
+xrandr --setprovideroutputsource <evdi provider index> 0
+```
+
 ## The on-screen keyboard pops up
 
 The daemon turns KDE's virtual keyboard off while it runs and restores the
