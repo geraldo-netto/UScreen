@@ -254,8 +254,8 @@ async fn check_encoder_availability(r: &mut Report, cfg: &FileConfig) {
     }
 }
 
-/// The check that matters most: more than one helper or encoder means several
-/// processes are writing/reading the same FIFO and every frame is corrupt.
+/// Check daemon ownership and per-slot process counts. Each tablet slot has its
+/// own FIFO; duplicate encoders on one FIFO corrupt its frames.
 async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     let daemons = pids_exact("uscreen").await;
     let helpers = pids_exact("evdi_helper").await;
@@ -642,7 +642,7 @@ fn report_display_outputs(
             .unwrap_or(false);
         if !enabled {
             r.line(Level::Warn, "KDE output", &format!("{} is disabled", name));
-            r.hint("the daemon enables it on start; nothing is rendered while it is off");
+            r.hint("the daemon enables it while an attached tablet uses it as a screen; nothing is rendered while it is off");
             continue;
         }
         let w = out
