@@ -46,6 +46,25 @@ install_debian_deps
         self.assertIn('ffmpeg android-tools-adb libevdi1', output)
         self.assertIn('apt-get install -y evdi-dkms', output)
 
+    def test_t216_system_setup_keeps_boot_configuration_and_live_fallback(self):
+        output = self.run_installer(r'''
+sudo() {
+    printf 'sudo %s\n' "$*" >&3
+    if [ "$1" = tee ]; then command cat >&3; fi
+}
+lsmod() { echo 'evdi 123 0'; }
+cat() {
+    if [ "$1" = /sys/devices/evdi/count ]; then echo 0;
+    else command cat "$@"; fi
+}
+system_setup 3>&1 2>&1
+''')
+        for expected in ['mkdir -p /etc/modprobe.d /etc/modules-load.d',
+                         'options evdi initial_device_count=2', 'evdi\nuinput',
+                         'sudo modprobe uinput', 'sudo modprobe -r evdi', 'sudo modprobe evdi',
+                         'sudo tee /sys/devices/evdi/add', 'No EVDI device could be created']:
+            self.assertIn(expected, output)
+
 
 if __name__ == '__main__':
     unittest.main()

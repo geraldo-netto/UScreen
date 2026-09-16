@@ -214,8 +214,7 @@ install_files() {
     install_user_service
 }
 
-system_setup() {
-    info "System setup (needs sudo): EVDI device at every boot"
+configure_boot_modules() {
     # Neither directory is guaranteed to exist on a minimal install, and with
     # set -e a missing one used to kill the whole script here, silently, with
     # the binaries already copied and the udev rule not yet installed.
@@ -224,6 +223,9 @@ system_setup() {
         || warn "Could not write /etc/modprobe.d/uscreen-evdi.conf"
     printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf >/dev/null \
         || warn "Could not write /etc/modules-load.d/uscreen.conf"
+}
+
+configure_uinput() {
     sudo modprobe uinput 2>/dev/null || true
     # /dev/uinput is root-only on a stock system. Bazzite ships a rule that
     # opens it to the seat user; everyone else needs this one.
@@ -236,7 +238,9 @@ system_setup() {
             warn "packaging/60-uscreen-uinput.rules not found — /dev/uinput may stay root-only"
         fi
     fi
+}
 
+activate_evdi() {
     # initial_device_count is only read when the module loads, so writing the
     # modprobe.d file does nothing to a module that is already resident. That
     # is the usual state after installing evdi-dkms by hand, and it is why the
@@ -260,6 +264,13 @@ system_setup() {
     else
         info "EVDI device ready (count=$(cat /sys/devices/evdi/count))"
     fi
+}
+
+system_setup() {
+    info "System setup (needs sudo): EVDI device at every boot"
+    configure_boot_modules
+    configure_uinput
+    activate_evdi
 }
 
 main() {
