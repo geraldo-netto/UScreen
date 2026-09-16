@@ -5,6 +5,8 @@ VERSION = 1.2.3
 CARGO = cargo
 CC = gcc
 ADB = adb
+# Release bundles pin the same libevdi as the portable build. Override its path when needed.
+LIBEVDI ?= $(shell $(CC) -print-file-name=libevdi.so.1.15.0)
 BIN_DIR = ${HOME}/.local/bin
 DATA_DIR = ${HOME}/.local/share/uscreen
 
@@ -12,7 +14,7 @@ all: build
 
 # Generic -O3 (no -march=native): release binaries must run on any x86-64 CPU
 build-helper:
-	$(CC) -O3 -o host/evdi/evdi_helper host/evdi/evdi_helper.c -levdi -lpthread -Ihost/evdi
+	$(CC) -O3 -o host/evdi/evdi_helper host/evdi/evdi_helper.c -levdi -lpthread -Ihost/evdi -Wl,-rpath,'$$ORIGIN'
 	@echo "✓ EVDI helper: host/evdi/evdi_helper"
 
 build: build-helper
@@ -111,13 +113,16 @@ dist:
 
 dist-local: build
 	rm -rf dist/uscreen-$(VERSION)
+	rm -f dist/uscreen-$(VERSION)-linux-x86_64.tar.gz
 	mkdir -p dist/uscreen-$(VERSION)/bin dist/uscreen-$(VERSION)/scripts dist/uscreen-$(VERSION)/packaging
 	cp target/release/uscreen target/release/uscreen-gui host/evdi/evdi_helper dist/uscreen-$(VERSION)/bin/
+	cp -L "$(LIBEVDI)" dist/uscreen-$(VERSION)/bin/libevdi.so.1.15.0
+	ln -sf libevdi.so.1.15.0 dist/uscreen-$(VERSION)/bin/libevdi.so.1
 	cp scripts/install.sh scripts/uscreen.desktop scripts/uscreen.service dist/uscreen-$(VERSION)/scripts/
 	cp packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules dist/uscreen-$(VERSION)/packaging/
 	mkdir -p dist/uscreen-$(VERSION)/packaging/icons && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg dist/uscreen-$(VERSION)/packaging/icons/
 	cp README.md dist/uscreen-$(VERSION)/
-	cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk ../dist/uscreen-$(VERSION)/uscreen.apk 2>/dev/null || true
+	cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk ../dist/uscreen-$(VERSION)/uscreen.apk
 	tar -C dist -czf dist/uscreen-$(VERSION)-linux-x86_64.tar.gz uscreen-$(VERSION)
 	@echo "✓ Release: dist/uscreen-$(VERSION)-linux-x86_64.tar.gz"
 

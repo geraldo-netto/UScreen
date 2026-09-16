@@ -352,3 +352,16 @@ fn t101_package_failures_cannot_reuse_old_assets() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t102_local_distribution_requires_apk_and_bundled_library() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_distribution.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
