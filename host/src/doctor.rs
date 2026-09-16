@@ -501,9 +501,7 @@ async fn check_tablet_session(
 }
 
 fn report_codec(r: &mut Report, cfg: &FileConfig, out: Option<&str>) {
-    let report = out
-        .and_then(|text| text.split_once("USCREEN_CODECS_V1:").map(|(_, tail)| tail))
-        .map(|tail| tail.split(['"', '\r', '\n']).next().unwrap_or("").trim());
+    let report = codec_inventory_text(out);
     let entries: Vec<_> = report.unwrap_or("").split(',').collect();
     let valid = entries.iter().all(|entry| {
         matches!(
@@ -532,31 +530,44 @@ fn report_codec(r: &mut Report, cfg: &FileConfig, out: Option<&str>) {
             "HEVC Main10 not reported; 10-bit host stream is unsupported by this inventory",
         );
     } else {
-        let usable: Vec<_> = entries
-            .iter()
-            .copied()
-            .filter(|entry| !hevc || !cfg.ten_bit || entry.ends_with("10"))
-            .collect();
-        if usable.iter().any(|entry| entry.starts_with("hw")) {
-            let detail = if usable.contains(&"hw10") {
-                "hardware HEVC Main10 reported by Android"
-            } else {
-                "hardware HEVC reported by Android (8-bit)"
-            };
-            r.line(Level::Ok, "tablet codec", detail);
-        } else if usable.iter().any(|entry| entry.starts_with("unknown")) {
-            r.line(
-                Level::Warn,
-                "tablet codec",
-                "HEVC decoder reported; acceleration unknown",
-            );
+        report_usable_decoders(r, cfg, &entries);
+    }
+}
+
+fn codec_inventory_text(out: Option<&str>) -> Option<&str> {
+    out.and_then(|text| text.split_once("USCREEN_CODECS_V1:").map(|(_, tail)| tail))
+        .map(|tail| tail.split(['"', '\r', '\n']).next().unwrap_or("").trim())
+}
+
+fn decoder_matches_stream(entry: &str, cfg: &FileConfig) -> bool {
+    !cfg.encoder.contains("hevc") || !cfg.ten_bit || entry.ends_with("10")
+}
+
+fn report_usable_decoders(r: &mut Report, cfg: &FileConfig, entries: &[&str]) {
+    let usable: Vec<_> = entries
+        .iter()
+        .copied()
+        .filter(|entry| decoder_matches_stream(entry, cfg))
+        .collect();
+    if usable.iter().any(|entry| entry.starts_with("hw")) {
+        let detail = if usable.contains(&"hw10") {
+            "hardware HEVC Main10 reported by Android"
         } else {
-            r.line(
-                Level::Warn,
-                "tablet codec",
-                "HEVC software decoder only; real-time performance is not guaranteed",
-            );
-        }
+            "hardware HEVC reported by Android (8-bit)"
+        };
+        r.line(Level::Ok, "tablet codec", detail);
+    } else if usable.iter().any(|entry| entry.starts_with("unknown")) {
+        r.line(
+            Level::Warn,
+            "tablet codec",
+            "HEVC decoder reported; acceleration unknown",
+        );
+    } else {
+        r.line(
+            Level::Warn,
+            "tablet codec",
+            "HEVC software decoder only; real-time performance is not guaranteed",
+        );
     }
 }
 
