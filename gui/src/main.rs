@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use uscreen_config::commands::SyncCommandExt;
 use uscreen_config::*;
 
 /// Whether the systemd user service is enabled, i.e. whether plugging the
@@ -12,7 +13,7 @@ use uscreen_config::*;
 fn autostart_enabled() -> bool {
     Command::new("systemctl")
         .args(["--user", "is-enabled", "uscreen.service"])
-        .output()
+        .output_bounded()
         .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "enabled")
         .unwrap_or(false)
 }
@@ -21,7 +22,7 @@ fn set_autostart(on: bool) -> Result<(), String> {
     let verb = if on { "enable" } else { "disable" };
     let out = Command::new("systemctl")
         .args(["--user", verb, "--now", "uscreen.service"])
-        .output()
+        .output_bounded()
         .map_err(|e| format!("systemctl failed: {}", e))?;
     if out.status.success() {
         Ok(())
@@ -83,7 +84,7 @@ fn find_uscreen_bin_in(
 fn command_exists(name: &str) -> bool {
     Command::new("which")
         .arg(name)
-        .output()
+        .output_bounded()
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
@@ -116,7 +117,7 @@ fn poll_status() -> Status {
     // Not `adb get-state`: it fails outright as soon as two devices are
     // reachable, which is the normal state with `adb tcpip` in use - the
     // window would have said "no tablet" while the daemon was streaming.
-    if let Ok(out) = Command::new("adb").args(["devices", "-l"]).output() {
+    if let Ok(out) = Command::new("adb").args(["devices", "-l"]).output_bounded() {
         let text = String::from_utf8_lossy(&out.stdout);
         let ready: Vec<&str> = text
             .lines()
@@ -160,7 +161,7 @@ fn run_system_setup() -> Result<(), String> {
     let script = system_setup_script(std::path::Path::new("/"));
     let out = Command::new("pkexec")
         .args(["sh", "-c", &script])
-        .output()
+        .output_timeout(Duration::from_secs(120))
         .map_err(|e| format!("pkexec failed to run: {}", e))?;
     if out.status.success() {
         Ok(())
@@ -187,8 +188,8 @@ fn daemon_command(bin: &std::path::Path, action: &str, managed: bool) -> Command
 fn service_managed() -> bool {
     if Command::new("systemctl")
         .args(["--user", "is-active", "--quiet", "uscreen.service"])
-        .status()
-        .is_ok_and(|status| status.success())
+        .output_bounded()
+        .is_ok_and(|output| output.status.success())
     {
         return true;
     }
@@ -208,7 +209,7 @@ fn service_managed() -> bool {
             "--value",
             "uscreen.service",
         ])
-        .output()
+        .output_bounded()
         .is_ok_and(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "loaded")
 }
 
@@ -219,7 +220,7 @@ fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
         find_uscreen_bin().ok_or("uscreen binary not found")?
     };
     let output = daemon_command(&bin, action, managed)
-        .output()
+        .output_bounded()
         .map_err(|e| e.to_string())?;
     if output.status.success() {
         Ok(())
@@ -273,6 +274,16 @@ fn stop_daemon() -> Result<(), String> {
     run_daemon_command("stop", service_managed())
 }
 
+fn dispatch_action(
+    action: impl FnOnce() -> String + Send + 'static,
+) -> std::sync::mpsc::Receiver<String> {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = sender.send(action());
+    });
+    receiver
+}
+
 struct App {
     cfg: FileConfig,
     saved_cfg: FileConfig,
@@ -281,6 +292,7 @@ struct App {
     /// Newer release, if the check made when the window opened found one.
     update: Arc<Mutex<Option<String>>>,
     tab: Tab,
+    action: Option<std::sync::mpsc::Receiver<String>>,
 }
 
 /// The settings are more than fit in one column, so they are grouped.
@@ -353,7 +365,7 @@ fn check_for_update() -> Option<String> {
             concat!("User-Agent: uscreen-gui/", env!("CARGO_PKG_VERSION")),
             RELEASES_API,
         ])
-        .output()
+        .output_bounded()
         .ok()?;
     if !out.status.success() {
         return None;
@@ -403,20 +415,32 @@ impl App {
             message: String::new(),
             update,
             tab: Tab::Video,
+            action: None,
+        }
+    }
+
+    fn run_action(&mut self, action: impl FnOnce() -> String + Send + 'static) {
+        if self.action.is_none() {
+            self.message = "Working…".into();
+            self.action = Some(dispatch_action(action));
         }
     }
 
     fn apply(&mut self, restart: bool) {
+        if self.action.is_some() {
+            return;
+        }
         match self.cfg.save_edits(&self.saved_cfg) {
             Ok(merged) => {
                 self.cfg = merged.clone();
                 self.saved_cfg = merged;
                 self.message = "Settings saved".into();
                 if restart {
-                    match restart_daemon() {
-                        Ok(_) => self.message = "Settings saved — daemon restarted".into(),
-                        Err(e) => self.message = e,
-                    }
+                    self.run_action(|| {
+                        restart_daemon()
+                            .map(|_| "Settings saved — daemon restarted".into())
+                            .unwrap_or_else(|e| e)
+                    });
                 }
             }
             Err(e) => self.message = format!("Save failed: {}", e),
@@ -465,6 +489,19 @@ fn status_dot(ui: &mut egui::Ui, on: bool, label: &str, detail: &str) {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint_after(Duration::from_secs(1));
+        if let Some(receiver) = &self.action {
+            match receiver.try_recv() {
+                Ok(message) => {
+                    self.message = message;
+                    self.action = None;
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    self.message = "Action failed".into();
+                    self.action = None;
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {}
+            }
+        }
         let status = self.status.lock().map(|s| s.clone()).unwrap_or_default();
 
         // Keep one shared action row below every tab, visible while settings scroll.
@@ -565,10 +602,7 @@ impl eframe::App for App {
                                 });
                                 if ui.button("Set up display and input (asks for password)").clicked()
                                 {
-                                    match run_system_setup() {
-                                        Ok(_) => self.message = "System setup complete".into(),
-                                        Err(e) => self.message = e,
-                                    }
+                                    self.run_action(|| run_system_setup().map(|_| "System setup complete".into()).unwrap_or_else(|e| e));
                                 }
                             }
                         });
@@ -619,19 +653,13 @@ impl eframe::App for App {
                             .add_sized(big, egui::Button::new(egui::RichText::new("Stop").size(16.0)))
                             .clicked()
                         {
-                            match stop_daemon() {
-                                Ok(_) => self.message = "Daemon stopped".into(),
-                                Err(e) => self.message = e,
-                            }
+                            self.run_action(|| stop_daemon().map(|_| "Daemon stopped".into()).unwrap_or_else(|e| e));
                         }
                     } else if ui
                         .add_sized(big, egui::Button::new(egui::RichText::new("Start").size(16.0)))
                         .clicked()
                     {
-                        match start_daemon() {
-                            Ok(_) => self.message = "Daemon starting…".into(),
-                            Err(e) => self.message = e,
-                        }
+                        self.run_action(|| start_daemon().map(|_| "Daemon starting…".into()).unwrap_or_else(|e| e));
                     }
                 });
 
@@ -946,16 +974,10 @@ impl eframe::App for App {
                                     .checkbox(&mut auto, "Start UScreen with the desktop")
                                     .changed()
                                 {
-                                    match set_autostart(auto) {
-                                        Ok(_) => {
-                                            self.message = if auto {
-                                                "Autostart on — plugging the cable in is now enough".into()
-                                            } else {
-                                                "Autostart off".into()
-                                            }
-                                        }
-                                        Err(e) => self.message = e,
-                                    }
+                                    self.run_action(move || set_autostart(auto).map(|_| {
+                                        if auto { "Autostart on — plugging the cable in is now enough".into() }
+                                        else { "Autostart off".into() }
+                                    }).unwrap_or_else(|e| e));
                                 }
                             });
                             ui.end_row();
@@ -998,6 +1020,17 @@ fn main() -> eframe::Result {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t094_service_action_does_not_block_ui() {
+        let start = std::time::Instant::now();
+        let result = dispatch_action(|| {
+            std::thread::sleep(Duration::from_millis(100));
+            "done".into()
+        });
+        assert!(start.elapsed() < Duration::from_millis(50));
+        assert_eq!(result.recv_timeout(Duration::from_secs(1)).unwrap(), "done");
+    }
 
     struct Sandbox(PathBuf);
     impl Sandbox {

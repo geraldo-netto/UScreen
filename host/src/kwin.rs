@@ -14,6 +14,7 @@
 
 use tokio::sync::OnceCell;
 use tracing::{info, warn};
+use uscreen_config::commands::AsyncCommandExt;
 
 const SERVICE: &str = "org.kde.KWin";
 /// Probe target: a property KWin always exposes, so a tool that exists but
@@ -45,7 +46,7 @@ static BACKEND: OnceCell<Backend> = OnceCell::const_new();
 async fn output_of(cmd: &str, args: &[&str]) -> Option<String> {
     let out = tokio::process::Command::new(cmd)
         .args(args)
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     if !out.status.success() {

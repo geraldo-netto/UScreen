@@ -12,6 +12,7 @@ use tokio::sync::watch;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{accept_async_with_config, tungstenite::protocol::WebSocketConfig};
 use tracing::{debug, error, info, warn};
+use uscreen_config::commands::AsyncCommandExt;
 
 // Linux input event constants
 const EV_SYN: u16 = 0x00;
@@ -788,7 +789,7 @@ async fn primary_non_evdi_output() -> Option<String> {
         .collect();
     let out = tokio::process::Command::new("kscreen-doctor")
         .arg("-j")
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
@@ -995,7 +996,7 @@ async fn map_x11_devices(
         let connectors = fixed_connectors.unwrap_or(&current);
         let Ok(randr) = tokio::process::Command::new(xrandr)
             .arg("--query")
-            .output()
+            .output_bounded()
             .await
         else {
             warn!("X11 input mapping needs xrandr");
@@ -1059,7 +1060,7 @@ async fn map_x11_devices(
         };
         let Ok(devices) = tokio::process::Command::new(xinput)
             .args(["list", "--short"])
-            .output()
+            .output_bounded()
             .await
         else {
             warn!("X11 input mapping needs xinput");
@@ -1090,7 +1091,7 @@ async fn map_x11_devices(
             };
             let ok = tokio::process::Command::new(xinput)
                 .args(["map-to-output", id, output])
-                .output()
+                .output_bounded()
                 .await
                 .is_ok_and(|out| out.status.success());
             if ok {
@@ -1112,7 +1113,7 @@ async fn map_x11_devices(
 async fn kscreen_outputs() -> Option<Vec<serde_json::Value>> {
     let out = tokio::process::Command::new("kscreen-doctor")
         .arg("-j")
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     let v: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;

@@ -12,6 +12,7 @@ use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS};
 use crate::vdisplay;
 use anyhow::Result;
 use std::path::Path;
+use uscreen_config::commands::AsyncCommandExt;
 
 #[derive(PartialEq)]
 enum Level {
@@ -75,7 +76,7 @@ fn section(title: &str) {
 async fn output_of(program: &str, args: &[&str]) -> Option<String> {
     let out = tokio::process::Command::new(program)
         .args(args)
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     Some(String::from_utf8_lossy(&out.stdout).to_string())
@@ -176,7 +177,7 @@ async fn check_tools(r: &mut Report, cfg: &FileConfig) {
 
 async fn check_tools_with_helper(r: &mut Report, cfg: &FileConfig, helper: &Path) {
     // With no arguments the helper prints usage and exits before opening EVDI.
-    match tokio::process::Command::new(helper).output().await {
+    match tokio::process::Command::new(helper).output_bounded().await {
         Ok(out)
             if out.status.success()
                 || (out.status.code() == Some(1)

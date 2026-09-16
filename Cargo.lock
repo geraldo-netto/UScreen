@@ -3721,6 +3721,7 @@ dependencies = [
  "anyhow",
  "serde",
  "tempfile",
+ "tokio",
  "toml",
  "tracing",
 ]

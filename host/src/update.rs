@@ -12,6 +12,7 @@
 use std::time::Duration;
 use tokio::sync::watch;
 use tracing::{debug, info};
+use uscreen_config::commands::AsyncCommandExt;
 
 const RELEASES_API: &str = "https://api.github.com/repos/majmichu1/UScreen/releases/latest";
 pub const RELEASES_PAGE: &str = "https://github.com/majmichu1/UScreen/releases/latest";
@@ -63,7 +64,7 @@ pub async fn latest_release_tag() -> Option<String> {
             &format!("User-Agent: uscreen/{}", current_version()),
             RELEASES_API,
         ])
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     if !out.status.success() {

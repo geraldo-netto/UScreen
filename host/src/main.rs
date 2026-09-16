@@ -22,6 +22,7 @@ use std::path::PathBuf;
 use tokio::signal;
 use tokio::sync::{broadcast, watch};
 use tracing::{error, info, warn};
+use uscreen_config::commands::AsyncCommandExt;
 
 #[derive(Parser)]
 #[command(
@@ -1224,7 +1225,7 @@ async fn adb_monitor(
 
     if tokio::process::Command::new("adb")
         .arg("version")
-        .output()
+        .output_bounded()
         .await
         .is_err()
     {
@@ -1393,7 +1394,7 @@ async fn adb_monitor(
                 if current.is_none() && !wifi_address.is_empty() {
                     let out = tokio::process::Command::new("adb")
                         .args(["connect", &wifi_address])
-                        .output()
+                        .output_bounded()
                         .await;
                     if let Ok(o) = out {
                         let said = String::from_utf8_lossy(&o.stdout);
@@ -1469,7 +1470,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
         if !cfg.wifi_address.is_empty() {
             let _ = tokio::process::Command::new("adb")
                 .args(["disconnect", &cfg.wifi_address])
-                .output()
+                .output_bounded()
                 .await;
         }
         config::FileConfig::update(|cfg| {
@@ -1494,7 +1495,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
     println!("Switching {} to Wi-Fi…", serial);
     let out = tokio::process::Command::new("adb")
         .args(["-s", &serial, "tcpip", "5555"])
-        .output()
+        .output_bounded()
         .await?;
     if !out.status.success() {
         anyhow::bail!(
@@ -1516,7 +1517,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
 
     let out = tokio::process::Command::new("adb")
         .args(["connect", &address])
-        .output()
+        .output_bounded()
         .await?;
     let said = String::from_utf8_lossy(&out.stdout).trim().to_string();
     if !said.contains("connected") {
@@ -1553,7 +1554,7 @@ async fn tablet_ip(serial: &str) -> Option<String> {
     ] {
         let Ok(out) = tokio::process::Command::new("adb")
             .args(&args)
-            .output()
+            .output_bounded()
             .await
         else {
             continue;
@@ -1584,7 +1585,7 @@ async fn tablet_ip(serial: &str) -> Option<String> {
 async fn app_running(serial: &str) -> Option<bool> {
     let out = tokio::process::Command::new("adb")
         .args(["-s", serial, "shell", "pidof", "com.uscreen"])
-        .output()
+        .output_bounded()
         .await
         .ok()?;
     // pidof exits 1 with no output when nothing matches; adb itself failing
@@ -1659,6 +1660,7 @@ async fn launch_app(serial: &str, token: Option<&str>) {
     let cmd = app_launch_command(token);
 
     let child = tokio::process::Command::new("adb")
+        .kill_on_drop(true)
         .args(["-s", serial, "shell"])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::null())
@@ -1671,13 +1673,19 @@ async fn launch_app(serial: &str, token: Option<&str>) {
             return;
         }
     };
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(cmd.as_bytes()).await;
-        let _ = stdin.shutdown().await;
-    }
-    match tokio::time::timeout(std::time::Duration::from_secs(15), child.wait()).await {
+    let operation = async {
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin.write_all(cmd.as_bytes()).await?;
+            stdin.shutdown().await?;
+        }
+        child.wait().await
+    };
+    match tokio::time::timeout(std::time::Duration::from_secs(15), operation).await {
         Ok(Ok(st)) if st.success() => info!("UScreen app launched on tablet"),
-        _ => warn!("Could not launch the app (is it installed?)"),
+        _ => {
+            let _ = child.kill().await;
+            warn!("Could not launch the app (is it installed?)");
+        }
     }
 }
 
@@ -1746,7 +1754,7 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
             }
             let has_app = tokio::process::Command::new("adb")
                 .args(["-s", d, "shell", "pm", "path", "com.uscreen"])
-                .output()
+                .output_bounded()
                 .await
                 .map(|o| !o.stdout.is_empty())
                 .unwrap_or(false);
@@ -1773,7 +1781,7 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
 async fn adb_devices() -> Vec<String> {
     let Ok(out) = tokio::process::Command::new("adb")
         .arg("devices")
-        .output()
+        .output_bounded()
         .await
     else {
         return Vec::new();
@@ -1806,7 +1814,7 @@ async fn setup_adb_forwarding(serial: &str, video_port: u16, input_port: u16) ->
         let local = format!("tcp:{}", local);
         let r = tokio::process::Command::new("adb")
             .args(["-s", serial, "reverse", &remote, &local])
-            .output()
+            .output_bounded()
             .await?;
         if !r.status.success() {
             anyhow::bail!(
@@ -1915,7 +1923,7 @@ async fn list_displays() -> Result<()> {
     println!("=== Available displays ===");
     if let Ok(out) = tokio::process::Command::new("kscreen-doctor")
         .args(["-o"])
-        .output()
+        .output_bounded()
         .await
     {
         println!("{}", String::from_utf8_lossy(&out.stdout));
@@ -1923,7 +1931,7 @@ async fn list_displays() -> Result<()> {
 
     if let Ok(out) = tokio::process::Command::new("wpctl")
         .args(["status"])
-        .output()
+        .output_bounded()
         .await
     {
         println!("--- PipeWire ---");

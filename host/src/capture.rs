@@ -10,6 +10,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::{broadcast, watch};
 use tracing::{error, info, warn};
+use uscreen_config::commands::AsyncCommandExt;
 
 const RECONNECT_DELAY_MS: u64 = 2000;
 /// Capture FIFO, in the per-user runtime directory. It used to be
@@ -374,7 +375,7 @@ impl CaptureManager {
             }
             let Ok(o) = tokio::process::Command::new("kscreen-doctor")
                 .arg("-j")
-                .output()
+                .output_bounded()
                 .await
             else {
                 continue;
@@ -520,7 +521,7 @@ impl CaptureManager {
                     cmd.arg(format!("output.{}.position.{},{}", oid, nx, ny));
                 }
             }
-            let r = cmd.output().await;
+            let r = cmd.output_bounded().await;
             match r {
                 Ok(o) if o.status.success() => info!("kscreen-doctor enable+position: ok"),
                 Ok(o) => warn!(
@@ -549,7 +550,7 @@ impl CaptureManager {
         }
         let Ok(o) = tokio::process::Command::new("kscreen-doctor")
             .arg("-j")
-            .output()
+            .output_bounded()
             .await
         else {
             return;
@@ -576,7 +577,7 @@ impl CaptureManager {
             info!("Disabling EVDI output.{} ({})", id, name);
             let _ = tokio::process::Command::new("kscreen-doctor")
                 .arg(format!("output.{}.disable", id))
-                .output()
+                .output_bounded()
                 .await;
         }
     }
@@ -597,9 +598,9 @@ impl CaptureManager {
         // never carries --capture-fifo, so this cannot hit the daemon.
         let killed_helper = Command::new("pkill")
             .args(["-f", &format!("evdi_helper.*--capture-fifo {}( |$)", fifo)])
-            .status()
+            .output_bounded()
             .await
-            .map(|s| s.success())
+            .map(|s| s.status.success())
             .unwrap_or(false);
         // A stray ffmpeg reading the same FIFO is just as bad as a stray
         // helper writing it — two readers/writers on one pipe interleave at
@@ -607,9 +608,9 @@ impl CaptureManager {
         // never touch an unrelated ffmpeg invocation.
         let killed_ffmpeg = Command::new("pkill")
             .args(["-f", &format!("ffmpeg.*{}", fifo)])
-            .status()
+            .output_bounded()
             .await
-            .map(|s| s.success())
+            .map(|s| s.status.success())
             .unwrap_or(false);
         if killed_helper || killed_ffmpeg {
             warn!("Killed stray evdi_helper/ffmpeg process(es) before starting");
