@@ -29,7 +29,9 @@ tokio-tungstenite = "0.21"
 libc = "0.2"
 zbus = { version = "4", features = ["tokio"] }
 toml = "0.8"
-ksni = "0.3"
+# Share AccessKit's zbus 5 runtime in workspace builds. Enabling Tokio here
+# makes AccessKit's dedicated async-io worker panic without a Tokio reactor.
+ksni = { version = "0.3", default-features = false, features = ["async-io"] }
 
 [dev-dependencies]
 tempfile = "3"
