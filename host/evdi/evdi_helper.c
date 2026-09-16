@@ -1048,6 +1048,30 @@ static void run_event_loop(evdi_handle handle) {
     }
 }
 
+static int choose_card_after(const char *name, int after, int found) {
+    const char *digits = name + 4;
+    char *end = NULL;
+    long card = strtol(digits, &end, 10);
+    if (end != digits && *end == '\0' && card > after && card <= INT_MAX
+            && (found < 0 || card < found)) {
+        found = (int)card;
+    }    return found;
+}
+
+static int find_card_after(const char *drm_path, int after, int found) {
+    DIR *drm_dir = opendir(drm_path);
+    if (!drm_dir) return found;
+
+    struct dirent *drm_entry;
+    while ((drm_entry = readdir(drm_dir)) != NULL) {
+        if (strncmp(drm_entry->d_name, "card", 4) != 0)
+            continue;
+        found = choose_card_after(drm_entry->d_name, after, found);
+    }
+    closedir(drm_dir);
+    return found;
+}
+
 static int find_evdi_device_after(const char *root, int after) {
     DIR *dir = opendir(root);
     if (!dir) return -1;
@@ -1061,22 +1085,7 @@ static int find_evdi_device_after(const char *root, int after) {
         char drm_path[4096];
         snprintf(drm_path, sizeof(drm_path), "%s/%s/drm", root, entry->d_name);
 
-        DIR *drm_dir = opendir(drm_path);
-        if (!drm_dir) continue;
-
-        struct dirent *drm_entry;
-        while ((drm_entry = readdir(drm_dir)) != NULL) {
-            if (strncmp(drm_entry->d_name, "card", 4) != 0)
-                continue;
-            const char *digits = drm_entry->d_name + 4;
-            char *end = NULL;
-            long card = strtol(digits, &end, 10);
-            if (end != digits && *end == '\0' && card > after && card <= INT_MAX
-                    && (found < 0 || card < found)) {
-                found = (int)card;
-            }
-        }
-        closedir(drm_dir);
+        found = find_card_after(drm_path, after, found);
     }
     closedir(dir);
     return found;
