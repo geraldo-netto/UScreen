@@ -1205,6 +1205,49 @@ async fn target_output(
     }
 }
 
+struct Controllers {
+    devices: Arc<std::sync::Mutex<InjectDevices>>,
+    generation: watch::Sender<u64>,
+}
+impl Controllers {
+    fn new(devices: Arc<std::sync::Mutex<InjectDevices>>) -> Self {
+        Self {
+            devices,
+            generation: watch::channel(0).0,
+        }
+    }
+    fn claim(self: &Arc<Self>) -> ControllerLease {
+        let mut id = 0;
+        self.generation.send_modify(|generation| {
+            if let Ok(mut devices) = self.devices.lock() {
+                devices.release_all();
+            }
+            *generation = generation.wrapping_add(1);
+            id = *generation;
+        });
+        ControllerLease {
+            controllers: self.clone(),
+            id,
+        }
+    }
+}
+struct ControllerLease {
+    controllers: Arc<Controllers>,
+    id: u64,
+}
+impl Drop for ControllerLease {
+    fn drop(&mut self) {
+        // Keep the generation read lock through release, so a new claim cannot
+        // interleave after the ownership check and before device cleanup.
+        let generation = self.controllers.generation.borrow();
+        if *generation == self.id {
+            if let Ok(mut devices) = self.controllers.devices.lock() {
+                devices.release_all();
+            }
+        }
+    }
+}
+
 pub struct InputServer {
     config: InputConfig,
     running: Arc<AtomicBool>,
@@ -1276,6 +1319,7 @@ impl InputServer {
             );
         }
         let uinput = Arc::new(std::sync::Mutex::new(InjectDevices::empty()));
+        let controllers = Arc::new(Controllers::new(uinput.clone()));
         let mut tasks = tokio::task::JoinSet::new();
 
         // Follow the tablet, the mode and the card for as long as the daemon
@@ -1405,7 +1449,7 @@ impl InputServer {
             let settings = self.settings_tx.clone();
             let mode_tx = self.mode_tx.clone();
             let latency = self.latency.clone();
-            let devices = uinput.clone();
+            let devices = controllers.clone();
             let relaunch = self.relaunch.clone();
             tasks.spawn(async move {
                 if let Err(e) =
@@ -1450,7 +1494,7 @@ async fn handle_connection(
     settings_tx: Option<watch::Sender<EncoderSettings>>,
     mode_tx: watch::Sender<bool>,
     latency: crate::latency::LatencyTracker,
-    uinput: Arc<std::sync::Mutex<InjectDevices>>,
+    controllers: Arc<Controllers>,
     relaunch: Arc<tokio::sync::Notify>,
 ) -> Result<()> {
     // Input events are a few hundred bytes. The library default of 64 MiB
@@ -1500,6 +1544,13 @@ async fn handle_connection(
         }
     }
 
+    let mut ownership = controllers.generation.subscribe();
+    let lease = controllers.claim();
+    if *ownership.borrow_and_update() != lease.id {
+        return Ok(());
+    }
+    let uinput = &controllers.devices;
+
     let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
 
     ws_sender
@@ -1508,6 +1559,8 @@ async fn handle_connection(
 
     loop {
         let msg = tokio::select! {
+            biased;
+            _ = ownership.changed() => break,
             incoming = ws_receiver.next() => match incoming {
                 Some(m) => m,
                 None => break,
@@ -1548,7 +1601,11 @@ async fn handle_connection(
         match msg {
             Ok(Message::Text(text)) => match serde_json::from_str::<InputEvent>(&text) {
                 Ok(event) => {
-                    handle_event(event, &uinput, &settings_tx, &mode_tx, &latency, config.pen);
+                    let generation = controllers.generation.borrow();
+                    if *generation != lease.id {
+                        break;
+                    }
+                    handle_event(event, uinput, &settings_tx, &mode_tx, &latency, config.pen);
                 }
                 Err(e) => {
                     warn!("Invalid input: {} - {}", e, text);
@@ -1560,14 +1617,6 @@ async fn handle_connection(
             }
             _ => {}
         }
-    }
-
-    // Release any stuck MT slots or pen proximity. The devices themselves now
-    // outlive the connection, so without this the next client inherits a
-    // phantom finger or a pen stuck in proximity — which shows up as
-    // unstoppable scrolling.
-    if let Ok(mut guard) = uinput.lock() {
-        guard.release_all();
     }
 
     Ok(())
@@ -1851,6 +1900,68 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    // T085: a retired socket must not release the replacement controller's contact.
+    #[tokio::test]
+    async fn t085_reconnect_preserves_current_controller_contacts() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
+            touch: Some(UInputDevice {
+                file: file.reopen().unwrap(),
+            }),
+            ..InjectDevices::empty()
+        }));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let (mode, _rx) = watch::channel(false);
+        let controllers = Arc::new(Controllers::new(devices.clone()));
+        let mut clients = Vec::new();
+        let mut tasks = Vec::new();
+        for _ in 0..2 {
+            let connection = tokio::spawn(connect_async(format!("ws://{addr}")));
+            let (socket, _) = listener.accept().await.unwrap();
+            tasks.push(tokio::spawn(handle_connection(
+                socket,
+                InputConfig::default(),
+                None,
+                mode.clone(),
+                crate::latency::LatencyTracker::new(),
+                controllers.clone(),
+                Arc::new(tokio::sync::Notify::new()),
+            )));
+            let (mut client, _) = connection.await.unwrap().unwrap();
+            response(&mut client).await;
+            clients.push(client);
+        }
+        clients[1]
+            .send(Message::Text(
+                r#"{"type":"touch","x":0.5,"y":0.5,"pressure":0.5,"action":0,"slot":0}"#.into(),
+            ))
+            .await
+            .unwrap();
+        clients[1].send(Message::Ping(vec![1])).await.unwrap();
+        assert!(matches!(
+            clients[1].next().await,
+            Some(Ok(Message::Pong(_)))
+        ));
+        let _ = clients[0].close(None).await;
+        tasks.remove(0).await.unwrap().unwrap();
+        assert_eq!(devices.lock().unwrap().active_slots, 1);
+        let events = std::fs::read(file.path()).unwrap();
+        let keys: Vec<i32> = events
+            .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
+            .0
+            .iter()
+            .filter_map(|event| {
+                let code = u16::from_ne_bytes(event[18..20].try_into().unwrap());
+                (code == BTN_TOUCH).then(|| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
+            })
+            .collect();
+        assert_eq!(keys.last(), Some(&1));
+        clients[1].close(None).await.unwrap();
+        tasks.remove(0).await.unwrap().unwrap();
+        assert_eq!(devices.lock().unwrap().active_slots, 0);
+    }
+
     #[tokio::test]
     async fn t109_state_changes_cancel_pending_mapping() {
         for changed in 0..3 {
@@ -2042,7 +2153,9 @@ fi
                 Some(tx),
                 mode_tx,
                 crate::latency::LatencyTracker::new(),
-                Arc::new(std::sync::Mutex::new(InjectDevices::empty())),
+                Arc::new(Controllers::new(Arc::new(std::sync::Mutex::new(
+                    InjectDevices::empty(),
+                )))),
                 Arc::new(tokio::sync::Notify::new()),
             )
             .await
