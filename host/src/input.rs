@@ -1321,6 +1321,7 @@ impl InputServer {
         let uinput = Arc::new(std::sync::Mutex::new(InjectDevices::empty()));
         let controllers = Arc::new(Controllers::new(uinput.clone()));
         let mut tasks = tokio::task::JoinSet::new();
+        let slots = Arc::new(tokio::sync::Semaphore::new(16));
 
         // Follow the tablet, the mode and the card for as long as the daemon
         // runs. Attach creates the devices and maps them; detach destroys
@@ -1444,6 +1445,10 @@ impl InputServer {
                 }
             };
 
+            let Ok(permit) = slots.clone().try_acquire_owned() else {
+                continue;
+            };
+            let incoming = PendingInput::new(socket);
             info!("Input client: {}", peer);
             let cfg = config.clone();
             let settings = self.settings_tx.clone();
@@ -1452,8 +1457,9 @@ impl InputServer {
             let devices = controllers.clone();
             let relaunch = self.relaunch.clone();
             tasks.spawn(async move {
+                let _permit = permit;
                 if let Err(e) =
-                    handle_connection(socket, cfg, settings, mode_tx, latency, devices, relaunch)
+                    handle_connection(incoming, cfg, settings, mode_tx, latency, devices, relaunch)
                         .await
                 {
                     warn!("Input handler {}: {}", peer, e);
@@ -1488,8 +1494,21 @@ async fn wait_for_mapping_change(
     }
 }
 
+struct PendingInput {
+    stream: tokio::net::TcpStream,
+    deadline: tokio::time::Instant,
+}
+impl PendingInput {
+    fn new(stream: tokio::net::TcpStream) -> Self {
+        Self {
+            stream,
+            deadline: tokio::time::Instant::now() + std::time::Duration::from_secs(3),
+        }
+    }
+}
+
 async fn handle_connection(
-    raw_stream: tokio::net::TcpStream,
+    incoming: PendingInput,
     config: InputConfig,
     settings_tx: Option<watch::Sender<EncoderSettings>>,
     mode_tx: watch::Sender<bool>,
@@ -1505,9 +1524,14 @@ async fn handle_connection(
         max_frame_size: Some(64 * 1024),
         ..Default::default()
     };
-    let ws_stream = accept_async_with_config(raw_stream, Some(ws_cfg))
-        .await
-        .context("WebSocket handshake failed")?;
+    let deadline = incoming.deadline;
+    let ws_stream = tokio::time::timeout_at(
+        deadline,
+        accept_async_with_config(incoming.stream, Some(ws_cfg)),
+    )
+    .await
+    .context("WebSocket handshake timed out")?
+    .context("WebSocket handshake failed")?;
 
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
     let mut mode_rx = mode_tx.subscribe();
@@ -1515,8 +1539,7 @@ async fn handle_connection(
 
     // Authenticate before anything else happens: no greeting, no events.
     if let Some(expected) = config.token.as_deref() {
-        let first =
-            tokio::time::timeout(std::time::Duration::from_secs(3), ws_receiver.next()).await;
+        let first = tokio::time::timeout_at(deadline, ws_receiver.next()).await;
         let ok = match first {
             Ok(Some(Ok(Message::Text(text)))) => matches!(
                 serde_json::from_str::<InputEvent>(&text),
@@ -1539,7 +1562,7 @@ async fn handle_connection(
             // Most likely the app was started by hand and never received a
             // token. Launching it again over adb delivers one.
             relaunch.notify_one();
-            let _ = ws_sender.send(Message::Close(None)).await;
+            let _ = tokio::time::timeout_at(deadline, ws_sender.send(Message::Close(None))).await;
             return Ok(());
         }
     }
@@ -1900,6 +1923,86 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t092_idle_and_partial_upgrades_expire() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        for partial in [false, true] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let mut client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+                .await
+                .unwrap();
+            let (socket, _) = listener.accept().await.unwrap();
+            let (mode, _rx) = watch::channel(false);
+            let task = tokio::spawn(handle_connection(
+                PendingInput::new(socket),
+                InputConfig::default(),
+                None,
+                mode,
+                crate::latency::LatencyTracker::new(),
+                Arc::new(Controllers::new(Arc::new(std::sync::Mutex::new(
+                    InjectDevices::empty(),
+                )))),
+                Arc::new(tokio::sync::Notify::new()),
+            ));
+            if partial {
+                client.write_all(b"GET / HTTP/1.1\r\n").await.unwrap();
+            }
+            let mut byte = [0];
+            let closed = tokio::time::timeout(
+                std::time::Duration::from_millis(3500),
+                client.read(&mut byte),
+            )
+            .await;
+            assert!(
+                matches!(closed, Ok(Ok(0)) | Ok(Err(_))),
+                "upgrade outlives accept-to-auth deadline"
+            );
+            assert!(task.await.unwrap().is_err());
+        }
+    }
+
+    #[tokio::test]
+    async fn t092_pending_connections_are_bounded() {
+        use tokio::io::AsyncReadExt;
+        let (mode, _mode_rx) = watch::channel(false);
+        let (_card_tx, card) = watch::channel(None);
+        let (_tablet_tx, tablet) = watch::channel(false);
+        let server = InputServer::new(
+            InputConfig {
+                port: 0,
+                touch: false,
+                pen: false,
+                pointer: false,
+                ..InputConfig::default()
+            },
+            None,
+            mode,
+            crate::latency::LatencyTracker::new(),
+            Arc::new(tokio::sync::Notify::new()),
+            card,
+            tablet,
+        );
+        let listener = server.bind().await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move { server.run_with_listener(listener).await });
+        let mut clients = Vec::new();
+        for _ in 0..17 {
+            clients.push(tokio::net::TcpStream::connect(addr).await.unwrap());
+        }
+        let mut byte = [0];
+        let closed = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            clients.last_mut().unwrap().read(&mut byte),
+        )
+        .await;
+        task.abort();
+        let _ = task.await;
+        assert!(
+            matches!(closed, Ok(Ok(0)) | Ok(Err(_))),
+            "unbounded pending handlers"
+        );
+    }
+
     // T085: a retired socket must not release the replacement controller's contact.
     #[tokio::test]
     async fn t085_reconnect_preserves_current_controller_contacts() {
@@ -1920,7 +2023,7 @@ mod tests {
             let connection = tokio::spawn(connect_async(format!("ws://{addr}")));
             let (socket, _) = listener.accept().await.unwrap();
             tasks.push(tokio::spawn(handle_connection(
-                socket,
+                PendingInput::new(socket),
                 InputConfig::default(),
                 None,
                 mode.clone(),
@@ -2144,7 +2247,7 @@ fi
             let (socket, _) = listener.accept().await.unwrap();
             let (mode_tx, _rx) = watch::channel(false);
             handle_connection(
-                socket,
+                PendingInput::new(socket),
                 InputConfig {
                     touch: false,
                     pen: false,
