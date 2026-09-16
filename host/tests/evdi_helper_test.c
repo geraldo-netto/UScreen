@@ -128,7 +128,20 @@ static void stop_test_writer(pthread_t writer, int pipefd[2]) {
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T081") == 0) {
+    if (strcmp(argv[1], "T083") == 0) {
+        int pipefd[2];
+        pthread_t writer = start_test_writer(pipefd);
+        read_test_frame(pipefd[0], 8, 8);
+        for (int i = 0; i < 50; i++) {
+            struct evdi_mode mode = {8 + (i % 2) * 2, 8, 60, 32, 0x34325258};
+            on_mode_changed(mode, NULL);
+            publish_frame();
+            read_test_frame(pipefd[0], mode.width, mode.height);
+        }
+        signal(SIGTERM, handle_signal);
+        assert(pthread_kill(writer, SIGTERM) == 0);
+        stop_test_writer(writer, pipefd);
+    } else if (strcmp(argv[1], "T081") == 0) {
         int pipefd[2];
         pthread_t writer = start_test_writer(pipefd);
         read_test_frame(pipefd[0], 8, 8);

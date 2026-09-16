@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <limits.h>
 /* Only the public client API. The headers are upstream libevdi 1.15's, kept
    in sync with the library: the previous copies predated the
@@ -22,7 +23,10 @@
 
 static evdi_handle g_handle = EVDI_INVALID_HANDLE;
 static int g_device_index = -1;
-static volatile int g_running = 1;
+/* Lock-free atomics are safe in the signal handler and publish shutdown to
+   both threads. volatile alone supplies neither ordering nor race safety. */
+_Static_assert(ATOMIC_INT_LOCK_FREE == 2, "signal shutdown requires lock-free int atomics");
+static atomic_int g_running = 1;
 
 static int g_capture_fifo_fd = -1;
 static const char *g_fifo_path = NULL;
@@ -115,8 +119,8 @@ static int cmp_int(const void *a, const void *b) {
 }
 
 static volatile int g_update_pending = 0;  /* request_update sent, waiting for update_ready */
-static volatile int g_writer_busy = 0;     /* writer is streaming g_write to the FIFO */
-static volatile int g_mode_generation = 0; /* bumped on every mode change */
+static atomic_int g_writer_busy = 0;     /* writer is streaming g_write to the FIFO */
+static atomic_uint g_mode_generation = 0; /* bumped on every mode change */
 static volatile long long g_grab_count = 0;
 
 /* Where the capture cycle spends its time, printed with the 5s stats. The
@@ -658,7 +662,7 @@ static int try_open_fifo(void) {
    poll timeouts, but bound a continuous stall and notice mode changes. */
 static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
     long long deadline = now_ms() + 1000;
-    int generation = g_mode_generation;
+    unsigned generation = g_mode_generation;
     while (remaining > 0 && g_running && generation == g_mode_generation) {
         struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
         int pr = poll(&wfd, 1, 250);
@@ -697,7 +701,7 @@ static void *writer_thread(void *arg) {
     struct timespec next_allowed;
     clock_gettime(CLOCK_MONOTONIC, &next_allowed);
     int have_frame = 0;
-    int frame_generation = -1;
+    unsigned frame_generation = UINT_MAX;
 
     while (g_running) {
         if (g_capture_fifo_fd < 0) {

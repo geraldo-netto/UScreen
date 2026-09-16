@@ -12,7 +12,11 @@ impl Harness {
         std::fs::create_dir_all(&dir).unwrap();
         let harness = Self(dir);
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/evdi_helper_test.c");
-        let output = Command::new("cc")
+        let mut compiler = Command::new("cc");
+        if case == "T083" {
+            compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
+        }
+        let output = compiler
             .args([
                 "-std=c11",
                 "-O1",
@@ -36,10 +40,33 @@ impl Harness {
     }
 
     fn run(&self, case: &str) -> String {
-        let output = Command::new(self.0.join("helper-test"))
-            .arg(case)
-            .output()
-            .unwrap();
+        let binary = self.0.join("helper-test");
+        let output = if case == "T083" {
+            // New kernels can place libraries inside GCC TSan's fixed shadow
+            // range. Disable ASLR for this child only when permitted.
+            let isolated = Command::new("setarch")
+                .arg(std::env::consts::ARCH)
+                .arg("-R")
+                .arg(&binary)
+                .arg(case)
+                .env("TSAN_OPTIONS", "halt_on_error=1")
+                .output();
+            match isolated {
+                Ok(output)
+                    if !String::from_utf8_lossy(&output.stderr)
+                        .contains("Operation not permitted") =>
+                {
+                    output
+                }
+                _ => Command::new(&binary)
+                    .arg(case)
+                    .env("TSAN_OPTIONS", "halt_on_error=1")
+                    .output()
+                    .unwrap(),
+            }
+        } else {
+            Command::new(&binary).arg(case).output().unwrap()
+        };
         assert!(
             output.status.success(),
             "{}",
@@ -110,4 +137,9 @@ fn t081_idle_writer_releases_buffers_before_mode_changes() {
             .count(),
         4
     );
+}
+
+#[test]
+fn t083_mode_changes_and_signal_shutdown_are_race_free() {
+    Harness::build("T083").run("T083");
 }
