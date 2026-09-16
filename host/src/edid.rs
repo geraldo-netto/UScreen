@@ -38,7 +38,16 @@ pub fn make_edid_sized(
         width,
         height
     );
-    anyhow::ensure!(refresh > 0, "EDID refresh must be positive");
+    anyhow::ensure!(
+        (uscreen_config::MIN_FPS..=uscreen_config::MAX_FPS).contains(&refresh),
+        "EDID refresh must be within {}..={} Hz",
+        uscreen_config::MIN_FPS,
+        uscreen_config::MAX_FPS
+    );
+    anyhow::ensure!(
+        (1..=4095).contains(&width_mm) && (1..=4095).contains(&height_mm),
+        "EDID physical dimensions must fit 12 bits and be positive"
+    );
     let mut edid = vec![0u8; 128];
 
     // Header
@@ -127,13 +136,21 @@ pub fn make_edid_sized(
     // === Range limits descriptor (bytes 108-125) ===
     let i = 108;
     edid[i + 3] = 0xFD;
-    edid[i + 5] = 23; // min V rate Hz
-    edid[i + 6] = 145; // max V rate Hz
-    edid[i + 7] = 30; // min H rate kHz
-    edid[i + 8] = 255; // max H rate kHz
+    edid[i + 5] = uscreen_config::MIN_FPS as u8;
+    edid[i + 6] = uscreen_config::MAX_FPS as u8;
+    // Include the actual rounded DTD clock and every configured refresh.
+    // EDID 1.4 range offsets represent horizontal rates above 255 kHz.
+    let clock_hz = u32::from(pixel_clock_10khz) * 10_000;
+    let min_h = (v_total * uscreen_config::MIN_FPS / 1000).min(clock_hz / (h_total * 1000));
+    let max_h = (v_total * uscreen_config::MAX_FPS)
+        .div_ceil(1000)
+        .max(clock_hz.div_ceil(h_total * 1000));
+    edid[i + 4] = (u8::from(min_h > 255) << 2) | (u8::from(max_h > 255) << 3);
+    edid[i + 7] = (min_h - if min_h > 255 { 255 } else { 0 }) as u8;
+    edid[i + 8] = (max_h - if max_h > 255 { 255 } else { 0 }) as u8;
     let max_pclk_mhz = (pixel_clock_10khz as u32 * 10_000).div_ceil(1_000_000);
     edid[i + 9] = max_pclk_mhz.div_ceil(10).min(255) as u8;
-    edid[i + 10] = 0x01; // GTF
+    edid[i + 10] = 0x01; // EDID 1.4: range limits only, no timing formula
     edid[i + 11..i + 18].copy_from_slice(b"\x0A      ");
 
     // Checksum
@@ -152,7 +169,7 @@ pub fn make_edid(width: u32, height: u32, refresh: u32) -> Vec<u8> {
 /// Bumped whenever the generator changes. It is part of the cache filename so
 /// that fixing a bug here actually reaches existing installs — without it, a
 /// stale file from a previous version would be reused forever.
-const EDID_GENERATION: u32 = 4;
+const EDID_GENERATION: u32 = 5;
 
 /// Write (or reuse) a generated EDID for this mode and return its path.
 pub fn ensure_edid_sized(
@@ -250,6 +267,83 @@ mod tests {
             .status
             .success());
         assert_eq!(physical_size(&std::fs::read(output).unwrap()), (310, 194));
+    }
+
+    fn python_edid(w: u32, h: u32, fps: u32, wm: u32, hm: u32) -> Option<Vec<u8>> {
+        let dir = tempfile::tempdir().unwrap();
+        let output = dir.path().join("display.bin");
+        let script =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../scripts/gen-edid.py");
+        let status = std::process::Command::new("python3")
+            .arg(script)
+            .args([w.to_string(), h.to_string(), fps.to_string()])
+            .arg(&output)
+            .args([wm.to_string(), hm.to_string()])
+            .output()
+            .unwrap()
+            .status;
+        status.success().then(|| std::fs::read(output).unwrap())
+    }
+
+    #[test]
+    fn t115_generators_agree_on_boundaries_color_and_ranges() {
+        for (w, h, fps, wm, hm) in [
+            (1920, 1080, 10, 310, 194),
+            (2960, 1848, 90, 314, 195),
+            (4095, 2160, 30, 4095, 4095),
+            (1, 1080, 10, 255, 256),
+            (1024, 4095, 90, 310, 194),
+        ] {
+            let rust = make_edid_sized(w, h, fps, wm, hm).unwrap();
+            let python = python_edid(w, h, fps, wm, hm).unwrap();
+            assert_eq!(rust, python, "generator mismatch at {w}x{h}@{fps}");
+            assert!(u32::from(rust[113]) <= fps && u32::from(rust[114]) >= fps);
+            let pclk = u32::from(u16::from_le_bytes([rust[54], rust[55]])) * 10_000;
+            let horizontal = pclk as f64 / f64::from(w + 160);
+            let low = u32::from(rust[115]) + if rust[112] & 4 != 0 { 255 } else { 0 };
+            let high = u32::from(rust[116]) + if rust[112] & 8 != 0 { 255 } else { 0 };
+            assert!(f64::from(low * 1000) <= horizontal && f64::from(high * 1000) >= horizontal);
+            // sRGB xy coordinates decoded independently from packed 10-bit values.
+            let expected = [0.640, 0.330, 0.300, 0.600, 0.150, 0.060, 0.3127, 0.3290];
+            for (index, expected) in expected.into_iter().enumerate() {
+                let low_bits = (rust[25 + index / 4] >> (6 - (index % 4) * 2)) & 3;
+                let value = (u16::from(rust[27 + index]) * 4 + u16::from(low_bits)) as f64 / 1024.0;
+                assert!((value - expected).abs() < 1.0 / 1024.0);
+            }
+        }
+    }
+
+    #[test]
+    fn t115_both_generators_reject_unrepresentable_or_unsupported_values() {
+        for (w, h, fps, wm, hm) in [
+            (4096, 1080, 60, 310, 194),
+            (1920, 4096, 60, 310, 194),
+            (0, 1080, 60, 310, 194),
+            (1920, 1080, 0, 310, 194),
+            (1920, 1080, 9, 310, 194),
+            (1920, 1080, 91, 310, 194),
+            (4095, 4095, 90, 310, 194),
+            (1920, 1080, 60, 4096, 194),
+            (1920, 1080, 60, 310, 0),
+        ] {
+            assert!(
+                python_edid(w, h, fps, wm, hm).is_none(),
+                "Python accepted {w}x{h}@{fps}, {wm}x{hm} mm"
+            );
+            assert!(
+                make_edid_sized(w, h, fps, wm, hm).is_err(),
+                "Rust accepted {w}x{h}@{fps}, {wm}x{hm} mm"
+            );
+        }
+    }
+
+    #[test]
+    fn t115_old_range_cache_is_not_reused() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = dir.path().join("auto-v4-1920x1080@10-310x194mm.bin");
+        std::fs::write(&old, [0u8; 128]).unwrap();
+        let path = ensure_edid_in(dir.path(), 1920, 1080, 10, 310, 194).unwrap();
+        assert_ne!(path, old);
     }
 
     #[test]

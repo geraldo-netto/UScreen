@@ -43,7 +43,17 @@ def encode_manufacturer_id(s):
     return byte8, byte9
 
 
-def make_edid(width, height, refresh=60, name="UScreen"):
+# Keep in sync with common/src/lib.rs; cross-language Cargo regressions verify it.
+MIN_FPS, MAX_FPS = 10, 90
+
+
+def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm=194):
+    if not (1 <= width <= 4095 and 1 <= height <= 4095):
+        raise ValueError("EDID active dimensions must fit 12 bits and be positive")
+    if not MIN_FPS <= refresh <= MAX_FPS:
+        raise ValueError(f"EDID refresh must be within {MIN_FPS}..{MAX_FPS} Hz")
+    if not (1 <= width_mm <= 4095 and 1 <= height_mm <= 4095):
+        raise ValueError("EDID physical dimensions must fit 12 bits and be positive")
     edid = bytearray(128)
 
     # Header
@@ -69,8 +79,8 @@ def make_edid(width, height, refresh=60, name="UScreen"):
     edid[20] = 0xA5  # Digital, 8 bpc, DVI
 
     # Max image size (cm)
-    edid[21] = 31  # ~310mm horizontal
-    edid[22] = 19  # ~194mm vertical
+    edid[21] = max(1, min(255, width_mm // 10))
+    edid[22] = max(1, min(255, height_mm // 10))
 
     # Gamma
     edid[23] = 0x78  # gamma = 2.2
@@ -78,16 +88,8 @@ def make_edid(width, height, refresh=60, name="UScreen"):
     # DPMS / features
     edid[24] = 0xEE  # RGB, DPMS active-off/suspend/standby
 
-    # Chromaticity (sRGB)
-    edid[25] = 0xEF
-    edid[26] = 0x2C
-    edid[27] = 0xA2
-    edid[28] = 0xEE
-    edid[29] = 0xEF
-    edid[30] = 0x2C
-    edid[31] = 0xA2
-    edid[32] = 0x44
-    edid[33] = 0x42
+    # Chromaticity (sRGB), all eight packed 10-bit coordinates.
+    edid[25:35] = bytes([0xEE, 0x91, 0xA3, 0x54, 0x4C, 0x99, 0x26, 0x0F, 0x50, 0x54])
 
     # Established timings (none)
     edid[35] = 0x00
@@ -119,8 +121,10 @@ def make_edid(width, height, refresh=60, name="UScreen"):
     # Pixel clock in 10kHz units
     pixel_clock_10khz = (h_total * v_total * refresh + 5000) // 10000
 
-    h_image = 310  # mm
-    v_image = 194  # mm
+    if not 0 < pixel_clock_10khz <= 65535:
+        raise ValueError("EDID pixel clock must fit 16 bits (maximum 655.35 MHz)")
+    h_image = width_mm
+    v_image = height_mm
 
     # === DTD 1 (bytes 54-71) ===
     idx = 54
@@ -199,15 +203,19 @@ def make_edid(width, height, refresh=60, name="UScreen"):
     edid[idx+1] = 0x00
     edid[idx+2] = 0x00
     edid[idx+3] = 0xFD  # Range limits tag
-    edid[idx+4] = 0x00  # Reserved (offsets flags = 0)
-    edid[idx+5] = 55    # min V rate Hz
-    edid[idx+6] = 65    # max V rate Hz
-    edid[idx+7] = 30    # min H rate kHz
-    edid[idx+8] = 150   # max H rate kHz
+    edid[idx+5] = MIN_FPS
+    edid[idx+6] = MAX_FPS
+    clock_hz = pixel_clock_10khz * 10000
+    min_h = min(v_total * MIN_FPS // 1000, clock_hz // (h_total * 1000))
+    max_h = max((v_total * MAX_FPS + 999) // 1000,
+                (clock_hz + h_total * 1000 - 1) // (h_total * 1000))
+    edid[idx+4] = ((min_h > 255) << 2) | ((max_h > 255) << 3)
+    edid[idx+7] = min_h - (255 if min_h > 255 else 0)
+    edid[idx+8] = max_h - (255 if max_h > 255 else 0)
     # Max pixel clock in MHz / 10, rounded up
     max_pclk_mhz = (pixel_clock_10khz * 10000 + 999999) // 1000000
     edid[idx+9] = (max_pclk_mhz + 9) // 10  # Round up to nearest 10MHz
-    edid[idx+10] = 0x01  # GTF (default timing)
+    edid[idx+10] = 0x01  # EDID 1.4: range limits only, no timing formula
     edid[idx+11:idx+18] = b'\x0A\x20\x20\x20\x20\x20\x20'
 
     # Extension flag
@@ -225,7 +233,9 @@ def main():
     refresh = int(sys.argv[3]) if len(sys.argv) > 3 else 60
     output = sys.argv[4] if len(sys.argv) > 4 else "s9ultra.bin"
 
-    edid = make_edid(width, height, refresh)
+    width_mm = int(sys.argv[5]) if len(sys.argv) > 5 else 310
+    height_mm = int(sys.argv[6]) if len(sys.argv) > 6 else 194
+    edid = make_edid(width, height, refresh, width_mm=width_mm, height_mm=height_mm)
     with open(output, 'wb') as f:
         f.write(edid)
 
