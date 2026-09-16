@@ -1636,34 +1636,16 @@ async fn handle_connection(
     let mut mode_rx = mode_tx.subscribe();
     let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
 
-    // Authenticate before anything else happens: no greeting, no events.
-    if let Some(expected) = config.token.as_deref() {
-        let first = tokio::time::timeout_at(deadline, ws_receiver.next()).await;
-        let ok = match first {
-            Ok(Some(Ok(Message::Text(text)))) => matches!(
-                serde_json::from_str::<InputEvent>(&text),
-                Ok(InputEvent::Auth { token }) if crate::runtime::token_matches(expected, &token)
-            ),
-            _ => false,
-        };
-        if !ok {
-            // The app reconnects every two seconds; after a handful of these
-            // the log has made its point.
-            static DROPS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-            let n = DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            if n < 5 {
-                warn!(
-                    "Input client did not authenticate — dropped. Re-sending the token to the app."
-                );
-            } else if n == 5 {
-                warn!("Further unauthenticated clients will be dropped quietly.");
-            }
-            // Most likely the app was started by hand and never received a
-            // token. Launching it again over adb delivers one.
-            relaunch.notify_one();
-            let _ = tokio::time::timeout_at(deadline, ws_sender.send(Message::Close(None))).await;
-            return Ok(());
-        }
+    if !authenticate_input(
+        &mut ws_sender,
+        &mut ws_receiver,
+        config.token.as_deref(),
+        deadline,
+        &relaunch,
+    )
+    .await
+    {
+        return Ok(());
     }
 
     let mut ownership = controllers.generation.subscribe();
@@ -1671,7 +1653,6 @@ async fn handle_connection(
     if *ownership.borrow_and_update() != lease.id {
         return Ok(());
     }
-    let uinput = &controllers.devices;
 
     let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
 
@@ -1721,18 +1702,19 @@ async fn handle_connection(
         };
 
         match msg {
-            Ok(Message::Text(text)) => match serde_json::from_str::<InputEvent>(&text) {
-                Ok(event) => {
-                    let generation = controllers.generation.borrow();
-                    if *generation != lease.id {
-                        break;
-                    }
-                    handle_event(event, uinput, &settings_tx, &mode_tx, &latency, config.pen);
+            Ok(Message::Text(text)) => {
+                if !dispatch_controller_text(
+                    &text,
+                    &controllers,
+                    lease.id,
+                    &settings_tx,
+                    &mode_tx,
+                    &latency,
+                    config.pen,
+                ) {
+                    break;
                 }
-                Err(e) => {
-                    warn!("Invalid input: {} - {}", e, text);
-                }
-            },
+            }
             Ok(Message::Close(_)) | Err(_) => break,
             Ok(Message::Ping(data)) => {
                 let _ = ws_sender.send(Message::Pong(data)).await;
@@ -1742,6 +1724,77 @@ async fn handle_connection(
     }
 
     Ok(())
+}
+
+fn dispatch_controller_text(
+    text: &str,
+    controllers: &Controllers,
+    lease: u64,
+    settings_tx: &Option<watch::Sender<EncoderSettings>>,
+    mode_tx: &watch::Sender<bool>,
+    latency: &crate::latency::LatencyTracker,
+    pen_enabled: bool,
+) -> bool {
+    match serde_json::from_str::<InputEvent>(text) {
+        Ok(event) => {
+            let generation = controllers.generation.borrow();
+            if *generation != lease {
+                return false;
+            }
+            handle_event(
+                event,
+                &controllers.devices,
+                settings_tx,
+                mode_tx,
+                latency,
+                pen_enabled,
+            );
+        }
+        Err(e) => warn!("Invalid input: {} - {}", e, text),
+    }
+    true
+}
+
+type InputSocket = tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>;
+
+async fn authenticate_input(
+    ws_sender: &mut futures_util::stream::SplitSink<InputSocket, Message>,
+    ws_receiver: &mut futures_util::stream::SplitStream<InputSocket>,
+    expected: Option<&str>,
+    deadline: tokio::time::Instant,
+    relaunch: &tokio::sync::Notify,
+) -> bool {
+    // Authenticate before anything else happens: no greeting, no events.
+    if let Some(expected) = expected {
+        let first = tokio::time::timeout_at(deadline, ws_receiver.next()).await;
+        let ok = match first {
+            Ok(Some(Ok(Message::Text(text)))) => matches!(
+                serde_json::from_str::<InputEvent>(&text),
+                Ok(InputEvent::Auth { token }) if crate::runtime::token_matches(expected, &token)
+            ),
+            _ => false,
+        };
+        if !ok {
+            // The app reconnects every two seconds; after a handful of these
+            // the log has made its point.
+            static DROPS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            let n = DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if n < 5 {
+                warn!(
+                    "Input client did not authenticate — dropped. Re-sending the token to the app."
+                );
+            } else if n == 5 {
+                warn!("Further unauthenticated clients will be dropped quietly.");
+            }
+            // Most likely the app was started by hand and never received a
+            // token. Launching it again over adb delivers one.
+            relaunch.notify_one();
+            let _ = tokio::time::timeout_at(deadline, ws_sender.send(Message::Close(None))).await;
+            return false;
+        }
+    }
+
+    true
 }
 
 /// Counts of pen actions received, logged periodically. Hover in particular is
