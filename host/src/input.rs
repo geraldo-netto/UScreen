@@ -499,47 +499,6 @@ impl UInputDevice {
         Ok(())
     }
 
-    fn inject_touch(&mut self, x: i32, y: i32, pressure: i32, action: u8, slot: u8) -> Result<()> {
-        match action {
-            0 => {
-                // DOWN
-                self.emit(EV_ABS, ABS_MT_SLOT, slot as i32)?;
-                self.emit(EV_ABS, ABS_MT_TRACKING_ID, slot as i32)?;
-                self.emit(EV_ABS, ABS_MT_POSITION_X, x)?;
-                self.emit(EV_ABS, ABS_MT_POSITION_Y, y)?;
-                self.emit(EV_ABS, ABS_MT_PRESSURE, pressure)?;
-                self.emit(EV_KEY, BTN_TOUCH, 1)?;
-                self.emit(EV_KEY, BTN_TOOL_FINGER, 1)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
-                self.syn()?;
-            }
-            1 => {
-                // UP
-                self.emit(EV_ABS, ABS_MT_SLOT, slot as i32)?;
-                self.emit(EV_ABS, ABS_MT_TRACKING_ID, -1)?;
-                self.emit(EV_KEY, BTN_TOUCH, 0)?;
-                self.emit(EV_KEY, BTN_TOOL_FINGER, 0)?;
-                self.emit(EV_ABS, ABS_PRESSURE, 0)?;
-                self.syn()?;
-            }
-            2 => {
-                // MOVE - combine with previous if possible
-                self.emit(EV_ABS, ABS_MT_SLOT, slot as i32)?;
-                self.emit(EV_ABS, ABS_MT_POSITION_X, x)?;
-                self.emit(EV_ABS, ABS_MT_POSITION_Y, y)?;
-                self.emit(EV_ABS, ABS_MT_PRESSURE, pressure)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
-                self.syn()?;
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn inject_pen(
         &mut self,
@@ -705,8 +664,9 @@ struct InjectDevices {
     pointer: Option<UInputDevice>,
     last_pen_pos: (i32, i32),
     /// Bitmask of MT slots that currently have an active tracking ID
-    /// (DOWN received, no matching UP yet). Bit N → slot N, up to slot 15.
+    /// (DOWN received, no matching UP yet). Bit N identifies slot N, 0–9.
     active_slots: u16,
+    touch_contacts: [Option<(i32, i32, i32)>; 10],
     pen_proximity: bool,
     /// S Pen side button currently held (BTN_STYLUS). Tracked so a held
     /// button is released cleanly if the connection drops.
@@ -721,6 +681,7 @@ impl InjectDevices {
             pointer: None,
             last_pen_pos: (0, 0),
             active_slots: 0,
+            touch_contacts: [None; 10],
             pen_proximity: false,
             pen_button: false,
         }
@@ -756,6 +717,52 @@ impl InjectDevices {
             + self.pointer.is_some() as usize
     }
 
+    fn inject_touch(&mut self, x: i32, y: i32, pressure: i32, action: u8, slot: u8) -> Result<()> {
+        let Some(contact) = self.touch_contacts.get_mut(slot as usize) else {
+            return Ok(());
+        };
+        let Some(dev) = self.touch.as_mut() else {
+            return Ok(());
+        };
+        match action {
+            0 => {
+                *contact = Some((x, y, pressure));
+                self.active_slots |= 1 << slot;
+            }
+            1 if contact.is_some() => {
+                *contact = None;
+                self.active_slots &= !(1 << slot);
+            }
+            2 if contact.is_some() => {
+                *contact = Some((x, y, pressure));
+            }
+            _ => return Ok(()),
+        }
+        dev.emit(EV_ABS, ABS_MT_SLOT, slot as i32)?;
+        match action {
+            0 => dev.emit(EV_ABS, ABS_MT_TRACKING_ID, slot as i32)?,
+            1 => dev.emit(EV_ABS, ABS_MT_TRACKING_ID, -1)?,
+            _ => {}
+        }
+        if action != 1 {
+            dev.emit(EV_ABS, ABS_MT_POSITION_X, x)?;
+            dev.emit(EV_ABS, ABS_MT_POSITION_Y, y)?;
+            dev.emit(EV_ABS, ABS_MT_PRESSURE, pressure)?;
+        }
+        // Legacy single-touch consumers follow the first remaining contact.
+        let primary = self.touch_contacts.iter().flatten().next();
+        dev.emit(EV_KEY, BTN_TOUCH, i32::from(primary.is_some()))?;
+        dev.emit(EV_KEY, BTN_TOOL_FINGER, i32::from(primary.is_some()))?;
+        if let Some(&(x, y, pressure)) = primary {
+            dev.emit(EV_ABS, ABS_X, x)?;
+            dev.emit(EV_ABS, ABS_Y, y)?;
+            dev.emit(EV_ABS, ABS_PRESSURE, pressure)?;
+        } else {
+            dev.emit(EV_ABS, ABS_PRESSURE, 0)?;
+        }
+        dev.syn()
+    }
+
     /// Release all active contacts cleanly before the connection closes.
     /// Without this, a stuck MT slot or a pen left in proximity causes
     /// the next connection to inherit phantom input events.
@@ -770,10 +777,12 @@ impl InjectDevices {
             if self.active_slots != 0 {
                 let _ = dev.emit(EV_KEY, BTN_TOUCH, 0);
                 let _ = dev.emit(EV_KEY, BTN_TOOL_FINGER, 0);
+                let _ = dev.emit(EV_ABS, ABS_PRESSURE, 0);
                 let _ = dev.syn();
             }
         }
         self.active_slots = 0;
+        self.touch_contacts = [None; 10];
 
         if self.pen_proximity {
             if let Some(ref mut dev) = self.pen {
@@ -1695,29 +1704,8 @@ fn handle_event(
             let abs_pressure = (pressure * 4096.0) as i32;
 
             if let Ok(mut guard) = uinput.lock() {
-                let ok = if let Some(ref mut dev) = guard.touch {
-                    match dev.inject_touch(abs_x, abs_y, abs_pressure, action, slot) {
-                        Ok(_) => true,
-                        Err(e) => {
-                            warn!("Failed to inject touch: {}", e);
-                            false
-                        }
-                    }
-                } else {
-                    match action {
-                        0 => debug!("Touch DOWN at ({}, {}) — no touch device", abs_x, abs_y),
-                        1 => debug!("Touch UP   at ({}, {}) — no touch device", abs_x, abs_y),
-                        _ => {}
-                    }
-                    false
-                };
-                if ok {
-                    let bit = 1u16 << (slot.min(15) as u16);
-                    match action {
-                        0 => guard.active_slots |= bit,
-                        1 => guard.active_slots &= !bit,
-                        _ => {}
-                    }
+                if let Err(error) = guard.inject_touch(abs_x, abs_y, abs_pressure, action, slot) {
+                    warn!("Failed to inject touch: {}", error);
                 }
             }
         }
@@ -1923,6 +1911,63 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t086_touch_stays_down_until_last_contact_lifts() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
+            touch: Some(UInputDevice {
+                file: file.reopen().unwrap(),
+            }),
+            ..InjectDevices::empty()
+        }));
+        let (mode, _rx) = watch::channel(false);
+        let tracker = crate::latency::LatencyTracker::new();
+        let send = |slot, action, x, y, pressure| {
+            handle_event(
+                InputEvent::Touch {
+                    slot,
+                    action,
+                    x,
+                    y,
+                    pressure,
+                },
+                &devices,
+                &None,
+                &mode,
+                &tracker,
+                false,
+            )
+        };
+        let last = |code| {
+            let events = std::fs::read(file.path()).unwrap();
+            events
+                .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
+                .0
+                .iter()
+                .filter(|event| {
+                    u16::from_ne_bytes(event[18..20].try_into().unwrap()) == code
+                        && u16::from_ne_bytes(event[16..18].try_into().unwrap())
+                            == if code >= 0x100 { EV_KEY } else { EV_ABS }
+                })
+                .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
+                .next_back()
+                .unwrap()
+        };
+        send(0, 0, 0.25, 0.25, 0.5);
+        send(1, 0, 0.75, 0.75, 0.75);
+        send(0, 1, 0.25, 0.25, 0.0);
+        assert_eq!(last(BTN_TOUCH), 1);
+        assert_eq!(last(BTN_TOOL_FINGER), 1);
+        assert_eq!(last(ABS_PRESSURE), 3072);
+        assert_eq!(last(ABS_X), (0.75 * COORD_MAX as f64) as i32);
+        send(1, 2, 0.5, 0.5, 0.5);
+        assert_eq!(last(ABS_PRESSURE), 2048);
+        send(1, 1, 0.5, 0.5, 0.0);
+        assert_eq!(last(BTN_TOUCH), 0);
+        assert_eq!(last(BTN_TOOL_FINGER), 0);
+        assert_eq!(last(ABS_PRESSURE), 0);
+    }
+
     #[tokio::test]
     async fn t092_idle_and_partial_upgrades_expire() {
         use tokio::io::{AsyncReadExt, AsyncWriteExt};
