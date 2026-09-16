@@ -52,7 +52,8 @@ Android 8.1 and newer, on any device with a hardware H.264 decoder.
 **Is screen or input data sent to the cloud?**
 No. Screen and input data never leave the cable (or your own network if you
 chose Wi-Fi). The only outbound request is an optional check of the latest
-release tag on GitHub, off with `check_updates = false`. See
+release tag on GitHub, off with `check_updates = false` on the desktop and a
+switch in the app's settings sheet. See
 [SECURITY.md](../SECURITY.md).
 
 **How is UScreen different from Weylus?**

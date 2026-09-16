@@ -75,6 +75,15 @@ class Prefs(context: Context) {
         get() = sp.getString("host_token", null)
         set(v) = sp.edit().putString("host_token", v).apply()
 
+    /**
+     * Whether to ask GitHub for a newer release when the app comes to the
+     * front. The host has `check_updates` for the daemon and GUI; this is the
+     * tablet's own switch, so the app can be kept fully offline too.
+     */
+    var checkUpdates: Boolean
+        get() = sp.getBoolean("check_updates", true)
+        set(v) = sp.edit().putBoolean("check_updates", v).apply()
+
     /** Shown once, after the first time video actually arrived. */
     var thankedOnce: Boolean
         get() = sp.getBoolean("thanked_once", false)

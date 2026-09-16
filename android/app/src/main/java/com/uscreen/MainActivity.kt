@@ -340,7 +340,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // One check per process, when the app comes to the front. It is a
         // single small request and the answer changes about once a month.
-        if (!updateChecked) {
+        if (!updateChecked && prefs.checkUpdates) {
             updateChecked = true
             val cur = try { packageManager.getPackageInfo(packageName, 0).versionName ?: "0" } catch (_: Exception) { "0" }
             Thread {
@@ -413,6 +413,7 @@ fun UScreenMain(
     var showOverlay by remember { mutableStateOf(true) }
     var showSettings by remember { mutableStateOf(false) }
     var showStats by remember { mutableStateOf(prefs?.showStats ?: false) }
+    var checkUpdates by remember { mutableStateOf(prefs?.checkUpdates ?: true) }
     var orientationChoice by remember { mutableStateOf(prefs?.orientation ?: Prefs.ORIENTATION_AUTO) }
 
     val context = LocalContext.current
@@ -611,6 +612,11 @@ fun UScreenMain(
                     showStats = it
                     prefs?.showStats = it
                 },
+                checkUpdates = checkUpdates,
+                onCheckUpdatesChange = {
+                    checkUpdates = it
+                    prefs?.checkUpdates = it
+                },
                 orientation = orientationChoice,
                 onOrientationChange = {
                     orientationChoice = it
@@ -731,6 +737,8 @@ private fun SettingsSheet(
     onPenOnlyChange: (Boolean) -> Unit,
     showStats: Boolean,
     onShowStatsChange: (Boolean) -> Unit,
+    checkUpdates: Boolean,
+    onCheckUpdatesChange: (Boolean) -> Unit,
     orientation: Int,
     onOrientationChange: (Int) -> Unit,
     onApply: (bitrateKbps: Int, fps: Int) -> Unit,
@@ -911,6 +919,26 @@ private fun SettingsSheet(
                 Switch(
                     checked = showStats,
                     onCheckedChange = onShowStatsChange,
+                    colors = SwitchDefaults.colors(checkedTrackColor = Accent)
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Check for newer releases", fontSize = 14.sp, color = Color(0xFFB0B0C0))
+                    Text(
+                        "One request to GitHub when the app opens. Nothing installs itself.",
+                        fontSize = 11.sp,
+                        color = Color(0xFF6A6A7E)
+                    )
+                }
+                Switch(
+                    checked = checkUpdates,
+                    onCheckedChange = onCheckUpdatesChange,
                     colors = SwitchDefaults.colors(checkedTrackColor = Accent)
                 )
             }

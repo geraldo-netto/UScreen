@@ -16,7 +16,9 @@
   There is no account, no telemetry and no cloud.
 - The only outbound connection is an optional **update check**: one HTTPS
   request to `api.github.com` (daemon: once a day; app and GUI: when opened)
-  that reads the latest release tag. It is off with `check_updates = false`.
+  that reads the latest release tag. Off with `check_updates = false` for the
+  daemon and GUI, and with the *Check for newer releases* switch in the app's
+  settings sheet.
   Nothing is ever downloaded or installed automatically.
 
 ## What the installer and packages change on the system

@@ -172,7 +172,7 @@ GNOME and X11 get the display and the stream; input mapping is manual there.
 
 **Is anything sent to the cloud?** No. Screen and input data never leave the
 cable; the only outbound request is an optional version check against GitHub
-(`check_updates = false` turns it off).
+(`check_updates = false` turns it off; the app has a switch of its own).
 
 **How do I uninstall it completely?** [SECURITY.md](SECURITY.md#how-to-uninstall-completely)
 lists every file.
