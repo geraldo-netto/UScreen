@@ -2154,6 +2154,22 @@ mod tests {
         );
     }
 
+    fn last_input_value(path: &std::path::Path, code: u16) -> i32 {
+        let bytes = std::fs::read(path).unwrap();
+        bytes
+            .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
+            .0
+            .iter()
+            .filter(|event| {
+                u16::from_ne_bytes(event[18..20].try_into().unwrap()) == code
+                    && u16::from_ne_bytes(event[16..18].try_into().unwrap())
+                        == if code >= 0x100 { EV_KEY } else { EV_ABS }
+            })
+            .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
+            .next_back()
+            .unwrap()
+    }
+
     #[test]
     fn t146_normalized_input_stays_in_axes_and_releases() {
         for pen in [false, true] {
@@ -2192,21 +2208,7 @@ mod tests {
                 };
                 handle_event(event, &devices, &None, &mode, &tracker, pen);
             };
-            let last = |code| {
-                let bytes = std::fs::read(file.path()).unwrap();
-                bytes
-                    .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
-                    .0
-                    .iter()
-                    .filter(|event| {
-                        u16::from_ne_bytes(event[18..20].try_into().unwrap()) == code
-                            && u16::from_ne_bytes(event[16..18].try_into().unwrap())
-                                == if code >= 0x100 { EV_KEY } else { EV_ABS }
-                    })
-                    .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
-                    .next_back()
-                    .unwrap()
-            };
+            let last = |code| last_input_value(file.path(), code);
             send(0, -0.2, 1.4, 2.0);
             assert_eq!(last(ABS_X), 0, "T146 pen={pen}");
             assert_eq!(last(ABS_Y), COORD_MAX);
@@ -2247,21 +2249,7 @@ mod tests {
                 false,
             )
         };
-        let last = |code| {
-            let events = std::fs::read(file.path()).unwrap();
-            events
-                .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
-                .0
-                .iter()
-                .filter(|event| {
-                    u16::from_ne_bytes(event[18..20].try_into().unwrap()) == code
-                        && u16::from_ne_bytes(event[16..18].try_into().unwrap())
-                            == if code >= 0x100 { EV_KEY } else { EV_ABS }
-                })
-                .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
-                .next_back()
-                .unwrap()
-        };
+        let last = |code| last_input_value(file.path(), code);
         send(0, 0, 0.25, 0.25, 0.5);
         send(1, 0, 0.75, 0.75, 0.75);
         send(0, 1, 0.25, 0.25, 0.0);
