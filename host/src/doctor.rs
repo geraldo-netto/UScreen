@@ -171,7 +171,8 @@ fn uinput_hint(root: &Path) -> String {
 }
 
 async fn check_tools(r: &mut Report, cfg: &FileConfig) {
-    let helper = crate::find_helper(&std::path::PathBuf::from("host/evdi/evdi_helper"));
+    // An empty path makes the existing execution probe report a missing helper.
+    let helper = crate::find_helper(None).unwrap_or_default();
     check_tools_with_helper(r, cfg, &helper).await;
 }
 

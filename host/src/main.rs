@@ -39,8 +39,8 @@ struct Cli {
     #[arg(long = "edid")]
     edid: Option<PathBuf>,
 
-    #[arg(long = "helper", default_value = "host/evdi/evdi_helper")]
-    helper: PathBuf,
+    #[arg(long = "helper")]
+    helper: Option<PathBuf>,
 
     /// Defaults come from ~/.config/uscreen/config.toml; CLI flags override.
     #[arg(long = "encoder")]
@@ -171,6 +171,37 @@ mod cli_tests {
         assert_eq!(config.card, Some(3));
         assign_slot_card(&mut config, &[0, 3], 0).unwrap();
         assert_eq!(config.card, Some(0));
+    }
+
+    #[test]
+    fn t122_cli_distinguishes_omitted_helper_from_explicit_override() {
+        assert!(Cli::try_parse_from(["uscreen"]).unwrap().helper.is_none());
+        assert_eq!(
+            Cli::try_parse_from(["uscreen", "--helper", "/custom/helper"])
+                .unwrap()
+                .helper,
+            Some(PathBuf::from("/custom/helper"))
+        );
+    }
+
+    #[test]
+    fn t122_explicit_missing_helper_cannot_fall_back() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let installed = dir.path().join("installed");
+        let explicit = dir.path().join("explicit");
+        std::fs::write(&installed, "#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&installed, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let candidates = vec![installed.clone()];
+        assert!(select_helper(Some(&explicit), &candidates).is_err());
+        assert_eq!(select_helper(None, &candidates).unwrap(), installed);
+        std::fs::write(&explicit, "#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&explicit, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(
+            select_helper(Some(&explicit), &candidates).unwrap(),
+            explicit
+        );
+        assert!(select_helper(Some(dir.path()), &candidates).is_err());
     }
 
     #[tokio::test]
@@ -558,6 +589,7 @@ async fn start_servers(
 }
 
 async fn run_daemon(cli: Cli) -> Result<()> {
+    let helper_path = find_helper(cli.helper.as_deref())?;
     let pid_path = get_pid_path();
     if let Some(parent) = pid_path.parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -636,7 +668,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     }
 
     let cap_config = capture::CaptureConfig {
-        helper_path: find_helper(&cli.helper),
+        helper_path: helper_path.clone(),
         edid_path: cli.edid.clone(),
         encoder: encoder.clone(),
         vaapi_device: file_cfg.vaapi_device.clone(),
@@ -908,7 +940,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let extra = ExtraSessionTemplate {
         max_tablets: file_cfg.max_tablets,
         cap_template: capture::CaptureConfig {
-            helper_path: find_helper(&cli.helper),
+            helper_path: helper_path.clone(),
             edid_path: None,
             encoder: encoder.clone(),
             vaapi_device: file_cfg.vaapi_device.clone(),
@@ -1076,83 +1108,63 @@ fn get_pid_path() -> PathBuf {
     PathBuf::from(format!("{}/.local/share/uscreen/uscreen.pid", home))
 }
 
-/// Resolve the helper binary.
-///
-/// An explicitly given `--helper` always wins. It used to lose to the copy in
-/// `~/.local/bin`, so a freshly built helper was silently ignored in favour of
-/// whatever was last installed — the kind of thing that costs an afternoon.
-fn find_helper(path: &std::path::Path) -> PathBuf {
+fn select_helper(explicit: Option<&std::path::Path>, candidates: &[PathBuf]) -> Result<PathBuf> {
+    use std::os::unix::fs::PermissionsExt;
+    let executable = |path: &std::path::Path| {
+        path.metadata()
+            .is_ok_and(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
+    };
+    if let Some(path) = explicit {
+        anyhow::ensure!(
+            executable(path),
+            "Explicit --helper {} is not an executable file",
+            path.display()
+        );
+        return path.canonicalize().context("resolve explicit --helper");
+    }
+    candidates
+        .iter()
+        .find(|path| executable(path))
+        .map(|path| path.canonicalize())
+        .transpose()?
+        .ok_or_else(|| anyhow::anyhow!("No EVDI helper found; build/install it or set --helper"))
+}
+
+/// Explicit overrides are validated without fallback. Otherwise prefer the
+/// helper belonging to this executable's installation, then generic installs
+/// and development checkout locations.
+fn find_helper(explicit: Option<&std::path::Path>) -> Result<PathBuf> {
     let home = std::env::var("HOME").unwrap_or_default();
-
-    if path.exists() {
-        if let Ok(canon) = path.canonicalize() {
-            return canon;
-        }
-        return path.to_path_buf();
-    }
-
-    // The helper that belongs to *this* install first, derived from where
-    // this binary lives: next to it (install.sh puts both in ~/.local/bin),
-    // or ../lib/uscreen and ../lib64/uscreen (packages put uscreen in
-    // /usr/bin and the helper under /usr/lib*/uscreen). Only then the
-    // generic locations. A packaged /usr/bin/uscreen must never pick up a
-    // stale ~/.local/bin/evdi_helper left by an earlier install.sh - one
-    // built against the old, too-short evdi header, say.
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            candidates.push(dir.join("evdi_helper"));
-            if let Some(prefix) = dir.parent() {
-                candidates.push(prefix.join("lib/uscreen/evdi_helper"));
-                candidates.push(prefix.join("lib64/uscreen/evdi_helper"));
-                candidates.push(prefix.join("libexec/uscreen/evdi_helper"));
+    let exe = std::env::current_exe().ok();
+    let mut candidates = Vec::new();
+    if let Some(dir) = exe.as_ref().and_then(|path| path.parent()) {
+        candidates.push(dir.join("evdi_helper"));
+        if let Some(prefix) = dir.parent() {
+            for relative in [
+                "lib/uscreen/evdi_helper",
+                "lib64/uscreen/evdi_helper",
+                "libexec/uscreen/evdi_helper",
+            ] {
+                candidates.push(prefix.join(relative));
             }
         }
     }
-    candidates.extend(
-        [
-            format!("{}/.local/bin/evdi_helper", home),
-            "/usr/lib/uscreen/evdi_helper".to_string(),
-            "/usr/lib64/uscreen/evdi_helper".to_string(),
-            "/usr/libexec/uscreen/evdi_helper".to_string(),
-            "/usr/local/lib/uscreen/evdi_helper".to_string(),
-        ]
-        .into_iter()
-        .map(PathBuf::from),
-    );
-    for p in candidates {
-        if p.exists() {
-            return p;
+    candidates.push(PathBuf::from(home).join(".local/bin/evdi_helper"));
+    for path in [
+        "/usr/lib/uscreen/evdi_helper",
+        "/usr/lib64/uscreen/evdi_helper",
+        "/usr/libexec/uscreen/evdi_helper",
+        "/usr/local/lib/uscreen/evdi_helper",
+        "host/evdi/evdi_helper",
+    ] {
+        candidates.push(PathBuf::from(path));
+    }
+    if let Some(exe) = exe {
+        for dir in exe.ancestors().skip(1).take(5) {
+            candidates.push(dir.join("host/evdi/evdi_helper"));
         }
     }
-
-    let alt = PathBuf::from("host/evdi/evdi_helper");
-    if alt.exists() {
-        if let Ok(canon) = alt.canonicalize() {
-            return canon;
-        }
-        return alt;
-    }
-
-    if let Ok(exe) = std::env::current_exe() {
-        let mut dir = exe.parent();
-        for _ in 0..5 {
-            if let Some(d) = dir {
-                let from_exe = d.join("host").join("evdi").join("evdi_helper");
-                if from_exe.exists() {
-                    if let Ok(canon) = from_exe.canonicalize() {
-                        return canon;
-                    }
-                    return from_exe;
-                }
-                dir = d.parent();
-            } else {
-                break;
-            }
-        }
-    }
-
-    path.to_path_buf()
+    select_helper(explicit, &candidates)
 }
 
 /// Everything needed to bring up a pipeline for a second (third, ...)
