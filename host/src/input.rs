@@ -11,7 +11,7 @@ use tokio::net::TcpListener;
 use tokio::sync::watch;
 use tokio_tungstenite::{accept_async_with_config, tungstenite::protocol::WebSocketConfig};
 use tokio_tungstenite::tungstenite::Message;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 // Linux input event constants
 const EV_SYN: u16 = 0x00;
@@ -226,6 +226,19 @@ pub struct InputConfig {
     pub codec: String,
     pub virtual_width: u32,
     pub virtual_height: u32,
+    /// Which virtual input devices to create while a tablet is attached. A
+    /// device that is off is never registered with the kernel: the desktop
+    /// does not see it, and input of that kind from the tablet is dropped
+    /// (logged at debug level). The pointer needs the pen.
+    pub touch: bool,
+    pub pen: bool,
+    pub pointer: bool,
+}
+
+impl InputConfig {
+    pub fn any_device(&self) -> bool {
+        self.touch || self.pen || (self.pen && self.pointer)
+    }
 }
 
 impl Default for InputConfig {
@@ -237,6 +250,9 @@ impl Default for InputConfig {
             codec: "h264".into(),
             virtual_width: 2960,
             virtual_height: 1848,
+            touch: true,
+            pen: true,
+            pointer: true,
         }
     }
 }
@@ -588,7 +604,44 @@ impl Drop for UInputDevice {
     }
 }
 
-/// The pair of virtual input devices backing one tablet connection.
+/// One virtual input device, or `None` with the reason logged: off in the
+/// config (debug, it is a choice) or refused by uinput (warn, it is a fault).
+fn create_device(
+    enabled: bool,
+    what: &str,
+    make: impl FnOnce() -> Result<UInputDevice>,
+) -> Option<UInputDevice> {
+    if !enabled {
+        debug!("{} device off by config", what);
+        return None;
+    }
+    match make() {
+        Ok(dev) => Some(dev),
+        Err(e) => {
+            warn!("No {} device: {}. {} input will be dropped.", what, e, what);
+            None
+        }
+    }
+}
+
+/// How many attached tablets currently have a touch device. The on-screen
+/// keyboard is suppressed while that is non-zero: the desktop sees a
+/// touchscreen and would pop the keyboard over the screen used as a monitor.
+static TOUCH_DEVICES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+async fn osk_touch_device_added() {
+    if TOUCH_DEVICES.fetch_add(1, Ordering::SeqCst) == 0 {
+        crate::osk::disable().await;
+    }
+}
+
+async fn osk_touch_device_removed() {
+    if TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst) == 1 {
+        crate::osk::restore().await;
+    }
+}
+
+/// The virtual input devices backing one tablet connection.
 struct InjectDevices {
     touch: Option<UInputDevice>,
     pen: Option<UInputDevice>,
@@ -606,6 +659,39 @@ struct InjectDevices {
 }
 
 impl InjectDevices {
+    fn empty() -> Self {
+        Self {
+            touch: None,
+            pen: None,
+            pointer: None,
+            last_pen_pos: (0, 0),
+            active_slots: 0,
+            pen_proximity: false,
+            pen_button: false,
+        }
+    }
+
+    /// Creates whichever devices the config asks for. The pointer only
+    /// exists to park the cursor when the pen lifts, so it is tied to the
+    /// pen here and nowhere else has to know that rule.
+    fn create(cfg: &InputConfig, ident: &DeviceIdentity) -> Self {
+        let touch = create_device(cfg.touch, "touch", || {
+            UInputDevice::new_touch(&ident.touch, ident.product_touch)
+        });
+        let pen = create_device(cfg.pen, "pen", || UInputDevice::new_pen(&ident.pen, ident.product_pen));
+        let pointer = create_device(cfg.pen && cfg.pointer, "pointer", || {
+            UInputDevice::new_pointer(&ident.pointer, ident.product_pointer)
+        });
+        if pen.is_some() && pointer.is_none() {
+            info!("No pointer device — the cursor will vanish when the pen lifts");
+        }
+        Self { touch, pen, pointer, ..Self::empty() }
+    }
+
+    fn count(&self) -> usize {
+        self.touch.is_some() as usize + self.pen.is_some() as usize + self.pointer.is_some() as usize
+    }
+
     /// Release all active contacts cleanly before the connection closes.
     /// Without this, a stuck MT slot or a pen left in proximity causes
     /// the next connection to inherit phantom input events.
@@ -700,7 +786,17 @@ async fn kwin_device_property(sysname: &str, property: &str) -> Option<String> {
 /// and finding it empty, both when written before and after device creation.
 /// Setting the property directly takes effect immediately, and KWin persists it
 /// itself.
-async fn map_devices_to_output(pen_only: bool, ident: &DeviceIdentity, card: Option<u32>) {
+/// `expected` is how many devices this instance actually created; the retry
+/// loop stops once that many are mapped rather than assuming all three exist.
+async fn map_devices_to_output(
+    pen_only: bool,
+    ident: &DeviceIdentity,
+    card: Option<u32>,
+    expected: usize,
+) {
+    if expected == 0 {
+        return;
+    }
     let Some(output) = target_output(pen_only, card, std::time::Duration::from_secs(10)).await
     else {
         if pen_only {
@@ -770,7 +866,7 @@ async fn map_devices_to_output(pen_only: bool, ident: &DeviceIdentity, card: Opt
             }
         }
 
-        if mapped >= 3 {
+        if mapped >= expected {
             return;
         }
     }
@@ -874,6 +970,9 @@ pub struct InputServer {
     /// mapped onto that card's connector, not onto "the first EVDI output" -
     /// with two tablets that would put both pens on one screen.
     card_rx: watch::Receiver<Option<u32>>,
+    /// Whether this tablet is attached at all. The virtual input devices
+    /// exist exactly while it is.
+    tablet_rx: watch::Receiver<bool>,
 }
 
 impl InputServer {
@@ -884,6 +983,7 @@ impl InputServer {
         latency: crate::latency::LatencyTracker,
         relaunch: Arc<tokio::sync::Notify>,
         card_rx: watch::Receiver<Option<u32>>,
+        tablet_rx: watch::Receiver<bool>,
     ) -> Self {
         Self {
             config,
@@ -893,6 +993,7 @@ impl InputServer {
             latency,
             relaunch,
             card_rx,
+            tablet_rx,
         }
     }
 
@@ -909,95 +1010,101 @@ impl InputServer {
 
         info!("Input server on ws://{}", addr);
 
-        // Created once for the lifetime of the daemon, not per connection.
-        // Recreating them on every reconnect gave the devices a fresh identity
-        // each time, so KDE reran input configuration and the output mapping
-        // below had nothing stable to attach to.
-        //
-        // Device creation sleeps to let udev settle, so it runs off the async
-        // runtime rather than blocking a worker thread.
+        // The devices exist only while a tablet is attached. Created for the
+        // daemon's whole lifetime they left a touchscreen and a pen tablet on
+        // the desktop with nothing behind them, and merely having those
+        // present changes desktop behaviour (Cinnamon and GNOME on X11 hide
+        // the mouse cursor around touch devices). Recreating them on attach is
+        // safe: DeviceIdentity is fixed per instance, names and product ids
+        // alike, so the desktop's per-device settings and the output mapping
+        // below find the same device every time.
         let ident = DeviceIdentity::for_instance(self.config.instance);
-        let ident_bg = ident.clone();
-        let devices = tokio::task::spawn_blocking(move || {
-            let touch = match UInputDevice::new_touch(&ident_bg.touch, ident_bg.product_touch) {
-                Ok(dev) => Some(dev),
-                Err(e) => {
-                    warn!("No touch device: {}. Touch will be logged only.", e);
-                    None
-                }
-            };
-            let pen = match UInputDevice::new_pen(&ident_bg.pen, ident_bg.product_pen) {
-                Ok(dev) => Some(dev),
-                Err(e) => {
-                    warn!("No pen device: {}. Pen will be logged only.", e);
-                    None
-                }
-            };
-            let pointer = match UInputDevice::new_pointer(&ident_bg.pointer, ident_bg.product_pointer) {
-                Ok(dev) => Some(dev),
-                Err(e) => {
-                    warn!("No pointer device: {}. The cursor will vanish when the pen lifts.", e);
-                    None
-                }
-            };
-            InjectDevices {
-                touch,
-                pen,
-                pointer,
-                last_pen_pos: (0, 0),
-                active_slots: 0,
-                pen_proximity: false,
-                pen_button: false,
-            }
-        })
-        .await
-        .unwrap_or(InjectDevices {
-            touch: None,
-            pen: None,
-            pointer: None,
-            last_pen_pos: (0, 0),
-            active_slots: 0,
-            pen_proximity: false,
-            pen_button: false,
-        });
-        let uinput = Arc::new(std::sync::Mutex::new(devices));
+        if !self.config.any_device() {
+            info!(
+                "Virtual input devices are all off (input_touch / input_pen / \
+                 input_pointer in config.toml) — the tablet is display-only"
+            );
+        }
+        let uinput = Arc::new(std::sync::Mutex::new(InjectDevices::empty()));
 
-        // Follow the mode for as long as the daemon runs. A switch has to move
-        // the pen and touch devices onto the other output, and drop anything
-        // held at the moment of the switch — a finger or pen tip that was down
-        // would otherwise stay down on a screen that is no longer listening.
+        // Follow the tablet, the mode and the card for as long as the daemon
+        // runs. Attach creates the devices and maps them; detach destroys
+        // them; a mode or card switch moves them onto the other output and
+        // drops anything held at that moment — a finger or pen tip that was
+        // down would otherwise stay down on a screen no longer listening.
         {
+            let mut tablet_rx = self.tablet_rx.clone();
             let mut mode_rx = self.mode_tx.subscribe();
             let mut card_rx = self.card_rx.clone();
             let devices = uinput.clone();
-            let ident_map = ident.clone();
-            let initial = *mode_rx.borrow_and_update();
-            let card0 = *card_rx.borrow_and_update();
-            // The first mapping waits for the virtual display to be enabled
-            // like every later one, so it runs in the background rather than
-            // holding up the accept loop below.
+            let ident_bg = ident.clone();
+            let cfg = self.config.clone();
             tokio::spawn(async move {
-                map_devices_to_output(initial, &ident_map, card0).await;
+                let mut present = false;
+                tablet_rx.borrow_and_update();
+                mode_rx.borrow_and_update();
+                card_rx.borrow_and_update();
                 loop {
-                    tokio::select! {
-                        r = mode_rx.changed() => { if r.is_err() { break; } }
-                        r = card_rx.changed() => { if r.is_err() { break; } }
-                    }
+                    let attached = *tablet_rx.borrow();
                     let pen_only = *mode_rx.borrow();
                     let card = *card_rx.borrow();
-                    if let Ok(mut guard) = devices.lock() {
-                        guard.release_all();
+                    let count;
+                    if attached && !present {
+                        present = true;
+                        let (c, i) = (cfg.clone(), ident_bg.clone());
+                        // Device creation sleeps to let udev settle, so it
+                        // runs off the async runtime.
+                        let created = tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
+                            .await
+                            .unwrap_or_else(|_| InjectDevices::empty());
+                        count = created.count();
+                        let has_touch = created.touch.is_some();
+                        if let Ok(mut guard) = devices.lock() {
+                            *guard = created;
+                        }
+                        if has_touch {
+                            osk_touch_device_added().await;
+                        }
+                    } else if !attached && present {
+                        present = false;
+                        let old = devices
+                            .lock()
+                            .map(|mut g| {
+                                g.release_all();
+                                std::mem::replace(&mut *g, InjectDevices::empty())
+                            })
+                            .ok();
+                        let had_touch = old.as_ref().is_some_and(|d| d.touch.is_some());
+                        drop(old);
+                        if had_touch {
+                            osk_touch_device_removed().await;
+                        }
+                        info!("Tablet detached — virtual input devices removed");
+                        count = 0;
+                    } else if attached {
+                        count = devices.lock().map(|mut g| { g.release_all(); g.count() }).unwrap_or(0);
+                        if count > 0 {
+                            info!(
+                                "Mode is now {} — remapping input devices{}",
+                                if pen_only { "pen-only" } else { "second screen" },
+                                card.map(|c| format!(" (card{})", c)).unwrap_or_default()
+                            );
+                        }
+                    } else {
+                        count = 0;
                     }
                     // Leaving display mode tears the virtual output down and
                     // entering it brings the output back. map_devices_to_output
                     // waits for the output it needs to actually be enabled, so
-                    // a mode change during the wait simply restarts it.
-                    info!(
-                        "Mode is now {} — remapping input devices{}",
-                        if pen_only { "pen-only" } else { "second screen" },
-                        card.map(|c| format!(" (card{})", c)).unwrap_or_default()
-                    );
-                    map_devices_to_output(pen_only, &ident_map, card).await;
+                    // a change during the wait simply restarts it.
+                    if count > 0 {
+                        map_devices_to_output(pen_only, &ident_bg, card, count).await;
+                    }
+                    tokio::select! {
+                        r = tablet_rx.changed() => { if r.is_err() { break; } }
+                        r = mode_rx.changed() => { if r.is_err() { break; } }
+                        r = card_rx.changed() => { if r.is_err() { break; } }
+                    }
                 }
             });
         }
@@ -1150,7 +1257,7 @@ async fn handle_connection(
         match msg {
             Ok(Message::Text(text)) => match serde_json::from_str::<InputEvent>(&text) {
                 Ok(event) => {
-                    handle_event(event, &uinput, &settings_tx, &mode_tx, &latency);
+                    handle_event(event, &uinput, &settings_tx, &mode_tx, &latency, config.pen);
                 }
                 Err(e) => {
                     warn!("Invalid input: {} - {}", e, text);
@@ -1208,6 +1315,7 @@ fn handle_event(
     settings_tx: &Option<watch::Sender<EncoderSettings>>,
     mode_tx: &watch::Sender<bool>,
     latency: &crate::latency::LatencyTracker,
+    pen_enabled: bool,
 ) {
     match event {
         InputEvent::Touch {
@@ -1229,8 +1337,8 @@ fn handle_event(
                     }
                 } else {
                     match action {
-                        0 => info!("Touch DOWN at ({}, {})", abs_x, abs_y),
-                        1 => info!("Touch UP   at ({}, {})", abs_x, abs_y),
+                        0 => debug!("Touch DOWN at ({}, {}) — no touch device", abs_x, abs_y),
+                        1 => debug!("Touch UP   at ({}, {}) — no touch device", abs_x, abs_y),
                         _ => {}
                     }
                     false
@@ -1256,7 +1364,9 @@ fn handle_event(
         } => {
             let abs_x = (x * COORD_MAX as f64) as i32;
             let abs_y = (y * COORD_MAX as f64) as i32;
-            note_pen_action(action);
+            if pen_enabled {
+                note_pen_action(action);
+            }
             let abs_pressure = (pressure * 4096.0) as i32;
             // Already degrees, as the tablet computes them. This used to
             // multiply by 180/π on the assumption they were radians, which
@@ -1272,8 +1382,8 @@ fn handle_event(
                     }
                 } else {
                     match action {
-                        0 => info!("Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1})", abs_x, abs_y, eraser, tilt_x, tilt_y),
-                        1 => info!("Pen UP   at ({}, {})", abs_x, abs_y),
+                        0 => debug!("Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device", abs_x, abs_y, eraser, tilt_x, tilt_y),
+                        1 => debug!("Pen UP   at ({}, {}) — no pen device", abs_x, abs_y),
                         _ => {}
                     }
                     false
@@ -1396,6 +1506,13 @@ fn handle_event(
             // follower, so re-sending the current mode would tear the virtual
             // display down and back up for nothing.
             if *mode_tx.borrow() == pen_only {
+                return;
+            }
+            // Pen-only mode with no pen device would tear the display down
+            // and then drop every stroke: a blank tablet. The app's switch
+            // follows the mode the daemon reports, so it simply stays off.
+            if pen_only && !pen_enabled {
+                warn!("Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored");
                 return;
             }
             info!(

@@ -93,6 +93,18 @@ pub struct FileConfig {
     pub input_port: u16,
     /// Launch the UScreen app on the tablet automatically when it's plugged in
     pub auto_launch_app: bool,
+    /// Create the virtual touchscreen ("UScreen Touch") while a tablet is
+    /// attached, so taps on it become touch input here. Opt out if merely
+    /// having a touchscreen upsets your desktop (Cinnamon/GNOME on X11 hide
+    /// the mouse cursor around touch devices) and you only use the pen.
+    pub input_touch: bool,
+    /// Create the virtual pen tablet ("UScreen Pen") for stylus input with
+    /// pressure, tilt and eraser. Pen-only mode needs it.
+    pub input_pen: bool,
+    /// Create the absolute pointer ("UScreen Pointer") that parks the mouse
+    /// cursor where the pen last was, so it does not vanish when the pen
+    /// lifts. Only exists together with `input_pen`.
+    pub input_pointer: bool,
 }
 
 impl Default for FileConfig {
@@ -116,6 +128,9 @@ impl Default for FileConfig {
             video_port: 8890,
             input_port: 8891,
             auto_launch_app: true,
+            input_touch: true,
+            input_pen: true,
+            input_pointer: true,
         }
     }
 }

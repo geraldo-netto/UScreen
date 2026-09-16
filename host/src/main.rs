@@ -197,7 +197,11 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let input_port = cli.input_port.unwrap_or(file_cfg.input_port);
     let quality = cli.quality.unwrap_or(file_cfg.quality);
     let stream_scale = cli.stream_scale.unwrap_or(file_cfg.stream_scale);
-    let pen_only = cli.pen_only || file_cfg.pen_only;
+    let mut pen_only = cli.pen_only || file_cfg.pen_only;
+    if pen_only && !file_cfg.input_pen {
+        warn!("Pen-only mode needs the pen device, but input_pen is off in config.toml — starting as a second screen");
+        pen_only = false;
+    }
 
     let cap_config = capture::CaptureConfig {
         helper_path: find_helper(&cli.helper),
@@ -249,6 +253,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         codec: capture::Codec::from_encoder(&encoder).muxer().to_string(),
         virtual_width: width,
         virtual_height: height,
+        touch: file_cfg.input_touch,
+        pen: file_cfg.input_pen,
+        pointer: file_cfg.input_pointer,
     };
 
     // Which of the two jobs the tablet is doing. Switchable at runtime from
@@ -270,6 +277,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         stream_scale,
     });
 
+    // Tablet presence, published by the ADB monitor.
+    let (tablet_tx, mut tablet_rx) = watch::channel(false);
+    let tray_tablet_rx = tablet_tx.subscribe();
+
     let mut capture_mgr = capture::CaptureManager::new(cap_config);
     let card_rx = capture_mgr.card_rx();
     let codec_config = capture_mgr.codec_config_arc();
@@ -283,6 +294,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         latency,
         relaunch.clone(),
         card_rx,
+        tablet_tx.subscribe(),
     );
 
     // Deliberately shallow. This ring is pure latency when it fills: 256 frames
@@ -292,9 +304,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // the stream server actually gets a chance to run.
     let (video_tx, _) = broadcast::channel(8);
 
-    // The tablet is a touchscreen as far as the desktop is concerned, so the
-    // virtual keyboard would pop up over the screen being used as a monitor.
-    osk::disable().await;
 
     info!("=== uscreen daemon starting ===");
     info!("  Resolution: {}x{} @ {}fps", width, height, fps);
@@ -302,10 +311,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     info!("  Bitrate: {} kbps", bitrate);
     info!("  Stream port: {}", video_port);
     info!("  Input port: {}", input_port);
-
-    // Tablet presence, published by the ADB monitor.
-    let (tablet_tx, mut tablet_rx) = watch::channel(false);
-    let tray_tablet_rx = tablet_tx.subscribe();
+    info!(
+        "  Input devices: touch={} pen={} pointer={}",
+        file_cfg.input_touch, file_cfg.input_pen, file_cfg.input_pointer
+    );
 
     // What the capture manager actually follows: the virtual display should
     // exist exactly while a tablet is attached *and* being used as a screen.
@@ -431,8 +440,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     let tray_mode_tx = mode_tx.clone();
     let tray_shutdown_tx = shutdown_tx.clone();
+    let tray_pen_device = file_cfg.input_pen;
     let tray_handle = tokio::spawn(async move {
-        tray::run(tray_mode_tx, tray_tablet_rx, tray_shutdown_tx, update_rx).await;
+        tray::run(tray_mode_tx, tray_tablet_rx, tray_shutdown_tx, update_rx, tray_pen_device).await;
     });
 
     // Plug-and-play: watch for the tablet over ADB, set up port forwarding
@@ -461,6 +471,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         video_port,
         input_port,
         codec: capture::Codec::from_encoder(&encoder).muxer().to_string(),
+        input_touch: file_cfg.input_touch,
+        input_pen: file_cfg.input_pen,
+        input_pointer: file_cfg.input_pointer,
         token: token.clone(),
         mode_tx: mode_tx.clone(),
         shutdown_rx: shutdown_tx.subscribe(),
@@ -509,6 +522,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         warn!("Capture pipeline did not stop within 5s");
     }
 
+    // The input server restores the keyboard when the last tablet detaches;
+    // this covers a shutdown with a tablet still attached.
     osk::restore().await;
 
     stream_handle.abort();
@@ -668,6 +683,11 @@ struct ExtraSessionTemplate {
     input_port: u16,
     codec: String,
     token: Option<String>,
+    /// Which virtual input devices each extra tablet gets; same switches as
+    /// the first one.
+    input_touch: bool,
+    input_pen: bool,
+    input_pointer: bool,
     mode_tx: watch::Sender<bool>,
     shutdown_rx: watch::Receiver<bool>,
 }
@@ -727,6 +747,7 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
         height_mm: cfg.height_mm,
         stream_scale: cfg.stream_scale,
     });
+    let (tablet_tx, mut tablet_rx) = watch::channel(false);
     let mut cap = capture::CaptureManager::new(cfg.clone());
     let card_rx = cap.card_rx();
     let codec_config = cap.codec_config_arc();
@@ -745,15 +766,18 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
             codec: t.codec.clone(),
             virtual_width: cfg.width,
             virtual_height: cfg.height,
+            touch: t.input_touch,
+            pen: t.input_pen,
+            pointer: t.input_pointer,
         },
         Some(settings_tx),
         t.mode_tx.clone(),
         latency,
         relaunch.clone(),
         card_rx,
+        tablet_tx.subscribe(),
     );
 
-    let (tablet_tx, mut tablet_rx) = watch::channel(false);
     let (gate_tx, gate_rx) = watch::channel(false);
     let (stop_tx, stop_rx) = watch::channel(false);
     let mut mode_rx = t.mode_tx.subscribe();

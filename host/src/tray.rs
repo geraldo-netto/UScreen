@@ -37,6 +37,9 @@ fn pixmap(rgba: &[u8]) -> ksni::Icon {
 
 struct UScreenTray {
     pen_only: bool,
+    /// Whether the daemon creates a pen device at all; pen-only mode is
+    /// pointless without one.
+    pen_device: bool,
     tablet_present: bool,
     /// Newer release, when the daily check found one.
     update: Option<String>,
@@ -133,6 +136,10 @@ impl Tray for UScreenTray {
                 // out would take away the one chance to set it in advance.
                 activate: Box::new(|t: &mut Self| {
                     let want = !t.pen_only;
+                    if want && !t.pen_device {
+                        warn!("Pen-only mode needs the pen device (input_pen in config.toml) — ignored");
+                        return;
+                    }
                     // The mode channel is the source of truth. Do not flip the
                     // local copy here: the update task below sets it from the
                     // channel, so the menu can only ever show a mode the
@@ -201,10 +208,12 @@ pub async fn run(
     mut tablet_rx: watch::Receiver<bool>,
     shutdown_tx: watch::Sender<bool>,
     mut update_rx: watch::Receiver<crate::update::Available>,
+    pen_device: bool,
 ) {
     let mut mode_rx = mode_tx.subscribe();
 
     let tray = UScreenTray {
+        pen_device,
         pen_only: *mode_rx.borrow_and_update(),
         tablet_present: *tablet_rx.borrow_and_update(),
         update: update_rx.borrow_and_update().clone(),
