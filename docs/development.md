@@ -2,15 +2,48 @@
 
 ## Building from source
 
-Dependencies: Rust (stable), gcc, `pkg-config`, `libdrm` headers, `ffmpeg`,
-`adb`, and the evdi kernel module. See [installation.md](installation.md) for
-the per-distribution package names.
+Host build needs stable Rust/Cargo, a C/C++ compiler, make, pkg-config,
+libdrm headers, the **libevdi userspace development library** (including the
+unversioned `libevdi.so` linker name), and the GUI platform headers below.
+The evdi kernel module alone cannot satisfy the helper's `-levdi` link.
+
+On Debian 12 / Ubuntu, install the compiler and GUI prerequisites:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential pkg-config git curl ca-certificates \
+  libdrm-dev libxkbcommon-dev libwayland-dev libxcb-render0-dev \
+  libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev
+# Install stable Rust with rustup if cargo/rustc are not already available.
+```
+
+If the distribution provides `libevdi-dev`, it supplies the linker library.
+For Debian 12, or to match the bundled release library exactly, build the
+pinned upstream userspace library (this does not build/load a kernel module):
+
+```bash
+git clone --depth 1 --branch v1.15.0 https://github.com/DisplayLink/evdi /tmp/uscreen-evdi
+make -C /tmp/uscreen-evdi/library
+sudo make -C /tmp/uscreen-evdi/library install PREFIX=/usr/local
+sudo ldconfig
+```
+
+Runtime additionally needs `ffmpeg`, `adb`/`android-tools`, a compatible evdi
+kernel module, and the permissions installed by `make setup-system`.
+KDE mapping needs `kscreen-doctor` plus `busctl` or `qdbus`; X11 mapping needs
+`xinput` and `xrandr`. See [installation.md](installation.md).
 
 ```bash
 make build            # EVDI helper (C) + Rust daemon + GUI
 make install          # copies to ~/.local/bin, installs the systemd user unit
 make setup-system     # modprobe.d / modules-load.d / udev rule (sudo)
 ```
+
+The Android app needs JDK 17 or 21 and Android SDK platform 34 / build-tools
+34.0.0. Use the committed Gradle wrapper (8.5); set `ANDROID_HOME` to the SDK
+root or put `sdk.dir=/absolute/sdk/path` in ignored `android/local.properties`.
+SDK tools must have their licenses accepted. No connected device is needed
+for unit tests or APK builds.
 
 The Android app:
 
@@ -26,10 +59,22 @@ Or open `android/` in Android Studio.
 
 ```bash
 RUST_LOG=uscreen=debug uscreen start      # in a terminal, with the tablet attached
-cargo test --release --manifest-path host/Cargo.toml
-cargo clippy --release --manifest-path host/Cargo.toml
-cd android && ./gradlew lintDebug
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+./android/gradlew -p android testDebugUnitTest assembleDebug lintDebug
 ```
+
+The normal host suite includes permanent C sanitizer, FFmpeg, GUI startup,
+installer and real Debian/RPM artifact tests. On Debian/Ubuntu, add:
+
+```bash
+sudo apt-get install -y python3 ffmpeg rpm fakeroot dpkg-dev \
+  xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
+```
+
+GCC's ASan/UBSan/TSan runtimes must be installed with the compiler. The GUI
+startup test uses an isolated Xvfb session and accessibility bus. Android
+tests use Robolectric API 27 and 34; Gradle downloads their test images.
 
 `scripts/fake-tablet.py` pretends to be a tablet on the loopback ports
 (authenticates, reports a resolution, acks frames). With
@@ -135,20 +180,34 @@ Binaries are built in a Debian 12 container for glibc 2.36 or newer (Debian 12+,
 
 ```bash
 distrobox create --image debian:12 --name uscreen-build
-# inside: build-essential pkg-config libdrm-dev git dpkg-dev fakeroot rpm curl,
-#         the X11/Wayland dev packages for the GUI, and rustup
+# Inside: install the host compiler/GUI prerequisites listed above,
+# plus dpkg-dev fakeroot rpm, and stable Rust through rustup.
+# build-release.sh builds and bundles pinned libevdi v1.15.0 itself.
 
 GH_TOKEN=... make publish NOTES=release-notes.md
 ```
 
 `make publish` runs `scripts/build-release.sh` and `packaging/build-packages.sh`,
-refuses to continue unless all five release files exist, creates the GitHub
-release for the already-pushed tag (titled *UScreen X.Y.Z — USB second monitor
-for Linux with S Pen support*) and uploads everything plus `SHA256SUMS`.
+requires HEAD and both local/origin tag objects to match, and refuses to
+continue unless all five release files exist. It creates a **draft**, uploads
+those files plus `SHA256SUMS`, verifies the complete server asset inventory,
+sizes and SHA-256 digests, then publishes. Any earlier failure leaves the draft
+unpublished. Publishing needs Python 3.11+ on the host and `GH_TOKEN` with
+release write access; credentials are read from the environment inside Python.
+The Android release build runs on the host and needs the SDK/JDK and signing
+key described above. No publishing command belongs in routine validation.
+
+`make dist-local` uses the local toolchain and requires a successful signed APK
+build. It bundles libevdi v1.15.0 beside the helper; if the compiler cannot find
+that exact library, pass `LIBEVDI=/absolute/path/libevdi.so.1.15.0`. Its tarball is
+only compatible with systems at least as new as the build host. All tar/native
+packages carry the notices and documentation listed in
+`packaging/distribution-docs.txt`.
 
 Before that, for a new version:
 
-1. Bump `VERSION` in the Makefile, `version` in both `Cargo.toml` files,
+1. Bump `VERSION` in the Makefile, `version` in `host/Cargo.toml`,
+   `gui/Cargo.toml`, and `common/Cargo.toml` (refresh `Cargo.lock`),
    `versionCode`/`versionName` in `android/app/build.gradle.kts` and
    `pkgver` in `packaging/arch/PKGBUILD`.
 2. Add a `## X.Y.Z — YYYY-MM-DD` entry to `CHANGELOG.md`.
