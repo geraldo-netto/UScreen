@@ -7,6 +7,7 @@ mod encoder;
 #[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]
 mod encoder_io;
 mod input;
+mod kscreen;
 mod kwin;
 mod latency;
 mod osk;

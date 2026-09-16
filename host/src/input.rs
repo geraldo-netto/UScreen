@@ -1138,18 +1138,6 @@ async fn map_x11_devices(
     warn!("X11 output or input devices not ready after 10s; check xrandr providers and xinput");
 }
 
-/// The outputs KWin currently knows, as reported by `kscreen-doctor -j`.
-/// `None` when the tool is not there at all (not a KDE session).
-async fn kscreen_outputs() -> Option<Vec<serde_json::Value>> {
-    let out = tokio::process::Command::new("kscreen-doctor")
-        .arg("-j")
-        .output_bounded()
-        .await
-        .ok()?;
-    let v: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
-    Some(v.get("outputs")?.as_array()?.clone())
-}
-
 /// The output the devices should address in this mode, returned only once
 /// KWin lists it as enabled.
 ///
@@ -1173,12 +1161,12 @@ async fn target_output(
                 return Some(name);
             }
             // No kscreen-doctor means no KDE session: nothing to wait for.
-            kscreen_outputs().await?;
+            crate::kscreen::outputs().await?;
         } else {
             let connectors = crate::vdisplay::evdi_connectors();
             // Keep this tablet's assigned card, including during discovery gaps.
             let fallback = fallback_output(&connectors, card);
-            let Some(outputs) = kscreen_outputs().await else {
+            let Some(outputs) = crate::kscreen::outputs().await else {
                 return fallback;
             };
             let enabled = outputs.iter().find(|output| {

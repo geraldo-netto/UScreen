@@ -550,32 +550,13 @@ impl CaptureManager {
         if evdi_names.is_empty() {
             return;
         }
-        let Ok(o) = tokio::process::Command::new("kscreen-doctor")
-            .arg("-j")
-            .output_bounded()
-            .await
-        else {
+        let Some(outputs) = crate::kscreen::outputs().await else {
             return;
         };
-        let Ok(v) = serde_json::from_slice::<serde_json::Value>(&o.stdout) else {
-            return;
-        };
-        let Some(outputs) = v.get("outputs").and_then(|o| o.as_array()) else {
-            return;
-        };
-        for out in outputs {
-            let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
-            if !evdi_names.iter().any(|n| n == name) {
+        for out in &outputs {
+            let Some((id, name)) = crate::kscreen::enabled_matching_output(out, &evdi_names) else {
                 continue;
-            }
-            if !out
-                .get("enabled")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false)
-            {
-                continue;
-            }
-            let id = out.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            };
             info!("Disabling EVDI output.{} ({})", id, name);
             let _ = tokio::process::Command::new("kscreen-doctor")
                 .arg(format!("output.{}.disable", id))
