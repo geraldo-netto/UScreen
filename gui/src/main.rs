@@ -473,10 +473,28 @@ impl eframe::App for App {
         ctx.request_repaint_after(Duration::from_secs(1));
         let status = self.status.lock().map(|s| s.clone()).unwrap_or_default();
 
-        // The settings run longer than any sensible window, so they scroll;
-        // the config path stays put underneath instead of scrolling away.
+        // Keep one shared action row below every tab, visible while settings scroll.
         egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
-            ui.add_space(4.0);
+            ui.add_space(8.0);
+            let dirty = self.cfg != self.saved_cfg;
+            ui.horizontal(|ui| {
+                let label = if status.daemon_running {
+                    "Apply & restart"
+                } else {
+                    "Save"
+                };
+                if ui.add_enabled(dirty, egui::Button::new(label)).clicked() {
+                    self.apply(status.daemon_running);
+                }
+                if dirty && ui.button("Discard").clicked() {
+                    self.cfg = self.saved_cfg.clone();
+                }
+            });
+            if !self.message.is_empty() {
+                ui.add_space(8.0);
+                ui.label(egui::RichText::new(&self.message).weak());
+            }
+            ui.add_space(8.0);
             ui.label(
                 egui::RichText::new(format!("config: {}", config_path().display()))
                     .weak()
@@ -950,30 +968,6 @@ impl eframe::App for App {
                         }
                     });
 
-                ui.add_space(12.0);
-
-                let dirty = self.cfg != self.saved_cfg;
-                ui.horizontal(|ui| {
-                    let label = if status.daemon_running {
-                        "Apply & restart"
-                    } else {
-                        "Save"
-                    };
-                    if ui
-                        .add_enabled(dirty, egui::Button::new(label))
-                        .clicked()
-                    {
-                        self.apply(status.daemon_running);
-                    }
-                    if dirty && ui.button("Discard").clicked() {
-                        self.cfg = self.saved_cfg.clone();
-                    }
-                });
-
-                if !self.message.is_empty() {
-                    ui.add_space(8.0);
-                    ui.label(egui::RichText::new(&self.message).weak());
-                }
             });
         });
     }
