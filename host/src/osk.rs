@@ -68,13 +68,46 @@ pub async fn disable() {
 
 /// Put the on-screen keyboard back the way the user had it.
 pub async fn restore() {
-    let path = state_path();
-    let Ok(saved) = std::fs::read_to_string(&path) else {
+    restore_from(&state_path(), |saved| async move { set_mode(&saved).await }).await;
+}
+
+async fn restore_from<F, Fut>(path: &std::path::Path, apply: F)
+where
+    F: FnOnce(String) -> Fut,
+    Fut: std::future::Future<Output = bool>,
+{
+    let Ok(saved) = std::fs::read_to_string(path) else {
         return;
     };
     let saved = saved.trim();
-    if !saved.is_empty() && set_mode(saved).await {
+    if !saved.is_empty() && apply(saved.to_string()).await {
         info!("On-screen keyboard setting restored");
+        let _ = std::fs::remove_file(path);
+    } else {
+        warn!("Keyboard restoration failed — saved setting retained for retry");
     }
-    let _ = std::fs::remove_file(&path);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn t111_restore_retries_preserved_setting_until_confirmed() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("osk-restore");
+        std::fs::write(&path, "2").unwrap();
+        restore_from(&path, |value| async move {
+            assert_eq!(value, "2");
+            false
+        })
+        .await;
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "2");
+        restore_from(&path, |value| async move {
+            assert_eq!(value, "2");
+            true
+        })
+        .await;
+        assert!(!path.exists());
+        restore_from(&path, |_| async { panic!("already restored") }).await;
+    }
 }
