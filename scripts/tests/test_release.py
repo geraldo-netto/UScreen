@@ -63,6 +63,50 @@ class ReleaseTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertFalse((self.base / 'build-called').exists(), result.stdout + result.stderr)
 
+    def enable_uploads(self):
+        for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
+            self.write(name, '#!/bin/sh\nexit 0\n', True)
+        for name in ['uscreen-1.2.3-linux-x86_64.tar.gz', 'uscreen_1.2.3_amd64.deb',
+                     'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz',
+                     'uscreen-1.2.3/uscreen.apk']:
+            self.write('dist/' + name, 'asset ' + name)
+        self.git('add', '.')
+        self.git('commit', '-qm', 'mock builds')
+        self.git('tag', '-fa', 'v1.2.3', '-m', 'mock release')
+        self.git('push', '-q', '-f', 'origin', 'refs/tags/v1.2.3')
+        # urllib is intercepted in every child interpreter. No real HTTP.
+        site = self.base / 'sitecustomize.py'
+        site.write_text(r"""
+import io, json, os, urllib.request
+from pathlib import Path
+root = Path(os.environ['USCREEN_TEST_ROOT'])
+def fake_urlopen(request, *args, **kwargs):
+    authorized = request.get_header('Authorization') == 'Bearer ' + os.environ['GH_TOKEN']
+    with (root / 'requests').open('a') as f:
+        f.write(json.dumps({'url': request.full_url, 'authorized': authorized}) + '\n')
+    return io.BytesIO(json.dumps({'id': 123, 'name': 'asset', 'state': 'uploaded'}).encode())
+urllib.request.urlopen = fake_urlopen
+""")
+        self.env['PYTHONPATH'] = str(self.base)
+        real_python = shutil.which('python3')
+        wrapper = self.bin / 'python3'
+        wrapper.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "$USCREEN_TEST_ROOT/argv"\nexec {real_python} "$@"\n')
+        wrapper.chmod(0o755)
+        curl = self.bin / 'curl'
+        curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$USCREEN_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
+        curl.chmod(0o755)
+
+    def test_t118_credentials_absent_from_arguments_and_logs(self):
+        self.enable_uploads()
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        arguments = (self.base / 'argv').read_text()
+        self.assertNotIn(self.env['GH_TOKEN'], arguments + result.stdout + result.stderr)
+        requests = (self.base / 'requests').read_text().splitlines()
+        import json
+        self.assertGreaterEqual(len(requests), 7)
+        self.assertTrue(all(json.loads(line)['authorized'] for line in requests))
+
     def test_t100_newer_head_rejected(self):
         self.write('new-source', 'new')
         self.git('add', '.')

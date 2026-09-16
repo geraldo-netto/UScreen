@@ -329,3 +329,8 @@ fn release_tests(pattern: &str) {
 fn t100_release_requires_matching_head_local_and_remote_tags() {
     release_tests("t100");
 }
+
+#[test]
+fn t118_release_credentials_never_appear_in_command_arguments() {
+    release_tests("t118");
+}

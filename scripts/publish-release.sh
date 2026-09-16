@@ -97,9 +97,18 @@ echo "release id: $RID"
 
 for a in "${ASSETS[@]}"; do
   f="${a%%:*}"; t="${a##*:}"; n="$(basename "$f")"
-  curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: $t" \
-    --data-binary @"$f" \
-    "https://uploads.github.com/repos/$REPO/releases/$RID/assets?name=$n" \
-    | python3 -c "import json,sys; d=json.load(sys.stdin); print(' ', d.get('name'), d.get('state','?'))"
+  python3 - "$f" "$t" "$REPO" "$RID" "$n" <<'PY'
+import json, os, sys, urllib.parse, urllib.request
+path, kind, repo, release, name = sys.argv[1:]
+with open(path, "rb") as data:
+    request = urllib.request.Request(
+        f"https://uploads.github.com/repos/{repo}/releases/{release}/assets?name={urllib.parse.quote(name)}",
+        data=data, method="POST",
+        headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                 "Content-Type": kind, "Content-Length": str(os.path.getsize(path))})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        result = json.load(response)
+    print(" ", result.get("name"), result.get("state", "?"))
+PY
 done
 echo "✓ https://github.com/$REPO/releases/tag/v$VERSION"
