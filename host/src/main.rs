@@ -164,6 +164,33 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 #[cfg(test)]
 mod cli_tests {
     #[tokio::test]
+    async fn t106_usb_migration_preserves_physical_tablet_identity() {
+        let mut identities = std::collections::HashMap::from([
+            ("PHONE".into(), "phone".into()),
+            ("TABLET".into(), "tablet".into()),
+            ("192.0.2.1:5555".into(), "tablet".into()),
+        ]);
+        let devices = ["PHONE", "TABLET", "192.0.2.1:5555"].map(String::from);
+        let selected =
+            unique_devices(&devices, Some("192.0.2.1:5555"), &mut identities, "/unused").await;
+        assert_eq!(
+            current_transport(&selected, Some("192.0.2.1:5555"), &identities).as_deref(),
+            Some("TABLET")
+        );
+        let without_cable = ["PHONE", "192.0.2.1:5555"].map(String::from);
+        let selected =
+            unique_devices(&without_cable, Some("TABLET"), &mut identities, "/unused").await;
+        assert_eq!(
+            current_transport(&selected, Some("TABLET"), &identities).as_deref(),
+            Some("192.0.2.1:5555")
+        );
+        assert_eq!(
+            current_transport(&selected, Some("192.0.2.1:5555"), &identities).as_deref(),
+            Some("192.0.2.1:5555")
+        );
+    }
+
+    #[tokio::test]
     async fn t107_dual_transports_use_one_physical_slot() {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
@@ -1281,7 +1308,8 @@ async fn adb_monitor(
             }
         }
         let devices = unique_devices(&devices, current.as_deref(), &mut identities, "adb").await;
-        let found = pick_device(&devices, current.as_deref()).await;
+        let preferred = current_transport(&devices, current.as_deref(), &identities);
+        let found = pick_device(&devices, preferred.as_deref()).await;
 
         match (&current, &found) {
             // Newly attached, or a different tablet than before.
@@ -1761,7 +1789,8 @@ fn is_fake_serial(serial: &str) -> bool {
 
 /// Which of the attached devices to drive.
 ///
-/// Stay with the one already in use for as long as it is still attached.
+/// Stay with the physical tablet already in use; current_transport resolves
+/// its preferred USB transport before this function selects a serial.
 /// adb lists two devices in no fixed order, and taking `first()` on every
 /// poll meant that any reshuffle — a phone's USB re-enumerating when its
 /// screen sleeps is enough — looked like a different tablet being plugged in:
@@ -1772,13 +1801,32 @@ fn is_fake_serial(serial: &str) -> bool {
 /// For a fresh pick, prefer USB over the network, and among USB devices the
 /// one that actually has the app installed: a phone charging next to the
 /// tablet normally does not, and it is almost never the one meant.
+fn current_transport(
+    devices: &[String],
+    current: Option<&str>,
+    identities: &std::collections::HashMap<String, String>,
+) -> Option<String> {
+    let current = current?;
+    if let Some(identity) = identities.get(current) {
+        devices
+            .iter()
+            .find(|device| identities.get(*device) == Some(identity))
+            .cloned()
+    } else {
+        devices
+            .iter()
+            .find(|device| device.as_str() == current)
+            .cloned()
+    }
+}
+
 async fn unique_devices(
     devices: &[String],
     current: Option<&str>,
     identities: &mut std::collections::HashMap<String, String>,
     adb: &str,
 ) -> Vec<String> {
-    identities.retain(|serial, _| devices.contains(serial));
+    identities.retain(|serial, _| devices.contains(serial) || Some(serial.as_str()) == current);
     let missing = devices
         .iter()
         .filter(|serial| !identities.contains_key(*serial));
@@ -1800,7 +1848,7 @@ async fn unique_devices(
         identities.insert(serial, id);
     }
     let mut selected: Vec<String> = Vec::new();
-    let mut groups = std::collections::HashMap::new();
+    let mut groups = std::collections::HashMap::<String, usize>::new();
     for serial in devices {
         // Unknown identities remain distinct; never merge unrelated tablets on
         // an empty or failed getprop response.
@@ -1809,7 +1857,11 @@ async fn unique_devices(
             .map(|id| format!("device:{id}"))
             .unwrap_or_else(|| format!("transport:{serial}"));
         if let Some(&index) = groups.get(&identity) {
-            if Some(serial.as_str()) == current {
+            let existing = transport_of(&selected[index]);
+            let candidate = transport_of(serial);
+            if (candidate == Transport::Usb && existing == Transport::Network)
+                || (candidate == existing && Some(serial.as_str()) == current)
+            {
                 selected[index] = serial.clone();
             }
         } else {
