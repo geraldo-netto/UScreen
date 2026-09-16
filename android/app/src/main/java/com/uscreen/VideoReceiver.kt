@@ -405,33 +405,17 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         while (isCurrent(generation)) {
             var sessionSocket: Socket? = null
             try {
-                // Wait for surface to be ready before connecting
-                while (isCurrent(generation) && !surfaceReady.get()) {
-                    Log.d(TAG, "Waiting for surface...")
-                    delay(200)
-                }
+                awaitSurface(generation)
                 if (!isCurrent(generation)) return
-
-                // Ensure codec is set up
                 val codecReady = synchronized(this@VideoReceiver) {
                     if (!isCurrent(generation)) return
-                    if (mediaCodec == null) {
-                        val surface = pendingSurface.get()
-                        if (surface != null && surface.isValid) {
-                            setupCodec(surface)
-                        } else {
-                            false
-                        }
-                    } else {
-                        true
-                    }
+                    ensureSurfaceCodec()
                 }
                 if (!codecReady) {
                     Log.w(TAG, "Codec/surface not ready, retrying...")
                     delay(500)
                     continue
                 }
-
                 Log.i(TAG, "Connecting to $HOST:$PORT...")
                 val connection = openSocket()
                 sessionSocket = connection
@@ -459,108 +443,131 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                 }
                 Log.i(TAG, "Connected to video stream")
 
-                val sizeHeader = ByteArray(4)
-                // Reused across frames to avoid 60 allocations/s of multi-MB arrays
-                var packetBuf = ByteArray(512 * 1024)
-                var firstFrame = true
-
-                receiveLoop@ while (isCurrent(generation) && !connection.isClosed) {
-                    val codec = synchronized(this@VideoReceiver) {
-                        if (isCurrent(generation)) mediaCodec else null
-                    } ?: break
-
-                    readExact(input, sizeHeader, 4)
-
-                    val frameSize = ((sizeHeader[0].toInt() and 0xFF) shl 24) or
-                            ((sizeHeader[1].toInt() and 0xFF) shl 16) or
-                            ((sizeHeader[2].toInt() and 0xFF) shl 8) or
-                            (sizeHeader[3].toInt() and 0xFF)
-
-                    if (frameSize <= 1 || frameSize > MAX_FRAME_SIZE + 1) {
-                        Log.w(TAG, "Invalid packet size: $frameSize, reconnecting")
-                        break // Reconnect
-                    }
-
-                    if (packetBuf.size < frameSize) {
-                        packetBuf = ByteArray(frameSize + frameSize / 2)
-                    }
-                    readExact(input, packetBuf, frameSize)
-                    if (!isCurrent(generation)) break
-                    byteCounter.addAndGet(frameSize.toLong())
-
-                    val packetType = packetBuf[0].toInt() and 0xFF
-                    when (packetType) {
-                        PACKET_TYPE_CONFIG -> {
-                            val payloadSize = frameSize - 1
-                            Log.i(TAG, "Received codec config: ${payloadSize}B")
-                            feedDecoder(generation, codec, packetBuf, 1, payloadSize, true, 0L)
-                        }
-                        PACKET_TYPE_FRAME -> {
-                            if (frameSize <= FRAME_HEADER_SIZE) {
-                                Log.w(TAG, "Truncated frame packet: $frameSize, reconnecting")
-                                break@receiveLoop
-                            }
-                            // 4-byte big-endian sequence number after the type
-                            // byte, carried through the decoder as the
-                            // presentation timestamp and echoed to the host.
-                            val seq = ((packetBuf[1].toInt() and 0xFF) shl 24) or
-                                    ((packetBuf[2].toInt() and 0xFF) shl 16) or
-                                    ((packetBuf[3].toInt() and 0xFF) shl 8) or
-                                    (packetBuf[4].toInt() and 0xFF)
-                            if (firstFrame) {
-                                firstFrame = false
-                                synchronized(this@VideoReceiver) {
-                                    if (isCurrent(generation)) onConnected?.invoke()
-                                }
-                            }
-                            noteArrival(seq)
-                            feedDecoder(
-                                generation, codec, packetBuf, FRAME_HEADER_SIZE,
-                                frameSize - FRAME_HEADER_SIZE, false,
-                                seq.toLong() and 0xFFFFFFFFL
-                            )
-                        }
-                        else -> {
-                            Log.w(TAG, "Unknown packet type: $packetType, reconnecting")
-                            break@receiveLoop
-                        }
-                    }
-                }
+                receivePackets(generation, connection, input)
             } catch (e: java.io.EOFException) {
-                if (isCurrent(generation)) {
-                    Log.i(TAG, "Stream ended (server closed)")
-                    synchronized(this@VideoReceiver) {
-                        if (isCurrent(generation)) onDisconnected?.invoke()
-                    }
-                    delay(1000)
-                }
+                disconnectAndPause(generation, 1000) { Log.i(TAG, "Stream ended (server closed)") }
             } catch (e: java.net.SocketTimeoutException) {
-                if (isCurrent(generation)) {
-                    Log.w(TAG, "Stream read timeout, reconnecting")
-                    synchronized(this@VideoReceiver) {
-                        if (isCurrent(generation)) onDisconnected?.invoke()
-                    }
-                    delay(500)
-                }
+                disconnectAndPause(generation, 500) { Log.w(TAG, "Stream read timeout, reconnecting") }
             } catch (e: Exception) {
-                if (isCurrent(generation)) {
-                    Log.e(TAG, "Stream error: ${e.message}")
-                    synchronized(this@VideoReceiver) {
-                        if (isCurrent(generation)) onDisconnected?.invoke()
-                    }
-                    delay(1000)
-                }
+                disconnectAndPause(generation, 1000) { Log.e(TAG, "Stream error: ${e.message}") }
             } finally {
-                try {
-                    sessionSocket?.close()
-                } catch (_: Exception) {}
-                synchronized(this@VideoReceiver) {
-                    if (socket === sessionSocket) {
-                        socket = null
-                        inputStream = null
+                retireSessionSocket(sessionSocket)
+            }
+        }
+    }
+
+    private suspend fun awaitSurface(generation: Long) {
+        while (isCurrent(generation) && !surfaceReady.get()) {
+            Log.d(TAG, "Waiting for surface...")
+            delay(200)
+        }
+    }
+
+    // Caller holds the receiver monitor so surface/codec ownership stays atomic.
+    private fun ensureSurfaceCodec(): Boolean {
+        if (mediaCodec != null) return true
+        val surface = pendingSurface.get()
+        return if (surface != null && surface.isValid) setupCodec(surface) else false
+    }
+
+    private suspend fun disconnectAndPause(generation: Long, pauseMs: Long, report: () -> Unit) {
+        if (isCurrent(generation)) {
+            report()
+            synchronized(this@VideoReceiver) {
+                if (isCurrent(generation)) onDisconnected?.invoke()
+            }
+            delay(pauseMs)
+        }
+    }
+
+    private fun retireSessionSocket(sessionSocket: Socket?) {
+        try { sessionSocket?.close() } catch (_: Exception) {}
+        synchronized(this) {
+            if (socket === sessionSocket) {
+                socket = null
+                inputStream = null
+            }
+        }
+    }
+
+    private fun receivePackets(generation: Long, connection: Socket, input: InputStream) {
+        val sizeHeader = ByteArray(4)
+        // Reuse storage across frames to avoid multi-megabyte allocations at 60 Hz.
+        var packetBuf = ByteArray(512 * 1024)
+        val packets = VideoPackets(generation)
+        while (isCurrent(generation) && !connection.isClosed) {
+            val codec = synchronized(this@VideoReceiver) {
+                if (isCurrent(generation)) mediaCodec else null
+            } ?: break
+
+            readExact(input, sizeHeader, 4)
+
+            val frameSize = ((sizeHeader[0].toInt() and 0xFF) shl 24) or
+                    ((sizeHeader[1].toInt() and 0xFF) shl 16) or
+                    ((sizeHeader[2].toInt() and 0xFF) shl 8) or
+                    (sizeHeader[3].toInt() and 0xFF)
+
+            if (frameSize <= 1 || frameSize > MAX_FRAME_SIZE + 1) {
+                Log.w(TAG, "Invalid packet size: $frameSize, reconnecting")
+                break // Reconnect
+            }
+
+            if (packetBuf.size < frameSize) {
+                packetBuf = ByteArray(frameSize + frameSize / 2)
+            }
+            readExact(input, packetBuf, frameSize)
+            if (!isCurrent(generation)) break
+            byteCounter.addAndGet(frameSize.toLong())
+            if (!packets.handle(codec, packetBuf, frameSize)) break
+        }
+    }
+
+    private inner class VideoPackets(private val generation: Long) {
+        private var firstFrame = true
+
+        fun handle(codec: MediaCodec, data: ByteArray, size: Int): Boolean {
+            val packetType = data[0].toInt() and 0xFF
+            when (packetType) {
+                PACKET_TYPE_CONFIG -> {
+                    val payloadSize = size - 1
+                    Log.i(TAG, "Received codec config: ${payloadSize}B")
+                    feedDecoder(generation, codec, data, 1, payloadSize, true, 0L)
+                }
+                PACKET_TYPE_FRAME -> {
+                    if (size <= FRAME_HEADER_SIZE) {
+                        Log.w(TAG, "Truncated frame packet: $size, reconnecting")
+                        return false
                     }
+                    deliverFrame(codec, data, size)
+                }
+                else -> {
+                    Log.w(TAG, "Unknown packet type: $packetType, reconnecting")
+                    return false
                 }
             }
+            return true
+        }
+
+        private fun deliverFrame(codec: MediaCodec, data: ByteArray, size: Int) {
+            // 4-byte big-endian sequence number after the type
+            // byte, carried through the decoder as the
+            // presentation timestamp and echoed to the host.
+            val seq = ((data[1].toInt() and 0xFF) shl 24) or
+                    ((data[2].toInt() and 0xFF) shl 16) or
+                    ((data[3].toInt() and 0xFF) shl 8) or
+                    (data[4].toInt() and 0xFF)
+            if (firstFrame) {
+                firstFrame = false
+                synchronized(this@VideoReceiver) {
+                    if (isCurrent(generation)) onConnected?.invoke()
+                }
+            }
+            noteArrival(seq)
+            feedDecoder(
+                generation, codec, data, FRAME_HEADER_SIZE,
+                size - FRAME_HEADER_SIZE, false,
+                seq.toLong() and 0xFFFFFFFFL
+            )
         }
     }
 
