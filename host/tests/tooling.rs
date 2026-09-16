@@ -227,11 +227,96 @@ fn t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files() {
 }
 
 #[test]
+fn t141_installers_launch_desktop_paths_with_reserved_characters() {
+    for installer in ["source", "make"] {
+        let sandbox = Sandbox::new(&format!("desktop-escaping-{installer}"));
+        let home = sandbox
+            .0
+            .join("home spaces & 'quotes' \\\" $dollar `tick` %percent | semi;");
+        sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
+        sandbox.script("bin/gtk-update-icon-cache", "#!/bin/sh\nexit 0\n");
+        sandbox.script("bin/kbuildsycoca6", "#!/bin/sh\nexit 0\n");
+        for name in ["uscreen", "uscreen-gui", "evdi_helper"] {
+            sandbox.script(
+                &format!("target/release/{name}"),
+                "#!/bin/sh\nprintf '%s' \"$0\" > \"$USCREEN_TEST_LAUNCHED\"\n",
+            );
+        }
+        sandbox.script("host/evdi/evdi_helper", "#!/bin/sh\nexit 0\n");
+        for entry in std::fs::read_dir(repo().join("scripts")).unwrap() {
+            let entry = entry.unwrap();
+            if entry.file_type().unwrap().is_file() {
+                let name = entry.file_name();
+                let to = sandbox.0.join("scripts").join(name);
+                std::fs::create_dir_all(to.parent().unwrap()).unwrap();
+                std::fs::copy(entry.path(), to).unwrap();
+            }
+        }
+        let mut command = if installer == "make" {
+            sandbox.write(
+                "Makefile",
+                &std::fs::read_to_string(repo().join("Makefile"))
+                    .unwrap()
+                    .replace("${HOME}", "$(value USCREEN_TEST_ROOT)")
+                    .replace("$(value HOME)", "$(value USCREEN_TEST_ROOT)"),
+            );
+            let mut command = Command::new("make");
+            command.args(["-o", "build", "install"]);
+            command
+        } else {
+            let source = std::fs::read_to_string(repo().join("scripts/install.sh")).unwrap();
+            let source = source
+                .strip_suffix("main \"$@\"\n")
+                .unwrap()
+                .replace("${HOME}", "${USCREEN_TEST_ROOT}")
+                .replace("$HOME", "$USCREEN_TEST_ROOT");
+            let script =
+                sandbox.script("scripts/install.sh", &format!("{source}\ninstall_files\n"));
+            Command::new(script)
+        };
+        let output = command
+            .current_dir(&sandbox.0)
+            .env("PATH", sandbox.path())
+            .env("USCREEN_TEST_ROOT", &home)
+            .env("XDG_DATA_HOME", home.join(".local/share"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T141 {installer}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let desktop = home.join(".local/share/applications/uscreen.desktop");
+        let marker = sandbox.0.join("launched");
+        let output = Command::new("gio")
+            .arg("launch")
+            .arg(&desktop)
+            .env("USCREEN_TEST_LAUNCHED", &marker)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T141 {installer}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while !marker.exists() && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(
+            std::fs::read_to_string(marker).unwrap(),
+            home.join(".local/bin/uscreen-gui").to_str().unwrap()
+        );
+    }
+}
+
+#[test]
 fn t096_desktop_launches_installed_gui_with_stale_path() {
     let sandbox = Sandbox::new("desktop-install");
     let makefile = std::fs::read_to_string(repo().join("Makefile"))
         .unwrap()
-        .replace("${HOME}", sandbox.0.to_str().unwrap());
+        .replace("${HOME}", sandbox.0.to_str().unwrap())
+        .replace("$(value HOME)", sandbox.0.to_str().unwrap());
     sandbox.write("Makefile", &makefile);
     for name in ["uscreen", "uscreen-gui"] {
         sandbox.script(
@@ -243,6 +328,10 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
     sandbox.write(
         "scripts/uscreen.desktop",
         &std::fs::read_to_string(repo().join("scripts/uscreen.desktop")).unwrap(),
+    );
+    sandbox.script(
+        "scripts/write-desktop-entry.sh",
+        &std::fs::read_to_string(repo().join("scripts/write-desktop-entry.sh")).unwrap(),
     );
     sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
     sandbox.script("bin/uscreen-gui", "#!/bin/sh\necho stale\n");

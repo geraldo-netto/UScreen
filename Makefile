@@ -7,8 +7,10 @@ CC = gcc
 ADB = adb
 # Release bundles pin the same libevdi as the portable build. Override its path when needed.
 LIBEVDI ?= $(shell $(CC) -print-file-name=libevdi.so.1.15.0)
-BIN_DIR = ${HOME}/.local/bin
-DATA_DIR = ${HOME}/.local/share/uscreen
+BIN_DIR = $(value HOME)/.local/bin
+DATA_DIR = $(value HOME)/.local/share/uscreen
+# Keep literal user paths out of shell evaluation.
+quote = '$(subst ','"'"',$(1))'
 
 all: build
 
@@ -22,20 +24,20 @@ build: build-helper
 	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
 
 install: build
-	mkdir -p $(BIN_DIR)
+	mkdir -p $(call quote,$(BIN_DIR))
 	# rm first: cp into a running binary fails with "text file busy"
-	rm -f $(BIN_DIR)/uscreen $(BIN_DIR)/uscreen-gui $(BIN_DIR)/evdi_helper
-	cp target/release/uscreen $(BIN_DIR)/uscreen
-	cp target/release/uscreen-gui $(BIN_DIR)/uscreen-gui
-	cp host/evdi/evdi_helper $(BIN_DIR)/evdi_helper
-	@echo "✓ Installed to $(BIN_DIR)/uscreen, $(BIN_DIR)/uscreen-gui and $(BIN_DIR)/evdi_helper"
-	mkdir -p ${HOME}/.local/share/applications
-	sed 's|^Exec=.*|Exec="$(abspath $(BIN_DIR))/uscreen-gui"|' scripts/uscreen.desktop > "${HOME}/.local/share/applications/uscreen.desktop"
-	mkdir -p ${HOME}/.local/share/icons/hicolor/scalable/apps
-	cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg ${HOME}/.local/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
+	rm -f $(call quote,$(BIN_DIR)/uscreen) $(call quote,$(BIN_DIR)/uscreen-gui) $(call quote,$(BIN_DIR)/evdi_helper)
+	cp target/release/uscreen $(call quote,$(BIN_DIR)/uscreen)
+	cp target/release/uscreen-gui $(call quote,$(BIN_DIR)/uscreen-gui)
+	cp host/evdi/evdi_helper $(call quote,$(BIN_DIR)/evdi_helper)
+	@printf '✓ Binaries installed to %s\n' $(call quote,$(BIN_DIR))
+	mkdir -p $(call quote,$(value HOME)/.local/share/applications)
+	bash scripts/write-desktop-entry.sh $(call quote,$(BIN_DIR)/uscreen-gui) scripts/uscreen.desktop > $(call quote,$(value HOME)/.local/share/applications/uscreen.desktop)
+	mkdir -p $(call quote,$(value HOME)/.local/share/icons/hicolor/scalable/apps)
+	cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg $(call quote,$(value HOME)/.local/share/icons/hicolor/scalable/apps/) 2>/dev/null || true
 	@echo "✓ Desktop entry and icons installed (UScreen in the app menu)"
-	mkdir -p ${HOME}/.config/systemd/user/ 2>/dev/null || true
-	cp scripts/uscreen.service ${HOME}/.config/systemd/user/ 2>/dev/null || true
+	mkdir -p $(call quote,$(value HOME)/.config/systemd/user/) 2>/dev/null || true
+	cp scripts/uscreen.service $(call quote,$(value HOME)/.config/systemd/user/) 2>/dev/null || true
 	systemctl --user daemon-reload 2>/dev/null || true
 	@echo "✓ systemd user service installed"
 
@@ -118,7 +120,7 @@ dist-local: build
 	cp target/release/uscreen target/release/uscreen-gui host/evdi/evdi_helper dist/uscreen-$(VERSION)/bin/
 	cp -L "$(LIBEVDI)" dist/uscreen-$(VERSION)/bin/libevdi.so.1.15.0
 	ln -sf libevdi.so.1.15.0 dist/uscreen-$(VERSION)/bin/libevdi.so.1
-	cp scripts/install.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/scripts/
+	cp scripts/install.sh scripts/write-desktop-entry.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/scripts/
 	cp packaging/distribution-docs.txt packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules dist/uscreen-$(VERSION)/packaging/
 	mkdir -p dist/uscreen-$(VERSION)/packaging/icons && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg dist/uscreen-$(VERSION)/packaging/icons/
 	./scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/

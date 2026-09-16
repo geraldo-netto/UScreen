@@ -165,7 +165,7 @@ install_files() {
 
     # Absolute path: the app menu does not necessarily have ~/.local/bin on
     # its PATH, so a bare "uscreen-gui" can be a menu entry that does nothing.
-    sed "s|^Exec=.*|Exec=$BIN_DIR/uscreen-gui|" "$SCRIPT_DIR/uscreen.desktop" > "$APP_DIR/uscreen.desktop" \
+    bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen-gui" "$SCRIPT_DIR/uscreen.desktop" > "$APP_DIR/uscreen.desktop" \
         && info "Desktop entry installed (UScreen in the app menu)"
 
     # The menu entry and the tray look the icon up by name in the hicolor
