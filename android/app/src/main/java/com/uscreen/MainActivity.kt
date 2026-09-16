@@ -59,6 +59,39 @@ class MainActivity : ComponentActivity() {
         touchCapture = TouchCapture()
         applyToken(restart = false)
 
+        connectStreamCallbacks()
+        reportNativeResolution()
+
+        setContent {
+            UScreenTheme {
+                UScreenMain(
+                    penOnly = penOnlyMode,
+                    updateAvailable = updateAvailable,
+                    showThanks = showThanks,
+                    onDismissThanks = { showThanks = false },
+                    videoReceiver = videoReceiver,
+                    touchCapture = touchCapture,
+                    prefs = prefs,
+                    onSurfaceReady = { surfaceView ->
+                        videoReceiver?.setSurface(surfaceView)
+                        touchCapture?.setSurfaceView(surfaceView)
+                    },
+                    onSurfaceDestroyed = { videoReceiver?.onSurfaceDestroyed() },
+                    onOrientationChange = { choice ->
+                        prefs.orientation = choice
+                        applyOrientation()
+                    }
+                )
+            }
+        }
+
+        // Enable fullscreen AFTER setContent so DecorView exists
+        window.decorView.post {
+            enableImmersiveMode()
+        }
+    }
+
+    private fun connectStreamCallbacks() {
         // Close the host's latency measurement loop: every acknowledged frame
         // lets the host time encoded-packet readiness to receipt of the
         // render acknowledgement, including the return message path.
@@ -94,6 +127,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    }
+
+    private fun reportNativeResolution() {
         // Report the real screen size (landscape-oriented) so the host can
         // size the virtual display to match this tablet exactly.
         @Suppress("DEPRECATION")
@@ -117,33 +153,6 @@ class MainActivity : ComponentActivity() {
             videoReceiver?.formatHeight = h
         }
 
-        setContent {
-            UScreenTheme {
-                UScreenMain(
-                    penOnly = penOnlyMode,
-                    updateAvailable = updateAvailable,
-                    showThanks = showThanks,
-                    onDismissThanks = { showThanks = false },
-                    videoReceiver = videoReceiver,
-                    touchCapture = touchCapture,
-                    prefs = prefs,
-                    onSurfaceReady = { surfaceView ->
-                        videoReceiver?.setSurface(surfaceView)
-                        touchCapture?.setSurfaceView(surfaceView)
-                    },
-                    onSurfaceDestroyed = { videoReceiver?.onSurfaceDestroyed() },
-                    onOrientationChange = { choice ->
-                        prefs.orientation = choice
-                        applyOrientation()
-                    }
-                )
-            }
-        }
-
-        // Enable fullscreen AFTER setContent so DecorView exists
-        window.decorView.post {
-            enableImmersiveMode()
-        }
     }
 
     /**
