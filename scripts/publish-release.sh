@@ -23,6 +23,8 @@ for f in host/Cargo.toml gui/Cargo.toml; do
 done
 grep -q "versionName = \"$VERSION\"" android/app/build.gradle.kts \
   || { echo "!! android/app/build.gradle.kts versionName is not $VERSION"; exit 1; }
+grep -q "^pkgver=$VERSION$" packaging/arch/PKGBUILD \
+  || { echo "!! packaging/arch/PKGBUILD pkgver is not $VERSION"; exit 1; }
 grep -q "^## $VERSION — $RELEASE_DATE" CHANGELOG.md \
   || { echo "!! CHANGELOG.md has no '## $VERSION — $RELEASE_DATE' entry (set RELEASE_DATE=YYYY-MM-DD if the release is dated differently)"; exit 1; }
 ./scripts/update-release-metadata.sh --check "$VERSION" "$RELEASE_DATE" \

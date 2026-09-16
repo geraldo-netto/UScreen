@@ -146,8 +146,9 @@ for Linux with S Pen support*) and uploads everything plus `SHA256SUMS`.
 
 Before that, for a new version:
 
-1. Bump `VERSION` in the Makefile, `version` in both `Cargo.toml` files and
-   `versionCode`/`versionName` in `android/app/build.gradle.kts`.
+1. Bump `VERSION` in the Makefile, `version` in both `Cargo.toml` files,
+   `versionCode`/`versionName` in `android/app/build.gradle.kts` and
+   `pkgver` in `packaging/arch/PKGBUILD`.
 2. Add a `## X.Y.Z — YYYY-MM-DD` entry to `CHANGELOG.md`.
 3. `make release-metadata DATE=YYYY-MM-DD` (or
    `scripts/update-release-metadata.sh X.Y.Z YYYY-MM-DD`): rewrites the
