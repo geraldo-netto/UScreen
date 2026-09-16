@@ -3,6 +3,10 @@
 VERSION = 1.2.3
 
 CARGO = cargo
+# T220: forward the parallel jobserver on real builds; keep -n/-q/-t inert.
+# https://doc.rust-lang.org/rustc/jobserver.html
+make_mode = $(firstword -$(MAKEFLAGS))
+cargo_recursive = $(if $(or $(findstring n,$(make_mode)),$(findstring q,$(make_mode)),$(findstring t,$(make_mode))),,+)
 CC = gcc
 ADB = adb
 # Release bundles pin the same libevdi as the portable build. Override its path when needed.
@@ -20,7 +24,7 @@ build-helper:
 	@echo "✓ EVDI helper: host/evdi/evdi_helper"
 
 build: build-helper
-	$(CARGO) build --release
+	$(cargo_recursive)$(CARGO) build --release
 	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
 
 install: build

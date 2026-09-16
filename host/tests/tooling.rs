@@ -480,3 +480,16 @@ fn t214_installer_preserves_dependency_and_setup_commands() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t220_make_shares_jobserver_without_executing_dry_runs() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_make.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
