@@ -122,15 +122,26 @@ class TouchCapture {
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            if (isStale(webSocket)) return
             isConnected = false
             scheduleReconnect()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            if (isStale(webSocket)) return
             isConnected = false
             Log.w(TAG, "Connection failed: ${t.message}")
             scheduleReconnect()
         }
+
+        /**
+         * A socket we already replaced or closed on purpose. Its closing
+         * callbacks still arrive, and acting on them would undo what we just
+         * did: after disconnect() they would schedule a reconnect in the
+         * background, and during a token change they would flip isConnected
+         * off and cancel the socket that replaced them.
+         */
+        private fun isStale(ws: WebSocket) = ws !== this@TouchCapture.webSocket
     }
 
     // The surface only forwards touches to the host; there is no click to perform.
