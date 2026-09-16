@@ -6,8 +6,9 @@ graphics tablet, with touch, S Pen pressure, tilt, eraser and stylus-button
 support.
 
 UScreen uses a direct ADB-over-USB connection — no Wi-Fi, USB tethering,
-dummy HDMI plug or cloud account required. Screen and input data never leave
-the cable.
+dummy HDMI plug or cloud account required. Screen and input data travel
+between your computer and tablet over USB, or over your local network when
+you enable the optional Wi-Fi fallback. They are not sent to a cloud service.
 
 Tested on Bazzite (KDE Plasma, Wayland, NVIDIA) with a Samsung Galaxy Tab S9
 Ultra. Packages and installation instructions cover Bazzite, Fedora,
@@ -174,8 +175,9 @@ GNOME, require manual input mapping.
 
 **Which Android versions?** 8.1 and newer.
 
-**Is anything sent to the cloud?** No. Screen and input data never leave the
-cable; the only outbound request is an optional version check against GitHub
+**Is screen or input data sent to the cloud?** No. It travels over the USB
+cable, or your local network when Wi-Fi fallback is enabled. The only automatic
+internet request is an optional version check against GitHub
 (`check_updates = false` turns it off; the app has a switch of its own).
 
 **How do I uninstall it completely?** [SECURITY.md](SECURITY.md#how-to-uninstall-completely)

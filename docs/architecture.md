@@ -76,5 +76,8 @@ button down/up.
 ## Security model
 
 Loopback-only ports, a per-run random token required before any data flows,
-private runtime directory for the FIFO and token, no network traffic except an
-optional update check. Details and threat model in [SECURITY.md](../SECURITY.md).
+private runtime directory for the FIFO and token. USB mode carries screen and
+input over the cable; optional ADB Wi-Fi transport carries them over the local
+network. Neither sends them to a cloud service. The optional GitHub update
+check is the only automatic internet request. Details and threat model in
+[SECURITY.md](../SECURITY.md).

@@ -18,7 +18,7 @@
 - **Screen and input data travel only between your computer and tablet,**
   over USB or your own network if you chose Wi-Fi.
   There is no account, no telemetry and no cloud.
-- The only outbound connection is an optional **update check**: one HTTPS
+- The only automatic internet connection is an optional **update check**: one HTTPS
   request to `api.github.com` (daemon: once a day; app and GUI: when opened)
   that reads the latest release tag. Off with `check_updates = false` for the
   daemon and GUI, and with the *Check for newer releases* switch in the app's
