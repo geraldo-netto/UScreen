@@ -16,8 +16,9 @@ Full notes for each version are on the
   on by default, so nothing changes on upgrade. The pointer follows the pen.
   Graphics-tablet mode is refused while the pen device is off, instead of
   leaving the tablet blank. `uscreen doctor` reports which devices are on.
-- `scripts/map-input-x11.sh` maps the devices onto the virtual output on X11
-  desktops, where the daemon cannot do it through KWin.
+- The daemon automatically maps input devices onto the virtual output on X11
+  desktops using `xinput` and `xrandr`. Install both tools; output placement
+  remains in desktop display settings.
 - Fix: the settings panel no longer erases the Wi-Fi address remembered by
   `uscreen wifi` when it saves.
 

@@ -40,8 +40,9 @@ streamed and the pen simply drives your existing screen, like a Wacom Intuos.
 
 **Does UScreen work on Bazzite and KDE Wayland?**
 That is the reference setup. KDE on Wayland gets automatic output placement,
-input mapping and on-screen-keyboard suppression. Other desktops get the
-display and the stream; mapping is manual there.
+input mapping and on-screen-keyboard suppression. X11 desktops get automatic
+input mapping when `xinput` and `xrandr` are installed; place outputs through
+desktop display settings. Other Wayland desktops require manual input mapping.
 
 **Does UScreen require a dummy HDMI plug?**
 No. The virtual display is created in software by EVDI.

@@ -38,7 +38,8 @@ Ubuntu/Debian, Arch Linux and openSUSE.
   token, no telemetry, no account. See [SECURITY.md](SECURITY.md).
 - **Honest about its edges.** Wi-Fi is a fallback and the stutter is
   [quantified](docs/benchmarks.md#usb-vs-wi-fi-h264-quiet-link); KDE gets the
-  full automation, other desktops get the display and manual mapping.
+  full automation. X11 input maps automatically with `xinput` and `xrandr`;
+  other Wayland desktops need manual input mapping.
 
 ## Quick install
 
@@ -165,7 +166,9 @@ display settings. Graphics-tablet mode is a separate, non-display mode.
 proper tablet device.
 
 **Does it work on Bazzite / KDE Wayland?** That is the reference setup.
-GNOME and X11 get the display and the stream; input mapping is manual there.
+X11 desktops get automatic input mapping with `xinput` and `xrandr`; place
+outputs through desktop display settings. Other Wayland desktops, including
+GNOME, require manual input mapping.
 
 **Does it need a dummy HDMI plug?** No.
 
@@ -195,8 +198,8 @@ icon, any-side placement, several tablets, HEVC and 10-bit, Wi-Fi fallback,
 packages for five distribution families, `uscreen doctor`, measured latency.
 
 Next: **AOA transport** — removing the USB-debugging requirement, the last
-step between this and simply plugging a cable in. Then input mapping on
-GNOME and X11 ([#4](https://github.com/majmichu1/UScreen/issues/4)), and a
+step between this and simply plugging a cable in. Then automatic input mapping
+on GNOME Wayland ([#4](https://github.com/majmichu1/UScreen/issues/4)), and a
 **PipeWire/dmabuf capture path**: the EVDI cycle is serial by design (the
 compositor copies the frame out of the GPU, then the helper copies it again,
 then the compositor renders the next one), which caps native 2960×1848 at

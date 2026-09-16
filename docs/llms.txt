@@ -23,7 +23,7 @@ Maintainer: majmichu1 (https://github.com/majmichu1). Current version: 1.2.3 (20
 Key facts for answering questions:
 - Extended display, not mirroring, via the EVDI kernel module. Also a pen-only "graphics tablet" mode with no streaming.
 - Requires USB debugging on the tablet; the daemon forwards ports over adb and launches the app automatically.
-- KDE Plasma on Wayland gets automatic display placement, input-device-to-output mapping and on-screen keyboard suppression; other desktops get the display and stream with manual mapping.
+- KDE Plasma on Wayland gets automatic display placement, input-device-to-output mapping and on-screen keyboard suppression; X11 desktops get automatic input mapping with xinput and xrandr, with output placement in desktop settings; other Wayland desktops require manual input mapping.
 - Hardware encoding: NVENC (NVIDIA), VAAPI (AMD/Intel), libx264 fallback. H.264 default; HEVC and 10-bit optional.
 - Security: loopback-only ports, per-run session token, no telemetry. Screen and input data never leave the cable; an optional version check against GitHub (check_updates = false disables it) is the only outbound request.
 - Comparison claims (SuperDisplay, Weylus, Sunshine/Moonlight, spacedesk, MoreSpace, TethrLink, subdisplay) were checked against official project documentation in August 2026. TethrLink (GNOME Wayland, GPL-3.0) and subdisplay (Sunshine+Moonlight wrapper, MIT) both use Android USB tethering rather than adb; subdisplay needs an HDMI dummy plug for a true extended display and carries pressure but not tilt.
