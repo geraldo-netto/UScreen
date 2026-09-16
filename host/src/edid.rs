@@ -114,8 +114,8 @@ pub fn make_edid_sized(
         | (((v_front >> 4) & 0x03) << 2)
         | ((v_sync >> 4) & 0x03)) as u8;
     edid[i + 12] = (h_image & 0xFF) as u8;
-    edid[i + 13] = ((((h_image >> 8) & 0x0F) << 4) | ((v_image >> 8) & 0x0F)) as u8;
-    edid[i + 14] = (v_image & 0xFF) as u8;
+    edid[i + 13] = (v_image & 0xFF) as u8;
+    edid[i + 14] = ((((h_image >> 8) & 0x0F) << 4) | ((v_image >> 8) & 0x0F)) as u8;
     edid[i + 17] = 0x1E; // non-interlaced, digital separate sync, +h +v
 
     // === Monitor name descriptor (bytes 90-107) ===
@@ -152,7 +152,7 @@ pub fn make_edid(width: u32, height: u32, refresh: u32) -> Vec<u8> {
 /// Bumped whenever the generator changes. It is part of the cache filename so
 /// that fixing a bug here actually reaches existing installs — without it, a
 /// stale file from a previous version would be reused forever.
-const EDID_GENERATION: u32 = 3;
+const EDID_GENERATION: u32 = 4;
 
 /// Write (or reuse) a generated EDID for this mode and return its path.
 pub fn ensure_edid_sized(
@@ -162,10 +162,21 @@ pub fn ensure_edid_sized(
     width_mm: u32,
     height_mm: u32,
 ) -> Result<PathBuf> {
-    let edid = make_edid_sized(width, height, refresh, width_mm, height_mm)?;
     let home = std::env::var("HOME").unwrap_or_default();
     let dir = PathBuf::from(home).join(".local/share/uscreen/edid");
-    std::fs::create_dir_all(&dir).context("create EDID dir")?;
+    ensure_edid_in(&dir, width, height, refresh, width_mm, height_mm)
+}
+
+fn ensure_edid_in(
+    dir: &std::path::Path,
+    width: u32,
+    height: u32,
+    refresh: u32,
+    width_mm: u32,
+    height_mm: u32,
+) -> Result<PathBuf> {
+    let edid = make_edid_sized(width, height, refresh, width_mm, height_mm)?;
+    std::fs::create_dir_all(dir).context("create EDID dir")?;
     let path = dir.join(format!(
         "auto-v{}-{}x{}@{}-{}x{}mm.bin",
         EDID_GENERATION, width, height, refresh, width_mm, height_mm
@@ -194,6 +205,52 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Independent DTD decoder: Linux drm_edid.h orders width low, height
+    // low, then both high nibbles at offsets 12, 13, 14.
+    fn physical_size(edid: &[u8]) -> (u32, u32) {
+        (
+            u32::from(edid[66]) | (u32::from(edid[68] & 0xf0) << 4),
+            u32::from(edid[67]) | (u32::from(edid[68] & 0x0f) << 8),
+        )
+    }
+
+    #[test]
+    fn t114_rust_dtd_reports_exact_physical_size() {
+        for (w, h) in [(310, 194), (255, 256), (4095, 4095)] {
+            assert_eq!(
+                physical_size(&make_edid_sized(1920, 1080, 60, w, h).unwrap()),
+                (w, h)
+            );
+        }
+    }
+
+    #[test]
+    fn t114_old_edid_cache_is_not_reused() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = dir.path().join("auto-v3-1920x1080@60-310x194mm.bin");
+        std::fs::write(&old, [0u8; 128]).unwrap();
+        let path = ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
+        assert_ne!(path, old);
+        assert_eq!(physical_size(&std::fs::read(path).unwrap()), (310, 194));
+    }
+
+    #[test]
+    fn t114_python_dtd_reports_exact_physical_size() {
+        let dir = tempfile::tempdir().unwrap();
+        let output = dir.path().join("display.bin");
+        let script =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../scripts/gen-edid.py");
+        assert!(std::process::Command::new("python3")
+            .arg(script)
+            .args(["1920", "1080", "60"])
+            .arg(&output)
+            .output()
+            .unwrap()
+            .status
+            .success());
+        assert_eq!(physical_size(&std::fs::read(output).unwrap()), (310, 194));
+    }
 
     #[test]
     fn t061_rejects_unrepresentable_edid_modes() {
