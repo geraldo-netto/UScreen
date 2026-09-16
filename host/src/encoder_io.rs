@@ -34,41 +34,52 @@ pub(crate) fn read_frame(
     Ok(true)
 }
 
+/// Length of the Annex B prefix at the beginning of a slice.
+pub(crate) fn annex_b_prefix_len(data: &[u8]) -> Option<usize> {
+    if data.starts_with(&[0, 0, 0, 1]) {
+        Some(4)
+    } else if data.starts_with(&[0, 0, 1]) {
+        Some(3)
+    } else {
+        None
+    }
+}
+
+/// Start-code and NAL-header offsets, including an incomplete trailing prefix.
+pub(crate) fn annex_b_starts(data: &[u8]) -> Vec<(usize, usize)> {
+    let mut starts = Vec::new();
+    let mut offset = 0;
+    while offset + 3 <= data.len() {
+        if let Some(length) = annex_b_prefix_len(&data[offset..]) {
+            starts.push((offset, offset + length));
+            offset += length;
+        } else {
+            offset += 1;
+        }
+    }
+    starts
+}
+
+fn parameter_set_slot(header: u8, codec: Codec) -> Option<usize> {
+    let (kind, types): (u8, &[u8]) = match codec {
+        Codec::H264 => (header & 0x1f, &[7, 8]),
+        Codec::Hevc => ((header >> 1) & 0x3f, &[32, 33, 34]),
+    };
+    types.iter().position(|&candidate| candidate == kind)
+}
+
 /// Collect the complete decoder configuration from an Annex B access unit.
 /// Ignore AUD/SEI and slice NALs; never publish an incomplete parameter set.
 pub(crate) fn extract_parameter_sets(au: &[u8], codec: Codec) -> Option<Bytes> {
-    let mut starts = Vec::new();
-    let mut i = 0;
-    while i + 3 <= au.len() {
-        let header = if au[i..].starts_with(&[0, 0, 0, 1]) {
-            4
-        } else if au[i..].starts_with(&[0, 0, 1]) {
-            3
-        } else {
-            i += 1;
-            continue;
-        };
-        starts.push((i, i + header));
-        i += header;
-    }
+    let starts = annex_b_starts(au);
     let mut sets: [Option<&[u8]>; 3] = [None; 3];
     for (n, &(start, header)) in starts.iter().enumerate() {
         let end = starts.get(n + 1).map_or(au.len(), |&(next, _)| next);
         if header + usize::from(codec == Codec::Hevc) >= end {
             continue;
         }
-        let slot = match codec {
-            Codec::H264 => match au[header] & 0x1f {
-                7 => 0,
-                8 => 1,
-                _ => continue,
-            },
-            Codec::Hevc => match (au[header] >> 1) & 0x3f {
-                32 => 0,
-                33 => 1,
-                34 => 2,
-                _ => continue,
-            },
+        let Some(slot) = parameter_set_slot(au[header], codec) else {
+            continue;
         };
         sets[slot] = Some(&au[start..end]);
     }
