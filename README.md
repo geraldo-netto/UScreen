@@ -130,8 +130,10 @@ extended display, pressure but no tilt.
 
 ## Settings
 
-Everything lives in `~/.config/uscreen/config.toml` and is reachable from
-`uscreen-gui`, the ⚙ sheet in the tablet app, the tray icon, or CLI flags.
+Host settings live in `~/.config/uscreen/config.toml`; edit them with
+`uscreen-gui` or override supported settings with CLI flags. The tablet’s ⚙
+sheet stores app preferences locally and sends shared streaming settings to
+the host. The tray controls the running daemon.
 When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 `$XDG_CONFIG_HOME/uscreen/config.toml`. Empty or relative values use the default.
 
@@ -157,7 +159,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   cable is out. `uscreen wifi --off` undoes it. The daemon prefers the cable
   when both are there, and the stutter is [quantified](docs/benchmarks.md).
 - **Updates** — the app, the GUI and the tray tell you when a newer release
-  exists; nothing installs itself. `check_updates = false` turns it off.
+  exists; nothing installs itself. `check_updates = false` disables host checks;
+  the tablet app has its own update-check switch.
 
 ## FAQ
 

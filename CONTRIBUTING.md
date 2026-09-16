@@ -23,8 +23,9 @@ involved, the log (`RUST_LOG=uscreen=debug uscreen start`, or
   suite needs a C compiler and make; Android tests run with Robolectric.
 - Keep commits focused and write the message for someone reading `git log`
   in a year: what broke, why, what changed.
-- Measure before claiming a performance change. The daemon logs end-to-end
-  latency percentiles; quote them.
+- Measure before claiming a performance change. The daemon logs packet-send-to-render-ack
+  latency percentiles; quote them and distinguish them from capture/encoding
+  latency, which this metric excludes.
 
 ## Pull requests
 

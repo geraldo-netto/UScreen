@@ -553,8 +553,9 @@ class TouchCapture {
 
     /**
      * Tell the host that frame [seq] is on screen. The host started the clock
-     * when it emitted that frame, so the round trip it computes is the real
-     * end-to-end latency without either side needing a shared time base.
+     * when it emitted that encoded frame. The round trip measures packet send
+     * through render acknowledgement, excluding capture and encoding, without
+     * either side needing a shared time base.
      */
     fun sendRendered(seq: Int, decodeUs: Int) {
         if (!isConnected) return
