@@ -1,6 +1,6 @@
 # TODO
 
-| id | status | severity | effort | short description |
+| id | status | severity | effort | description |
 |---|---|---|---|---|
 | T078 | open | medium | medium | Fix workspace-built GUI accessibility startup (`gui/Cargo.toml`, `host/Cargo.toml`, `gui/src/main.rs::main`): `cargo build --release --workspace` unifies ksni's zbus Tokio feature into AccessKit; launching GUI panics with `there is no reactor running`. Standalone GUI build avoids it. Regression: retain a workspace-built GUI/AT-SPI startup smoke test that detects worker panics. |
 | T087 | open | medium | medium | Allocate multitouch slots by active pointer identity (`android/app/src/main/java/com/uscreen/TouchCapture.kt::slotOf`): clamping Android IDs to 0–9 aliases valid IDs 10 and 11 to slot 9. Robolectric probes reproduced both packets using slot 9 on API 27 and 34. Regression: sparse/high pointer IDs get distinct slots, retained through index reshuffling and released on UP/CANCEL. |
