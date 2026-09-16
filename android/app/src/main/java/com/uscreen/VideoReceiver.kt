@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
-class VideoReceiver {
+class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) }) {
     companion object {
         const val HOST = "127.0.0.1"
         const val PORT = 8890
@@ -46,9 +46,11 @@ class VideoReceiver {
 
     private var socket: Socket? = null
     private var inputStream: InputStream? = null
-    private var mediaCodec: MediaCodec? = null
+    @Volatile private var mediaCodec: MediaCodec? = null
     private var outputThread: Thread? = null
     @Volatile private var isRunning = false
+    private val sessionGeneration = AtomicLong(0)
+    private fun isCurrent(generation: Long) = isRunning && sessionGeneration.get() == generation
     @Volatile private var codecAlive = false
 
     var onConnected: (() -> Unit)? = null
@@ -273,7 +275,7 @@ class VideoReceiver {
             val cbThread = HandlerThread("uscreen-frame-cb").apply { start() }
             frameCallbackThread = cbThread
             codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->
-                if (renderedCount.incrementAndGet() % ACK_EVERY == 0L) {
+                if (mediaCodec === codec && codecAlive && isRunning && renderedCount.incrementAndGet() % ACK_EVERY == 0L) {
                     val seq = presentationTimeUs.toInt()
                     onFrameRendered?.invoke(seq, decodeMicrosFor(seq))
                 }
@@ -300,9 +302,10 @@ class VideoReceiver {
         outputThread = Thread({
             val info = MediaCodec.BufferInfo()
             var rendered = 0L
-            while (codecAlive) {
+            while (codecAlive && mediaCodec === codec) {
                 try {
                     val index = codec.dequeueOutputBuffer(info, 10_000) // 10ms
+                    if (mediaCodec !== codec || !codecAlive) break
                     if (index >= 0) {
                         val seq = info.presentationTimeUs.toInt()
                         codec.releaseOutputBuffer(index, true)
@@ -331,6 +334,8 @@ class VideoReceiver {
         synchronized(this) {
             if (isRunning) return
             isRunning = true
+            val generation = sessionGeneration.incrementAndGet()
+            val sessionToken = token
             // Fresh job/scope per start — see the field docs.
             val newJob = SupervisorJob()
             val newScope = CoroutineScope(Dispatchers.IO + newJob)
@@ -338,12 +343,13 @@ class VideoReceiver {
             scope = newScope
 
             newScope.launch {
-                connectAndReceive()
+                connectAndReceive(generation, sessionToken)
             }
 
             newScope.launch {
-                while (isRunning) {
+                while (isCurrent(generation)) {
                     delay(1000)
+                    if (!isCurrent(generation)) break
                     currentFps = frameCounter.getAndSet(0).toFloat()
                     currentMbps = byteCounter.getAndSet(0) * 8f / 1_000_000f
                 }
@@ -351,18 +357,20 @@ class VideoReceiver {
         }
     }
 
-    private suspend fun connectAndReceive() {
-        while (isRunning) {
+    private suspend fun connectAndReceive(generation: Long, sessionToken: String?) {
+        while (isCurrent(generation)) {
+            var sessionSocket: Socket? = null
             try {
                 // Wait for surface to be ready before connecting
-                while (isRunning && !surfaceReady.get()) {
+                while (isCurrent(generation) && !surfaceReady.get()) {
                     Log.d(TAG, "Waiting for surface...")
                     delay(200)
                 }
-                if (!isRunning) return
+                if (!isCurrent(generation)) return
 
                 // Ensure codec is set up
                 val codecReady = synchronized(this@VideoReceiver) {
+                    if (!isCurrent(generation)) return
                     if (mediaCodec == null) {
                         val surface = pendingSurface.get()
                         if (surface != null && surface.isValid) {
@@ -381,7 +389,9 @@ class VideoReceiver {
                 }
 
                 Log.i(TAG, "Connecting to $HOST:$PORT...")
-                socket = Socket(HOST, PORT).apply {
+                val connection = openSocket()
+                sessionSocket = connection
+                connection.apply {
                     tcpNoDelay = true
                     soTimeout = 10000 // 10s read timeout
                     // Small on purpose. A 1 MB receive buffer let the host run
@@ -391,9 +401,14 @@ class VideoReceiver {
                     // know how to drop stale frames.
                     receiveBufferSize = 128 * 1024
                 }
-                inputStream = socket?.getInputStream()
-                token?.let { t ->
-                    socket?.getOutputStream()?.apply {
+                val input = connection.getInputStream()
+                synchronized(this@VideoReceiver) {
+                    if (!isCurrent(generation)) return
+                    socket = connection
+                    inputStream = input
+                }
+                sessionToken?.let { t ->
+                    connection.getOutputStream().apply {
                         write(t.toByteArray(Charsets.US_ASCII))
                         flush()
                     }
@@ -405,10 +420,12 @@ class VideoReceiver {
                 var packetBuf = ByteArray(512 * 1024)
                 var firstFrame = true
 
-                receiveLoop@ while (isRunning) {
-                    val codec = mediaCodec ?: break
+                receiveLoop@ while (isCurrent(generation)) {
+                    val codec = synchronized(this@VideoReceiver) {
+                        if (isCurrent(generation)) mediaCodec else null
+                    } ?: break
 
-                    readExact(inputStream!!, sizeHeader, 4)
+                    readExact(input, sizeHeader, 4)
 
                     val frameSize = ((sizeHeader[0].toInt() and 0xFF) shl 24) or
                             ((sizeHeader[1].toInt() and 0xFF) shl 16) or
@@ -423,7 +440,8 @@ class VideoReceiver {
                     if (packetBuf.size < frameSize) {
                         packetBuf = ByteArray(frameSize + frameSize / 2)
                     }
-                    readExact(inputStream!!, packetBuf, frameSize)
+                    readExact(input, packetBuf, frameSize)
+                    if (!isCurrent(generation)) break
                     byteCounter.addAndGet(frameSize.toLong())
 
                     val packetType = packetBuf[0].toInt() and 0xFF
@@ -431,7 +449,7 @@ class VideoReceiver {
                         PACKET_TYPE_CONFIG -> {
                             val payloadSize = frameSize - 1
                             Log.i(TAG, "Received codec config: ${payloadSize}B")
-                            feedDecoder(codec, packetBuf, 1, payloadSize, true, 0L)
+                            feedDecoder(generation, codec, packetBuf, 1, payloadSize, true, 0L)
                         }
                         PACKET_TYPE_FRAME -> {
                             if (frameSize <= FRAME_HEADER_SIZE) {
@@ -447,11 +465,13 @@ class VideoReceiver {
                                     (packetBuf[4].toInt() and 0xFF)
                             if (firstFrame) {
                                 firstFrame = false
-                                onConnected?.invoke()
+                                synchronized(this@VideoReceiver) {
+                                    if (isCurrent(generation)) onConnected?.invoke()
+                                }
                             }
                             noteArrival(seq)
                             feedDecoder(
-                                codec, packetBuf, FRAME_HEADER_SIZE,
+                                generation, codec, packetBuf, FRAME_HEADER_SIZE,
                                 frameSize - FRAME_HEADER_SIZE, false,
                                 seq.toLong() and 0xFFFFFFFFL
                             )
@@ -463,29 +483,39 @@ class VideoReceiver {
                     }
                 }
             } catch (e: java.io.EOFException) {
-                if (isRunning) {
+                if (isCurrent(generation)) {
                     Log.i(TAG, "Stream ended (server closed)")
-                    onDisconnected?.invoke()
+                    synchronized(this@VideoReceiver) {
+                        if (isCurrent(generation)) onDisconnected?.invoke()
+                    }
                     delay(1000)
                 }
             } catch (e: java.net.SocketTimeoutException) {
-                if (isRunning) {
+                if (isCurrent(generation)) {
                     Log.w(TAG, "Stream read timeout, reconnecting")
-                    onDisconnected?.invoke()
+                    synchronized(this@VideoReceiver) {
+                        if (isCurrent(generation)) onDisconnected?.invoke()
+                    }
                     delay(500)
                 }
             } catch (e: Exception) {
-                if (isRunning) {
+                if (isCurrent(generation)) {
                     Log.e(TAG, "Stream error: ${e.message}")
-                    onDisconnected?.invoke()
+                    synchronized(this@VideoReceiver) {
+                        if (isCurrent(generation)) onDisconnected?.invoke()
+                    }
                     delay(1000)
                 }
             } finally {
                 try {
-                    socket?.close()
+                    sessionSocket?.close()
                 } catch (_: Exception) {}
-                socket = null
-                inputStream = null
+                synchronized(this@VideoReceiver) {
+                    if (socket === sessionSocket) {
+                        socket = null
+                        inputStream = null
+                    }
+                }
             }
         }
     }
@@ -496,10 +526,11 @@ class VideoReceiver {
      * input buffer frees up within ~200ms the codec is genuinely stuck and we
      * reset it instead.
      */
-    private fun feedDecoder(
-        codec: MediaCodec, data: ByteArray, offset: Int, size: Int,
+    @Synchronized private fun feedDecoder(
+        generation: Long, codec: MediaCodec, data: ByteArray, offset: Int, size: Int,
         isConfig: Boolean, presentationTimeUs: Long
     ) {
+        if (!isCurrent(generation) || mediaCodec !== codec) return
         try {
             var attempts = 0
             while (true) {
@@ -595,7 +626,8 @@ class VideoReceiver {
     fun getFps(): Float = currentFps
     fun getMbps(): Float = currentMbps
 
-    fun stop() {
+    @Synchronized fun stop() {
+        sessionGeneration.incrementAndGet()
         isRunning = false
         codecAlive = false
         // Close socket first to unblock any pending reads

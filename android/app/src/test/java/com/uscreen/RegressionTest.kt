@@ -212,6 +212,53 @@ class RegressionTest {
         assertEquals(10, send(MotionEvent.ACTION_CANCEL, *(10..20).toList().toIntArray()).size)
     }
 
+    @Test fun t088_lateOldCleanupLeavesReplacementSocketAndDecoderAlive() {
+        class VideoSocket : java.net.Socket() {
+            val reading = java.util.concurrent.CountDownLatch(1)
+            val releaseRead = java.util.concurrent.CountDownLatch(1)
+            @Volatile var closed = false
+            override fun setTcpNoDelay(value: Boolean) {}
+            override fun setSoTimeout(value: Int) {}
+            override fun setReceiveBufferSize(value: Int) {}
+            override fun getInputStream() = object : java.io.InputStream() {
+                override fun read(): Int = error("use bulk read")
+                override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+                    reading.countDown()
+                    check(releaseRead.await(3, java.util.concurrent.TimeUnit.SECONDS))
+                    throw java.io.EOFException()
+                }
+            }
+            override fun getOutputStream() = java.io.ByteArrayOutputStream()
+            override fun close() { closed = true }
+        }
+        val old = VideoSocket()
+        val next = VideoSocket()
+        val sockets = java.util.concurrent.LinkedBlockingQueue<java.net.Socket>().apply { add(old); add(next) }
+        val receiver = VideoReceiver { sockets.remove() }
+        (get(receiver, "surfaceReady") as java.util.concurrent.atomic.AtomicBoolean).set(true)
+        set(receiver, "mediaCodec", android.media.MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE))
+        try {
+            receiver.start()
+            assertTrue(old.reading.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            val oldJob = get(receiver, "job") as kotlinx.coroutines.Job
+            receiver.stop()
+            val nextCodec = android.media.MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE)
+            set(receiver, "mediaCodec", nextCodec)
+            receiver.start()
+            assertTrue(next.reading.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            old.releaseRead.countDown()
+            kotlinx.coroutines.runBlocking { kotlinx.coroutines.withTimeout(2000) { oldJob.join() } }
+            assertFalse("Old cleanup closed the replacement socket", next.closed)
+            assertSame(next, get(receiver, "socket"))
+            assertSame(nextCodec, get(receiver, "mediaCodec"))
+            assertTrue(get(receiver, "isRunning") as Boolean)
+        } finally {
+            receiver.stop()
+            old.releaseRead.countDown()
+            next.releaseRead.countDown()
+        }
+    }
+
     private class Socket : WebSocket {
         val messages = mutableListOf<String>()
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()
