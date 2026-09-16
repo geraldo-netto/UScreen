@@ -37,6 +37,7 @@ impl Default for StreamConfig {
 
 /// How long a client gets to present the token before the socket is closed.
 const AUTH_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(3);
+const MAX_CLIENTS: usize = 16;
 
 pub struct StreamServer {
     config: StreamConfig,
@@ -78,6 +79,7 @@ impl StreamServer {
         let running = self.running.clone();
         // Dropping this server future also cancels every accepted connection.
         let mut clients = tokio::task::JoinSet::new();
+        let slots = Arc::new(tokio::sync::Semaphore::new(MAX_CLIENTS));
 
         loop {
             let accept = tokio::select! {
@@ -98,15 +100,18 @@ impl StreamServer {
                 }
             };
 
+            let Ok(permit) = slots.clone().try_acquire_owned() else {
+                warn!("Video client limit reached — dropping {}", peer);
+                continue;
+            };
             info!("Client connected: {}", peer);
-            // The optional in-process encoder honors this next-frame request;
-            // the CLI path supplies periodic wall-clock IDRs.
-            self.idr_wanted.store(true, Ordering::SeqCst);
-            let rx = video_tx.subscribe();
+            let tx = video_tx.clone();
+            let idr_wanted = self.idr_wanted.clone();
             let cc = self.codec_config.clone();
             let token = self.config.token.clone();
             clients.spawn(async move {
-                if let Err(e) = Self::handle_client(socket, rx, cc, token).await {
+                let _permit = permit;
+                if let Err(e) = Self::handle_client(socket, tx, cc, token, idr_wanted).await {
                     warn!("Client {} disconnected: {}", peer, e);
                 }
                 info!("Client {} session ended", peer);
@@ -119,9 +124,10 @@ impl StreamServer {
 
     async fn handle_client(
         mut socket: TcpStream,
-        mut rx: broadcast::Receiver<VideoPacket>,
+        video_tx: broadcast::Sender<VideoPacket>,
         codec_config: Arc<Mutex<Option<Bytes>>>,
         token: Option<String>,
+        idr_wanted: Arc<AtomicBool>,
     ) -> Result<()> {
         // Disable Nagle's algorithm for lower latency
         socket.set_nodelay(true)?;
@@ -154,6 +160,25 @@ impl StreamServer {
         // write, which is exactly what the backlog handling needs to react to.
         Self::set_send_buffer(&socket, SEND_BUFFER_BYTES);
 
+        // Only authenticated peers count as viewers or request encoder work.
+        let rx = video_tx.subscribe();
+        idr_wanted.store(true, Ordering::SeqCst);
+        let (mut reader, writer) = socket.into_split();
+        use tokio::io::AsyncReadExt;
+        let mut unexpected = [0];
+        tokio::select! {
+            result = Self::stream_packets(writer, rx, codec_config) => result,
+            // The client sends only its initial token. EOF or more input ends
+            // the session, including while no captured frames are available.
+            _ = reader.read(&mut unexpected) => Ok(()),
+        }
+    }
+
+    async fn stream_packets(
+        mut socket: tokio::net::tcp::OwnedWriteHalf,
+        mut rx: broadcast::Receiver<VideoPacket>,
+        codec_config: Arc<Mutex<Option<Bytes>>>,
+    ) -> Result<()> {
         let mut last_sent_config: Option<Bytes> = None;
 
         // Send cached codec config (SPS/PPS) so MediaCodec can configure.
@@ -269,7 +294,11 @@ impl StreamServer {
         }
     }
 
-    async fn write_packet(socket: &mut TcpStream, packet_type: u8, payload: &[u8]) -> Result<()> {
+    async fn write_packet(
+        socket: &mut (impl tokio::io::AsyncWrite + Unpin),
+        packet_type: u8,
+        payload: &[u8],
+    ) -> Result<()> {
         let packet_len = payload.len() + 1;
         let len_buf = (packet_len as u32).to_be_bytes();
         socket.write_all(&len_buf).await?;
@@ -322,6 +351,126 @@ mod tests {
         pin::Pin,
         task::{Context, Poll},
     };
+
+    async fn authenticated_test_server() -> (
+        Arc<StreamServer>,
+        broadcast::Sender<VideoPacket>,
+        std::net::SocketAddr,
+        tokio::task::JoinHandle<Result<()>>,
+    ) {
+        let server = Arc::new(StreamServer::new(
+            StreamConfig {
+                token: Some("a".repeat(64)),
+                ..Default::default()
+            },
+            Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+            Default::default(),
+        ));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (tx, _) = broadcast::channel(8);
+        let task = tokio::spawn({
+            let server = server.clone();
+            let tx = tx.clone();
+            async move { server.run_with_listener(tx, listener).await }
+        });
+        (server, tx, address, task)
+    }
+
+    #[tokio::test]
+    async fn t139_only_authenticated_clients_request_capture() {
+        use tokio::io::AsyncReadExt;
+        use tokio::time::{sleep, timeout, Duration};
+        let (server, tx, address, task) = authenticated_test_server().await;
+        let mut client = TcpStream::connect(address).await.unwrap();
+        sleep(Duration::from_millis(20)).await;
+        assert_eq!(
+            tx.receiver_count(),
+            0,
+            "pending token subscribed to capture"
+        );
+        assert!(!server.idr_wanted.load(Ordering::SeqCst));
+        client.write_all("b".repeat(64).as_bytes()).await.unwrap();
+        assert_eq!(
+            timeout(Duration::from_secs(1), client.read(&mut [0]))
+                .await
+                .unwrap()
+                .unwrap(),
+            0
+        );
+        assert_eq!(tx.receiver_count(), 0);
+        assert!(!server.idr_wanted.load(Ordering::SeqCst));
+        let mut client = TcpStream::connect(address).await.unwrap();
+        client.write_all("a".repeat(64).as_bytes()).await.unwrap();
+        timeout(Duration::from_secs(1), client.read_exact(&mut [0; 12]))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(tx.receiver_count(), 1);
+        assert!(server.idr_wanted.load(Ordering::SeqCst));
+        server.stop();
+        task.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn t139_pending_admission_is_bounded_and_reusable() {
+        use tokio::io::AsyncReadExt;
+        use tokio::time::{sleep, timeout, Duration};
+        let (server, _, address, task) = authenticated_test_server().await;
+        let mut clients = Vec::new();
+        for _ in 0..16 {
+            clients.push(TcpStream::connect(address).await.unwrap());
+            tokio::task::yield_now().await;
+        }
+        let mut excess = TcpStream::connect(address).await.unwrap();
+        assert_eq!(
+            timeout(Duration::from_secs(1), excess.read(&mut [0]))
+                .await
+                .expect("excess unauthenticated connection stayed open")
+                .unwrap(),
+            0
+        );
+        drop(clients);
+        timeout(Duration::from_secs(1), async {
+            loop {
+                let mut client = TcpStream::connect(address).await.unwrap();
+                if client.write_all("a".repeat(64).as_bytes()).await.is_ok()
+                    && client.read_exact(&mut [0; 12]).await.is_ok()
+                {
+                    break;
+                }
+                sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("closed pending clients did not free admission capacity");
+        server.stop();
+        task.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn t139_idle_authenticated_disconnect_frees_capture() {
+        use tokio::io::AsyncReadExt;
+        use tokio::time::{timeout, Duration};
+        let (server, tx, address, task) = authenticated_test_server().await;
+        let mut client = TcpStream::connect(address).await.unwrap();
+        client.write_all("a".repeat(64).as_bytes()).await.unwrap();
+        timeout(Duration::from_secs(1), client.read_exact(&mut [0; 12]))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(tx.receiver_count(), 1);
+        drop(client);
+        timeout(Duration::from_secs(1), async {
+            while tx.receiver_count() != 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("idle disconnected client retained capture subscription");
+        server.stop();
+        task.await.unwrap().unwrap();
+    }
 
     #[tokio::test]
     async fn t138_server_shutdown_retires_authenticated_clients() {
