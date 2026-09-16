@@ -3,7 +3,7 @@
 Full notes for each version are on the
 [releases page](https://github.com/majmichu1/UScreen/releases).
 
-## Unreleased
+## 1.2.3 — 2026-09-16
 
 - Fix: the virtual monitor no longer exists while no tablet is attached. The
   EVDI helper used to run from daemon start, so the desktop saw a connected
