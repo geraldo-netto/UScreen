@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y \
             libxkbcommon-dev libwayland-dev libxcb-render0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
-            libdrm-dev ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
+            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
           sudo apt-get install -y libevdi-dev
 
       - name: Cache cargo

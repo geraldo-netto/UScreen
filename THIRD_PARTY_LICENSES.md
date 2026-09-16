@@ -2,6 +2,8 @@
 - libevdi (host/evdi/evdi_lib.h, and libevdi.so.1 shipped next to the helper
   in release packages) is copyright DisplayLink (UK) Ltd. and licensed under
   the GNU Lesser General Public License v2.1 or later. It is used unmodified as
-  a separate shared library. Source: https://github.com/DisplayLink/evdi
+  a separate shared library. Source for the bundled v1.15.0 library:
+  https://github.com/DisplayLink/evdi/tree/v1.15.0/library
+  License text: [LGPL-2.1](licenses/libevdi-LGPL-2.1.txt).
 - The evdi kernel module is not part of this project; it is installed from
   your distribution or built from the same upstream repository.

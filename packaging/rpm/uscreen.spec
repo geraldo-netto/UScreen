@@ -2,7 +2,7 @@ Name:           uscreen
 Version:        1.1.0
 Release:        1%{?dist}
 Summary:        Android tablet as a USB second display and graphics tablet
-License:        MIT
+License:        MIT AND LGPL-2.1-or-later
 URL:            https://github.com/majmichu1/UScreen
 Source0:        uscreen-%{version}-linux-x86_64.tar.gz
 BuildArch:      x86_64
@@ -36,6 +36,8 @@ install -Dm644 packaging/uscreen-evdi.conf    %{buildroot}%{_modprobedir}/uscree
 install -Dm644 packaging/uscreen-modules.conf %{buildroot}%{_modulesloaddir}/uscreen.conf
 install -Dm644 packaging/60-uscreen-uinput.rules %{buildroot}%{_udevrulesdir}/60-uscreen-uinput.rules
 
+./scripts/copy-distribution-docs.sh %{buildroot}%{_docdir}/uscreen
+
 %post
 # initial_device_count is only read when evdi loads. Reload it so a device
 # exists now, not only after the next reboot.
@@ -66,3 +68,11 @@ udevadm trigger --name-match=uinput 2>/dev/null || true
 %{_modprobedir}/uscreen-evdi.conf
 %{_modulesloaddir}/uscreen.conf
 %{_udevrulesdir}/60-uscreen-uinput.rules
+%license %{_docdir}/uscreen/LICENSE
+%license %{_docdir}/uscreen/THIRD_PARTY_LICENSES.md
+%license %{_docdir}/uscreen/licenses
+%doc %{_docdir}/uscreen/README.md
+%doc %{_docdir}/uscreen/SECURITY.md
+%doc %{_docdir}/uscreen/CHANGELOG.md
+%doc %{_docdir}/uscreen/CONTRIBUTING.md
+%doc %{_docdir}/uscreen/docs

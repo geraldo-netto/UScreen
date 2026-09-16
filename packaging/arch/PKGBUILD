@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc="Use an Android tablet as a USB second display and graphics tablet (KDE Wayland)"
 arch=('x86_64')
 url="https://github.com/majmichu1/UScreen"
-license=('MIT')
+license=('MIT' 'LGPL-2.1-or-later')
 depends=('evdi-dkms' 'ffmpeg' 'android-tools')
 makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
 install=uscreen.install
@@ -39,5 +39,7 @@ package() {
   install -Dm644 packaging/uscreen-evdi.conf "$pkgdir/usr/lib/modprobe.d/uscreen-evdi.conf"
   install -Dm644 packaging/uscreen-modules.conf "$pkgdir/usr/lib/modules-load.d/uscreen.conf"
   install -Dm644 packaging/60-uscreen-uinput.rules "$pkgdir/usr/lib/udev/rules.d/60-uscreen-uinput.rules"
-  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE" 2>/dev/null || true
+  ./scripts/copy-distribution-docs.sh "$pkgdir/usr/share/doc/uscreen"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 licenses/libevdi-LGPL-2.1.txt "$pkgdir/usr/share/licenses/$pkgname/libevdi-LGPL-2.1.txt"
 }

@@ -14,7 +14,7 @@ class DistributionTest(unittest.TestCase):
         for mode in ['failed-apk', 'missing-apk', 'success']:
             with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-dist-') as tmp:
                 root = Path(tmp)
-                for name in ['Makefile', 'scripts', 'packaging', 'README.md']:
+                for name in ['Makefile', 'scripts', 'packaging', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
                     source = REPO / name
                     if source.is_dir():
                         shutil.copytree(source, root / name)
@@ -56,6 +56,9 @@ class DistributionTest(unittest.TestCase):
                     loaded = subprocess.run([str(helper)], env=env, capture_output=True, text=True)
                     self.assertEqual(loaded.returncode, 0, loaded.stderr)
                     self.assertTrue((artifact / 'uscreen-1.2.3/uscreen.apk').is_file())
+                    # T129: the local tarball carries the same notices and working links.
+                    from test_notices import NoticeTest
+                    NoticeTest().verify_docs(artifact / 'uscreen-1.2.3')
 
 
 if __name__ == '__main__':

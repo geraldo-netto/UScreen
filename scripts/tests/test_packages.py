@@ -1,6 +1,7 @@
 """T101: failed container/package builds cannot reuse older output."""
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -22,6 +23,12 @@ class PackageTest(unittest.TestCase):
                 for name in ['packaging/build-packages.sh', 'packaging/deb/control', 'packaging/deb/postinst',
                              'packaging/rpm/uscreen.spec', 'packaging/arch/PKGBUILD', 'packaging/arch/uscreen.install']:
                     write(name, (REPO / name).read_text(), name.endswith('.sh'))
+                for name in ['README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
+                    source = REPO / name
+                    if source.is_dir(): shutil.copytree(source, root / name)
+                    else: shutil.copy(source, root / name)
+                write('scripts/copy-distribution-docs.sh', (REPO / 'scripts/copy-distribution-docs.sh').read_text(), True)
+                write('packaging/distribution-docs.txt', (REPO / 'packaging/distribution-docs.txt').read_text())
                 write('Makefile', 'VERSION = 1.2.3\n')
                 for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
                     write('dist/uscreen-1.2.3/bin/' + name, 'binary', True)

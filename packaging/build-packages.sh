@@ -31,6 +31,7 @@ distrobox enter "${USCREEN_BUILD_CONTAINER:-uscreen-build}" -- bash -lc '
   install -Dm644 packaging/uscreen-evdi.conf    $R/usr/lib/modprobe.d/uscreen-evdi.conf
   install -Dm644 packaging/uscreen-modules.conf $R/usr/lib/modules-load.d/uscreen.conf
   install -Dm644 packaging/60-uscreen-uinput.rules $R/usr/lib/udev/rules.d/60-uscreen-uinput.rules
+  ./scripts/copy-distribution-docs.sh "$R/usr/share/doc/uscreen"
   mkdir -p $R/DEBIAN
   sed "s/^Version: .*/Version: $V/" packaging/deb/control > $R/DEBIAN/control
   install -m755 packaging/deb/postinst $R/DEBIAN/postinst
