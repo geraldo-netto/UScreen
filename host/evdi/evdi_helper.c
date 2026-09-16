@@ -194,6 +194,19 @@ static inline int row_is_dirty(const unsigned char *mask, int cy) {
     return mask == NULL || (mask[cy >> 3] & (1u << (cy & 7)));
 }
 
+static inline unsigned char clamp_byte(int value) {
+    if (value < 0) return 0;
+    if (value > 255) return 255;
+    return (unsigned char)value;
+}
+
+/* BT.709 limited-range chroma from the sum of four luma samples. */
+static inline void write_chroma(unsigned char *uv, int sb, int sg, int sr) {
+    int ab = sb >> 2, ag = sg >> 2, ar = sr >> 2;
+    uv[0] = clamp_byte(((-26 * ar - 87 * ag + 112 * ab + 128) >> 8) + 128);
+    uv[1] = clamp_byte(((112 * ar - 102 * ag - 10 * ab + 128) >> 8) + 128);
+}
+
 /* Downscaling variant: every output pixel is the mean of a scale x scale
    source block, and each chroma sample the mean of the 2*scale square it
    covers. Box averaging rather than point sampling — dropping pixels would
@@ -228,13 +241,7 @@ static inline void convert_strip_scaled(const conv_job_t *j) {
                 if (q < 2) yo0[oxx] = yv; else yo1[oxx] = yv;
                 csb += b; csg += g; csr += r;
             }
-            int ab = csb >> 2, ag = csg >> 2, ar = csr >> 2;
-            int cb = (((-26 * ar - 87 * ag + 112 * ab + 128) >> 8) + 128);
-            int cr = (((112 * ar - 102 * ag - 10 * ab + 128) >> 8) + 128);
-            if (cb < 0) cb = 0; else if (cb > 255) cb = 255;
-            if (cr < 0) cr = 0; else if (cr > 255) cr = 255;
-            uv[ox]     = (unsigned char)cb;
-            uv[ox + 1] = (unsigned char)cr;
+            write_chroma(uv + ox, csb, csg, csr);
         }
     }
 }
@@ -265,13 +272,7 @@ static inline void convert_strip(const conv_job_t *j) {
             p = row1 + (size_t)(x+1) * 4;   b = p[0]; g = p[1]; r = p[2];
             yo1[x+1] = (unsigned char)(((47*r + 157*g + 16*b + 128) >> 8) + 16);
             sb += b; sg += g; sr += r;
-            int ar = sr >> 2, ag = sg >> 2, ab = sb >> 2;  /* 2x2 chroma average */
-            int cb = (((-26*ar - 87*ag + 112*ab + 128) >> 8) + 128);
-            int cr = (((112*ar - 102*ag - 10*ab + 128) >> 8) + 128);
-            if (cb < 0) cb = 0; else if (cb > 255) cb = 255;
-            if (cr < 0) cr = 0; else if (cr > 255) cr = 255;
-            uv[x]   = (unsigned char)cb;
-            uv[x+1] = (unsigned char)cr;
+            write_chroma(uv + x, sb, sg, sr);
         }
     }
 }

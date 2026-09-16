@@ -2,7 +2,6 @@
 
 | id | status | severity | effort | description |
 |---|---|---|---|---|
-| T163 | open | low | small | Refactor `host/evdi/evdi_helper.c::convert_strip_scaled` (baseline line 201): SonarQube cyclomatic complexity 12 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T164 | open | medium | medium | Refactor `host/evdi/evdi_helper.c::on_mode_changed` (baseline line 412): SonarQube cyclomatic complexity 31 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T165 | open | low | medium | Refactor `host/evdi/evdi_helper.c::write_fifo_frame` (baseline line 669): SonarQube cyclomatic complexity 17 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T166 | open | medium | medium | Refactor `host/evdi/evdi_helper.c::writer_thread` (baseline line 706): SonarQube cyclomatic complexity 22 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
