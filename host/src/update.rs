@@ -29,21 +29,7 @@ pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-/// Parse "1.2.3" into comparable parts. Anything unparseable sorts lowest, so
-/// a malformed tag can never look like an upgrade.
-fn parse(v: &str) -> (u32, u32, u32) {
-    let v = v.trim().trim_start_matches('v');
-    let mut it = v.split('.').map(|p| p.parse::<u32>().unwrap_or(0));
-    (
-        it.next().unwrap_or(0),
-        it.next().unwrap_or(0),
-        it.next().unwrap_or(0),
-    )
-}
-
-pub fn is_newer(candidate: &str, current: &str) -> bool {
-    parse(candidate) > parse(current)
-}
+pub use uscreen_config::version::is_newer;
 
 /// Extract `tag_name` from the release JSON without pulling in a full parse
 /// of everything else GitHub sends back.
@@ -81,8 +67,12 @@ pub async fn run(tx: watch::Sender<Available>) {
     tokio::time::sleep(FIRST_CHECK).await;
     loop {
         if let Some(tag) = latest_release_tag().await {
-            let latest = tag.trim_start_matches('v').to_string();
-            if is_newer(&latest, current_version()) {
+            if is_newer(&tag, current_version()) {
+                let latest = tag
+                    .trim()
+                    .strip_prefix('v')
+                    .unwrap_or(tag.trim())
+                    .to_owned();
                 info!(
                     "A newer release is available: {} (running {}). {}",
                     latest,
@@ -102,6 +92,14 @@ pub async fn run(tx: watch::Sender<Available>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t123_update_versions_follow_shared_validation_and_precedence() {
+        for line in include_str!("../../testdata/version-comparisons.tsv").lines() {
+            let parts: Vec<_> = line.split('\t').collect();
+            assert_eq!(is_newer(parts[0], parts[1]), parts[2] == "true", "{line}");
+        }
+    }
 
     #[test]
     fn version_comparison() {

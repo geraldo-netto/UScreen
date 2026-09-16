@@ -339,18 +339,7 @@ fn urlencode(s: &str) -> String {
     out
 }
 
-fn version_parts(v: &str) -> (u32, u32, u32) {
-    let mut it = v
-        .trim()
-        .trim_start_matches('v')
-        .split('.')
-        .map(|p| p.parse().unwrap_or(0));
-    (
-        it.next().unwrap_or(0),
-        it.next().unwrap_or(0),
-        it.next().unwrap_or(0),
-    )
-}
+use uscreen_config::version::is_newer as is_newer_version;
 
 /// One request when the window opens. Reports; never installs.
 fn check_for_update() -> Option<String> {
@@ -371,14 +360,13 @@ fn check_for_update() -> Option<String> {
         return None;
     }
     let body = String::from_utf8_lossy(&out.stdout);
-    let tag = body
-        .split("\"tag_name\"")
-        .nth(1)?
-        .split('"')
-        .nth(1)?
-        .trim_start_matches('v')
-        .to_string();
-    (version_parts(&tag) > version_parts(env!("CARGO_PKG_VERSION"))).then_some(tag)
+    let tag = body.split("\"tag_name\"").nth(1)?.split('"').nth(1)?;
+    is_newer_version(tag, env!("CARGO_PKG_VERSION")).then(|| {
+        tag.trim()
+            .strip_prefix('v')
+            .unwrap_or(tag.trim())
+            .to_owned()
+    })
 }
 
 impl App {
@@ -1020,6 +1008,18 @@ fn main() -> eframe::Result {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t123_update_versions_follow_shared_validation_and_precedence() {
+        for line in include_str!("../../testdata/version-comparisons.tsv").lines() {
+            let parts: Vec<_> = line.split('\t').collect();
+            assert_eq!(
+                is_newer_version(parts[0], parts[1]),
+                parts[2] == "true",
+                "{line}"
+            );
+        }
+    }
 
     #[test]
     fn t094_service_action_does_not_block_ui() {

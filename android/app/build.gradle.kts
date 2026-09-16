@@ -49,6 +49,8 @@ android {
         }
     }
 
+    sourceSets.getByName("test").resources.srcDir("../../testdata")
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }

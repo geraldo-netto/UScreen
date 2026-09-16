@@ -23,6 +23,14 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t123_updateVersionsFollowSharedValidationAndPrecedence() {
+        val fixture = javaClass.classLoader!!.getResourceAsStream("version-comparisons.tsv")!!
+        fixture.bufferedReader().useLines { lines -> lines.forEach { line ->
+            val parts = line.split('\t')
+            assertEquals(line, parts[2] == "true", UpdateCheck.isNewer(parts[0], parts[1]))
+        } }
+    }
+
     @Test fun t036_sessionTokenIsExcludedFromBackup() {
         assertEquals(0, app.applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP)
     }

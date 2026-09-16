@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod version;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};

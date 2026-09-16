@@ -21,14 +21,33 @@ object UpdateCheck {
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
-    private fun parse(v: String): Triple<Int, Int, Int> {
-        val p = v.trim().removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        return Triple(p.getOrElse(0) { 0 }, p.getOrElse(1) { 0 }, p.getOrElse(2) { 0 })
+    private data class Version(val core: List<Long>, val pre: List<String>)
+    private val syntax = Regex("""(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?""")
+
+    private fun parse(value: String): Version? {
+        val match = syntax.matchEntire(value.trim().removePrefix("v")) ?: return null
+        val core = (1..3).map { index ->
+            match.groupValues[index].toLongOrNull()?.takeIf { it <= 0xffff_ffffL } ?: return null
+        }
+        val pre = match.groupValues[4].takeIf { it.isNotEmpty() }?.split('.') ?: emptyList()
+        if (pre.any { it.all(Char::isDigit) && it.length > 1 && it.startsWith('0') }) return null
+        return Version(core, pre)
     }
 
     fun isNewer(candidate: String, current: String): Boolean {
-        val (a1, a2, a3) = parse(candidate); val (b1, b2, b3) = parse(current)
-        return if (a1 != b1) a1 > b1 else if (a2 != b2) a2 > b2 else a3 > b3
+        val a = parse(candidate) ?: return false
+        val b = parse(current) ?: return false
+        for (i in 0..2) if (a.core[i] != b.core[i]) return a.core[i] > b.core[i]
+        if (a.pre.isEmpty() || b.pre.isEmpty()) return a.pre.isEmpty() && b.pre.isNotEmpty()
+        for (i in 0 until minOf(a.pre.size, b.pre.size)) {
+            val x = a.pre[i]; val y = b.pre[i]
+            if (x == y) continue
+            val xn = x.all(Char::isDigit); val yn = y.all(Char::isDigit)
+            if (xn != yn) return !xn
+            if (xn && x.length != y.length) return x.length > y.length
+            return x > y
+        }
+        return a.pre.size > b.pre.size
     }
 
     /** Blocking; call off the main thread. Returns the newer version or null. */
@@ -41,8 +60,8 @@ object UpdateCheck {
             client.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) return null
                 val tag = JSONObject(resp.body?.string() ?: return null)
-                    .optString("tag_name").removePrefix("v")
-                if (tag.isNotEmpty() && isNewer(tag, current)) tag else null
+                    .optString("tag_name")
+                if (isNewer(tag, current)) tag.trim().removePrefix("v") else null
             }
         } catch (e: Exception) {
             Log.d(TAG, "update check skipped: ${e.message}"); null

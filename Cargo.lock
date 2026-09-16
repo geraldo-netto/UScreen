@@ -3743,6 +3743,7 @@ name = "uscreen-config"
 version = "1.2.3"
 dependencies = [
  "anyhow",
+ "semver",
  "serde",
  "tempfile",
  "tokio",

@@ -826,8 +826,8 @@ async fn check_version(r: &mut Report, cfg: &FileConfig) {
     let cur = crate::update::current_version();
     match crate::update::latest_release_tag().await {
         Some(tag) => {
-            let latest = tag.trim_start_matches('v').to_string();
-            if crate::update::is_newer(&latest, cur) {
+            if crate::update::is_newer(&tag, cur) {
+                let latest = tag.trim().strip_prefix('v').unwrap_or(tag.trim());
                 r.line(
                     Level::Warn,
                     "version",
