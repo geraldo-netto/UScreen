@@ -81,34 +81,66 @@ check_release_refs
 # what the project is rather than just the tag.
 TITLE="UScreen $VERSION — USB second monitor for Linux with S Pen support"
 
-RID=$(python3 - "$NOTES" "$VERSION" "$TITLE" <<'PY'
-import json, sys, urllib.request
-body = open(sys.argv[1]).read()
-v, title = sys.argv[2], sys.argv[3]
-req = urllib.request.Request(
-    "https://api.github.com/repos/majmichu1/UScreen/releases",
-    data=json.dumps({"tag_name": f"v{v}", "name": title, "body": body}).encode(),
-    headers={"Authorization": "Bearer " + __import__("os").environ["GH_TOKEN"],
-             "Content-Type": "application/json"})
-print(json.load(urllib.request.urlopen(req))["id"])
-PY
-)
-echo "release id: $RID"
+python3 - "$NOTES" "$VERSION" "$TITLE" "$REPO" "${ASSETS[@]}" <<'PY'
+import hashlib, json, os, pathlib, sys, urllib.parse, urllib.request
 
-for a in "${ASSETS[@]}"; do
-  f="${a%%:*}"; t="${a##*:}"; n="$(basename "$f")"
-  python3 - "$f" "$t" "$REPO" "$RID" "$n" <<'PY'
-import json, os, sys, urllib.parse, urllib.request
-path, kind, repo, release, name = sys.argv[1:]
-with open(path, "rb") as data:
-    request = urllib.request.Request(
-        f"https://uploads.github.com/repos/{repo}/releases/{release}/assets?name={urllib.parse.quote(name)}",
-        data=data, method="POST",
-        headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"],
-                 "Content-Type": kind, "Content-Length": str(os.path.getsize(path))})
-    with urllib.request.urlopen(request, timeout=120) as response:
-        result = json.load(response)
-    print(" ", result.get("name"), result.get("state", "?"))
+notes, version, title, repo, *assets = sys.argv[1:]
+api = f"https://api.github.com/repos/{repo}/releases"
+headers = {"Authorization": "Bearer " + os.environ["GH_TOKEN"],
+           "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+
+def request(url, method="GET", body=None, kind="application/json", size=None):
+    extra = {"Content-Type": kind}
+    if size is not None:
+        extra["Content-Length"] = str(size)
+    req = urllib.request.Request(url, data=body, method=method, headers=headers | extra)
+    with urllib.request.urlopen(req, timeout=120) as response:
+        return json.load(response)
+
+def json_request(url, method, body):
+    return request(url, method, json.dumps(body).encode())
+
+def verify(asset, expected):
+    if not isinstance(asset, dict) or any(asset.get(k) != v for k, v in expected.items()):
+        raise RuntimeError(f"asset verification failed: {expected['name']}")
+
+# Hash every local file before uploading, including the checksum manifest.
+expected = {}
+for asset in assets:
+    path, kind = asset.rsplit(":", 1)
+    file = pathlib.Path(path)
+    with file.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    expected[file.name] = {"name": file.name, "size": file.stat().st_size,
+                           "state": "uploaded", "digest": "sha256:" + digest}
+
+release = json_request(api, "POST", {"tag_name": "v" + version, "name": title,
+                       "body": pathlib.Path(notes).read_text(), "draft": True})
+if release.get("draft") is not True or not isinstance(release.get("id"), int):
+    raise RuntimeError("API did not create a draft release")
+release_url = f"{api}/{release['id']}"
+print(f"Draft release id: {release['id']}; failures leave it unpublished.")
+for asset in assets:
+    path, kind = asset.rsplit(":", 1)
+    name = pathlib.Path(path).name
+    url = (f"https://uploads.github.com/repos/{repo}/releases/{release['id']}/assets"
+           f"?name={urllib.parse.quote(name)}")
+    with open(path, "rb") as data:
+        uploaded = request(url, "POST", data, kind, expected[name]["size"])
+    verify(uploaded, expected[name])
+    print("  verified", name)
+
+# Read back the server's complete asset inventory and SHA-256 digests. A 200
+# error body, starter asset, truncated upload or missing asset cannot publish.
+remote = request(release_url + "/assets?per_page=100")
+if not isinstance(remote, list) or len(remote) != len(expected):
+    raise RuntimeError("release asset set is incomplete")
+if {asset.get("name") for asset in remote} != set(expected):
+    raise RuntimeError("release asset names differ")
+for asset in remote:
+    verify(asset, expected[asset["name"]])
+published = json_request(release_url, "PATCH", {"draft": False})
+if published.get("draft") is not False or published.get("tag_name") != "v" + version:
+    raise RuntimeError("release publication was not confirmed")
 PY
-done
 echo "✓ https://github.com/$REPO/releases/tag/v$VERSION"

@@ -88,7 +88,7 @@ stop:
 # Release tarball: prebuilt binaries + installer. Upload to GitHub releases
 # together with the release APK (android/app/build/outputs/apk/release/).
 # Publish a complete release: builds everything, refuses if any of the five
-# files is missing, then creates the GitHub release and uploads them all.
+# files is missing, uploads to a draft, verifies digests, then publishes.
 # Usage: GH_TOKEN=... make publish NOTES=path/to/notes.md
 publish:
 	./scripts/publish-release.sh $(NOTES)

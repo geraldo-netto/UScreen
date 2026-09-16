@@ -334,3 +334,8 @@ fn t100_release_requires_matching_head_local_and_remote_tags() {
 fn t118_release_credentials_never_appear_in_command_arguments() {
     release_tests("t118");
 }
+
+#[test]
+fn t117_release_stays_draft_until_all_assets_are_verified() {
+    release_tests("t117");
+}

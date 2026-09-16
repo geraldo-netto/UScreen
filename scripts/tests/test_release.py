@@ -76,17 +76,7 @@ class ReleaseTest(unittest.TestCase):
         self.git('push', '-q', '-f', 'origin', 'refs/tags/v1.2.3')
         # urllib is intercepted in every child interpreter. No real HTTP.
         site = self.base / 'sitecustomize.py'
-        site.write_text(r"""
-import io, json, os, urllib.request
-from pathlib import Path
-root = Path(os.environ['USCREEN_TEST_ROOT'])
-def fake_urlopen(request, *args, **kwargs):
-    authorized = request.get_header('Authorization') == 'Bearer ' + os.environ['GH_TOKEN']
-    with (root / 'requests').open('a') as f:
-        f.write(json.dumps({'url': request.full_url, 'authorized': authorized}) + '\n')
-    return io.BytesIO(json.dumps({'id': 123, 'name': 'asset', 'state': 'uploaded'}).encode())
-urllib.request.urlopen = fake_urlopen
-""")
+        site.write_text((REPO / 'scripts/tests/release_api_stub.py').read_text())
         self.env['PYTHONPATH'] = str(self.base)
         real_python = shutil.which('python3')
         wrapper = self.bin / 'python3'
@@ -95,6 +85,43 @@ urllib.request.urlopen = fake_urlopen
         curl = self.bin / 'curl'
         curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$USCREEN_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
         curl.chmod(0o755)
+
+    def test_t117_failed_uploads_never_publish(self):
+        import json
+        self.enable_uploads()
+        for failure in ['http', 'api']:
+            for index in range(6):
+                with self.subTest(failure=failure, index=index):
+                    (self.base / 'api-state').unlink(missing_ok=True)
+                    self.env.update(USCREEN_TEST_FAILURE=failure, USCREEN_TEST_FAIL_INDEX=str(index))
+                    result = self.publish()
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                    state = json.loads((self.base / 'api-state').read_text())
+                    self.assertFalse(state['published'], 'incomplete release made public')
+                    self.assertTrue(state['draft'])
+
+    def test_t117_verifies_uploaded_set_and_digests(self):
+        import json
+        self.enable_uploads()
+        for failure in ['digest', 'missing']:
+            with self.subTest(failure=failure):
+                (self.base / 'api-state').unlink(missing_ok=True)
+                self.env['USCREEN_TEST_FAILURE'] = failure
+                result = self.publish()
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse(json.loads((self.base / 'api-state').read_text())['published'])
+
+    def test_t117_only_complete_verified_release_is_published(self):
+        import json
+        self.enable_uploads()
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        state = json.loads((self.base / 'api-state').read_text())
+        self.assertTrue(state['published'])
+        self.assertEqual(len(state['assets']), 6)
+        requests = [json.loads(line) for line in (self.base / 'requests').read_text().splitlines()]
+        self.assertEqual(requests[-1]['method'], 'PATCH')
+        self.assertTrue(any(r['method'] == 'GET' for r in requests))
 
     def test_t118_credentials_absent_from_arguments_and_logs(self):
         self.enable_uploads()
