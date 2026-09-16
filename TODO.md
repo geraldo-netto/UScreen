@@ -2,7 +2,6 @@
 
 | id | status | severity | effort | description |
 |---|---|---|---|---|
-| T153 | open | low | small | Refactor `android/app/src/main/java/com/uscreen/MainActivity.kt::UScreenMain` (baseline line 412): SonarQube cyclomatic complexity 13 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T162 | open | medium | large | Refactor `gui/src/main.rs::update` (baseline line 491): SonarQube cyclomatic complexity 105 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T163 | open | low | small | Refactor `host/evdi/evdi_helper.c::convert_strip_scaled` (baseline line 201): SonarQube cyclomatic complexity 12 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T164 | open | medium | medium | Refactor `host/evdi/evdi_helper.c::on_mode_changed` (baseline line 412): SonarQube cyclomatic complexity 31 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |

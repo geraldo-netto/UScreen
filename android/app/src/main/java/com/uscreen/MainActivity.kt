@@ -473,70 +473,8 @@ fun UScreenMain(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Video surface — fills entire screen
-        AndroidView(
-            factory = { ctx ->
-                SurfaceView(ctx).apply {
-                    holder.setFormat(android.graphics.PixelFormat.OPAQUE)
-                    holder.addCallback(
-                        object : android.view.SurfaceHolder.Callback {
-                            override fun surfaceCreated(holder: android.view.SurfaceHolder) {
-                                onSurfaceReady(this@apply)
-                            }
-                            override fun surfaceChanged(
-                                holder: android.view.SurfaceHolder,
-                                format: Int, width: Int, height: Int
-                            ) {
-                                onSurfaceReady(this@apply)
-                            }
-                            override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
-                                onSurfaceDestroyed()
-                            }
-                        }
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Pen-only: there is no picture coming, so say so instead of leaving
-        // the user staring at a "waiting for the host" spinner forever.
-        AnimatedVisibility(
-            visible = penOnly,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            PenOnlyScreen()
-        }
-
-        // Connection screen
-        AnimatedVisibility(
-            visible = !isConnected && !penOnly,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            ConnectionScreen()
-        }
-
-        // Stats chip (top-left, only while streaming)
-        if (isConnected && showStats) {
-            Surface(
-                color = Color(0x99000000),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = "%.0f fps   %.1f Mbps".format(fps, mbps),
-                    fontSize = 12.sp,
-                    color = Color(0xFFB0B0C0),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                )
-            }
-        }
+        StreamSurface(onSurfaceReady, onSurfaceDestroyed)
+        ConnectionLayers(penOnly, isConnected, showStats, fps, mbps)
 
         // Subtle settings handle (top-right). Sits above the video surface, so
         // taps here are NOT forwarded to the Linux host.
@@ -554,60 +492,7 @@ fun UScreenMain(
             Text("⚙", fontSize = 18.sp, color = Color.White)
         }
 
-        // One-time note after the first successful picture. Dismissable, never
-        // repeated: the point is one honest ask, not a nag.
-        if (showThanks) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(24.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xE620202C))
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Text("UScreen is working.", fontSize = 15.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text(
-                        "If it replaced a second monitor for you, a star on GitHub or a compatibility " +
-                            "report helps other Linux users find it. This note appears only once.",
-                        fontSize = 12.sp, color = Color(0xFFB0B0C0)
-                    )
-                    Row(modifier = Modifier.padding(top = 10.dp)) {
-                        Text("Open GitHub", fontSize = 13.sp, color = Accent,
-                            modifier = Modifier.clickable {
-                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://github.com/majmichu1/UScreen")))
-                                onDismissThanks()
-                            }.padding(end = 20.dp))
-                        Text("Dismiss", fontSize = 13.sp, color = Color(0xFF9A9AB0),
-                            modifier = Modifier.clickable { onDismissThanks() })
-                    }
-                }
-            }
-        }
-
-        // "Update available" pill under the settings handle. Small, and gone
-        // the moment there is nothing to say.
-        if (updateAvailable != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 56.dp, end = 10.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xCC20202C))
-                    .clickable {
-                        context.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse(UpdateCheck.RELEASES_PAGE)
-                            )
-                        )
-                    }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text("Update $updateAvailable available", fontSize = 12.sp, color = Color.White)
-            }
-        }
+        StreamNotices(showThanks, onDismissThanks, updateAvailable)
 
         if (showSettings) {
             SettingsSheet(
@@ -652,6 +537,139 @@ fun UScreenMain(
             )
         }
     }
+}
+
+@Composable
+private fun StreamSurface(onSurfaceReady: (SurfaceView) -> Unit, onSurfaceDestroyed: () -> Unit) {
+    // Video surface — fills entire screen
+    AndroidView(
+        factory = { ctx ->
+            SurfaceView(ctx).apply {
+                holder.setFormat(android.graphics.PixelFormat.OPAQUE)
+                holder.addCallback(
+                    object : android.view.SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                            onSurfaceReady(this@apply)
+                        }
+                        override fun surfaceChanged(
+                            holder: android.view.SurfaceHolder,
+                            format: Int, width: Int, height: Int
+                        ) {
+                            onSurfaceReady(this@apply)
+                        }
+                        override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                            onSurfaceDestroyed()
+                        }
+                    }
+                )
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    )
+
+}
+
+@Composable
+private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float) {
+    // Pen-only: there is no picture coming, so say so instead of leaving
+    // the user staring at a "waiting for the host" spinner forever.
+    AnimatedVisibility(
+        visible = penOnly,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        PenOnlyScreen()
+    }
+
+    // Connection screen
+    AnimatedVisibility(
+        visible = !isConnected && !penOnly,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        ConnectionScreen()
+    }
+
+    // Stats chip (top-left, only while streaming)
+    if (isConnected && showStats) {
+        Surface(
+            color = Color(0x99000000),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(12.dp)
+        ) {
+            Text(
+                text = "%.0f fps   %.1f Mbps".format(fps, mbps),
+                fontSize = 12.sp,
+                color = Color(0xFFB0B0C0),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+            )
+        }
+    }
+
+}
+
+@Composable
+private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> Unit, updateAvailable: String?) {
+    val context = LocalContext.current
+    // One-time note after the first successful picture. Dismissable, never
+    // repeated: the point is one honest ask, not a nag.
+    if (showThanks) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(24.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xE620202C))
+                .padding(16.dp)
+        ) {
+            Column {
+                Text("UScreen is working.", fontSize = 15.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    "If it replaced a second monitor for you, a star on GitHub or a compatibility " +
+                        "report helps other Linux users find it. This note appears only once.",
+                    fontSize = 12.sp, color = Color(0xFFB0B0C0)
+                )
+                Row(modifier = Modifier.padding(top = 10.dp)) {
+                    Text("Open GitHub", fontSize = 13.sp, color = Accent,
+                        modifier = Modifier.clickable {
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://github.com/majmichu1/UScreen")))
+                            onDismissThanks()
+                        }.padding(end = 20.dp))
+                    Text("Dismiss", fontSize = 13.sp, color = Color(0xFF9A9AB0),
+                        modifier = Modifier.clickable { onDismissThanks() })
+                }
+            }
+        }
+    }
+
+    // "Update available" pill under the settings handle. Small, and gone
+    // the moment there is nothing to say.
+    if (updateAvailable != null) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 56.dp, end = 10.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xCC20202C))
+                .clickable {
+                    context.startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(UpdateCheck.RELEASES_PAGE)
+                        )
+                    )
+                }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Text("Update $updateAvailable available", fontSize = 12.sp, color = Color.White)
+        }
+    }
+
 }
 
 @Composable
