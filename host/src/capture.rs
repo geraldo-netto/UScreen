@@ -12,6 +12,8 @@ use tokio::sync::{broadcast, watch};
 use tracing::{error, info, warn};
 use uscreen_config::commands::AsyncCommandExt;
 
+type HelperLines = tokio::io::Lines<BufReader<tokio::process::ChildStdout>>;
+
 const RECONNECT_DELAY_MS: u64 = 2000;
 /// Capture FIFO, in the per-user runtime directory. It used to be
 /// /tmp/uscreen_capture.fifo with mode 0666, which let any local account read
@@ -585,7 +587,35 @@ impl CaptureManager {
     async fn start_helper(&mut self) -> Result<()> {
         let fifo = fifo_path_for(self.config.instance);
         Self::ensure_fifo(&fifo)?;
+        Self::retire_orphan_capture(&fifo).await;
+        let mut child = self
+            .helper_command(&fifo)?
+            .spawn()
+            .context("Failed to spawn evdi-helper")?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("No stdout from helper"))?;
+        let mut lines = BufReader::new(stdout).lines();
+        let card = Self::await_helper_card(&mut lines).await?;
+        self.helper_card = Some(card);
+        let _ = self.card_tx.send(Some(card));
+        // A fresh helper has not negotiated a mode yet.
+        let _ = self.mode_tx.send(None);
+        let _ = self.stream_tx.send(None);
+        if let Some(task) = self.helper_stdout_task.take() {
+            task.abort();
+        }
+        self.helper_stdout_task = Some(tokio::spawn(Self::drain_helper_stdout(
+            lines,
+            self.mode_tx.clone(),
+            self.stream_tx.clone(),
+        )));
+        self.helper_child = Some(child);
+        Ok(())
+    }
 
+    async fn retire_orphan_capture(fifo: &str) {
         // Kill any stray helper from a previous run before spawning a new one.
         // kill_on_drop only fires on a graceful exit; if the daemon was
         // SIGKILLed, pkill'd, or crashed, its helper is orphaned and keeps
@@ -618,7 +648,9 @@ impl CaptureManager {
             // drop the old FIFO write end before we open a fresh one.
             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
         }
+    }
 
+    fn helper_command(&self, fifo: &str) -> Result<Command> {
         // EDID 1.4 pixel-clock field is 16-bit (max 655 MHz).
         // 2960×1848 @120 Hz needs ~706 MHz which overflows.
         // Cap the EDID at 90 Hz so KDE can render at 90 fps; the helper
@@ -642,7 +674,7 @@ impl CaptureManager {
             cmd.args(["--scale", &self.config.stream_scale.to_string()]);
         }
 
-        cmd.args(["--capture-fifo", &fifo]);
+        cmd.args(["--capture-fifo", fifo]);
         if let Some(card) = self.config.card {
             cmd.args(["--card", &card.to_string()]);
         }
@@ -652,24 +684,17 @@ impl CaptureManager {
             .stdin(Stdio::null())
             .kill_on_drop(true);
 
-        let mut child = cmd.spawn().context("Failed to spawn evdi-helper")?;
+        Ok(cmd)
+    }
 
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| anyhow::anyhow!("No stdout from helper"))?;
-
-        let reader = BufReader::new(stdout);
-        let mut lines = reader.lines();
-
-        let card: u32;
+    async fn await_helper_card(lines: &mut HelperLines) -> Result<u32> {
         loop {
             match lines.next_line().await {
                 Ok(Some(l)) => {
                     if let Some(rest) = l.strip_prefix("EVDI_CONNECTED card") {
-                        card = rest.trim().parse()?;
+                        let card = rest.trim().parse()?;
                         info!("Helper connected on card{}", card);
-                        break;
+                        return Ok(card);
                     }
                 }
                 Ok(None) => {
@@ -680,65 +705,61 @@ impl CaptureManager {
                 }
             }
         }
+    }
 
-        self.helper_card = Some(card);
-        let _ = self.card_tx.send(Some(card));
-        // A fresh helper has not negotiated a mode yet.
-        let _ = self.mode_tx.send(None);
-        let _ = self.stream_tx.send(None);
-
-        // Keep draining stdout for the life of the helper. Dropping the reader
-        // here (as this code used to) closes the pipe, so every later
-        // MODE_CHANGED line dies with EPIPE and the host never learns what the
-        // compositor really picked.
-        if let Some(task) = self.helper_stdout_task.take() {
-            task.abort();
+    // Retain stdout for the entire helper lifetime so negotiated mode reports
+    // do not hit EPIPE after the initial connection handshake.
+    async fn drain_helper_stdout(
+        mut lines: HelperLines,
+        mode_tx: watch::Sender<Option<DetectedMode>>,
+        stream_tx: watch::Sender<Option<(u32, u32)>>,
+    ) {
+        while let Ok(Some(line)) = lines.next_line().await {
+            Self::publish_helper_line(&line, &mode_tx, &stream_tx);
         }
-        let mode_tx = self.mode_tx.clone();
-        let stream_tx = self.stream_tx.clone();
-        self.helper_stdout_task = Some(tokio::spawn(async move {
-            while let Ok(Some(line)) = lines.next_line().await {
-                if let Some(rest) = line.strip_prefix("STREAM_SIZE ") {
-                    let mut p = rest.split_whitespace();
-                    if let (Some(Ok(w)), Some(Ok(h))) = (
-                        p.next().map(str::parse::<u32>),
-                        p.next().map(str::parse::<u32>),
-                    ) {
-                        if w > 0 && h > 0 {
-                            info!("Helper emits {}x{} frames to the encoder", w, h);
-                            let _ = stream_tx.send(Some((w, h)));
-                        }
-                    }
-                    continue;
-                }
-                let Some(rest) = line.strip_prefix("MODE_CHANGED ") else {
-                    continue;
-                };
-                let mut parts = rest.split_whitespace();
-                let parsed = (|| {
-                    Some(DetectedMode {
-                        width: parts.next()?.parse().ok()?,
-                        height: parts.next()?.parse().ok()?,
-                        refresh: parts.next()?.parse().ok()?,
-                    })
-                })();
-                let Some(mode) = parsed else {
-                    warn!("Unparseable MODE_CHANGED from helper: {}", rest);
-                    continue;
-                };
-                if mode.width == 0 || mode.height == 0 {
-                    continue;
-                }
-                info!(
-                    "Compositor negotiated {}x{}@{}Hz on the virtual output",
-                    mode.width, mode.height, mode.refresh
-                );
-                let _ = mode_tx.send(Some(mode));
-            }
-        }));
+    }
 
-        self.helper_child = Some(child);
-        Ok(())
+    fn publish_helper_line(
+        line: &str,
+        mode_tx: &watch::Sender<Option<DetectedMode>>,
+        stream_tx: &watch::Sender<Option<(u32, u32)>>,
+    ) {
+        if let Some(rest) = line.strip_prefix("STREAM_SIZE ") {
+            let mut p = rest.split_whitespace();
+            if let (Some(Ok(w)), Some(Ok(h))) = (
+                p.next().map(str::parse::<u32>),
+                p.next().map(str::parse::<u32>),
+            ) {
+                if w > 0 && h > 0 {
+                    info!("Helper emits {}x{} frames to the encoder", w, h);
+                    let _ = stream_tx.send(Some((w, h)));
+                }
+            }
+            return;
+        }
+        let Some(rest) = line.strip_prefix("MODE_CHANGED ") else {
+            return;
+        };
+        let mut parts = rest.split_whitespace();
+        let parsed = (|| {
+            Some(DetectedMode {
+                width: parts.next()?.parse().ok()?,
+                height: parts.next()?.parse().ok()?,
+                refresh: parts.next()?.parse().ok()?,
+            })
+        })();
+        let Some(mode) = parsed else {
+            warn!("Unparseable MODE_CHANGED from helper: {}", rest);
+            return;
+        };
+        if mode.width == 0 || mode.height == 0 {
+            return;
+        }
+        info!(
+            "Compositor negotiated {}x{}@{}Hz on the virtual output",
+            mode.width, mode.height, mode.refresh
+        );
+        let _ = mode_tx.send(Some(mode));
     }
 
     /// With the in-process encoder there is no child to spawn; the encode loop
