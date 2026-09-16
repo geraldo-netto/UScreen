@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-72 items: 4 high, 28 medium, 40 low.
+71 items: 3 high, 28 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T003 | open | high | S | Stop `pkill -x evdi_helper` from killing the other tablet's helper in multi-tablet mode ([capture.rs:582](host/src/capture.rs#L582)) |
 | T004 | open | high | S | Fix inproc-encoder build: spawn_blocking closure captures &mut self via self.config.instance ([capture.rs:1164](host/src/capture.rs#L1164)) |
 | T005 | open | high | S | Forward extra tablets' base ports to their session ports; second real tablet can never connect ([main.rs:971](host/src/main.rs#L971)) |
 | T006 | open | high | S | Rewrite pkgver in the shipped PKGBUILD; it is still 1.1.0 while everything else is 1.2.3 ([build-packages.sh:47](packaging/build-packages.sh#L47)) |
@@ -88,8 +87,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T003** — main.rs spawn_extra_session runs a second CaptureManager (instance 1+, own card and FIFO), but every start_helper kills all evdi_helper processes, so attaching a second tablet kills tablet 1's helper; its ffmpeg then EOFs, restarts, and kills tablet 2's helper in turn, ping-ponging forever. Match on this instance's FIFO like the ffmpeg pattern does (`pkill -f 'evdi_helper.*<fifo>'`) or only kill a PID recorded from the previous run.
 
 **T004** — The `move` closure handed to tokio::task::spawn_blocking reads `self.config.instance`, which captures `self` (a `&mut CaptureManager`) and fails with E0521 (borrowed data escapes, requires 'static); the feature advertised in docs/development.md:107 has not compiled since e7a9c3e. Hoist `let fifo = fifo_path_for(self.config.instance);` above the closure like the other locals.
 

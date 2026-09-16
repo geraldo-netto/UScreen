@@ -577,10 +577,12 @@ impl CaptureManager {
         // writing full frames into the shared FIFO. Several such orphans
         // interleave their output, which the encoder reads as a single
         // stream — producing torn, banded frames mixing several captures.
-        // -x matches the process name exactly so it never hits this daemon
-        // (whose own command line contains the helper path via --helper).
+        // Matched on this instance's FIFO: with several tablets each has a
+        // helper of its own, and killing by name alone took the other
+        // tablet's helper down on every start. The daemon's own command line
+        // never carries --capture-fifo, so this cannot hit the daemon.
         let killed_helper = Command::new("pkill")
-            .args(["-x", "evdi_helper"])
+            .args(["-f", &format!("evdi_helper.*--capture-fifo {}( |$)", fifo)])
             .status()
             .await
             .map(|s| s.success())
