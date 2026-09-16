@@ -1729,109 +1729,99 @@ impl H264AnnexBPacketizer {
         let Some(&header) = self.buffer.get(offset) else {
             return false;
         };
-        let (vcl, prefix) = match self.codec {
-            Codec::H264 => {
-                let kind = header & 0x1f;
-                (
-                    (NAL_TYPE_NON_IDR..=NAL_TYPE_IDR).contains(&kind),
-                    matches!(kind, NAL_TYPE_AUD | NAL_TYPE_SPS | NAL_TYPE_PPS),
-                )
-            }
-            Codec::Hevc => {
-                let kind = (header >> 1) & 0x3f;
-                (
-                    kind <= HEVC_NAL_VCL_MAX,
-                    matches!(
-                        kind,
-                        HEVC_NAL_AUD | HEVC_NAL_VPS | HEVC_NAL_SPS | HEVC_NAL_PPS
-                    ),
-                )
-            }
-        };
+        let (kind, _) = self.classify_nal(header);
+        let vcl = kind == NalKind::Vcl;
+        let prefix = matches!(kind, NalKind::Sps | NalKind::Pps | NalKind::Aud);
         prefix || (vcl && self.starts_new_picture(&self.buffer, offset))
+    }
+
+    fn classify_nal(&self, header: u8) -> (NalKind, bool) {
+        match self.codec {
+            Codec::H264 => Self::classify_h264(header & 0x1f),
+            Codec::Hevc => Self::classify_hevc((header >> 1) & 0x3f),
+        }
+    }
+
+    fn classify_h264(kind: u8) -> (NalKind, bool) {
+        let class = match kind {
+            NAL_TYPE_SPS => NalKind::Sps,
+            NAL_TYPE_PPS => NalKind::Pps,
+            NAL_TYPE_AUD => NalKind::Aud,
+            NAL_TYPE_NON_IDR..=NAL_TYPE_IDR => NalKind::Vcl,
+            _ => NalKind::Other,
+        };
+        (class, kind == NAL_TYPE_IDR)
+    }
+
+    fn classify_hevc(kind: u8) -> (NalKind, bool) {
+        let class = match kind {
+            HEVC_NAL_VPS | HEVC_NAL_SPS => NalKind::Sps,
+            HEVC_NAL_PPS => NalKind::Pps,
+            HEVC_NAL_AUD => NalKind::Aud,
+            0..=HEVC_NAL_VCL_MAX => NalKind::Vcl,
+            _ => NalKind::Other,
+        };
+        // Every IRAP picture, including CRA, is a valid decoder join point.
+        (
+            class,
+            (HEVC_NAL_IRAP_MIN..=HEVC_NAL_IRAP_MAX).contains(&kind),
+        )
     }
 
     fn process_nal(&mut self, nal: &[u8], out: &mut Vec<VideoPacket>) {
         let Some(header_offset) = CaptureManager::nal_header_offset(nal, 0) else {
             return;
         };
-        if header_offset >= nal.len() {
-            return;
+        match self.classify_nal(nal[header_offset]) {
+            (NalKind::Sps | NalKind::Pps, _) => {
+                self.remember_parameter_set(nal, header_offset, out)
+            }
+            (NalKind::Aud, _) => {
+                self.emit_pending_access_unit(out);
+                self.pending_access_unit.extend_from_slice(nal);
+            }
+            (NalKind::Vcl, is_key) => self.append_picture_slice(nal, header_offset, is_key, out),
+            (NalKind::Other, _) => self.pending_access_unit.extend_from_slice(nal),
         }
+    }
 
-        let (kind, is_key) = match self.codec {
-            Codec::H264 => {
-                let t = nal[header_offset] & 0x1f;
-                let kind = match t {
-                    NAL_TYPE_SPS => NalKind::Sps,
-                    NAL_TYPE_PPS => NalKind::Pps,
-                    NAL_TYPE_AUD => NalKind::Aud,
-                    NAL_TYPE_NON_IDR..=NAL_TYPE_IDR => NalKind::Vcl,
-                    _ => NalKind::Other,
-                };
-                (kind, t == NAL_TYPE_IDR)
-            }
-            Codec::Hevc => {
-                // Two-byte header; the type is bits 1..6 of the first byte.
-                let t = (nal[header_offset] >> 1) & 0x3f;
-                let kind = match t {
-                    HEVC_NAL_VPS | HEVC_NAL_SPS => NalKind::Sps,
-                    HEVC_NAL_PPS => NalKind::Pps,
-                    HEVC_NAL_AUD => NalKind::Aud,
-                    0..=HEVC_NAL_VCL_MAX => NalKind::Vcl,
-                    _ => NalKind::Other,
-                };
-                // Any IRAP picture is a valid place for a decoder to join,
-                // not only an IDR — refusing a CRA would leave a client
-                // waiting for a picture the encoder may never emit.
-                (kind, (HEVC_NAL_IRAP_MIN..=HEVC_NAL_IRAP_MAX).contains(&t))
-            }
+    fn remember_parameter_set(
+        &mut self,
+        nal: &[u8],
+        header_offset: usize,
+        out: &mut Vec<VideoPacket>,
+    ) {
+        // Finish the old picture with its configuration before replacing it.
+        if self.pending_has_vcl {
+            self.emit_pending_access_unit(out);
+        }
+        let nal_type = match self.codec {
+            Codec::H264 => nal[header_offset] & 0x1f,
+            Codec::Hevc => (nal[header_offset] >> 1) & 0x3f,
         };
-
-        match kind {
-            NalKind::Sps | NalKind::Pps => {
-                // Parameter sets precede the following picture. Finish the old
-                // picture using its configuration before replacing that state.
-                if self.pending_has_vcl {
-                    if let Some(packet) = self.take_pending_access_unit() {
-                        out.push(packet);
-                    }
-                }
-                let nal_type = match self.codec {
-                    Codec::H264 => nal[header_offset] & 0x1f,
-                    Codec::Hevc => (nal[header_offset] >> 1) & 0x3f,
-                };
-                // These single-layer encoders emit one current set per type.
-                // Normalize Annex B prefixes so equivalent headers stay equal.
-                let mut set = vec![0, 0, 0, 1];
-                set.extend_from_slice(&nal[header_offset..]);
-                if self.parameter_sets.get(&nal_type) != Some(&set) {
-                    self.parameter_sets.insert(nal_type, set);
-                    self.config = self.parameter_sets.values().flatten().copied().collect();
-                }
-            }
-            NalKind::Aud => {
-                if let Some(access_unit) = self.take_pending_access_unit() {
-                    out.push(access_unit);
-                }
-                self.pending_access_unit.extend_from_slice(nal);
-            }
-            NalKind::Vcl => {
-                if self.pending_has_vcl && self.starts_new_picture(nal, header_offset) {
-                    if let Some(access_unit) = self.take_pending_access_unit() {
-                        out.push(access_unit);
-                    }
-                }
-                if is_key {
-                    self.pending_has_idr = true;
-                }
-                self.pending_access_unit.extend_from_slice(nal);
-                self.pending_has_vcl = true;
-            }
-            NalKind::Other => {
-                self.pending_access_unit.extend_from_slice(nal);
-            }
+        // Single-layer encoders emit one current set per type. Normalize the
+        // prefix so equivalent headers retain the same configuration bytes.
+        let mut set = vec![0, 0, 0, 1];
+        set.extend_from_slice(&nal[header_offset..]);
+        if self.parameter_sets.get(&nal_type) != Some(&set) {
+            self.parameter_sets.insert(nal_type, set);
+            self.config = self.parameter_sets.values().flatten().copied().collect();
         }
+    }
+
+    fn append_picture_slice(
+        &mut self,
+        nal: &[u8],
+        header_offset: usize,
+        is_key: bool,
+        out: &mut Vec<VideoPacket>,
+    ) {
+        if self.pending_has_vcl && self.starts_new_picture(nal, header_offset) {
+            self.emit_pending_access_unit(out);
+        }
+        self.pending_has_idr |= is_key;
+        self.pending_access_unit.extend_from_slice(nal);
+        self.pending_has_vcl = true;
     }
 
     /// Is this slice the first of a new picture?
