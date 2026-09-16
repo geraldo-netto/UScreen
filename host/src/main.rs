@@ -2020,20 +2020,27 @@ async fn tablet_ip(serial: &str) -> Option<String> {
             continue;
         };
         let text = String::from_utf8_lossy(&out.stdout);
-        // "inet 192.168.1.42/24 …" or "… src 192.168.1.42 …"
-        let mut words = text.split_whitespace().peekable();
-        while let Some(w) = words.next() {
-            if w != "inet" && w != "src" {
-                continue;
-            }
-            let Some(value) = words.peek() else { continue };
-            let ip = value.split('/').next().unwrap_or(value);
-            if ip.starts_with("127.") || !ip.contains('.') {
-                continue;
-            }
-            if ip.split('.').count() == 4 && ip.split('.').all(|o| o.parse::<u8>().is_ok()) {
-                return Some(ip.to_string());
-            }
+        if let Some(ip) = parse_tablet_ip(&text) {
+            return Some(ip);
+        }
+    }
+    None
+}
+
+fn parse_tablet_ip(text: &str) -> Option<String> {
+    // "inet 192.168.1.42/24 …" or "… src 192.168.1.42 …"
+    let mut words = text.split_whitespace().peekable();
+    while let Some(w) = words.next() {
+        if w != "inet" && w != "src" {
+            continue;
+        }
+        let Some(value) = words.peek() else { continue };
+        let ip = value.split('/').next().unwrap_or(value);
+        if ip.starts_with("127.") || !ip.contains('.') {
+            continue;
+        }
+        if ip.split('.').count() == 4 && ip.split('.').all(|o| o.parse::<u8>().is_ok()) {
+            return Some(ip.to_string());
         }
     }
     None
