@@ -1045,8 +1045,11 @@ impl ExtraSession {
             self.capture.abort();
             let _ = self.capture.await;
         }
-        for t in self.tasks {
-            t.abort();
+        for task in &self.tasks {
+            task.abort();
+        }
+        for task in self.tasks {
+            let _ = task.await;
         }
     }
 }

@@ -677,6 +677,25 @@ async fn osk_touch_device_removed() {
     }
 }
 
+/// Own device lifetime even when the watcher is cancelled inside an await.
+struct DeviceOwner {
+    devices: Arc<std::sync::Mutex<InjectDevices>>,
+    touch_registered: bool,
+}
+impl Drop for DeviceOwner {
+    fn drop(&mut self) {
+        if let Ok(mut devices) = self.devices.lock() {
+            devices.release_all();
+            *devices = InjectDevices::empty();
+        }
+        if self.touch_registered && TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst) == 1 {
+            // Drop cannot await; recovery state remains on disk if runtime shutdown
+            // prevents this final restoration from completing.
+            tokio::spawn(crate::osk::restore());
+        }
+    }
+}
+
 /// The virtual input devices backing one tablet connection.
 struct InjectDevices {
     touch: Option<UInputDevice>,
@@ -1257,6 +1276,7 @@ impl InputServer {
             );
         }
         let uinput = Arc::new(std::sync::Mutex::new(InjectDevices::empty()));
+        let mut tasks = tokio::task::JoinSet::new();
 
         // Follow the tablet, the mode and the card for as long as the daemon
         // runs. Attach creates the devices and maps them; detach destroys
@@ -1270,7 +1290,11 @@ impl InputServer {
             let devices = uinput.clone();
             let ident_bg = ident.clone();
             let cfg = self.config.clone();
-            tokio::spawn(async move {
+            tasks.spawn(async move {
+                let mut owner = DeviceOwner {
+                    devices: devices.clone(),
+                    touch_registered: false,
+                };
                 let mut present = false;
                 tablet_rx.borrow_and_update();
                 mode_rx.borrow_and_update();
@@ -1295,6 +1319,7 @@ impl InputServer {
                             *guard = created;
                         }
                         if has_touch {
+                            owner.touch_registered = true;
                             osk_touch_device_added().await;
                         }
                     } else if !attached && present {
@@ -1309,6 +1334,7 @@ impl InputServer {
                         let had_touch = old.as_ref().is_some_and(|d| d.touch.is_some());
                         drop(old);
                         if had_touch {
+                            owner.touch_registered = false;
                             osk_touch_device_removed().await;
                         }
                         info!("Tablet detached — virtual input devices removed");
@@ -1357,6 +1383,7 @@ impl InputServer {
         loop {
             let accept = tokio::select! {
                 res = listener.accept() => res,
+                _ = tasks.join_next(), if !tasks.is_empty() => continue,
                 _ = async {
                     while running.load(Ordering::SeqCst) {
                         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -1379,7 +1406,7 @@ impl InputServer {
             let latency = self.latency.clone();
             let devices = uinput.clone();
             let relaunch = self.relaunch.clone();
-            tokio::spawn(async move {
+            tasks.spawn(async move {
                 if let Err(e) =
                     handle_connection(socket, cfg, settings, mode_tx, latency, devices, relaunch)
                         .await
@@ -1389,6 +1416,7 @@ impl InputServer {
             });
         }
 
+        tasks.shutdown().await;
         Ok(())
     }
 }
@@ -1800,6 +1828,48 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t084_stopping_server_closes_clients_and_watcher() {
+        let (mode_tx, _mode_rx) = watch::channel(false);
+        let (_card_tx, card_rx) = watch::channel(None);
+        let (tablet_tx, tablet_rx) = watch::channel(false);
+        let server = InputServer::new(
+            InputConfig {
+                port: 0,
+                touch: false,
+                pen: false,
+                pointer: false,
+                ..InputConfig::default()
+            },
+            None,
+            mode_tx.clone(),
+            crate::latency::LatencyTracker::new(),
+            Arc::new(tokio::sync::Notify::new()),
+            card_rx,
+            tablet_rx,
+        );
+        let listener = server.bind().await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move { server.run_with_listener(listener).await });
+        let (mut client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+        response(&mut client).await;
+        task.abort();
+        let _ = task.await;
+        let _ = client.send(Message::Ping(vec![42])).await;
+        let next = tokio::time::timeout(std::time::Duration::from_millis(300), client.next()).await;
+        assert!(
+            !matches!(next, Ok(Some(Ok(Message::Pong(_))))),
+            "old controller remains alive"
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        assert_eq!(tablet_tx.receiver_count(), 0, "watcher survives server");
+        assert_eq!(
+            mode_tx.receiver_count(),
+            1,
+            "old session retains mode receiver"
+        );
+    }
+
     #[tokio::test]
     async fn t029_x11_maps_only_this_tablets_devices_and_card() {
         use std::os::unix::fs::PermissionsExt;
