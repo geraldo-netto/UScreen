@@ -61,9 +61,8 @@ class StreamingService : Service() {
         // Acquire a partial wake lock to prevent CPU sleep.
         //
         // Guarded against re-entry: onStartCommand runs again on every
-        // startService call and on every START_STICKY restart, and the previous
-        // version replaced the field each time without releasing the old lock,
-        // leaking one wake lock per restart.
+        // startService call, and the previous version replaced the field each
+        // time without releasing the old lock, leaking one per call.
         if (wakeLock?.isHeld != true) {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wakeLock = pm.newWakeLock(
@@ -109,7 +108,11 @@ class StreamingService : Service() {
             }
         }
 
-        return START_STICKY
+        // Not sticky: this service does no work of its own, it only holds
+        // locks while the activity streams. Restarted by the system after
+        // process death, with no activity behind it, it would hold a wake
+        // lock and a Wi-Fi lock for hours for nothing.
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {

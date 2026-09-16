@@ -140,10 +140,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Start foreground service to prevent Samsung from killing us
-        val serviceIntent = Intent(this, StreamingService::class.java)
-        startForegroundService(serviceIntent)
-
         // Enable fullscreen AFTER setContent so DecorView exists
         window.decorView.post {
             enableImmersiveMode()
@@ -338,6 +334,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // The foreground service holds the wake and Wi-Fi locks and keeps
+        // Samsung from killing the process. It lives exactly as long as we
+        // are streaming, i.e. between onStart and onStop: a backgrounded app
+        // must not keep the CPU and the radio awake for nothing.
+        startForegroundService(Intent(this, StreamingService::class.java))
         // One check per process, when the app comes to the front. It is a
         // single small request and the answer changes about once a month.
         if (!updateChecked && prefs.checkUpdates) {
@@ -364,12 +365,12 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         videoReceiver?.stop()
         touchCapture?.disconnect()
+        stopService(Intent(this, StreamingService::class.java))
     }
 
     override fun onDestroy() {
         super.onDestroy()
         stopTiltListener()
-        stopService(Intent(this, StreamingService::class.java))
     }
 }
 

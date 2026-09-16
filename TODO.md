@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-67 items: 0 high, 27 medium, 40 low.
+66 items: 0 high, 26 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T008 | open | medium | S | Use START_NOT_STICKY and tie wake/Wi-Fi locks to onStart/onStop, not activity lifetime ([StreamingService.kt:112](android/app/src/main/java/com/uscreen/StreamingService.kt#L112)) |
 | T010 | open | medium | S | Do not build the decoder in setSurface() while the receiver is stopped ([VideoReceiver.kt:204](android/app/src/main/java/com/uscreen/VideoReceiver.kt#L204)) |
 | T011 | open | medium | S | Stop claiming the tarball installer enables the systemd unit; install.sh never does ([installation.md:40](docs/installation.md#L40)) |
 | T012 | open | medium | S | Scale-1 conversion writes with g_mode_w stride into buffers sized by g_out_w: heap overflow on odd width ([evdi_helper.c:328](host/evdi/evdi_helper.c#L328)) |
@@ -83,8 +82,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T008** — START_STICKY makes the system restart the service after process death with no activity, re-acquiring a 4 h partial wake lock and an untimed Wi-Fi lock. MainActivity.onStop stops streaming but the locks stay held until onDestroy, so a backgrounded app keeps CPU and radio awake. Return START_NOT_STICKY and release the locks from onStop.
 
 **T010** — setSurface() calls setupCodec() whenever mediaCodec is null, independent of isRunning, so every surfaceCreated/surfaceChanged (launch with no host, rotation in pen-only mode) creates a hardware decoder plus a MAX_PRIORITY thread polling every 10 ms that nothing releases until the next stop(). Guard with isRunning.
 
