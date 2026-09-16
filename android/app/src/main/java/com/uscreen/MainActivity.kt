@@ -13,6 +13,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -744,7 +746,7 @@ internal fun applyStreamSettings(prefs: Prefs?, touchCapture: TouchCapture?, vid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsSheet(
+internal fun SettingsSheet(
     prefs: Prefs?,
     updateAvailable: String?,
     onOpenUpdate: () -> Unit,
@@ -766,9 +768,10 @@ private fun SettingsSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = Color(0xFF16161F)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp)) {
             Text(
                 "Settings",
                 fontSize = 20.sp,

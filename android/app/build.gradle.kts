@@ -73,6 +73,8 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("org.robolectric:robolectric:4.17")
     // 2024.02.02 ships material3 1.2.1 built against compose 1.6.x — the
     // 2024.01.00 BOM paired material3 1.1.2 with animation-core 1.6.0, which
