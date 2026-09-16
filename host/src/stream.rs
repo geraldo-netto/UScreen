@@ -175,100 +175,31 @@ impl StreamServer {
     }
 
     async fn stream_packets(
-        mut socket: tokio::net::tcp::OwnedWriteHalf,
+        socket: tokio::net::tcp::OwnedWriteHalf,
         mut rx: broadcast::Receiver<VideoPacket>,
         codec_config: Arc<Mutex<Option<Bytes>>>,
     ) -> Result<()> {
-        let mut last_sent_config: Option<Bytes> = None;
-
-        // Send cached codec config (SPS/PPS) so MediaCodec can configure.
-        // If not yet available, wait briefly for it.
-        let mut retries = 0;
-        loop {
-            let codec_data: Option<Bytes> = codec_config.lock().ok().and_then(|g| g.clone());
-            if let Some(config) = codec_data {
-                info!("Sending codec config to client ({} bytes)", config.len());
-                Self::write_packet(&mut socket, PACKET_TYPE_CONFIG, &config).await?;
-                last_sent_config = Some(config);
-                break;
-            }
-            retries += 1;
-            if retries > 50 {
-                // 5 seconds
-                warn!("Codec config not available after 5s, starting stream without it");
-                break;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        }
-
-        // New clients can only start decoding at an IDR
-        let mut wait_for_idr = true;
-        let mut dropped: u64 = 0;
-
+        let mut client = ClientPlayback {
+            socket,
+            last_sent_config: None,
+            wait_for_idr: true,
+            dropped: 0,
+        };
+        client.send_initial_config(&codec_config).await?;
         loop {
             let first = match rx.recv().await {
                 Ok(d) => d,
                 Err(broadcast::error::RecvError::Lagged(n)) => {
                     warn!("Client lagged {} frames, resuming at next IDR", n);
-                    wait_for_idr = true;
+                    client.wait_for_idr = true;
                     continue;
                 }
                 Err(broadcast::error::RecvError::Closed) => break,
             };
-
-            // Drain whatever else is already queued so we can see how far
-            // behind this client is.
-            let mut batch = vec![first];
-            loop {
-                match rx.try_recv() {
-                    Ok(p) => batch.push(p),
-                    Err(broadcast::error::TryRecvError::Lagged(n)) => {
-                        warn!("Client lagged {} frames, resuming at next IDR", n);
-                        wait_for_idr = true;
-                        batch.clear();
-                    }
-                    Err(_) => break,
-                }
-            }
-
-            // Too far behind: jump to the freshest IDR if one is queued.
-            // Frames before an IDR are never needed to decode what follows it.
-            if batch.len() > MAX_BACKLOG {
-                if let Some(pos) = batch.iter().rposition(|p| p.is_idr) {
-                    dropped += pos as u64;
-                    batch.drain(..pos);
-                }
-            }
-
-            let current_config = codec_config.lock().ok().and_then(|g| g.clone());
-            if let Some(config) = current_config {
-                if last_sent_config.as_ref() != Some(&config) {
-                    info!(
-                        "Sending refreshed codec config to client ({} bytes)",
-                        config.len()
-                    );
-                    Self::write_packet(&mut socket, PACKET_TYPE_CONFIG, &config).await?;
-                    last_sent_config = Some(config);
-                    wait_for_idr = true;
-                }
-            }
-
-            for packet in batch {
-                if wait_for_idr {
-                    if !packet.is_idr {
-                        dropped += 1;
-                        continue;
-                    }
-                    if dropped > 0 {
-                        info!("Resumed at IDR after dropping {} frames", dropped);
-                        dropped = 0;
-                    }
-                    wait_for_idr = false;
-                }
-                Self::write_frame(&mut socket, packet.seq, &packet.data).await?;
-            }
+            let batch = client.drain_batch(&mut rx, first);
+            client.refresh_config(&codec_config).await?;
+            client.send_batch(batch).await?;
         }
-
         Ok(())
     }
 
@@ -341,6 +272,111 @@ impl StreamServer {
     pub fn stop(&self) {
         self.running.store(false, Ordering::SeqCst);
     }
+}
+
+/// Decode readiness and backlog state owned by one authenticated viewer.
+struct ClientPlayback {
+    socket: tokio::net::tcp::OwnedWriteHalf,
+    last_sent_config: Option<Bytes>,
+    wait_for_idr: bool,
+    dropped: u64,
+}
+
+impl ClientPlayback {
+    async fn send_initial_config(&mut self, codec_config: &Mutex<Option<Bytes>>) -> Result<()> {
+        // Send cached codec config (SPS/PPS) so MediaCodec can configure.
+        // If not yet available, wait briefly for it.
+        let mut retries = 0;
+        loop {
+            let codec_data: Option<Bytes> = cached_codec_config(codec_config);
+            if let Some(config) = codec_data {
+                info!("Sending codec config to client ({} bytes)", config.len());
+                StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
+                self.last_sent_config = Some(config);
+                break;
+            }
+            retries += 1;
+            if retries > 50 {
+                // 5 seconds
+                warn!("Codec config not available after 5s, starting stream without it");
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
+        Ok(())
+    }
+
+    fn drain_batch(
+        &mut self,
+        rx: &mut broadcast::Receiver<VideoPacket>,
+        first: VideoPacket,
+    ) -> Vec<VideoPacket> {
+        // Drain whatever else is already queued so we can see how far
+        // behind this client is.
+        let mut batch = vec![first];
+        loop {
+            match rx.try_recv() {
+                Ok(p) => batch.push(p),
+                Err(broadcast::error::TryRecvError::Lagged(n)) => {
+                    warn!("Client lagged {} frames, resuming at next IDR", n);
+                    self.wait_for_idr = true;
+                    batch.clear();
+                }
+                Err(_) => break,
+            }
+        }
+
+        // Too far behind: jump to the freshest IDR if one is queued.
+        // Frames before an IDR are never needed to decode what follows it.
+        if batch.len() > MAX_BACKLOG {
+            if let Some(pos) = batch.iter().rposition(|p| p.is_idr) {
+                self.dropped += pos as u64;
+                batch.drain(..pos);
+            }
+        }
+
+        batch
+    }
+
+    async fn refresh_config(&mut self, codec_config: &Mutex<Option<Bytes>>) -> Result<()> {
+        let current_config = cached_codec_config(codec_config);
+        if let Some(config) = current_config {
+            if self.last_sent_config.as_ref() != Some(&config) {
+                info!(
+                    "Sending refreshed codec config to client ({} bytes)",
+                    config.len()
+                );
+                StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
+                self.last_sent_config = Some(config);
+                self.wait_for_idr = true;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn send_batch(&mut self, batch: Vec<VideoPacket>) -> Result<()> {
+        for packet in batch {
+            if self.wait_for_idr {
+                if !packet.is_idr {
+                    self.dropped += 1;
+                    continue;
+                }
+                if self.dropped > 0 {
+                    info!("Resumed at IDR after dropping {} frames", self.dropped);
+                    self.dropped = 0;
+                }
+                self.wait_for_idr = false;
+            }
+            StreamServer::write_frame(&mut self.socket, packet.seq, &packet.data).await?;
+        }
+        Ok(())
+    }
+}
+
+fn cached_codec_config(codec_config: &Mutex<Option<Bytes>>) -> Option<Bytes> {
+    codec_config.lock().ok().and_then(|g| g.clone())
 }
 
 #[cfg(test)]
