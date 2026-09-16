@@ -151,8 +151,7 @@ build_if_needed() {
     make -C "$PROJECT_DIR" build
 }
 
-install_files() {
-    mkdir -p "$BIN_DIR" "$APP_DIR"
+install_binaries() {
     local src_bin
     if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
         src_bin="$PROJECT_DIR/bin"
@@ -172,15 +171,20 @@ install_files() {
     fi
     chmod +x "$BIN_DIR/uscreen" "$BIN_DIR/evdi_helper"
     info "Binaries installed to $BIN_DIR"
+}
 
+install_desktop_entry() {
     # Absolute path: the app menu does not necessarily have ~/.local/bin on
     # its PATH, so a bare "uscreen-gui" can be a menu entry that does nothing.
     bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen-gui" "$SCRIPT_DIR/uscreen.desktop" > "$APP_DIR/uscreen.desktop" \
         && info "Desktop entry installed (UScreen in the app menu)"
+    return 0
+}
 
+install_icons() {
     # The menu entry and the tray look the icon up by name in the hicolor
     # theme; without this they fall back to a generic or blank picture.
-    ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
+    local ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
     if [ -f "$PROJECT_DIR/packaging/icons/uscreen.svg" ]; then
         mkdir -p "$ICON_DIR"
         cp "$PROJECT_DIR/packaging/icons/uscreen.svg" "$PROJECT_DIR/packaging/icons/uscreen-pen.svg" "$ICON_DIR/"
@@ -189,7 +193,9 @@ install_files() {
         command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
         command -v kbuildsycoca6 >/dev/null 2>&1 && kbuildsycoca6 >/dev/null 2>&1 || true
     fi
+}
 
+install_user_service() {
     mkdir -p "${HOME}/.config/systemd/user"
     cp "$SCRIPT_DIR/uscreen.service" "${HOME}/.config/systemd/user/" 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true
@@ -198,6 +204,14 @@ install_files() {
     # closing message says how to start it now; it starts by itself from the
     # next login on.
     systemctl --user enable uscreen.service 2>/dev/null || true
+}
+
+install_files() {
+    mkdir -p "$BIN_DIR" "$APP_DIR"
+    install_binaries
+    install_desktop_entry
+    install_icons
+    install_user_service
 }
 
 system_setup() {
