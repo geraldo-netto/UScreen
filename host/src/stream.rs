@@ -76,10 +76,13 @@ impl StreamServer {
     ) -> Result<()> {
         self.running.store(true, Ordering::SeqCst);
         let running = self.running.clone();
+        // Dropping this server future also cancels every accepted connection.
+        let mut clients = tokio::task::JoinSet::new();
 
         loop {
             let accept = tokio::select! {
                 res = listener.accept() => res,
+                _ = clients.join_next(), if !clients.is_empty() => continue,
                 _ = async {
                     while running.load(Ordering::SeqCst) {
                         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -102,7 +105,7 @@ impl StreamServer {
             let rx = video_tx.subscribe();
             let cc = self.codec_config.clone();
             let token = self.config.token.clone();
-            tokio::spawn(async move {
+            clients.spawn(async move {
                 if let Err(e) = Self::handle_client(socket, rx, cc, token).await {
                     warn!("Client {} disconnected: {}", peer, e);
                 }
@@ -110,6 +113,7 @@ impl StreamServer {
             });
         }
 
+        clients.shutdown().await;
         Ok(())
     }
 
@@ -318,6 +322,58 @@ mod tests {
         pin::Pin,
         task::{Context, Poll},
     };
+
+    #[tokio::test]
+    async fn t138_server_shutdown_retires_authenticated_clients() {
+        use tokio::io::AsyncReadExt;
+        use tokio::time::{timeout, Duration};
+        for abort in [false, true] {
+            let token = "a".repeat(64);
+            let server = Arc::new(StreamServer::new(
+                StreamConfig {
+                    token: Some(token.clone()),
+                    ..Default::default()
+                },
+                Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+                Default::default(),
+            ));
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let (tx, _) = broadcast::channel(8);
+            let task = tokio::spawn({
+                let server = server.clone();
+                let tx = tx.clone();
+                async move { server.run_with_listener(tx, listener).await }
+            });
+            let mut client = TcpStream::connect(address).await.unwrap();
+            client.write_all(token.as_bytes()).await.unwrap();
+            let mut config = [0; 12];
+            timeout(Duration::from_secs(1), client.read_exact(&mut config))
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(&config[5..], b"headers");
+            assert_eq!(tx.receiver_count(), 1);
+            if abort {
+                task.abort();
+            } else {
+                server.stop();
+            }
+            let result = timeout(Duration::from_secs(1), task).await.unwrap();
+            if !abort {
+                result.unwrap().unwrap();
+            }
+            let mut byte = [0];
+            assert_eq!(
+                timeout(Duration::from_secs(1), client.read(&mut byte))
+                    .await
+                    .expect("server shutdown left a video socket alive")
+                    .unwrap(),
+                0
+            );
+            assert_eq!(tx.receiver_count(), 0);
+        }
+    }
 
     #[tokio::test]
     async fn t056_idle_server_does_not_count_as_a_video_client() {
