@@ -995,6 +995,15 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
     // stale 200 Mbps on disk is worth reporting even though the daemon would
     // no longer act on it.
     let on_disk = read_config_report(r, &path);
+    check_tablet_capacity(r, cfg);
+    report_configured_display(r, cfg);
+    report_configured_input(r, cfg);
+    report_input_dependencies(r, cfg);
+    report_configured_bitrate(r, cfg, on_disk.as_ref());
+    report_configured_fps(r, cfg, on_disk.as_ref());
+}
+
+fn check_tablet_capacity(r: &mut Report, cfg: &FileConfig) {
     if cfg.max_tablets > 1 {
         let cards = crate::vdisplay::evdi_cards().len() as u32;
         if cards >= cfg.max_tablets {
@@ -1020,6 +1029,9 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             ));
         }
     }
+}
+
+fn report_configured_display(r: &mut Report, cfg: &FileConfig) {
     r.line(
         Level::Ok,
         "screen position",
@@ -1039,6 +1051,23 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             "second screen (switchable from the tablet)"
         },
     );
+    r.line(
+        Level::Ok,
+        "resolution",
+        &format!(
+            "{}x{}{}",
+            cfg.width,
+            cfg.height,
+            if cfg.auto_resolution {
+                " (auto, follows the tablet)"
+            } else {
+                " (fixed)"
+            }
+        ),
+    );
+}
+
+fn report_configured_input(r: &mut Report, cfg: &FileConfig) {
     let mut on: Vec<&str> = Vec::new();
     if cfg.input_touch {
         on.push("touch");
@@ -1064,6 +1093,9 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             &format!("{} (created while a tablet is attached)", on.join(", ")),
         );
     }
+}
+
+fn report_input_dependencies(r: &mut Report, cfg: &FileConfig) {
     if cfg.pen_only && !cfg.input_pen {
         r.line(
             Level::Warn,
@@ -1075,8 +1107,10 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
     if cfg.input_pointer && !cfg.input_pen {
         r.hint("input_pointer only takes effect together with input_pen");
     }
+}
 
-    let raw_bitrate = on_disk.as_ref().map(|c| c.bitrate).unwrap_or(cfg.bitrate);
+fn report_configured_bitrate(r: &mut Report, cfg: &FileConfig, on_disk: Option<&FileConfig>) {
+    let raw_bitrate = on_disk.map(|c| c.bitrate).unwrap_or(cfg.bitrate);
     if raw_bitrate > MAX_BITRATE_KBPS {
         r.line(
             Level::Warn,
@@ -1095,8 +1129,10 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             &format!("{} Mbps", cfg.bitrate as f64 / 1000.0),
         );
     }
+}
 
-    let raw_fps = on_disk.as_ref().map(|c| c.fps).unwrap_or(cfg.fps);
+fn report_configured_fps(r: &mut Report, cfg: &FileConfig, on_disk: Option<&FileConfig>) {
+    let raw_fps = on_disk.map(|c| c.fps).unwrap_or(cfg.fps);
     if raw_fps > MAX_FPS {
         r.line(
             Level::Warn,
@@ -1107,21 +1143,6 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
     } else {
         r.line(Level::Ok, "fps", &format!("{}", cfg.fps));
     }
-
-    r.line(
-        Level::Ok,
-        "resolution",
-        &format!(
-            "{}x{}{}",
-            cfg.width,
-            cfg.height,
-            if cfg.auto_resolution {
-                " (auto, follows the tablet)"
-            } else {
-                " (fixed)"
-            }
-        ),
-    );
 }
 
 pub async fn run() -> Result<()> {
