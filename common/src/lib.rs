@@ -233,7 +233,7 @@ impl FileConfig {
         Self::load_at(&config_path())
     }
 
-    fn load_at(path: &Path) -> Self {
+    pub fn load_at(path: &Path) -> Self {
         let mut cfg = match std::fs::read_to_string(path) {
             Ok(text) => toml::from_str(&text).unwrap_or_else(|e| {
                 tracing::warn!("Invalid config at {:?}: {} — using defaults", path, e);

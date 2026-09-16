@@ -164,6 +164,33 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 #[cfg(test)]
 mod cli_tests {
     #[tokio::test]
+    async fn t105_live_wifi_off_and_address_changes_reach_adb() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let adb = dir.path().join("adb");
+        std::fs::write(
+            &adb,
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$0.log\"\necho connected\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = dir.path().join("config.toml");
+        let write =
+            |address| std::fs::write(&path, format!("wifi_address = \"{address}\"\n")).unwrap();
+        write("192.0.2.1:5555");
+        let reconnect = WifiReconnect::new(path.clone(), adb.to_str().unwrap().into());
+        assert_eq!(reconnect.connect().await.as_deref(), Some("192.0.2.1:5555"));
+        write("");
+        assert_eq!(reconnect.connect().await, None);
+        write("192.0.2.2:5555");
+        assert_eq!(reconnect.connect().await.as_deref(), Some("192.0.2.2:5555"));
+        assert_eq!(
+            std::fs::read_to_string(adb.with_extension("log")).unwrap(),
+            "connect 192.0.2.1:5555\nconnect 192.0.2.2:5555\n"
+        );
+    }
+
+    #[tokio::test]
     async fn t106_usb_migration_preserves_physical_tablet_identity() {
         let mut identities = std::collections::HashMap::from([
             ("PHONE".into(), "phone".into()),
@@ -834,7 +861,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         mode_tx: mode_tx.clone(),
         shutdown_rx: shutdown_tx.subscribe(),
     };
-    let wifi_address = file_cfg.wifi_address.clone();
     let mut adb_handle = tokio::spawn(async move {
         adb_monitor(
             video_port,
@@ -844,7 +870,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             adb_token,
             relaunch,
             extra,
-            wifi_address,
         )
         .await;
     });
@@ -1253,8 +1278,6 @@ async fn adb_monitor(
     token: Option<String>,
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
-    // `ip:port` remembered by `uscreen wifi`, or empty.
-    wifi_address: String,
 ) {
     let mut daemon_stop = extra.shutdown_rx.clone();
     let mut current: Option<String> = None;
@@ -1280,6 +1303,7 @@ async fn adb_monitor(
     const APP_CHECK_EVERY: u32 = 5;
     // Said once per disappearance, not every ten seconds.
     let mut wifi_announced = false;
+    let reconnect = WifiReconnect::new(config::config_path(), "adb".into());
     // Further tablets, by serial.
     let mut extras: std::collections::HashMap<String, ExtraSession> =
         std::collections::HashMap::new();
@@ -1454,15 +1478,10 @@ async fn adb_monitor(
                 // Wi-Fi: try to get it back. adb answers instantly when the
                 // tablet is not reachable, so this costs nothing while it is
                 // off or out of range.
-                if current.is_none() && !wifi_address.is_empty() {
-                    let out = tokio::process::Command::new("adb")
-                        .args(["connect", &wifi_address])
-                        .output_bounded()
-                        .await;
-                    if let Ok(o) = out {
-                        let said = String::from_utf8_lossy(&o.stdout);
-                        if said.contains("connected") && !wifi_announced {
-                            info!("Reconnected to the tablet over Wi-Fi ({})", wifi_address);
+                if current.is_none() {
+                    if let Some(address) = reconnect.connect().await {
+                        if !wifi_announced {
+                            info!("Reconnected to the tablet over Wi-Fi ({})", address);
                             wifi_announced = true;
                         }
                     }
@@ -1519,6 +1538,37 @@ async fn adb_monitor(
     futures_util::future::join_all(extras.into_values().map(ExtraSession::stop)).await;
 }
 
+struct WifiReconnect {
+    path: PathBuf,
+    adb: String,
+}
+impl WifiReconnect {
+    fn new(path: PathBuf, adb: String) -> Self {
+        Self { path, adb }
+    }
+    async fn connect(&self) -> Option<String> {
+        let address = config::FileConfig::load_at(&self.path).wifi_address;
+        if address.is_empty() {
+            return None;
+        }
+        let output = tokio::process::Command::new(&self.adb)
+            .args(["connect", &address])
+            .output_bounded()
+            .await
+            .ok()?;
+        if config::FileConfig::load_at(&self.path).wifi_address != address {
+            // --off or a replacement address may arrive while adb is connecting.
+            let _ = tokio::process::Command::new(&self.adb)
+                .args(["disconnect", &address])
+                .output_bounded()
+                .await;
+            return None;
+        }
+        (output.status.success() && String::from_utf8_lossy(&output.stdout).contains("connected"))
+            .then_some(address)
+    }
+}
+
 /// Switch the tablet's adb to TCP and remember where it lives, so the daemon
 /// can pick it up over Wi-Fi on its own from then on.
 ///
@@ -1530,16 +1580,16 @@ async fn setup_wifi(off: bool) -> Result<()> {
     let cfg = config::FileConfig::load();
 
     if off {
+        config::FileConfig::update(|cfg| {
+            cfg.wifi_address.clear();
+            Ok(())
+        })?;
         if !cfg.wifi_address.is_empty() {
             let _ = tokio::process::Command::new("adb")
                 .args(["disconnect", &cfg.wifi_address])
                 .output_bounded()
                 .await;
         }
-        config::FileConfig::update(|cfg| {
-            cfg.wifi_address.clear();
-            Ok(())
-        })?;
         println!("Wi-Fi off. Plug the cable in to use the tablet again.");
         return Ok(());
     }
