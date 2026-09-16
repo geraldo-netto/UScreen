@@ -163,6 +163,36 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 
 #[cfg(test)]
 mod cli_tests {
+    #[tokio::test]
+    async fn t107_dual_transports_use_one_physical_slot() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(&adb, "#!/bin/sh\ncase \"$2\" in USB_A|192.0.2.1:5555) echo device-A;; USB_B) echo device-B;; esac\n").unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let devices = ["USB_A", "USB_B", "192.0.2.1:5555"].map(String::from);
+        let mut identities = std::collections::HashMap::new();
+        assert_eq!(
+            unique_devices(&devices, None, &mut identities, adb.to_str().unwrap()).await,
+            ["USB_A", "USB_B"]
+        );
+        let selected = unique_devices(
+            &devices,
+            Some("192.0.2.1:5555"),
+            &mut identities,
+            adb.to_str().unwrap(),
+        )
+        .await;
+        assert_eq!(selected.len(), 2);
+        assert!(selected.contains(&"USB_B".into()));
+        assert!(selected.contains(&"USB_A".into()) ^ selected.contains(&"192.0.2.1:5555".into()));
+        let unknown = ["UNKNOWN_A", "UNKNOWN_B"].map(String::from);
+        assert_eq!(
+            unique_devices(&unknown, None, &mut identities, adb.to_str().unwrap()).await,
+            unknown
+        );
+    }
+
     #[test]
     fn t039_host_sends_tokens_only_to_the_protected_activity() {
         let token = "a".repeat(64);
@@ -1201,6 +1231,7 @@ async fn adb_monitor(
 ) {
     let mut daemon_stop = extra.shutdown_rx.clone();
     let mut current: Option<String> = None;
+    let mut identities = std::collections::HashMap::new();
     let mut last_relaunch = std::time::Instant::now() - std::time::Duration::from_secs(60);
     // How many times the token has been re-delivered to this tablet. An app
     // too old to send one fails auth on every reconnect, and without a cap
@@ -1249,6 +1280,7 @@ async fn adb_monitor(
                 }
             }
         }
+        let devices = unique_devices(&devices, current.as_deref(), &mut identities, "adb").await;
         let found = pick_device(&devices, current.as_deref()).await;
 
         match (&current, &found) {
@@ -1740,6 +1772,54 @@ fn is_fake_serial(serial: &str) -> bool {
 /// For a fresh pick, prefer USB over the network, and among USB devices the
 /// one that actually has the app installed: a phone charging next to the
 /// tablet normally does not, and it is almost never the one meant.
+async fn unique_devices(
+    devices: &[String],
+    current: Option<&str>,
+    identities: &mut std::collections::HashMap<String, String>,
+    adb: &str,
+) -> Vec<String> {
+    identities.retain(|serial, _| devices.contains(serial));
+    let missing = devices
+        .iter()
+        .filter(|serial| !identities.contains_key(*serial));
+    let probes = missing.map(|serial| async move {
+        let output = tokio::process::Command::new(adb)
+            .args(["-s", serial, "shell", "getprop", "ro.serialno"])
+            .output_bounded()
+            .await
+            .ok()?;
+        let id = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        (output.status.success() && !id.is_empty() && !id.eq_ignore_ascii_case("unknown"))
+            .then(|| (serial.clone(), id))
+    });
+    for (serial, id) in futures_util::future::join_all(probes)
+        .await
+        .into_iter()
+        .flatten()
+    {
+        identities.insert(serial, id);
+    }
+    let mut selected: Vec<String> = Vec::new();
+    let mut groups = std::collections::HashMap::new();
+    for serial in devices {
+        // Unknown identities remain distinct; never merge unrelated tablets on
+        // an empty or failed getprop response.
+        let identity = identities
+            .get(serial)
+            .map(|id| format!("device:{id}"))
+            .unwrap_or_else(|| format!("transport:{serial}"));
+        if let Some(&index) = groups.get(&identity) {
+            if Some(serial.as_str()) == current {
+                selected[index] = serial.clone();
+            }
+        } else {
+            groups.insert(identity, selected.len());
+            selected.push(serial.clone());
+        }
+    }
+    selected
+}
+
 async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String> {
     if let Some(cur) = current {
         if devices.iter().any(|d| d == cur) {
