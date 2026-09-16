@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-71 items: 3 high, 28 medium, 40 low.
+70 items: 2 high, 28 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T004 | open | high | S | Fix inproc-encoder build: spawn_blocking closure captures &mut self via self.config.instance ([capture.rs:1164](host/src/capture.rs#L1164)) |
 | T005 | open | high | S | Forward extra tablets' base ports to their session ports; second real tablet can never connect ([main.rs:971](host/src/main.rs#L971)) |
 | T006 | open | high | S | Rewrite pkgver in the shipped PKGBUILD; it is still 1.1.0 while everything else is 1.2.3 ([build-packages.sh:47](packaging/build-packages.sh#L47)) |
 | T007 | open | medium | S | Make the GitHub update check optional or correct SECURITY.md, which says it can be turned off ([MainActivity.kt:343](android/app/src/main/java/com/uscreen/MainActivity.kt#L343)) |
@@ -87,8 +86,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T004** — The `move` closure handed to tokio::task::spawn_blocking reads `self.config.instance`, which captures `self` (a `&mut CaptureManager`) and fails with E0521 (borrowed data escapes, requires 'static); the feature advertised in docs/development.md:107 has not compiled since e7a9c3e. Hoist `let fifo = fifo_path_for(self.config.instance);` above the closure like the other locals.
 
 **T005** — spawn_extra_session's comment says the tablet side keeps using 8890/8891, but on_tablet_connected runs `adb reverse tcp:8892 tcp:8892`. The app hard-codes 127.0.0.1:8890 and ws://127.0.0.1:8891, so with max_tablets > 1 a second physical tablet gets a pipeline and a display but nothing listens on the ports it dials; only the loopback fake tablet works. Give setup_adb_forwarding separate remote/local ports: `adb reverse tcp:<base> tcp:<base+2*instance>`.
 

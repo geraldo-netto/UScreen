@@ -1154,6 +1154,9 @@ impl CaptureManager {
                              encoding 8-bit. Build without --features inproc-encoder for 10-bit."
                         );
                     }
+                    // Everything the blocking task needs is copied out first:
+                    // the closure is 'static and must not borrow self.
+                    let fifo = fifo_path_for(self.config.instance);
                     let (tx2, cc, idr, stopc, lat) = (
                         tx.clone(),
                         self.codec_config.clone(),
@@ -1163,8 +1166,7 @@ impl CaptureManager {
                     );
                     tokio::task::spawn_blocking(move || {
                         crate::encoder::run(
-                            &fifo_path_for(self.config.instance), &name, w, h, fps, bitrate, quality, tx2, cc, idr, stopc,
-                            lat,
+                            &fifo, &name, w, h, fps, bitrate, quality, tx2, cc, idr, stopc, lat,
                         )
                     })
                 }
