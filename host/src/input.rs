@@ -1177,25 +1177,17 @@ async fn target_output(
             kscreen_outputs().await?;
         } else {
             let connectors = crate::vdisplay::evdi_connectors();
-            // This tablet's own card first; "any connected EVDI output" only
-            // as a fallback while the card is not known yet.
-            let fallback = connectors
-                .iter()
-                .find(|c| card.is_some_and(|want| c.card == want))
-                .or_else(|| connectors.iter().find(|c| c.connected))
-                .or_else(|| connectors.first())
-                .map(|c| c.name.clone());
+            // Keep this tablet's assigned card, including during discovery gaps.
+            let fallback = fallback_output(&connectors, card);
             let Some(outputs) = kscreen_outputs().await else {
                 return fallback;
             };
-            let mine: Vec<&str> = connectors
-                .iter()
-                .filter(|c| card.is_none_or(|want| c.card == want))
-                .map(|c| c.name.as_str())
-                .collect();
-            let enabled = outputs.iter().find(|o| {
-                let name = o.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                mine.contains(&name) && o.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false)
+            let enabled = outputs.iter().find(|output| {
+                output.get("name").and_then(|value| value.as_str()) == fallback.as_deref()
+                    && output
+                        .get("enabled")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(false)
             });
             if let Some(o) = enabled {
                 return o.get("name").and_then(|v| v.as_str()).map(str::to_string);
@@ -1215,6 +1207,20 @@ async fn target_output(
         }
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
     }
+}
+
+fn fallback_output(
+    connectors: &[crate::vdisplay::EvdiConnector],
+    card: Option<u32>,
+) -> Option<String> {
+    // A known card must remain ours even while its connector is absent. With
+    // no card yet, wait unless there is exactly one possible connector.
+    match card {
+        Some(card) => connectors.iter().find(|connector| connector.card == card),
+        None if connectors.len() == 1 => connectors.first(),
+        None => None,
+    }
+    .map(|connector| connector.name.clone())
 }
 
 struct Controllers {
@@ -1914,6 +1920,39 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t145_fallback_preserves_card_ownership() {
+        let first = crate::vdisplay::EvdiConnector {
+            card: 2,
+            name: "DVI-I-1".into(),
+            connected: true,
+        };
+        let second = crate::vdisplay::EvdiConnector {
+            card: 3,
+            name: "DVI-I-2".into(),
+            connected: true,
+        };
+        let connectors = [first, second];
+        assert_eq!(
+            super::fallback_output(&connectors, Some(4)),
+            None,
+            "missing assigned card must not map another tablet"
+        );
+        assert_eq!(
+            super::fallback_output(&connectors, None),
+            None,
+            "unknown card must not guess between tablets"
+        );
+        assert_eq!(
+            super::fallback_output(&connectors, Some(3)).as_deref(),
+            Some("DVI-I-2")
+        );
+        assert_eq!(
+            super::fallback_output(&connectors[..1], None).as_deref(),
+            Some("DVI-I-1")
+        );
+    }
+
     #[test]
     fn t086_touch_stays_down_until_last_contact_lifts() {
         let file = tempfile::NamedTempFile::new().unwrap();
