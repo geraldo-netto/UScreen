@@ -352,7 +352,7 @@
   </table>
   </div>
   <div class="steps" style="margin-top:40px">
-    <div><h3>Enable the daemon</h3><p><code>systemctl --user enable --now uscreen</code>. The tarball installer does this for you and adds a menu entry.</p></div>
+    <div><h3>Start the daemon</h3><p>After a package install: <code>systemctl --user enable --now uscreen</code>. The tarball installer adds a menu entry and enables startup at the next login; to start immediately, run <code>systemctl --user start uscreen</code>.</p></div>
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
     <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Touch and the pen work on it immediately. Flip <em>Graphics tablet</em> in the app when you want to draw on the laptop screen instead.</p></div>
   </div>
