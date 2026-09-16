@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-65 items: 0 high, 25 medium, 40 low.
+64 items: 0 high, 24 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T011 | open | medium | S | Stop claiming the tarball installer enables the systemd unit; install.sh never does ([installation.md:40](docs/installation.md#L40)) |
 | T012 | open | medium | S | Scale-1 conversion writes with g_mode_w stride into buffers sized by g_out_w: heap overflow on odd width ([evdi_helper.c:328](host/evdi/evdi_helper.c#L328)) |
 | T013 | open | medium | S | Print STREAM_SIZE after computing g_out_w/g_out_h; capture.rs waits 3s for it on every start ([evdi_helper.c:493](host/evdi/evdi_helper.c#L493)) |
 | T014 | open | medium | S | find_uscreen_bin prefers a stale ~/.local/bin/uscreen over the daemon installed next to the GUI ([main.rs:160](gui/src/main.rs#L160)) |
@@ -81,8 +80,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T011** — This line and README.md:55 say install.sh runs `systemctl --user enable --now`, but scripts/install.sh:183-185 only copies the unit and runs daemon-reload. Either add the enable step to install.sh or correct both docs.
 
 **T012** — bgra_to_nv12 passes g_mode_w/g_mode_h as the job's w/h and convert_strip uses j->w as the destination row stride, while buffers are malloc'd for g_out_w*g_out_h*3/2 with g_out_w = g_mode_w & ~1. With an odd mode width every Y row is one byte too long and the last chroma row writes past the buffer. Loop to ow/oh and use ow as the destination stride, or reject odd modes.
 

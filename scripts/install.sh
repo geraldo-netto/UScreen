@@ -183,6 +183,11 @@ install_files() {
     mkdir -p "${HOME}/.config/systemd/user"
     cp "$SCRIPT_DIR/uscreen.service" "${HOME}/.config/systemd/user/" 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true
+    # Enabled, not started: the system setup below (evdi module, udev rule)
+    # has not run yet, so a start here would fail on a fresh machine. The
+    # closing message says how to start it now; it starts by itself from the
+    # next login on.
+    systemctl --user enable uscreen.service 2>/dev/null || true
 }
 
 system_setup() {
@@ -244,6 +249,7 @@ main() {
     system_setup
     echo ""
     info "Done! Launch 'UScreen' from your app menu (or run: uscreen-gui)"
+    info "The daemon starts with your next login; to start it now: systemctl --user start uscreen"
     info "Install the APK on your tablet, enable USB debugging, plug in — that's it."
     check_path
 }

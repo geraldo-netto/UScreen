@@ -37,7 +37,8 @@ After a package install, enable the daemon for your login session:
 systemctl --user enable --now uscreen
 ```
 
-The tarball installer does this for you and also adds a menu entry.
+The tarball installer enables the unit for you (start it once by hand with
+`systemctl --user start uscreen`, or log in again) and also adds a menu entry.
 
 Verify the checksums if you like: `sha256sum -c SHA256SUMS` next to the
 downloaded files.

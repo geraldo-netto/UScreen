@@ -52,9 +52,10 @@ Ubuntu/Debian, Arch Linux and openSUSE.
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — extract, `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | Bazzite, Nobara, anything else — extract, `./scripts/install.sh` |
 
-Then `systemctl --user enable --now uscreen` (the tarball installer does this
-for you). Full details, including what the installer changes on the system,
-in [docs/installation.md](docs/installation.md).
+Then `systemctl --user enable --now uscreen` (the tarball installer enables
+it for you; start it once with `systemctl --user start uscreen`). Full
+details, including what the installer changes on the system, in
+[docs/installation.md](docs/installation.md).
 
 **2. Tablet** — install `uscreen.apk` and enable USB debugging (Settings →
 Developer options).
