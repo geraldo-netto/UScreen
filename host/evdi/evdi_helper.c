@@ -749,119 +749,145 @@ static void record_latency(long long grab_us) {
     pthread_mutex_unlock(&g_swap_mutex);
 }
 
+typedef struct {
+    long period_ns;
+    struct timespec next_allowed;
+    int have_frame;
+    unsigned frame_generation;
+} writer_state_t;
+
+static void add_period(struct timespec *time, long period_ns) {
+    time->tv_nsec += period_ns;
+    while (time->tv_nsec >= 1000000000L) {
+        time->tv_nsec -= 1000000000L;
+        time->tv_sec += 1;
+    }
+}
+
+static int ensure_writer_fifo(void) {
+    if (g_capture_fifo_fd < 0) {
+        g_capture_fifo_fd = try_open_fifo();
+        if (g_capture_fifo_fd < 0) {
+            /* No reader yet: poll slowly instead of spinning. */
+            struct timespec idle = { .tv_sec = 0, .tv_nsec = 50000000L };
+            nanosleep(&idle, NULL);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* Caller holds g_swap_mutex; timedwait releases and reacquires it. */
+static void wait_for_writer_frame(long period_ns) {
+    /* Wait for a frame, but no longer than one period so shutdown and
+       mode changes are still noticed promptly. */
+    while (g_running && (!g_buffers_ready || !g_latest_valid)) {
+        struct timespec wait_until;
+        clock_gettime(CLOCK_MONOTONIC, &wait_until);
+        add_period(&wait_until, period_ns);
+        if (pthread_cond_timedwait(&g_frame_ready, &g_swap_mutex,
+                                   &wait_until) == ETIMEDOUT)
+            break;
+    }
+}
+
+/* -1: stopped, 0: no frame, 1: writer owns the current buffer. */
+static int claim_writer_frame(writer_state_t *state, int *size, int *fresh) {
+    pthread_mutex_lock(&g_swap_mutex);
+    wait_for_writer_frame(state->period_ns);
+    if (!g_running) {
+        pthread_mutex_unlock(&g_swap_mutex);
+        return -1;
+    }
+    if (!g_buffers_ready) {
+        pthread_mutex_unlock(&g_swap_mutex);
+        return 0;
+    }
+    if (state->frame_generation != g_mode_generation) {
+        /* Buffers were reallocated; previous g_write content is gone */
+        state->frame_generation = g_mode_generation;
+        state->have_frame = 0;
+    }
+    *fresh = 0;
+    if (g_latest_valid) {
+        unsigned char *tmp = g_write;
+        g_write = g_latest;
+        g_latest = tmp;
+        unsigned char *dtmp = g_dirty_write;
+        g_dirty_write = g_dirty_latest;
+        g_dirty_latest = dtmp;
+        g_latest_valid = 0;
+        g_write_grab_us = g_latest_grab_us;
+        state->have_frame = 1;
+        *fresh = 1;
+    }
+    *size = g_packed_size;
+    g_writer_busy = state->have_frame;
+    pthread_mutex_unlock(&g_swap_mutex);
+
+    return state->have_frame;
+}
+
+static int writer_frame_due(int fresh) {
+    /* Nothing changed on screen: don't re-send the identical frame.
+       A motionless desktop was still pushing 60 full NV12 frames a second
+       through the FIFO — 8.2MB each, roughly half a gigabyte per second of
+       pure memory traffic, plus an encode for every one of them, all to
+       transmit no new information. The occasional keepalive keeps the
+       encoder and the client's read timeout alive. */
+    long long now_ms_write = now_ms();
+    if (!fresh && (now_ms_write - g_last_write_ms) < IDLE_KEEPALIVE_MS) {
+        pthread_mutex_lock(&g_swap_mutex);
+        g_writer_busy = 0;
+        pthread_mutex_unlock(&g_swap_mutex);
+        return 0;
+    }
+    g_last_write_ms = now_ms_write;
+
+    return 1;
+}
+
+static void pace_writer(writer_state_t *state) {
+    /* Rate limit against an absolute schedule, never against "now".
+       Rebasing on now would add the wait and write time to every period,
+       so the stream drifts slower than the target — measured as 58fps
+       against a 60fps target, with ffmpeg reporting speed=0.97x. */
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    long long ahead_ns = (long long)(state->next_allowed.tv_sec - now.tv_sec) * 1000000000LL
+                       + (state->next_allowed.tv_nsec - now.tv_nsec);
+    if (ahead_ns > 0) {
+        struct timespec gap = { .tv_sec = ahead_ns / 1000000000LL,
+                                .tv_nsec = ahead_ns % 1000000000LL };
+        nanosleep(&gap, NULL);
+    } else if (-ahead_ns > 4 * (long long)state->period_ns) {
+        /* Fallen far behind (a stalled encoder, a mode change): resync
+           instead of trying to catch up on a burst of stale frames. */
+        state->next_allowed = now;
+    }
+    add_period(&state->next_allowed, state->period_ns);
+}
+
 static void *writer_thread(void *arg) {
     (void)arg;
-    const long period_ns = 1000000000L / (g_fps > 0 ? g_fps : 60);
-    struct timespec next_allowed;
-    clock_gettime(CLOCK_MONOTONIC, &next_allowed);
-    int have_frame = 0;
-    unsigned frame_generation = UINT_MAX;
-
+    writer_state_t state = {
+        .period_ns = 1000000000L / (g_fps > 0 ? g_fps : 60),
+        .have_frame = 0,
+        .frame_generation = UINT_MAX,
+    };
+    clock_gettime(CLOCK_MONOTONIC, &state.next_allowed);
     while (g_running) {
-        if (g_capture_fifo_fd < 0) {
-            g_capture_fifo_fd = try_open_fifo();
-            if (g_capture_fifo_fd < 0) {
-                /* No reader yet — poll slowly instead of spinning. */
-                struct timespec idle = { .tv_sec = 0, .tv_nsec = 50000000L };
-                nanosleep(&idle, NULL);
-                continue;
-            }
-        }
-
-        int size;
-        pthread_mutex_lock(&g_swap_mutex);
-        /* Wait for a frame, but no longer than one period so shutdown and
-           mode changes are still noticed promptly. */
-        while (g_running && (!g_buffers_ready || !g_latest_valid)) {
-            struct timespec wait_until;
-            clock_gettime(CLOCK_MONOTONIC, &wait_until);
-            wait_until.tv_nsec += period_ns;
-            while (wait_until.tv_nsec >= 1000000000L) {
-                wait_until.tv_nsec -= 1000000000L;
-                wait_until.tv_sec += 1;
-            }
-            if (pthread_cond_timedwait(&g_frame_ready, &g_swap_mutex,
-                                       &wait_until) == ETIMEDOUT)
-                break;
-        }
-        if (!g_running) {
-            pthread_mutex_unlock(&g_swap_mutex);
-            break;
-        }
-        if (!g_buffers_ready) {
-            pthread_mutex_unlock(&g_swap_mutex);
-            continue;
-        }
-        if (frame_generation != g_mode_generation) {
-            /* Buffers were reallocated; previous g_write content is gone */
-            frame_generation = g_mode_generation;
-            have_frame = 0;
-        }
-        int fresh = 0;
-        if (g_latest_valid) {
-            unsigned char *tmp = g_write;
-            g_write = g_latest;
-            g_latest = tmp;
-            unsigned char *dtmp = g_dirty_write;
-            g_dirty_write = g_dirty_latest;
-            g_dirty_latest = dtmp;
-            g_latest_valid = 0;
-            g_write_grab_us = g_latest_grab_us;
-            have_frame = 1;
-            fresh = 1;
-        }
-        size = g_packed_size;
-        g_writer_busy = have_frame;
-        pthread_mutex_unlock(&g_swap_mutex);
-
-        if (!have_frame)
-            continue;  /* nothing grabbed yet for this mode */
-
-        /* Nothing changed on screen: don't re-send the identical frame.
-           A motionless desktop was still pushing 60 full NV12 frames a second
-           through the FIFO — 8.2MB each, roughly half a gigabyte per second of
-           pure memory traffic, plus an encode for every one of them, all to
-           transmit no new information. The occasional keepalive keeps the
-           encoder and the client's read timeout alive. */
-        long long now_ms_write = now_ms();
-        if (!fresh && (now_ms_write - g_last_write_ms) < IDLE_KEEPALIVE_MS) {
-            pthread_mutex_lock(&g_swap_mutex);
-            g_writer_busy = 0;
-            pthread_mutex_unlock(&g_swap_mutex);
-            continue;
-        }
-        g_last_write_ms = now_ms_write;
-
-        /* Rate limit against an absolute schedule, never against "now".
-           Rebasing on now would add the wait and write time to every period,
-           so the stream drifts slower than the target — measured as 58fps
-           against a 60fps target, with ffmpeg reporting speed=0.97x. */
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        long long ahead_ns = (long long)(next_allowed.tv_sec - now.tv_sec) * 1000000000LL
-                           + (next_allowed.tv_nsec - now.tv_nsec);
-        if (ahead_ns > 0) {
-            struct timespec gap = { .tv_sec = ahead_ns / 1000000000LL,
-                                    .tv_nsec = ahead_ns % 1000000000LL };
-            nanosleep(&gap, NULL);
-        } else if (-ahead_ns > 4 * (long long)period_ns) {
-            /* Fallen far behind (a stalled encoder, a mode change): resync
-               instead of trying to catch up on a burst of stale frames. */
-            next_allowed = now;
-        }
-        next_allowed.tv_nsec += period_ns;
-        while (next_allowed.tv_nsec >= 1000000000L) {
-            next_allowed.tv_nsec -= 1000000000L;
-            next_allowed.tv_sec += 1;
-        }
-
+        if (!ensure_writer_fifo()) continue;
+        int size, fresh;
+        int claimed = claim_writer_frame(&state, &size, &fresh);
+        if (claimed < 0) break;
+        if (claimed == 0) continue;
+        if (!writer_frame_due(fresh)) continue;
+        pace_writer(&state);
         size_t remaining = write_fifo_frame(g_write, (size_t)size);
         g_writer_busy = 0;
-
-        /* Only freshly grabbed frames say anything about capture latency;
-           keepalive repeats would report the age of stale content. */
+        /* Repeated keepalives measure stale frame age, not capture latency. */
         if (fresh && remaining == 0) record_latency(g_write_grab_us);
-
     }
     return NULL;
 }
