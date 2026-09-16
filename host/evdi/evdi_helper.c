@@ -1095,6 +1095,31 @@ static int find_evdi_device_in(const char *root) {
     return find_evdi_device_after(root, -1);
 }
 
+static int connector_status_connected(const char *path, const char *name) {
+    int connected = 0;
+    char status_path[8192];
+    snprintf(status_path, sizeof(status_path), "%s/%s/status", path, name);
+    FILE *status = fopen(status_path, "r");
+    if (status) {
+        char value[32] = {0};
+        if (fgets(value, sizeof(value), status) && strcmp(value, "connected\n") == 0) connected = 1;
+        fclose(status);
+    }    return connected;
+}
+
+static int directory_has_connected_output(const char *path) {
+    DIR *connectors = opendir(path);
+    if (!connectors) return 0;
+    int connected = 0;
+    struct dirent *connector;
+    while ((connector = readdir(connectors)) != NULL) {
+        if (strncmp(connector->d_name, "card", 4) != 0 || !strchr(connector->d_name, '-')) continue;
+        if (connector_status_connected(path, connector->d_name)) connected = 1;
+    }
+    closedir(connectors);
+    return connected;
+}
+
 static int card_connected_in(const char *root, int card) {
     DIR *devices = opendir(root);
     if (!devices) return 0;
@@ -1104,21 +1129,7 @@ static int card_connected_in(const char *root, int card) {
         if (strncmp(device->d_name, "evdi.", 5) != 0) continue;
         char path[4096];
         snprintf(path, sizeof(path), "%s/%s/drm/card%d", root, device->d_name, card);
-        DIR *connectors = opendir(path);
-        if (!connectors) continue;
-        struct dirent *connector;
-        while ((connector = readdir(connectors)) != NULL) {
-            if (strncmp(connector->d_name, "card", 4) != 0 || !strchr(connector->d_name, '-')) continue;
-            char status_path[8192];
-            snprintf(status_path, sizeof(status_path), "%s/%s/status", path, connector->d_name);
-            FILE *status = fopen(status_path, "r");
-            if (status) {
-                char value[32] = {0};
-                if (fgets(value, sizeof(value), status) && strcmp(value, "connected\n") == 0) connected = 1;
-                fclose(status);
-            }
-        }
-        closedir(connectors);
+        connected = directory_has_connected_output(path);
     }
     closedir(devices);
     return connected;
