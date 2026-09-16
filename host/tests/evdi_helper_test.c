@@ -224,193 +224,247 @@ static void test_helper_options(void) {
     assert(g_pin_card == -1);
 }
 
+static void assert_external_card_preserved(const char *root) {
+    int index = -1;
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root);
+    assert(mkdir(path, 0700) == 0);
+    strncat(path, "/status", sizeof(path) - strlen(path) - 1);
+    FILE *status = fopen(path, "w"); assert(status);
+    fputs("connected\n", status); fclose(status);
+    evdi_handle external = open_available_device_in(root, -1, &index);
+    assert(external && index == 2 && "T108: do not steal another EVDI application's output");
+    evdi_close(external);
+    assert(!open_available_device_in(root, 0, &index));
+    unlink(path);
+    snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root); rmdir(path);
+}
+
+static void test_t108(void) {
+    char root[] = "/tmp/uscreen-card-lease-test-XXXXXX";
+    assert(mkdtemp(root));
+    snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
+    make_test_card(root, 0); make_test_card(root, 2);
+    int index = -1;
+    evdi_handle first = open_available_device_in(root, -1, &index);
+    assert(first && index == 0);
+    evdi_handle second = open_available_device_in(root, -1, &index);
+    assert(second && index == 2 && "T108: another helper already owns the lowest card");
+    assert(!open_available_device_in(root, 0, &index) && "T108: pinned busy card must not fall back");
+    make_test_card(root, 4);
+    evdi_handle added = open_available_device_in(root, -1, &index);
+    assert(added && index == 4 && "T108: discover newly added free card after busy cards");
+    evdi_close(first); evdi_close(second); evdi_close(added);
+    evdi_handle reclaimed = open_available_device_in(root, -1, &index);
+    assert(reclaimed && index == 0);
+    evdi_close(reclaimed);
+    assert_external_card_preserved(root);
+    char path[4096];
+    for (int card = 0; card <= 4; card += 2) {
+        snprintf(path, sizeof(path), "%s/card%d", root, card); unlink(path);
+        snprintf(path, sizeof(path), "%s/evdi.%d/drm/card%d", root, card, card); rmdir(path);
+        snprintf(path, sizeof(path), "%s/evdi.%d/drm", root, card); rmdir(path);
+        snprintf(path, sizeof(path), "%s/evdi.%d", root, card); rmdir(path);
+    }
+    assert(rmdir(root) == 0);
+}
+
+static void assert_small_scaled_modes(int scale) {
+    for (int small = 1; small < 2 * scale; small++) {
+        for (int axis = 0; axis < 2; axis++) {
+            g_running = 1;
+            struct evdi_mode mode = {axis ? 2 * scale : small, axis ? small : 2 * scale, 60, 32, 0x34325258};
+            on_mode_changed(mode, NULL);
+            assert(!g_have_mode && !g_buffers_ready && !g_running && "T082: undersized mode reaches conversion");
+        }
+    }
+}
+
+static void test_t082(void) {
+    pthread_cond_init(&g_frame_ready, NULL);
+    for (int scale = 1; scale <= 4; scale++) {
+        g_scale = scale;
+        assert_small_scaled_modes(scale);
+        g_running = 1;
+        struct evdi_mode mode = {2 * scale, 2 * scale, 60, 32, 0x34325258};
+        on_mode_changed(mode, NULL);
+        assert(g_out_w == 2 && g_out_h == 2 && g_have_mode);
+        test_conversion(2 * scale, 2 * scale, scale);
+        test_conversion(2 * scale + 1, 2 * scale + 1, scale);
+    }
+    free(g_framebuffer);
+    free(g_fill); free(g_latest); free(g_write);
+    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
+    pthread_cond_destroy(&g_frame_ready);
+}
+
+static void test_t113(void) {
+    test_stalled_fifo(0);
+    test_stalled_fifo(1);
+    test_stalled_fifo(2);
+}
+
+static void test_t083(void) {
+    int pipefd[2];
+    pthread_t writer = start_test_writer(pipefd);
+    read_test_frame(pipefd[0], 8, 8);
+    for (int i = 0; i < 50; i++) {
+        struct evdi_mode mode = {8 + (i % 2) * 2, 8, 60, 32, 0x34325258};
+        on_mode_changed(mode, NULL);
+        publish_frame();
+        read_test_frame(pipefd[0], mode.width, mode.height);
+    }
+    signal(SIGTERM, handle_signal);
+    assert(pthread_kill(writer, SIGTERM) == 0);
+    stop_test_writer(writer, pipefd);
+}
+
+static void test_t081(void) {
+    int pipefd[2];
+    pthread_t writer = start_test_writer(pipefd);
+    read_test_frame(pipefd[0], 8, 8);
+    for (int i = 0; i < 3; i++) {
+        usleep(50000); /* several unchanged frames, before the idle keepalive */
+        long long start = now_ms();
+        struct evdi_mode mode = {10 + i * 2, 8, 60, 32, 0x34325258};
+        on_mode_changed(mode, NULL);
+        assert(now_ms() - start < 250 && "T081: idle writer falsely retains buffer ownership");
+        read_test_frame(pipefd[0], mode.width, mode.height);
+    }
+    stop_test_writer(writer, pipefd);
+}
+
+static void test_t012(void) {
+    test_conversion(6, 4, 1);
+    test_conversion(7, 4, 1);
+    test_conversion(6, 5, 1);
+    test_conversion(7, 5, 1);
+    test_conversion(13, 9, 2);
+}
+
+static void test_t013(void) {
+    /* TODO T013: announce the packed size on initial and changed modes,
+     * without emitting a false change for repeated compositor events. */
+    pthread_cond_init(&g_frame_ready, NULL);
+    g_scale = 2;
+    struct evdi_mode mode = {13, 9, 60, 32, 0x34325258};
+    on_mode_changed(mode, NULL);
+    on_mode_changed(mode, NULL);
+    mode.width = 20;
+    mode.height = 12;
+    on_mode_changed(mode, NULL);
+    free(g_framebuffer);
+    free(g_fill);
+    free(g_latest);
+    free(g_write);
+    free(g_dirty_fill);
+    free(g_dirty_latest);
+    free(g_dirty_write);
+    pthread_cond_destroy(&g_frame_ready);
+}
+
+static void test_t047(void) {
+    fail_worker = 2;
+    conv_pool_init();
+    assert(g_nthreads == 2 && "T047: count only successfully created workers");
+    test_conversion(8, 8, 1);
+    pthread_mutex_lock(&g_pool_mtx);
+    g_pool_shutdown = 1;
+    pthread_cond_broadcast(&g_pool_go);
+    pthread_mutex_unlock(&g_pool_mtx);
+    for (int i = 1; i < g_nthreads; i++) pthread_join(g_pool[i], NULL);
+}
+
+static void test_t048(void) {
+    pthread_cond_init(&g_frame_ready, NULL);
+    struct evdi_mode mode = {8, 8, 60, 16, 0x36314752};
+    on_mode_changed(mode, NULL);
+    assert(!g_have_mode && !g_buffers_ready && "T048: reject non-BGRA data before conversion");
+    mode.bits_per_pixel = 32;
+    mode.pixel_format = 0x34324258; /* XBGR8888 is not XRGB8888. */
+    on_mode_changed(mode, NULL);
+    assert(!g_have_mode && !g_buffers_ready);
+}
+
+static void test_t049(void) {
+    int pipefd[2];
+    assert(pipe2(pipefd, O_NONBLOCK) == 0);
+    g_capture_fifo_fd = pipefd[1];
+    stall_once = 1;
+    const unsigned char frame[] = {1, 2, 3, 4};
+    assert(write_fifo_frame(frame, sizeof(frame)) == 0 && "T049: transient poll timeout lost frame");
+    unsigned char received[4];
+    assert(read(pipefd[0], received, sizeof(received)) == sizeof(received));
+    assert(memcmp(frame, received, sizeof(frame)) == 0);
+    close(pipefd[0]);
+    close(pipefd[1]);
+}
+
+static void test_t050(void) {
+    pthread_t thread;
+    pthread_mutex_lock(&g_swap_mutex);
+    assert(pthread_create(&thread, NULL, sample_latency, NULL) == 0);
+    while (!atomic_load(&sample_started)) usleep(1000);
+    usleep(20000);
+    int finished_while_locked = atomic_load(&sample_finished);
+    pthread_mutex_unlock(&g_swap_mutex);
+    pthread_join(thread, NULL);
+    assert(!finished_while_locked && "T050: writer bypassed the statistics lock");
+    assert(g_lat_count == 1);
+}
+
+static void test_t051(void) {
+    char root[] = "/tmp/uscreen-card-test-XXXXXX";
+    assert(mkdtemp(root));
+    const char *paths[] = {"evdi.9", "evdi.9/drm", "evdi.9/drm/card9",
+                           "evdi.0", "evdi.0/drm", "evdi.0/drm/card0"};
+    char path[4096];
+    for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+        snprintf(path, sizeof(path), "%s/%s", root, paths[i]);
+        assert(mkdir(path, 0700) == 0);
+    }
+    int card = find_evdi_device_in(root);
+    for (int i = 5; i >= 0; i--) {
+        snprintf(path, sizeof(path), "%s/%s", root, paths[i]);
+        assert(rmdir(path) == 0);
+    }
+    rmdir(root);
+    assert(card == 0 && "T051: use the lowest available card, including card0");
+}
+
+static void test_t052(void) {
+    add_result = 0;
+    assert(!request_evdi_device() && "T052: libevdi reports failure as zero bytes written");
+    add_result = -1;
+    assert(!request_evdi_device());
+    add_result = 1;
+    assert(request_evdi_device());
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T170") == 0) {
-        test_helper_options();
-    } else if (strcmp(argv[1], "T108") == 0) {
-        char root[] = "/tmp/uscreen-card-lease-test-XXXXXX";
-        assert(mkdtemp(root));
-        snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
-        make_test_card(root, 0); make_test_card(root, 2);
-        int index = -1;
-        evdi_handle first = open_available_device_in(root, -1, &index);
-        assert(first && index == 0);
-        evdi_handle second = open_available_device_in(root, -1, &index);
-        assert(second && index == 2 && "T108: another helper already owns the lowest card");
-        assert(!open_available_device_in(root, 0, &index) && "T108: pinned busy card must not fall back");
-        make_test_card(root, 4);
-        evdi_handle added = open_available_device_in(root, -1, &index);
-        assert(added && index == 4 && "T108: discover newly added free card after busy cards");
-        evdi_close(first); evdi_close(second); evdi_close(added);
-        evdi_handle reclaimed = open_available_device_in(root, -1, &index);
-        assert(reclaimed && index == 0);
-        evdi_close(reclaimed);
-        char path[4096];
-        snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root);
-        assert(mkdir(path, 0700) == 0);
-        strncat(path, "/status", sizeof(path) - strlen(path) - 1);
-        FILE *status = fopen(path, "w"); assert(status);
-        fputs("connected\n", status); fclose(status);
-        evdi_handle external = open_available_device_in(root, -1, &index);
-        assert(external && index == 2 && "T108: do not steal another EVDI application's output");
-        evdi_close(external);
-        assert(!open_available_device_in(root, 0, &index));
-        unlink(path);
-        snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root); rmdir(path);
-        for (int card = 0; card <= 4; card += 2) {
-            snprintf(path, sizeof(path), "%s/card%d", root, card); unlink(path);
-            snprintf(path, sizeof(path), "%s/evdi.%d/drm/card%d", root, card, card); rmdir(path);
-            snprintf(path, sizeof(path), "%s/evdi.%d/drm", root, card); rmdir(path);
-            snprintf(path, sizeof(path), "%s/evdi.%d", root, card); rmdir(path);
+    static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T170", test_helper_options},
+        {"T108", test_t108},
+        {"T082", test_t082},
+        {"T113", test_t113},
+        {"T083", test_t083},
+        {"T081", test_t081},
+        {"T012", test_t012},
+        {"T013", test_t013},
+        {"T047", test_t047},
+        {"T048", test_t048},
+        {"T049", test_t049},
+        {"T050", test_t050},
+        {"T051", test_t051},
+        {"T052", test_t052},
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        if (strcmp(argv[1], cases[i].id) == 0) {
+            cases[i].run();
+            return 0;
         }
-        assert(rmdir(root) == 0);
-    } else if (strcmp(argv[1], "T082") == 0) {
-        pthread_cond_init(&g_frame_ready, NULL);
-        for (int scale = 1; scale <= 4; scale++) {
-            g_scale = scale;
-            for (int small = 1; small < 2 * scale; small++) {
-                for (int axis = 0; axis < 2; axis++) {
-                    g_running = 1;
-                    struct evdi_mode mode = {axis ? 2 * scale : small, axis ? small : 2 * scale, 60, 32, 0x34325258};
-                    on_mode_changed(mode, NULL);
-                    assert(!g_have_mode && !g_buffers_ready && !g_running && "T082: undersized mode reaches conversion");
-                }
-            }
-            g_running = 1;
-            struct evdi_mode mode = {2 * scale, 2 * scale, 60, 32, 0x34325258};
-            on_mode_changed(mode, NULL);
-            assert(g_out_w == 2 && g_out_h == 2 && g_have_mode);
-            test_conversion(2 * scale, 2 * scale, scale);
-            test_conversion(2 * scale + 1, 2 * scale + 1, scale);
-        }
-        free(g_framebuffer);
-        free(g_fill); free(g_latest); free(g_write);
-        free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
-        pthread_cond_destroy(&g_frame_ready);
-    } else if (strcmp(argv[1], "T113") == 0) {
-        test_stalled_fifo(0);
-        test_stalled_fifo(1);
-        test_stalled_fifo(2);
-    } else if (strcmp(argv[1], "T083") == 0) {
-        int pipefd[2];
-        pthread_t writer = start_test_writer(pipefd);
-        read_test_frame(pipefd[0], 8, 8);
-        for (int i = 0; i < 50; i++) {
-            struct evdi_mode mode = {8 + (i % 2) * 2, 8, 60, 32, 0x34325258};
-            on_mode_changed(mode, NULL);
-            publish_frame();
-            read_test_frame(pipefd[0], mode.width, mode.height);
-        }
-        signal(SIGTERM, handle_signal);
-        assert(pthread_kill(writer, SIGTERM) == 0);
-        stop_test_writer(writer, pipefd);
-    } else if (strcmp(argv[1], "T081") == 0) {
-        int pipefd[2];
-        pthread_t writer = start_test_writer(pipefd);
-        read_test_frame(pipefd[0], 8, 8);
-        for (int i = 0; i < 3; i++) {
-            usleep(50000); /* several unchanged frames, before the idle keepalive */
-            long long start = now_ms();
-            struct evdi_mode mode = {10 + i * 2, 8, 60, 32, 0x34325258};
-            on_mode_changed(mode, NULL);
-            assert(now_ms() - start < 250 && "T081: idle writer falsely retains buffer ownership");
-            read_test_frame(pipefd[0], mode.width, mode.height);
-        }
-        stop_test_writer(writer, pipefd);
-    } else if (strcmp(argv[1], "T012") == 0) {
-        test_conversion(6, 4, 1);
-        test_conversion(7, 4, 1);
-        test_conversion(6, 5, 1);
-        test_conversion(7, 5, 1);
-        test_conversion(13, 9, 2);
-    } else if (strcmp(argv[1], "T013") == 0) {
-        /* TODO T013: announce the packed size on initial and changed modes,
-         * without emitting a false change for repeated compositor events. */
-        pthread_cond_init(&g_frame_ready, NULL);
-        g_scale = 2;
-        struct evdi_mode mode = {13, 9, 60, 32, 0x34325258};
-        on_mode_changed(mode, NULL);
-        on_mode_changed(mode, NULL);
-        mode.width = 20;
-        mode.height = 12;
-        on_mode_changed(mode, NULL);
-        free(g_framebuffer);
-        free(g_fill);
-        free(g_latest);
-        free(g_write);
-        free(g_dirty_fill);
-        free(g_dirty_latest);
-        free(g_dirty_write);
-        pthread_cond_destroy(&g_frame_ready);
-    } else if (strcmp(argv[1], "T047") == 0) {
-        fail_worker = 2;
-        conv_pool_init();
-        assert(g_nthreads == 2 && "T047: count only successfully created workers");
-        test_conversion(8, 8, 1);
-        pthread_mutex_lock(&g_pool_mtx);
-        g_pool_shutdown = 1;
-        pthread_cond_broadcast(&g_pool_go);
-        pthread_mutex_unlock(&g_pool_mtx);
-        for (int i = 1; i < g_nthreads; i++) pthread_join(g_pool[i], NULL);
-    } else if (strcmp(argv[1], "T048") == 0) {
-        pthread_cond_init(&g_frame_ready, NULL);
-        struct evdi_mode mode = {8, 8, 60, 16, 0x36314752};
-        on_mode_changed(mode, NULL);
-        assert(!g_have_mode && !g_buffers_ready && "T048: reject non-BGRA data before conversion");
-        mode.bits_per_pixel = 32;
-        mode.pixel_format = 0x34324258; /* XBGR8888 is not XRGB8888. */
-        on_mode_changed(mode, NULL);
-        assert(!g_have_mode && !g_buffers_ready);
-    } else if (strcmp(argv[1], "T049") == 0) {
-        int pipefd[2];
-        assert(pipe2(pipefd, O_NONBLOCK) == 0);
-        g_capture_fifo_fd = pipefd[1];
-        stall_once = 1;
-        const unsigned char frame[] = {1, 2, 3, 4};
-        assert(write_fifo_frame(frame, sizeof(frame)) == 0 && "T049: transient poll timeout lost frame");
-        unsigned char received[4];
-        assert(read(pipefd[0], received, sizeof(received)) == sizeof(received));
-        assert(memcmp(frame, received, sizeof(frame)) == 0);
-        close(pipefd[0]);
-        close(pipefd[1]);
-    } else if (strcmp(argv[1], "T050") == 0) {
-        pthread_t thread;
-        pthread_mutex_lock(&g_swap_mutex);
-        assert(pthread_create(&thread, NULL, sample_latency, NULL) == 0);
-        while (!atomic_load(&sample_started)) usleep(1000);
-        usleep(20000);
-        int finished_while_locked = atomic_load(&sample_finished);
-        pthread_mutex_unlock(&g_swap_mutex);
-        pthread_join(thread, NULL);
-        assert(!finished_while_locked && "T050: writer bypassed the statistics lock");
-        assert(g_lat_count == 1);
-    } else if (strcmp(argv[1], "T051") == 0) {
-        char root[] = "/tmp/uscreen-card-test-XXXXXX";
-        assert(mkdtemp(root));
-        const char *paths[] = {"evdi.9", "evdi.9/drm", "evdi.9/drm/card9",
-                               "evdi.0", "evdi.0/drm", "evdi.0/drm/card0"};
-        char path[4096];
-        for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
-            snprintf(path, sizeof(path), "%s/%s", root, paths[i]);
-            assert(mkdir(path, 0700) == 0);
-        }
-        int card = find_evdi_device_in(root);
-        for (int i = 5; i >= 0; i--) {
-            snprintf(path, sizeof(path), "%s/%s", root, paths[i]);
-            assert(rmdir(path) == 0);
-        }
-        rmdir(root);
-        assert(card == 0 && "T051: use the lowest available card, including card0");
-    } else if (strcmp(argv[1], "T052") == 0) {
-        add_result = 0;
-        assert(!request_evdi_device() && "T052: libevdi reports failure as zero bytes written");
-        add_result = -1;
-        assert(!request_evdi_device());
-        add_result = 1;
-        assert(request_evdi_device());
-    } else {
-        assert(0 && "unknown regression case");
     }
+    assert(0 && "unknown regression case");
     return 0;
 }
