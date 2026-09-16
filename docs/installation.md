@@ -18,6 +18,19 @@ Bazzite and Nobara ship the evdi module in the image; the tarball's installer
 is the right choice there (it layers `ffmpeg`/`android-tools` with rpm-ostree
 if they are missing).
 
+**Debian or Ubuntu on a kernel newer than the distribution's own** (a mainline
+6.14+ kernel on Debian 13, say): the packaged `evdi-dkms` 1.14.8 predates
+those kernels and fails to build (`'struct drm_driver' has no member named
+'date'`), which used to leave the `uscreen` package unconfigured as well. Build
+the current module from upstream instead, then let dpkg finish:
+
+```bash
+sudo apt install dkms git "linux-headers-$(uname -r)"
+git clone --depth 1 --branch v1.15.1 https://github.com/DisplayLink/evdi.git
+cd evdi/module && sudo make install_dkms && sudo modprobe evdi
+sudo dpkg --configure -a          # finishes uscreen's post-install (udev rule, modprobe.d)
+```
+
 After a package install, enable the daemon for your login session:
 
 ```bash

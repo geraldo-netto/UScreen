@@ -1006,6 +1006,35 @@ impl CaptureManager {
                 self.config.stream_scale = s.stream_scale;
             }
 
+            // No tablet being used as a screen: no helper, and so no EVDI
+            // connector for the desktop to see. Keeping the helper up "just
+            // in case" put a connected-but-disabled monitor on the desktop
+            // from the moment the daemon started, and KDE remembers layouts
+            // by output — one user had set "show only on the UScreen screen"
+            // once, and from then on every boot came up with the real screens
+            // black and no tablet in sight (#12). Starting the helper only
+            // while a tablet is attached makes the virtual monitor appear and
+            // disappear exactly like a cable being plugged in and out.
+            if !*display_rx.borrow() {
+                if let Some(mut h) = self.helper_child.take() {
+                    info!("No tablet is a screen — disconnecting the virtual display");
+                    let _ = h.start_kill();
+                }
+                if let Some(mut e) = self.encoder_child.take() {
+                    let _ = e.start_kill();
+                }
+                encoder_mode = None;
+                tokio::select! {
+                    _ = display_rx.changed() => {}
+                    _ = settings_rx.changed() => {}
+                    _ = shutdown_rx.changed() => {
+                        self.shutdown().await;
+                        return Ok(());
+                    }
+                }
+                continue;
+            }
+
             // Start evdi-helper if not running
             if self.helper_child.is_none() {
                 if let Err(e) = self.start_helper().await {
@@ -1144,6 +1173,9 @@ impl CaptureManager {
             // encoder must be rebuilt but the helper and the virtual display
             // are fine and must not be torn down.
             let mut mode_changed = false;
+            // The tablet stopped being a screen: a clean stop, not a crash,
+            // so no backoff and no wait before the outer loop parks itself.
+            let mut display_dropped = false;
             let card = self.helper_card;
 
             // Events that need no restart at all send us back here without
@@ -1195,11 +1227,16 @@ impl CaptureManager {
                     if wanted {
                         info!("Tablet is a screen — enabling the virtual display");
                         Self::enable_evdi_display(card, self.config.position).await;
+                        resume_same_encoder = true;
                     } else {
+                        // Disable first so KWin moves the windows off it, then
+                        // fall through to the teardown: the helper goes away
+                        // with the session, and the top of the outer loop
+                        // waits for a tablet before bringing anything back.
                         info!("Tablet is not a screen — disabling the virtual display");
                         Self::disable_evdi_display(card).await;
+                        display_dropped = true;
                     }
-                    resume_same_encoder = true;
                 }
                 _ = shutdown_rx.changed() => {
                     info!("Shutdown requested — tearing down the capture pipeline");
@@ -1239,7 +1276,7 @@ impl CaptureManager {
             // A pipeline that died within seconds is crash-looping — back off.
             if pipeline_started_at.elapsed().as_secs() >= 30 {
                 backoff_ms = RECONNECT_DELAY_MS;
-            } else if !settings_changed && !mode_changed {
+            } else if !settings_changed && !mode_changed && !display_dropped {
                 backoff_ms = (backoff_ms * 2).min(30_000);
             }
 
@@ -1259,7 +1296,7 @@ impl CaptureManager {
             if let Ok(mut config) = self.codec_config.lock() {
                 *config = None;
             }
-            if !settings_changed && !mode_changed {
+            if !settings_changed && !mode_changed && !display_dropped {
                 tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
             }
         }

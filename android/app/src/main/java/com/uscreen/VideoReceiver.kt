@@ -74,6 +74,23 @@ class VideoReceiver {
     private val renderedCount = AtomicLong(0)
 
     /**
+     * Output watchdog. The input-side check below catches a decoder that
+     * stops taking frames; it does nothing for one that keeps taking them and
+     * never puts any on screen, which is what a Galaxy Tab S10 FE+ on Android
+     * 16 did — one frame rendered, then silence, while the host kept sending
+     * (issue #10). Frames queued since the last output, and when that was.
+     */
+    private val queuedSinceOutput = AtomicInteger(0)
+    @Volatile private var lastOutputNanos = 0L
+    private var outputStalls = 0
+    /**
+     * Whether to ask for low-latency decoding. Off after the second stall in
+     * a row: those hints are exactly the kind of thing a decoder can accept
+     * and then misbehave on, and a picture that is late beats no picture.
+     */
+    @Volatile private var lowLatencyHints = true
+
+    /**
      * seq → nanoTime the frame finished arriving, so the render callback can
      * report how much of the end-to-end latency was spent on this device
      * rather than on the wire. Bounded and cheap: a plain ring, since frames
@@ -219,19 +236,26 @@ class VideoReceiver {
                 format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
             } catch (_: Exception) {}
 
-            // Low latency flags (safe to set, ignored if unsupported)
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-                format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
+            // Low latency flags (safe to set, ignored if unsupported) — unless
+            // this decoder has already stalled on them, see lowLatencyHints.
+            if (lowLatencyHints) {
+                if (android.os.Build.VERSION.SDK_INT >= 30) {
+                    format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
+                }
+                try {
+                    // Ask the decoder to run flat out rather than pace to the
+                    // frame rate — headroom above the stream rate, so a late
+                    // frame is caught up on instead of waiting for the next slot.
+                    format.setInteger("operating-rate", streamFps * 2)
+                } catch (_: Exception) {}
+                try {
+                    format.setInteger("vendor.qti-ext-dec-low-latency.enable", 1)
+                } catch (_: Exception) {}
+            } else {
+                Log.w(TAG, "Configuring decoder without low-latency hints")
             }
-            try {
-                // Ask the decoder to run flat out rather than pace to the frame
-                // rate — headroom above the stream rate, so a late frame is
-                // caught up on instead of waiting for the next slot.
-                format.setInteger("operating-rate", streamFps * 2)
-            } catch (_: Exception) {}
-            try {
-                format.setInteger("vendor.qti-ext-dec-low-latency.enable", 1)
-            } catch (_: Exception) {}
+            queuedSinceOutput.set(0)
+            lastOutputNanos = System.nanoTime()
 
             val codec = MediaCodec.createDecoderByType(mimeType)
             codec.configure(format, surface, null, 0)
@@ -277,6 +301,9 @@ class VideoReceiver {
                     if (index >= 0) {
                         val seq = info.presentationTimeUs.toInt()
                         codec.releaseOutputBuffer(index, true)
+                        lastOutputNanos = System.nanoTime()
+                        queuedSinceOutput.set(0)
+                        outputStalls = 0
                         noteReleased(seq)
                         frameCounter.incrementAndGet()
                         rendered++
@@ -487,6 +514,27 @@ class VideoReceiver {
                         presentationTimeUs,
                         flags
                     )
+                    if (!isConfig) {
+                        val queued = queuedSinceOutput.incrementAndGet()
+                        val silentNs = System.nanoTime() - lastOutputNanos
+                        if (queued >= 4 && silentNs > 1_500_000_000L) {
+                            outputStalls++
+                            val dropHints = outputStalls >= 2 && lowLatencyHints
+                            Log.w(
+                                TAG,
+                                "Decoder took $queued frames and showed none for " +
+                                    "${silentNs / 1_000_000} ms — restarting" +
+                                    (if (dropHints) " without low-latency hints" else "")
+                            )
+                            if (dropHints) lowLatencyHints = false
+                            // A fresh decoder needs the codec config and a
+                            // keyframe again, and the host sends both to a
+                            // client that (re)connects — so drop the socket
+                            // too, and let the read loop come back.
+                            resetCodec()
+                            try { socket?.close() } catch (_: Exception) {}
+                        }
+                    }
                     return
                 }
                 attempts++

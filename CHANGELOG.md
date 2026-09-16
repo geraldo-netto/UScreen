@@ -5,6 +5,27 @@ Full notes for each version are on the
 
 ## Unreleased
 
+- Fix: the virtual monitor no longer exists while no tablet is attached. The
+  EVDI helper used to run from daemon start, so the desktop saw a connected
+  (if disabled) monitor at every boot — and a KDE layout saved as "only the
+  UScreen screen" came up with the real screens black and no tablet in sight.
+  The helper now starts when a tablet becomes a screen and stops when it stops
+  being one, so the monitor appears and disappears like a cable
+  ([#12](https://github.com/majmichu1/UScreen/issues/12)).
+- App: a decoder that keeps accepting frames but never shows any is now
+  restarted after 1.5 s, and after a second stall restarted without the
+  low-latency hints. A Galaxy Tab S10 FE+ on Android 16 rendered one frame and
+  then nothing while the host kept sending; the old check only noticed a
+  decoder that stopped *taking* frames
+  ([#10](https://github.com/majmichu1/UScreen/issues/10)).
+- Packaging: the `.deb` recommends `evdi-dkms` instead of depending on it, so
+  a module that fails to build for an unusual kernel no longer leaves
+  `uscreen` unconfigured with its udev rule and modprobe file missing;
+  `docs/installation.md` explains building the upstream module on kernels
+  newer than the distribution's `evdi-dkms` supports, and the helper's hint
+  when no EVDI device appears no longer refers to a Makefile target that
+  package installs do not have
+  ([#13](https://github.com/majmichu1/UScreen/issues/13)).
 - Fix: with two Android devices attached the daemon took whichever one adb
   listed first on every check, so any reshuffle of that list looked like a
   different tablet being plugged in — the port forwards moved, the stream on

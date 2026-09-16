@@ -1017,8 +1017,11 @@ int main(int argc, char *argv[]) {
         dev_idx = wait_for_device(5000);
         if (dev_idx < 0) {
             fprintf(stderr, "[evdi-helper] EVDI device did not appear within timeout.\n"
-                            "[evdi-helper] /sys/devices/evdi/add is root-only — run once:\n"
-                            "[evdi-helper]   make setup-system\n");
+                            "[evdi-helper] Either the evdi kernel module is not loaded, or no device exists\n"
+                            "[evdi-helper] and /sys/devices/evdi/add is root-only. Check `lsmod | grep evdi`;\n"
+                            "[evdi-helper] then, once: echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf\n"
+                            "[evdi-helper]            sudo modprobe -r evdi; sudo modprobe evdi   (or reboot)\n"
+                            "[evdi-helper] The packages and install.sh do this — unless evdi-dkms failed to build, see docs/installation.md.\n");
             return 1;
         }
         fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", dev_idx);
