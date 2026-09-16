@@ -1622,10 +1622,6 @@ impl H264AnnexBPacketizer {
         }
 
         let starts = CaptureManager::find_start_codes(&self.buffer);
-        if starts.len() < 2 && !flush {
-            return out;
-        }
-
         let nal_count = if flush {
             starts.len()
         } else {
@@ -1644,7 +1640,44 @@ impl H264AnnexBPacketizer {
             starts[starts.len() - 1]
         };
         self.buffer.drain(..drain_to);
+        // The trailing NAL is incomplete, but its header can already prove
+        // that the preceding access unit is complete. Keep all trailing bytes
+        // buffered; publish only the previous picture.
+        if self.pending_has_vcl && self.trailing_nal_starts_picture() {
+            if let Some(packet) = self.take_pending_access_unit() {
+                out.push(packet);
+            }
+        }
         out
+    }
+
+    fn trailing_nal_starts_picture(&self) -> bool {
+        let Some(offset) = CaptureManager::nal_header_offset(&self.buffer, 0) else {
+            return false;
+        };
+        let Some(&header) = self.buffer.get(offset) else {
+            return false;
+        };
+        let (vcl, prefix) = match self.codec {
+            Codec::H264 => {
+                let kind = header & 0x1f;
+                (
+                    (NAL_TYPE_NON_IDR..=NAL_TYPE_IDR).contains(&kind),
+                    matches!(kind, NAL_TYPE_AUD | NAL_TYPE_SPS | NAL_TYPE_PPS),
+                )
+            }
+            Codec::Hevc => {
+                let kind = (header >> 1) & 0x3f;
+                (
+                    kind <= HEVC_NAL_VCL_MAX,
+                    matches!(
+                        kind,
+                        HEVC_NAL_AUD | HEVC_NAL_VPS | HEVC_NAL_SPS | HEVC_NAL_PPS
+                    ),
+                )
+            }
+        };
+        prefix || (vcl && self.starts_new_picture(&self.buffer, offset))
     }
 
     fn process_nal(&mut self, nal: &[u8], out: &mut Vec<VideoPacket>) {
@@ -1829,6 +1862,53 @@ impl<'a> ExpGolombReader<'a> {
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t080_next_picture_header_releases_complete_previous_picture() {
+        for (codec, first, continuation, next, header_len) in [
+            (
+                Codec::H264,
+                nal(NAL_TYPE_IDR, &[0x80, 0x11]),
+                nal(NAL_TYPE_IDR, &[0x40, 0x22]),
+                nal(NAL_TYPE_NON_IDR, &[0x80, 0x33]),
+                5,
+            ),
+            (
+                Codec::Hevc,
+                hevc_slice(19, true),
+                hevc_slice(19, false),
+                hevc_slice(1, true),
+                6,
+            ),
+        ] {
+            let mut p = H264AnnexBPacketizer::new(codec);
+            for byte in first.iter().chain(&continuation) {
+                assert!(
+                    p.push(&[*byte]).is_empty(),
+                    "additional slices belong to same picture"
+                );
+            }
+            for byte in &next[..header_len] {
+                assert!(
+                    p.push(&[*byte]).is_empty(),
+                    "need enough header to identify next picture"
+                );
+            }
+            let out = p.push(&next[header_len..header_len + 1]);
+            assert_eq!(
+                out.len(),
+                1,
+                "complete picture waits for unnecessary future frame"
+            );
+            assert_eq!(out[0].data.as_ref(), [first, continuation].concat());
+            assert_eq!(out[0].seq, 0);
+            assert!(p.push(&next[header_len + 1..]).is_empty());
+            let last = p.finish();
+            assert_eq!(last.len(), 1);
+            assert_eq!(last[0].data.as_ref(), next);
+            assert_eq!(last[0].seq, 1);
+        }
+    }
 
     #[test]
     fn t079_parameter_sets_replace_without_growing_or_resending() {
@@ -2342,11 +2422,12 @@ mod tests {
 
         second.drain(..3);
         let out = packetizer.push(&second);
-        assert!(out.is_empty());
+        // T080: the next header proves the preceding NAL and picture complete.
+        assert_eq!(out.len(), 1);
+        assert_eq!(&out[0].data[..], &first[..]);
 
         let out = packetizer.finish();
-        assert_eq!(out.len(), 2);
-        // No SPS/PPS seen, IDR emitted as-is
-        assert_eq!(&out[0].data[..], &first[..]);
+        assert_eq!(out.len(), 1);
+        assert_eq!(&out[0].data[..], &nal(NAL_TYPE_NON_IDR, &[0x80]));
     }
 }
