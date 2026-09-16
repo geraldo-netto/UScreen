@@ -1468,28 +1468,12 @@ impl CaptureManager {
     /// Find all NAL start codes in a buffer and return their positions.
     #[cfg(not(feature = "inproc-encoder"))]
     fn find_start_codes(data: &[u8]) -> Vec<usize> {
-        let mut starts = Vec::new();
-        let mut i = 0;
-        while i < data.len().saturating_sub(3) {
-            // Check for 4-byte start code: 00 00 00 01
-            if i + 3 < data.len()
-                && data[i] == 0
-                && data[i + 1] == 0
-                && data[i + 2] == 0
-                && data[i + 3] == 1
-            {
-                starts.push(i);
-                i += 4;
-            }
-            // Check for 3-byte start code: 00 00 01
-            else if data[i] == 0 && data[i + 1] == 0 && data[i + 2] == 1 {
-                starts.push(i);
-                i += 3;
-            } else {
-                i += 1;
-            }
-        }
-        starts
+        crate::encoder_io::annex_b_starts(data)
+            .into_iter()
+            // Streaming packetization waits for at least one byte after a
+            // three-byte prefix, preserving incomplete-tail buffering.
+            .filter_map(|(start, _)| (start < data.len().saturating_sub(3)).then_some(start))
+            .collect()
     }
 
     #[cfg(not(feature = "inproc-encoder"))]
