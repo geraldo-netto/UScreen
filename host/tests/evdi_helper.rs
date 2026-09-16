@@ -143,3 +143,8 @@ fn t081_idle_writer_releases_buffers_before_mode_changes() {
 fn t083_mode_changes_and_signal_shutdown_are_race_free() {
     Harness::build("T083").run("T083");
 }
+
+#[test]
+fn t113_stalled_fifo_obeys_deadline_mode_change_and_shutdown() {
+    Harness::build("T113").run("T113");
+}

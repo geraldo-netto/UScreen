@@ -636,9 +636,8 @@ static int try_open_fifo(void) {
     int fd = open(g_fifo_path, O_WRONLY | O_NONBLOCK | O_NOFOLLOW);
     if (fd < 0)
         return -1;
-    /* Switch back to blocking writes once connected */
-    int flags = fcntl(fd, F_GETFL);
-    fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+    /* Keep writes nonblocking: POLLOUT promises some space, not enough for
+       an entire frame. The writer owns this fd until it closes/reopens it. */
     /* Enlarge the pipe so a full-frame write doesn't take hundreds of
        64KB round-trips with the encoder. */
     fcntl(fd, F_SETPIPE_SZ, 1 << 20);
@@ -656,7 +655,7 @@ static int try_open_fifo(void) {
    frame goes out as soon as it exists, and the minimum-interval check below
    still caps the rate.
 
-   Blocking writes here never stall capture, and the FIFO is reopened
+   FIFO backpressure never stalls capture, and the FIFO is reopened
    automatically when the encoder restarts. */
 /* A live reader may stall briefly under load. Keep the same frame across
    poll timeouts, but bound a continuous stall and notice mode changes. */
@@ -664,8 +663,10 @@ static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
     long long deadline = now_ms() + 1000;
     unsigned generation = g_mode_generation;
     while (remaining > 0 && g_running && generation == g_mode_generation) {
+        long long wait_ms = deadline - now_ms();
+        if (wait_ms <= 0) break;
         struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
-        int pr = poll(&wfd, 1, 250);
+        int pr = poll(&wfd, 1, wait_ms < 250 ? (int)wait_ms : 250);
         if (pr < 0 && errno == EINTR) continue;
         if (pr == 0 && now_ms() < deadline) continue;
         if (pr <= 0 || (wfd.revents & (POLLERR | POLLHUP | POLLNVAL))) break;

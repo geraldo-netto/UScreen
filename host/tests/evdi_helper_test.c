@@ -18,6 +18,7 @@ static int mock_poll(struct pollfd *, nfds_t, int);
 #undef sysconf
 #undef poll
 #include <assert.h>
+#include <sys/wait.h>
 
 static int fail_worker = 0;
 static int stall_once = 0;
@@ -126,9 +127,64 @@ static void stop_test_writer(pthread_t writer, int pipefd[2]) {
     pthread_cond_destroy(&g_frame_ready);
 }
 
+static void *cancel_fifo_write(void *arg) {
+    usleep(50000);
+    if ((intptr_t)arg == 1) g_mode_generation++;
+    else handle_signal(SIGTERM);
+    return NULL;
+}
+
+static void test_stalled_fifo(int cancel) {
+    char root[] = "/tmp/uscreen-fifo-test-XXXXXX";
+    assert(mkdtemp(root));
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/capture.fifo", root);
+    assert(mkfifo(path, 0600) == 0);
+    int reader = open(path, O_RDONLY | O_NONBLOCK);
+    assert(reader >= 0);
+    g_fifo_path = path;
+    g_capture_fifo_fd = try_open_fifo();
+    assert(g_capture_fifo_fd >= 0);
+    pid_t child = fork();
+    assert(child >= 0);
+    if (child == 0) {
+        close(reader);
+        pthread_t cancellation;
+        if (cancel) assert(pthread_create(&cancellation, NULL, cancel_fifo_write, (void *)(intptr_t)cancel) == 0);
+        size_t size = 2u << 20;
+        unsigned char *frame = calloc(1, size);
+        assert(frame);
+        long long start = now_ms();
+        size_t remaining = write_fifo_frame(frame, size);
+        assert(remaining > 0 && g_capture_fifo_fd == -1);
+        assert(now_ms() - start < (cancel ? 600 : 1400));
+        if (cancel) pthread_join(cancellation, NULL);
+        free(frame);
+        _exit(0);
+    }
+    int status = 0;
+    int finished = 0;
+    long long deadline = now_ms() + 1600;
+    while (now_ms() < deadline) {
+        if (waitpid(child, &status, WNOHANG) == child) { finished = 1; break; }
+        usleep(10000);
+    }
+    if (!finished) { kill(child, SIGKILL); waitpid(child, &status, 0); }
+    close(reader);
+    close(g_capture_fifo_fd);
+    g_capture_fifo_fd = -1;
+    unlink(path);
+    rmdir(root);
+    assert(finished && WIFEXITED(status) && WEXITSTATUS(status) == 0 && "T113: stalled FIFO ignores deadline/cancellation");
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T083") == 0) {
+    if (strcmp(argv[1], "T113") == 0) {
+        test_stalled_fifo(0);
+        test_stalled_fifo(1);
+        test_stalled_fifo(2);
+    } else if (strcmp(argv[1], "T083") == 0) {
         int pipefd[2];
         pthread_t writer = start_test_writer(pipefd);
         read_test_frame(pipefd[0], 8, 8);
