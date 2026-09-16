@@ -95,7 +95,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
 
     /**
      * seq → nanoTime the frame finished arriving, so the render callback can
-     * report how much of the end-to-end latency was spent on this device
+     * report the arrival-to-render portion of the host’s send-to-ack interval
      * rather than on the wire. Bounded and cheap: a plain ring, since frames
      * are rendered in the order they arrive.
      */

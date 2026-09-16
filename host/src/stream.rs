@@ -309,8 +309,8 @@ impl StreamServer {
 
     /// Frame packets carry a 4-byte big-endian sequence number after the type
     /// byte. The tablet hands it to the decoder as the presentation timestamp
-    /// and echoes it back once the frame is on screen, which is what makes
-    /// end-to-end latency measurable on a single clock.
+    /// and echoes it back once the frame is on screen. This measures send-to-ack
+    /// latency on one clock; capture and encoding occur before that interval.
     async fn write_frame(
         socket: &mut (impl tokio::io::AsyncWrite + Unpin),
         seq: u32,

@@ -103,7 +103,7 @@ pub struct VideoPacket {
     pub data: Bytes,
     pub is_idr: bool,
     /// Monotonically increasing per encoder run. Echoed back by the tablet once
-    /// the frame is on screen, which is how end-to-end latency is measured.
+    /// the frame is on screen, measuring packet-send-to-render-ack latency.
     pub seq: u32,
 }
 
