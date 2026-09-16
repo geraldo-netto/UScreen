@@ -2060,69 +2060,72 @@ mod tests {
 
     #[tokio::test]
     async fn t091_setup_stages_cancel_on_shutdown_or_detach() {
-        use std::os::unix::fs::PermissionsExt;
         for shutdown in [false, true] {
             for stage in 0..3 {
-                let root = tempfile::tempdir().unwrap();
-                let helper = root.path().join("helper");
-                std::fs::write(&helper, "#!/bin/sh\necho $$ > \"$0.pid\"\nexec sleep 30\n")
-                    .unwrap();
-                std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
-                let mut manager = test_manager();
-                manager.config.helper_path = helper.clone();
-                manager.config.edid_path = Some(root.path().join("test.edid"));
-                let (display_tx, mut display) = watch::channel(true);
-                let (shutdown_tx, mut stop) = watch::channel(false);
-                let operation = async {
-                    match stage {
-                        0 => {
-                            let _ = manager.start_helper().await;
-                        }
-                        1 => manager.wait_stream_size().await,
-                        _ => tokio::time::sleep(std::time::Duration::from_secs(30)).await,
-                    }
-                };
-                let cancel = async {
-                    if stage == 0 {
-                        tokio::time::timeout(std::time::Duration::from_secs(1), async {
-                            while !helper.with_extension("pid").exists() {
-                                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-                            }
-                        })
-                        .await
-                        .unwrap();
-                    } else {
-                        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                    }
-                    if shutdown {
-                        shutdown_tx.send(true).unwrap();
-                    } else {
-                        display_tx.send(false).unwrap();
-                    }
-                };
-                let result = tokio::time::timeout(std::time::Duration::from_millis(1200), async {
-                    tokio::join!(
-                        CaptureManager::while_active(&mut display, &mut stop, operation),
-                        cancel
-                    )
-                    .0
-                })
-                .await;
-                assert!(
-                    matches!(result, Ok(None)),
-                    "stage {stage} ignored cancellation"
-                );
-                if stage == 0 {
-                    let pid = std::fs::read_to_string(helper.with_extension("pid")).unwrap();
-                    tokio::time::timeout(std::time::Duration::from_millis(300), async {
-                        while std::path::Path::new(&format!("/proc/{}", pid.trim())).exists() {
-                            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-                        }
-                    })
-                    .await
-                    .expect("cancelled helper not reaped");
-                }
+                assert_setup_stage_cancels(stage, shutdown).await;
             }
+        }
+    }
+
+    async fn assert_setup_stage_cancels(stage: u8, shutdown: bool) {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let helper = root.path().join("helper");
+        std::fs::write(&helper, "#!/bin/sh\necho $$ > \"$0.pid\"\nexec sleep 30\n").unwrap();
+        std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut manager = test_manager();
+        manager.config.helper_path = helper.clone();
+        manager.config.edid_path = Some(root.path().join("test.edid"));
+        let (display_tx, mut display) = watch::channel(true);
+        let (shutdown_tx, mut stop) = watch::channel(false);
+        let operation = async {
+            match stage {
+                0 => {
+                    let _ = manager.start_helper().await;
+                }
+                1 => manager.wait_stream_size().await,
+                _ => tokio::time::sleep(std::time::Duration::from_secs(30)).await,
+            }
+        };
+        let cancel = async {
+            if stage == 0 {
+                tokio::time::timeout(std::time::Duration::from_secs(1), async {
+                    while !helper.with_extension("pid").exists() {
+                        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                    }
+                })
+                .await
+                .unwrap();
+            } else {
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            if shutdown {
+                shutdown_tx.send(true).unwrap();
+            } else {
+                display_tx.send(false).unwrap();
+            }
+        };
+        let result = tokio::time::timeout(std::time::Duration::from_millis(1200), async {
+            tokio::join!(
+                CaptureManager::while_active(&mut display, &mut stop, operation),
+                cancel
+            )
+            .0
+        })
+        .await;
+        assert!(
+            matches!(result, Ok(None)),
+            "stage {stage} ignored cancellation"
+        );
+        if stage == 0 {
+            let pid = std::fs::read_to_string(helper.with_extension("pid")).unwrap();
+            tokio::time::timeout(std::time::Duration::from_millis(300), async {
+                while std::path::Path::new(&format!("/proc/{}", pid.trim())).exists() {
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .expect("cancelled helper not reaped");
         }
     }
 
