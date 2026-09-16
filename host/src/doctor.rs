@@ -332,113 +332,117 @@ fn report_helpers(r: &mut Report, helpers: &[u32], tracked: Option<u32>, max_tab
     }
 }
 
-async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Option<String> {
-    // `adb get-state` errors out when more than one device is attached, so
-    // enumerate instead — that failure mode is silent otherwise.
-    let Some(list) = output_of("adb", &["devices"]).await else {
+async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Vec<String> {
+    check_tablet_with(
+        r,
+        cfg,
+        "adb",
+        crate::runtime::load_sessions(&crate::runtime::runtime_dir().join("sessions.json")),
+    )
+    .await
+}
+
+async fn check_tablet_with(
+    r: &mut Report,
+    cfg: &FileConfig,
+    adb: &str,
+    sessions: Option<Vec<crate::runtime::TabletSession>>,
+) -> Vec<String> {
+    let Some(list) = output_of(adb, &["devices"]).await else {
         r.line(Level::Warn, "adb", "could not run");
-        return None;
+        return Vec::new();
     };
-    let devices: Vec<&str> = list
+    let mut devices: Vec<String> = list
         .lines()
         .skip(1)
-        .filter_map(|l| {
-            let mut parts = l.split_whitespace();
+        .filter_map(|line| {
+            let mut parts = line.split_whitespace();
             let serial = parts.next()?;
-            let state = parts.next()?;
-            (state == "device").then_some(serial)
+            (parts.next()? == "device").then(|| serial.to_owned())
         })
         .collect();
-
-    // Which device every later check should address. With more than one
-    // present, a bare `adb shell` fails outright ("more than one
-    // device/emulator") — which is how this check used to report a perfectly
-    // well installed app as missing the moment `adb tcpip` was in use.
-    let chosen: Option<&str> = devices
-        .iter()
-        .find(|d| !d.contains(':'))
-        .or_else(|| devices.first())
-        .copied();
-
-    match devices.len() {
-        0 => {
-            let unauthorized = list.contains("unauthorized");
-            if unauthorized {
-                r.line(Level::Fail, "tablet", "attached but unauthorized");
-                r.hint("accept the 'Allow USB debugging' prompt on the tablet");
-            } else {
-                r.line(Level::Warn, "tablet", "not connected");
-                r.hint("plug in the USB cable and enable USB debugging");
-            }
-            return None;
+    devices.sort_by_key(|serial| serial.contains(':'));
+    let sessions = match sessions {
+        Some(sessions) => sessions,
+        None => {
+            r.line(
+                Level::Warn,
+                "tablet selection",
+                "no live daemon session report; checking a candidate",
+            );
+            let mut identities = std::collections::HashMap::new();
+            let devices = crate::unique_devices(&devices, None, &mut identities, adb).await;
+            crate::pick_device_with(&devices, None, adb)
+                .await
+                .into_iter()
+                .map(|serial| crate::runtime::TabletSession {
+                    serial,
+                    instance: 0,
+                    video_port: cfg.video_port,
+                    input_port: cfg.input_port,
+                })
+                .collect()
         }
-        1 => {
-            r.line(Level::Ok, "tablet", devices[0]);
-            report_transport(r, devices[0]);
-        }
-        n => {
-            let pick = chosen.unwrap_or(devices[0]);
-            // Two entries can mean one tablet reachable two ways — `adb tcpip`
-            // leaves the cable working alongside the network device — or two
-            // different Android devices plugged in, which is a different
-            // situation entirely: the daemon drives the first and the app is
-            // launched there, so watching the other one shows a black screen.
-            // Only the second kind has more than one USB serial.
-            let usb: Vec<&&str> = devices.iter().filter(|d| !d.contains(':')).collect();
-            if usb.len() > 1 {
-                let mut named = Vec::new();
-                for d in &devices {
-                    match output_of("adb", &["-s", d, "shell", "getprop", "ro.product.model"]).await
-                    {
-                        Some(m) if !m.trim().is_empty() => {
-                            named.push(format!("{} ({})", d, m.trim()))
-                        }
-                        _ => named.push(d.to_string()),
-                    }
-                }
-                r.line(
-                    Level::Warn,
-                    "tablet",
-                    &format!("{} Android devices attached — using {}", n, pick),
-                );
-                r.hint(&format!(
-                    "attached: {}. The daemon drives the first one and launches the app there, \
-                     so a second device shows nothing. Unplug the others, or raise max_tablets \
-                     to give each its own screen.",
-                    named.join(", ")
-                ));
-            } else {
-                r.line(
-                    Level::Ok,
-                    "tablet",
-                    &format!("{} reachable {} ways: {:?}", pick, n, devices),
-                );
-            }
-            report_transport(r, pick);
+    };
+    if sessions.is_empty() {
+        if list.contains("unauthorized") {
+            r.line(Level::Fail, "tablet", "attached but unauthorized");
+            r.hint("accept the 'Allow USB debugging' prompt on the tablet");
+        } else {
+            r.line(Level::Warn, "tablet", "no active tablet session");
         }
     }
-    let dev_args: Vec<String> = match chosen {
-        Some(d) => vec!["-s".into(), d.to_string()],
-        None => Vec::new(),
-    };
-
-    let mut reverse_args: Vec<&str> = dev_args.iter().map(|s| s.as_str()).collect();
-    reverse_args.extend_from_slice(&["reverse", "--list"]);
-    match output_of("adb", &reverse_args).await {
-        Some(reverse) => {
-            report_forwarding(r, cfg, chosen.unwrap_or("SERIAL"), &reverse);
+    let mut selected = Vec::new();
+    for session in sessions {
+        r.line(
+            Level::Ok,
+            "tablet session",
+            &format!(
+                "slot {}: {} (video {}, input {})",
+                session.instance + 1,
+                session.serial,
+                session.video_port,
+                session.input_port
+            ),
+        );
+        if !devices.contains(&session.serial) {
+            r.line(
+                Level::Warn,
+                "tablet",
+                "active transport no longer reachable; waiting for daemon refresh",
+            );
+            continue;
         }
+        report_transport(r, &session.serial);
+        check_tablet_session(r, cfg, adb, &session).await;
+        selected.push(session.serial);
+    }
+    selected
+}
+
+async fn check_tablet_session(
+    r: &mut Report,
+    cfg: &FileConfig,
+    adb: &str,
+    session: &crate::runtime::TabletSession,
+) {
+    let cfg = &FileConfig {
+        video_port: session.video_port,
+        input_port: session.input_port,
+        ..cfg.clone()
+    };
+    match output_of(adb, &["-s", &session.serial, "reverse", "--list"]).await {
+        Some(reverse) => report_forwarding(r, cfg, &session.serial, &reverse),
         None => r.line(Level::Warn, "adb reverse", "could not query"),
     }
-
     // Whether this tablet can decode HEVC, and in 10 bits. Measured on one
     // Tab S9 Ultra, HEVC was slightly faster than H.264 and Main10 cost
     // nothing on top — but only where the hardware decoder exists, which is
     // exactly what this asks. H.264 stays the default because it is the one
     // every device has.
-    let mut codec_args: Vec<&str> = dev_args.iter().map(|s| s.as_str()).collect();
+    let mut codec_args: Vec<&str> = vec!["-s", &session.serial];
     codec_args.extend_from_slice(&["shell", "dumpsys", "media.player"]);
-    if let Some(out) = output_of("adb", &codec_args).await {
+    if let Some(out) = output_of(adb, &codec_args).await {
         let hevc = out.contains("video/hevc");
         let main10 = out.contains("Main10");
         match (hevc, main10, cfg.encoder.contains("hevc")) {
@@ -470,9 +474,9 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Option<String> {
         }
     }
 
-    let mut pm_args: Vec<&str> = dev_args.iter().map(|s| s.as_str()).collect();
+    let mut pm_args: Vec<&str> = vec!["-s", &session.serial];
     pm_args.extend_from_slice(&["shell", "pm", "list", "packages", "com.uscreen"]);
-    if let Some(out) = output_of("adb", &pm_args).await {
+    if let Some(out) = output_of(adb, &pm_args).await {
         if out.contains("com.uscreen") {
             r.line(Level::Ok, "tablet app", "installed");
         } else {
@@ -480,11 +484,10 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Option<String> {
             r.hint(&format!(
                 "download uscreen.apk from {} then: adb -s {} install -r uscreen.apk",
                 crate::update::RELEASES_PAGE,
-                chosen.unwrap_or("SERIAL")
+                session.serial
             ));
         }
     }
-    chosen.map(str::to_owned)
 }
 
 fn report_forwarding(r: &mut Report, cfg: &FileConfig, serial: &str, reverse: &str) {
@@ -1002,7 +1005,7 @@ pub async fn run() -> Result<()> {
     check_processes(&mut r, &cfg).await;
 
     section("Tablet");
-    let serial = check_tablet(&mut r, &cfg).await;
+    let serials = check_tablet(&mut r, &cfg).await;
 
     section("Virtual display");
     check_virtual_display(&mut r, &cfg).await;
@@ -1014,7 +1017,9 @@ pub async fn run() -> Result<()> {
     check_osk(&mut r).await;
 
     section("Colour");
-    check_colour(&mut r, serial.as_deref()).await;
+    for serial in &serials {
+        check_colour(&mut r, Some(serial)).await;
+    }
 
     section("Configuration");
     check_version(&mut r, &cfg).await;
@@ -1052,6 +1057,67 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t099_doctor_targets_active_sessions_and_actual_ports() {
+        let temp = tempfile::tempdir().unwrap();
+        let adb = temp.path().join("adb");
+        let log = temp.path().join("calls");
+        std::fs::write(&adb, format!(r#"#!/bin/sh
+printf '%s\n' "$*" >> '{}'
+case "$*" in
+  devices) printf 'List of devices attached\nPHONE\tdevice\nTABLET\tdevice\n192.0.2.1:5555\tdevice\nEXTRA\tdevice\n';;
+  '-s 192.0.2.1:5555 reverse --list') printf 'USB tcp:8890 tcp:19000\nUSB tcp:8891 tcp:19100\n';;
+  '-s EXTRA reverse --list') printf 'USB tcp:8890 tcp:19004\nUSB tcp:8891 tcp:19104\n';;
+  *'pm path com.uscreen') [ "$2" = TABLET ] && echo package:/app/uscreen.apk;;
+  *'pm list packages com.uscreen') echo package:com.uscreen;;
+esac
+exit 0
+"#, log.display())).unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut report = Report::new();
+        let sessions = vec![
+            crate::runtime::TabletSession {
+                serial: "192.0.2.1:5555".into(),
+                instance: 0,
+                video_port: 19000,
+                input_port: 19100,
+            },
+            crate::runtime::TabletSession {
+                serial: "EXTRA".into(),
+                instance: 2,
+                video_port: 19004,
+                input_port: 19104,
+            },
+        ];
+        let selected = check_tablet_with(
+            &mut report,
+            &FileConfig::default(),
+            adb.to_str().unwrap(),
+            Some(sessions),
+        )
+        .await;
+        assert_eq!(selected, ["192.0.2.1:5555", "EXTRA"]);
+        let calls = std::fs::read_to_string(&log).unwrap();
+        assert!(!calls.contains("-s PHONE"), "{calls}");
+        let messages = report.messages.borrow().join("\n");
+        assert!(!messages.contains("not forwarded"), "{messages}");
+        assert!(
+            messages.contains("19004") && messages.contains("19104"),
+            "{messages}"
+        );
+        std::fs::write(&log, "").unwrap();
+        let mut report = Report::new();
+        let selected = check_tablet_with(
+            &mut report,
+            &FileConfig::default(),
+            adb.to_str().unwrap(),
+            None,
+        )
+        .await;
+        assert_eq!(selected, ["TABLET"]);
+        assert!(report.messages.borrow().join("\n").contains("candidate"));
+    }
+
     #[test]
     fn t076_forwarding_checks_exact_app_to_host_ports_and_hints_selected_tablet() {
         let cfg = FileConfig {

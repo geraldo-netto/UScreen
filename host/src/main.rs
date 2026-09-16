@@ -1373,6 +1373,14 @@ async fn adb_monitor(
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
 ) {
+    let mut ledger = match runtime::SessionLedger::new(runtime::runtime_dir().join("sessions.json"))
+    {
+        Ok(ledger) => Some(ledger),
+        Err(error) => {
+            warn!("Could not publish tablet sessions: {error}");
+            None
+        }
+    };
     let mut daemon_stop = extra.shutdown_rx.clone();
     let mut current: Option<String> = None;
     let mut identities = std::collections::HashMap::new();
@@ -1548,6 +1556,31 @@ async fn adb_monitor(
                 let _ = sess.tablet_tx.send(true);
                 extra_backoff.insert(serial.clone(), RelaunchBackoff::default());
                 extras.insert(serial, sess);
+            }
+        }
+
+        if let Some(ledger) = &mut ledger {
+            let mut sessions: Vec<_> = current
+                .iter()
+                .map(|serial| runtime::TabletSession {
+                    serial: serial.clone(),
+                    instance: 0,
+                    video_port,
+                    input_port,
+                })
+                .collect();
+            sessions.extend(
+                extras
+                    .iter()
+                    .map(|(serial, session)| runtime::TabletSession {
+                        serial: serial.clone(),
+                        instance: session.instance,
+                        video_port: session.video_port,
+                        input_port: session.input_port,
+                    }),
+            );
+            if let Err(error) = ledger.update(sessions) {
+                warn!("Could not update tablet sessions: {error}");
             }
         }
 
@@ -2067,6 +2100,10 @@ async fn unique_devices(
 }
 
 async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String> {
+    pick_device_with(devices, current, "adb").await
+}
+
+async fn pick_device_with(devices: &[String], current: Option<&str>, adb: &str) -> Option<String> {
     if let Some(cur) = current {
         if devices.iter().any(|d| d == cur) {
             return Some(cur.to_string());
@@ -2081,11 +2118,11 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
             if is_fake_serial(d) {
                 continue;
             }
-            let has_app = tokio::process::Command::new("adb")
+            let has_app = tokio::process::Command::new(adb)
                 .args(["-s", d, "shell", "pm", "path", "com.uscreen"])
                 .output_bounded()
                 .await
-                .map(|o| !o.stdout.is_empty())
+                .map(|o| o.status.success() && !o.stdout.is_empty())
                 .unwrap_or(false);
             if has_app {
                 info!(

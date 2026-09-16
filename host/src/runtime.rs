@@ -94,6 +94,55 @@ pub fn token_matches(expected: &str, presented: &str) -> bool {
 mod tests {
     use super::*;
 
+    #[tokio::test]
+    async fn t099_session_snapshot_is_private_current_and_removed_on_exit() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("sessions.json");
+        let session = TabletSession {
+            serial: "TABLET".into(),
+            instance: 1,
+            video_port: 19002,
+            input_port: 19102,
+        };
+        {
+            let mut ledger = SessionLedger::new(path.clone()).unwrap();
+            ledger.update(vec![session.clone()]).unwrap();
+            assert_eq!(
+                std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+            let snapshot: SessionSnapshot =
+                serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+            assert_eq!(snapshot.sessions.as_slice(), std::slice::from_ref(&session));
+        }
+        assert!(!path.exists());
+        // A real named process exercises liveness and PID-start-time validation.
+        let executable = temp.path().join("uscreen");
+        std::os::unix::fs::symlink("/bin/sleep", &executable).unwrap();
+        let mut child = tokio::process::Command::new(executable)
+            .arg("30")
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        let pid = child.id().unwrap();
+        let mut snapshot = SessionSnapshot {
+            pid,
+            start_ticks: process_start(pid).unwrap(),
+            sessions: vec![session.clone()],
+        };
+        std::fs::write(&path, serde_json::to_vec(&snapshot).unwrap()).unwrap();
+        assert_eq!(load_sessions(&path), Some(vec![session]));
+        snapshot.start_ticks += 1;
+        std::fs::write(&path, serde_json::to_vec(&snapshot).unwrap()).unwrap();
+        assert!(load_sessions(&path).is_none());
+        snapshot.start_ticks -= 1;
+        std::fs::write(&path, serde_json::to_vec(&snapshot).unwrap()).unwrap();
+        child.kill().await.unwrap();
+        child.wait().await.unwrap();
+        assert!(load_sessions(&path).is_none());
+    }
+
     #[test]
     fn token_comparison_is_exact() {
         assert!(token_matches("abc123", "abc123"));
@@ -114,5 +163,92 @@ mod tests {
             "runtime dir {} is group/world accessible",
             dir.display()
         );
+    }
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub struct TabletSession {
+    pub serial: String,
+    pub instance: u32,
+    pub video_port: u16,
+    pub input_port: u16,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SessionSnapshot {
+    pid: u32,
+    start_ticks: u64,
+    sessions: Vec<TabletSession>,
+}
+
+fn process_start(pid: u32) -> Option<u64> {
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    stat.rsplit_once(") ")?
+        .1
+        .split_whitespace()
+        .nth(19)?
+        .parse()
+        .ok()
+}
+
+pub fn load_sessions(path: &std::path::Path) -> Option<Vec<TabletSession>> {
+    let snapshot: SessionSnapshot = serde_json::from_slice(&std::fs::read(path).ok()?).ok()?;
+    (crate::config::daemon_is_running(snapshot.pid)
+        && process_start(snapshot.pid) == Some(snapshot.start_ticks))
+    .then_some(snapshot.sessions)
+}
+
+/// Atomic private snapshot of the monitor's actual assignments, including CLI
+/// port overrides. PID plus start time prevents accepting a reused process ID.
+pub struct SessionLedger {
+    path: PathBuf,
+    snapshot: SessionSnapshot,
+}
+impl SessionLedger {
+    pub fn new(path: PathBuf) -> Result<Self> {
+        let pid = std::process::id();
+        let ledger = Self {
+            path,
+            snapshot: SessionSnapshot {
+                pid,
+                start_ticks: process_start(pid).context("read daemon start time")?,
+                sessions: Vec::new(),
+            },
+        };
+        ledger.write()?;
+        Ok(ledger)
+    }
+
+    fn write(&self) -> Result<()> {
+        let mut temporary =
+            tempfile::NamedTempFile::new_in(self.path.parent().context("session directory")?)?;
+        serde_json::to_writer(&mut temporary, &self.snapshot)?;
+        temporary.persist(&self.path)?;
+        Ok(())
+    }
+
+    pub fn update(&mut self, mut sessions: Vec<TabletSession>) -> Result<()> {
+        sessions.sort_by_key(|session| session.instance);
+        if self.snapshot.sessions != sessions {
+            let previous = std::mem::replace(&mut self.snapshot.sessions, sessions);
+            if let Err(error) = self.write() {
+                self.snapshot.sessions = previous;
+                return Err(error);
+            }
+        }
+        Ok(())
+    }
+}
+impl Drop for SessionLedger {
+    fn drop(&mut self) {
+        if let Ok(data) = std::fs::read(&self.path) {
+            if let Ok(snapshot) = serde_json::from_slice::<SessionSnapshot>(&data) {
+                if snapshot.pid == self.snapshot.pid
+                    && snapshot.start_ticks == self.snapshot.start_ticks
+                {
+                    let _ = std::fs::remove_file(&self.path);
+                }
+            }
+        }
     }
 }
