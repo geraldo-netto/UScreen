@@ -816,6 +816,13 @@ async fn tablet_setting(
 /// hold windows. Everything here is a setting rather than a bug, but each one
 /// silently ruins colour and none of them is visible from the host side.
 async fn check_colour(r: &mut Report, serial: Option<&str>) {
+    check_blue_light_filter(r, serial).await;
+    check_tablet_colour_mode(r, serial).await;
+    check_tablet_refresh_rate(r, serial).await;
+    check_desktop_colour_profiles(r).await;
+}
+
+async fn check_blue_light_filter(r: &mut Report, serial: Option<&str>) {
     // Eye comfort / blue light filter warms the whole panel. Nothing on the
     // host can compensate, and it is easy to leave on by accident.
     match tablet_setting("adb", serial, "system", "blue_light_filter").await {
@@ -826,7 +833,9 @@ async fn check_colour(r: &mut Report, serial: Option<&str>) {
         Some(v) if v.trim() == "0" => r.line(Level::Ok, "blue light filter", "off"),
         _ => {}
     }
+}
 
+async fn check_tablet_colour_mode(r: &mut Report, serial: Option<&str>) {
     // Samsung's "Vivid" screen mode stretches saturation past sRGB. "Natural"
     // is the colour-accurate one.
     if let Some(v) = tablet_setting("adb", serial, "system", "screen_mode_setting").await {
@@ -842,7 +851,9 @@ async fn check_colour(r: &mut Report, serial: Option<&str>) {
             r.hint("tablet: Settings → Display → Screen mode → Natural");
         }
     }
+}
 
+async fn check_tablet_refresh_rate(r: &mut Report, serial: Option<&str>) {
     // Samsung's "Motion smoothness" setting. On "Standard" the panel only
     // offers apps its 60 Hz modes, so the app's request for the fastest one
     // gets 60 and every frame waits an average of 8 ms for vsync instead of
@@ -865,43 +876,40 @@ async fn check_colour(r: &mut Report, serial: Option<&str>) {
             );
         }
     }
+}
 
+async fn check_desktop_colour_profiles(r: &mut Report) {
     // KWin can colour-manage the virtual output, but only once a profile is
     // attached to it.
     let names: Vec<String> = vdisplay::evdi_connectors()
         .into_iter()
         .map(|c| c.name)
         .collect();
-    if let Some(json) = output_of("kscreen-doctor", &["-j"]).await {
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&json) {
-            for out in v
-                .get("outputs")
-                .and_then(|o| o.as_array())
-                .unwrap_or(&vec![])
-            {
-                let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                if !names.iter().any(|n| n == name) {
-                    continue;
-                }
-                let icc = out
-                    .get("iccProfilePath")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                if icc.is_empty() {
-                    r.line(
-                        Level::Warn,
-                        "colour profile",
-                        "none assigned to the virtual display",
-                    );
-                    r.hint(
-                        "System Settings → Display → pick the UScreen display → Color Profile. \
-                         A generic sRGB profile is the right baseline; a measured one needs a \
-                         colorimeter pointed at the tablet.",
-                    );
-                } else {
-                    r.line(Level::Ok, "colour profile", icc);
-                }
-            }
+    let Some(outputs) = crate::kscreen::outputs().await else {
+        return;
+    };
+    for out in outputs {
+        let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        if !names.iter().any(|n| n == name) {
+            continue;
+        }
+        let icc = out
+            .get("iccProfilePath")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        if icc.is_empty() {
+            r.line(
+                Level::Warn,
+                "colour profile",
+                "none assigned to the virtual display",
+            );
+            r.hint(
+                "System Settings → Display → pick the UScreen display → Color Profile. \
+                 A generic sRGB profile is the right baseline; a measured one needs a \
+                 colorimeter pointed at the tablet.",
+            );
+        } else {
+            r.line(Level::Ok, "colour profile", icc);
         }
     }
 }
