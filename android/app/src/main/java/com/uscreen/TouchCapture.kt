@@ -477,8 +477,8 @@ class TouchCapture {
         if (!penEnabled) return
         val msg = JSONObject().apply {
             put("type", "pen")
-            put("x", x)
-            put("y", y)
+            put("x", x.coerceIn(0.0, 1.0))
+            put("y", y.coerceIn(0.0, 1.0))
             put("pressure", pressure.coerceIn(0.0, 1.0))
             put("tilt_x", tiltX)
             put("tilt_y", tiltY)
@@ -524,8 +524,8 @@ class TouchCapture {
         if (!touchEnabled) return
         val msg = JSONObject().apply {
             put("type", "touch")
-            put("x", x.toDouble())
-            put("y", y.toDouble())
+            put("x", x.toDouble().coerceIn(0.0, 1.0))
+            put("y", y.toDouble().coerceIn(0.0, 1.0))
             put("pressure", pressure.coerceIn(0.0, 1.0))
             put("action", action)
             put("slot", slot)

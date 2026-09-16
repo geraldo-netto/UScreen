@@ -226,6 +226,35 @@ class RegressionTest {
         } finally { set(activity, "started", false); controller.destroy() }
     }
 
+    @Test fun t146_motionCoordinatesStayNormalizedIncludingReleases() {
+        for (tool in listOf(MotionEvent.TOOL_TYPE_FINGER, MotionEvent.TOOL_TYPE_STYLUS)) {
+            val capture = TouchCapture()
+            val socket = Socket()
+            set(capture, "webSocket", socket)
+            set(capture, "isConnected", true)
+            fun send(action: Int, x: Float, y: Float): org.json.JSONObject {
+                socket.messages.clear()
+                val e = MotionEvent.obtain(0, 10, action, 1,
+                    arrayOf(MotionEvent.PointerProperties().apply { id = 0; toolType = tool }),
+                    arrayOf(MotionEvent.PointerCoords().apply { this.x = x; this.y = y; pressure = 2f }),
+                    0, 0, 1f, 1f, 0, 0, 0, 0)
+                try { assertTrue(capture.handleMotionEvent(e, 100, 100)) } finally { e.recycle() }
+                return org.json.JSONObject(socket.messages.single())
+            }
+            val down = send(MotionEvent.ACTION_DOWN, -20f, 140f)
+            assertEquals(0.0, down.getDouble("x"), 0.0)
+            assertEquals(1.0, down.getDouble("y"), 0.0)
+            assertEquals(1.0, down.getDouble("pressure"), 0.0)
+            val move = send(MotionEvent.ACTION_MOVE, 100f, 0f)
+            assertEquals(1.0, move.getDouble("x"), 0.0)
+            assertEquals(0.0, move.getDouble("y"), 0.0)
+            val up = send(MotionEvent.ACTION_UP, 150f, -50f)
+            assertEquals(1.0, up.getDouble("x"), 0.0)
+            assertEquals(0.0, up.getDouble("y"), 0.0)
+            assertEquals(1, up.getInt("action"))
+        }
+    }
+
     @Test fun t087_sparsePointerIdsKeepDistinctSlotsAcrossReordering() {
         val capture = TouchCapture()
         val socket = Socket()

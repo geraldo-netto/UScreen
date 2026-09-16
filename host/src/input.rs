@@ -1708,9 +1708,9 @@ fn handle_event(
             action,
             slot,
         } => {
-            let abs_x = (x * COORD_MAX as f64) as i32;
-            let abs_y = (y * COORD_MAX as f64) as i32;
-            let abs_pressure = (pressure * 4096.0) as i32;
+            let abs_x = (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
+            let abs_y = (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
+            let abs_pressure = (pressure.clamp(0.0, 1.0) * 4096.0) as i32;
 
             if let Ok(mut guard) = uinput.lock() {
                 if let Err(error) = guard.inject_touch(abs_x, abs_y, abs_pressure, action, slot) {
@@ -1727,12 +1727,12 @@ fn handle_event(
             eraser,
             action,
         } => {
-            let abs_x = (x * COORD_MAX as f64) as i32;
-            let abs_y = (y * COORD_MAX as f64) as i32;
+            let abs_x = (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
+            let abs_y = (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
             if pen_enabled {
                 note_pen_action(action);
             }
-            let abs_pressure = (pressure * 4096.0) as i32;
+            let abs_pressure = (pressure.clamp(0.0, 1.0) * 4096.0) as i32;
             // Already degrees, as the tablet computes them. This used to
             // multiply by 180/π on the assumption they were radians, which
             // squashed a pen laid flat at 90° down to 57°.
@@ -1951,6 +1951,72 @@ mod tests {
             super::fallback_output(&connectors[..1], None).as_deref(),
             Some("DVI-I-1")
         );
+    }
+
+    #[test]
+    fn t146_normalized_input_stays_in_axes_and_releases() {
+        for pen in [false, true] {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            let device = UInputDevice {
+                file: file.reopen().unwrap(),
+            };
+            let mut devices = InjectDevices::empty();
+            if pen {
+                devices.pen = Some(device);
+            } else {
+                devices.touch = Some(device);
+            }
+            let devices = Arc::new(std::sync::Mutex::new(devices));
+            let (mode, _rx) = watch::channel(false);
+            let tracker = crate::latency::LatencyTracker::new();
+            let send = |action, x, y, pressure| {
+                let event = if pen {
+                    InputEvent::Pen {
+                        x,
+                        y,
+                        pressure,
+                        action,
+                        tilt_x: 0.0,
+                        tilt_y: 0.0,
+                        eraser: false,
+                    }
+                } else {
+                    InputEvent::Touch {
+                        x,
+                        y,
+                        pressure,
+                        action,
+                        slot: 0,
+                    }
+                };
+                handle_event(event, &devices, &None, &mode, &tracker, pen);
+            };
+            let last = |code| {
+                let bytes = std::fs::read(file.path()).unwrap();
+                bytes
+                    .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
+                    .0
+                    .iter()
+                    .filter(|event| {
+                        u16::from_ne_bytes(event[18..20].try_into().unwrap()) == code
+                            && u16::from_ne_bytes(event[16..18].try_into().unwrap())
+                                == if code >= 0x100 { EV_KEY } else { EV_ABS }
+                    })
+                    .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
+                    .next_back()
+                    .unwrap()
+            };
+            send(0, -0.2, 1.4, 2.0);
+            assert_eq!(last(ABS_X), 0, "T146 pen={pen}");
+            assert_eq!(last(ABS_Y), COORD_MAX);
+            assert_eq!(last(ABS_PRESSURE), 4096);
+            send(2, 1.0, 0.0, -0.2);
+            assert_eq!(last(ABS_X), COORD_MAX);
+            assert_eq!(last(ABS_Y), 0);
+            assert_eq!(last(ABS_PRESSURE), 0);
+            send(1, 1.5, -0.5, 0.0);
+            assert_eq!(last(BTN_TOUCH), 0, "out-of-bounds release must survive");
+        }
     }
 
     #[test]
