@@ -467,3 +467,16 @@ fn t129_distributed_notices_and_readme_links_exist() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t214_installer_preserves_dependency_and_setup_commands() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_installer.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
