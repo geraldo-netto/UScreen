@@ -192,14 +192,14 @@ pub enum InputEvent {
     #[serde(rename = "auth")]
     Auth { token: String },
     /// The tablet has this frame on screen. Closes the latency measurement
-    /// loop — the host timed the frame out, so the round trip needs no clock
-    /// agreement between the two devices.
+    /// loop — the host times encoded-packet readiness through acknowledgement
+    /// receipt on its own clock, without clock agreement between devices.
     #[serde(rename = "rendered")]
     Rendered {
         seq: u32,
         /// Microseconds the tablet spent between receiving the frame and
-        /// putting it on screen. Subtracting it from the round trip isolates
-        /// what the transport actually costs.
+        /// putting it on screen. Subtracting it leaves host queueing, delivery,
+        /// and acknowledgement return time; it is not a pure transport measure.
         #[serde(default)]
         decode_us: i64,
     },
