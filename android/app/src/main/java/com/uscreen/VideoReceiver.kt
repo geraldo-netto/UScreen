@@ -73,6 +73,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
     @Volatile var token: String? = null
 
     private var frameCallbackThread: HandlerThread? = null
+    internal var callbackThreadFactory: () -> HandlerThread = { HandlerThread("uscreen-frame-cb") }
     private val renderedCount = AtomicLong(0)
 
     /**
@@ -225,7 +226,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         releaseCodec()
     }
 
-    private fun setupCodec(surface: Surface): Boolean {
+    @Synchronized private fun setupCodec(surface: Surface): Boolean {
+        var pendingCodec: MediaCodec? = null
+        var pendingThread: HandlerThread? = null
         try {
             val format = MediaFormat.createVideoFormat(mimeType, formatWidth, formatHeight)
             // Follow the stream's real frame rate rather than a hardcoded
@@ -265,6 +268,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             lastOutputNanos = System.nanoTime()
 
             val codec = MediaCodec.createDecoderByType(mimeType)
+            pendingCodec = codec
             codec.configure(format, surface, null, 0)
             codec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT)
 
@@ -272,8 +276,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             // the true "it is on screen" moment, rather than the earlier
             // moment we handed the buffer back. The host's sequence number
             // rides along as the presentation timestamp.
-            val cbThread = HandlerThread("uscreen-frame-cb").apply { start() }
-            frameCallbackThread = cbThread
+            val cbThread = callbackThreadFactory()
+            pendingThread = cbThread
+            cbThread.start()
             codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->
                 if (mediaCodec === codec && codecAlive && isRunning && renderedCount.incrementAndGet() % ACK_EVERY == 0L) {
                     val seq = presentationTimeUs.toInt()
@@ -283,12 +288,28 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
 
             codec.start()
             mediaCodec = codec
+            frameCallbackThread = cbThread
             codecAlive = true
             startOutputThread(codec)
             Log.i(TAG, "Codec configured and started with surface")
             return true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup codec", e)
+            // Ownership transfers only after successful startup. A failure at
+            // configure/listener/start must retire these locals before retry.
+            if (mediaCodec === pendingCodec) {
+                codecAlive = false
+                mediaCodec = null
+            }
+            if (frameCallbackThread === pendingThread) frameCallbackThread = null
+            pendingCodec?.let {
+                try { it.stop() } catch (_: Exception) {}
+                try { it.release() } catch (_: Exception) {}
+            }
+            pendingThread?.let {
+                it.quitSafely()
+                if (Thread.currentThread() !== it) it.join(500)
+            }
             return false
         }
     }
