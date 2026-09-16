@@ -202,9 +202,29 @@ static void test_stalled_fifo(int cancel) {
     assert(finished && WIFEXITED(status) && WEXITSTATUS(status) == 0 && "T113: stalled FIFO ignores deadline/cancellation");
 }
 
+static void test_helper_options(void) {
+    char *args[] = {"helper", "--unknown", "--edid", "sample.edid", "--capture-fifo", "/tmp/sample.fifo",
+        "--fps", "999", "--scale", "9", "--card", "4", "--edid"};
+    helper_options_t options = parse_helper_options((int)(sizeof(args) / sizeof(args[0])), args);
+    assert(strcmp(options.edid_path, "sample.edid") == 0);
+    assert(strcmp(options.fifo_path, "/tmp/sample.fifo") == 0);
+    assert(g_fps == 60);
+    assert(g_scale == 4);
+    assert(g_pin_card == 4);
+    char *low[] = {"helper", "--scale", "0", "--fps", "0", "--card", "-1"};
+    options = parse_helper_options((int)(sizeof(low) / sizeof(low[0])), low);
+    assert(options.edid_path == NULL);
+    assert(options.fifo_path == NULL);
+    assert(g_scale == 1);
+    assert(g_fps == 60);
+    assert(g_pin_card == -1);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T108") == 0) {
+    if (strcmp(argv[1], "T170") == 0) {
+        test_helper_options();
+    } else if (strcmp(argv[1], "T108") == 0) {
         char root[] = "/tmp/uscreen-card-lease-test-XXXXXX";
         assert(mkdtemp(root));
         snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);

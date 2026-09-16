@@ -1173,34 +1173,44 @@ static evdi_handle wait_for_available_device(const char *root, int timeout_ms, i
     return EVDI_INVALID_HANDLE;
 }
 
-int main(int argc, char *argv[]) {
-    const char *edid_path = NULL;
-    const char *fifo_path = NULL;
+typedef struct {
+    const char *edid_path;
+    const char *fifo_path;
+} helper_options_t;
 
+static int set_numeric_option(const char *name, const char *value) {
+    if (strcmp(name, "--scale") == 0) {
+        g_scale = atoi(value);
+        if (g_scale < 1) g_scale = 1;
+        if (g_scale > 4) g_scale = 4;
+    } else if (strcmp(name, "--card") == 0) {
+        /* Pin the assigned card; never borrow another tablet's slot. */
+        g_pin_card = atoi(value);
+    } else if (strcmp(name, "--fps") == 0) {
+        g_fps = atoi(value);
+        if (g_fps < 1 || g_fps > 240) g_fps = 60;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+static int set_helper_option(helper_options_t *options, const char *name, const char *value) {
+    if (strcmp(name, "--edid") == 0) options->edid_path = value;
+    else if (strcmp(name, "--capture-fifo") == 0) options->fifo_path = value;
+    else return set_numeric_option(name, value);
+    return 1;
+}
+
+static helper_options_t parse_helper_options(int argc, char *argv[]) {
+    helper_options_t options = {0};
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--edid") == 0 && i + 1 < argc) {
-            edid_path = argv[++i];
-        } else if (strcmp(argv[i], "--capture-fifo") == 0 && i + 1 < argc) {
-            fifo_path = argv[++i];
-        } else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
-            g_scale = atoi(argv[++i]);
-            if (g_scale < 1) g_scale = 1;
-            if (g_scale > 4) g_scale = 4;
-        } else if (strcmp(argv[i], "--card") == 0 && i + 1 < argc) {
-            /* Pin a specific EVDI card. With several virtual displays each
-               helper must use its assigned card or fail, never another slot. */
-            g_pin_card = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "--fps") == 0 && i + 1 < argc) {
-            g_fps = atoi(argv[++i]);
-            if (g_fps < 1 || g_fps > 240) g_fps = 60;
-        }
+        if (i + 1 < argc && set_helper_option(&options, argv[i], argv[i + 1])) i++;
     }
+    return options;
+}
 
-    if (!edid_path) {
-        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>]\n", argv[0]);
-        return 1;
-    }
-
+static void initialize_helper_runtime(void) {
     {
         pthread_condattr_t ca;
         pthread_condattr_init(&ca);
@@ -1216,25 +1226,27 @@ int main(int argc, char *argv[]) {
     sigaction(SIGTERM, &sa, NULL);
     signal(SIGPIPE, SIG_IGN);
 
+}
+
+static evdi_handle acquire_capture_device(int *index) {
     /* Reuse an existing EVDI device if one is free (e.g. from a previous
        run) — adding a new DRM card on every restart floods the compositor
        with display hotplug events. */
-    int dev_idx = -1;
-    evdi_handle handle = open_available_device_in("/sys/devices/platform", g_pin_card, &dev_idx);
+    evdi_handle handle = open_available_device_in("/sys/devices/platform", g_pin_card, index);
     if (handle != EVDI_INVALID_HANDLE) {
-        fprintf(stderr, "[evdi-helper] Reusing EVDI device /dev/dri/card%d\n", dev_idx);
+        fprintf(stderr, "[evdi-helper] Reusing EVDI device /dev/dri/card%d\n", (*index));
     }
 
     if (handle == EVDI_INVALID_HANDLE) {
         if (g_pin_card >= 0) {
             fprintf(stderr, "[evdi-helper] Assigned card%d is unavailable; refusing another slot's card\n", g_pin_card);
-            return 1;
+            return EVDI_INVALID_HANDLE;
         }
         fprintf(stderr, "[evdi-helper] Creating EVDI device...\n");
-        if (!request_evdi_device()) return 1;
+        if (!request_evdi_device()) return EVDI_INVALID_HANDLE;
 
         fprintf(stderr, "[evdi-helper] Waiting for EVDI device...\n");
-        handle = wait_for_available_device("/sys/devices/platform", 5000, &dev_idx);
+        handle = wait_for_available_device("/sys/devices/platform", 5000, index);
         if (handle == EVDI_INVALID_HANDLE) {
             fprintf(stderr, "[evdi-helper] No free EVDI device appeared within timeout.\n"
                             "[evdi-helper] Either the evdi kernel module is not loaded, or no device exists\n"
@@ -1242,65 +1254,60 @@ int main(int argc, char *argv[]) {
                             "[evdi-helper] then, once: echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf\n"
                             "[evdi-helper]            sudo modprobe -r evdi; sudo modprobe evdi   (or reboot)\n"
                             "[evdi-helper] The packages and install.sh do this — unless evdi-dkms failed to build, see docs/installation.md.\n");
-            return 1;
+            return EVDI_INVALID_HANDLE;
         }
-        fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", dev_idx);
+        fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", (*index));
     }
-    g_device_index = dev_idx;
-    g_handle = handle;
+    return handle;
+}
 
+static unsigned char *read_edid_file(const char *edid_path, long *size) {
     FILE *f = fopen(edid_path, "rb");
     if (!f) {
         fprintf(stderr, "[evdi-helper] Failed to open EDID file: %s\n", edid_path);
-        evdi_close(handle);
-        return 1;
+        return NULL;
     }
     fseek(f, 0, SEEK_END);
     long edid_size = ftell(f);
     if (edid_size <= 0 || edid_size > 32768) {
         fprintf(stderr, "[evdi-helper] Invalid EDID size: %ld\n", edid_size);
         fclose(f);
-        evdi_close(handle);
-        return 1;
+        return NULL;
     }
     fseek(f, 0, SEEK_SET);
     unsigned char *edid = malloc((size_t)edid_size);
     if (!edid) {
         fprintf(stderr, "[evdi-helper] Failed to allocate EDID buffer\n");
         fclose(f);
-        evdi_close(handle);
-        return 1;
+        return NULL;
     }
     size_t read_bytes = fread(edid, 1, (size_t)edid_size, f);
     fclose(f);
     if ((long)read_bytes != edid_size) {
         fprintf(stderr, "[evdi-helper] EDID read error: got %zu of %ld bytes\n", read_bytes, edid_size);
         free(edid);
-        evdi_close(handle);
-        return 1;
+        return NULL;
     }
 
-    fprintf(stderr, "[evdi-helper] Connecting with EDID (%ld bytes)...\n", edid_size);
-    evdi_connect(handle, edid, (unsigned int)edid_size, 0);
-    free(edid);
+    *size = edid_size;
+    return edid;
+}
 
-    printf("EVDI_CONNECTED card%d\n", dev_idx);
-    fflush(stdout);
-
-    pthread_t writer = 0;
+static int start_capture_writer(const char *fifo_path, pthread_t *writer) {
     if (fifo_path) {
         g_fifo_path = fifo_path;
         conv_pool_init();   /* spawn NV12 conversion workers before first grab */
         fprintf(stderr, "[evdi-helper] Capture FIFO: %s (opened on demand)\n", fifo_path);
-        if (pthread_create(&writer, NULL, writer_thread, NULL) != 0) {
+        if (pthread_create(writer, NULL, writer_thread, NULL) != 0) {
             fprintf(stderr, "[evdi-helper] Failed to start writer thread\n");
-            return 1;
+            return 0;
         }
     }
 
-    fprintf(stderr, "[evdi-helper] Connected. Capture at %d fps. Entering event loop.\n", g_fps);
-    run_event_loop(handle);
+    return 1;
+}
 
+static void shutdown_capture(evdi_handle handle, pthread_t writer) {
     g_running = 0;
     /* Wake the writer out of its condition wait so shutdown is immediate
        rather than up to one frame period late. */
@@ -1323,5 +1330,46 @@ int main(int argc, char *argv[]) {
     g_handle = EVDI_INVALID_HANDLE;
 
     fprintf(stderr, "[evdi-helper] Done.\n");
+}
+
+int main(int argc, char *argv[]) {
+    helper_options_t options = parse_helper_options(argc, argv);
+    const char *edid_path = options.edid_path;
+    const char *fifo_path = options.fifo_path;
+
+    if (!edid_path) {
+        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>]\n", argv[0]);
+        return 1;
+    }
+
+    initialize_helper_runtime();
+
+    int dev_idx = -1;
+    evdi_handle handle = acquire_capture_device(&dev_idx);
+    if (handle == EVDI_INVALID_HANDLE) return 1;
+    g_device_index = dev_idx;
+    g_handle = handle;
+
+    long edid_size;
+    unsigned char *edid = read_edid_file(edid_path, &edid_size);
+    if (!edid) {
+        evdi_close(handle);
+        return 1;
+    }
+
+    fprintf(stderr, "[evdi-helper] Connecting with EDID (%ld bytes)...\n", edid_size);
+    evdi_connect(handle, edid, (unsigned int)edid_size, 0);
+    free(edid);
+
+    printf("EVDI_CONNECTED card%d\n", dev_idx);
+    fflush(stdout);
+
+    pthread_t writer = 0;
+    if (!start_capture_writer(fifo_path, &writer)) return 1;
+
+    fprintf(stderr, "[evdi-helper] Connected. Capture at %d fps. Entering event loop.\n", g_fps);
+    run_event_loop(handle);
+
+    shutdown_capture(handle, writer);
     return 0;
 }

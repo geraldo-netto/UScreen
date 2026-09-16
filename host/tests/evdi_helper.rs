@@ -160,3 +160,8 @@ fn t082_small_modes_never_exceed_scaled_source_bounds() {
 fn t108_helpers_reserve_distinct_cards_and_find_new_devices() {
     Harness::build("T108").run("T108");
 }
+
+#[test]
+fn t170_helper_options_preserve_bounds_and_missing_values() {
+    Harness::build("T170").run("T170");
+}
