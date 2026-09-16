@@ -608,21 +608,7 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
         r.hint("the evdi module is loaded but exposes no DRM connector — reboot or re-add");
         return;
     }
-    for c in &connectors {
-        r.line(
-            if c.connected { Level::Ok } else { Level::Warn },
-            "EVDI connector",
-            &format!(
-                "{} ({})",
-                c.name,
-                if c.connected {
-                    "connected"
-                } else {
-                    "disconnected — helper not running"
-                }
-            ),
-        );
-    }
+    report_connectors(r, &connectors);
 
     let names: Vec<&str> = connectors.iter().map(|c| c.name.as_str()).collect();
     let Some(json) = output_of("kscreen-doctor", &["-j"]).await else {
@@ -636,6 +622,15 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
         return;
     };
 
+    report_display_outputs(r, cfg, &names, outputs);
+}
+
+fn report_display_outputs(
+    r: &mut Report,
+    cfg: &FileConfig,
+    names: &[&str],
+    outputs: &[serde_json::Value],
+) {
     for out in outputs {
         let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
         if !names.contains(&name) {
@@ -659,6 +654,24 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
             .and_then(|v| v.as_i64())
             .unwrap_or(0);
         report_output_mode(r, cfg, name, w, h);
+    }
+}
+
+fn report_connectors(r: &mut Report, connectors: &[vdisplay::EvdiConnector]) {
+    for c in connectors {
+        r.line(
+            if c.connected { Level::Ok } else { Level::Warn },
+            "EVDI connector",
+            &format!(
+                "{} ({})",
+                c.name,
+                if c.connected {
+                    "connected"
+                } else {
+                    "disconnected — helper not running"
+                }
+            ),
+        );
     }
 }
 
