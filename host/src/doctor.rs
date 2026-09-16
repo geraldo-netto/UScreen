@@ -260,22 +260,7 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     let daemons = pids_exact("uscreen").await;
     let helpers = pids_exact("evdi_helper").await;
 
-    // The PID file is the daemon's single slot; anything running beside it is
-    // untracked and `uscreen stop` will never reach it.
-    let pid_file = crate::get_pid_path();
-    let tracked: Option<u32> = std::fs::read_to_string(&pid_file)
-        .ok()
-        .and_then(|t| t.trim().parse().ok())
-        .filter(|pid| config::daemon_is_running(*pid));
-
-    match tracked {
-        Some(pid) => r.line(Level::Ok, "daemon", &format!("running, PID {}", pid)),
-        None if pid_file.exists() => {
-            r.line(Level::Warn, "daemon", "stale PID file, not running");
-            r.hint(&format!("rm {}", pid_file.display()));
-        }
-        None => r.line(Level::Ok, "daemon", "not running"),
-    }
+    let tracked = report_daemon(r);
 
     // `pgrep -x uscreen` also matches this very process — excluding it is not
     // cosmetic: reporting ourselves as an orphan would send the user off to
@@ -301,6 +286,27 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
         let encoders = pids_full(&format!("ffmpeg.*{}([[:space:]]|$)", fifo)).await;
         report_encoders(r, &encoders, tracked, &fifo);
     }
+}
+
+fn report_daemon(r: &mut Report) -> Option<u32> {
+    // The PID file is the daemon's single slot; anything running beside it is
+    // untracked and `uscreen stop` will never reach it.
+    let pid_file = crate::get_pid_path();
+    let tracked: Option<u32> = std::fs::read_to_string(&pid_file)
+        .ok()
+        .and_then(|t| t.trim().parse().ok())
+        .filter(|pid| config::daemon_is_running(*pid));
+
+    match tracked {
+        Some(pid) => r.line(Level::Ok, "daemon", &format!("running, PID {}", pid)),
+        None if pid_file.exists() => {
+            r.line(Level::Warn, "daemon", "stale PID file, not running");
+            r.hint(&format!("rm {}", pid_file.display()));
+        }
+        None => r.line(Level::Ok, "daemon", "not running"),
+    }
+
+    tracked
 }
 
 fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo: &str) {
