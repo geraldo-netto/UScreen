@@ -84,9 +84,64 @@ static void test_conversion(int width, int height, int scale) {
     free(dest);
 }
 
+static pthread_t start_test_writer(int pipefd[2]) {
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init(&g_frame_ready, &attr);
+    pthread_condattr_destroy(&attr);
+    assert(pipe2(pipefd, O_NONBLOCK) == 0);
+    g_capture_fifo_fd = pipefd[1];
+    g_fps = 100;
+    struct evdi_mode mode = {8, 8, 60, 32, 0x34325258};
+    on_mode_changed(mode, NULL);
+    pthread_t writer;
+    assert(pthread_create(&writer, NULL, writer_thread, NULL) == 0);
+    return writer;
+}
+
+static void read_test_frame(int fd, int width, int height) {
+    unsigned char data[1024];
+    size_t remaining = (size_t)width * height * 3 / 2;
+    long long deadline = now_ms() + 1000;
+    while (remaining && now_ms() < deadline) {
+        ssize_t n = read(fd, data, remaining < sizeof(data) ? remaining : sizeof(data));
+        if (n > 0) remaining -= (size_t)n;
+        else usleep(1000);
+    }
+    assert(remaining == 0 && "test writer did not deliver its frame");
+}
+
+static void stop_test_writer(pthread_t writer, int pipefd[2]) {
+    g_running = 0;
+    pthread_mutex_lock(&g_swap_mutex);
+    pthread_cond_broadcast(&g_frame_ready);
+    pthread_mutex_unlock(&g_swap_mutex);
+    pthread_join(writer, NULL);
+    close(pipefd[0]);
+    if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
+    free(g_framebuffer);
+    free(g_fill); free(g_latest); free(g_write);
+    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
+    pthread_cond_destroy(&g_frame_ready);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "T012") == 0) {
+    if (strcmp(argv[1], "T081") == 0) {
+        int pipefd[2];
+        pthread_t writer = start_test_writer(pipefd);
+        read_test_frame(pipefd[0], 8, 8);
+        for (int i = 0; i < 3; i++) {
+            usleep(50000); /* several unchanged frames, before the idle keepalive */
+            long long start = now_ms();
+            struct evdi_mode mode = {10 + i * 2, 8, 60, 32, 0x34325258};
+            on_mode_changed(mode, NULL);
+            assert(now_ms() - start < 250 && "T081: idle writer falsely retains buffer ownership");
+            read_test_frame(pipefd[0], mode.width, mode.height);
+        }
+        stop_test_writer(writer, pipefd);
+    } else if (strcmp(argv[1], "T012") == 0) {
         test_conversion(6, 4, 1);
         test_conversion(7, 4, 1);
         test_conversion(6, 5, 1);

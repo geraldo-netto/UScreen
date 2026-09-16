@@ -99,3 +99,15 @@ fn t051_picks_lowest_card_including_card_zero() {
 fn t052_zero_bytes_written_means_device_creation_failed() {
     Harness::build("T052").run("T052");
 }
+
+#[test]
+fn t081_idle_writer_releases_buffers_before_mode_changes() {
+    let output = Harness::build("T081").run("T081");
+    assert_eq!(
+        output
+            .lines()
+            .filter(|line| line.starts_with("STREAM_SIZE "))
+            .count(),
+        4
+    );
+}

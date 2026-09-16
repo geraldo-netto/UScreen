@@ -766,8 +766,12 @@ static void *writer_thread(void *arg) {
            transmit no new information. The occasional keepalive keeps the
            encoder and the client's read timeout alive. */
         long long now_ms_write = now_ms();
-        if (!fresh && (now_ms_write - g_last_write_ms) < IDLE_KEEPALIVE_MS)
+        if (!fresh && (now_ms_write - g_last_write_ms) < IDLE_KEEPALIVE_MS) {
+            pthread_mutex_lock(&g_swap_mutex);
+            g_writer_busy = 0;
+            pthread_mutex_unlock(&g_swap_mutex);
             continue;
+        }
         g_last_write_ms = now_ms_write;
 
         /* Rate limit against an absolute schedule, never against "now".
