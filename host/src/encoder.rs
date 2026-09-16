@@ -107,6 +107,10 @@ impl Encoder {
             opts.set("preset", "ultrafast");
             opts.set("tune", "zerolatency");
             opts.set("crf", &quality.to_string());
+            // Match the CLI's two-frame reservoir (minimum 200 kbit).
+            // libx264 ignores max_bit_rate entirely without a VBV buffer.
+            let bufsize = ((bitrate_kbps * 2 / fps.max(1)).max(200) * 1000).to_string();
+            opts.set("bufsize", &bufsize);
         }
     }
 
@@ -247,4 +251,36 @@ pub fn run(
         latency.maybe_report();
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t119_libx264_respects_vbv_ceiling_on_complex_frames() {
+        let mut encoder = Encoder::new("libx264", 256, 144, 60, 200, 20).unwrap();
+        let mut frame = vec![0; 256 * 144 * 3 / 2];
+        let mut rng = 0x1234_5678u32;
+        let mut bytes = 0usize;
+        for _ in 0..180 {
+            for pixel in &mut frame {
+                rng ^= rng << 13;
+                rng ^= rng >> 17;
+                rng ^= rng << 5;
+                *pixel = rng as u8;
+            }
+            for (data, _) in encoder.encode(&frame, false).unwrap() {
+                bytes += data.len();
+            }
+        }
+        // Three seconds at 200 kbit/s plus the CLI's 200 kbit minimum
+        // reservoir. Allow 10% overhead for headers and encoder rounding.
+        assert!(bytes > 1000);
+        assert!(
+            bytes * 8 <= (200_000 * 3 + 200_000) * 11 / 10,
+            "libx264 ignored its rate ceiling: {} bits",
+            bytes * 8
+        );
+    }
 }
