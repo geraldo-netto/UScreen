@@ -894,6 +894,9 @@ fn main() -> eframe::Result {
                 width: 64,
                 height: 64,
             }),
+        // Open in the middle of the screen rather than wherever the window
+        // manager drops it (Wayland compositors cannot honour this; X11 can).
+        centered: true,
         ..Default::default()
     };
     eframe::run_native(
