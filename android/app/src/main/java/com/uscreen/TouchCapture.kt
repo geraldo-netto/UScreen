@@ -226,6 +226,20 @@ class TouchCapture {
                 sendPenProximityExit()
                 true
             }
+            // S-Pen side button. Android delivers BUTTON_PRESS/RELEASE as
+            // generic motion, never through the touch listener, so this is
+            // the only place they can be caught. Forwarded as the stylus
+            // button (right-click in GIMP).
+            MotionEvent.ACTION_BUTTON_PRESS -> {
+                if (!isPenLike(event, 0)) return false
+                sendPenButton(true)
+                true
+            }
+            MotionEvent.ACTION_BUTTON_RELEASE -> {
+                if (!isPenLike(event, 0)) return false
+                sendPenButton(false)
+                true
+            }
             else -> false
         }
     }
@@ -285,15 +299,6 @@ class TouchCapture {
                             2, slotOf(event, i))
                     }
                 }
-            }
-
-            // S-Pen side button. Fired as a discrete event while hovering or
-            // drawing; forwarded as the stylus button (right-click in GIMP).
-            MotionEvent.ACTION_BUTTON_PRESS -> {
-                if (isPenLike(event, event.actionIndex)) sendPenButton(true)
-            }
-            MotionEvent.ACTION_BUTTON_RELEASE -> {
-                if (isPenLike(event, event.actionIndex)) sendPenButton(false)
             }
 
             MotionEvent.ACTION_UP,

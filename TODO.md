@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-74 items: 5 high, 29 medium, 40 low.
+73 items: 4 high, 29 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T002 | open | high | S | Handle ACTION_BUTTON_PRESS/RELEASE on the generic-motion path; S-Pen button never reaches host ([TouchCapture.kt:281](android/app/src/main/java/com/uscreen/TouchCapture.kt#L281)) |
 | T003 | open | high | S | Stop `pkill -x evdi_helper` from killing the other tablet's helper in multi-tablet mode ([capture.rs:582](host/src/capture.rs#L582)) |
 | T004 | open | high | S | Fix inproc-encoder build: spawn_blocking closure captures &mut self via self.config.instance ([capture.rs:1164](host/src/capture.rs#L1164)) |
 | T005 | open | high | S | Forward extra tablets' base ports to their session ports; second real tablet can never connect ([main.rs:971](host/src/main.rs#L971)) |
@@ -90,8 +89,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T002** — ACTION_BUTTON_PRESS/RELEASE are delivered to onGenericMotionEvent, never to the OnTouchListener that feeds handleMotionEvent, so this branch is dead and pen actions 5/6 are never sent; handleHoverEvent returns false for them. Move the button handling into handleHoverEvent.
 
 **T003** — main.rs spawn_extra_session runs a second CaptureManager (instance 1+, own card and FIFO), but every start_helper kills all evdi_helper processes, so attaching a second tablet kills tablet 1's helper; its ffmpeg then EOFs, restarts, and kills tablet 2's helper in turn, ping-ponging forever. Match on this instance's FIFO like the ffmpeg pattern does (`pkill -f 'evdi_helper.*<fifo>'`) or only kill a PID recorded from the previous run.
 
