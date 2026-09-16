@@ -379,28 +379,7 @@ async fn check_tablet_with(
         })
         .collect();
     devices.sort_by_key(|serial| serial.contains(':'));
-    let sessions = match sessions {
-        Some(sessions) => sessions,
-        None => {
-            r.line(
-                Level::Warn,
-                "tablet selection",
-                "no live daemon session report; checking a candidate",
-            );
-            let mut identities = std::collections::HashMap::new();
-            let devices = crate::unique_devices(&devices, None, &mut identities, adb).await;
-            crate::pick_device_with(&devices, None, adb)
-                .await
-                .into_iter()
-                .map(|serial| crate::runtime::TabletSession {
-                    serial,
-                    instance: 0,
-                    video_port: cfg.video_port,
-                    input_port: cfg.input_port,
-                })
-                .collect()
-        }
-    };
+    let sessions = diagnostic_sessions(r, cfg, adb, &devices, sessions).await;
     if sessions.is_empty() {
         if list.contains("unauthorized") {
             r.line(Level::Fail, "tablet", "attached but unauthorized");
@@ -435,6 +414,37 @@ async fn check_tablet_with(
         selected.push(session.serial);
     }
     selected
+}
+
+async fn diagnostic_sessions(
+    r: &mut Report,
+    cfg: &FileConfig,
+    adb: &str,
+    devices: &[String],
+    sessions: Option<Vec<crate::runtime::TabletSession>>,
+) -> Vec<crate::runtime::TabletSession> {
+    match sessions {
+        Some(sessions) => sessions,
+        None => {
+            r.line(
+                Level::Warn,
+                "tablet selection",
+                "no live daemon session report; checking a candidate",
+            );
+            let mut identities = std::collections::HashMap::new();
+            let devices = crate::unique_devices(devices, None, &mut identities, adb).await;
+            crate::pick_device_with(&devices, None, adb)
+                .await
+                .into_iter()
+                .map(|serial| crate::runtime::TabletSession {
+                    serial,
+                    instance: 0,
+                    video_port: cfg.video_port,
+                    input_port: cfg.input_port,
+                })
+                .collect()
+        }
+    }
 }
 
 async fn check_tablet_session(
