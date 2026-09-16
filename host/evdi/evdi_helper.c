@@ -410,39 +410,40 @@ static void publish_frame(void) {
 
 static int g_buffer_registered = 0;
 
-static void on_mode_changed(struct evdi_mode mode, void *user_data) {
-    (void)user_data;
-    fprintf(stderr, "[evdi-helper] Mode: %dx%d@%dHz %dbpp fmt=0x%x\n",
-            mode.width, mode.height, mode.refresh_rate,
-            mode.bits_per_pixel, mode.pixel_format);
+static void reject_mode(void) {
+    g_have_mode = 0;
+    pthread_mutex_lock(&g_swap_mutex);
+    g_buffers_ready = 0;
+    pthread_mutex_unlock(&g_swap_mutex);
+    g_running = 0;
+}
+
+static int validate_frame_format(struct evdi_mode mode) {
     /* Both conversion paths read little-endian XRGB8888/ARGB8888 as BGRA.
        Stop before registering or reading any buffer with another layout. */
     if (mode.bits_per_pixel != 32 ||
             (mode.pixel_format != 0x34325258 && mode.pixel_format != 0x34325241)) {
         fprintf(stderr, "[evdi-helper] Unsupported framebuffer format; need XRGB8888 or ARGB8888\n");
-        g_have_mode = 0;
-        pthread_mutex_lock(&g_swap_mutex);
-        g_buffers_ready = 0;
-        pthread_mutex_unlock(&g_swap_mutex);
-        g_running = 0;
-        return;
+        reject_mode();
+        return 0;
     }
+    return 1;
+}
+
+static int validate_mode_dimensions(struct evdi_mode mode) {
     /* Each output chroma sample reads a complete 2*scale source block.
        Enlarging a tiny output to 2x2 would read outside the source image. */
     if (g_scale < 1 || g_scale > 4 || mode.width < 2 * g_scale || mode.height < 2 * g_scale ||
             mode.width > (INT_MAX - 63) / 4 ||
             (((long long)mode.width * 4 + 63) & ~63LL) * mode.height > INT_MAX) {
         fprintf(stderr, "[evdi-helper] Mode dimensions cannot be safely converted at scale %d\n", g_scale);
-        g_have_mode = 0;
-        pthread_mutex_lock(&g_swap_mutex);
-        g_buffers_ready = 0;
-        pthread_mutex_unlock(&g_swap_mutex);
-        g_running = 0;
-        return;
+        reject_mode();
+        return 0;
     }
-    printf("MODE_CHANGED %d %d %d\n", mode.width, mode.height, mode.refresh_rate);
-    fflush(stdout);
+    return 1;
+}
 
+static int configure_mode_geometry(struct evdi_mode mode) {
     int new_w = mode.width;
     int new_h = mode.height;
     int new_bpp = mode.bits_per_pixel / 8;
@@ -454,7 +455,7 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
             && new_bpp == g_mode_bpp) {
         fprintf(stderr, "[evdi-helper] Mode unchanged, keeping buffer\n");
         g_update_pending = 0;
-        return;
+        return 0;
     }
 
     g_mode_w = new_w;
@@ -466,6 +467,10 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     g_mode_stride = aligned_stride;
     g_fb_size = g_mode_stride * g_mode_h;
 
+    return 1;
+}
+
+static void retire_mode_buffers(void) {
     pthread_mutex_lock(&g_swap_mutex);
     g_latest_valid = 0;
     g_buffers_ready = 0;
@@ -494,6 +499,9 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
         g_buffer_registered = 0;
     }
 
+}
+
+static void allocate_framebuffer(void) {
     free(g_framebuffer);
     /* The kernel copies the damaged part of the scanout buffer into this
        on every grab — the whole 22 MB when the compositor reports full
@@ -515,6 +523,9 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
         }
     }
 
+}
+
+static void allocate_stream_buffers(void) {
     /* Stream dimensions: source divided by the scale, forced even because
        NV12 chroma covers 2x2 luma samples. */
     g_out_w = (g_mode_w / g_scale) & ~1;
@@ -537,8 +548,29 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     if (g_dirty_fill && g_dirty_latest && g_dirty_write)
         mark_all_dirty();
 
-    if (!g_framebuffer || !g_fill || !g_latest || !g_write
-            || !g_dirty_fill || !g_dirty_latest || !g_dirty_write) {
+}
+
+static int mode_buffers_allocated(void) {
+    return g_framebuffer && g_fill && g_latest && g_write
+        && g_dirty_fill && g_dirty_latest && g_dirty_write;
+}
+
+static void on_mode_changed(struct evdi_mode mode, void *user_data) {
+    (void)user_data;
+    fprintf(stderr, "[evdi-helper] Mode: %dx%d@%dHz %dbpp fmt=0x%x\n",
+            mode.width, mode.height, mode.refresh_rate,
+            mode.bits_per_pixel, mode.pixel_format);
+    if (!validate_frame_format(mode) || !validate_mode_dimensions(mode)) return;
+    printf("MODE_CHANGED %d %d %d\n", mode.width, mode.height, mode.refresh_rate);
+    fflush(stdout);
+
+    if (!configure_mode_geometry(mode)) return;
+
+    retire_mode_buffers();
+    allocate_framebuffer();
+    allocate_stream_buffers();
+
+    if (!mode_buffers_allocated()) {
         fprintf(stderr, "[evdi-helper] Failed to allocate framebuffers\n");
         g_have_mode = 0;
         return;
@@ -568,7 +600,7 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     g_have_mode = 1;
     g_update_pending = 0;
     fprintf(stderr, "[evdi-helper] Buffer 0 registered: %dx%d stride=%d (row_bytes=%d)\n",
-            g_mode_w, g_mode_h, buf.stride, row_bytes);
+            g_mode_w, g_mode_h, buf.stride, g_mode_w * g_mode_bpp);
 }
 
 static void grab_now(void) {
