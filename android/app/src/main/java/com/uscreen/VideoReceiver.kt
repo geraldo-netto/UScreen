@@ -240,40 +240,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         var pendingCodec: MediaCodec? = null
         var pendingThread: HandlerThread? = null
         try {
-            val format = MediaFormat.createVideoFormat(mimeType, formatWidth, formatHeight)
-            // Follow the stream's real frame rate rather than a hardcoded
-            // guess: telling the decoder 90 when the host sends 60 skews its
-            // internal pacing and power/clock decisions.
-            format.setInteger(MediaFormat.KEY_FRAME_RATE, streamFps)
-            format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
-
-            // State the colour space explicitly rather than relying on the SPS
-            // alone. A/B measured: no latency cost either way, and being
-            // explicit means the decoder cannot guess wrong.
-            try {
-                format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)
-                format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT709)
-                format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
-            } catch (_: Exception) {}
-
-            // Low latency flags (safe to set, ignored if unsupported) — unless
-            // this decoder has already stalled on them, see lowLatencyHints.
-            if (lowLatencyHints) {
-                if (android.os.Build.VERSION.SDK_INT >= 30) {
-                    format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
-                }
-                try {
-                    // Ask the decoder to run flat out rather than pace to the
-                    // frame rate — headroom above the stream rate, so a late
-                    // frame is caught up on instead of waiting for the next slot.
-                    format.setInteger("operating-rate", streamFps * 2)
-                } catch (_: Exception) {}
-                try {
-                    format.setInteger("vendor.qti-ext-dec-low-latency.enable", 1)
-                } catch (_: Exception) {}
-            } else {
-                Log.w(TAG, "Configuring decoder without low-latency hints")
-            }
+            val format = decoderFormat()
             queuedSinceOutput.set(0)
             lastOutputNanos = System.nanoTime()
 
@@ -322,6 +289,44 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             }
             return false
         }
+    }
+
+    private fun decoderFormat(): MediaFormat {
+        val format = MediaFormat.createVideoFormat(mimeType, formatWidth, formatHeight)
+        // Follow the stream's real frame rate rather than a hardcoded
+        // guess: telling the decoder 90 when the host sends 60 skews its
+        // internal pacing and power/clock decisions.
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, streamFps)
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+
+        // State the colour space explicitly rather than relying on the SPS
+        // alone. A/B measured: no latency cost either way, and being
+        // explicit means the decoder cannot guess wrong.
+        try {
+            format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)
+            format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT709)
+            format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
+        } catch (_: Exception) {}
+
+        // Low latency flags (safe to set, ignored if unsupported) — unless
+        // this decoder has already stalled on them, see lowLatencyHints.
+        if (lowLatencyHints) {
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
+            }
+            try {
+                // Ask the decoder to run flat out rather than pace to the
+                // frame rate — headroom above the stream rate, so a late
+                // frame is caught up on instead of waiting for the next slot.
+                format.setInteger("operating-rate", streamFps * 2)
+            } catch (_: Exception) {}
+            try {
+                format.setInteger("vendor.qti-ext-dec-low-latency.enable", 1)
+            } catch (_: Exception) {}
+        } else {
+            Log.w(TAG, "Configuring decoder without low-latency hints")
+        }
+        return format
     }
 
     /**
