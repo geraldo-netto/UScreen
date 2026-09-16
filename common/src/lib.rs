@@ -33,6 +33,31 @@ pub const MAX_QUALITY: u32 = 32;
 /// Maximum active pixels representable in an EDID detailed timing.
 pub const MAX_DIMENSION: u32 = 4095;
 
+/// Validate every listener before allocating any tablet slot.
+pub fn slot_ports(video: u16, input: u16, slots: u32) -> Result<Vec<(u16, u16)>> {
+    anyhow::ensure!(
+        (1..=4).contains(&slots),
+        "tablet count must be between 1 and 4"
+    );
+    let mut used = std::collections::BTreeSet::new();
+    let mut ports = Vec::new();
+    for slot in 0..slots {
+        let offset = (2 * slot) as u16;
+        let video = video
+            .checked_add(offset)
+            .context("video slot port exceeds 65535")?;
+        let input = input
+            .checked_add(offset)
+            .context("input slot port exceeds 65535")?;
+        for port in [video, input] {
+            anyhow::ensure!(port != 0, "video and input ports must be nonzero");
+            anyhow::ensure!(used.insert(port), "tablet ports overlap at {port}");
+        }
+        ports.push((video, input));
+    }
+    Ok(ports)
+}
+
 pub fn supported_encoder(name: &str) -> bool {
     matches!(
         name,
@@ -330,6 +355,7 @@ impl FileConfig {
     }
 
     fn write_at(&self, path: &Path) -> Result<()> {
+        slot_ports(self.video_port, self.input_port, self.max_tablets)?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -370,6 +396,40 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t093_all_slot_ports_are_unique_nonzero_and_representable() {
+        for (video, input, slots) in [
+            (0, 8891, 1),
+            (8890, 0, 1),
+            (8890, 8890, 1),
+            (8890, 8892, 2),
+            (8890, 8894, 3),
+            (65535, 65534, 2),
+            (65529, 65528, 5),
+        ] {
+            assert!(
+                slot_ports(video, input, slots).is_err(),
+                "accepted {video}/{input} x{slots}"
+            );
+        }
+        for slots in 1..=4 {
+            let ports = slot_ports(8890, 8891, slots).unwrap();
+            assert_eq!(ports.len(), slots as usize);
+            assert_eq!(
+                ports.last(),
+                Some(&(8890 + 2 * (slots - 1) as u16, 8891 + 2 * (slots - 1) as u16))
+            );
+        }
+        assert_eq!(
+            slot_ports(65529, 65528, 4).unwrap().last(),
+            Some(&(65535, 65534))
+        );
+        assert_eq!(
+            slot_ports(19000, 20000, 2).unwrap(),
+            [(19000, 20000), (19002, 20002)]
+        );
+    }
 
     // T104: concurrent transactions retain every edit; readers never see partial TOML.
     #[test]

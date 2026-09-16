@@ -580,12 +580,18 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         );
     }
 
+    // Validate the complete effective range before claiming resources.
+    let file_cfg = config::FileConfig::load();
+    let effective = effective_config(&cli, &file_cfg);
+    config::slot_ports(
+        effective.video_port,
+        effective.input_port,
+        effective.max_tablets,
+    )?;
+
     // Write PID file for clean stop/status
     let pid = std::process::id();
     std::fs::write(&pid_path, pid.to_string())?;
-
-    // Settings precedence: CLI flag > config file > built-in default
-    let file_cfg = config::FileConfig::load();
 
     // `load()` clamps unusable values, but leaving the bad number on disk means
     // the GUI keeps showing it and writes it straight back. Heal the file once,
@@ -604,7 +610,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             }
         }
     }
-    let effective = effective_config(&cli, &file_cfg);
     let encoder = effective.encoder.clone();
     let fps = effective.fps;
     let bitrate = effective.bitrate;
@@ -1197,6 +1202,9 @@ impl ExtraSession {
 /// Ports are the base ports plus 2 per instance; the tablet side keeps
 /// using 8890/8891, since `adb reverse` maps them per device.
 async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<ExtraSession> {
+    let (video_port, input_port) = *config::slot_ports(t.video_port, t.input_port, t.max_tablets)?
+        .get(instance as usize)
+        .context("tablet slot outside configured range")?;
     let cards = vdisplay::evdi_cards();
     let mut cfg = t.cap_template.clone();
     cfg.instance = instance;
@@ -1210,8 +1218,6 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
             t.max_tablets
         );
     }
-    let video_port = t.video_port + 2 * instance as u16;
-    let input_port = t.input_port + 2 * instance as u16;
 
     let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
         encoder: cfg.encoder.clone(),
