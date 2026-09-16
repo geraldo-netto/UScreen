@@ -642,6 +642,68 @@ struct DeviceOwner {
     devices: Arc<std::sync::Mutex<InjectDevices>>,
     touch_registered: bool,
 }
+impl DeviceOwner {
+    async fn create_devices(&mut self, cfg: &InputConfig, ident: &DeviceIdentity) -> usize {
+        let (c, i) = (cfg.clone(), ident.clone());
+        // Device creation sleeps to let udev settle, so it
+        // runs off the async runtime.
+        let created = tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
+            .await
+            .unwrap_or_else(|_| InjectDevices::empty());
+        let count = created.count();
+        let has_touch = created.touch.is_some();
+        if let Ok(mut guard) = self.devices.lock() {
+            *guard = created;
+        }
+        if has_touch {
+            self.touch_registered = true;
+            osk_touch_device_added().await;
+        }
+        count
+    }
+
+    async fn remove_devices(&mut self) {
+        let old = self
+            .devices
+            .lock()
+            .map(|mut g| {
+                g.release_all();
+                std::mem::replace(&mut *g, InjectDevices::empty())
+            })
+            .ok();
+        let had_touch = old.as_ref().is_some_and(|d| d.touch.is_some());
+        drop(old);
+        if had_touch {
+            self.touch_registered = false;
+            osk_touch_device_removed().await;
+        }
+        info!("Tablet detached — virtual input devices removed");
+    }
+
+    fn release_for_remap(&self, pen_only: bool, card: Option<u32>) -> usize {
+        let count = self
+            .devices
+            .lock()
+            .map(|mut g| {
+                g.release_all();
+                g.count()
+            })
+            .unwrap_or(0);
+        if count > 0 {
+            info!(
+                "Mode is now {} — remapping input devices{}",
+                if pen_only {
+                    "pen-only"
+                } else {
+                    "second screen"
+                },
+                card.map(|c| format!(" (card{})", c)).unwrap_or_default()
+            );
+        }
+        count
+    }
+}
+
 impl Drop for DeviceOwner {
     fn drop(&mut self) {
         if let Ok(mut devices) = self.devices.lock() {
@@ -1402,100 +1464,14 @@ impl InputServer {
         // them; a mode or card switch moves them onto the other output and
         // drops anything held at that moment — a finger or pen tip that was
         // down would otherwise stay down on a screen no longer listening.
-        {
-            let mut tablet_rx = self.tablet_rx.clone();
-            let mut mode_rx = self.mode_tx.subscribe();
-            let mut card_rx = self.card_rx.clone();
-            let devices = uinput.clone();
-            let ident_bg = ident.clone();
-            let cfg = self.config.clone();
-            tasks.spawn(async move {
-                let mut owner = DeviceOwner {
-                    devices: devices.clone(),
-                    touch_registered: false,
-                };
-                let mut present = false;
-                tablet_rx.borrow_and_update();
-                mode_rx.borrow_and_update();
-                card_rx.borrow_and_update();
-                loop {
-                    let attached = *tablet_rx.borrow();
-                    let pen_only = *mode_rx.borrow();
-                    let card = *card_rx.borrow();
-                    let count;
-                    if attached && !present {
-                        present = true;
-                        let (c, i) = (cfg.clone(), ident_bg.clone());
-                        // Device creation sleeps to let udev settle, so it
-                        // runs off the async runtime.
-                        let created =
-                            tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
-                                .await
-                                .unwrap_or_else(|_| InjectDevices::empty());
-                        count = created.count();
-                        let has_touch = created.touch.is_some();
-                        if let Ok(mut guard) = devices.lock() {
-                            *guard = created;
-                        }
-                        if has_touch {
-                            owner.touch_registered = true;
-                            osk_touch_device_added().await;
-                        }
-                    } else if !attached && present {
-                        present = false;
-                        let old = devices
-                            .lock()
-                            .map(|mut g| {
-                                g.release_all();
-                                std::mem::replace(&mut *g, InjectDevices::empty())
-                            })
-                            .ok();
-                        let had_touch = old.as_ref().is_some_and(|d| d.touch.is_some());
-                        drop(old);
-                        if had_touch {
-                            owner.touch_registered = false;
-                            osk_touch_device_removed().await;
-                        }
-                        info!("Tablet detached — virtual input devices removed");
-                        count = 0;
-                    } else if attached {
-                        count = devices
-                            .lock()
-                            .map(|mut g| {
-                                g.release_all();
-                                g.count()
-                            })
-                            .unwrap_or(0);
-                        if count > 0 {
-                            info!(
-                                "Mode is now {} — remapping input devices{}",
-                                if pen_only {
-                                    "pen-only"
-                                } else {
-                                    "second screen"
-                                },
-                                card.map(|c| format!(" (card{})", c)).unwrap_or_default()
-                            );
-                        }
-                    } else {
-                        count = 0;
-                    }
-                    // Leaving display mode tears the virtual output down and
-                    // entering it brings the output back. map_devices_to_output
-                    // waits for the output it needs to actually be enabled, so
-                    // a change during the wait simply restarts it.
-                    if !wait_for_mapping_change(&mut tablet_rx, &mut mode_rx, &mut card_rx, async {
-                        if count > 0 {
-                            map_devices_to_output(pen_only, &ident_bg, card, count).await;
-                        }
-                    })
-                    .await
-                    {
-                        break;
-                    }
-                }
-            });
-        }
+        tasks.spawn(follow_input_devices(
+            self.tablet_rx.clone(),
+            self.mode_tx.subscribe(),
+            self.card_rx.clone(),
+            uinput.clone(),
+            ident,
+            self.config.clone(),
+        ));
 
         let config = self.config.clone();
         let running = self.running.clone();
@@ -1543,6 +1519,55 @@ impl InputServer {
 
         tasks.shutdown().await;
         Ok(())
+    }
+}
+
+async fn follow_input_devices(
+    mut tablet_rx: watch::Receiver<bool>,
+    mut mode_rx: watch::Receiver<bool>,
+    mut card_rx: watch::Receiver<Option<u32>>,
+    devices: Arc<std::sync::Mutex<InjectDevices>>,
+    ident: DeviceIdentity,
+    cfg: InputConfig,
+) {
+    let mut owner = DeviceOwner {
+        devices: devices.clone(),
+        touch_registered: false,
+    };
+    let mut present = false;
+    tablet_rx.borrow_and_update();
+    mode_rx.borrow_and_update();
+    card_rx.borrow_and_update();
+    loop {
+        let attached = *tablet_rx.borrow();
+        let pen_only = *mode_rx.borrow();
+        let card = *card_rx.borrow();
+        let count;
+        if attached && !present {
+            present = true;
+            count = owner.create_devices(&cfg, &ident).await;
+        } else if !attached && present {
+            present = false;
+            owner.remove_devices().await;
+            count = 0;
+        } else if attached {
+            count = owner.release_for_remap(pen_only, card);
+        } else {
+            count = 0;
+        }
+        // Leaving display mode tears the virtual output down and
+        // entering it brings the output back. map_devices_to_output
+        // waits for the output it needs to actually be enabled, so
+        // a change during the wait simply restarts it.
+        if !wait_for_mapping_change(&mut tablet_rx, &mut mode_rx, &mut card_rx, async {
+            if count > 0 {
+                map_devices_to_output(pen_only, &ident, card, count).await;
+            }
+        })
+        .await
+        {
+            break;
+        }
     }
 }
 
