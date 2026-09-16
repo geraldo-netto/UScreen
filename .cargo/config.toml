@@ -1,0 +1,7 @@
+[env]
+# T131: permanent T029/T110/T099 regressions must not race their fixtures.
+# Process fixtures are written and executed by different tests. Concurrent
+# fork/exec can briefly inherit another test's writable fixture descriptor and
+# make Linux reject that fixture with ETXTBSY. Serialize test functions; tests
+# still run their own concurrent clients/tasks and keep every assertion.
+RUST_TEST_THREADS = "1"
