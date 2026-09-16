@@ -267,18 +267,16 @@ class TouchCapture {
      * activity might want to do with generic motion events is disturbed.
      */
     fun handleHoverEvent(event: MotionEvent, width: Int, height: Int): Boolean {
-        if (!isConnected || !penEnabled) return false
+        if (!isConnected || !penEnabled || !isPenLike(event, 0)) return false
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()
         return when (event.actionMasked) {
             MotionEvent.ACTION_HOVER_ENTER,
             MotionEvent.ACTION_HOVER_MOVE -> {
-                if (!isPenLike(event, 0)) return false
                 sendPenEvent(event, 0, 3, vw, vh)
                 true
             }
             MotionEvent.ACTION_HOVER_EXIT -> {
-                if (!isPenLike(event, 0)) return false
                 sendPenProximityExit()
                 true
             }
@@ -287,12 +285,10 @@ class TouchCapture {
             // the only place they can be caught. Forwarded as the stylus
             // button (right-click in GIMP).
             MotionEvent.ACTION_BUTTON_PRESS -> {
-                if (!isPenLike(event, 0)) return false
                 sendPenButton(true)
                 true
             }
             MotionEvent.ACTION_BUTTON_RELEASE -> {
-                if (!isPenLike(event, 0)) return false
                 sendPenButton(false)
                 true
             }
