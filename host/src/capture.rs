@@ -1478,22 +1478,8 @@ impl CaptureManager {
 
     #[cfg(not(feature = "inproc-encoder"))]
     fn nal_header_offset(data: &[u8], start: usize) -> Option<usize> {
-        if start + 4 < data.len()
-            && data[start] == 0
-            && data[start + 1] == 0
-            && data[start + 2] == 0
-            && data[start + 3] == 1
-        {
-            Some(start + 4)
-        } else if start + 3 < data.len()
-            && data[start] == 0
-            && data[start + 1] == 0
-            && data[start + 2] == 1
-        {
-            Some(start + 3)
-        } else {
-            None
-        }
+        let header = start + crate::encoder_io::annex_b_prefix_len(data.get(start..)?)?;
+        (header < data.len()).then_some(header)
     }
 
     #[cfg(not(feature = "inproc-encoder"))]
