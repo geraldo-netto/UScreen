@@ -1842,15 +1842,12 @@ fn handle_event(
             action,
             slot,
         } => {
-            let abs_x = (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
-            let abs_y = (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
-            let abs_pressure = (pressure.clamp(0.0, 1.0) * 4096.0) as i32;
-
-            if let Ok(mut guard) = uinput.lock() {
-                if let Err(error) = guard.inject_touch(abs_x, abs_y, abs_pressure, action, slot) {
-                    warn!("Failed to inject touch: {}", error);
-                }
-            }
+            inject_touch_event(
+                uinput,
+                AbsoluteContact::from_normalized(x, y, pressure),
+                action,
+                slot,
+            );
         }
         InputEvent::Pen {
             x,
@@ -1861,70 +1858,14 @@ fn handle_event(
             eraser,
             action,
         } => {
-            let abs_x = (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
-            let abs_y = (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32;
-            if pen_enabled {
-                note_pen_action(action);
-            }
-            let abs_pressure = (pressure.clamp(0.0, 1.0) * 4096.0) as i32;
-            // Already degrees, as the tablet computes them. This used to
-            // multiply by 180/π on the assumption they were radians, which
-            // squashed a pen laid flat at 90° down to 57°.
-            let tilt_x_deg = (tilt_x.round() as i32).clamp(-90, 90);
-            let tilt_y_deg = (tilt_y.round() as i32).clamp(-90, 90);
-
-            if let Ok(mut guard) = uinput.lock() {
-                let ok = if let Some(ref mut dev) = guard.pen {
-                    match dev.inject_pen(
-                        abs_x,
-                        abs_y,
-                        abs_pressure,
-                        tilt_x_deg,
-                        tilt_y_deg,
-                        action,
-                        eraser,
-                    ) {
-                        Ok(_) => true,
-                        Err(e) => {
-                            warn!("Failed to inject pen: {}", e);
-                            false
-                        }
-                    }
-                } else {
-                    match action {
-                        0 => debug!(
-                            "Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device",
-                            abs_x, abs_y, eraser, tilt_x, tilt_y
-                        ),
-                        1 => debug!("Pen UP   at ({}, {}) — no pen device", abs_x, abs_y),
-                        _ => {}
-                    }
-                    false
-                };
-                if ok {
-                    if matches!(action, 0 | 2 | 3) {
-                        guard.last_pen_pos = (abs_x, abs_y);
-                    }
-                    // Leaving proximity hides the tablet cursor, so hand the
-                    // position to the plain pointer and let an ordinary cursor
-                    // stay where the pen last was.
-                    if action == 4 {
-                        let (px, py) = guard.last_pen_pos;
-                        if let Some(ref mut dev) = guard.pointer {
-                            let _ = dev.emit(EV_ABS, ABS_X, px);
-                            let _ = dev.emit(EV_ABS, ABS_Y, py);
-                            let _ = dev.syn();
-                        }
-                    }
-                    match action {
-                        0 | 3 => guard.pen_proximity = true,
-                        1 | 4 => guard.pen_proximity = false,
-                        5 => guard.pen_button = true,
-                        6 => guard.pen_button = false,
-                        _ => {}
-                    }
-                }
-            }
+            inject_pen_event(
+                uinput,
+                AbsoluteContact::from_normalized(x, y, pressure),
+                (tilt_x, tilt_y),
+                eraser,
+                action,
+                pen_enabled,
+            );
         }
         InputEvent::Resolution {
             width,
@@ -1932,124 +1873,250 @@ fn handle_event(
             width_mm,
             height_mm,
         } => {
-            info!(
-                "Tablet reports native resolution: {}x{} ({}x{} mm)",
-                width, height, width_mm, height_mm
-            );
-            let Some(tx) = settings_tx else { return };
-            if !crate::config::FileConfig::load().auto_resolution {
-                info!("auto_resolution is off — keeping configured resolution");
-                return;
-            }
-            if !(640..=crate::config::MAX_DIMENSION).contains(&width)
-                || !(480..=crate::config::MAX_DIMENSION).contains(&height)
-            {
-                warn!("Ignoring implausible resolution {}x{}", width, height);
-                return;
-            }
-            let mut new = tx.borrow().clone();
-            // Reject nonsense physical sizes rather than baking them into an
-            // EDID: a bad DPI makes the desktop come up at a absurd scale.
-            let (mm_w, mm_h) =
-                if (50..=1000).contains(&width_mm) && (50..=1000).contains(&height_mm) {
-                    (width_mm, height_mm)
-                } else {
-                    (
-                        crate::edid::DEFAULT_WIDTH_MM,
-                        crate::edid::DEFAULT_HEIGHT_MM,
-                    )
-                };
-            if new.width != width
-                || new.height != height
-                || new.width_mm != mm_w
-                || new.height_mm != mm_h
-            {
-                new.width = width;
-                new.height = height;
-                new.width_mm = mm_w;
-                new.height_mm = mm_h;
-                info!(
-                    "Auto-resolution: switching virtual display to {}x{} ({}x{} mm)",
-                    width, height, mm_w, mm_h
-                );
-                let _ = tx.send(new);
-            }
+            apply_tablet_resolution(settings_tx, width, height, width_mm, height_mm);
         }
-        InputEvent::Rendered { seq, decode_us } => {
-            latency.on_rendered(seq, decode_us);
-        }
+        InputEvent::Rendered { seq, decode_us } => latency.on_rendered(seq, decode_us),
         InputEvent::Config {
             bitrate,
             fps,
             encoder,
         } => {
-            let Some(tx) = settings_tx else {
-                warn!("Received config from tablet but live settings are disabled");
-                return;
-            };
-            let mut new = tx.borrow().clone();
-            if let Some(b) = bitrate {
-                // Clamped to the same ceiling the config file uses: an
-                // unclamped value here would be persisted and poison every
-                // later run, which is exactly how installs ended up pinned at
-                // 200 Mbps with seconds of queueing delay.
-                new.bitrate = b.clamp(
-                    crate::config::MIN_BITRATE_KBPS,
-                    crate::config::MAX_BITRATE_KBPS,
-                );
-                if new.bitrate != b {
-                    warn!("Tablet asked for {} kbps — clamped to {}", b, new.bitrate);
-                }
-            }
-            if let Some(f) = fps {
-                new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
-            }
-            if let Some(e) = encoder {
-                if crate::config::supported_encoder(&e) {
-                    new.encoder = e;
-                } else {
-                    warn!("Ignoring unsupported encoder from tablet: {}", e);
-                }
-            }
-            if *tx.borrow() != new {
-                info!(
-                    "Tablet pushed settings: encoder={} {}kbps @{}fps",
-                    new.encoder, new.bitrate, new.fps
-                );
-                let _ = tx.send(new);
-            }
+            apply_tablet_config(settings_tx, bitrate, fps, encoder);
         }
-
         // Already consumed by handle_connection; a second one is harmless.
         InputEvent::Auth { .. } => {}
+        InputEvent::Mode { pen_only } => apply_tablet_mode(mode_tx, pen_only, pen_enabled),
+    }
+}
 
-        InputEvent::Mode { pen_only } => {
-            // Only publish a real change. A watch send always wakes every
-            // follower, so re-sending the current mode would tear the virtual
-            // display down and back up for nothing.
-            if *mode_tx.borrow() == pen_only {
-                return;
-            }
-            // Pen-only mode with no pen device would tear the display down
-            // and then drop every stroke: a blank tablet. The app's switch
-            // follows the mode the daemon reports, so it simply stays off.
-            if pen_only && !pen_enabled {
-                warn!(
-                    "Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored"
-                );
-                return;
-            }
-            info!(
-                "Tablet switched to {}",
-                if pen_only {
-                    "pen-only mode"
-                } else {
-                    "second-screen mode"
-                }
-            );
-            let _ = mode_tx.send(pen_only);
+struct AbsoluteContact {
+    x: i32,
+    y: i32,
+    pressure: i32,
+}
+impl AbsoluteContact {
+    fn from_normalized(x: f64, y: f64, pressure: f64) -> Self {
+        Self {
+            x: (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32,
+            y: (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32,
+            pressure: (pressure.clamp(0.0, 1.0) * 4096.0) as i32,
         }
     }
+}
+
+fn inject_touch_event(
+    devices: &std::sync::Mutex<InjectDevices>,
+    contact: AbsoluteContact,
+    action: u8,
+    slot: u8,
+) {
+    if let Ok(mut guard) = devices.lock() {
+        if let Err(error) = guard.inject_touch(contact.x, contact.y, contact.pressure, action, slot)
+        {
+            warn!("Failed to inject touch: {}", error);
+        }
+    }
+}
+
+fn inject_pen_event(
+    devices: &std::sync::Mutex<InjectDevices>,
+    contact: AbsoluteContact,
+    tilt: (f64, f64),
+    eraser: bool,
+    action: u8,
+    pen_enabled: bool,
+) {
+    if pen_enabled {
+        note_pen_action(action);
+    }
+    if let Ok(mut guard) = devices.lock() {
+        guard.apply_pen(contact, tilt, eraser, action);
+    }
+}
+
+impl InjectDevices {
+    fn apply_pen(&mut self, contact: AbsoluteContact, tilt: (f64, f64), eraser: bool, action: u8) {
+        // Tablet tilt is already in degrees. Convert to integer axis values only.
+        let tilt_x = (tilt.0.round() as i32).clamp(-90, 90);
+        let tilt_y = (tilt.1.round() as i32).clamp(-90, 90);
+        let ok = if let Some(dev) = self.pen.as_mut() {
+            match dev.inject_pen(
+                contact.x,
+                contact.y,
+                contact.pressure,
+                tilt_x,
+                tilt_y,
+                action,
+                eraser,
+            ) {
+                Ok(_) => true,
+                Err(e) => {
+                    warn!("Failed to inject pen: {}", e);
+                    false
+                }
+            }
+        } else {
+            log_missing_pen(&contact, tilt, eraser, action);
+            false
+        };
+        if ok {
+            self.record_pen_state(&contact, action);
+        }
+    }
+
+    fn record_pen_state(&mut self, contact: &AbsoluteContact, action: u8) {
+        if matches!(action, 0 | 2 | 3) {
+            self.last_pen_pos = (contact.x, contact.y);
+        }
+        // Keep an ordinary cursor at the last pen position when proximity ends.
+        if action == 4 {
+            self.park_pointer();
+        }
+        match action {
+            0 | 3 => self.pen_proximity = true,
+            1 | 4 => self.pen_proximity = false,
+            5 => self.pen_button = true,
+            6 => self.pen_button = false,
+            _ => {}
+        }
+    }
+
+    fn park_pointer(&mut self) {
+        let (x, y) = self.last_pen_pos;
+        if let Some(dev) = self.pointer.as_mut() {
+            let _ = dev.emit(EV_ABS, ABS_X, x);
+            let _ = dev.emit(EV_ABS, ABS_Y, y);
+            let _ = dev.syn();
+        }
+    }
+}
+
+fn log_missing_pen(contact: &AbsoluteContact, tilt: (f64, f64), eraser: bool, action: u8) {
+    match action {
+        0 => debug!(
+            "Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device",
+            contact.x, contact.y, eraser, tilt.0, tilt.1
+        ),
+        1 => debug!("Pen UP   at ({}, {}) — no pen device", contact.x, contact.y),
+        _ => {}
+    }
+}
+
+fn physical_dimensions(width: u32, height: u32) -> (u32, u32) {
+    // Reject nonsense physical sizes instead of baking an absurd DPI into EDID.
+    if (50..=1000).contains(&width) && (50..=1000).contains(&height) {
+        (width, height)
+    } else {
+        (
+            crate::edid::DEFAULT_WIDTH_MM,
+            crate::edid::DEFAULT_HEIGHT_MM,
+        )
+    }
+}
+
+fn apply_tablet_resolution(
+    settings_tx: &Option<watch::Sender<EncoderSettings>>,
+    width: u32,
+    height: u32,
+    width_mm: u32,
+    height_mm: u32,
+) {
+    info!(
+        "Tablet reports native resolution: {}x{} ({}x{} mm)",
+        width, height, width_mm, height_mm
+    );
+    let Some(tx) = settings_tx else { return };
+    if !crate::config::FileConfig::load().auto_resolution {
+        info!("auto_resolution is off — keeping configured resolution");
+        return;
+    }
+    if !(640..=crate::config::MAX_DIMENSION).contains(&width)
+        || !(480..=crate::config::MAX_DIMENSION).contains(&height)
+    {
+        warn!("Ignoring implausible resolution {}x{}", width, height);
+        return;
+    }
+    let mut new = tx.borrow().clone();
+    let (mm_w, mm_h) = physical_dimensions(width_mm, height_mm);
+    if new.width != width || new.height != height || new.width_mm != mm_w || new.height_mm != mm_h {
+        new.width = width;
+        new.height = height;
+        new.width_mm = mm_w;
+        new.height_mm = mm_h;
+        info!(
+            "Auto-resolution: switching virtual display to {}x{} ({}x{} mm)",
+            width, height, mm_w, mm_h
+        );
+        let _ = tx.send(new);
+    }
+}
+
+fn apply_tablet_config(
+    settings_tx: &Option<watch::Sender<EncoderSettings>>,
+    bitrate: Option<u32>,
+    fps: Option<u32>,
+    encoder: Option<String>,
+) {
+    let Some(tx) = settings_tx else {
+        warn!("Received config from tablet but live settings are disabled");
+        return;
+    };
+    let mut new = tx.borrow().clone();
+    if let Some(b) = bitrate {
+        // Clamped to the same ceiling the config file uses: an
+        // unclamped value here would be persisted and poison every
+        // later run, which is exactly how installs ended up pinned at
+        // 200 Mbps with seconds of queueing delay.
+        new.bitrate = b.clamp(
+            crate::config::MIN_BITRATE_KBPS,
+            crate::config::MAX_BITRATE_KBPS,
+        );
+        if new.bitrate != b {
+            warn!("Tablet asked for {} kbps — clamped to {}", b, new.bitrate);
+        }
+    }
+    if let Some(f) = fps {
+        new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
+    }
+    if let Some(e) = encoder {
+        if crate::config::supported_encoder(&e) {
+            new.encoder = e;
+        } else {
+            warn!("Ignoring unsupported encoder from tablet: {}", e);
+        }
+    }
+    if *tx.borrow() != new {
+        info!(
+            "Tablet pushed settings: encoder={} {}kbps @{}fps",
+            new.encoder, new.bitrate, new.fps
+        );
+        let _ = tx.send(new);
+    }
+}
+
+fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled: bool) {
+    // Only publish a real change. A watch send always wakes every
+    // follower, so re-sending the current mode would tear the virtual
+    // display down and back up for nothing.
+    if *mode_tx.borrow() == pen_only {
+        return;
+    }
+    // Pen-only mode with no pen device would tear the display down
+    // and then drop every stroke: a blank tablet. The app's switch
+    // follows the mode the daemon reports, so it simply stays off.
+    if pen_only && !pen_enabled {
+        warn!("Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored");
+        return;
+    }
+    info!(
+        "Tablet switched to {}",
+        if pen_only {
+            "pen-only mode"
+        } else {
+            "second-screen mode"
+        }
+    );
+    let _ = mode_tx.send(pen_only);
 }
 
 #[cfg(test)]
