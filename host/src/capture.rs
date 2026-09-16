@@ -1570,18 +1570,12 @@ impl CaptureManager {
             let chunk = &buf[..n];
             let access_units = packetizer.push(chunk);
 
-            if !config_extracted {
-                if let Some(config) = packetizer.codec_config() {
-                    info!("Extracted codec config (SPS+PPS): {} bytes", config.len());
-                    if let Ok(mut cc) = codec_config.lock() {
-                        *cc = Some(config);
-                    }
-                    config_extracted = true;
-                } else if total > 1024 * 1024 {
-                    warn!("Could not find SPS/PPS in first 1MB of stream");
-                    config_extracted = true;
-                }
-            }
+            Self::publish_initial_codec_config(
+                &packetizer,
+                &codec_config,
+                &mut config_extracted,
+                total,
+            );
 
             for data in access_units {
                 frames += 1;
@@ -1592,22 +1586,48 @@ impl CaptureManager {
             }
             latency.maybe_report();
 
-            if last_log.elapsed().as_secs() >= 5 {
-                let elapsed = last_log.elapsed().as_secs_f64();
-                let mbps = if elapsed > 0.0 {
-                    (total as f64 / elapsed) / 1_048_576.0
-                } else {
-                    0.0
-                };
-                let kbps = mbps * 8.0 * 1024.0;
-                info!(
-                    "Encoder: {} access units in {:.1}s, {:.1} MB/s ({:.0} kbps)",
-                    frames, elapsed, mbps, kbps
-                );
-                frames = 0;
-                total = 0;
-                last_log = Instant::now();
+            Self::report_encoder_throughput(&mut frames, &mut total, &mut last_log);
+        }
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn publish_initial_codec_config(
+        packetizer: &H264AnnexBPacketizer,
+        codec_config: &Arc<Mutex<Option<Bytes>>>,
+        config_extracted: &mut bool,
+        total: u64,
+    ) {
+        if !*config_extracted {
+            if let Some(config) = packetizer.codec_config() {
+                info!("Extracted codec config (SPS+PPS): {} bytes", config.len());
+                if let Ok(mut cc) = codec_config.lock() {
+                    *cc = Some(config);
+                }
+                *config_extracted = true;
+            } else if total > 1024 * 1024 {
+                warn!("Could not find SPS/PPS in first 1MB of stream");
+                *config_extracted = true;
             }
+        }
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn report_encoder_throughput(frames: &mut u64, total: &mut u64, last_log: &mut Instant) {
+        if last_log.elapsed().as_secs() >= 5 {
+            let elapsed = last_log.elapsed().as_secs_f64();
+            let mbps = if elapsed > 0.0 {
+                (*total as f64 / elapsed) / 1_048_576.0
+            } else {
+                0.0
+            };
+            let kbps = mbps * 8.0 * 1024.0;
+            info!(
+                "Encoder: {} access units in {:.1}s, {:.1} MB/s ({:.0} kbps)",
+                frames, elapsed, mbps, kbps
+            );
+            *frames = 0;
+            *total = 0;
+            *last_log = Instant::now();
         }
     }
 
