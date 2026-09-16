@@ -1174,13 +1174,7 @@ async fn target_output(
             let Some(outputs) = crate::kscreen::outputs().await else {
                 return fallback;
             };
-            let enabled = outputs.iter().find(|output| {
-                output.get("name").and_then(|value| value.as_str()) == fallback.as_deref()
-                    && output
-                        .get("enabled")
-                        .and_then(|value| value.as_bool())
-                        .unwrap_or(false)
-            });
+            let enabled = enabled_named_output(&outputs, fallback.as_deref());
             if let Some(o) = enabled {
                 return o.get("name").and_then(|v| v.as_str()).map(str::to_string);
             }
@@ -1199,6 +1193,19 @@ async fn target_output(
         }
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
     }
+}
+
+fn enabled_named_output<'a>(
+    outputs: &'a [serde_json::Value],
+    name: Option<&str>,
+) -> Option<&'a serde_json::Value> {
+    outputs.iter().find(|output| {
+        output.get("name").and_then(|value| value.as_str()) == name
+            && output
+                .get("enabled")
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false)
+    })
 }
 
 fn fallback_output(
