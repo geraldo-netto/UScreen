@@ -15,15 +15,7 @@ class NoticeTest(unittest.TestCase):
     def test_t129_tar_deb_rpm_and_arch_include_notices(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-notices-') as tmp:
             root = Path(tmp)
-            for name in ['Makefile', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',
-                         'CHANGELOG.md', 'CONTRIBUTING.md', 'scripts', 'packaging', 'docs', 'licenses']:
-                source = REPO / name
-                if not source.exists():
-                    continue
-                if source.is_dir():
-                    shutil.copytree(source, root / name)
-                else:
-                    shutil.copy(source, root / name)
+            self.copy_sources(root)
             def write(name, body, executable=False):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,6 +68,17 @@ class NoticeTest(unittest.TestCase):
             shutil.copy(docs / 'bin/libevdi.so.1.15.0', root / 'evdi-1.15.0/library/')
             run('bash', '-c', 'set -e; source packaging/arch/PKGBUILD; srcdir="$PWD"; pkgdir="$PWD/arch"; package')
             self.verify_docs(root / 'arch/usr/share/doc/uscreen')
+
+    def copy_sources(self, root):
+        for name in ['Makefile', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',
+                     'CHANGELOG.md', 'CONTRIBUTING.md', 'scripts', 'packaging', 'docs', 'licenses']:
+            source = REPO / name
+            if not source.exists():
+                continue
+            if source.is_dir():
+                shutil.copytree(source, root / name)
+            else:
+                shutil.copy(source, root / name)
 
     def verify_docs(self, folder):
         for name in NOTICES:
