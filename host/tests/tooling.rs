@@ -172,3 +172,16 @@ fn t075_missing_notes_fail_before_build() {
 fn t075_missing_tag_fails_before_build() {
     rejected_publish("tag", true, "tag v1.2.3 does not exist");
 }
+
+#[test]
+fn t103_fake_tablet_handles_partial_tcp_io() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_fake_tablet.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

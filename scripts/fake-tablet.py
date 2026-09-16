@@ -15,10 +15,25 @@ def runtime_dir():
     base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
     return os.path.join(base, "uscreen")
 
+class BufferedSocket:
+    """Keep bytes received after the HTTP upgrade for the first WS frame."""
+    def __init__(self, sock, pending):
+        self.sock, self.pending = sock, pending
+
+    def recv(self, size):
+        if self.pending:
+            result, self.pending = self.pending[:size], self.pending[size:]
+            return result
+        return self.sock.recv(size)
+
+    def __getattr__(self, name):
+        return getattr(self.sock, name)
+
+
 def ws_connect(port):
     s = socket.create_connection(("127.0.0.1", port), timeout=5)
     key = base64.b64encode(os.urandom(16)).decode()
-    s.send((f"GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\n"
+    s.sendall((f"GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\n"
             f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
             f"Sec-WebSocket-Version: 13\r\n\r\n").encode())
     resp = b""
@@ -29,7 +44,7 @@ def ws_connect(port):
         resp += chunk
     if b" 101 " not in resp.split(b"\r\n")[0]:
         raise RuntimeError("handshake failed: " + resp.split(b"\r\n")[0].decode())
-    return s
+    return BufferedSocket(s, resp.split(b"\r\n\r\n", 1)[1])
 
 def ws_send(s, obj):
     payload = json.dumps(obj).encode()
@@ -39,24 +54,20 @@ def ws_send(s, obj):
         hdr = bytes([0x81, 0x80 | len(payload)])
     else:
         hdr = bytes([0x81, 0x80 | 126]) + struct.pack(">H", len(payload))
-    s.send(hdr + mask + masked)
+    s.sendall(hdr + mask + masked)
 
 def ws_recv_text(s):
-    h = s.recv(2)
-    if len(h) < 2:
+    try:
+        h = read_exact(s, 2)
+        op, ln = h[0] & 0x0F, h[1] & 0x7F
+        if ln == 126:
+            ln = struct.unpack(">H", read_exact(s, 2))[0]
+        elif ln == 127:
+            ln = struct.unpack(">Q", read_exact(s, 8))[0]
+        data = read_exact(s, ln)
+        return data.decode(errors="replace") if op == 1 else None
+    except EOFError:
         return None
-    op, ln = h[0] & 0x0F, h[1] & 0x7F
-    if ln == 126:
-        ln = struct.unpack(">H", s.recv(2))[0]
-    elif ln == 127:
-        ln = struct.unpack(">Q", s.recv(8))[0]
-    data = b""
-    while len(data) < ln:
-        part = s.recv(ln - len(data))
-        if not part:
-            break
-        data += part
-    return data.decode(errors="replace") if op == 1 else None
 
 def read_exact(s, n):
     buf = b""
@@ -98,7 +109,7 @@ def main():
     # --- video ---
     v = socket.create_connection(("127.0.0.1", vport), timeout=10)
     if token:
-        v.send(token.encode())
+        v.sendall(token.encode())
     frames = 0
     got_config = False
     t_end = time.time() + a.seconds
