@@ -262,6 +262,44 @@ mod cli_tests {
     }
 
     #[tokio::test]
+    async fn t142_every_slot_and_wifi_setup_require_the_app() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(&adb, "#!/bin/sh\ncase \"$2\" in TABLET*|192.0.2.1:5555) echo package:/data/app/com.uscreen/base.apk;; esac\n").unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let adb = adb.to_str().unwrap();
+        let network = ["PHONE", "192.0.2.1:5555"].map(String::from);
+        assert_eq!(
+            pick_device_with(&network, None, adb).await.as_deref(),
+            Some("192.0.2.1:5555")
+        );
+        assert_eq!(
+            pick_device_with(&network, Some("PHONE"), adb)
+                .await
+                .as_deref(),
+            Some("192.0.2.1:5555")
+        );
+        assert_eq!(wifi_device_with(&network, adb).await, None);
+        let devices = ["PHONE", "TABLET_A", "TABLET_B"].map(String::from);
+        let eligible = app_devices_with(&devices, adb).await;
+        let primary = pick_device_with(&devices, None, adb).await;
+        assert_eq!(primary.as_deref(), Some("TABLET_A"));
+        assert_eq!(extra_devices(&eligible, primary.as_deref()), ["TABLET_B"]);
+        assert_eq!(
+            wifi_device_with(&devices, adb).await.as_deref(),
+            Some("TABLET_A")
+        );
+        assert_eq!(
+            pick_device_with(&devices, Some("TABLET_B"), adb)
+                .await
+                .as_deref(),
+            Some("TABLET_B")
+        );
+        assert_eq!(pick_device_with(&["PHONE".into()], None, adb).await, None);
+    }
+
+    #[tokio::test]
     async fn t105_live_wifi_off_and_address_changes_reach_adb() {
         use std::os::unix::fs::PermissionsExt;
         let dir = tempfile::tempdir().unwrap();
@@ -1435,8 +1473,9 @@ async fn adb_monitor(
             }
         }
         let devices = unique_devices(&devices, current.as_deref(), &mut identities, "adb").await;
+        let devices = app_devices_with(&devices, "adb").await;
         let preferred = current_transport(&devices, current.as_deref(), &identities);
-        let found = pick_device(&devices, preferred.as_deref()).await;
+        let found = select_tablet(&devices, preferred.as_deref());
 
         match (&current, &found) {
             // Newly attached, or a different tablet than before.
@@ -1767,13 +1806,9 @@ async fn setup_wifi(off: bool) -> Result<()> {
         return Ok(());
     }
 
-    let Some(serial) = adb_devices()
-        .await
-        .into_iter()
-        .find(|s| transport_of(s) == Transport::Usb)
-    else {
+    let Some(serial) = wifi_device_with(&adb_devices().await, "adb").await else {
         anyhow::bail!(
-            "No tablet on USB. Plug the cable in for this one step — the tablet has to be told \
+            "No USB tablet with UScreen installed. Install the app and plug the cable in for this one step — the tablet has to be told \
              to listen on the network, and only the cable can tell it."
         );
     };
@@ -2099,48 +2134,54 @@ async fn unique_devices(
     selected
 }
 
-async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String> {
-    pick_device_with(devices, current, "adb").await
+/// Filter once before assigning any display slot. Explicit test serials do
+/// not need a real ADB package manager.
+async fn app_devices_with(devices: &[String], adb: &str) -> Vec<String> {
+    futures_util::future::join_all(devices.iter().map(|serial| async move {
+        let eligible = is_fake_serial(serial)
+            || tokio::process::Command::new(adb)
+                .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
+                .output_bounded()
+                .await
+                .map(|out| {
+                    out.status.success()
+                        && String::from_utf8_lossy(&out.stdout)
+                            .lines()
+                            .any(|line| line.starts_with("package:"))
+                })
+                .unwrap_or(false);
+        eligible.then(|| serial.clone())
+    }))
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+async fn wifi_device_with(devices: &[String], adb: &str) -> Option<String> {
+    let usb: Vec<_> = devices
+        .iter()
+        .filter(|s| transport_of(s) == Transport::Usb)
+        .cloned()
+        .collect();
+    app_devices_with(&usb, adb).await.into_iter().next()
+}
+
+fn select_tablet(devices: &[String], current: Option<&str>) -> Option<String> {
+    current
+        .filter(|cur| devices.iter().any(|d| d == cur))
+        .map(String::from)
+        .or_else(|| {
+            devices
+                .iter()
+                .find(|d| transport_of(d) == Transport::Usb)
+                .cloned()
+        })
+        .or_else(|| devices.first().cloned())
 }
 
 async fn pick_device_with(devices: &[String], current: Option<&str>, adb: &str) -> Option<String> {
-    if let Some(cur) = current {
-        if devices.iter().any(|d| d == cur) {
-            return Some(cur.to_string());
-        }
-    }
-    let usb: Vec<&String> = devices
-        .iter()
-        .filter(|d| transport_of(d) == Transport::Usb)
-        .collect();
-    if usb.len() > 1 {
-        for d in &usb {
-            if is_fake_serial(d) {
-                continue;
-            }
-            let has_app = tokio::process::Command::new(adb)
-                .args(["-s", d, "shell", "pm", "path", "com.uscreen"])
-                .output_bounded()
-                .await
-                .map(|o| o.status.success() && !o.stdout.is_empty())
-                .unwrap_or(false);
-            if has_app {
-                info!(
-                    "{} Android devices attached; using {} — it has the UScreen app",
-                    devices.len(),
-                    d
-                );
-                return Some((*d).clone());
-            }
-        }
-        warn!(
-            "{} Android devices attached and none has the app installed; using {}. \
-             Unplug the others, or raise max_tablets to give each its own screen.",
-            devices.len(),
-            usb[0]
-        );
-    }
-    devices.first().cloned()
+    select_tablet(&app_devices_with(devices, adb).await, current)
 }
 
 /// Every device in state "device", USB entries first.
