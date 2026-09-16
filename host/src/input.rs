@@ -1365,13 +1365,14 @@ impl InputServer {
                     // entering it brings the output back. map_devices_to_output
                     // waits for the output it needs to actually be enabled, so
                     // a change during the wait simply restarts it.
-                    if count > 0 {
-                        map_devices_to_output(pen_only, &ident_bg, card, count).await;
-                    }
-                    tokio::select! {
-                        r = tablet_rx.changed() => { if r.is_err() { break; } }
-                        r = mode_rx.changed() => { if r.is_err() { break; } }
-                        r = card_rx.changed() => { if r.is_err() { break; } }
+                    if !wait_for_mapping_change(&mut tablet_rx, &mut mode_rx, &mut card_rx, async {
+                        if count > 0 {
+                            map_devices_to_output(pen_only, &ident_bg, card, count).await;
+                        }
+                    })
+                    .await
+                    {
+                        break;
                     }
                 }
             });
@@ -1418,6 +1419,28 @@ impl InputServer {
 
         tasks.shutdown().await;
         Ok(())
+    }
+}
+
+async fn wait_for_mapping_change(
+    tablet: &mut watch::Receiver<bool>,
+    mode: &mut watch::Receiver<bool>,
+    card: &mut watch::Receiver<Option<u32>>,
+    mapping: impl std::future::Future<Output = ()>,
+) -> bool {
+    let changed = async {
+        tokio::select! {
+            biased;
+            result = tablet.changed() => result.is_ok(),
+            result = mode.changed() => result.is_ok(),
+            result = card.changed() => result.is_ok(),
+        }
+    };
+    tokio::pin!(changed);
+    tokio::select! {
+        biased;
+        result = &mut changed => result,
+        _ = mapping => changed.await,
     }
 }
 
@@ -1828,6 +1851,42 @@ fn handle_event(
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t109_state_changes_cancel_pending_mapping() {
+        for changed in 0..3 {
+            let (tablet_tx, mut tablet) = watch::channel(true);
+            let (mode_tx, mut mode) = watch::channel(false);
+            let (card_tx, mut card) = watch::channel(Some(1));
+            let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+            let mapping = async move {
+                started_tx.send(()).unwrap();
+                std::future::pending::<()>().await;
+                panic!("stale mapping completed");
+            };
+            let task = tokio::spawn(async move {
+                wait_for_mapping_change(&mut tablet, &mut mode, &mut card, mapping).await
+            });
+            started_rx.await.unwrap();
+            match changed {
+                0 => {
+                    tablet_tx.send(false).unwrap();
+                }
+                1 => {
+                    mode_tx.send(true).unwrap();
+                }
+                _ => {
+                    card_tx.send(Some(2)).unwrap();
+                }
+            }
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(100), task)
+                    .await
+                    .expect("mapping must be interrupted")
+                    .unwrap()
+            );
+        }
+    }
+
     #[tokio::test]
     async fn t084_stopping_server_closes_clients_and_watcher() {
         let (mode_tx, _mode_rx) = watch::channel(false);
