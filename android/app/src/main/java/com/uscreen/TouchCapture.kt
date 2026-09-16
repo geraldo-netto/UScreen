@@ -116,26 +116,9 @@ class TouchCapture {
                 // ignored, this channel is otherwise ours to talk on.
                 try {
                     val o = JSONObject(text)
-                    if (o.has("touch")) {
-                        touchEnabled = o.getBoolean("touch")
-                        if (!touchEnabled) touchSlots.clear()
-                    }
-                    if (o.has("pen")) penEnabled = o.getBoolean("pen")
-                    if (o.has("fps")) {
-                        val fps = o.getInt("fps")
-                        if (fps in 10..90) onFpsKnown?.invoke(fps)
-                    }
-                    if (o.has("codec")) {
-                        onCodecKnown?.invoke(o.getString("codec"))
-                    }
-                    if (o.has("pen_only")) {
-                        val pen = o.getBoolean("pen_only")
-                        if (pen != isPenOnly) {
-                            isPenOnly = pen
-                            Log.i(TAG, "Host mode: ${if (pen) "pen-only" else "display"}")
-                        }
-                        onModeKnown?.invoke(pen)
-                    }
+                    applyInputGreeting(o)
+                    applyDecoderGreeting(o)
+                    applyModeGreeting(o)
                 } catch (_: Exception) {}
             }
         }
@@ -176,6 +159,35 @@ class TouchCapture {
          * off and cancel the socket that replaced them.
          */
         private fun isStale(ws: WebSocket) = ws !== this@TouchCapture.webSocket
+    }
+
+    private fun applyInputGreeting(o: JSONObject) {
+        if (o.has("touch")) {
+            touchEnabled = o.getBoolean("touch")
+            if (!touchEnabled) touchSlots.clear()
+        }
+        if (o.has("pen")) penEnabled = o.getBoolean("pen")
+    }
+
+    private fun applyDecoderGreeting(o: JSONObject) {
+        if (o.has("fps")) {
+            val fps = o.getInt("fps")
+            if (fps in 10..90) onFpsKnown?.invoke(fps)
+        }
+        if (o.has("codec")) {
+            onCodecKnown?.invoke(o.getString("codec"))
+        }
+    }
+
+    private fun applyModeGreeting(o: JSONObject) {
+        if (o.has("pen_only")) {
+            val pen = o.getBoolean("pen_only")
+            if (pen != isPenOnly) {
+                isPenOnly = pen
+                Log.i(TAG, "Host mode: ${if (pen) "pen-only" else "display"}")
+            }
+            onModeKnown?.invoke(pen)
+        }
     }
 
     // The surface only forwards touches to the host; there is no click to perform.
