@@ -375,167 +375,49 @@ impl CaptureManager {
             if attempt > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(200)).await;
             }
-            let Ok(o) = tokio::process::Command::new("kscreen-doctor")
-                .arg("-j")
-                .output_bounded()
-                .await
-            else {
+            let Some(outputs) = crate::kscreen::outputs().await else {
                 continue;
             };
-            let Ok(v) = serde_json::from_slice::<serde_json::Value>(&o.stdout) else {
+            let Some(plan) = crate::kscreen::placement(&outputs, &evdi_names, position) else {
                 continue;
             };
-            let Some(outputs) = v.get("outputs").and_then(|o| o.as_array()) else {
-                continue;
-            };
-
-            // (id, enabled, x, y, logical size)
-            let mut evdi: Option<(u32, bool, i64, i64, i64, i64)> = None;
-            // Every other enabled output, so the whole layout can be shifted
-            // back to the origin when the virtual screen lands above or left
-            // of everything.
-            let mut others: Vec<(u32, i64, i64)> = Vec::new();
-            // Bounding box of everything already on the desktop. The virtual
-            // screen is placed against one of its edges, so all four are
-            // needed, not just the right one.
-            let mut have_any = false;
-            let (mut min_x, mut min_y, mut max_x, mut max_y) = (0i64, 0i64, 0i64, 0i64);
-
-            for out in outputs {
-                let id = out.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                let enabled = out
-                    .get("enabled")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false);
-                let x = out.pointer("/pos/x").and_then(|v| v.as_i64()).unwrap_or(0);
-
-                let y = out.pointer("/pos/y").and_then(|v| v.as_i64()).unwrap_or(0);
-                let raw_w = out
-                    .pointer("/size/width")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0);
-                let raw_h = out
-                    .pointer("/size/height")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0);
-                let sc = out.get("scale").and_then(|v| v.as_f64()).unwrap_or(1.0);
-                let logical = |v: i64| {
-                    if sc > 0.0 {
-                        (v as f64 / sc).round() as i64
-                    } else {
-                        v
-                    }
-                };
-
-                if evdi_names.iter().any(|n| n == name) {
-                    evdi = Some((id, enabled, x, y, logical(raw_w), logical(raw_h)));
-                } else if enabled {
-                    // `pos` is already in logical (scaled) coordinates,
-                    // matching what "position.X,Y" expects, but `size`
-                    // is the raw physical mode resolution — divide by
-                    // `scale` to get the logical width before adding,
-                    // or the computed edge lands far past the actual
-                    // screen (e.g. a 2560px-wide physical panel at
-                    // 1.35x scale is only ~1897 logical px wide).
-                    others.push((id, x, y));
-                    if have_any {
-                        min_x = min_x.min(x);
-                        min_y = min_y.min(y);
-                        max_x = max_x.max(x + logical(raw_w));
-                        max_y = max_y.max(y + logical(raw_h));
-                    } else {
-                        have_any = true;
-                        min_x = x;
-                        min_y = y;
-                        max_x = x + logical(raw_w);
-                        max_y = y + logical(raw_h);
-                    }
-                }
-            }
-
-            let Some((id, enabled, x, y, evdi_w, evdi_h)) = evdi else {
-                continue;
-            };
-
-            // With nothing else on the desktop there is no edge to sit beside,
-            // so the origin is as good an answer as any.
-            let (want_x, want_y) = if !have_any {
-                (0, 0)
-            } else {
-                use crate::config::Position::*;
-                match position {
-                    Right => (max_x, min_y),
-                    Left => (min_x - evdi_w, min_y),
-                    Above => (min_x, min_y - evdi_h),
-                    Below => (min_x, max_y),
-                }
-            };
-
-            // KDE will not take a negative position. It reports success and
-            // then quietly leaves the output disabled — which is exactly what
-            // "above" did before this: the command said ok and the virtual
-            // screen simply never appeared. So when the virtual screen lands
-            // above or left of everything, shift the whole layout back to the
-            // origin instead, which is what the display settings panel does
-            // when you drag a screen off the top-left corner.
-            //
-            // Normalising to exactly zero rather than merely to non-negative
-            // keeps this idempotent: without it, switching to "above" once and
-            // then back to "right" would leave the whole desktop permanently
-            // offset downwards by the height of the virtual screen, and each
-            // switch would add another band of empty space. Shifting every
-            // output by the same amount changes no adjacency and nothing the
-            // user can see — the coordinates are internal bookkeeping.
-            let shift_x = -want_x.min(min_x);
-            let shift_y = -want_y.min(min_y);
-            let (want_x, want_y) = (want_x + shift_x, want_y + shift_y);
-            let moves: Vec<(u32, i64, i64)> = others
-                .iter()
-                .map(|&(oid, ox, oy)| (oid, ox + shift_x, oy + shift_y))
-                .collect();
-
-            // Already where it belongs, and nothing else needs moving.
-            // Re-issuing the command would make KWin reconfigure every output,
-            // flickering the whole desktop — which is what used to happen on
-            // each pass of the capture loop.
-            if enabled && x == want_x && y == want_y && shift_x == 0 && shift_y == 0 {
+            if plan.already_applied {
                 return;
             }
-
-            info!(
-                "Enabling EVDI output.{} at ({}, {}) — {:?} of the other screens",
-                id, want_x, want_y, position
-            );
-            if shift_x != 0 || shift_y != 0 {
-                info!(
-                    "  Shifting the other screens by ({}, {}) to keep the layout at the origin",
-                    shift_x, shift_y
-                );
-            }
-            // All args in one kscreen-doctor call so KDE applies them atomically.
-            // Position syntax is "X,Y" (comma-separated).
-            let mut cmd = tokio::process::Command::new("kscreen-doctor");
-            cmd.arg(format!("output.{}.enable", id))
-                .arg(format!("output.{}.position.{},{}", id, want_x, want_y));
-            if shift_x != 0 || shift_y != 0 {
-                for (oid, nx, ny) in &moves {
-                    cmd.arg(format!("output.{}.position.{},{}", oid, nx, ny));
-                }
-            }
-            let r = cmd.output_bounded().await;
-            match r {
-                Ok(o) if o.status.success() => info!("kscreen-doctor enable+position: ok"),
-                Ok(o) => warn!(
-                    "kscreen-doctor failed: {}",
-                    String::from_utf8_lossy(&o.stderr).trim()
-                ),
-                Err(e) => warn!("kscreen-doctor error: {}", e),
-            }
+            Self::apply_display_placement(&plan, position).await;
             return;
         }
 
         warn!("EVDI output did not appear in kscreen-doctor within 3s");
+    }
+
+    async fn apply_display_placement(
+        plan: &crate::kscreen::Placement,
+        position: crate::config::Position,
+    ) {
+        info!(
+            "Enabling EVDI output.{} at ({}, {}) — {:?} of the other screens",
+            plan.id, plan.x, plan.y, position
+        );
+        if plan.shifts_desktop() {
+            info!(
+                "  Shifting the other screens by ({}, {}) to keep the layout at the origin",
+                plan.shift_x, plan.shift_y
+            );
+        }
+        // Apply the whole layout in one compositor transaction.
+        match Command::new("kscreen-doctor")
+            .args(plan.arguments())
+            .output_bounded()
+            .await
+        {
+            Ok(output) if output.status.success() => info!("kscreen-doctor enable+position: ok"),
+            Ok(output) => warn!(
+                "kscreen-doctor failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ),
+            Err(error) => warn!("kscreen-doctor error: {}", error),
+        }
     }
 
     /// Turn the virtual output back off so its windows return to the real
