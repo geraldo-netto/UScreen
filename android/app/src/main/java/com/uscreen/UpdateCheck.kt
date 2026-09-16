@@ -38,16 +38,20 @@ object UpdateCheck {
         val a = parse(candidate) ?: return false
         val b = parse(current) ?: return false
         for (i in 0..2) if (a.core[i] != b.core[i]) return a.core[i] > b.core[i]
-        if (a.pre.isEmpty() || b.pre.isEmpty()) return a.pre.isEmpty() && b.pre.isNotEmpty()
-        for (i in 0 until minOf(a.pre.size, b.pre.size)) {
-            val x = a.pre[i]; val y = b.pre[i]
+        return isNewerPrerelease(a.pre, b.pre)
+    }
+
+    private fun isNewerPrerelease(a: List<String>, b: List<String>): Boolean {
+        if (a.isEmpty() || b.isEmpty()) return a.isEmpty() && b.isNotEmpty()
+        for (i in 0 until minOf(a.size, b.size)) {
+            val x = a[i]; val y = b[i]
             if (x == y) continue
             val xn = x.all(Char::isDigit); val yn = y.all(Char::isDigit)
             if (xn != yn) return !xn
             if (xn && x.length != y.length) return x.length > y.length
             return x > y
         }
-        return a.pre.size > b.pre.size
+        return a.size > b.size
     }
 
     /** Blocking; call off the main thread. Returns the newer version or null. */
