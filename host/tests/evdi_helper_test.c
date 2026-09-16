@@ -158,6 +158,21 @@ static void *cancel_fifo_write(void *arg) {
     return NULL;
 }
 
+static void assert_stalled_write_exits(int reader, int cancel) {
+    close(reader);
+    pthread_t cancellation;
+    if (cancel) assert(pthread_create(&cancellation, NULL, cancel_fifo_write, (void *)(intptr_t)cancel) == 0);
+    size_t size = 2u << 20;
+    unsigned char *frame = calloc(1, size);
+    assert(frame);
+    long long start = now_ms();
+    size_t remaining = write_fifo_frame(frame, size);
+    assert(remaining > 0 && g_capture_fifo_fd == -1);
+    assert(now_ms() - start < (cancel ? 600 : 1400));
+    if (cancel) pthread_join(cancellation, NULL);
+    free(frame);
+}
+
 static void test_stalled_fifo(int cancel) {
     char root[] = "/tmp/uscreen-fifo-test-XXXXXX";
     assert(mkdtemp(root));
@@ -172,18 +187,7 @@ static void test_stalled_fifo(int cancel) {
     pid_t child = fork();
     assert(child >= 0);
     if (child == 0) {
-        close(reader);
-        pthread_t cancellation;
-        if (cancel) assert(pthread_create(&cancellation, NULL, cancel_fifo_write, (void *)(intptr_t)cancel) == 0);
-        size_t size = 2u << 20;
-        unsigned char *frame = calloc(1, size);
-        assert(frame);
-        long long start = now_ms();
-        size_t remaining = write_fifo_frame(frame, size);
-        assert(remaining > 0 && g_capture_fifo_fd == -1);
-        assert(now_ms() - start < (cancel ? 600 : 1400));
-        if (cancel) pthread_join(cancellation, NULL);
-        free(frame);
+        assert_stalled_write_exits(reader, cancel);
         _exit(0);
     }
     int status = 0;

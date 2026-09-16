@@ -2,7 +2,6 @@
 
 | id | status | severity | effort | description |
 |---|---|---|---|---|
-| T205 | open | low | small | Refactor `host/tests/evdi_helper_test.c::test_stalled_fifo` (baseline line 161): SonarQube cyclomatic complexity 12 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T206 | open | medium | large | Refactor `host/tests/evdi_helper_test.c::main` (baseline line 205): SonarQube cyclomatic complexity 50 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T207 | open | low | small | Refactor `scripts/fake-tablet.py::main` (baseline line 81): SonarQube cyclomatic complexity 11 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T208 | open | low | small | Refactor `scripts/gen-edid.py::make_edid` (baseline line 50): SonarQube cyclomatic complexity 10 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
