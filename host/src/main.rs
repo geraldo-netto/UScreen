@@ -130,34 +130,18 @@ fn setup_logging() {
 }
 
 fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig {
-    let mut effective = saved.clone();
-    if let Some(value) = &cli.encoder {
-        effective.encoder = value.clone();
-    }
-    if let Some(value) = cli.fps {
-        effective.fps = value;
-    }
-    if let Some(value) = cli.bitrate {
-        effective.bitrate = value;
-    }
-    if let Some(value) = cli.width {
-        effective.width = value;
-    }
-    if let Some(value) = cli.height {
-        effective.height = value;
-    }
-    if let Some(value) = cli.quality {
-        effective.quality = value;
-    }
-    if let Some(value) = cli.stream_scale {
-        effective.stream_scale = value;
-    }
-    if let Some(value) = cli.video_port {
-        effective.video_port = value;
-    }
-    if let Some(value) = cli.input_port {
-        effective.input_port = value;
-    }
+    let mut effective = config::FileConfig {
+        encoder: cli.encoder.as_ref().unwrap_or(&saved.encoder).clone(),
+        fps: cli.fps.unwrap_or(saved.fps),
+        bitrate: cli.bitrate.unwrap_or(saved.bitrate),
+        width: cli.width.unwrap_or(saved.width),
+        height: cli.height.unwrap_or(saved.height),
+        quality: cli.quality.unwrap_or(saved.quality),
+        stream_scale: cli.stream_scale.unwrap_or(saved.stream_scale),
+        video_port: cli.video_port.unwrap_or(saved.video_port),
+        input_port: cli.input_port.unwrap_or(saved.input_port),
+        ..saved.clone()
+    };
     effective.sanitize();
     effective
 }
