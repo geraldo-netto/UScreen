@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Highest bitrate the USB transport actually sustains. Beyond this the encoder
 /// outruns the link, frames pile up in every queue along the way and latency
@@ -229,8 +229,11 @@ impl FileConfig {
     }
 
     pub fn load() -> Self {
-        let path = config_path();
-        let mut cfg = match std::fs::read_to_string(&path) {
+        Self::load_at(&config_path())
+    }
+
+    fn load_at(path: &Path) -> Self {
+        let mut cfg = match std::fs::read_to_string(path) {
             Ok(text) => toml::from_str(&text).unwrap_or_else(|e| {
                 tracing::warn!("Invalid config at {:?}: {} — using defaults", path, e);
                 Self::default()
@@ -282,14 +285,57 @@ impl FileConfig {
     }
 
     pub fn save(&self) -> Result<()> {
-        let path = config_path();
+        self.save_at(&config_path())
+    }
+
+    /// Serialize the entire read/modify/write operation across processes.
+    pub fn update(edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
+        Self::update_at(&config_path(), edit)
+    }
+
+    pub fn save_edits(&self, baseline: &Self) -> Result<Self> {
+        Self::update(|latest| {
+            *latest = self.merge_edits(baseline, latest.clone())?;
+            Ok(())
+        })
+    }
+
+    fn lock_at(path: &Path) -> Result<std::fs::File> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let lock = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(path.with_extension("lock"))?;
+        lock.lock().context("lock config transaction")?;
+        Ok(lock)
+    }
+
+    fn update_at(path: &Path, edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
+        let _lock = Self::lock_at(path)?;
+        let mut config = Self::load_at(path);
+        edit(&mut config)?;
+        config.sanitize();
+        config.write_at(path)?;
+        Ok(config)
+    }
+
+    fn save_at(&self, path: &Path) -> Result<()> {
+        let _lock = Self::lock_at(path)?;
+        self.write_at(path)
+    }
+
+    fn write_at(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
         let text = toml::to_string_pretty(self).context("serialize config")?;
         // Say exactly which lines change. Settings that drift with nobody
         // touching them are impossible to chase down otherwise.
-        if let Ok(old) = std::fs::read_to_string(&path) {
+        if let Ok(old) = std::fs::read_to_string(path) {
             let before: std::collections::BTreeMap<&str, &str> =
                 old.lines().filter_map(|l| l.split_once(" = ")).collect();
             let changed: Vec<String> = text
@@ -310,9 +356,12 @@ impl FileConfig {
             }
         }
         // Write-then-rename: a reader must never see a half-written file.
-        let tmp = path.with_extension("toml.tmp");
-        std::fs::write(&tmp, text).context("write config file")?;
-        std::fs::rename(&tmp, &path).context("replace config file")?;
+        use std::io::Write;
+        let mut tmp = tempfile::NamedTempFile::new_in(path.parent().context("config directory")?)?;
+        tmp.write_all(text.as_bytes())
+            .context("write config file")?;
+        tmp.as_file().sync_all()?;
+        tmp.persist(path).context("replace config file")?;
         Ok(())
     }
 }
@@ -320,6 +369,38 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // T104: concurrent transactions retain every edit; readers never see partial TOML.
+    #[test]
+    fn t104_concurrent_config_transactions() {
+        let dir = std::env::temp_dir().join(format!("uscreen-t104-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.toml");
+        FileConfig::default().save_at(&path).unwrap();
+        let barrier = std::sync::Barrier::new(8);
+        std::thread::scope(|scope| {
+            let barrier = &barrier;
+            let path = &path;
+            for _ in 0..8 {
+                scope.spawn(move || {
+                    barrier.wait();
+                    for _ in 0..4 {
+                        FileConfig::update_at(path, |config| {
+                            let old = config.bitrate;
+                            std::thread::sleep(std::time::Duration::from_millis(5));
+                            config.bitrate = old + 100;
+                            Ok(())
+                        })
+                        .unwrap();
+                        let text = std::fs::read_to_string(path).unwrap();
+                        toml::from_str::<FileConfig>(&text).unwrap();
+                    }
+                });
+            }
+        });
+        assert_eq!(FileConfig::load_at(&path).bitrate, 23_200);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn t017_merge_preserves_external_changes_and_applies_only_user_edits() {

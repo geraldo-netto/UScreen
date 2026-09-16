@@ -407,16 +407,10 @@ impl App {
     }
 
     fn apply(&mut self, restart: bool) {
-        match self.cfg.merge_edits(&self.saved_cfg, FileConfig::load()) {
-            Ok(merged) => self.cfg = merged,
-            Err(error) => {
-                self.message = format!("Save failed: {}", error);
-                return;
-            }
-        }
-        match self.cfg.save() {
-            Ok(_) => {
-                self.saved_cfg = self.cfg.clone();
+        match self.cfg.save_edits(&self.saved_cfg) {
+            Ok(merged) => {
+                self.cfg = merged.clone();
+                self.saved_cfg = merged;
                 self.message = "Settings saved".into();
                 if restart {
                     match restart_daemon() {

@@ -453,7 +453,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             .ok()
             .and_then(|t| toml::from_str(&t).ok());
         if raw.is_some_and(|r| r != file_cfg) {
-            match file_cfg.save() {
+            match config::FileConfig::update(|_| Ok(())) {
                 Ok(_) => info!(
                     "Rewrote out-of-range settings in {:?}",
                     config::config_path()
@@ -664,31 +664,35 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Persist settings changes pushed at runtime back to the config file
     let mut settings_rx_save = settings_rx.clone();
     let save_handle = tokio::spawn(async move {
+        let mut previous = settings_rx_save.borrow().clone();
         while settings_rx_save.changed().await.is_ok() {
             let s = settings_rx_save.borrow().clone();
-            let mut cfg = config::FileConfig::load();
-            if !cli_overrides.0 {
-                cfg.encoder = s.encoder;
-            }
-            if !cli_overrides.1 {
-                cfg.fps = s.fps;
-            }
-            if !cli_overrides.2 {
-                cfg.bitrate = s.bitrate;
-            }
-            if !cli_overrides.3 {
-                cfg.width = s.width;
-            }
-            if !cli_overrides.4 {
-                cfg.height = s.height;
-            }
-            if !cli_overrides.5 {
-                cfg.quality = s.quality;
-            }
-            if !cli_overrides.6 {
-                cfg.stream_scale = s.stream_scale;
-            }
-            if let Err(e) = cfg.save() {
+            let result = config::FileConfig::update(|cfg| {
+                if !cli_overrides.0 && s.encoder != previous.encoder {
+                    cfg.encoder = s.encoder.clone();
+                }
+                if !cli_overrides.1 && s.fps != previous.fps {
+                    cfg.fps = s.fps;
+                }
+                if !cli_overrides.2 && s.bitrate != previous.bitrate {
+                    cfg.bitrate = s.bitrate;
+                }
+                if !cli_overrides.3 && s.width != previous.width {
+                    cfg.width = s.width;
+                }
+                if !cli_overrides.4 && s.height != previous.height {
+                    cfg.height = s.height;
+                }
+                if !cli_overrides.5 && s.quality != previous.quality {
+                    cfg.quality = s.quality;
+                }
+                if !cli_overrides.6 && s.stream_scale != previous.stream_scale {
+                    cfg.stream_scale = s.stream_scale;
+                }
+                Ok(())
+            });
+            previous = s;
+            if let Err(e) = result {
                 warn!("Failed to persist settings: {}", e);
             } else {
                 info!("Settings saved to {:?}", config::config_path());
@@ -703,9 +707,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let mode_save_handle = tokio::spawn(async move {
         while mode_rx_save.changed().await.is_ok() {
             let pen_only = *mode_rx_save.borrow();
-            let mut cfg = config::FileConfig::load();
-            cfg.pen_only = pen_only;
-            if let Err(e) = cfg.save() {
+            if let Err(e) = config::FileConfig::update(|cfg| {
+                cfg.pen_only = pen_only;
+                Ok(())
+            }) {
                 warn!("Failed to persist mode: {}", e);
             }
         }
@@ -1458,7 +1463,7 @@ async fn adb_monitor(
 /// adb builds, so nothing new is exposed to the network and the tablet still
 /// has to be a device this computer is authorised to talk to.
 async fn setup_wifi(off: bool) -> Result<()> {
-    let mut cfg = config::FileConfig::load();
+    let cfg = config::FileConfig::load();
 
     if off {
         if !cfg.wifi_address.is_empty() {
@@ -1467,8 +1472,10 @@ async fn setup_wifi(off: bool) -> Result<()> {
                 .output()
                 .await;
         }
-        cfg.wifi_address = String::new();
-        cfg.save()?;
+        config::FileConfig::update(|cfg| {
+            cfg.wifi_address.clear();
+            Ok(())
+        })?;
         println!("Wi-Fi off. Plug the cable in to use the tablet again.");
         return Ok(());
     }
@@ -1516,8 +1523,10 @@ async fn setup_wifi(off: bool) -> Result<()> {
         anyhow::bail!("adb connect {} did not take: {}", address, said);
     }
 
-    cfg.wifi_address = address.clone();
-    cfg.save()?;
+    config::FileConfig::update(|cfg| {
+        cfg.wifi_address = address.clone();
+        Ok(())
+    })?;
     println!("Connected to {}. The cable can come out.", address);
     println!(
         "The daemon reconnects to this address by itself whenever the cable is not in, \
