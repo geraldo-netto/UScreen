@@ -36,6 +36,7 @@ class TouchCapture {
     @Volatile private var penEnabled = true
     var onModeKnown: ((penOnly: Boolean) -> Unit)? = null
     var onCodecKnown: ((codec: String) -> Unit)? = null
+    var onFpsKnown: ((fps: Int) -> Unit)? = null
 
     /// Session token from the host, delivered as an intent extra when the
     /// daemon launches us over adb. Must be the first thing sent on the
@@ -120,6 +121,10 @@ class TouchCapture {
                         if (!touchEnabled) touchSlots.clear()
                     }
                     if (o.has("pen")) penEnabled = o.getBoolean("pen")
+                    if (o.has("fps")) {
+                        val fps = o.getInt("fps")
+                        if (fps in 10..90) onFpsKnown?.invoke(fps)
+                    }
                     if (o.has("codec")) {
                         onCodecKnown?.invoke(o.getString("codec"))
                     }

@@ -259,6 +259,42 @@ class RegressionTest {
         }
     }
 
+    @Test fun t120_hostGreetingUpdatesEffectiveDecoderRate() {
+        Prefs(app).checkUpdates = false
+        val controller = Robolectric.buildActivity(MainActivity::class.java).create()
+        val activity = controller.get()
+        val capture = get(activity, "touchCapture") as TouchCapture
+        val receiver = get(activity, "videoReceiver") as VideoReceiver
+        val socket = Socket()
+        set(capture, "webSocket", socket)
+        set(activity, "started", true)
+        val listener = get(capture, "wsListener") as WebSocketListener
+        try {
+            listener.onMessage(socket, """{"fps":30}""")
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            assertEquals(30, receiver.streamFps)
+            listener.onMessage(socket, """{"fps":90}""")
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            assertEquals(90, receiver.streamFps)
+            listener.onMessage(socket, """{"fps":999}""")
+            assertEquals(90, receiver.streamFps)
+        } finally { set(activity, "started", false); controller.destroy() }
+    }
+
+    @Test fun t120_applyRebuildsRunningDecoderWithSelectedRate() {
+        val receiver = VideoReceiver()
+        val prefs = Prefs(app)
+        receiver.start()
+        val previous = get(receiver, "job")
+        try {
+            applyStreamSettings(prefs, null, receiver, 5000, 30)
+            assertEquals(30, receiver.streamFps)
+            assertEquals(30, prefs.fps)
+            assertNotSame("New rate needs a fresh decoder session", previous, get(receiver, "job"))
+            assertTrue(get(receiver, "isRunning") as Boolean)
+        } finally { receiver.stop() }
+    }
+
     private class Socket : WebSocket {
         val messages = mutableListOf<String>()
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()

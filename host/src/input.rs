@@ -208,6 +208,8 @@ pub enum InputEvent {
 #[derive(Serialize)]
 pub struct InputResponse {
     pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fps: Option<u32>,
     pub width: u32,
     pub height: u32,
     /// Which bitstream the tablet should expect: "h264" or "hevc". It has to
@@ -259,6 +261,7 @@ impl InputConfig {
             .unwrap_or_else(|| self.codec.clone());
         InputResponse {
             status: status.into(),
+            fps: settings.as_ref().map(|tx| tx.borrow().fps),
             width: self.virtual_width,
             height: self.virtual_height,
             codec,
@@ -2321,6 +2324,23 @@ fi
             .unwrap()
             .unwrap();
         serde_json::from_str(msg.to_text().unwrap()).unwrap()
+    }
+
+    #[tokio::test]
+    async fn t120_greeting_and_apply_report_effective_frame_rate() {
+        let (mut client, tx, task) = connection("libx264").await;
+        assert_eq!(response(&mut client).await["fps"], 60);
+        let mut next = settings("libx264");
+        next.fps = 30;
+        tx.send_replace(next);
+        assert_eq!(response(&mut client).await["fps"], 30);
+        client
+            .send(Message::Text(r#"{"type":"config","fps":90}"#.into()))
+            .await
+            .unwrap();
+        assert_eq!(response(&mut client).await["fps"], 90);
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
     }
 
     #[tokio::test]

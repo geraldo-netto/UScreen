@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
             }
         }
         videoReceiver?.streamFps = prefs.fps
+        touchCapture?.onFpsKnown = { fps ->
+            withCurrentControl { videoReceiver?.streamFps = fps }
+        }
         touchCapture?.onCodecKnown = { codec ->
             withCurrentControl {
                 val mime = if (codec == "hevc") VideoReceiver.MIME_TYPE_HEVC
@@ -631,11 +634,7 @@ fun UScreenMain(
                     onOrientationChange(it)
                 },
                 onApply = { bitrateKbps, newFps ->
-                    prefs?.bitrateKbps = bitrateKbps
-                    prefs?.fps = newFps
-                    // From now on the tablet re-asserts these on every connect.
-                    prefs?.hasUserSettings = true
-                    touchCapture?.sendConfig(bitrateKbps, newFps)
+                    applyStreamSettings(prefs, touchCapture, videoReceiver, bitrateKbps, newFps)
                 },
                 onDismiss = { showSettings = false }
             )
@@ -733,6 +732,14 @@ private fun ConnectionScreen() {
             }
         }
     }
+}
+
+internal fun applyStreamSettings(prefs: Prefs?, touchCapture: TouchCapture?, videoReceiver: VideoReceiver?, bitrateKbps: Int, newFps: Int) {
+    prefs?.bitrateKbps = bitrateKbps
+    prefs?.fps = newFps
+    prefs?.hasUserSettings = true
+    videoReceiver?.streamFps = newFps
+    touchCapture?.sendConfig(bitrateKbps, newFps)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

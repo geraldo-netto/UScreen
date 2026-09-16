@@ -21,8 +21,10 @@ class FailingCodecShadow : ShadowMediaCodec() {
     companion object {
         var failAt = "configure"
         var releases = 0
+        var lastFormat: MediaFormat? = null
     }
     @Implementation fun configure(format: MediaFormat, surface: Surface?, crypto: MediaCrypto?, flags: Int) {
+        lastFormat = format
         if (failAt == "configure") throw IllegalStateException("injected configure failure")
     }
     @Implementation fun setVideoScalingMode(mode: Int) {}
@@ -39,6 +41,22 @@ class FailingCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [FailingCodecShadow::class])
 class DecoderSetupTest {
+    @Test fun t120_decoderHintsUseTheEffectiveRateAcrossRestarts() {
+        val receiver = VideoReceiver()
+        val setup = VideoReceiver::class.java.getDeclaredMethod("setupCodec", Surface::class.java).apply { isAccessible = true }
+        val surface = Surface(android.graphics.SurfaceTexture(1))
+        FailingCodecShadow.failAt = "start"
+        try {
+            for (fps in listOf(30, 90, 60)) {
+                receiver.streamFps = fps
+                assertEquals(false, setup.invoke(receiver, surface))
+                assertEquals(fps, FailingCodecShadow.lastFormat!!.getInteger(MediaFormat.KEY_FRAME_RATE))
+                assertEquals(fps * 2, FailingCodecShadow.lastFormat!!.getInteger("operating-rate"))
+                receiver.stop()
+            }
+        } finally { receiver.stop(); surface.release() }
+    }
+
     @Test fun t089_configureFailureReleasesResources() = checkFailure("configure")
     @Test fun t089_listenerFailureReleasesResources() = checkFailure("listener")
     @Test fun t089_startFailureReleasesResources() = checkFailure("start")

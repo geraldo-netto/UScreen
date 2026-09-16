@@ -171,6 +171,16 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
 
     /** Frame rate the host is configured to send, used to size decoder hints. */
     @Volatile var streamFps = Prefs.DEFAULT_FPS
+        set(value) {
+            if (value !in 10..90) return
+            synchronized(this) {
+                if (field == value) return
+                val restart = isRunning
+                if (restart) stop()
+                field = value
+                if (restart) start()
+            }
+        }
 
     // Stats
     private val frameCounter = AtomicInteger(0)

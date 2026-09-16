@@ -54,7 +54,7 @@ before the Annex B data.
 
 **Input (WebSocket, loopback, port 8891 + 2·slot).** JSON messages. The first
 must be `{"type":"auth","token":"…"}`; the server then replies with a greeting
-`{"status":"connected","width":…,"height":…,"codec":"h264"|"hevc","pen_only":bool}`
+`{"status":"connected","width":…,"height":…,"fps":…,"codec":"h264"|"hevc","pen_only":bool}`
 and repeats it whenever the mode changes. Client messages:
 
 ```json
