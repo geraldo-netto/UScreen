@@ -2259,16 +2259,7 @@ async fn unique_devices(
     let missing = devices
         .iter()
         .filter(|serial| !identities.contains_key(*serial));
-    let probes = missing.map(|serial| async move {
-        let output = tokio::process::Command::new(adb)
-            .args(["-s", serial, "shell", "getprop", "ro.serialno"])
-            .output_bounded()
-            .await
-            .ok()?;
-        let id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        (output.status.success() && !id.is_empty() && !id.eq_ignore_ascii_case("unknown"))
-            .then(|| (serial.clone(), id))
-    });
+    let probes = missing.map(|serial| probe_device_identity(serial, adb));
     for (serial, id) in futures_util::future::join_all(probes)
         .await
         .into_iter()
@@ -2276,6 +2267,25 @@ async fn unique_devices(
     {
         identities.insert(serial, id);
     }
+    select_device_transports(devices, current, identities)
+}
+
+async fn probe_device_identity(serial: &str, adb: &str) -> Option<(String, String)> {
+    let output = tokio::process::Command::new(adb)
+        .args(["-s", serial, "shell", "getprop", "ro.serialno"])
+        .output_bounded()
+        .await
+        .ok()?;
+    let id = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (output.status.success() && !id.is_empty() && !id.eq_ignore_ascii_case("unknown"))
+        .then(|| (serial.to_string(), id))
+}
+
+fn select_device_transports(
+    devices: &[String],
+    current: Option<&str>,
+    identities: &std::collections::HashMap<String, String>,
+) -> Vec<String> {
     let mut selected: Vec<String> = Vec::new();
     let mut groups = std::collections::HashMap::<String, usize>::new();
     for serial in devices {
