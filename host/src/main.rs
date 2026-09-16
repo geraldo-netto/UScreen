@@ -1390,17 +1390,26 @@ async fn adb_device_serial() -> Option<String> {
         .map(|s| s.to_string())
 }
 
+/// The ports the tablet app dials on its own loopback. Fixed in the app
+/// (VideoReceiver.PORT, TouchCapture.WS_URL), so `adb reverse` maps them per
+/// device onto whatever this daemon actually listens on: the configured
+/// ports for the first tablet, base + 2 per instance for the others.
+const APP_VIDEO_PORT: u16 = 8890;
+const APP_INPUT_PORT: u16 = 8891;
+
 async fn setup_adb_forwarding(serial: &str, video_port: u16, input_port: u16) -> Result<()> {
-    for port in [video_port, input_port] {
-        let arg = format!("tcp:{}", port);
+    for (remote, local) in [(APP_VIDEO_PORT, video_port), (APP_INPUT_PORT, input_port)] {
+        let remote = format!("tcp:{}", remote);
+        let local = format!("tcp:{}", local);
         let r = tokio::process::Command::new("adb")
-            .args(["-s", serial, "reverse", &arg, &arg])
+            .args(["-s", serial, "reverse", &remote, &local])
             .output()
             .await?;
         if !r.status.success() {
             anyhow::bail!(
-                "adb reverse {} failed: {}",
-                arg,
+                "adb reverse {} {} failed: {}",
+                remote,
+                local,
                 String::from_utf8_lossy(&r.stderr).trim()
             );
         }

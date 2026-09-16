@@ -10,11 +10,10 @@ Severity: **high** = crash, data loss, security, or a feature silently dead;
 cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 **L** larger. Status: open, doing, done, wontfix.
 
-70 items: 2 high, 28 medium, 40 low.
+69 items: 1 high, 28 medium, 40 low.
 
 | id | status | severity | effort | short description |
 |---|---|---|---|---|
-| T005 | open | high | S | Forward extra tablets' base ports to their session ports; second real tablet can never connect ([main.rs:971](host/src/main.rs#L971)) |
 | T006 | open | high | S | Rewrite pkgver in the shipped PKGBUILD; it is still 1.1.0 while everything else is 1.2.3 ([build-packages.sh:47](packaging/build-packages.sh#L47)) |
 | T007 | open | medium | S | Make the GitHub update check optional or correct SECURITY.md, which says it can be turned off ([MainActivity.kt:343](android/app/src/main/java/com/uscreen/MainActivity.kt#L343)) |
 | T008 | open | medium | S | Use START_NOT_STICKY and tie wake/Wi-Fi locks to onStart/onStop, not activity lifetime ([StreamingService.kt:112](android/app/src/main/java/com/uscreen/StreamingService.kt#L112)) |
@@ -86,8 +85,6 @@ cosmetic, or minor. Effort: **S** under an hour, **M** under half a day,
 | T075 | open | low | S | Check NOTES and the tag before the multi-minute build, not after ([publish-release.sh:57](scripts/publish-release.sh#L57)) |
 
 ## Details
-
-**T005** — spawn_extra_session's comment says the tablet side keeps using 8890/8891, but on_tablet_connected runs `adb reverse tcp:8892 tcp:8892`. The app hard-codes 127.0.0.1:8890 and ws://127.0.0.1:8891, so with max_tablets > 1 a second physical tablet gets a pipeline and a display but nothing listens on the ports it dials; only the loopback fake tablet works. Give setup_adb_forwarding separate remote/local ports: `adb reverse tcp:<base> tcp:<base+2*instance>`.
 
 **T006** — control and the rpm spec get Version sed-replaced but the PKGBUILD is tarred as-is with pkgver=1.1.0 and source at tag v$pkgver, so uscreen-1.2.3-PKGBUILD.tar.gz builds 1.1.0; publish-release.sh never checks it and docs/development.md:149 omits it from the bump list. Sed pkgver like the others and add it to the publish check and checklist.
 
