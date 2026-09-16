@@ -57,6 +57,16 @@ class PartialIoTest(unittest.TestCase):
     def test_t103_truncated_payload_is_not_valid_text(self):
         self.assertIsNone(tablet.ws_recv_text(FragmentedSocket([b'\x81\x05abc'])))
 
+    def test_t207_video_packets_keep_config_and_ack_sequence(self):
+        packets = [b'\x00codec', b'\x01' + struct.pack('>I', 42) + b'frame']
+        chunks = [struct.pack('>I', len(packet)) + packet for packet in packets]
+        with patch.object(tablet, 'ws_send') as send:
+            control = object()
+            result = tablet.receive_video(FragmentedSocket(chunks), control, 5)
+        self.assertEqual(result, (True, 1, 42))
+        send.assert_called_once_with(control, {'type': 'rendered', 'seq': 42, 'decode_us': 1000})
+        self.assertEqual(tablet.receive_video(FragmentedSocket([]), control, 5), (False, 0, None))
+
 
 if __name__ == '__main__':
     unittest.main()

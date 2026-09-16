@@ -78,6 +78,29 @@ def read_exact(s, n):
         buf += part
     return buf
 
+def receive_video(video, control, seconds):
+    frames = 0
+    got_config = False
+    t_end = time.time() + seconds
+    seq_last = None
+    while time.time() < t_end:
+        try:
+            ln = struct.unpack(">I", read_exact(video, 4))[0]
+            body = read_exact(video, ln)
+        except (socket.timeout, EOFError):
+            break
+        ptype = body[0]
+        if ptype == 0:
+            got_config = True
+            print(f"codec config: {ln-1} bytes")
+        elif ptype == 1:
+            seq = struct.unpack(">I", body[1:5])[0]
+            frames += 1
+            seq_last = seq
+            ws_send(control, {"type": "rendered", "seq": seq, "decode_us": 1000})
+    return got_config, frames, seq_last
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--slot", type=int, default=1)
@@ -110,25 +133,7 @@ def main():
     v = socket.create_connection(("127.0.0.1", vport), timeout=10)
     if token:
         v.sendall(token.encode())
-    frames = 0
-    got_config = False
-    t_end = time.time() + a.seconds
-    seq_last = None
-    while time.time() < t_end:
-        try:
-            ln = struct.unpack(">I", read_exact(v, 4))[0]
-            body = read_exact(v, ln)
-        except (socket.timeout, EOFError):
-            break
-        ptype = body[0]
-        if ptype == 0:
-            got_config = True
-            print(f"codec config: {ln-1} bytes")
-        elif ptype == 1:
-            seq = struct.unpack(">I", body[1:5])[0]
-            frames += 1
-            seq_last = seq
-            ws_send(ws, {"type": "rendered", "seq": seq, "decode_us": 1000})
+    got_config, frames, seq_last = receive_video(v, ws, a.seconds)
     print(f"frames: {frames}, config: {got_config}, last seq: {seq_last}")
     ok = got_config and frames > 0
     print("RESULT:", "OK" if ok else "FAIL")

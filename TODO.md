@@ -2,7 +2,6 @@
 
 | id | status | severity | effort | description |
 |---|---|---|---|---|
-| T207 | open | low | small | Refactor `scripts/fake-tablet.py::main` (baseline line 81): SonarQube cyclomatic complexity 11 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T208 | open | low | small | Refactor `scripts/gen-edid.py::make_edid` (baseline line 50): SonarQube cyclomatic complexity 10 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T209 | open | low | small | Refactor `scripts/tests/release_api_stub.py::fake_urlopen` (baseline line 14): SonarQube cyclomatic complexity 11 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
 | T210 | open | low | small | Refactor `scripts/tests/test_notices.py::test_t129_tar_deb_rpm_and_arch_include_notices` (baseline line 15): SonarQube cyclomatic complexity 11 exceeds 9. Extract focused responsibilities and reuse compatible helpers; preserve behavior and permanent regression coverage. Verify every resulting function scores at most 9. |
