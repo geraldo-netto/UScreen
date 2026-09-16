@@ -70,8 +70,10 @@ exist already (often a dummy plug), over the network. UScreen creates the
 display and works over USB with pen input as a tablet device.
 
 **What latency should I expect?**
-On the reference hardware: about 19–22 ms median end-to-end with H.264,
-15–18 ms with HEVC, over USB. The tablet's decoder is most of it.
+On the reference hardware: about 19–22 ms median with H.264, 15–18 ms with
+HEVC, over USB, measured from encoded packet readiness to receipt of the
+render acknowledgement. Capture, encoding and packetizer assembly are excluded;
+see [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
 **Can I use two tablets?**
 Yes, `max_tablets` up to 4; each becomes its own screen. Verified with one

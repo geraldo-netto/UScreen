@@ -1,15 +1,13 @@
-//! End-to-end latency measurement.
+//! Encoded-packet-to-render-acknowledgement latency on the host clock.
 //!
-//! Every access unit leaving the encoder gets a sequence number and a host
-//! timestamp. The tablet echoes the sequence number back over the existing
-//! input WebSocket once the frame has actually been rendered, so the round trip
-//! is measured entirely on the host's clock — no clock synchronisation between
-//! the two machines, which is what makes naive "timestamp in the stream"
-//! approaches useless.
+//! The timer starts when a complete access unit is ready for broadcast, after
+//! encoding and packetizer buffering. It ends when the tablet's render-callback
+//! acknowledgement reaches the host, so it includes the reverse message path
+//! and callback scheduling. The legacy log label is `encode→display`.
 //!
-//! What this measures is `encoder output → visible on the tablet`: transport
-//! queueing, decode and render. The helper reports its own capture→FIFO delay
-//! separately on stderr; the two together account for the whole pipeline.
+//! The helper's separate capture→FIFO timer starts after the EVDI grab. Neither
+//! metric covers the compositor wait, grab, encoding, or packetizer assembly;
+//! their percentiles cannot be summed into total display latency.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -26,13 +24,13 @@ const MAX_SAMPLES: usize = 1024;
 
 #[derive(Default)]
 struct Inner {
-    /// (seq, time the access unit left the encoder), oldest first.
+    /// (seq, time the complete access unit became ready for broadcast), oldest first.
     sent: VecDeque<(u32, Instant)>,
     /// Round-trip latencies in microseconds, for the current report window.
     samples: Vec<u32>,
     /// Of that round trip, the part the tablet spent decoding and rendering.
-    /// The remainder is what the transport costs — which is what decides
-    /// whether a different transport is worth building.
+    /// The remainder also includes host queueing and the return message path;
+    /// subtracting independent medians is only a rough transport estimate.
     decode_samples: Vec<u32>,
     /// Frames that were sent but whose acknowledgement never arrived before
     /// they aged out — a direct sign of frames being dropped downstream.
@@ -50,7 +48,7 @@ impl LatencyTracker {
         Self::default()
     }
 
-    /// An access unit just left the encoder.
+    /// A complete encoded access unit is ready for broadcast.
     pub fn on_encoded(&self, seq: u32) {
         let Ok(mut g) = self.inner.lock() else { return };
         if g.last_report.is_none() {
@@ -63,7 +61,7 @@ impl LatencyTracker {
         }
     }
 
-    /// The tablet reports that this frame is on screen.
+    /// The host received the tablet's render-callback acknowledgement.
     pub fn on_rendered(&self, seq: u32, decode_us: i64) {
         let Ok(mut g) = self.inner.lock() else { return };
         // Everything queued before this frame is now known to be behind it;

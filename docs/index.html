@@ -49,7 +49,7 @@
     "Direct USB connection over adb, Wi-Fi as a fallback",
     "Graphics-tablet mode with zero display latency",
     "Hardware encoding (NVENC, VAAPI) and decoding, H.264 and HEVC",
-    "Measured 22 ms median end-to-end latency over USB",
+    "Measured 22 ms median encoded-packet-to-render-acknowledgement latency over USB",
     "Packages for Debian, Ubuntu, Fedora, openSUSE, Arch, Bazzite",
     "Several tablets at once"
   ]
@@ -302,7 +302,7 @@
       </g>
       <!-- readout -->
       <g font-family="IBM Plex Mono, monospace" font-size="11" fill="#a8a399">
-        <text x="34" y="300">encode→display</text>
+        <text x="34" y="300">packet→ack</text>
         <text x="34" y="318" fill="#ece8df" font-size="14">p50 <tspan fill="#f0a742">19.3 ms</tspan>   p95 <tspan fill="#f0a742">22.9 ms</tspan></text>
         <text x="330" y="300">tablet decode+render</text>
         <text x="330" y="318" fill="#ece8df" font-size="14">≈ <tspan fill="#f0a742">15 ms</tspan> of that</text>
@@ -313,7 +313,7 @@
 </section>
 
 <div class="strip" aria-label="Key figures">
-  <div><div class="v">22<small>ms</small></div><div class="k">median latency, USB, H.264</div></div>
+  <div><div class="v">22<small>ms</small></div><div class="k">packet-to-ack median, USB, H.264</div></div>
   <div><div class="v">15–18<small>ms</small></div><div class="k">with HEVC</div></div>
   <div><div class="v">0<small>bytes</small></div><div class="k">of screen or input data sent to any cloud</div></div>
   <div><div class="v">5<small>families</small></div><div class="k">of Linux packages</div></div>
@@ -362,7 +362,7 @@
 <section id="numbers">
   <div class="sec-head">
     <h2>Numbers, with the method</h2>
-    <p>Every frame carries a sequence number; the tablet echoes it when the frame reaches the screen; the daemon logs the round trip on its own clock. Published, reproducible, and honest about Wi-Fi.</p>
+    <p>The host times complete encoded-packet readiness through receipt of the tablet’s render-callback acknowledgement. These historical results include the return message and exclude capture, encoding and packetizer assembly; they are not total display latency.</p>
   </div>
   <div class="table-wrap" tabindex="0" aria-label="Measured latency by transport and codec; scrolls sideways on narrow screens" data-hint="Swipe for notes →">
   <table>
@@ -379,7 +379,7 @@
     <b>uscreen::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
     <b>uscreen::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
   </div>
-  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/majmichu1/UScreen/blob/main/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
+  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt retains historical log labels: “encode→display” includes the return acknowledgement; “wire” also includes host queueing. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/majmichu1/UScreen/blob/main/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
 </section>
 
 <section id="compare">

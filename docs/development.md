@@ -47,7 +47,7 @@ host/              Rust daemon
   src/input.rs       WebSocket input server, uinput devices, KWin mapping
   src/config.rs      ~/.config/uscreen/config.toml
   src/runtime.rs     per-user runtime dir: FIFO, session token
-  src/latency.rs     end-to-end latency measurement
+  src/latency.rs     encoded-packet-to-render-acknowledgement timing
   src/tray.rs        StatusNotifierItem tray icon
   src/update.rs      release check (report only)
   src/doctor.rs      `uscreen doctor`

@@ -34,7 +34,9 @@
    these devices onto the virtual output over KWin's D-Bus interface so
    coordinates land on the right screen.
 7. **Latency loop.** Every frame carries a sequence number; the app echoes it
-   when the frame reaches the screen, and the daemon logs p50/p95 end-to-end.
+   after its render callback. The daemon logs packet-readiness-to-acknowledgement
+   p50/p95, including the return message and excluding capture, encoding and
+   packetizer assembly. See [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
 ## Processes
 

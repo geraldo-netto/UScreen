@@ -18,24 +18,29 @@ differ.
 
 ## How latency is measured
 
-The daemon stamps every encoded frame with a sequence number and starts a
-clock. The app hands the sequence number to the decoder as the presentation
-timestamp and, when Android's `onFrameRendered` callback fires for that frame,
-sends it back over the input socket with the time it spent on the tablet
-(arrival → on screen). The daemon then reports, every five seconds:
+The daemon starts a host-clock timer when a complete encoded access unit is
+ready for broadcast, after encoding and CLI packetizer buffering. The app
+returns its sequence number after Android's `onFrameRendered` callback runs;
+the timer stops when the host receives that acknowledgement over the input
+socket. The legacy log label **encode→display** therefore measures **encoded
+packet ready → render acknowledgement received**, including forward queueing,
+transport, decoding/rendering, callback scheduling and the return message.
+It is not a camera measurement of pixels becoming visible.
 
-- **encode→display**: total time from the frame leaving the encoder to being
-  on the tablet's screen, on the host's clock — no clock synchronisation
-  needed;
-- the tablet's **decode+render** share of that, and the remainder as **wire**.
+The tablet's **decode+render** value covers complete-frame arrival to execution
+of its render callback. The legacy **wire** estimate subtracts its median from
+the host median; it includes host queueing and the reverse acknowledgement path,
+and is not an isolated USB-hop measurement or an exact per-frame decomposition.
 
-It does not include capture (compositor → encoder), which the helper reports
-separately (`capture→fifo`, typically 8–20 ms at 90 Hz and dominated by
-waiting for the next compositor frame).
+Capture, encoding, and time already spent assembling an access unit are outside
+that host timer. The helper's separate `capture→fifo` timer begins after
+`evdi_grab_pixels` returns and ends after the frame is written to the FIFO;
+it excludes the compositor wait and the grab itself. These uncorrelated metrics
+do not add up to a measured total display latency.
 
 ## Results
 
-### End-to-end, USB
+### Encoded packet to acknowledgement, USB
 
 | codec | p50 | p95 | notes |
 | --- | --- | --- | --- |
@@ -43,10 +48,11 @@ waiting for the next compositor frame).
 | HEVC (NVENC) | 15–18 ms | 20–23 ms | tablet has a dedicated low-latency HEVC decoder |
 | HEVC Main10 (10-bit) | 16–17 ms | 19–22 ms | no measurable cost over 8-bit |
 
-Split of the ~22 ms H.264 figure: tablet decode+render ≈ 15 ms, USB/adb hop
-≈ 5–7 ms, encoder < 1 ms. The tablet's decoder is ~7–8 ms fixed plus ~1.2 ms
-per megapixel, which is why `stream_scale = 2` (a quarter of the pixels)
-brought p50 from 22 ms to 16 ms at the cost of softer text.
+Of the ~22 ms H.264 figure, the tablet reported about 15 ms from frame
+arrival to render callback; the remaining 5–7 ms includes both transport
+directions and host queueing. Encoding time was outside this measurement.
+On this hardware, `stream_scale = 2` (a quarter of the pixels) brought the
+reported p50 from 22 ms to 16 ms at the cost of softer text.
 
 ### USB vs Wi-Fi (H.264, quiet link)
 
@@ -69,7 +75,8 @@ usual excuses. Wi-Fi stays a fallback.
 | ffmpeg child process (default) | ~190 % of a core |
 | in-process libavcodec (`--features inproc-encoder`) | ~97 % |
 
-Latency identical either way; the encoder is not on the critical path.
+The reported packet-to-acknowledgement latency was similar; this metric does
+not establish encoder latency, because its timer begins after encoding.
 
 Capture helper while the output is disabled (tablet unplugged, or graphics-
 tablet mode): 96 % of a core before 0.4.0 (a poll loop with a deadline in the
@@ -104,7 +111,8 @@ on the roadmap.
 
 - One host, one tablet model. The tablet's decoder dominates the budget, so
   other tablets will land elsewhere; a Snapdragon 8 Gen 2 is a fast one.
-- The wire figure lumps adb, USB and the app's socket read together.
+- The wire estimate includes both directions of adb/USB and host queueing;
+  subtracting independent percentiles cannot isolate individual stages.
 - "Windows with p95 < 60 ms" is a coarse stutter indicator, not a standard.
 - No measurement yet of AMD/Intel VAAPI encoders or of libx264.
 

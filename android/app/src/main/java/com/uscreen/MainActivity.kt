@@ -60,7 +60,8 @@ class MainActivity : ComponentActivity() {
         applyToken(restart = false)
 
         // Close the host's latency measurement loop: every acknowledged frame
-        // lets the host time capture→display on its own clock.
+        // lets the host time encoded-packet readiness to receipt of the
+        // render acknowledgement, including the return message path.
         videoReceiver?.onFrameRendered = { seq, decodeUs ->
             touchCapture?.sendRendered(seq, decodeUs)
             // First frame ever on screen: say thanks once, then never again.

@@ -30,7 +30,8 @@ Ubuntu/Debian, Arch Linux and openSUSE.
   in Linux as a graphics-tablet device — Krita, GIMP and Blender see a tablet.
   A one-tap *graphics tablet* mode uses the pen on your own screen with zero
   display latency.
-- **Low latency, measured.** About 22 ms median end-to-end over USB with
+- **Low latency, measured.** About 22 ms median from encoded packet
+  readiness to render acknowledgement over USB with
   H.264, 15–18 ms with HEVC, on the reference hardware — the
   [numbers and the method](docs/benchmarks.md) are published.
 - **Plug in and it works.** The daemon starts with your desktop, finds the
@@ -87,7 +88,8 @@ display is generated to match the tablet. More in
 ## Performance
 
 Measured on the reference hardware over USB (2960×1848, 90 fps target,
-constant-quality encoding):
+constant-quality encoding). Times run from encoded packet readiness to receipt
+of the tablet's render acknowledgement; capture and encoding are excluded:
 
 | | median | p95 |
 | --- | --- | --- |
@@ -95,8 +97,9 @@ constant-quality encoding):
 | HEVC, NVENC | 15–18 ms | 20–23 ms |
 | Wi-Fi fallback (H.264) | 22.8 ms | 78.6 ms, worst frames in seconds |
 
-The tablet's hardware decoder is most of the budget (~15 ms), the USB hop
-5–7 ms, the encoder under 1 ms. Method, CPU figures and limitations in
+The tablet reports ~15 ms from frame arrival to render callback. The remaining
+5–7 ms includes host queueing and both transport directions. Method, CPU figures
+and measurement limits in
 [docs/benchmarks.md](docs/benchmarks.md).
 
 ## Compared with the alternatives
