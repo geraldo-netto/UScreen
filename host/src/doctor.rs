@@ -892,15 +892,50 @@ async fn check_version(r: &mut Report, cfg: &FileConfig) {
     }
 }
 
+fn read_config_report(r: &mut Report, path: &Path) -> Option<FileConfig> {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            r.line(
+                Level::Ok,
+                "config file",
+                &format!("{} absent — using defaults", path.display()),
+            );
+            return None;
+        }
+        Err(error) => {
+            r.line(
+                Level::Fail,
+                "config file",
+                &format!("{} unreadable: {error}", path.display()),
+            );
+            r.hint("restore access to this file; runtime uses defaults until it can be read");
+            return None;
+        }
+    };
+    match toml::from_str(&text) {
+        Ok(config) => {
+            r.line(Level::Ok, "config file", &path.display().to_string());
+            Some(config)
+        }
+        Err(error) => {
+            r.line(
+                Level::Fail,
+                "config file",
+                &format!("{} invalid: {error}", path.display()),
+            );
+            r.hint("repair the TOML; runtime uses defaults and partial updates preserve the invalid file");
+            None
+        }
+    }
+}
+
 fn check_config(r: &mut Report, cfg: &FileConfig) {
     let path = config::config_path();
     // `cfg` has already been clamped, so compare against the raw file too: a
     // stale 200 Mbps on disk is worth reporting even though the daemon would
     // no longer act on it.
-    let on_disk: Option<FileConfig> = std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|t| toml::from_str(&t).ok());
-    r.line(Level::Ok, "config file", &format!("{}", path.display()));
+    let on_disk = read_config_report(r, &path);
     if cfg.max_tablets > 1 {
         let cards = crate::vdisplay::evdi_cards().len() as u32;
         if cards >= cfg.max_tablets {
@@ -1100,6 +1135,41 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t149_config_health_distinguishes_invalid_missing_and_valid_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("config.toml");
+        for content in ["fps = invalid\n", "fps = 'wrong type'\n"] {
+            std::fs::write(&path, content).unwrap();
+            let mut report = super::Report::new();
+            assert!(super::read_config_report(&mut report, &path).is_none());
+            assert_eq!(report.failures, 1, "malformed config was reported healthy");
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), content);
+        }
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        let mut report = super::Report::new();
+        assert!(super::read_config_report(&mut report, &path).is_none());
+        assert_eq!(report.failures, 1);
+        std::fs::remove_dir(&path).unwrap();
+        let mut report = super::Report::new();
+        assert!(super::read_config_report(&mut report, &path).is_none());
+        assert_eq!(report.failures, 0);
+        assert!(report
+            .messages
+            .borrow()
+            .iter()
+            .any(|line| line.contains("defaults")));
+        std::fs::write(&path, "fps = 120\n").unwrap();
+        let mut report = super::Report::new();
+        assert_eq!(
+            super::read_config_report(&mut report, &path).unwrap().fps,
+            120,
+            "diagnostics must retain raw values before runtime clamps"
+        );
+        assert_eq!(report.failures, 0);
+    }
+
     #[test]
     fn t098_codec_report_requires_decoder_evidence() {
         let cfg = FileConfig {
