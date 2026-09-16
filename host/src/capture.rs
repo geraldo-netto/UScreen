@@ -779,15 +779,18 @@ impl CaptureManager {
         &mut self,
         spawn: impl FnOnce(Command) -> std::io::Result<Child>,
     ) -> Result<(u32, u32)> {
-        // Accept the old gstreamer-style name as an alias
-        let encoder = if self.config.encoder == "vaapih264enc" {
-            "h264_vaapi".to_string()
-        } else {
-            self.config.encoder.clone()
-        };
-        // Always the size the helper really emits, never the one we asked for:
-        // a mismatch here shows up as a permanently skewed picture.
+        // The encoder must consume the dimensions the helper actually emits.
         let (w, h) = self.active_mode();
+        self.log_encoder_dimensions(w, h);
+        let cmd = self.encoder_command(w, h)?;
+        let child = spawn(cmd).context("Failed to spawn ffmpeg encoder")?;
+        info!("Encoder started (PID: {})", child.id().unwrap_or(0));
+        self.encoder_child = Some(child);
+        Ok((w, h))
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn log_encoder_dimensions(&self, w: u32, h: u32) {
         let n = self.config.stream_scale.max(1);
         let expected = (
             ((self.config.width / n) & !1).max(2),
@@ -805,8 +808,16 @@ impl CaptureManager {
                 w, h, self.config.width, self.config.height, n
             );
         }
-        let fps = self.config.fps;
-        let bitrate = self.config.bitrate;
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn encoder_command(&self, w: u32, h: u32) -> Result<Command> {
+        // Accept the old gstreamer-style name as an alias
+        let encoder = if self.config.encoder == "vaapih264enc" {
+            "h264_vaapi".to_string()
+        } else {
+            self.config.encoder.clone()
+        };
         let codec = Codec::from_encoder(&encoder);
         // 10-bit only makes sense on HEVC here: NVENC's H.264 encoder is
         // 8-bit, so asking for it there would silently do nothing.
@@ -817,13 +828,30 @@ impl CaptureManager {
                 encoder
             );
         }
-        // Frame-count GOP bounds busy streams; wall-clock forced IDRs below
-        // also bound join/recovery when the helper drops to its 5 fps idle floor.
-        let gop = fps.max(1);
+        let encoder_args = self.encoder_arguments(&encoder, codec, ten_bit, w, h)?;
+        let mut cmd = Command::new("ffmpeg");
+        cmd.args(&encoder_args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .stdin(Stdio::null())
+            .kill_on_drop(true);
 
+        Ok(cmd)
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn encoder_arguments(
+        &self,
+        encoder: &str,
+        codec: Codec,
+        ten_bit: bool,
+        w: u32,
+        h: u32,
+    ) -> Result<Vec<String>> {
+        let fps = self.config.fps;
         let mut encoder_args: Vec<String> = vec!["-hide_banner".into()];
 
-        if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
+        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
             encoder_args
                 .extend_from_slice(&["-vaapi_device".into(), self.config.vaapi_device.clone()]);
         }
@@ -869,7 +897,7 @@ impl CaptureManager {
             fifo_path_for(self.config.instance),
         ]);
 
-        if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
+        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
             encoder_args.extend_from_slice(&[
                 "-vf".into(),
                 if ten_bit {
@@ -891,18 +919,34 @@ impl CaptureManager {
 
         encoder_args.extend_from_slice(&[
             "-c:v".into(),
-            encoder.clone(),
+            encoder.to_string(),
             "-fps_mode".into(),
             "passthrough".into(),
             "-force_key_frames".into(),
             "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into(),
         ]);
 
+        self.encoder_quality_args(&mut encoder_args, encoder, ten_bit)?;
+        encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
+        Ok(encoder_args)
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn encoder_quality_args(
+        &self,
+        args: &mut Vec<String>,
+        encoder: &str,
+        ten_bit: bool,
+    ) -> Result<()> {
+        let fps = self.config.fps;
+        let bitrate = self.config.bitrate;
+        // Frame-count GOP bounds busy streams; forced IDRs also bound idle joins.
+        let gop = fps.max(1);
         if encoder.ends_with("_nvenc") {
             let bitrate_m = bitrate as f64 / 1000.0;
             // bufsize = 1 frame of bits: keeps VBV under 1-frame delay.
             let bufsize_k = (bitrate / fps.max(1)).max(200);
-            encoder_args.extend_from_slice(&[
+            args.extend_from_slice(&[
                 "-preset".into(),
                 "p1".into(),
                 "-tune".into(),
@@ -948,12 +992,12 @@ impl CaptureManager {
                 // arithmetic: quantisation and motion compensation round in
                 // 10 bits instead of 8, which is what smooths the banding that
                 // shows up on gradients at low bitrates.
-                encoder_args.extend_from_slice(&["-profile:v".into(), "main10".into()]);
+                args.extend_from_slice(&["-profile:v".into(), "main10".into()]);
             }
-        } else if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
+        } else if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
             // Constant quality, for the same reason as NVENC above: a static
             // desktop should cost nothing, and the bitrate is only a ceiling.
-            encoder_args.extend_from_slice(&[
+            args.extend_from_slice(&[
                 "-rc_mode".into(),
                 "CQP".into(),
                 "-qp".into(),
@@ -969,7 +1013,7 @@ impl CaptureManager {
             ]);
         } else if encoder == "libx264" {
             let bufsize_k = (bitrate * 2 / fps.max(1)).max(200);
-            encoder_args.extend_from_slice(&[
+            args.extend_from_slice(&[
                 "-preset".into(),
                 "ultrafast".into(),
                 "-tune".into(),
@@ -992,19 +1036,7 @@ impl CaptureManager {
             );
         }
 
-        encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
-
-        let mut cmd = Command::new("ffmpeg");
-        cmd.args(&encoder_args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .stdin(Stdio::null())
-            .kill_on_drop(true);
-
-        let child = spawn(cmd).context("Failed to spawn ffmpeg encoder")?;
-        info!("Encoder started (PID: {})", child.id().unwrap_or(0));
-        self.encoder_child = Some(child);
-        Ok((w, h))
+        Ok(())
     }
 
     async fn start_session_encoder(&mut self) -> Result<(u32, u32)> {
