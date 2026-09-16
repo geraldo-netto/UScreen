@@ -230,10 +230,10 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
      * rather than letting it keep rendering into a destroyed surface, which
      * throws from the render thread on the way to the background.
      */
-    fun onSurfaceDestroyed() {
+    @Synchronized fun onSurfaceDestroyed() {
         surfaceReady.set(false)
         pendingSurface.set(null)
-        releaseCodec()
+        resetCodec()
     }
 
     @Synchronized private fun setupCodec(surface: Surface): Boolean {
@@ -350,9 +350,16 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                     }
                 } catch (e: IllegalStateException) {
                     if (codecAlive) Log.w(TAG, "Output thread: codec gone", e)
+                    synchronized(this@VideoReceiver) {
+                        if (mediaCodec === codec) resetCodec()
+                    }
                     break
                 } catch (e: Exception) {
                     if (codecAlive) Log.w(TAG, "Output thread error", e)
+                    synchronized(this@VideoReceiver) {
+                        if (mediaCodec === codec) resetCodec()
+                    }
+                    break
                 }
             }
         }, "uscreen-render").apply {
@@ -451,7 +458,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                 var packetBuf = ByteArray(512 * 1024)
                 var firstFrame = true
 
-                receiveLoop@ while (isCurrent(generation)) {
+                receiveLoop@ while (isCurrent(generation) && !connection.isClosed) {
                     val codec = synchronized(this@VideoReceiver) {
                         if (isCurrent(generation)) mediaCodec else null
                     } ?: break
@@ -567,7 +574,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             while (true) {
                 val inputIndex = codec.dequeueInputBuffer(20_000) // 20ms
                 if (inputIndex >= 0) {
-                    val inputBuffer = codec.getInputBuffer(inputIndex) ?: return
+                    val inputBuffer = checkNotNull(codec.getInputBuffer(inputIndex)) {
+                        "Decoder returned no input buffer"
+                    }
                     inputBuffer.clear()
                     inputBuffer.put(data, offset, size)
 
@@ -599,7 +608,6 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                             // client that (re)connects — so drop the socket
                             // too, and let the read loop come back.
                             resetCodec()
-                            try { socket?.close() } catch (_: Exception) {}
                         }
                     }
                     return
@@ -616,6 +624,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             resetCodec()
         } catch (e: Exception) {
             Log.w(TAG, "Decoder feed error", e)
+            resetCodec()
         }
     }
 
@@ -623,7 +632,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
     private fun releaseCodec() {
         synchronized(this) {
             codecAlive = false
-            outputThread?.join(500)
+            outputThread?.let { if (it !== Thread.currentThread()) it.join(500) }
             outputThread = null
             mediaCodec?.let {
                 try { it.stop() } catch (_: Exception) {}
@@ -637,11 +646,10 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
 
     private fun resetCodec() {
         synchronized(this) {
+            // Every replacement decoder needs headers and a keyframe. Leave
+            // creation to reconnect, which obtains both from the host.
+            try { socket?.close() } catch (_: Exception) {}
             releaseCodec()
-            val surface = pendingSurface.get()
-            if (surface != null && surface.isValid) {
-                setupCodec(surface)
-            }
         }
     }
 
