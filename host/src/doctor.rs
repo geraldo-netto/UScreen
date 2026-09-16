@@ -177,6 +177,12 @@ async fn check_tools(r: &mut Report, cfg: &FileConfig) {
 }
 
 async fn check_tools_with_helper(r: &mut Report, cfg: &FileConfig, helper: &Path) {
+    check_helper_execution(r, helper).await;
+    check_required_commands(r);
+    check_encoder_availability(r, cfg).await;
+}
+
+async fn check_helper_execution(r: &mut Report, helper: &Path) {
     // With no arguments the helper prints usage and exits before opening EVDI.
     match tokio::process::Command::new(helper).output_bounded().await {
         Ok(out)
@@ -206,6 +212,9 @@ async fn check_tools_with_helper(r: &mut Report, cfg: &FileConfig, helper: &Path
             r.hint("reinstall UScreen (including evdi_helper) and its libevdi runtime dependency");
         }
     }
+}
+
+fn check_required_commands(r: &mut Report) {
     for (tool, fatal) in [("ffmpeg", true), ("adb", true), ("kscreen-doctor", false)] {
         if command_exists(tool) {
             r.line(Level::Ok, tool, "found");
@@ -216,7 +225,9 @@ async fn check_tools_with_helper(r: &mut Report, cfg: &FileConfig, helper: &Path
             r.line(Level::Warn, tool, "not installed (KDE only)");
         }
     }
+}
 
+async fn check_encoder_availability(r: &mut Report, cfg: &FileConfig) {
     if let Some(list) = output_of("ffmpeg", &["-hide_banner", "-encoders"]).await {
         let has = |name: &str| {
             list.lines()
