@@ -1001,6 +1001,29 @@ impl CaptureManager {
         }
     }
 
+    async fn while_active<T>(
+        display: &mut watch::Receiver<bool>,
+        shutdown: &mut watch::Receiver<bool>,
+        operation: impl std::future::Future<Output = T>,
+    ) -> Option<T> {
+        tokio::pin!(operation);
+        loop {
+            if !*display.borrow()
+                || *shutdown.borrow()
+                || display.has_changed().is_err()
+                || shutdown.has_changed().is_err()
+            {
+                return None;
+            }
+            tokio::select! {
+                biased;
+                _ = shutdown.changed() => {},
+                _ = display.changed() => {},
+                result = &mut operation => return Some(result),
+            }
+        }
+    }
+
     pub async fn stream_frames(
         &mut self,
         tx: broadcast::Sender<VideoPacket>,
@@ -1020,6 +1043,13 @@ impl CaptureManager {
         let mut encoder_mode: Option<(u32, u32)> = None;
 
         loop {
+            if *shutdown_rx.borrow()
+                || shutdown_rx.has_changed().is_err()
+                || display_rx.has_changed().is_err()
+            {
+                self.shutdown().await;
+                return Ok(());
+            }
             // Apply the latest runtime settings before (re)starting anything
             {
                 let s = settings_rx.borrow_and_update().clone();
@@ -1048,7 +1078,12 @@ impl CaptureManager {
                         Self::terminate(&mut h, "evdi_helper").await;
                     }
                     // Give the compositor a moment to process the unplug
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    Self::while_active(
+                        &mut display_rx,
+                        &mut shutdown_rx,
+                        tokio::time::sleep(std::time::Duration::from_millis(500)),
+                    )
+                    .await;
                 }
                 self.config.encoder = s.encoder;
                 self.config.fps = s.fps;
@@ -1092,7 +1127,13 @@ impl CaptureManager {
 
             // Start evdi-helper if not running
             if self.helper_child.is_none() {
-                if let Err(e) = self.start_helper().await {
+                let Some(result) =
+                    Self::while_active(&mut display_rx, &mut shutdown_rx, self.start_helper())
+                        .await
+                else {
+                    continue;
+                };
+                if let Err(e) = result {
                     error!(
                         "Failed to start helper: {}. Retrying in {}ms...",
                         e, backoff_ms
@@ -1107,7 +1148,12 @@ impl CaptureManager {
                             error!("{}", reason);
                         }
                     }
-                    tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
+                    Self::while_active(
+                        &mut display_rx,
+                        &mut shutdown_rx,
+                        tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
+                    )
+                    .await;
                     backoff_ms = (backoff_ms * 2).min(30_000);
                     continue;
                 }
@@ -1122,8 +1168,15 @@ impl CaptureManager {
             // enabling it unconditionally puts a monitor on the desktop that
             // nobody can see, and KDE happily moves windows onto it. The
             // display_rx branch below enables it the moment that changes.
-            if *display_rx.borrow() {
-                Self::enable_evdi_display(self.helper_card, self.config.position).await;
+            if Self::while_active(
+                &mut display_rx,
+                &mut shutdown_rx,
+                Self::enable_evdi_display(self.helper_card, self.config.position),
+            )
+            .await
+            .is_none()
+            {
+                continue;
             }
 
             // Wait (briefly) for the helper to report the mode the compositor
@@ -1134,22 +1187,39 @@ impl CaptureManager {
             // Skipped when nothing is using the virtual output: it is
             // disabled then, so no mode is ever reported and the wait would
             // just add three seconds and a warning to every daemon start.
-            if *display_rx.borrow() {
-                self.wait_stream_size().await;
+            if Self::while_active(&mut display_rx, &mut shutdown_rx, self.wait_stream_size())
+                .await
+                .is_none()
+            {
+                continue;
             }
             mode_rx.borrow_and_update();
             stream_rx.borrow_and_update();
 
             // Start encoder if not running
             if self.encoder_child.is_none() {
-                match self.start_session_encoder().await {
+                let Some(result) = Self::while_active(
+                    &mut display_rx,
+                    &mut shutdown_rx,
+                    self.start_session_encoder(),
+                )
+                .await
+                else {
+                    continue;
+                };
+                match result {
                     Ok(mode) => encoder_mode = Some(mode),
                     Err(e) => {
                         error!(
                             "Failed to start encoder: {}. Retrying in {}ms...",
                             e, backoff_ms
                         );
-                        tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
+                        Self::while_active(
+                            &mut display_rx,
+                            &mut shutdown_rx,
+                            tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
+                        )
+                        .await;
                         backoff_ms = (backoff_ms * 2).min(30_000);
                         continue;
                     }
@@ -1288,15 +1358,29 @@ impl CaptureManager {
                         let wanted = *display_rx.borrow();
                         if wanted {
                             info!("Tablet is a screen — enabling the virtual display");
-                            Self::enable_evdi_display(card, self.config.position).await;
-                            resume_same_encoder = true;
+                            Self::while_active(&mut display_rx, &mut shutdown_rx,
+                                Self::enable_evdi_display(card, self.config.position)).await;
+                            // Leave cancellation pending for the session select.
+                            if *shutdown_rx.borrow() || shutdown_rx.has_changed().is_err() {
+                                #[cfg(feature = "inproc-encoder")]
+                                stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
+                                encode_task.abort();
+                                self.shutdown().await;
+                                return Ok(());
+                            }
+                            if !*display_rx.borrow() || display_rx.has_changed().is_err() {
+                                display_dropped = true;
+                            } else {
+                                resume_same_encoder = true;
+                            }
                         } else {
                             // Disable first so KWin moves the windows off it, then
                             // fall through to the teardown: the helper goes away
                             // with the session, and the top of the outer loop
                             // waits for a tablet before bringing anything back.
                             info!("Tablet is not a screen — disabling the virtual display");
-                            Self::disable_evdi_display(card).await;
+                            let _ = tokio::time::timeout(std::time::Duration::from_millis(500),
+                                Self::disable_evdi_display(card)).await;
                             display_dropped = true;
                         }
                     }
@@ -1310,7 +1394,8 @@ impl CaptureManager {
                         #[cfg(feature = "inproc-encoder")]
                         stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
                         encode_task.abort();
-                        Self::disable_evdi_display(card).await;
+                        let _ = tokio::time::timeout(std::time::Duration::from_millis(500),
+                                Self::disable_evdi_display(card)).await;
                         self.shutdown().await;
                         return Ok(());
                     }
@@ -1361,7 +1446,12 @@ impl CaptureManager {
                 *config = None;
             }
             if !settings_changed && !mode_changed && !display_dropped {
-                tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
+                Self::while_active(
+                    &mut display_rx,
+                    &mut shutdown_rx,
+                    tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
+                )
+                .await;
             }
         }
     }
@@ -1949,6 +2039,109 @@ mod tests {
             packetizer.process_nal(&sets[0], &mut packets);
             assert_eq!(packetizer.codec_config().unwrap().as_ref(), sets.concat());
             assert_eq!(packetizer.config.len(), initial.len());
+        }
+    }
+
+    fn manager_settings(manager: &CaptureManager) -> EncoderSettings {
+        let c = &manager.config;
+        EncoderSettings {
+            encoder: c.encoder.clone(),
+            fps: c.fps,
+            bitrate: c.bitrate,
+            width: c.width,
+            height: c.height,
+            quality: c.quality,
+            width_mm: c.width_mm,
+            height_mm: c.height_mm,
+            stream_scale: c.stream_scale,
+        }
+    }
+
+    #[tokio::test]
+    async fn t091_shutdown_interrupts_real_capture_retry() {
+        let mut manager = test_manager();
+        let root = tempfile::tempdir().unwrap();
+        manager.config.edid_path = Some(root.path().join("test.edid"));
+        let (_settings, settings) = watch::channel(manager_settings(&manager));
+        let (_display, display) = watch::channel(true);
+        let (shutdown, stop) = watch::channel(false);
+        let (video, _) = broadcast::channel(8);
+        let mut task =
+            tokio::spawn(
+                async move { manager.stream_frames(video, settings, display, stop).await },
+            );
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        shutdown.send(true).unwrap();
+        let stopped = tokio::time::timeout(std::time::Duration::from_millis(300), &mut task).await;
+        task.abort();
+        assert!(matches!(stopped, Ok(Ok(Ok(())))), "retry ignores shutdown");
+    }
+
+    #[tokio::test]
+    async fn t091_setup_stages_cancel_on_shutdown_or_detach() {
+        use std::os::unix::fs::PermissionsExt;
+        for shutdown in [false, true] {
+            for stage in 0..3 {
+                let root = tempfile::tempdir().unwrap();
+                let helper = root.path().join("helper");
+                std::fs::write(&helper, "#!/bin/sh\necho $$ > \"$0.pid\"\nexec sleep 30\n")
+                    .unwrap();
+                std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
+                let mut manager = test_manager();
+                manager.config.helper_path = helper.clone();
+                manager.config.edid_path = Some(root.path().join("test.edid"));
+                let (display_tx, mut display) = watch::channel(true);
+                let (shutdown_tx, mut stop) = watch::channel(false);
+                let operation = async {
+                    match stage {
+                        0 => {
+                            let _ = manager.start_helper().await;
+                        }
+                        1 => manager.wait_stream_size().await,
+                        _ => tokio::time::sleep(std::time::Duration::from_secs(30)).await,
+                    }
+                };
+                let cancel = async {
+                    if stage == 0 {
+                        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+                            while !helper.with_extension("pid").exists() {
+                                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                            }
+                        })
+                        .await
+                        .unwrap();
+                    } else {
+                        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                    }
+                    if shutdown {
+                        shutdown_tx.send(true).unwrap();
+                    } else {
+                        display_tx.send(false).unwrap();
+                    }
+                };
+                let result = tokio::time::timeout(std::time::Duration::from_millis(1200), async {
+                    tokio::join!(
+                        CaptureManager::while_active(&mut display, &mut stop, operation),
+                        cancel
+                    )
+                    .0
+                })
+                .await;
+                assert!(
+                    matches!(result, Ok(None)),
+                    "stage {stage} ignored cancellation"
+                );
+                if stage == 0 {
+                    let pid = std::fs::read_to_string(helper.with_extension("pid")).unwrap();
+                    tokio::time::timeout(std::time::Duration::from_millis(300), async {
+                        while std::path::Path::new(&format!("/proc/{}", pid.trim())).exists() {
+                            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                        }
+                    })
+                    .await
+                    .expect("cancelled helper not reaped");
+                }
+            }
         }
     }
 
