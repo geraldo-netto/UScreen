@@ -290,6 +290,18 @@ struct App {
     message: String,
     /// Newer release, if the check made when the window opened found one.
     update: Arc<Mutex<Option<String>>>,
+    tab: Tab,
+}
+
+/// The settings are more than fit in one column, so they are grouped.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum Tab {
+    /// Encoder, quality, bitrate, frame rate, colour depth, resolution, scale.
+    Video,
+    /// Where the screen goes, which mode, how many tablets, input devices.
+    Display,
+    /// Security, updates, plug & play.
+    General,
 }
 
 const RELEASES_API: &str = "https://api.github.com/repos/majmichu1/UScreen/releases/latest";
@@ -363,6 +375,7 @@ impl App {
             status,
             message: String::new(),
             update,
+            tab: Tab::Video,
         }
     }
 
@@ -413,469 +426,514 @@ impl eframe::App for App {
         ctx.request_repaint_after(Duration::from_secs(1));
         let status = self.status.lock().map(|s| s.clone()).unwrap_or_default();
 
+        // The settings run longer than any sensible window, so they scroll;
+        // the config path stays put underneath instead of scrolling away.
+        egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
+            ui.add_space(4.0);
+            ui.label(
+                egui::RichText::new(format!("config: {}", config_path().display()))
+                    .weak()
+                    .size(10.0),
+            );
+            ui.add_space(2.0);
+        });
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_space(6.0);
-            ui.heading(egui::RichText::new("UScreen").size(26.0));
-            ui.label(egui::RichText::new("USB second display for your tablet").weak());
-            ui.horizontal(|ui| {
-                if ui.small_button("Report compatibility").on_hover_text(
-                    "Opens a GitHub issue pre-filled with your setup. Nothing is sent until you submit it.").clicked()
-                {
-                    let body = format!(
-                        "Result: \n\nDistribution and desktop: {}\nGPU and encoder: {}\nTablet, Android, stylus: {}\nUScreen version: {}\n\nLatency line from the log (optional):\n\nNotes:\n",
-                        os_release_name(), self.cfg.encoder, status.tablet_model, env!("CARGO_PKG_VERSION"));
-                    let url = format!(
-                        "https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
-                        urlencode("Compatibility: "), urlencode(&body));
-                    let _ = Command::new("xdg-open").arg(url).spawn();
-                }
-                if ui.small_button("Star on GitHub").clicked() {
-                    let _ = Command::new("xdg-open").arg("https://github.com/majmichu1/UScreen").spawn();
-                }
-            });
-            if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {
+            egui::ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
                 ui.add_space(6.0);
+                ui.heading(egui::RichText::new("UScreen").size(26.0));
+                ui.label(egui::RichText::new("USB second display for your tablet").weak());
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new(format!("Update available: {}", v)).strong());
-                    if ui.link("open release page").clicked() {
-                        let _ = Command::new("xdg-open").arg(RELEASES_PAGE).spawn();
+                    if ui.small_button("Report compatibility").on_hover_text(
+                        "Opens a GitHub issue pre-filled with your setup. Nothing is sent until you submit it.").clicked()
+                    {
+                        let body = format!(
+                            "Result: \n\nDistribution and desktop: {}\nGPU and encoder: {}\nTablet, Android, stylus: {}\nUScreen version: {}\n\nLatency line from the log (optional):\n\nNotes:\n",
+                            os_release_name(), self.cfg.encoder, status.tablet_model, env!("CARGO_PKG_VERSION"));
+                        let url = format!(
+                            "https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
+                            urlencode("Compatibility: "), urlencode(&body));
+                        let _ = Command::new("xdg-open").arg(url).spawn();
+                    }
+                    if ui.small_button("Star on GitHub").clicked() {
+                        let _ = Command::new("xdg-open").arg("https://github.com/majmichu1/UScreen").spawn();
                     }
                 });
-            }
-            ui.add_space(12.0);
+                if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {
+                    ui.add_space(6.0);
+                    ui.horizontal(|ui| {
+                        ui.label(egui::RichText::new(format!("Update available: {}", v)).strong());
+                        if ui.link("open release page").clicked() {
+                            let _ = Command::new("xdg-open").arg(RELEASES_PAGE).spawn();
+                        }
+                    });
+                }
+                ui.add_space(12.0);
 
-            // ----- First-run system setup -----
-            let needs_setup = status.evdi_count <= 0;
-            let missing_pkgs = !status.ffmpeg_ok || !status.adb_ok;
-            if needs_setup || missing_pkgs {
+                // ----- First-run system setup -----
+                let needs_setup = status.evdi_count <= 0;
+                let missing_pkgs = !status.ffmpeg_ok || !status.adb_ok;
+                if needs_setup || missing_pkgs {
+                    egui::Frame::group(ui.style())
+                        .fill(egui::Color32::from_rgb(50, 38, 22))
+                        .inner_margin(12.0)
+                        .show(ui, |ui| {
+                            ui.set_min_width(ui.available_width());
+                            ui.label(
+                                egui::RichText::new("Setup needed")
+                                    .strong()
+                                    .color(egui::Color32::from_rgb(255, 180, 80)),
+                            );
+                            if missing_pkgs {
+                                let mut pkgs = vec![];
+                                if !status.ffmpeg_ok {
+                                    pkgs.push("ffmpeg");
+                                }
+                                if !status.adb_ok {
+                                    pkgs.push("android-tools (adb)");
+                                }
+                                ui.label(format!(
+                                    "Install with your package manager: {}",
+                                    pkgs.join(", ")
+                                ));
+                            }
+                            if needs_setup {
+                                ui.label(if status.evdi_count < 0 {
+                                    "The EVDI kernel module is not loaded (install evdi/evdi-dkms)."
+                                } else {
+                                    "The virtual display device needs to be enabled (one time)."
+                                });
+                                if ui.button("Enable virtual display (asks for password)").clicked()
+                                {
+                                    match run_system_setup() {
+                                        Ok(_) => self.message = "System setup complete".into(),
+                                        Err(e) => self.message = e,
+                                    }
+                                }
+                            }
+                        });
+                    ui.add_space(10.0);
+                }
+
+                // ----- Status -----
                 egui::Frame::group(ui.style())
-                    .fill(egui::Color32::from_rgb(50, 38, 22))
                     .inner_margin(12.0)
                     .show(ui, |ui| {
                         ui.set_min_width(ui.available_width());
-                        ui.label(
-                            egui::RichText::new("Setup needed")
-                                .strong()
-                                .color(egui::Color32::from_rgb(255, 180, 80)),
-                        );
-                        if missing_pkgs {
-                            let mut pkgs = vec![];
-                            if !status.ffmpeg_ok {
-                                pkgs.push("ffmpeg");
-                            }
-                            if !status.adb_ok {
-                                pkgs.push("android-tools (adb)");
-                            }
-                            ui.label(format!(
-                                "Install with your package manager: {}",
-                                pkgs.join(", ")
-                            ));
-                        }
-                        if needs_setup {
-                            ui.label(if status.evdi_count < 0 {
-                                "The EVDI kernel module is not loaded (install evdi/evdi-dkms)."
+                        status_dot(
+                            ui,
+                            status.daemon_running,
+                            if status.daemon_running { "Daemon running" } else { "Daemon stopped" },
+                            &if status.daemon_running {
+                                format!("PID {}", status.daemon_pid)
                             } else {
-                                "The virtual display device needs to be enabled (one time)."
-                            });
-                            if ui.button("Enable virtual display (asks for password)").clicked()
-                            {
-                                match run_system_setup() {
-                                    Ok(_) => self.message = "System setup complete".into(),
-                                    Err(e) => self.message = e,
-                                }
-                            }
-                        }
-                    });
-                ui.add_space(10.0);
-            }
-
-            // ----- Status -----
-            egui::Frame::group(ui.style())
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    ui.set_min_width(ui.available_width());
-                    status_dot(
-                        ui,
-                        status.daemon_running,
-                        if status.daemon_running { "Daemon running" } else { "Daemon stopped" },
-                        &if status.daemon_running {
-                            format!("PID {}", status.daemon_pid)
-                        } else {
-                            String::new()
-                        },
-                    );
-                    ui.add_space(4.0);
-                    status_dot(
-                        ui,
-                        status.tablet_connected,
-                        if status.tablet_connected { "Tablet connected" } else { "No tablet detected" },
-                        &status.tablet_model,
-                    );
-                    if !status.tablet_connected {
+                                String::new()
+                            },
+                        );
                         ui.add_space(4.0);
-                        ui.label(
-                            egui::RichText::new(
-                                "Plug in via USB and enable USB debugging on the tablet",
-                            )
-                            .weak()
-                            .size(11.0),
+                        status_dot(
+                            ui,
+                            status.tablet_connected,
+                            if status.tablet_connected { "Tablet connected" } else { "No tablet detected" },
+                            &status.tablet_model,
                         );
-                    }
-                });
-
-            ui.add_space(10.0);
-
-            // ----- Start / Stop -----
-            ui.horizontal(|ui| {
-                let big = egui::vec2(ui.available_width(), 34.0);
-                if status.daemon_running {
-                    if ui
-                        .add_sized(big, egui::Button::new(egui::RichText::new("Stop").size(16.0)))
-                        .clicked()
-                    {
-                        match stop_daemon() {
-                            Ok(_) => self.message = "Daemon stopped".into(),
-                            Err(e) => self.message = e,
-                        }
-                    }
-                } else if ui
-                    .add_sized(big, egui::Button::new(egui::RichText::new("Start").size(16.0)))
-                    .clicked()
-                {
-                    match start_daemon() {
-                        Ok(_) => self.message = "Daemon starting…".into(),
-                        Err(e) => self.message = e,
-                    }
-                }
-            });
-
-            ui.add_space(14.0);
-            ui.separator();
-            ui.add_space(8.0);
-
-            // ----- Settings -----
-            ui.label(egui::RichText::new("Settings").strong().size(15.0));
-            ui.add_space(8.0);
-
-            egui::Grid::new("settings")
-                .num_columns(2)
-                .spacing([16.0, 10.0])
-                .show(ui, |ui| {
-                    ui.label("Encoder");
-                    egui::ComboBox::from_id_salt("encoder")
-                        .selected_text(match self.cfg.encoder.as_str() {
-                            "h264_nvenc" => "NVIDIA H.264 (NVENC)",
-                            "hevc_nvenc" => "NVIDIA HEVC (NVENC)",
-                            "h264_vaapi" | "vaapih264enc" => "AMD / Intel (VAAPI)",
-                            "libx264" => "CPU (libx264)",
-                            other => other,
-                        })
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.cfg.encoder,
-                                "h264_nvenc".to_string(),
-                                "NVIDIA H.264 (NVENC)",
-                            );
-                            ui.selectable_value(
-                                &mut self.cfg.encoder,
-                                "hevc_nvenc".to_string(),
-                                "NVIDIA HEVC (NVENC)",
-                            );
-                            ui.selectable_value(
-                                &mut self.cfg.encoder,
-                                "h264_vaapi".to_string(),
-                                "AMD / Intel (VAAPI)",
-                            );
-                            ui.selectable_value(
-                                &mut self.cfg.encoder,
-                                "libx264".to_string(),
-                                "CPU (libx264)",
-                            );
-                        });
-                    ui.end_row();
-
-                    ui.label("Quality");
-                    ui.vertical(|ui| {
-                        // Shown the intuitive way round — dragging right means
-                        // sharper — while the stored value is the encoder's
-                        // quantiser, where lower is better.
-                        let mut sharpness =
-                            (MAX_QUALITY - self.cfg.quality.clamp(MIN_QUALITY, MAX_QUALITY)) as f32;
-                        let span = (MAX_QUALITY - MIN_QUALITY) as f32;
-                        if ui
-                            .add(egui::Slider::new(&mut sharpness, 0.0..=span).show_value(false))
-                            .changed()
-                        {
-                            self.cfg.quality = MAX_QUALITY - sharpness.round() as u32;
-                        }
-                        ui.label(
-                            egui::RichText::new(
-                                "This, not the bitrate, sets how sharp text looks",
-                            )
-                            .weak()
-                            .size(11.0),
-                        );
-                    });
-                    ui.end_row();
-
-                    ui.label("Bitrate ceiling");
-                    ui.vertical(|ui| {
-                        let mut mbps = self.cfg.bitrate as f32 / 1000.0;
-                        // Capped at what the USB transport actually sustains:
-                        // past that the encoder just outruns the link and the
-                        // extra bits turn into queueing delay, not sharpness.
-                        if ui
-                            .add(egui::Slider::new(&mut mbps, 5.0..=60.0).suffix(" Mbps"))
-                            .changed()
-                        {
-                            self.cfg.bitrate = (mbps * 1000.0) as u32;
-                        }
-                        ui.label(
-                            egui::RichText::new(
-                                "Only a cap for bursts — a desktop streams well below it",
-                            )
-                            .weak()
-                            .size(11.0),
-                        );
-                    });
-                    ui.end_row();
-
-                    ui.label("Frame rate");
-                    // 120 is not offered: EDID 1.4 stores the pixel clock in 16
-                    // bits and 2960x1848@120 overflows it, so the virtual mode
-                    // is capped at 90 Hz.
-                    egui::ComboBox::from_id_salt("fps")
-                        .selected_text(format!("{} fps", self.cfg.fps))
-                        .show_ui(ui, |ui| {
-                            for f in [30u32, 60, 90] {
-                                ui.selectable_value(&mut self.cfg.fps, f, format!("{} fps", f));
-                            }
-                        });
-                    ui.end_row();
-
-                    ui.label("Security");
-                    ui.vertical(|ui| {
-                        ui.checkbox(&mut self.cfg.require_token, "Require the session token");
-                        ui.label(egui::RichText::new(
-                            "Off only for an app older than 1.1.0. Without it any local process \
-                             can read the screen and inject input.").small().weak());
-                    });
-                    ui.end_row();
-
-                    ui.label("Updates");
-                    ui.checkbox(&mut self.cfg.check_updates, "Check for a newer release on start");
-                    ui.end_row();
-
-                    ui.label("Tablets");
-                    ui.vertical(|ui| {
-                        ui.add(egui::Slider::new(&mut self.cfg.max_tablets, 1..=4).text("at once"));
-                        ui.label(egui::RichText::new(
-                            "Each tablet becomes its own screen. Needs that many EVDI devices \
-                             (see uscreen doctor); the installer prepares two.").small().weak());
-                    });
-                    ui.end_row();
-
-                    ui.label("Position");
-                    egui::ComboBox::from_id_salt("position")
-                        .selected_text(match self.cfg.position.as_str() {
-                            "left" => "Left of the other screens",
-                            "above" => "Above the other screens",
-                            "below" => "Below the other screens",
-                            _ => "Right of the other screens",
-                        })
-                        .show_ui(ui, |ui| {
-                            for (v, label) in [
-                                ("right", "Right of the other screens"),
-                                ("left", "Left of the other screens"),
-                                ("above", "Above the other screens"),
-                                ("below", "Below the other screens"),
-                            ] {
-                                ui.selectable_value(&mut self.cfg.position, v.to_string(), label);
-                            }
-                        });
-                    ui.end_row();
-
-                    ui.label("Colour depth");
-                    ui.vertical(|ui| {
-                        let hevc = self.cfg.encoder.contains("hevc");
-                        ui.add_enabled(
-                            hevc,
-                            egui::Checkbox::new(&mut self.cfg.ten_bit, "10-bit (HEVC Main10)"),
-                        );
-                        ui.label(
-                            egui::RichText::new(if hevc {
-                                "Smooths banding on gradients. The desktop itself is 8-bit, \
-                                 so this adds precision, not colour."
-                            } else {
-                                "Needs the HEVC encoder — H.264 here is 8-bit only."
-                            })
-                            .small()
-                            .weak(),
-                        );
-                    });
-                    ui.end_row();
-
-                    ui.label("Resolution");
-                    ui.vertical(|ui| {
-                        ui.checkbox(&mut self.cfg.auto_resolution, "Auto (match the tablet)");
-                        ui.horizontal(|ui| {
-                            ui.add_enabled(
-                                !self.cfg.auto_resolution,
-                                egui::DragValue::new(&mut self.cfg.width)
-                                    .range(640..=8192)
-                                    .speed(8),
-                            );
-                            ui.label("×");
-                            ui.add_enabled(
-                                !self.cfg.auto_resolution,
-                                egui::DragValue::new(&mut self.cfg.height)
-                                    .range(480..=8192)
-                                    .speed(8),
-                            );
-                        });
-                        if self.cfg.auto_resolution {
+                        if !status.tablet_connected {
+                            ui.add_space(4.0);
                             ui.label(
-                                egui::RichText::new(format!(
-                                    "currently {} × {}",
-                                    self.cfg.width, self.cfg.height
-                                ))
+                                egui::RichText::new(
+                                    "Plug in via USB and enable USB debugging on the tablet",
+                                )
                                 .weak()
                                 .size(11.0),
                             );
                         }
                     });
-                    ui.end_row();
 
-                    ui.label("Mode");
-                    ui.vertical(|ui| {
-                        ui.checkbox(
-                            &mut self.cfg.pen_only,
-                            "Graphics tablet instead of a second screen",
-                        );
-                        ui.label(
-                            egui::RichText::new(
-                                "Nothing is streamed: the pen drives this machine's own \
-                                 screen, so there is no display latency at all. Pressure, \
-                                 tilt and the eraser still work.",
-                            )
-                            .weak()
-                            .size(11.0),
-                        );
-                    });
-                    ui.end_row();
+                ui.add_space(10.0);
 
-                    ui.label("Input devices");
-                    ui.vertical(|ui| {
-                        ui.checkbox(&mut self.cfg.input_touch, "Touchscreen (taps on the tablet)");
-                        ui.checkbox(&mut self.cfg.input_pen, "Pen tablet (stylus, pressure, tilt)");
-                        // The pointer exists only to serve the pen; a greyed-out
-                        // box must not keep a value the daemon would act on.
-                        if !self.cfg.input_pen {
-                            self.cfg.input_pointer = false;
-                        }
-                        ui.add_enabled(
-                            self.cfg.input_pen,
-                            egui::Checkbox::new(
-                                &mut self.cfg.input_pointer,
-                                "Pointer that stays where the pen lifted",
-                            ),
-                        );
-                        ui.label(
-                            egui::RichText::new(
-                                "Each one is a virtual input device the desktop sees while a \
-                                 tablet is attached. Turn off what you do not use: on \
-                                 Cinnamon/GNOME under X11 a touchscreen device can make the \
-                                 mouse cursor hide. Restart the daemon to apply.",
-                            )
-                            .weak()
-                            .size(11.0),
-                        );
-                    });
-                    ui.end_row();
-
-                    ui.label("Stream detail");
-                    ui.vertical(|ui| {
-                        egui::ComboBox::from_id_salt("stream_scale")
-                            .selected_text(match self.cfg.stream_scale {
-                                1 => "Full — sharpest",
-                                2 => "Half — lowest latency",
-                                n => scale_label(n),
-                            })
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.cfg.stream_scale, 1,
-                                    "Full — sharpest");
-                                ui.selectable_value(&mut self.cfg.stream_scale, 2,
-                                    "Half — lowest latency");
-                            });
-                        ui.label(
-                            egui::RichText::new(
-                                "The desktop keeps its full resolution either way. Half sends \
-                                 a quarter of the pixels, which the tablet decodes sooner — \
-                                 good for games, softer for text.",
-                            )
-                            .weak()
-                            .size(11.0),
-                        );
-                    });
-                    ui.end_row();
-
-                    ui.label("Plug & play");
-                    ui.vertical(|ui| {
-                        ui.checkbox(
-                            &mut self.cfg.auto_launch_app,
-                            "Open the app on the tablet automatically",
-                        );
-                        let mut auto = status.autostart;
+                // ----- Start / Stop -----
+                ui.horizontal(|ui| {
+                    let big = egui::vec2(ui.available_width(), 34.0);
+                    if status.daemon_running {
                         if ui
-                            .checkbox(&mut auto, "Start UScreen with the desktop")
-                            .changed()
+                            .add_sized(big, egui::Button::new(egui::RichText::new("Stop").size(16.0)))
+                            .clicked()
                         {
-                            match set_autostart(auto) {
-                                Ok(_) => {
-                                    self.message = if auto {
-                                        "Autostart on — plugging the cable in is now enough".into()
-                                    } else {
-                                        "Autostart off".into()
-                                    }
-                                }
+                            match stop_daemon() {
+                                Ok(_) => self.message = "Daemon stopped".into(),
                                 Err(e) => self.message = e,
                             }
                         }
-                    });
-                    ui.end_row();
+                    } else if ui
+                        .add_sized(big, egui::Button::new(egui::RichText::new("Start").size(16.0)))
+                        .clicked()
+                    {
+                        match start_daemon() {
+                            Ok(_) => self.message = "Daemon starting…".into(),
+                            Err(e) => self.message = e,
+                        }
+                    }
                 });
 
-            ui.add_space(12.0);
-
-            let dirty = self.cfg != self.saved_cfg;
-            ui.horizontal(|ui| {
-                let label = if status.daemon_running {
-                    "Apply & restart"
-                } else {
-                    "Save"
-                };
-                if ui
-                    .add_enabled(dirty, egui::Button::new(label))
-                    .clicked()
-                {
-                    self.apply(status.daemon_running);
-                }
-                if dirty && ui.button("Discard").clicked() {
-                    self.cfg = self.saved_cfg.clone();
-                }
-            });
-
-            if !self.message.is_empty() {
+                ui.add_space(14.0);
+                ui.separator();
                 ui.add_space(8.0);
-                ui.label(egui::RichText::new(&self.message).weak());
-            }
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.label(
-                    egui::RichText::new(format!("config: {}", config_path().display()))
-                        .weak()
-                        .size(10.0),
-                );
+                // ----- Settings -----
+                ui.label(egui::RichText::new("Settings").strong().size(15.0));
+                ui.add_space(6.0);
+                ui.horizontal(|ui| {
+                    for (tab, name) in [
+                        (Tab::Video, "Video"),
+                        (Tab::Display, "Display & input"),
+                        (Tab::General, "General"),
+                    ] {
+                        ui.selectable_value(&mut self.tab, tab, name);
+                    }
+                });
+                ui.add_space(8.0);
+
+                // One grid per tab: column widths are remembered by id, and
+                // the tabs have different label widths.
+                egui::Grid::new(("settings", self.tab))
+                    .num_columns(2)
+                    .spacing([16.0, 10.0])
+                    .show(ui, |ui| {
+                        if self.tab == Tab::Video {
+                            ui.label("Encoder");
+                            egui::ComboBox::from_id_salt("encoder")
+                                .selected_text(match self.cfg.encoder.as_str() {
+                                    "h264_nvenc" => "NVIDIA H.264 (NVENC)",
+                                    "hevc_nvenc" => "NVIDIA HEVC (NVENC)",
+                                    "h264_vaapi" | "vaapih264enc" => "AMD / Intel (VAAPI)",
+                                    "libx264" => "CPU (libx264)",
+                                    other => other,
+                                })
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(
+                                        &mut self.cfg.encoder,
+                                        "h264_nvenc".to_string(),
+                                        "NVIDIA H.264 (NVENC)",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.cfg.encoder,
+                                        "hevc_nvenc".to_string(),
+                                        "NVIDIA HEVC (NVENC)",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.cfg.encoder,
+                                        "h264_vaapi".to_string(),
+                                        "AMD / Intel (VAAPI)",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.cfg.encoder,
+                                        "libx264".to_string(),
+                                        "CPU (libx264)",
+                                    );
+                                });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Quality");
+                            ui.vertical(|ui| {
+                                // Shown the intuitive way round — dragging right means
+                                // sharper — while the stored value is the encoder's
+                                // quantiser, where lower is better.
+                                let mut sharpness =
+                                    (MAX_QUALITY - self.cfg.quality.clamp(MIN_QUALITY, MAX_QUALITY)) as f32;
+                                let span = (MAX_QUALITY - MIN_QUALITY) as f32;
+                                if ui
+                                    .add(egui::Slider::new(&mut sharpness, 0.0..=span).show_value(false))
+                                    .changed()
+                                {
+                                    self.cfg.quality = MAX_QUALITY - sharpness.round() as u32;
+                                }
+                                ui.label(
+                                    egui::RichText::new(
+                                        "This, not the bitrate, sets how sharp text looks",
+                                    )
+                                    .weak()
+                                    .size(11.0),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Bitrate ceiling");
+                            ui.vertical(|ui| {
+                                let mut mbps = self.cfg.bitrate as f32 / 1000.0;
+                                // Capped at what the USB transport actually sustains:
+                                // past that the encoder just outruns the link and the
+                                // extra bits turn into queueing delay, not sharpness.
+                                if ui
+                                    .add(egui::Slider::new(&mut mbps, 5.0..=60.0).suffix(" Mbps"))
+                                    .changed()
+                                {
+                                    self.cfg.bitrate = (mbps * 1000.0) as u32;
+                                }
+                                ui.label(
+                                    egui::RichText::new(
+                                        "Only a cap for bursts — a desktop streams well below it",
+                                    )
+                                    .weak()
+                                    .size(11.0),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Frame rate");
+                            // 120 is not offered: EDID 1.4 stores the pixel clock in 16
+                            // bits and 2960x1848@120 overflows it, so the virtual mode
+                            // is capped at 90 Hz.
+                            egui::ComboBox::from_id_salt("fps")
+                                .selected_text(format!("{} fps", self.cfg.fps))
+                                .show_ui(ui, |ui| {
+                                    for f in [30u32, 60, 90] {
+                                        ui.selectable_value(&mut self.cfg.fps, f, format!("{} fps", f));
+                                    }
+                                });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::General {
+                            ui.label("Security");
+                            ui.vertical(|ui| {
+                                ui.checkbox(&mut self.cfg.require_token, "Require the session token");
+                                ui.label(egui::RichText::new(
+                                    "Off only for an app older than 1.1.0. Without it any local process \
+                                     can read the screen and inject input.").small().weak());
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::General {
+                            ui.label("Updates");
+                            ui.checkbox(&mut self.cfg.check_updates, "Check for a newer release on start");
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Display {
+                            ui.label("Tablets");
+                            ui.vertical(|ui| {
+                                ui.add(egui::Slider::new(&mut self.cfg.max_tablets, 1..=4).text("at once"));
+                                ui.label(egui::RichText::new(
+                                    "Each tablet becomes its own screen. Needs that many EVDI devices \
+                                     (see uscreen doctor); the installer prepares two.").small().weak());
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Display {
+                            ui.label("Position");
+                            egui::ComboBox::from_id_salt("position")
+                                .selected_text(match self.cfg.position.as_str() {
+                                    "left" => "Left of the other screens",
+                                    "above" => "Above the other screens",
+                                    "below" => "Below the other screens",
+                                    _ => "Right of the other screens",
+                                })
+                                .show_ui(ui, |ui| {
+                                    for (v, label) in [
+                                        ("right", "Right of the other screens"),
+                                        ("left", "Left of the other screens"),
+                                        ("above", "Above the other screens"),
+                                        ("below", "Below the other screens"),
+                                    ] {
+                                        ui.selectable_value(&mut self.cfg.position, v.to_string(), label);
+                                    }
+                                });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Colour depth");
+                            ui.vertical(|ui| {
+                                let hevc = self.cfg.encoder.contains("hevc");
+                                ui.add_enabled(
+                                    hevc,
+                                    egui::Checkbox::new(&mut self.cfg.ten_bit, "10-bit (HEVC Main10)"),
+                                );
+                                ui.label(
+                                    egui::RichText::new(if hevc {
+                                        "Smooths banding on gradients. The desktop itself is 8-bit, \
+                                         so this adds precision, not colour."
+                                    } else {
+                                        "Needs the HEVC encoder — H.264 here is 8-bit only."
+                                    })
+                                    .small()
+                                    .weak(),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Resolution");
+                            ui.vertical(|ui| {
+                                ui.checkbox(&mut self.cfg.auto_resolution, "Auto (match the tablet)");
+                                ui.horizontal(|ui| {
+                                    ui.add_enabled(
+                                        !self.cfg.auto_resolution,
+                                        egui::DragValue::new(&mut self.cfg.width)
+                                            .range(640..=8192)
+                                            .speed(8),
+                                    );
+                                    ui.label("×");
+                                    ui.add_enabled(
+                                        !self.cfg.auto_resolution,
+                                        egui::DragValue::new(&mut self.cfg.height)
+                                            .range(480..=8192)
+                                            .speed(8),
+                                    );
+                                });
+                                if self.cfg.auto_resolution {
+                                    ui.label(
+                                        egui::RichText::new(format!(
+                                            "currently {} × {}",
+                                            self.cfg.width, self.cfg.height
+                                        ))
+                                        .weak()
+                                        .size(11.0),
+                                    );
+                                }
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Display {
+                            ui.label("Mode");
+                            ui.vertical(|ui| {
+                                ui.checkbox(
+                                    &mut self.cfg.pen_only,
+                                    "Graphics tablet instead of a second screen",
+                                );
+                                ui.label(
+                                    egui::RichText::new(
+                                        "Nothing is streamed: the pen drives this machine's own \
+                                         screen, so there is no display latency at all. Pressure, \
+                                         tilt and the eraser still work.",
+                                    )
+                                    .weak()
+                                    .size(11.0),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Display {
+                            ui.label("Input devices");
+                            ui.vertical(|ui| {
+                                ui.checkbox(&mut self.cfg.input_touch, "Touchscreen (taps on the tablet)");
+                                ui.checkbox(&mut self.cfg.input_pen, "Pen tablet (stylus, pressure, tilt)");
+                                // The pointer exists only to serve the pen; a greyed-out
+                                // box must not keep a value the daemon would act on.
+                                if !self.cfg.input_pen {
+                                    self.cfg.input_pointer = false;
+                                }
+                                ui.add_enabled(
+                                    self.cfg.input_pen,
+                                    egui::Checkbox::new(
+                                        &mut self.cfg.input_pointer,
+                                        "Pointer that stays where the pen lifted",
+                                    ),
+                                );
+                                ui.label(
+                                    egui::RichText::new(
+                                        "Each one is a virtual input device the desktop sees while a \
+                                         tablet is attached. Turn off what you do not use: on \
+                                         Cinnamon/GNOME under X11 a touchscreen device can make the \
+                                         mouse cursor hide. Restart the daemon to apply.",
+                                    )
+                                    .weak()
+                                    .size(11.0),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::Video {
+                            ui.label("Stream detail");
+                            ui.vertical(|ui| {
+                                egui::ComboBox::from_id_salt("stream_scale")
+                                    .selected_text(match self.cfg.stream_scale {
+                                        1 => "Full — sharpest",
+                                        2 => "Half — lowest latency",
+                                        n => scale_label(n),
+                                    })
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(&mut self.cfg.stream_scale, 1,
+                                            "Full — sharpest");
+                                        ui.selectable_value(&mut self.cfg.stream_scale, 2,
+                                            "Half — lowest latency");
+                                    });
+                                ui.label(
+                                    egui::RichText::new(
+                                        "The desktop keeps its full resolution either way. Half sends \
+                                         a quarter of the pixels, which the tablet decodes sooner — \
+                                         good for games, softer for text.",
+                                    )
+                                    .weak()
+                                    .size(11.0),
+                                );
+                            });
+                            ui.end_row();
+                        }
+
+                        if self.tab == Tab::General {
+                            ui.label("Plug & play");
+                            ui.vertical(|ui| {
+                                ui.checkbox(
+                                    &mut self.cfg.auto_launch_app,
+                                    "Open the app on the tablet automatically",
+                                );
+                                let mut auto = status.autostart;
+                                if ui
+                                    .checkbox(&mut auto, "Start UScreen with the desktop")
+                                    .changed()
+                                {
+                                    match set_autostart(auto) {
+                                        Ok(_) => {
+                                            self.message = if auto {
+                                                "Autostart on — plugging the cable in is now enough".into()
+                                            } else {
+                                                "Autostart off".into()
+                                            }
+                                        }
+                                        Err(e) => self.message = e,
+                                    }
+                                }
+                            });
+                            ui.end_row();
+                        }
+                    });
+
+                ui.add_space(12.0);
+
+                let dirty = self.cfg != self.saved_cfg;
+                ui.horizontal(|ui| {
+                    let label = if status.daemon_running {
+                        "Apply & restart"
+                    } else {
+                        "Save"
+                    };
+                    if ui
+                        .add_enabled(dirty, egui::Button::new(label))
+                        .clicked()
+                    {
+                        self.apply(status.daemon_running);
+                    }
+                    if dirty && ui.button("Discard").clicked() {
+                        self.cfg = self.saved_cfg.clone();
+                    }
+                });
+
+                if !self.message.is_empty() {
+                    ui.add_space(8.0);
+                    ui.label(egui::RichText::new(&self.message).weak());
+                }
             });
         });
     }
@@ -884,8 +942,10 @@ impl eframe::App for App {
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([400.0, 600.0])
-            .with_min_inner_size([360.0, 520.0])
+            // Tall enough for the longest settings tab; anything shorter
+            // scrolls rather than hiding rows off the bottom.
+            .with_inner_size([440.0, 760.0])
+            .with_min_inner_size([380.0, 560.0])
             .with_app_id("uscreen")
             // Window icon from the same picture as the launcher and tray, so
             // the task bar shows it even where the theme icon is not installed.
