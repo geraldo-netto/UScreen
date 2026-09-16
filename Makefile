@@ -28,7 +28,7 @@ install: build
 	cp host/evdi/evdi_helper $(BIN_DIR)/evdi_helper
 	@echo "✓ Installed to $(BIN_DIR)/uscreen, $(BIN_DIR)/uscreen-gui and $(BIN_DIR)/evdi_helper"
 	mkdir -p ${HOME}/.local/share/applications
-	cp scripts/uscreen.desktop ${HOME}/.local/share/applications/ 2>/dev/null || true
+	sed 's|^Exec=.*|Exec="$(abspath $(BIN_DIR))/uscreen-gui"|' scripts/uscreen.desktop > "${HOME}/.local/share/applications/uscreen.desktop"
 	mkdir -p ${HOME}/.local/share/icons/hicolor/scalable/apps
 	cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg ${HOME}/.local/share/icons/hicolor/scalable/apps/ 2>/dev/null || true
 	@echo "✓ Desktop entry and icons installed (UScreen in the app menu)"

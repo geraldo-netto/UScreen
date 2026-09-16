@@ -225,3 +225,53 @@ fn t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files() {
         }
     }
 }
+
+#[test]
+fn t096_desktop_launches_installed_gui_with_stale_path() {
+    let sandbox = Sandbox::new("desktop-install");
+    let makefile = std::fs::read_to_string(repo().join("Makefile"))
+        .unwrap()
+        .replace("${HOME}", sandbox.0.to_str().unwrap());
+    sandbox.write("Makefile", &makefile);
+    for name in ["uscreen", "uscreen-gui"] {
+        sandbox.script(
+            &format!("target/release/{name}"),
+            "#!/bin/sh\necho installed\n",
+        );
+    }
+    sandbox.script("host/evdi/evdi_helper", "#!/bin/sh\nexit 0\n");
+    sandbox.write(
+        "scripts/uscreen.desktop",
+        &std::fs::read_to_string(repo().join("scripts/uscreen.desktop")).unwrap(),
+    );
+    sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
+    sandbox.script("bin/uscreen-gui", "#!/bin/sh\necho stale\n");
+    let output = Command::new("make")
+        .args(["-o", "build", "install"])
+        .current_dir(&sandbox.0)
+        .env("PATH", sandbox.path())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let desktop =
+        std::fs::read_to_string(sandbox.0.join(".local/share/applications/uscreen.desktop"))
+            .unwrap();
+    let exec = desktop
+        .lines()
+        .find_map(|line| line.strip_prefix("Exec="))
+        .unwrap();
+    let launched = Command::new("sh")
+        .args(["-c", exec])
+        .env("PATH", sandbox.path())
+        .output()
+        .unwrap();
+    assert!(launched.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&launched.stdout).trim(),
+        "installed"
+    );
+}
