@@ -91,15 +91,10 @@ static int g_out_w = 0;
 static int g_out_h = 0;
 static volatile int g_buffers_ready = 0;
 
-/* How long an unchanged screen may go without a frame being re-sent.
-   This is not just about the client's read timeout. The encoder's keyframe
-   interval (-g) counts frames, not seconds, so the slower we feed it while
-   idle, the longer the wall-clock gap between IDRs — and a client that joins
-   or recovers from a drop cannot start decoding until one arrives. At 200ms
-   the idle floor is 5fps, which keeps that gap bounded at a few seconds while
-   still cutting idle work by an order of magnitude.
-   The real fix is requesting an IDR on demand, which needs the in-process
-   encoder rather than a pipe into the ffmpeg CLI. */
+/* Re-send an unchanged screen at 5 fps. This keeps the client's read timeout
+   alive and supplies frames for the CLI's one-second wall-clock IDR schedule.
+   The optional in-process encoder can also honor a join request on the next
+   frame. Both paths need this idle input without paying the full target fps. */
 #define IDLE_KEEPALIVE_MS 200
 static long long g_last_write_ms = 0;
 
