@@ -16,8 +16,11 @@ involved, the log (`RUST_LOG=uscreen=debug uscreen start`, or
 
 - Build with `make build` (Rust host + C helper) and `cd android && ./gradlew
   assembleDebug` for the app. See [docs/development.md](docs/development.md).
-- Run `cargo test --release --manifest-path host/Cargo.toml` and `cargo clippy`
-  before opening a pull request; both are expected to be clean.
+- Run `cargo test --release --workspace`, `cargo clippy --workspace --all-targets`,
+  and `cd android && ./gradlew testDebugUnitTest` before opening a pull request.
+  Behavioral fixes need permanent regressions linked to the issue/TODO ID;
+  show each test failing before the fix and passing afterward. The host
+  suite needs a C compiler and make; Android tests run with Robolectric.
 - Keep commits focused and write the message for someone reading `git log`
   in a year: what broke, why, what changed.
 - Measure before claiming a performance change. The daemon logs end-to-end

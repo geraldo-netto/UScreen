@@ -49,24 +49,13 @@ it connects within seconds without re-plugging.
 
 ## Touch or pen land on the wrong screen
 
-The daemon maps the input devices onto the virtual output through KWin's
-D-Bus interface. If it did not stick (log says "Mapped ... to output"), restart
-the daemon with the tablet attached. On non-KDE desktops mapping is not done;
-use your desktop's tablet settings to assign "UScreen Pen" to the UScreen
-output.
+The daemon maps each tablet's input devices onto its own output: through
+KWin D-Bus on KDE Wayland, or `xinput map-to-output` on X11. Mapping runs again
+on attachment and mode changes. In graphics-tablet mode it targets the primary
+physical screen. Install `xinput` and `xrandr` for X11 sessions.
 
-On **X11** (Cinnamon, XFCE, MATE, GNOME on Xorg) there is usually no such
-settings page, but `xinput` can do it. With the tablet connected as a screen:
-
-```sh
-scripts/map-input-x11.sh              # finds the EVDI output (DVI-I-*) itself
-scripts/map-input-x11.sh DVI-I-1-1    # or name the output from `xrandr --query`
-```
-
-It runs `xinput map-to-output` for every "UScreen Touch/Pen/Pointer" device.
-The devices exist only while a tablet is attached and X11 forgets the mapping
-when they go away, so run it again after the tablet reconnects or the daemon
-restarts.
+On other Wayland desktops, use the desktop's tablet settings to assign
+"UScreen Pen" to the UScreen output.
 
 If `xrandr` shows no `DVI-I-*` output at all while the tablet is streaming,
 Xorg has not linked the evdi GPU provider yet:

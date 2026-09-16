@@ -1,0 +1,10 @@
+[package]
+name = "uscreen-config"
+version = "1.2.3"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+tracing = "0.1"

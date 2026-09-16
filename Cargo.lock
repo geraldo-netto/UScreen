@@ -3710,7 +3710,18 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "uscreen-config",
  "zbus 4.4.0",
+]
+
+[[package]]
+name = "uscreen-config"
+version = "1.2.3"
+dependencies = [
+ "anyhow",
+ "serde",
+ "toml",
+ "tracing",
 ]
 
 [[package]]
@@ -3720,6 +3731,7 @@ dependencies = [
  "eframe",
  "serde",
  "toml",
+ "uscreen-config",
 ]
 
 [[package]]

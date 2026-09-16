@@ -29,10 +29,14 @@ const PIXMAP_SIDE: i32 = 64;
 /// what StatusNotifierItem expects.
 fn pixmap(rgba: &[u8]) -> ksni::Icon {
     let mut data = Vec::with_capacity(rgba.len());
-    for px in rgba.chunks_exact(4) {
+    for px in rgba.as_chunks::<4>().0 {
         data.extend_from_slice(&[px[3], px[0], px[1], px[2]]);
     }
-    ksni::Icon { width: PIXMAP_SIDE, height: PIXMAP_SIDE, data }
+    ksni::Icon {
+        width: PIXMAP_SIDE,
+        height: PIXMAP_SIDE,
+        data,
+    }
 }
 
 struct UScreenTray {
@@ -77,7 +81,11 @@ impl Tray for UScreenTray {
     }
 
     fn icon_pixmap(&self) -> Vec<ksni::Icon> {
-        vec![pixmap(if self.pen_only { PIXMAP_TABLET } else { PIXMAP_SCREEN })]
+        vec![pixmap(if self.pen_only {
+            PIXMAP_TABLET
+        } else {
+            PIXMAP_SCREEN
+        })]
     }
 
     /// Always visible. Passive lets the desktop hide the icon, and an icon you
@@ -106,14 +114,12 @@ impl Tray for UScreenTray {
     }
 
     fn menu(&self) -> Vec<MenuItem<Self>> {
-        let mut items: Vec<MenuItem<Self>> = vec![
-            StandardItem {
-                label: self.state_line(),
-                enabled: false,
-                ..Default::default()
-            }
-            .into(),
-        ];
+        let mut items: Vec<MenuItem<Self>> = vec![StandardItem {
+            label: self.state_line(),
+            enabled: false,
+            ..Default::default()
+        }
+        .into()];
         if let Some(v) = &self.update {
             items.push(
                 StandardItem {
@@ -173,10 +179,9 @@ impl Tray for UScreenTray {
 }
 
 fn open_release_page() {
-    match std::process::Command::new("xdg-open")
-        .arg(crate::update::RELEASES_PAGE)
-        .spawn()
-    {
+    match crate::config::spawn_reaped(
+        std::process::Command::new("xdg-open").arg(crate::update::RELEASES_PAGE),
+    ) {
         Ok(_) => info!("Opened the release page"),
         Err(e) => warn!("Could not open {}: {}", crate::update::RELEASES_PAGE, e),
     }
@@ -193,7 +198,7 @@ fn open_settings() {
         .and_then(|p| p.parent().map(|d| d.join("uscreen-gui")))
         .filter(|p| p.exists());
     let program = sibling.unwrap_or_else(|| std::path::PathBuf::from("uscreen-gui"));
-    match std::process::Command::new(&program).spawn() {
+    match crate::config::spawn_reaped(&mut std::process::Command::new(&program)) {
         Ok(_) => info!("Opened settings from the tray"),
         Err(e) => warn!("Could not launch uscreen-gui: {}", e),
     }

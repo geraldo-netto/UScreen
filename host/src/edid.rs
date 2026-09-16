@@ -31,7 +31,14 @@ pub fn make_edid_sized(
     refresh: u32,
     width_mm: u32,
     height_mm: u32,
-) -> Vec<u8> {
+) -> Result<Vec<u8>> {
+    anyhow::ensure!(
+        (1..=4095).contains(&width) && (1..=4095).contains(&height),
+        "EDID active dimensions must fit 12 bits: {}x{}",
+        width,
+        height
+    );
+    anyhow::ensure!(refresh > 0, "EDID refresh must be positive");
     let mut edid = vec![0u8; 128];
 
     // Header
@@ -59,9 +66,7 @@ pub fn make_edid_sized(
 
     // Chromaticity (sRGB). Bytes 25..=34 inclusive — ten of them; the previous
     // nine-byte copy left the last one zeroed.
-    edid[25..35].copy_from_slice(&[
-        0xEE, 0x91, 0xA3, 0x54, 0x4C, 0x99, 0x26, 0x0F, 0x50, 0x54,
-    ]);
+    edid[25..35].copy_from_slice(&[0xEE, 0x91, 0xA3, 0x54, 0x4C, 0x99, 0x26, 0x0F, 0x50, 0x54]);
 
     // No established timings; standard timings unused
     for i in 0..8 {
@@ -79,8 +84,15 @@ pub fn make_edid_sized(
 
     let h_total = h_active + h_blank;
     let v_total = v_active + v_blank;
-    let pixel_clock_10khz = ((h_total as u64 * v_total as u64 * refresh as u64 + 5000) / 10000)
-        .min(u16::MAX as u64) as u16;
+    let pixel_clock = (h_total as u64 * v_total as u64 * refresh as u64 + 5000) / 10000;
+    anyhow::ensure!(
+        pixel_clock > 0 && pixel_clock <= u16::MAX as u64,
+        "EDID pixel clock for {}x{}@{} exceeds 655.35 MHz; lower the resolution or refresh rate",
+        width,
+        height,
+        refresh
+    );
+    let pixel_clock_10khz = pixel_clock as u16;
 
     let h_image = width_mm;
     let v_image = height_mm;
@@ -128,19 +140,19 @@ pub fn make_edid_sized(
     let sum: u32 = edid[..127].iter().map(|&b| b as u32).sum();
     edid[127] = ((256 - (sum % 256)) % 256) as u8;
 
-    edid
+    Ok(edid)
 }
 
 /// Build an EDID at the default physical size.
 #[cfg(test)]
 pub fn make_edid(width: u32, height: u32, refresh: u32) -> Vec<u8> {
-    make_edid_sized(width, height, refresh, DEFAULT_WIDTH_MM, DEFAULT_HEIGHT_MM)
+    make_edid_sized(width, height, refresh, DEFAULT_WIDTH_MM, DEFAULT_HEIGHT_MM).unwrap()
 }
 
 /// Bumped whenever the generator changes. It is part of the cache filename so
 /// that fixing a bug here actually reaches existing installs — without it, a
 /// stale file from a previous version would be reused forever.
-const EDID_GENERATION: u32 = 2;
+const EDID_GENERATION: u32 = 3;
 
 /// Write (or reuse) a generated EDID for this mode and return its path.
 pub fn ensure_edid_sized(
@@ -150,6 +162,7 @@ pub fn ensure_edid_sized(
     width_mm: u32,
     height_mm: u32,
 ) -> Result<PathBuf> {
+    let edid = make_edid_sized(width, height, refresh, width_mm, height_mm)?;
     let home = std::env::var("HOME").unwrap_or_default();
     let dir = PathBuf::from(home).join(".local/share/uscreen/edid");
     std::fs::create_dir_all(&dir).context("create EDID dir")?;
@@ -158,11 +171,7 @@ pub fn ensure_edid_sized(
         EDID_GENERATION, width, height, refresh, width_mm, height_mm
     ));
     if !path.exists() {
-        std::fs::write(
-            &path,
-            make_edid_sized(width, height, refresh, width_mm, height_mm),
-        )
-        .context("write EDID")?;
+        std::fs::write(&path, edid).context("write EDID")?;
         tracing::info!(
             "Generated EDID for {}x{}@{} ({}x{}mm) at {:?}",
             width,
@@ -185,6 +194,22 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t061_rejects_unrepresentable_edid_modes() {
+        for (w, h, fps) in [
+            (4096, 1080, 60),
+            (1920, 4096, 60),
+            (4095, 4095, 90),
+            (0, 1080, 60),
+        ] {
+            assert!(
+                make_edid_sized(w, h, fps, 310, 194).is_err(),
+                "{w}x{h}@{fps} must not be truncated"
+            );
+        }
+        assert!(make_edid_sized(4095, 2160, 30, 310, 194).is_ok());
+    }
 
     #[test]
     fn edid_checksum_is_valid() {

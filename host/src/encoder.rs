@@ -13,6 +13,7 @@
 //!
 //! Built only with the `inproc-encoder` feature; see host/Cargo.toml for why.
 
+use crate::encoder_io::{extract_parameter_sets, read_frame};
 use anyhow::{Context, Result};
 use bytes::Bytes;
 
@@ -63,14 +64,15 @@ impl Encoder {
             .open_with(opts)
             .with_context(|| format!("configure {}", name))?;
 
-        let mut frame = ffmpeg_next::frame::Video::new(
-            ffmpeg_next::format::Pixel::NV12,
-            width,
-            height,
-        );
+        let mut frame =
+            ffmpeg_next::frame::Video::new(ffmpeg_next::format::Pixel::NV12, width, height);
         frame.set_color_range(ffmpeg_next::color::Range::MPEG);
 
-        Ok(Self { inner, frame, pts: 0 })
+        Ok(Self {
+            inner,
+            frame,
+            pts: 0,
+        })
     }
 
     /// Encoder-specific knobs. Kept in one place so the CLI path and this one
@@ -174,6 +176,8 @@ fn copy_plane(dst: &mut [u8], stride: usize, src: &[u8], row_bytes: usize, rows:
 /// Reads a frame at a time rather than in the ~32KB chunks ffmpeg's I/O layer
 /// uses, which is most of the point: at 8.2MB a frame that is the difference
 /// between four syscalls and two hundred and fifty.
+// Blocking thread boundary takes owned session settings and channel handles.
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     fifo_path: &str,
     encoder_name: &str,
@@ -224,7 +228,9 @@ pub fn run(
         let force = idr_wanted.swap(false, Ordering::Relaxed);
         for (data, is_idr) in enc.encode(&buf, force)? {
             if is_idr {
-                if let Some(cfg) = extract_parameter_sets(&data) {
+                if let Some(cfg) =
+                    extract_parameter_sets(&data, crate::capture::Codec::from_encoder(encoder_name))
+                {
                     if let Ok(mut slot) = codec_config.lock() {
                         if slot.as_ref() != Some(&cfg) {
                             *slot = Some(cfg);
@@ -241,69 +247,4 @@ pub fn run(
         latency.maybe_report();
     }
     Ok(())
-}
-
-/// Fill `buf` completely, tolerating a FIFO that has no data yet and a writer
-/// that has not opened it. Returns false if asked to stop before a whole frame
-/// arrived — a partial frame must never reach the encoder, it would be encoded
-/// as garbage.
-fn read_frame(
-    fifo: &mut std::fs::File,
-    buf: &mut [u8],
-    stop: &std::sync::Arc<std::sync::atomic::AtomicBool>,
-) -> std::io::Result<bool> {
-    use std::io::Read;
-    use std::sync::atomic::Ordering;
-    let mut filled = 0;
-    while filled < buf.len() {
-        if stop.load(Ordering::Relaxed) {
-            return Ok(false);
-        }
-        match fifo.read(&mut buf[filled..]) {
-            Ok(0) => {
-                // No writer attached yet, or it closed between frames. Neither
-                // is fatal: the helper reopens the FIFO when it has something.
-                std::thread::sleep(std::time::Duration::from_millis(5));
-            }
-            Ok(n) => filled += n,
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(std::time::Duration::from_millis(2));
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
-            Err(e) => return Err(e),
-        }
-    }
-    Ok(true)
-}
-
-/// Pull the SPS and PPS out of an Annex B keyframe, so a client that connects
-/// later can be handed them before any frame data.
-fn extract_parameter_sets(au: &[u8]) -> Option<Bytes> {
-    let mut end = None;
-    let mut i = 0;
-    while i + 4 < au.len() {
-        let (hdr, start) = if au[i] == 0 && au[i + 1] == 0 && au[i + 2] == 0 && au[i + 3] == 1 {
-            (4, i)
-        } else if au[i] == 0 && au[i + 1] == 0 && au[i + 2] == 1 {
-            (3, i)
-        } else {
-            i += 1;
-            continue;
-        };
-        match au.get(start + hdr).map(|b| b & 0x1f) {
-            // SPS or PPS: keep going, the parameter sets run together.
-            Some(7) | Some(8) => {
-                i = start + hdr;
-                end = None;
-            }
-            // First non-parameter NAL ends the run.
-            Some(_) => {
-                end = Some(start);
-                break;
-            }
-            None => break,
-        }
-    }
-    let cut = end?;
-    (cut > 0).then(|| Bytes::copy_from_slice(&au[..cut]))
 }

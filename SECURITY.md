@@ -8,11 +8,15 @@
 - Every daemon run generates a **random 256-bit session token**. It is handed
   to the app over adb (on stdin, never on a command line) and a client that
   does not present it first receives no video and cannot inject input. This
-  protects against other local processes and other apps on the tablet.
+  protects against other local accounts and other apps on the tablet.
+  Processes running as your own Linux user can read your session token.
+  Android accepts token updates through a separate activity guarded by the
+  system DUMP permission, available to adb shell and privileged apps; the
+  normal launcher ignores token extras.
 - The capture FIFO and the token live in `$XDG_RUNTIME_DIR/uscreen/`, a
   per-user directory with mode 0700; both files are 0600.
-- **Screen and input data never leave the cable.** They go only between your
-  computer and your tablet over USB (or your own network, if you chose Wi-Fi).
+- **Screen and input data travel only between your computer and tablet,**
+  over USB or your own network if you chose Wi-Fi.
   There is no account, no telemetry and no cloud.
 - The only outbound connection is an optional **update check**: one HTTPS
   request to `api.github.com` (daemon: once a day; app and GUI: when opened)
@@ -28,8 +32,8 @@ unprivileged user; nothing else is touched.
 
 | change | why |
 | --- | --- |
-| `/etc/modprobe.d/uscreen-evdi.conf` — `options evdi initial_device_count=2` | two EVDI virtual-display devices exist from boot; creating them later needs root |
-| `/etc/modules-load.d/uscreen.conf` — `evdi`, `uinput` | load both modules at boot |
+| `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package) — `options evdi initial_device_count=2` | two EVDI virtual-display devices exist from boot; creating them later needs root |
+| `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package) — `evdi`, `uinput` | load both modules at boot |
 | `/usr/lib/udev/rules.d/60-uscreen-uinput.rules` (or `/etc/udev/rules.d/`) | opens `/dev/uinput` to the logged-in seat user via `uaccess`, the same mechanism the desktop uses for keyboards |
 | a systemd **user** unit `uscreen.service` | optional autostart with your session; never a system service, never root |
 
@@ -44,10 +48,11 @@ sudo apt remove uscreen      # or: sudo dnf remove uscreen / sudo zypper rm uscr
 # script installs:
 rm -f ~/.local/bin/uscreen ~/.local/bin/uscreen-gui ~/.local/bin/evdi_helper ~/.local/bin/libevdi.so.1*
 rm -f ~/.config/systemd/user/uscreen.service ~/.local/share/applications/uscreen.desktop
-# system changes (both kinds of install):
+rm -f ~/.local/share/icons/hicolor/scalable/apps/uscreen.svg ~/.local/share/icons/hicolor/scalable/apps/uscreen-pen.svg
+# script-created system changes (package removal handles /usr/lib files):
 sudo rm -f /etc/modprobe.d/uscreen-evdi.conf /etc/modules-load.d/uscreen.conf /etc/udev/rules.d/60-uscreen-uinput.rules
 # your settings and logs:
-rm -rf ~/.config/uscreen ~/.local/share/uscreen
+rm -rf ~/.config/uscreen ~/.local/share/uscreen ~/.cache/uscreen
 ```
 
 On the tablet, uninstall the app like any other.

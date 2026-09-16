@@ -40,58 +40,80 @@ impl Backend {
     }
 }
 
-static BACKEND: OnceCell<Option<Backend>> = OnceCell::const_new();
+static BACKEND: OnceCell<Backend> = OnceCell::const_new();
 
 async fn output_of(cmd: &str, args: &[&str]) -> Option<String> {
-    let out = tokio::process::Command::new(cmd).args(args).output().await.ok()?;
+    let out = tokio::process::Command::new(cmd)
+        .args(args)
+        .output()
+        .await
+        .ok()?;
     if !out.status.success() {
         return None;
     }
     Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-/// Which tool can reach KWin on this machine, decided once per run.
+/// Cache a successful probe; a session bus that is still starting is retried.
 pub async fn backend() -> Option<Backend> {
-    *BACKEND
-        .get_or_init(|| async {
+    cached_backend(&BACKEND, || async {
+        if output_of(
+            "busctl",
+            &[
+                "--user",
+                "get-property",
+                SERVICE,
+                PROBE_PATH,
+                PROBE_IFACE,
+                PROBE_PROP,
+            ],
+        )
+        .await
+        .is_some()
+        {
+            info!("KWin D-Bus via busctl");
+            return Some(Backend::Busctl);
+        }
+        for cmd in QDBUS_NAMES {
             if output_of(
-                "busctl",
-                &["--user", "get-property", SERVICE, PROBE_PATH, PROBE_IFACE, PROBE_PROP],
+                cmd,
+                &[
+                    "--literal",
+                    SERVICE,
+                    PROBE_PATH,
+                    "org.freedesktop.DBus.Properties.Get",
+                    PROBE_IFACE,
+                    PROBE_PROP,
+                ],
             )
             .await
             .is_some()
             {
-                info!("KWin D-Bus via busctl");
-                return Some(Backend::Busctl);
+                info!("KWin D-Bus via {}", cmd);
+                return Some(Backend::Qdbus(cmd));
             }
-            for cmd in QDBUS_NAMES {
-                if output_of(
-                    cmd,
-                    &[
-                        "--literal",
-                        SERVICE,
-                        PROBE_PATH,
-                        "org.freedesktop.DBus.Properties.Get",
-                        PROBE_IFACE,
-                        PROBE_PROP,
-                    ],
-                )
-                .await
-                .is_some()
-                {
-                    info!("KWin D-Bus via {}", cmd);
-                    return Some(Backend::Qdbus(cmd));
-                }
-            }
-            warn!(
-                "Cannot reach KWin over D-Bus: neither busctl nor qdbus answered. \
+        }
+        warn!(
+            "Cannot reach KWin over D-Bus: neither busctl nor qdbus answered. \
                  Touch and pen will address the whole desktop instead of the tablet's \
                  screen, and the on-screen keyboard will not be suppressed. \
                  On KDE this normally means systemd's busctl is missing."
-            );
-            None
-        })
+        );
+        None
+    })
+    .await
+}
+
+async fn cached_backend<F, Fut>(cache: &OnceCell<Backend>, probe: F) -> Option<Backend>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Option<Backend>>,
+{
+    cache
+        .get_or_try_init(|| async { probe().await.ok_or(()) })
         .await
+        .ok()
+        .copied()
 }
 
 /// A scalar property. Strings come back unquoted, numbers as digits.
@@ -99,7 +121,11 @@ pub async fn get_property(path: &str, iface: &str, prop: &str) -> Option<String>
     match backend().await? {
         Backend::Busctl => {
             // `s "DVI-I-1"`, `i 1`, `b true` — signature first, then the value.
-            let raw = output_of("busctl", &["--user", "get-property", SERVICE, path, iface, prop]).await?;
+            let raw = output_of(
+                "busctl",
+                &["--user", "get-property", SERVICE, path, iface, prop],
+            )
+            .await?;
             let value = raw.split_once(' ').map(|(_, v)| v).unwrap_or(&raw).trim();
             Some(value.trim_matches('"').to_string())
         }
@@ -107,7 +133,14 @@ pub async fn get_property(path: &str, iface: &str, prop: &str) -> Option<String>
             // `[Variant(QString): "DVI-I-1"]`, `[Variant(int): 1]`
             let raw = output_of(
                 cmd,
-                &["--literal", SERVICE, path, "org.freedesktop.DBus.Properties.Get", iface, prop],
+                &[
+                    "--literal",
+                    SERVICE,
+                    path,
+                    "org.freedesktop.DBus.Properties.Get",
+                    iface,
+                    prop,
+                ],
             )
             .await?;
             if raw.contains('"') {
@@ -116,7 +149,11 @@ pub async fn get_property(path: &str, iface: &str, prop: &str) -> Option<String>
                 (end > start).then(|| raw[start..end].to_string())
             } else {
                 let value = raw.rsplit_once(':').map(|(_, v)| v).unwrap_or(&raw);
-                Some(value.trim_matches(|c: char| !c.is_ascii_alphanumeric()).to_string())
+                Some(
+                    value
+                        .trim_matches(|c: char| !c.is_ascii_alphanumeric())
+                        .to_string(),
+                )
             }
         }
     }
@@ -124,17 +161,40 @@ pub async fn get_property(path: &str, iface: &str, prop: &str) -> Option<String>
 
 /// Write a scalar property. `signature` is the D-Bus type: `s` for a string,
 /// `i` for an int — busctl needs it, qdbus infers it.
-pub async fn set_property(path: &str, iface: &str, prop: &str, signature: &str, value: &str) -> bool {
+pub async fn set_property(
+    path: &str,
+    iface: &str,
+    prop: &str,
+    signature: &str,
+    value: &str,
+) -> bool {
     match backend().await {
         Some(Backend::Busctl) => output_of(
             "busctl",
-            &["--user", "set-property", SERVICE, path, iface, prop, signature, value],
+            &[
+                "--user",
+                "set-property",
+                SERVICE,
+                path,
+                iface,
+                prop,
+                signature,
+                value,
+            ],
         )
         .await
         .is_some(),
         Some(Backend::Qdbus(cmd)) => output_of(
             cmd,
-            &["--literal", SERVICE, path, "org.freedesktop.DBus.Properties.Set", iface, prop, value],
+            &[
+                "--literal",
+                SERVICE,
+                path,
+                "org.freedesktop.DBus.Properties.Set",
+                iface,
+                prop,
+                value,
+            ],
         )
         .await
         .is_some(),
@@ -147,8 +207,18 @@ pub async fn list_strings(path: &str, iface: &str, prop: &str) -> Option<Vec<Str
     match backend().await? {
         Backend::Busctl => {
             // `as 12 "event7" "event8" …` — every other field between quotes.
-            let raw = output_of("busctl", &["--user", "get-property", SERVICE, path, iface, prop]).await?;
-            Some(raw.split('"').skip(1).step_by(2).map(str::to_string).collect())
+            let raw = output_of(
+                "busctl",
+                &["--user", "get-property", SERVICE, path, iface, prop],
+            )
+            .await?;
+            Some(
+                raw.split('"')
+                    .skip(1)
+                    .step_by(2)
+                    .map(str::to_string)
+                    .collect(),
+            )
         }
         Backend::Qdbus(cmd) => {
             // qdbus reads a property through its member name, one per line.
@@ -161,10 +231,33 @@ pub async fn list_strings(path: &str, iface: &str, prop: &str) -> Option<Vec<Str
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn t064_transient_probe_failure_is_retried_until_backend_is_available() {
+        let cache = OnceCell::new();
+        assert_eq!(cached_backend(&cache, || async { None }).await, None);
+        assert_eq!(
+            cached_backend(&cache, || async { Some(Backend::Busctl) }).await,
+            Some(Backend::Busctl)
+        );
+        assert_eq!(
+            cached_backend(&cache, || async {
+                panic!("successful backend must be cached")
+            })
+            .await,
+            Some(Backend::Busctl)
+        );
+    }
     #[test]
     fn busctl_string_array_is_split_on_quotes() {
         let raw = r#"as 3 "event7" "event8" "event4""#;
-        let got: Vec<String> = raw.split('"').skip(1).step_by(2).map(str::to_string).collect();
+        let got: Vec<String> = raw
+            .split('"')
+            .skip(1)
+            .step_by(2)
+            .map(str::to_string)
+            .collect();
         assert_eq!(got, vec!["event7", "event8", "event4"]);
     }
 

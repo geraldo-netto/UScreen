@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <stdint.h>
+#include <limits.h>
 /* Only the public client API. The headers are upstream libevdi 1.15's, kept
    in sync with the library: the previous copies predated the
    ddcci_data_handler member of evdi_event_context, so a struct one pointer
@@ -239,7 +240,7 @@ static inline void convert_strip_scaled(const conv_job_t *j) {
 }
 
 static inline void convert_strip(const conv_job_t *j) {
-    const int w = j->w, stride = j->stride;
+    const int w = j->ow, stride = j->stride;
     for (int cy = j->cy0; cy < j->cy1; cy++) {
         if (!row_is_dirty(j->dirty, cy))
             continue;
@@ -314,8 +315,14 @@ static void conv_pool_init(void) {
     if (g_nthreads < 1) g_nthreads = 1;
     if (g_nthreads > MAX_CONV_THREADS) g_nthreads = MAX_CONV_THREADS;
     /* Worker threads handle jobs 1..n-1; the caller runs job 0 itself. */
-    for (int i = 1; i < g_nthreads; i++)
-        pthread_create(&g_pool[i], NULL, conv_worker, (void *)(intptr_t)i);
+    for (int i = 1; i < g_nthreads; i++) {
+        int error = pthread_create(&g_pool[i], NULL, conv_worker, (void *)(intptr_t)i);
+        if (error != 0) {
+            fprintf(stderr, "[evdi-helper] Conversion worker unavailable: %s\n", strerror(error));
+            g_nthreads = i;
+            break;
+        }
+    }
     fprintf(stderr, "[evdi-helper] NV12 conversion using %d thread(s)\n", g_nthreads);
 }
 
@@ -407,6 +414,18 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     fprintf(stderr, "[evdi-helper] Mode: %dx%d@%dHz %dbpp fmt=0x%x\n",
             mode.width, mode.height, mode.refresh_rate,
             mode.bits_per_pixel, mode.pixel_format);
+    /* Both conversion paths read little-endian XRGB8888/ARGB8888 as BGRA.
+       Stop before registering or reading any buffer with another layout. */
+    if (mode.bits_per_pixel != 32 ||
+            (mode.pixel_format != 0x34325258 && mode.pixel_format != 0x34325241)) {
+        fprintf(stderr, "[evdi-helper] Unsupported framebuffer format; need XRGB8888 or ARGB8888\n");
+        g_have_mode = 0;
+        pthread_mutex_lock(&g_swap_mutex);
+        g_buffers_ready = 0;
+        pthread_mutex_unlock(&g_swap_mutex);
+        g_running = 0;
+        return;
+    }
     printf("MODE_CHANGED %d %d %d\n", mode.width, mode.height, mode.refresh_rate);
     fflush(stdout);
 
@@ -488,6 +507,8 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
     g_out_h = (g_mode_h / g_scale) & ~1;
     if (g_out_w < 2) g_out_w = 2;
     if (g_out_h < 2) g_out_h = 2;
+    printf("STREAM_SIZE %d %d\n", g_out_w, g_out_h);
+    fflush(stdout);
 
     /* Packed buffers hold NV12 (Y plane + half-size interleaved CbCr). */
     g_packed_size = g_out_w * g_out_h * 3 / 2;
@@ -633,6 +654,43 @@ static int try_open_fifo(void) {
 
    Blocking writes here never stall capture, and the FIFO is reopened
    automatically when the encoder restarts. */
+/* A live reader may stall briefly under load. Keep the same frame across
+   poll timeouts, but bound a continuous stall and notice mode changes. */
+static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
+    long long deadline = now_ms() + 1000;
+    int generation = g_mode_generation;
+    while (remaining > 0 && g_running && generation == g_mode_generation) {
+        struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
+        int pr = poll(&wfd, 1, 250);
+        if (pr < 0 && errno == EINTR) continue;
+        if (pr == 0 && now_ms() < deadline) continue;
+        if (pr <= 0 || (wfd.revents & (POLLERR | POLLHUP | POLLNVAL))) break;
+        ssize_t written = write(g_capture_fifo_fd, ptr, remaining);
+        if (written <= 0) {
+            if (written < 0 && (errno == EINTR || errno == EAGAIN)) continue;
+            break;
+        }
+        ptr += written;
+        remaining -= (size_t)written;
+        deadline = now_ms() + 1000;
+    }
+    if (remaining > 0) {
+        fprintf(stderr, "[evdi-helper] Incomplete frame — closing FIFO to resync\n");
+        close(g_capture_fifo_fd);
+        g_capture_fifo_fd = -1;
+    }
+    return remaining;
+}
+
+static void record_latency(long long grab_us) {
+    if (grab_us <= 0) return;
+    long long d = now_us() - grab_us;
+    pthread_mutex_lock(&g_swap_mutex);
+    if (d >= 0 && d < 1000000 && g_lat_count < LAT_SAMPLES)
+        g_lat_us[g_lat_count++] = (int)d;
+    pthread_mutex_unlock(&g_swap_mutex);
+}
+
 static void *writer_thread(void *arg) {
     (void)arg;
     const long period_ns = 1000000000L / (g_fps > 0 ? g_fps : 60);
@@ -735,41 +793,13 @@ static void *writer_thread(void *arg) {
             next_allowed.tv_sec += 1;
         }
 
-        /* Bounded write: if the encoder stops reading for >250ms per chunk
-           it is stalled or dead — close the FIFO and resync on reopen.
-           An unbounded write() here would wedge the whole helper. */
-        const unsigned char *ptr = g_write;
-        size_t remaining = (size_t)size;
-        while (remaining > 0 && g_running) {
-            struct pollfd wfd = { .fd = g_capture_fifo_fd, .events = POLLOUT };
-            int pr = poll(&wfd, 1, 250);
-            if (pr <= 0 || (wfd.revents & (POLLERR | POLLHUP))) {
-                fprintf(stderr, "[evdi-helper] Encoder not reading — closing FIFO\n");
-                close(g_capture_fifo_fd);
-                g_capture_fifo_fd = -1;
-                break;
-            }
-            ssize_t written = write(g_capture_fifo_fd, ptr, remaining);
-            if (written <= 0) {
-                if (errno == EINTR) continue;
-                fprintf(stderr, "[evdi-helper] FIFO write failed: %s\n", strerror(errno));
-                close(g_capture_fifo_fd);
-                g_capture_fifo_fd = -1;
-                break;
-            }
-            ptr += written;
-            remaining -= (size_t)written;
-        }
+        size_t remaining = write_fifo_frame(g_write, (size_t)size);
         g_writer_busy = 0;
 
         /* Only freshly grabbed frames say anything about capture latency;
            keepalive repeats would report the age of stale content. */
-        if (fresh && remaining == 0 && g_write_grab_us > 0
-                && g_lat_count < LAT_SAMPLES) {
-            long long d = now_us() - g_write_grab_us;
-            if (d >= 0 && d < 1000000)
-                g_lat_us[g_lat_count++] = (int)d;
-        }
+        if (fresh && remaining == 0) record_latency(g_write_grab_us);
+
     }
     return NULL;
 }
@@ -905,8 +935,8 @@ static void run_event_loop(evdi_handle handle) {
     }
 }
 
-static int find_evdi_device(void) {
-    DIR *dir = opendir("/sys/devices/platform");
+static int find_evdi_device_in(const char *root) {
+    DIR *dir = opendir(root);
     if (!dir) return -1;
 
     struct dirent *entry;
@@ -915,8 +945,8 @@ static int find_evdi_device(void) {
         if (strncmp(entry->d_name, "evdi.", 5) != 0)
             continue;
 
-        char drm_path[256];
-        snprintf(drm_path, sizeof(drm_path), "/sys/devices/platform/%s/drm", entry->d_name);
+        char drm_path[4096];
+        snprintf(drm_path, sizeof(drm_path), "%s/%s/drm", root, entry->d_name);
 
         DIR *drm_dir = opendir(drm_path);
         if (!drm_dir) continue;
@@ -925,16 +955,31 @@ static int find_evdi_device(void) {
         while ((drm_entry = readdir(drm_dir)) != NULL) {
             if (strncmp(drm_entry->d_name, "card", 4) != 0)
                 continue;
-            int card = atoi(drm_entry->d_name + 4);
-            if (card > 0) {
-                found = card;
+            const char *digits = drm_entry->d_name + 4;
+            char *end = NULL;
+            long card = strtol(digits, &end, 10);
+            if (end != digits && *end == '\0' && card >= 0 && card <= INT_MAX
+                    && (found < 0 || card < found)) {
+                found = (int)card;
             }
         }
         closedir(drm_dir);
-        if (found >= 0) break;
     }
     closedir(dir);
     return found;
+}
+
+static int find_evdi_device(void) {
+    return find_evdi_device_in("/sys/devices/platform");
+}
+
+static int request_evdi_device(void) {
+    int written = evdi_add_device();
+    if (written <= 0) {
+        fprintf(stderr, "[evdi-helper] Failed to add EVDI device (result=%d); check module and sysfs permissions with uscreen doctor\n", written);
+        return 0;
+    }
+    return 1;
 }
 
 static int wait_for_device(int timeout_ms) {
@@ -1007,11 +1052,7 @@ int main(int argc, char *argv[]) {
 
     if (handle == EVDI_INVALID_HANDLE) {
         fprintf(stderr, "[evdi-helper] Creating EVDI device...\n");
-        int written = evdi_add_device();
-        if (written < 0) {
-            fprintf(stderr, "[evdi-helper] Failed to add EVDI device (err=%d)\n", written);
-            return 1;
-        }
+        if (!request_evdi_device()) return 1;
 
         fprintf(stderr, "[evdi-helper] Waiting for EVDI device...\n");
         dev_idx = wait_for_device(5000);

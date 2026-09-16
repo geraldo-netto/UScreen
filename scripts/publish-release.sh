@@ -16,9 +16,14 @@ REPO="majmichu1/UScreen"
 RELEASE_DATE="${RELEASE_DATE:-$(date +%F)}"
 : "${GH_TOKEN:?set GH_TOKEN first}"
 
+NOTES="${1:-}"
+[ -n "$NOTES" ] && [ -f "$NOTES" ] || { echo "usage: $0 <release-notes.md>  (tag v$VERSION must exist on origin)"; exit 1; }
+
+git rev-parse "v$VERSION" >/dev/null 2>&1 || { echo "!! tag v$VERSION does not exist — create and push it first"; exit 1; }
+
 # Every place that repeats the version has to agree with the Makefile before
 # anything is built, so the public page never advertises the previous release.
-for f in host/Cargo.toml gui/Cargo.toml; do
+for f in host/Cargo.toml gui/Cargo.toml common/Cargo.toml; do
   grep -q "^version = \"$VERSION\"" "$f" || { echo "!! $f is not at version $VERSION"; exit 1; }
 done
 grep -q "versionName = \"$VERSION\"" android/app/build.gradle.kts \
@@ -55,11 +60,6 @@ echo "All $(( ${#ASSETS[@]} )) files present."
     "uscreen-$VERSION-1.x86_64.rpm" "uscreen-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \
   && cp "uscreen-$VERSION/uscreen.apk" . && sha256sum uscreen.apk >> SHA256SUMS && rm uscreen.apk )
 ASSETS+=("dist/SHA256SUMS:text/plain")
-
-NOTES="${1:-}"
-[ -n "$NOTES" ] && [ -f "$NOTES" ] || { echo "usage: $0 <release-notes.md>  (tag v$VERSION must exist on origin)"; exit 1; }
-
-git rev-parse "v$VERSION" >/dev/null 2>&1 || { echo "!! tag v$VERSION does not exist — create and push it first"; exit 1; }
 
 # The release title is what shows up in feeds and search results, so it says
 # what the project is rather than just the tag.

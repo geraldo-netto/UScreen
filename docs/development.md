@@ -75,13 +75,13 @@ COMMANDS
   start           start the daemon
   stop            stop the daemon
   status          show daemon status
-  list-displays   list EVDI displays
+  list-displays   show compositor displays and PipeWire status
   wifi            put the tablet on the network (--off to undo)
   doctor          diagnose the setup and print fixes
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
-  --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, libx264
-  --fps <N>             frame rate (30–90)
+  --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, hevc_vaapi, libx264
+  --fps <N>             frame rate (10–90)
   --bitrate <KBPS>      bitrate ceiling
   --width/--height <N>  capture size (auto_resolution off)
   --quality <Q>         constant-quality target, 12–32, lower is sharper
@@ -95,7 +95,9 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
 
 - NVIDIA: `h264_nvenc` (default) or `hevc_nvenc` — see the codec section of
   the README for when HEVC and `ten_bit` are worth it.
-- AMD/Intel: `h264_vaapi`, constant-quality via `quality`.
+- AMD/Intel: `h264_vaapi` or `hevc_vaapi`, constant-quality via `quality`.
+  Set `vaapi_device = "/dev/dri/renderD129"` in config.toml to select another GPU
+  (default: `/dev/dri/renderD128`). HEVC supports `ten_bit = true`.
 - CPU: `libx264`, `ultrafast`/`zerolatency`; expect 30 fps at most on a laptop.
 
 `quality` is what governs picture quality; `bitrate` is only a ceiling for
@@ -129,7 +131,7 @@ every future release or users cannot update in place.
 
 ## Releasing (maintainers)
 
-Binaries are built in a Debian 12 container so they run on any current glibc:
+Binaries are built in a Debian 12 container for glibc 2.36 or newer (Debian 12+, Ubuntu 24.04+):
 
 ```bash
 distrobox create --image debian:12 --name uscreen-build

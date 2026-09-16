@@ -4,8 +4,10 @@ mod doctor;
 mod edid;
 #[cfg(feature = "inproc-encoder")]
 mod encoder;
-mod kwin;
+#[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]
+mod encoder_io;
 mod input;
+mod kwin;
 mod latency;
 mod osk;
 mod runtime;
@@ -14,7 +16,7 @@ mod tray;
 mod update;
 mod vdisplay;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use tokio::signal;
@@ -31,9 +33,6 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    #[arg(long = "display")]
-    display: Option<String>,
-
     /// Explicit EDID override. By default an EDID is generated at runtime
     /// for the configured (or tablet-reported) resolution.
     #[arg(long = "edid")]
@@ -41,9 +40,6 @@ struct Cli {
 
     #[arg(long = "helper", default_value = "host/evdi/evdi_helper")]
     helper: PathBuf,
-
-    #[arg(long = "auto-vdisplay", default_value_t = true)]
-    auto_vdisplay: bool,
 
     /// Defaults come from ~/.config/uscreen/config.toml; CLI flags override.
     #[arg(long = "encoder")]
@@ -83,10 +79,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Start the uscreen daemon
-    Start {
-        #[arg(long = "daemon", short = 'd')]
-        daemonize: bool,
-    },
+    Start,
     /// Stop the uscreen daemon
     Stop,
     /// Show daemon status
@@ -109,7 +102,7 @@ async fn main() -> Result<()> {
     setup_logging();
 
     match &cli.command {
-        Some(Commands::Start { .. }) | None => {
+        Some(Commands::Start) | None => {
             info!("Starting uscreen daemon");
             run_daemon(cli).await?;
         }
@@ -134,6 +127,284 @@ fn setup_logging() {
         .init();
 }
 
+fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig {
+    let mut effective = saved.clone();
+    if let Some(value) = &cli.encoder {
+        effective.encoder = value.clone();
+    }
+    if let Some(value) = cli.fps {
+        effective.fps = value;
+    }
+    if let Some(value) = cli.bitrate {
+        effective.bitrate = value;
+    }
+    if let Some(value) = cli.width {
+        effective.width = value;
+    }
+    if let Some(value) = cli.height {
+        effective.height = value;
+    }
+    if let Some(value) = cli.quality {
+        effective.quality = value;
+    }
+    if let Some(value) = cli.stream_scale {
+        effective.stream_scale = value;
+    }
+    if let Some(value) = cli.video_port {
+        effective.video_port = value;
+    }
+    if let Some(value) = cli.input_port {
+        effective.input_port = value;
+    }
+    effective.sanitize();
+    effective
+}
+
+#[cfg(test)]
+mod cli_tests {
+    #[test]
+    fn t039_host_sends_tokens_only_to_the_protected_activity() {
+        let token = "a".repeat(64);
+        let cmd = super::app_launch_command(Some(&token));
+        assert!(cmd.contains("com.uscreen/.TokenActivity --es token"));
+        assert!(!cmd.contains(".MainActivity --es token"));
+        assert!(super::app_launch_command(None).contains(".MainActivity"));
+    }
+
+    #[test]
+    fn t065_dead_flags_are_rejected_instead_of_silently_ignored() {
+        use clap::Parser;
+        for args in [
+            vec!["uscreen", "start", "--daemon"],
+            vec!["uscreen", "start", "-d"],
+            vec!["uscreen", "--display", "DVI-I-1"],
+            vec!["uscreen", "--auto-vdisplay"],
+        ] {
+            assert!(
+                super::Cli::try_parse_from(args.clone()).is_err(),
+                "accepted {args:?}"
+            );
+        }
+    }
+
+    use super::*;
+
+    #[tokio::test]
+    async fn t030_pid_reuse_does_not_mistake_another_process_for_uscreen() {
+        let mut child = tokio::process::Command::new("sleep")
+            .arg("5")
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        let reported = config::daemon_is_running(child.id().unwrap());
+        child.kill().await.unwrap();
+        assert!(!reported);
+    }
+
+    #[tokio::test]
+    async fn t033_stop_waits_for_daemon_cleanup() {
+        use tokio::io::AsyncBufReadExt;
+        let mut child = tokio::process::Command::new("sh")
+            .args(["-c", "echo uscreen > /proc/$$/comm; trap 'sleep 0.1; exit 0' TERM; echo ready; while :; do sleep 0.01; done"])
+            .stdout(std::process::Stdio::piped()).kill_on_drop(true).spawn().unwrap();
+        let mut ready = String::new();
+        tokio::io::BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut ready)
+            .await
+            .unwrap();
+        assert_eq!(ready, "ready\n");
+        stop_pids(&[child.id().unwrap()]).await.unwrap();
+        let finished = child.try_wait().unwrap().is_some();
+        if !finished {
+            child.wait().await.unwrap();
+        }
+        assert!(
+            finished,
+            "stop returned before the daemon completed cleanup"
+        );
+    }
+
+    #[test]
+    fn t032_extra_tablets_exclude_the_selected_primary_not_the_first_entry() {
+        let devices = vec!["new-usb".into(), "current-usb".into()];
+        assert_eq!(extra_devices(&devices, Some("current-usb")), ["new-usb"]);
+        assert_eq!(extra_devices(&devices, None), devices);
+    }
+
+    #[test]
+    fn t067_manual_forwarding_uses_custom_host_ports() {
+        let hints = forwarding_instructions(9000, 9001);
+        assert!(hints.contains("adb reverse tcp:8890 tcp:9000"));
+        assert!(hints.contains("adb reverse tcp:8891 tcp:9001"));
+    }
+
+    #[test]
+    fn t069_each_disappearance_allows_a_new_wifi_announcement() {
+        let mut current = Some("tablet".into());
+        let mut announced = true;
+        disconnected_primary(&mut current, &mut announced);
+        assert_eq!(current, None);
+        assert!(!announced);
+    }
+
+    #[tokio::test]
+    async fn t031_server_bind_failure_prevents_successful_startup() {
+        for occupied_input in [false, true] {
+            let occupied = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = occupied.local_addr().unwrap().port();
+            let stream = stream::StreamServer::new(
+                stream::StreamConfig {
+                    video_port: if occupied_input { 0 } else { port },
+                    token: None,
+                },
+                Default::default(),
+                Default::default(),
+            );
+            let (settings_tx, _settings_rx) = watch::channel(capture::EncoderSettings {
+                encoder: "libx264".into(),
+                fps: 60,
+                bitrate: 20000,
+                width: 1920,
+                height: 1080,
+                quality: 18,
+                width_mm: 310,
+                height_mm: 194,
+                stream_scale: 1,
+            });
+            let (mode_tx, _mode_rx) = watch::channel(false);
+            let (_card_tx, card_rx) = watch::channel(None);
+            let (_tablet_tx, tablet_rx) = watch::channel(false);
+            let input = input::InputServer::new(
+                input::InputConfig {
+                    port: if occupied_input { port } else { 0 },
+                    touch: false,
+                    pen: false,
+                    pointer: false,
+                    ..Default::default()
+                },
+                Some(settings_tx),
+                mode_tx,
+                latency::LatencyTracker::new(),
+                Default::default(),
+                card_rx,
+                tablet_rx,
+            );
+            let (video_tx, _) = broadcast::channel(8);
+            let result = start_servers(stream, input, video_tx).await;
+            let failed = result.is_err();
+            if let Ok((stream, input)) = result {
+                stream.abort();
+                input.abort();
+            }
+            assert!(
+                failed,
+                "occupied_input={occupied_input}: startup must report bind failure"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn t068_extra_session_waits_for_capture_cleanup() {
+        use std::sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        };
+        let completed = Arc::new(AtomicBool::new(false));
+        let done = completed.clone();
+        let (stop_tx, mut stop_rx) = watch::channel(false);
+        let capture = tokio::spawn(async move {
+            stop_rx.changed().await.unwrap();
+            tokio::time::sleep(std::time::Duration::from_millis(1600)).await;
+            done.store(true, Ordering::SeqCst);
+        });
+        let (tablet_tx, _tablet_rx) = watch::channel(true);
+        ExtraSession {
+            instance: 1,
+            tablet_tx,
+            relaunch: Default::default(),
+            stop_tx,
+            tasks: vec![],
+            capture,
+            video_port: 0,
+            input_port: 0,
+        }
+        .stop()
+        .await;
+        assert!(
+            completed.load(Ordering::SeqCst),
+            "capture must finish before stop returns"
+        );
+    }
+
+    #[tokio::test]
+    async fn t072_launched_children_are_reaped_after_exit() {
+        let pid = config::spawn_reaped(&mut std::process::Command::new("true")).unwrap();
+        let path = format!("/proc/{pid}");
+        let reaped = tokio::time::timeout(std::time::Duration::from_millis(300), async {
+            while std::path::Path::new(&path).exists() {
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .is_ok();
+        // Reap the old implementation's zombie even when the assertion fails.
+        if !reaped {
+            unsafe {
+                libc::waitpid(pid as i32, std::ptr::null_mut(), 0);
+            }
+        }
+        assert!(reaped, "launcher left a zombie process");
+    }
+
+    #[test]
+    fn t066_cli_overrides_use_the_same_limits_as_saved_settings() {
+        let cli = Cli::try_parse_from([
+            "uscreen",
+            "--fps",
+            "500",
+            "--bitrate",
+            "0",
+            "--width",
+            "8192",
+            "--height",
+            "1",
+            "--quality",
+            "99",
+            "--stream-scale",
+            "0",
+        ])
+        .unwrap();
+        let effective = effective_config(&cli, &config::FileConfig::default());
+        assert_eq!(effective.fps, config::MAX_FPS);
+        assert_eq!(effective.bitrate, config::MIN_BITRATE_KBPS);
+        assert_eq!((effective.width, effective.height), (4095, 480));
+        assert_eq!(effective.quality, config::MAX_QUALITY);
+        assert_eq!(effective.stream_scale, 1);
+    }
+}
+
+async fn start_servers(
+    stream_srv: stream::StreamServer,
+    input_srv: input::InputServer,
+    video_tx: broadcast::Sender<capture::VideoPacket>,
+) -> Result<(tokio::task::JoinHandle<()>, tokio::task::JoinHandle<()>)> {
+    // Bind both sockets before starting any worker. A failed second bind
+    // drops the first listener and reports startup failure to the caller.
+    let video_listener = stream_srv.bind().await?;
+    let input_listener = input_srv.bind().await?;
+    let stream_handle = tokio::spawn(async move {
+        if let Err(e) = stream_srv.run_with_listener(video_tx, video_listener).await {
+            error!("Stream server failed: {}", e);
+        }
+    });
+    let input_handle = tokio::spawn(async move {
+        if let Err(e) = input_srv.run_with_listener(input_listener).await {
+            error!("Input server failed: {}", e);
+        }
+    });
+    Ok((stream_handle, input_handle))
+}
+
 async fn run_daemon(cli: Cli) -> Result<()> {
     let pid_path = get_pid_path();
     if let Some(parent) = pid_path.parent() {
@@ -147,7 +418,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // EVDI FIFO, corrupting frames and starving the encoder.
     if let Ok(existing) = std::fs::read_to_string(&pid_path) {
         if let Ok(existing_pid) = existing.trim().parse::<i32>() {
-            let alive = std::path::Path::new(&format!("/proc/{}", existing_pid)).exists();
+            let alive = config::daemon_is_running(existing_pid as u32);
             if alive {
                 anyhow::bail!(
                     "uscreen daemon already running (PID: {}). Run `uscreen stop` first.",
@@ -183,20 +454,24 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             .and_then(|t| toml::from_str(&t).ok());
         if raw.is_some_and(|r| r != file_cfg) {
             match file_cfg.save() {
-                Ok(_) => info!("Rewrote out-of-range settings in {:?}", config::config_path()),
+                Ok(_) => info!(
+                    "Rewrote out-of-range settings in {:?}",
+                    config::config_path()
+                ),
                 Err(e) => warn!("Could not rewrite the config file: {}", e),
             }
         }
     }
-    let encoder = cli.encoder.clone().unwrap_or(file_cfg.encoder.clone());
-    let fps = cli.fps.unwrap_or(file_cfg.fps);
-    let bitrate = cli.bitrate.unwrap_or(file_cfg.bitrate);
-    let width = cli.width.unwrap_or(file_cfg.width);
-    let height = cli.height.unwrap_or(file_cfg.height);
-    let video_port = cli.video_port.unwrap_or(file_cfg.video_port);
-    let input_port = cli.input_port.unwrap_or(file_cfg.input_port);
-    let quality = cli.quality.unwrap_or(file_cfg.quality);
-    let stream_scale = cli.stream_scale.unwrap_or(file_cfg.stream_scale);
+    let effective = effective_config(&cli, &file_cfg);
+    let encoder = effective.encoder.clone();
+    let fps = effective.fps;
+    let bitrate = effective.bitrate;
+    let width = effective.width;
+    let height = effective.height;
+    let video_port = effective.video_port;
+    let input_port = effective.input_port;
+    let quality = effective.quality;
+    let stream_scale = effective.stream_scale;
     let mut pen_only = cli.pen_only || file_cfg.pen_only;
     if pen_only && !file_cfg.input_pen {
         warn!("Pen-only mode needs the pen device, but input_pen is off in config.toml — starting as a second screen");
@@ -207,6 +482,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         helper_path: find_helper(&cli.helper),
         edid_path: cli.edid.clone(),
         encoder: encoder.clone(),
+        vaapi_device: file_cfg.vaapi_device.clone(),
         fps,
         bitrate,
         width,
@@ -221,7 +497,11 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         instance: 0,
         // With several tablets every helper is pinned to its own card; the
         // helper's own search would give each of them the same one.
-        card: if file_cfg.max_tablets > 1 { vdisplay::evdi_cards().into_iter().min() } else { None },
+        card: if file_cfg.max_tablets > 1 {
+            vdisplay::evdi_cards().into_iter().min()
+        } else {
+            None
+        },
     };
 
     // One secret per daemon run. Handed to the app over adb when it is
@@ -244,7 +524,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     };
     let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
 
-    let stream_config = stream::StreamConfig { video_port, token: token.clone() };
+    let stream_config = stream::StreamConfig {
+        video_port,
+        token: token.clone(),
+    };
 
     let input_config = input::InputConfig {
         port: input_port,
@@ -304,7 +587,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // the stream server actually gets a chance to run.
     let (video_tx, _) = broadcast::channel(8);
 
-
     info!("=== uscreen daemon starting ===");
     info!("  Resolution: {}x{} @ {}fps", width, height, fps);
     info!("  Encoder: {}", encoder);
@@ -349,31 +631,20 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         info!("  screen with the pen. No virtual display, no encoding.");
     }
 
+    let (stream_handle, input_handle) =
+        start_servers(stream_srv, input_srv, video_tx.clone()).await?;
+
     let video_tx_cap = video_tx.clone();
     let settings_rx_cap = settings_rx.clone();
-    let cap_handle = tokio::spawn(async move {
+    let mut cap_handle = tokio::spawn(async move {
         // Started in both modes. In pen-only the gate below holds the virtual
-        // output disabled and nothing is encoded, but the helper is up and
-        // ready — which is what lets a switch back to second-screen mode show
-        // a picture immediately instead of rebuilding the pipeline first.
+        // output disabled, with no helper or encoder until a tablet requests
+        // second-screen mode.
         if let Err(e) = capture_mgr
             .stream_frames(video_tx_cap, settings_rx_cap, gate_rx, shutdown_rx)
             .await
         {
             error!("Capture manager failed: {}", e);
-        }
-    });
-
-    let video_rx = video_tx.subscribe();
-    let stream_handle = tokio::spawn(async move {
-        if let Err(e) = stream_srv.run(video_rx).await {
-            error!("Stream server failed: {}", e);
-        }
-    });
-
-    let input_handle = tokio::spawn(async move {
-        if let Err(e) = input_srv.run().await {
-            error!("Input server failed: {}", e);
         }
     });
 
@@ -396,13 +667,27 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         while settings_rx_save.changed().await.is_ok() {
             let s = settings_rx_save.borrow().clone();
             let mut cfg = config::FileConfig::load();
-            if !cli_overrides.0 { cfg.encoder = s.encoder; }
-            if !cli_overrides.1 { cfg.fps = s.fps; }
-            if !cli_overrides.2 { cfg.bitrate = s.bitrate; }
-            if !cli_overrides.3 { cfg.width = s.width; }
-            if !cli_overrides.4 { cfg.height = s.height; }
-            if !cli_overrides.5 { cfg.quality = s.quality; }
-            if !cli_overrides.6 { cfg.stream_scale = s.stream_scale; }
+            if !cli_overrides.0 {
+                cfg.encoder = s.encoder;
+            }
+            if !cli_overrides.1 {
+                cfg.fps = s.fps;
+            }
+            if !cli_overrides.2 {
+                cfg.bitrate = s.bitrate;
+            }
+            if !cli_overrides.3 {
+                cfg.width = s.width;
+            }
+            if !cli_overrides.4 {
+                cfg.height = s.height;
+            }
+            if !cli_overrides.5 {
+                cfg.quality = s.quality;
+            }
+            if !cli_overrides.6 {
+                cfg.stream_scale = s.stream_scale;
+            }
             if let Err(e) = cfg.save() {
                 warn!("Failed to persist settings: {}", e);
             } else {
@@ -442,7 +727,14 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let tray_shutdown_tx = shutdown_tx.clone();
     let tray_pen_device = file_cfg.input_pen;
     let tray_handle = tokio::spawn(async move {
-        tray::run(tray_mode_tx, tray_tablet_rx, tray_shutdown_tx, update_rx, tray_pen_device).await;
+        tray::run(
+            tray_mode_tx,
+            tray_tablet_rx,
+            tray_shutdown_tx,
+            update_rx,
+            tray_pen_device,
+        )
+        .await;
     });
 
     // Plug-and-play: watch for the tablet over ADB, set up port forwarding
@@ -455,6 +747,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             helper_path: find_helper(&cli.helper),
             edid_path: None,
             encoder: encoder.clone(),
+            vaapi_device: file_cfg.vaapi_device.clone(),
             fps,
             bitrate,
             width,
@@ -479,8 +772,18 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         shutdown_rx: shutdown_tx.subscribe(),
     };
     let wifi_address = file_cfg.wifi_address.clone();
-    let adb_handle = tokio::spawn(async move {
-        adb_monitor(video_port, input_port, auto_launch, tablet_tx, adb_token, relaunch, extra, wifi_address).await;
+    let mut adb_handle = tokio::spawn(async move {
+        adb_monitor(
+            video_port,
+            input_port,
+            auto_launch,
+            tablet_tx,
+            adb_token,
+            relaunch,
+            extra,
+            wifi_address,
+        )
+        .await;
     });
 
     println!();
@@ -490,8 +793,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     println!("  On your tablet, open the UScreen app");
     println!("  ADB ports will be auto-forwarded if possible.");
     println!("  Otherwise, run:");
-    println!("    adb reverse tcp:8890 tcp:8890");
-    println!("    adb reverse tcp:8891 tcp:8891");
+    println!("{}", forwarding_instructions(video_port, input_port));
     println!("================================================");
     println!();
 
@@ -515,11 +817,15 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Ask the capture pipeline to wind down, and give it a bounded moment to
     // actually reap its children before pulling the rug out.
     let _ = shutdown_tx.send(true);
-    if tokio::time::timeout(std::time::Duration::from_secs(5), cap_handle)
-        .await
-        .is_err()
+    if tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        let _ = tokio::join!(&mut cap_handle, &mut adb_handle);
+    })
+    .await
+    .is_err()
     {
-        warn!("Capture pipeline did not stop within 5s");
+        warn!("Capture pipelines did not stop within 5s");
+        cap_handle.abort();
+        adb_handle.abort();
     }
 
     // The input server restores the keyboard when the last tablet detaches;
@@ -556,17 +862,37 @@ fn other_daemons() -> Vec<u32> {
     let me = std::process::id();
     let uid = unsafe { libc::getuid() };
     let mut out = Vec::new();
-    let Ok(dir) = std::fs::read_dir("/proc") else { return out };
+    let Ok(dir) = std::fs::read_dir("/proc") else {
+        return out;
+    };
     for e in dir.flatten() {
-        let Ok(pid) = e.file_name().to_string_lossy().parse::<u32>() else { continue };
-        if pid == me { continue; }
+        let Ok(pid) = e.file_name().to_string_lossy().parse::<u32>() else {
+            continue;
+        };
+        if pid == me {
+            continue;
+        }
         let base = e.path();
-        let Ok(comm) = std::fs::read_to_string(base.join("comm")) else { continue };
-        if comm.trim() != "uscreen" { continue; }
-        let Ok(cmd) = std::fs::read(base.join("cmdline")) else { continue };
-        if !cmd.split(|b| *b == 0).any(|a| a == b"start") { continue; }
+        let Ok(comm) = std::fs::read_to_string(base.join("comm")) else {
+            continue;
+        };
+        if comm.trim() != "uscreen" {
+            continue;
+        }
+        let Ok(cmd) = std::fs::read(base.join("cmdline")) else {
+            continue;
+        };
+        if !cmd.split(|b| *b == 0).any(|a| a == b"start") {
+            continue;
+        }
         // Same user only: another account's daemon is not ours to touch.
-        if std::fs::metadata(&base).map(|m| m.uid()).unwrap_or(u32::MAX) != uid { continue; }
+        if std::fs::metadata(&base)
+            .map(|m| m.uid())
+            .unwrap_or(u32::MAX)
+            != uid
+        {
+            continue;
+        }
         out.push(pid);
     }
     out
@@ -667,11 +993,6 @@ fn find_helper(path: &std::path::Path) -> PathBuf {
     path.to_path_buf()
 }
 
-/// Keeps watching for the tablet. On every (re)connect: set up reverse port
-/// forwarding and optionally launch the UScreen app — plug in and it works.
-///
-/// Presence is published on `tablet_tx` so the capture manager can bring the
-/// virtual display up and down along with the tablet.
 /// Everything needed to bring up a pipeline for a second (third, ...)
 /// tablet on demand. The first tablet is wired at startup like it always
 /// was; these are spawned when another serial shows up and torn down when
@@ -699,17 +1020,25 @@ struct ExtraSession {
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     stop_tx: watch::Sender<bool>,
     tasks: Vec<tokio::task::JoinHandle<()>>,
+    capture: tokio::task::JoinHandle<()>,
     video_port: u16,
     input_port: u16,
 }
 
 impl ExtraSession {
-    async fn stop(self) {
+    async fn stop(mut self) {
         let _ = self.tablet_tx.send(false);
         let _ = self.stop_tx.send(true);
         // Let the capture manager disable its output and reap its children
         // before the tasks are dropped.
-        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        if tokio::time::timeout(std::time::Duration::from_secs(5), &mut self.capture)
+            .await
+            .is_err()
+        {
+            warn!("Capture pipeline {} did not stop within 5s", self.instance);
+            self.capture.abort();
+            let _ = self.capture.await;
+        }
         for t in self.tasks {
             t.abort();
         }
@@ -719,7 +1048,7 @@ impl ExtraSession {
 /// Bring up capture, stream and input for tablet number `instance`.
 /// Ports are the base ports plus 2 per instance; the tablet side keeps
 /// using 8890/8891, since `adb reverse` maps them per device.
-fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession {
+async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<ExtraSession> {
     let cards = vdisplay::evdi_cards();
     let mut cfg = t.cap_template.clone();
     cfg.instance = instance;
@@ -754,7 +1083,10 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
     let latency = cap.latency_tracker();
     let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
     let stream_srv = stream::StreamServer::new(
-        stream::StreamConfig { video_port, token: t.token.clone() },
+        stream::StreamConfig {
+            video_port,
+            token: t.token.clone(),
+        },
         codec_config,
         cap.idr_request_flag(),
     );
@@ -781,7 +1113,10 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
     let (gate_tx, gate_rx) = watch::channel(false);
     let (stop_tx, stop_rx) = watch::channel(false);
     let mut mode_rx = t.mode_tx.subscribe();
-    let mut tasks = Vec::new();
+    let (video_tx, _) = broadcast::channel(8);
+    let (stream_handle, input_handle) =
+        start_servers(stream_srv, input_srv, video_tx.clone()).await?;
+    let mut tasks = vec![stream_handle, input_handle];
     tasks.push(tokio::spawn(async move {
         let mut last = false;
         loop {
@@ -796,8 +1131,6 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
             }
         }
     }));
-    let (video_tx, _) = broadcast::channel(8);
-    let video_rx = video_tx.subscribe();
     // Either the whole daemon stopping or this session being torn down
     // must wind the capture pipeline down cleanly.
     let mut daemon_stop = t.shutdown_rx.clone();
@@ -810,29 +1143,33 @@ fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> ExtraSession 
         }
         let _ = cap_stop_tx.send(true);
     }));
-    tasks.push(tokio::spawn(async move {
-        if let Err(e) = cap.stream_frames(video_tx, settings_rx, gate_rx, cap_stop_rx).await {
+    let capture = tokio::spawn(async move {
+        if let Err(e) = cap
+            .stream_frames(video_tx, settings_rx, gate_rx, cap_stop_rx)
+            .await
+        {
             error!("Capture manager {} failed: {}", instance, e);
         }
-    }));
-    tasks.push(tokio::spawn(async move {
-        if let Err(e) = stream_srv.run(video_rx).await {
-            error!("Stream server {} failed: {}", instance, e);
-        }
-    }));
-    tasks.push(tokio::spawn(async move {
-        if let Err(e) = input_srv.run().await {
-            error!("Input server {} failed: {}", instance, e);
-        }
-    }));
+    });
     info!(
         "Tablet slot {} ready: video port {}, input port {}{}",
         instance + 1,
         video_port,
         input_port,
-        cfg.card.map(|c| format!(", EVDI card{}", c)).unwrap_or_default()
+        cfg.card
+            .map(|c| format!(", EVDI card{}", c))
+            .unwrap_or_default()
     );
-    ExtraSession { instance, tablet_tx, relaunch, stop_tx, tasks, video_port, input_port }
+    Ok(ExtraSession {
+        instance,
+        tablet_tx,
+        relaunch,
+        stop_tx,
+        tasks,
+        capture,
+        video_port,
+        input_port,
+    })
 }
 
 /// Keeps watching for tablets. The first serial seen gets the pipeline wired
@@ -853,6 +1190,7 @@ async fn adb_monitor(
     // `ip:port` remembered by `uscreen wifi`, or empty.
     wifi_address: String,
 ) {
+    let mut daemon_stop = extra.shutdown_rx.clone();
     let mut current: Option<String> = None;
     let mut last_relaunch = std::time::Instant::now() - std::time::Duration::from_secs(60);
     // How many times the token has been re-delivered to this tablet. An app
@@ -876,13 +1214,22 @@ async fn adb_monitor(
     // Said once per disappearance, not every ten seconds.
     let mut wifi_announced = false;
     // Further tablets, by serial.
-    let mut extras: std::collections::HashMap<String, ExtraSession> = std::collections::HashMap::new();
+    let mut extras: std::collections::HashMap<String, ExtraSession> =
+        std::collections::HashMap::new();
 
-    if tokio::process::Command::new("adb").arg("version").output().await.is_err() {
+    if tokio::process::Command::new("adb")
+        .arg("version")
+        .output()
+        .await
+        .is_err()
+    {
         error!("adb is not installed — the tablet can never be found. Install android-tools (or adb) and restart.");
     }
 
     loop {
+        if *daemon_stop.borrow() {
+            break;
+        }
         let mut devices = adb_devices().await;
         // Test hook: pretend a serial is attached so a second pipeline can be
         // exercised with one physical tablet and a loopback client.
@@ -905,7 +1252,14 @@ async fn adb_monitor(
                 );
                 announce_transport(serial);
                 if !is_fake_serial(serial) {
-                    on_tablet_connected(serial, video_port, input_port, auto_launch, token.as_deref()).await;
+                    on_tablet_connected(
+                        serial,
+                        video_port,
+                        input_port,
+                        auto_launch,
+                        token.as_deref(),
+                    )
+                    .await;
                 }
                 let _ = tablet_tx.send(true);
                 current = found.clone();
@@ -927,7 +1281,14 @@ async fn adb_monitor(
                     info!("Different tablet connected ({} → {})", old, serial);
                 }
                 announce_transport(serial);
-                on_tablet_connected(serial, video_port, input_port, auto_launch, token.as_deref()).await;
+                on_tablet_connected(
+                    serial,
+                    video_port,
+                    input_port,
+                    auto_launch,
+                    token.as_deref(),
+                )
+                .await;
                 let _ = tablet_tx.send(true);
                 current = found.clone();
                 relaunches = 0;
@@ -936,16 +1297,20 @@ async fn adb_monitor(
             (Some(old), None) => {
                 info!("Tablet disconnected ({})", old);
                 let _ = tablet_tx.send(false);
-                current = None;
+                disconnected_primary(&mut current, &mut wifi_announced);
             }
             _ => {}
         }
 
         // Further tablets. Anything beyond the first that has a free slot.
         if extra.max_tablets > 1 {
-            let others: Vec<String> = devices.iter().skip(1).cloned().collect();
+            let others = extra_devices(&devices, current.as_deref());
             // Gone
-            let gone: Vec<String> = extras.keys().filter(|k| !others.contains(k)).cloned().collect();
+            let gone: Vec<String> = extras
+                .keys()
+                .filter(|k| !others.contains(k))
+                .cloned()
+                .collect();
             for serial in gone {
                 if let Some(sess) = extras.remove(&serial) {
                     info!("Tablet {} disconnected ({})", sess.instance + 1, serial);
@@ -959,16 +1324,37 @@ async fn adb_monitor(
                 }
                 let used: Vec<u32> = extras.values().map(|s| s.instance).collect();
                 let Some(instance) = (1..extra.max_tablets).find(|i| !used.contains(i)) else {
-                    warn!("Tablet {} attached but all {} slots are taken", serial, extra.max_tablets);
+                    warn!(
+                        "Tablet {} attached but all {} slots are taken",
+                        serial, extra.max_tablets
+                    );
                     continue;
                 };
-                info!("Tablet {} connected over {} ({})", instance + 1, transport_of(&serial).label(), serial);
-                let sess = spawn_extra_session(&extra, instance);
+                info!(
+                    "Tablet {} connected over {} ({})",
+                    instance + 1,
+                    transport_of(&serial).label(),
+                    serial
+                );
+                let sess = match spawn_extra_session(&extra, instance).await {
+                    Ok(session) => session,
+                    Err(error) => {
+                        warn!("Could not start tablet {}: {}", instance + 1, error);
+                        continue;
+                    }
+                };
                 let is_fake = std::env::var("USCREEN_FAKE_TABLET")
                     .map(|f| f.split(',').any(|x| x.trim() == serial))
                     .unwrap_or(false);
                 if !is_fake {
-                    on_tablet_connected(&serial, sess.video_port, sess.input_port, auto_launch, token.as_deref()).await;
+                    on_tablet_connected(
+                        &serial,
+                        sess.video_port,
+                        sess.input_port,
+                        auto_launch,
+                        token.as_deref(),
+                    )
+                    .await;
                 }
                 let _ = sess.tablet_tx.send(true);
                 extras.insert(serial, sess);
@@ -988,6 +1374,7 @@ async fn adb_monitor(
             futures_util::future::select_all(futs).await;
         };
         tokio::select! {
+            _ = daemon_stop.changed() => break,
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)) => {
                 polls_since_check += 1;
                 if polls_since_check < APP_CHECK_EVERY {
@@ -1053,13 +1440,14 @@ async fn adb_monitor(
             }
             _ = extra_relaunch => {
                 // Deliver the token to every extra tablet; cheap and rare.
-                for (serial, _) in extras.iter() {
+                for serial in extras.keys() {
                     if std::env::var("USCREEN_FAKE_TABLET").map(|f| f.split(',').any(|x| x.trim() == serial)).unwrap_or(false) { continue; }
                     launch_app(serial, token.as_deref()).await;
                 }
             }
         }
     }
+    futures_util::future::join_all(extras.into_values().map(ExtraSession::stop)).await;
 }
 
 /// Switch the tablet's adb to TCP and remember where it lives, so the daemon
@@ -1085,7 +1473,10 @@ async fn setup_wifi(off: bool) -> Result<()> {
         return Ok(());
     }
 
-    let Some(serial) = adb_devices().await.into_iter().find(|s| transport_of(s) == Transport::Usb)
+    let Some(serial) = adb_devices()
+        .await
+        .into_iter()
+        .find(|s| transport_of(s) == Transport::Usb)
     else {
         anyhow::bail!(
             "No tablet on USB. Plug the cable in for this one step — the tablet has to be told \
@@ -1099,7 +1490,10 @@ async fn setup_wifi(off: bool) -> Result<()> {
         .output()
         .await?;
     if !out.status.success() {
-        anyhow::bail!("adb tcpip failed: {}", String::from_utf8_lossy(&out.stderr).trim());
+        anyhow::bail!(
+            "adb tcpip failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
     }
     // adbd restarts, taking the USB connection with it for a moment.
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -1113,7 +1507,10 @@ async fn setup_wifi(off: bool) -> Result<()> {
     };
     let address = format!("{}:5555", ip);
 
-    let out = tokio::process::Command::new("adb").args(["connect", &address]).output().await?;
+    let out = tokio::process::Command::new("adb")
+        .args(["connect", &address])
+        .output()
+        .await?;
     let said = String::from_utf8_lossy(&out.stdout).trim().to_string();
     if !said.contains("connected") {
         anyhow::bail!("adb connect {} did not take: {}", address, said);
@@ -1139,11 +1536,17 @@ async fn tablet_ip(serial: &str) -> Option<String> {
     // Asked for wlan0 first, since a tablet on USB may also have a tethering
     // interface whose address is useless here.
     for args in [
-        vec!["-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0"],
+        vec![
+            "-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0",
+        ],
         vec!["-s", serial, "shell", "ip", "route", "get", "1.1.1.1"],
         vec!["-s", serial, "shell", "ip", "-f", "inet", "addr"],
     ] {
-        let Ok(out) = tokio::process::Command::new("adb").args(&args).output().await else {
+        let Ok(out) = tokio::process::Command::new("adb")
+            .args(&args)
+            .output()
+            .await
+        else {
             continue;
         };
         let text = String::from_utf8_lossy(&out.stdout);
@@ -1202,7 +1605,10 @@ async fn on_tablet_connected(
 ) {
     match setup_adb_forwarding(serial, video_port, input_port).await {
         Ok(_) => {
-            info!("ADB port forwarding set up ({}, {})", video_port, input_port);
+            info!(
+                "ADB port forwarding set up ({}, {})",
+                video_port, input_port
+            );
             if auto_launch {
                 launch_app(serial, token).await;
             }
@@ -1212,23 +1618,36 @@ async fn on_tablet_connected(
 }
 
 /// Start (or re-front) the app, handing it the session token as an intent
-/// extra. The activity is singleTask, so a running app receives it through
-/// onNewIntent rather than being restarted.
+/// extra to the shell-permission-protected TokenActivity, which stores it and
+/// fronts the singleTask launcher activity to refresh live connections.
 ///
 /// The command goes to `adb shell` on stdin, not as arguments. Anything in
 /// argv is readable by every local process for as long as the adb client
 /// runs (/proc/<pid>/cmdline is world-readable), which would hand the token
 /// to exactly the attacker it exists to keep out — and a failed auth on the
 /// control socket can make the daemon spawn this on demand.
-async fn launch_app(serial: &str, token: Option<&str>) {
-    use tokio::io::AsyncWriteExt;
-    let mut cmd = String::from("am start -n com.uscreen/.MainActivity");
+fn app_launch_command(token: Option<&str>) -> String {
+    let mut cmd = format!(
+        "am start -n com.uscreen/.{}",
+        if token.is_some() {
+            "TokenActivity"
+        } else {
+            "MainActivity"
+        }
+    );
     if let Some(t) = token {
         // Hex only, so no quoting is needed and nothing can break out.
         cmd.push_str(" --es token ");
         cmd.push_str(t);
     }
     cmd.push_str(" >/dev/null 2>&1; exit\n");
+
+    cmd
+}
+
+async fn launch_app(serial: &str, token: Option<&str>) {
+    use tokio::io::AsyncWriteExt;
+    let cmd = app_launch_command(token);
 
     let child = tokio::process::Command::new("adb")
         .args(["-s", serial, "shell"])
@@ -1253,12 +1672,6 @@ async fn launch_app(serial: &str, token: Option<&str>) {
     }
 }
 
-/// Serial of the first fully-online device, or `None`.
-///
-/// Deliberately not `adb get-state`: that command fails outright with
-/// "more than one device/emulator" as soon as a second device (a phone, an
-/// emulator) is attached, which used to turn plug-and-play off with no
-/// indication of why.
 /// How the tablet is reached. Nothing in the pipeline is tied to either — it
 /// speaks to whatever adb is connected to — but the difference is worth a
 /// dozen milliseconds, so it is worth naming.
@@ -1287,11 +1700,7 @@ fn transport_of(serial: &str) -> Transport {
     }
 }
 
-/// Pick the tablet to drive, preferring USB.
-///
-/// Both can be present at once — `adb tcpip` leaves the cable working — and
-/// the order adb happens to list them in is not something to hang a latency
-/// difference on. USB wins whenever it is there.
+/// Test-only serials supplied through USCREEN_FAKE_TABLET.
 fn is_fake_serial(serial: &str) -> bool {
     std::env::var("USCREEN_FAKE_TABLET")
         .map(|f| f.split(',').any(|x| x.trim() == serial))
@@ -1317,7 +1726,10 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
             return Some(cur.to_string());
         }
     }
-    let usb: Vec<&String> = devices.iter().filter(|d| transport_of(d) == Transport::Usb).collect();
+    let usb: Vec<&String> = devices
+        .iter()
+        .filter(|d| transport_of(d) == Transport::Usb)
+        .collect();
     if usb.len() > 1 {
         for d in &usb {
             if is_fake_serial(d) {
@@ -1330,7 +1742,11 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
                 .map(|o| !o.stdout.is_empty())
                 .unwrap_or(false);
             if has_app {
-                info!("{} Android devices attached; using {} — it has the UScreen app", devices.len(), d);
+                info!(
+                    "{} Android devices attached; using {} — it has the UScreen app",
+                    devices.len(),
+                    d
+                );
                 return Some((*d).clone());
             }
         }
@@ -1346,7 +1762,11 @@ async fn pick_device(devices: &[String], current: Option<&str>) -> Option<String
 
 /// Every device in state "device", USB entries first.
 async fn adb_devices() -> Vec<String> {
-    let Ok(out) = tokio::process::Command::new("adb").arg("devices").output().await else {
+    let Ok(out) = tokio::process::Command::new("adb")
+        .arg("devices")
+        .output()
+        .await
+    else {
         return Vec::new();
     };
     let text = String::from_utf8_lossy(&out.stdout);
@@ -1362,32 +1782,6 @@ async fn adb_devices() -> Vec<String> {
         .collect();
     ready.sort_by_key(|s| transport_of(s) != Transport::Usb);
     ready
-}
-
-#[allow(dead_code)]
-async fn adb_device_serial() -> Option<String> {
-    let out = tokio::process::Command::new("adb")
-        .arg("devices")
-        .output()
-        .await
-        .ok()?;
-    let text = String::from_utf8_lossy(&out.stdout);
-    let ready: Vec<&str> = text
-        .lines()
-        .skip(1) // "List of devices attached"
-        .filter_map(|line| {
-            let mut parts = line.split_whitespace();
-            let serial = parts.next()?;
-            let state = parts.next()?;
-            (state == "device").then_some(serial)
-        })
-        .collect();
-
-    ready
-        .iter()
-        .find(|s| transport_of(s) == Transport::Usb)
-        .or_else(|| ready.first())
-        .map(|s| s.to_string())
 }
 
 /// The ports the tablet app dials on its own loopback. Fixed in the app
@@ -1417,38 +1811,59 @@ async fn setup_adb_forwarding(serial: &str, video_port: u16, input_port: u16) ->
     Ok(())
 }
 
+async fn stop_pids(pids: &[u32]) -> Result<()> {
+    for &pid in pids {
+        if config::daemon_is_running(pid) {
+            let status = unsafe { libc::kill(pid as i32, libc::SIGTERM) };
+            if status != 0 && std::io::Error::last_os_error().raw_os_error() != Some(libc::ESRCH) {
+                return Err(std::io::Error::last_os_error().into());
+            }
+        }
+    }
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        while pids.iter().any(|&pid| config::daemon_is_running(pid)) {
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .context("daemon did not finish shutting down within 10s")?;
+    Ok(())
+}
+
+fn extra_devices(devices: &[String], primary: Option<&str>) -> Vec<String> {
+    devices
+        .iter()
+        .filter(|serial| Some(serial.as_str()) != primary)
+        .cloned()
+        .collect()
+}
+
+fn disconnected_primary(current: &mut Option<String>, wifi_announced: &mut bool) {
+    *current = None;
+    *wifi_announced = false;
+}
+
+fn forwarding_instructions(video_port: u16, input_port: u16) -> String {
+    format!("    adb reverse tcp:{APP_VIDEO_PORT} tcp:{video_port}\n    adb reverse tcp:{APP_INPUT_PORT} tcp:{input_port}")
+}
+
 async fn stop_daemon() -> Result<()> {
     let pid_path = get_pid_path();
-
-    if pid_path.exists() {
-        let pid_str = std::fs::read_to_string(&pid_path)?;
-        let pid: u32 = pid_str.trim().parse()?;
-        info!("Stopping uscreen daemon (PID: {})", pid);
-
-        let result = tokio::process::Command::new("kill")
-            .args(["-TERM", &pid.to_string()])
-            .output()
-            .await?;
-
-        if result.status.success() {
-            let _ = std::fs::remove_file(&pid_path);
-            info!("uscreen daemon stopped");
-        } else {
-            // Fallback: try pkill but exclude our own PID
-            for p in other_daemons() {
-                unsafe { libc::kill(p as i32, libc::SIGTERM); }
-            }
-            let _ = std::fs::remove_file(&pid_path);
-            info!("uscreen daemon stopped (fallback)");
+    let tracked = std::fs::read_to_string(&pid_path)
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok());
+    let mut pids = other_daemons();
+    if let Some(pid) = tracked.filter(|&p| p != std::process::id() && config::daemon_is_running(p))
+    {
+        if !pids.contains(&pid) {
+            pids.push(pid);
         }
-    } else {
-        // No PID file, try pkill but exclude self
-        for p in other_daemons() {
-            unsafe { libc::kill(p as i32, libc::SIGTERM); }
-        }
-        info!("uscreen daemon stopped (no PID file)");
     }
-
+    stop_pids(&pids).await?;
+    if let Some(pid) = tracked {
+        remove_pid_file_if_ours(&pid_path, pid);
+    }
+    info!("uscreen daemon stopped");
     Ok(())
 }
 
@@ -1462,8 +1877,7 @@ async fn show_status() -> Result<()> {
 
         if pid > 0 && pid != my_pid {
             // Check if the process is actually running
-            let proc_path = format!("/proc/{}", pid);
-            if std::path::Path::new(&proc_path).exists() {
+            if config::daemon_is_running(pid) {
                 println!("uscreen is running (PID: {})", pid);
             } else {
                 println!("uscreen is not running (stale PID file)");

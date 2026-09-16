@@ -8,7 +8,7 @@ and must be updated together — the session token between them needs both.
 
 | file | for | command |
 | --- | --- | --- |
-| `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 22.04+, Mint, Pop | `sudo apt install ./uscreen_*.deb` — pulls `evdi-dkms`, `ffmpeg` and `adb` |
+| `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+ | `sudo apt install ./uscreen_*.deb` — pulls `evdi-dkms`, `ffmpeg` and `adb` |
 | `uscreen-<ver>-1.x86_64.rpm` | openSUSE | `sudo zypper install ./uscreen-*.rpm` |
 | `uscreen-<ver>-1.x86_64.rpm` | Fedora | enable [RPM Fusion](https://rpmfusion.org/Configuration) first (stock Fedora has no `ffmpeg`), then `sudo dnf install --allowerasing ./uscreen-*.rpm`, then build the evdi module from [DisplayLink/evdi](https://github.com/DisplayLink/evdi) — it is not packaged for Fedora |
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch, Manjaro, EndeavourOS, CachyOS | extract, `makepkg -si` — pulls `evdi-dkms` from the AUR |
@@ -66,8 +66,8 @@ something is.
 
 ## What gets changed on the system
 
-- `/etc/modprobe.d/uscreen-evdi.conf` with `options evdi initial_device_count=2`
-- `/etc/modules-load.d/uscreen.conf` loading `evdi` and `uinput`
+- `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package), with `options evdi initial_device_count=2`
+- `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package), loading `evdi` and `uinput`
 - a udev rule opening `/dev/uinput` to the logged-in user
 - a systemd *user* unit (never a system service, never root)
 

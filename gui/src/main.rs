@@ -1,115 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use eframe::egui;
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-/// Mirror of the daemon's config file (~/.config/uscreen/config.toml).
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(default)]
-struct FileConfig {
-    encoder: String,
-    fps: u32,
-    bitrate: u32,
-    width: u32,
-    height: u32,
-    quality: u32,
-    stream_scale: u32,
-    pen_only: bool,
-    /// Which side of the desktop the virtual screen sits on. Kept here even
-    /// though this window does not need it for anything else: the GUI writes
-    /// the whole file back, so a field it does not know about is a field it
-    /// silently erases.
-    position: String,
-    ten_bit: bool,
-    require_token: bool,
-    check_updates: bool,
-    max_tablets: u32,
-    /// `ip:port` remembered by `uscreen wifi`. The GUI never edits it, but
-    /// it has to carry it: save() writes the whole struct, so a field missing
-    /// here is erased from the file on the next Apply.
-    wifi_address: String,
-    auto_resolution: bool,
-    video_port: u16,
-    input_port: u16,
-    auto_launch_app: bool,
-    /// Which virtual input devices the daemon creates while a tablet is
-    /// attached. Defaults on, as in host/src/config.rs; keep the two in step.
-    input_touch: bool,
-    input_pen: bool,
-    input_pointer: bool,
-}
-
-impl Default for FileConfig {
-    fn default() -> Self {
-        Self {
-            encoder: "h264_nvenc".into(),
-            fps: 60,
-            bitrate: 20000,
-            width: 2960,
-            height: 1848,
-            quality: DEFAULT_QUALITY,
-            stream_scale: 1,
-            pen_only: false,
-            position: "right".into(),
-            ten_bit: false,
-            require_token: true,
-            check_updates: true,
-            max_tablets: 1,
-            wifi_address: String::new(),
-            auto_resolution: true,
-            video_port: 8890,
-            input_port: 8891,
-            auto_launch_app: true,
-            input_touch: true,
-            input_pen: true,
-            input_pointer: true,
-        }
-    }
-}
-
-fn config_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_default();
-    PathBuf::from(home).join(".config/uscreen/config.toml")
-}
-
-// Kept in sync with `host/src/config.rs`. TODO: share that module instead of
-// mirroring it here — the duplication is what let these drift in the first place.
-const MAX_BITRATE_KBPS: u32 = 60_000;
-const MIN_BITRATE_KBPS: u32 = 1_000;
-const MAX_FPS: u32 = 90;
-const MIN_FPS: u32 = 10;
-const DEFAULT_QUALITY: u32 = 18;
-const MIN_QUALITY: u32 = 12;
-const MAX_QUALITY: u32 = 32;
-
-impl FileConfig {
-    fn load() -> Self {
-        let mut cfg: Self = std::fs::read_to_string(config_path())
-            .ok()
-            .and_then(|t| toml::from_str(&t).ok())
-            .unwrap_or_default();
-        // Older installs persisted 200 Mbps / 90 fps pushed from the tablet.
-        // Without this the GUI would display that value and write it straight
-        // back on the next save.
-        cfg.bitrate = cfg.bitrate.clamp(MIN_BITRATE_KBPS, MAX_BITRATE_KBPS);
-        cfg.fps = cfg.fps.clamp(MIN_FPS, MAX_FPS);
-        cfg.quality = cfg.quality.clamp(MIN_QUALITY, MAX_QUALITY);
-        cfg.stream_scale = cfg.stream_scale.clamp(1, 4);
-        cfg
-    }
-
-    fn save(&self) -> std::io::Result<()> {
-        let path = config_path();
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(path, toml::to_string_pretty(self).unwrap_or_default())
-    }
-}
+use uscreen_config::*;
 
 /// Whether the systemd user service is enabled, i.e. whether plugging the
 /// cable in is enough on its own.
@@ -145,6 +41,11 @@ struct Status {
     ffmpeg_ok: bool,
     adb_ok: bool,
     autostart: bool,
+    uinput_ok: bool,
+}
+
+fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
+    status.evdi_count <= 0 || ((config.input_touch || config.input_pen) && !status.uinput_ok)
 }
 
 fn home() -> String {
@@ -156,23 +57,27 @@ fn pid_path() -> PathBuf {
 }
 
 fn find_uscreen_bin() -> Option<PathBuf> {
-    let installed = PathBuf::from(format!("{}/.local/bin/uscreen", home()));
-    if installed.exists() {
-        return Some(installed);
-    }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let sibling = dir.join("uscreen");
-            if sibling.exists() {
-                return Some(sibling);
-            }
+    find_uscreen_bin_in(
+        std::env::current_exe().ok(),
+        PathBuf::from(format!("{}/.local/bin/uscreen", home())),
+        &std::env::var_os("PATH").unwrap_or_default(),
+    )
+}
+
+fn find_uscreen_bin_in(
+    exe: Option<PathBuf>,
+    installed: PathBuf,
+    path: &std::ffi::OsStr,
+) -> Option<PathBuf> {
+    if let Some(sibling) = exe.and_then(|exe| exe.parent().map(|dir| dir.join("uscreen"))) {
+        if sibling.exists() {
+            return Some(sibling);
         }
     }
-    // Fall back to PATH
-    if Command::new("uscreen").arg("--version").output().is_ok() {
-        return Some(PathBuf::from("uscreen"));
-    }
-    None
+    std::env::split_paths(path)
+        .map(|dir| dir.join("uscreen"))
+        .find(|p| p.is_file())
+        .or_else(|| installed.is_file().then_some(installed))
 }
 
 fn command_exists(name: &str) -> bool {
@@ -194,10 +99,14 @@ fn poll_status() -> Status {
     s.ffmpeg_ok = command_exists("ffmpeg");
     s.autostart = autostart_enabled();
     s.adb_ok = command_exists("adb");
+    s.uinput_ok = std::fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/uinput")
+        .is_ok();
 
     if let Ok(pid_str) = std::fs::read_to_string(pid_path()) {
         if let Ok(pid) = pid_str.trim().parse::<u32>() {
-            if PathBuf::from(format!("/proc/{}", pid)).exists() {
+            if daemon_is_running(pid) {
                 s.daemon_running = true;
                 s.daemon_pid = pid;
             }
@@ -221,7 +130,10 @@ fn poll_status() -> Status {
             .or(ready.first())
         {
             s.tablet_connected = true;
-            if let Some(model) = line.split_whitespace().find_map(|t| t.strip_prefix("model:")) {
+            if let Some(model) = line
+                .split_whitespace()
+                .find_map(|t| t.strip_prefix("model:"))
+            {
                 s.tablet_model = model.replace('_', " ");
             }
         }
@@ -231,14 +143,23 @@ fn poll_status() -> Status {
 
 /// One-time privileged setup via the desktop's graphical password prompt:
 /// pre-create an EVDI device now and at every boot.
-fn run_system_setup() -> Result<(), String> {
+fn system_setup_script(root: &std::path::Path) -> String {
     let script = "set -e; \
         echo 'options evdi initial_device_count=2' > /etc/modprobe.d/uscreen-evdi.conf; \
         printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf; \
         modprobe evdi || true; modprobe uinput || true; \
         if [ \"$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)\" = \"0\" ]; then echo 1 > /sys/devices/evdi/add; fi";
+    let script = format!("{}\nmkdir -p /etc/udev/rules.d\ncat > /etc/udev/rules.d/60-uscreen-uinput.rules <<'USCREEN_RULE'\n{}USCREEN_RULE\nudevadm control --reload\nudevadm trigger --name-match=uinput\n", script,
+        include_str!("../../packaging/60-uscreen-uinput.rules"));
+    script
+        .replace("/etc/", &format!("{}/etc/", root.display()))
+        .replace("/sys/", &format!("{}/sys/", root.display()))
+}
+
+fn run_system_setup() -> Result<(), String> {
+    let script = system_setup_script(std::path::Path::new("/"));
     let out = Command::new("pkexec")
-        .args(["sh", "-c", script])
+        .args(["sh", "-c", &script])
         .output()
         .map_err(|e| format!("pkexec failed to run: {}", e))?;
     if out.status.success() {
@@ -251,20 +172,94 @@ fn run_system_setup() -> Result<(), String> {
     }
 }
 
+fn daemon_command(bin: &std::path::Path, action: &str, managed: bool) -> Command {
+    if managed {
+        let mut command = Command::new("systemctl");
+        command.args(["--user", action, "uscreen.service"]);
+        command
+    } else {
+        let mut command = Command::new(bin);
+        command.arg(action);
+        command
+    }
+}
+
+fn service_managed() -> bool {
+    if Command::new("systemctl")
+        .args(["--user", "is-active", "--quiet", "uscreen.service"])
+        .status()
+        .is_ok_and(|status| status.success())
+    {
+        return true;
+    }
+    let running_directly = std::fs::read_to_string(pid_path())
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .is_some_and(daemon_is_running);
+    if running_directly {
+        return false;
+    }
+    Command::new("systemctl")
+        .args([
+            "--user",
+            "show",
+            "-p",
+            "LoadState",
+            "--value",
+            "uscreen.service",
+        ])
+        .output()
+        .is_ok_and(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "loaded")
+}
+
+fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
+    let bin = if managed {
+        PathBuf::new()
+    } else {
+        find_uscreen_bin().ok_or("uscreen binary not found")?
+    };
+    let output = daemon_command(&bin, action, managed)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} failed: {}",
+            action,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ))
+    }
+}
+
+fn restart_daemon() -> Result<(), String> {
+    if service_managed() {
+        return run_daemon_command("restart", true);
+    }
+    run_daemon_command("stop", false)?;
+    start_direct_daemon()
+}
+
 fn start_daemon() -> Result<(), String> {
+    if service_managed() {
+        return run_daemon_command("start", true);
+    }
+    start_direct_daemon()
+}
+
+fn start_direct_daemon() -> Result<(), String> {
     let bin = find_uscreen_bin().ok_or("uscreen binary not found — run `make install`")?;
     let log_dir = PathBuf::from(format!("{}/.local/share/uscreen", home()));
     let _ = std::fs::create_dir_all(&log_dir);
     let log = std::fs::File::create(log_dir.join("daemon.log")).map_err(|e| e.to_string())?;
     let log_err = log.try_clone().map_err(|e| e.to_string())?;
-    let mut child = Command::new(bin)
-        .arg("start")
+    let mut child = daemon_command(&bin, "start", false)
         .stdout(log)
         .stderr(log_err)
         .stdin(std::process::Stdio::null())
         .spawn()
         .map_err(|e| format!("Failed to start daemon: {}", e))?;
-    // The daemon detaches and keeps running in the background, but the
+    // The GUI launches the foreground daemon as a child. The
     // std::process::Child handle must still be waited on or the kernel
     // leaves a zombie behind once it exits. Reap it on a background thread
     // instead of blocking the GUI.
@@ -275,12 +270,7 @@ fn start_daemon() -> Result<(), String> {
 }
 
 fn stop_daemon() -> Result<(), String> {
-    let bin = find_uscreen_bin().ok_or("uscreen binary not found")?;
-    Command::new(bin)
-        .arg("stop")
-        .output()
-        .map_err(|e| format!("Failed to stop daemon: {}", e))?;
-    Ok(())
+    run_daemon_command("stop", service_managed())
 }
 
 struct App {
@@ -310,17 +300,27 @@ const RELEASES_PAGE: &str = "https://github.com/majmichu1/UScreen/releases/lates
 fn os_release_name() -> String {
     std::fs::read_to_string("/etc/os-release")
         .ok()
-        .and_then(|t| t.lines().find_map(|l| l.strip_prefix("PRETTY_NAME=").map(|v| v.trim_matches('"').to_string())))
+        .and_then(|t| {
+            t.lines().find_map(|l| {
+                l.strip_prefix("PRETTY_NAME=")
+                    .map(|v| v.trim_matches('"').to_string())
+            })
+        })
         .unwrap_or_default()
-        + " / " + &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default()
-        + " (" + &std::env::var("XDG_SESSION_TYPE").unwrap_or_default() + ")"
+        + " / "
+        + &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default()
+        + " ("
+        + &std::env::var("XDG_SESSION_TYPE").unwrap_or_default()
+        + ")"
 }
 
 fn urlencode(s: &str) -> String {
     let mut out = String::new();
     for b in s.bytes() {
         match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char)
+            }
             _ => out.push_str(&format!("%{:02X}", b)),
         }
     }
@@ -328,19 +328,44 @@ fn urlencode(s: &str) -> String {
 }
 
 fn version_parts(v: &str) -> (u32, u32, u32) {
-    let mut it = v.trim().trim_start_matches('v').split('.').map(|p| p.parse().unwrap_or(0));
-    (it.next().unwrap_or(0), it.next().unwrap_or(0), it.next().unwrap_or(0))
+    let mut it = v
+        .trim()
+        .trim_start_matches('v')
+        .split('.')
+        .map(|p| p.parse().unwrap_or(0));
+    (
+        it.next().unwrap_or(0),
+        it.next().unwrap_or(0),
+        it.next().unwrap_or(0),
+    )
 }
 
 /// One request when the window opens. Reports; never installs.
 fn check_for_update() -> Option<String> {
     let out = Command::new("curl")
-        .args(["-sS", "--max-time", "4", "-H", "Accept: application/vnd.github+json",
-               "-H", concat!("User-Agent: uscreen-gui/", env!("CARGO_PKG_VERSION")), RELEASES_API])
-        .output().ok()?;
-    if !out.status.success() { return None; }
+        .args([
+            "-sS",
+            "--max-time",
+            "4",
+            "-H",
+            "Accept: application/vnd.github+json",
+            "-H",
+            concat!("User-Agent: uscreen-gui/", env!("CARGO_PKG_VERSION")),
+            RELEASES_API,
+        ])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
     let body = String::from_utf8_lossy(&out.stdout);
-    let tag = body.split("\"tag_name\"").nth(1)?.split('"').nth(1)?.trim_start_matches('v').to_string();
+    let tag = body
+        .split("\"tag_name\"")
+        .nth(1)?
+        .split('"')
+        .nth(1)?
+        .trim_start_matches('v')
+        .to_string();
     (version_parts(&tag) > version_parts(env!("CARGO_PKG_VERSION"))).then_some(tag)
 }
 
@@ -354,7 +379,9 @@ impl App {
             let slot = update.clone();
             std::thread::spawn(move || {
                 if let Some(v) = check_for_update() {
-                    if let Ok(mut g) = slot.lock() { *g = Some(v); }
+                    if let Ok(mut g) = slot.lock() {
+                        *g = Some(v);
+                    }
                 }
             });
         }
@@ -380,14 +407,19 @@ impl App {
     }
 
     fn apply(&mut self, restart: bool) {
+        match self.cfg.merge_edits(&self.saved_cfg, FileConfig::load()) {
+            Ok(merged) => self.cfg = merged,
+            Err(error) => {
+                self.message = format!("Save failed: {}", error);
+                return;
+            }
+        }
         match self.cfg.save() {
             Ok(_) => {
                 self.saved_cfg = self.cfg.clone();
                 self.message = "Settings saved".into();
                 if restart {
-                    let _ = stop_daemon();
-                    std::thread::sleep(Duration::from_millis(500));
-                    match start_daemon() {
+                    match restart_daemon() {
                         Ok(_) => self.message = "Settings saved — daemon restarted".into(),
                         Err(e) => self.message = e,
                     }
@@ -396,6 +428,21 @@ impl App {
             Err(e) => self.message = format!("Save failed: {}", e),
         }
     }
+}
+
+fn bitrate_slider(ui: &mut egui::Ui, bitrate: &mut u32) -> egui::Response {
+    let mut mbps = *bitrate as f32 / 1000.0;
+    let response = ui.add(
+        egui::Slider::new(
+            &mut mbps,
+            MIN_BITRATE_KBPS as f32 / 1000.0..=MAX_BITRATE_KBPS as f32 / 1000.0,
+        )
+        .suffix(" Mbps"),
+    );
+    if response.changed() {
+        *bitrate = (mbps * 1000.0) as u32;
+    }
+    response
 }
 
 fn scale_label(n: u32) -> &'static str {
@@ -452,10 +499,10 @@ impl eframe::App for App {
                         let url = format!(
                             "https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
                             urlencode("Compatibility: "), urlencode(&body));
-                        let _ = Command::new("xdg-open").arg(url).spawn();
+                        let _ = spawn_reaped(Command::new("xdg-open").arg(url));
                     }
                     if ui.small_button("Star on GitHub").clicked() {
-                        let _ = Command::new("xdg-open").arg("https://github.com/majmichu1/UScreen").spawn();
+                        let _ = spawn_reaped(Command::new("xdg-open").arg("https://github.com/majmichu1/UScreen"));
                     }
                 });
                 if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {
@@ -463,14 +510,14 @@ impl eframe::App for App {
                     ui.horizontal(|ui| {
                         ui.label(egui::RichText::new(format!("Update available: {}", v)).strong());
                         if ui.link("open release page").clicked() {
-                            let _ = Command::new("xdg-open").arg(RELEASES_PAGE).spawn();
+                            let _ = spawn_reaped(Command::new("xdg-open").arg(RELEASES_PAGE));
                         }
                     });
                 }
                 ui.add_space(12.0);
 
                 // ----- First-run system setup -----
-                let needs_setup = status.evdi_count <= 0;
+                let needs_setup = needs_system_setup(&status, &self.cfg);
                 let missing_pkgs = !status.ffmpeg_ok || !status.adb_ok;
                 if needs_setup || missing_pkgs {
                     egui::Frame::group(ui.style())
@@ -499,10 +546,12 @@ impl eframe::App for App {
                             if needs_setup {
                                 ui.label(if status.evdi_count < 0 {
                                     "The EVDI kernel module is not loaded (install evdi/evdi-dkms)."
-                                } else {
+                                } else if status.evdi_count == 0 {
                                     "The virtual display device needs to be enabled (one time)."
+                                } else {
+                                    "Touch and pen input need permission to access /dev/uinput."
                                 });
-                                if ui.button("Enable virtual display (asks for password)").clicked()
+                                if ui.button("Set up display and input (asks for password)").clicked()
                                 {
                                     match run_system_setup() {
                                         Ok(_) => self.message = "System setup complete".into(),
@@ -662,16 +711,7 @@ impl eframe::App for App {
                         if self.tab == Tab::Video {
                             ui.label("Bitrate ceiling");
                             ui.vertical(|ui| {
-                                let mut mbps = self.cfg.bitrate as f32 / 1000.0;
-                                // Capped at what the USB transport actually sustains:
-                                // past that the encoder just outruns the link and the
-                                // extra bits turn into queueing delay, not sharpness.
-                                if ui
-                                    .add(egui::Slider::new(&mut mbps, 5.0..=60.0).suffix(" Mbps"))
-                                    .changed()
-                                {
-                                    self.cfg.bitrate = (mbps * 1000.0) as u32;
-                                }
+                                bitrate_slider(ui, &mut self.cfg.bitrate);
                                 ui.label(
                                     egui::RichText::new(
                                         "Only a cap for bursts — a desktop streams well below it",
@@ -778,14 +818,14 @@ impl eframe::App for App {
                                     ui.add_enabled(
                                         !self.cfg.auto_resolution,
                                         egui::DragValue::new(&mut self.cfg.width)
-                                            .range(640..=8192)
+                                            .range(640..=MAX_DIMENSION)
                                             .speed(8),
                                     );
                                     ui.label("×");
                                     ui.add_enabled(
                                         !self.cfg.auto_resolution,
                                         egui::DragValue::new(&mut self.cfg.height)
-                                            .range(480..=8192)
+                                            .range(480..=MAX_DIMENSION)
                                             .speed(8),
                                     );
                                 });
@@ -964,4 +1004,187 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    struct Sandbox(PathBuf);
+    impl Sandbox {
+        fn new() -> Self {
+            static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            let path = std::env::temp_dir().join(format!(
+                "uscreen-gui-test-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+        fn script(&self, name: &str, body: &str) -> PathBuf {
+            let path = self.0.join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+            path
+        }
+    }
+    impl Drop for Sandbox {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn t014_packaged_daemon_wins_over_stale_local_install() {
+        let sandbox = Sandbox::new();
+        let sibling = sandbox.script("package/uscreen", "exit 0");
+        let local = sandbox.script("local/uscreen", "exit 0");
+        let path_bin = sandbox.script("path/uscreen", "exit 0");
+        let path = path_bin.parent().unwrap().as_os_str();
+        assert_eq!(
+            find_uscreen_bin_in(
+                Some(sibling.with_file_name("uscreen-gui")),
+                local.clone(),
+                path
+            ),
+            Some(sibling.clone())
+        );
+        std::fs::remove_file(sibling).unwrap();
+        assert_eq!(
+            find_uscreen_bin_in(None, local.clone(), path),
+            Some(path_bin.clone())
+        );
+        std::fs::remove_file(&path_bin).unwrap();
+        assert_eq!(find_uscreen_bin_in(None, local.clone(), path), Some(local));
+    }
+
+    #[test]
+    fn t015_system_setup_installs_uinput_rule_and_reloads_udev() {
+        let sandbox = Sandbox::new();
+        for dir in [
+            "etc/modprobe.d",
+            "etc/modules-load.d",
+            "sys/devices/evdi",
+            "etc/udev/rules.d",
+        ] {
+            std::fs::create_dir_all(sandbox.0.join(dir)).unwrap();
+        }
+        std::fs::write(sandbox.0.join("sys/devices/evdi/count"), "2").unwrap();
+        sandbox.script("bin/modprobe", "exit 0");
+        sandbox.script(
+            "bin/udevadm",
+            "printf '%s\\n' \"$*\" >> \"$USCREEN_TEST_TRACE\"",
+        );
+        let trace = sandbox.0.join("trace");
+        let output = Command::new("sh")
+            .args(["-c", &system_setup_script(&sandbox.0)])
+            .env(
+                "PATH",
+                format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),
+            )
+            .env("USCREEN_TEST_TRACE", &trace)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let rule =
+            std::fs::read_to_string(sandbox.0.join("etc/udev/rules.d/60-uscreen-uinput.rules"));
+        assert_eq!(
+            rule.unwrap(),
+            include_str!("../../packaging/60-uscreen-uinput.rules")
+        );
+        let trace = std::fs::read_to_string(trace).unwrap();
+        assert!(trace.contains("control --reload"));
+        assert!(trace.contains("trigger --name-match=uinput"));
+    }
+
+    #[test]
+    fn t015_unwritable_uinput_is_visible_even_when_evdi_is_ready() {
+        let mut status = Status {
+            evdi_count: 2,
+            uinput_ok: false,
+            ..Default::default()
+        };
+        assert!(needs_system_setup(&status, &FileConfig::default()));
+        status.uinput_ok = true;
+        assert!(!needs_system_setup(&status, &FileConfig::default()));
+        status.uinput_ok = false;
+        assert!(!needs_system_setup(
+            &status,
+            &FileConfig {
+                input_touch: false,
+                input_pen: false,
+                ..Default::default()
+            }
+        ));
+    }
+
+    #[test]
+    fn t016_service_actions_use_systemd_including_restart() {
+        let sandbox = Sandbox::new();
+        let bin = sandbox.script("uscreen", "echo direct");
+        sandbox.script("systemctl", "printf 'managed %s\\n' \"$*\"");
+        for action in ["start", "stop", "restart"] {
+            let output = daemon_command(&bin, action, true)
+                .env("PATH", &sandbox.0)
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            assert_eq!(
+                String::from_utf8_lossy(&output.stdout),
+                format!("managed --user {action} uscreen.service\n")
+            );
+        }
+        let output = daemon_command(&bin, "stop", false).output().unwrap();
+        assert_eq!(output.stdout, b"direct\n");
+    }
+
+    #[test]
+    fn t053_slider_can_select_the_supported_one_mbps_minimum() {
+        let ctx = egui::Context::default();
+        let mut bitrate = 20_000;
+        let mut rect = egui::Rect::NOTHING;
+        let _ = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                rect = bitrate_slider(ui, &mut bitrate).rect;
+            });
+        });
+        let pos = egui::pos2(rect.left() + 1.0, rect.center().y);
+        let input = egui::RawInput {
+            events: vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+            ..Default::default()
+        };
+        let _ = ctx.run(input, |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                bitrate_slider(ui, &mut bitrate);
+            });
+        });
+        assert_eq!(bitrate, 1000);
+    }
+
+    #[test]
+    fn t053_displaying_bitrate_slider_does_not_rewrite_supported_low_values() {
+        for original in [1000, 2500, 4999, 5000, 60000] {
+            let mut bitrate = original;
+            let ctx = egui::Context::default();
+            let _ = ctx.run(egui::RawInput::default(), |ctx| {
+                egui::CentralPanel::default().show(ctx, |ui| bitrate_slider(ui, &mut bitrate));
+            });
+            assert_eq!(bitrate, original);
+        }
+    }
 }

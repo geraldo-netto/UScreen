@@ -22,12 +22,12 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="UScreen Display"
         android:supportsRtl="true"
         android:theme="@style/Theme.UScreen"
-        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:hardwareAccelerated="true">
 
         <activity
@@ -44,6 +44,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- DUMP is granted to adb shell, not ordinary installed apps. Token
+             delivery goes through this gate; the launcher ignores extras. -->
+        <activity
+            android:name=".TokenActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay" />
 
         <service
             android:name=".StreamingService"

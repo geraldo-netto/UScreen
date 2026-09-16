@@ -28,7 +28,10 @@ pub struct StreamConfig {
 
 impl Default for StreamConfig {
     fn default() -> Self {
-        Self { video_port: 8890, token: None }
+        Self {
+            video_port: 8890,
+            token: None,
+        }
     }
 }
 
@@ -59,18 +62,20 @@ impl StreamServer {
         }
     }
 
-    pub async fn run(&self, video_rx: broadcast::Receiver<VideoPacket>) -> Result<()> {
-        self.running.store(true, Ordering::SeqCst);
-
-        // Loopback only. The tablet reaches us through `adb reverse`, where the
-        // adb server on this machine opens the connection locally — binding all
-        // interfaces would put an unauthenticated live view of the screen on
-        // the LAN for anyone who cares to connect.
+    pub async fn bind(&self) -> Result<TcpListener> {
+        // The tablet reaches loopback through adb reverse.
         let addr = format!("127.0.0.1:{}", self.config.video_port);
         let listener = TcpListener::bind(&addr).await?;
-
         info!("Stream server on tcp://{}", addr);
+        Ok(listener)
+    }
 
+    pub async fn run_with_listener(
+        &self,
+        video_tx: broadcast::Sender<VideoPacket>,
+        listener: TcpListener,
+    ) -> Result<()> {
+        self.running.store(true, Ordering::SeqCst);
         let running = self.running.clone();
 
         loop {
@@ -95,7 +100,7 @@ impl StreamServer {
             // Ask for a keyframe now rather than letting this client stare at
             // nothing until the next scheduled one.
             self.idr_wanted.store(true, Ordering::SeqCst);
-            let rx = video_rx.resubscribe();
+            let rx = video_tx.subscribe();
             let cc = self.codec_config.clone();
             let token = self.config.token.clone();
             tokio::spawn(async move {
@@ -130,8 +135,10 @@ impl StreamServer {
                     .map(|t| crate::runtime::token_matches(expected, t))
                     .unwrap_or(false);
             if !ok {
-                warn!("Video client did not present a valid session token — dropped. \
-                       An app older than 1.1.0 cannot authenticate: update it.");
+                warn!(
+                    "Video client did not present a valid session token — dropped. \
+                       An app older than 1.1.0 cannot authenticate: update it."
+                );
                 return Ok(());
             }
         }
@@ -154,7 +161,6 @@ impl StreamServer {
             if let Some(config) = codec_data {
                 info!("Sending codec config to client ({} bytes)", config.len());
                 Self::write_packet(&mut socket, PACKET_TYPE_CONFIG, &config).await?;
-                socket.flush().await?;
                 last_sent_config = Some(config);
                 break;
             }
@@ -233,9 +239,6 @@ impl StreamServer {
                 }
                 Self::write_frame(&mut socket, packet.seq, &packet.data).await?;
             }
-
-            // Flush once per batch for lowest latency without extra syscalls
-            socket.flush().await?;
         }
 
         Ok(())
@@ -276,12 +279,27 @@ impl StreamServer {
     /// byte. The tablet hands it to the decoder as the presentation timestamp
     /// and echoes it back once the frame is on screen, which is what makes
     /// end-to-end latency measurable on a single clock.
-    async fn write_frame(socket: &mut TcpStream, seq: u32, payload: &[u8]) -> Result<()> {
-        let packet_len = payload.len() + 1 + 4;
-        socket.write_all(&(packet_len as u32).to_be_bytes()).await?;
-        socket.write_all(&[PACKET_TYPE_FRAME]).await?;
-        socket.write_all(&seq.to_be_bytes()).await?;
-        socket.write_all(payload).await?;
+    async fn write_frame(
+        socket: &mut (impl tokio::io::AsyncWrite + Unpin),
+        seq: u32,
+        payload: &[u8],
+    ) -> Result<()> {
+        let mut header = [0u8; 9];
+        header[..4].copy_from_slice(&((payload.len() + 5) as u32).to_be_bytes());
+        header[4] = PACKET_TYPE_FRAME;
+        header[5..].copy_from_slice(&seq.to_be_bytes());
+        let mut slices = [
+            std::io::IoSlice::new(&header),
+            std::io::IoSlice::new(payload),
+        ];
+        let mut remaining = &mut slices[..];
+        while !remaining.is_empty() {
+            let written = socket.write_vectored(remaining).await?;
+            if written == 0 {
+                return Err(std::io::Error::from(std::io::ErrorKind::WriteZero).into());
+            }
+            std::io::IoSlice::advance_slices(&mut remaining, written);
+        }
         Ok(())
     }
 
@@ -290,5 +308,97 @@ impl StreamServer {
     #[allow(dead_code)]
     pub fn stop(&self) {
         self.running.store(false, Ordering::SeqCst);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        io::IoSlice,
+        pin::Pin,
+        task::{Context, Poll},
+    };
+
+    #[tokio::test]
+    async fn t056_idle_server_does_not_count_as_a_video_client() {
+        let server = StreamServer::new(
+            StreamConfig::default(),
+            Default::default(),
+            Default::default(),
+        );
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let (tx, _) = broadcast::channel(8);
+        let mut running = Box::pin(server.run_with_listener(tx.clone(), listener));
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(20), &mut running)
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            tx.receiver_count(),
+            0,
+            "only connected clients should subscribe"
+        );
+    }
+
+    #[derive(Default)]
+    struct Writer {
+        bytes: Vec<u8>,
+        writes: usize,
+        max_write: usize,
+    }
+    impl tokio::io::AsyncWrite for Writer {
+        fn poll_write(
+            mut self: Pin<&mut Self>,
+            _: &mut Context<'_>,
+            bytes: &[u8],
+        ) -> Poll<std::io::Result<usize>> {
+            let n = if self.max_write == 0 {
+                bytes.len()
+            } else {
+                bytes.len().min(self.max_write)
+            };
+            self.writes += 1;
+            self.bytes.extend_from_slice(&bytes[..n]);
+            Poll::Ready(Ok(n))
+        }
+        fn poll_write_vectored(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            slices: &[IoSlice<'_>],
+        ) -> Poll<std::io::Result<usize>> {
+            let data: Vec<u8> = slices.iter().flat_map(|s| s.iter().copied()).collect();
+            self.as_mut().poll_write(cx, &data)
+        }
+        fn is_write_vectored(&self) -> bool {
+            true
+        }
+        fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+        fn poll_shutdown(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+    }
+
+    #[tokio::test]
+    async fn t071_frame_header_and_payload_share_one_write_and_handle_short_writes() {
+        for max_write in [0, 2, 7, 10] {
+            let mut writer = Writer {
+                max_write,
+                ..Default::default()
+            };
+            StreamServer::write_frame(&mut writer, 0x12345678, &[9, 8, 7])
+                .await
+                .unwrap();
+            assert_eq!(
+                writer.bytes,
+                [0, 0, 0, 8, 1, 0x12, 0x34, 0x56, 0x78, 9, 8, 7]
+            );
+            if max_write == 0 {
+                assert_eq!(writer.writes, 1);
+            }
+        }
     }
 }

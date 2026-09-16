@@ -36,10 +36,6 @@ pub fn runtime_dir() -> PathBuf {
     dir
 }
 
-pub fn fifo_path() -> PathBuf {
-    fifo_path_for(0)
-}
-
 /// One FIFO per virtual display; the first keeps the old name.
 pub fn fifo_path_for(instance: u32) -> PathBuf {
     if instance == 0 {
@@ -112,6 +108,11 @@ mod tests {
         let dir = runtime_dir();
         let mode = std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
         // Either we created it 0700, or it is the user's own cache dir.
-        assert_eq!(mode & 0o077, 0, "runtime dir {} is group/world accessible", dir.display());
+        assert_eq!(
+            mode & 0o077,
+            0,
+            "runtime dir {} is group/world accessible",
+            dir.display()
+        );
     }
 }

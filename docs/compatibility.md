@@ -21,11 +21,12 @@ Requirements that follow from the design:
 - **Wayland with KDE Plasma** gets the full experience: the daemon places the
   virtual output and maps the pen and touch onto it through KWin's D-Bus
   interfaces, and suppresses the on-screen keyboard.
-- **Other desktops** (GNOME, Sway, X11): the virtual display and the stream
-  work wherever EVDI does, but output placement and input mapping are not
-  automated — assign the "UScreen Pen"/"UScreen Touch" devices to the UScreen
-  output in your desktop's settings. On X11 `scripts/map-input-x11.sh` does it
-  with `xinput` (see [troubleshooting](troubleshooting.md#touch-or-pen-land-on-the-wrong-screen)).
+- **X11** (Cinnamon, XFCE, MATE, GNOME on Xorg): the daemon maps each
+  tablet's input to its output with `xinput` and `xrandr`; output placement
+  remains in the desktop's display settings.
+- **Other Wayland desktops** (GNOME, Sway): the display and stream work wherever
+  EVDI does; assign input and output placement in the desktop's settings.
+  See [troubleshooting](troubleshooting.md#touch-or-pen-land-on-the-wrong-screen).
   Reports welcome.
 - **NVIDIA** uses NVENC; **AMD/Intel** use VAAPI (`h264_vaapi`); anything can
   fall back to `libx264` on the CPU.

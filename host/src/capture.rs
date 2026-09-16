@@ -15,14 +15,11 @@ const RECONNECT_DELAY_MS: u64 = 2000;
 /// Capture FIFO, in the per-user runtime directory. It used to be
 /// /tmp/uscreen_capture.fifo with mode 0666, which let any local account read
 /// the raw frames off it.
-pub fn fifo_path() -> String {
-    crate::runtime::fifo_path().to_string_lossy().into_owned()
-}
-
 pub fn fifo_path_for(instance: u32) -> String {
-    crate::runtime::fifo_path_for(instance).to_string_lossy().into_owned()
+    crate::runtime::fifo_path_for(instance)
+        .to_string_lossy()
+        .into_owned()
 }
-
 
 /// Which bitstream syntax is in play. H.264 and HEVC agree on Annex B start
 /// codes and on nothing else that matters here: the NAL header is one byte
@@ -177,6 +174,9 @@ pub struct CaptureConfig {
     /// Explicit EDID override; None = generate one for the configured mode
     pub edid_path: Option<PathBuf>,
     pub encoder: String,
+    // The experimental in-process encoder does not create VAAPI contexts.
+    #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+    pub vaapi_device: String,
     pub fps: u32,
     pub bitrate: u32,
     pub width: u32,
@@ -204,6 +204,7 @@ impl Default for CaptureConfig {
             helper_path: PathBuf::from("host/evdi/evdi_helper"),
             edid_path: None,
             encoder: String::from("h264_nvenc"),
+            vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,
             width: 2960,
@@ -400,12 +401,21 @@ impl CaptureManager {
             for out in outputs {
                 let id = out.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
                 let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                let enabled = out.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+                let enabled = out
+                    .get("enabled")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
                 let x = out.pointer("/pos/x").and_then(|v| v.as_i64()).unwrap_or(0);
 
                 let y = out.pointer("/pos/y").and_then(|v| v.as_i64()).unwrap_or(0);
-                let raw_w = out.pointer("/size/width").and_then(|v| v.as_i64()).unwrap_or(0);
-                let raw_h = out.pointer("/size/height").and_then(|v| v.as_i64()).unwrap_or(0);
+                let raw_w = out
+                    .pointer("/size/width")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
+                let raw_h = out
+                    .pointer("/size/height")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0);
                 let sc = out.get("scale").and_then(|v| v.as_f64()).unwrap_or(1.0);
                 let logical = |v: i64| {
                     if sc > 0.0 {
@@ -555,7 +565,11 @@ impl CaptureManager {
             if !evdi_names.iter().any(|n| n == name) {
                 continue;
             }
-            if !out.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false) {
+            if !out
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
                 continue;
             }
             let id = out.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
@@ -685,9 +699,10 @@ impl CaptureManager {
             while let Ok(Some(line)) = lines.next_line().await {
                 if let Some(rest) = line.strip_prefix("STREAM_SIZE ") {
                     let mut p = rest.split_whitespace();
-                    if let (Some(Ok(w)), Some(Ok(h))) =
-                        (p.next().map(str::parse::<u32>), p.next().map(str::parse::<u32>))
-                    {
+                    if let (Some(Ok(w)), Some(Ok(h))) = (
+                        p.next().map(str::parse::<u32>),
+                        p.next().map(str::parse::<u32>),
+                    ) {
                         if w > 0 && h > 0 {
                             info!("Helper emits {}x{} frames to the encoder", w, h);
                             let _ = stream_tx.send(Some((w, h)));
@@ -728,12 +743,20 @@ impl CaptureManager {
     /// With the in-process encoder there is no child to spawn; the encode loop
     /// is started per session instead.
     #[cfg(feature = "inproc-encoder")]
-    async fn start_encoder(&mut self) -> Result<()> {
-        Ok(())
+    async fn start_encoder(&mut self) -> Result<(u32, u32)> {
+        Ok(self.active_mode())
     }
 
     #[cfg(not(feature = "inproc-encoder"))]
-    async fn start_encoder(&mut self) -> Result<()> {
+    async fn start_encoder(&mut self) -> Result<(u32, u32)> {
+        self.start_encoder_with(|mut command| command.spawn())
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    fn start_encoder_with(
+        &mut self,
+        spawn: impl FnOnce(Command) -> std::io::Result<Child>,
+    ) -> Result<(u32, u32)> {
         // Accept the old gstreamer-style name as an alias
         let encoder = if self.config.encoder == "vaapih264enc" {
             "h264_vaapi".to_string()
@@ -755,8 +778,10 @@ impl CaptureManager {
                 w, h, expected.0, expected.1
             );
         } else if n > 1 {
-            info!("Encoding at {}x{} (desktop {}x{}, stream scale {})",
-                  w, h, self.config.width, self.config.height, n);
+            info!(
+                "Encoding at {}x{} (desktop {}x{}, stream scale {})",
+                w, h, self.config.width, self.config.height, n
+            );
         }
         let fps = self.config.fps;
         let bitrate = self.config.bitrate;
@@ -765,7 +790,10 @@ impl CaptureManager {
         // 8-bit, so asking for it there would silently do nothing.
         let ten_bit = self.config.ten_bit && codec == Codec::Hevc;
         if self.config.ten_bit && !ten_bit {
-            warn!("10-bit was asked for but {} is 8-bit only — ignoring", encoder);
+            warn!(
+                "10-bit was asked for but {} is 8-bit only — ignoring",
+                encoder
+            );
         }
         // Keyframe every second: enough for fast client joins without
         // burning the whole bitrate budget on IDR frames.
@@ -773,11 +801,9 @@ impl CaptureManager {
 
         let mut encoder_args: Vec<String> = vec!["-hide_banner".into()];
 
-        if encoder == "h264_vaapi" {
-            encoder_args.extend_from_slice(&[
-                "-vaapi_device".into(),
-                "/dev/dri/renderD128".into(),
-            ]);
+        if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
+            encoder_args
+                .extend_from_slice(&["-vaapi_device".into(), self.config.vaapi_device.clone()]);
         }
 
         encoder_args.extend_from_slice(&[
@@ -819,10 +845,15 @@ impl CaptureManager {
             fifo_path_for(self.config.instance),
         ]);
 
-        if encoder == "h264_vaapi" {
+        if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
             encoder_args.extend_from_slice(&[
                 "-vf".into(),
-                "format=nv12,hwupload".into(),
+                if ten_bit {
+                    "format=p010le,hwupload"
+                } else {
+                    "format=nv12,hwupload"
+                }
+                .into(),
             ]);
         }
 
@@ -830,7 +861,7 @@ impl CaptureManager {
         // first. Done here rather than in the helper to keep the FIFO format
         // single: the helper stays the one thing that never has to know which
         // codec is in use.
-        if ten_bit {
+        if ten_bit && !encoder.ends_with("_vaapi") {
             encoder_args.extend_from_slice(&["-vf".into(), "format=p010le".into()]);
         }
 
@@ -886,12 +917,9 @@ impl CaptureManager {
                 // arithmetic: quantisation and motion compensation round in
                 // 10 bits instead of 8, which is what smooths the banding that
                 // shows up on gradients at low bitrates.
-                encoder_args.extend_from_slice(&[
-                    "-profile:v".into(),
-                    "main10".into(),
-                ]);
+                encoder_args.extend_from_slice(&["-profile:v".into(), "main10".into()]);
             }
-        } else if encoder == "h264_vaapi" {
+        } else if matches!(encoder.as_str(), "h264_vaapi" | "hevc_vaapi") {
             // Constant quality, for the same reason as NVENC above: a static
             // desktop should cost nothing, and the bitrate is only a ceiling.
             encoder_args.extend_from_slice(&[
@@ -928,16 +956,12 @@ impl CaptureManager {
             ]);
         } else {
             anyhow::bail!(
-                "Unknown encoder: {}. Use h264_nvenc, hevc_nvenc, h264_vaapi, or libx264",
+                "Unknown encoder: {}. Use h264_nvenc, hevc_nvenc, h264_vaapi, hevc_vaapi, or libx264",
                 encoder
             );
         }
 
-        encoder_args.extend_from_slice(&[
-            "-f".into(),
-            codec.muxer().into(),
-            "pipe:1".into(),
-        ]);
+        encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
 
         let mut cmd = Command::new("ffmpeg");
         cmd.args(&encoder_args)
@@ -946,10 +970,34 @@ impl CaptureManager {
             .stdin(Stdio::null())
             .kill_on_drop(true);
 
-        let child = cmd.spawn().context("Failed to spawn ffmpeg encoder")?;
+        let child = spawn(cmd).context("Failed to spawn ffmpeg encoder")?;
         info!("Encoder started (PID: {})", child.id().unwrap_or(0));
         self.encoder_child = Some(child);
-        Ok(())
+        Ok((w, h))
+    }
+
+    async fn start_session_encoder(&mut self) -> Result<(u32, u32)> {
+        // A setup error has not run a pipeline. Keep the virtual display
+        // attached while retrying or waiting for corrected settings.
+        self.start_encoder().await
+    }
+
+    async fn wait_stream_size(&self) {
+        if self.stream_rx.borrow().is_none() {
+            let mut wait_rx = self.stream_rx.clone();
+            if tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                wait_rx.wait_for(Option::is_some),
+            )
+            .await
+            .is_err()
+            {
+                warn!(
+                    "Compositor reported no mode within 3s — encoding at the requested {}x{}",
+                    self.config.width, self.config.height
+                );
+            }
+        }
     }
 
     pub async fn stream_frames(
@@ -988,11 +1036,15 @@ impl CaptureManager {
                     // resolution into the EDID — restart with a fresh EDID
                     info!(
                         "Display mode change: {}x{}@{} → {}x{}@{}",
-                        self.config.width, self.config.height, self.config.fps,
-                        s.width, s.height, s.fps
+                        self.config.width,
+                        self.config.height,
+                        self.config.fps,
+                        s.width,
+                        s.height,
+                        s.fps
                     );
                     if let Some(mut h) = self.helper_child.take() {
-                        let _ = h.start_kill();
+                        Self::terminate(&mut h, "evdi_helper").await;
                     }
                     // Give the compositor a moment to process the unplug
                     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -1020,7 +1072,7 @@ impl CaptureManager {
             if !*display_rx.borrow() {
                 if let Some(mut h) = self.helper_child.take() {
                     info!("No tablet is a screen — disconnecting the virtual display");
-                    let _ = h.start_kill();
+                    Self::terminate(&mut h, "evdi_helper").await;
                 }
                 if let Some(mut e) = self.encoder_child.take() {
                     let _ = e.start_kill();
@@ -1040,7 +1092,10 @@ impl CaptureManager {
             // Start evdi-helper if not running
             if self.helper_child.is_none() {
                 if let Err(e) = self.start_helper().await {
-                    error!("Failed to start helper: {}. Retrying in {}ms...", e, backoff_ms);
+                    error!(
+                        "Failed to start helper: {}. Retrying in {}ms...",
+                        e, backoff_ms
+                    );
                     // Say why, once, instead of repeating an opaque line
                     // forever. Retrying is right for a transient failure and
                     // useless for a permissions problem, and the two look
@@ -1078,36 +1133,26 @@ impl CaptureManager {
             // Skipped when nothing is using the virtual output: it is
             // disabled then, so no mode is ever reported and the wait would
             // just add three seconds and a warning to every daemon start.
-            if *display_rx.borrow() && self.stream_rx.borrow().is_none() {
-                let mut wait_rx = self.stream_rx.clone();
-                if tokio::time::timeout(
-                    std::time::Duration::from_secs(3),
-                    wait_rx.changed(),
-                )
-                .await
-                .is_err()
-                {
-                    warn!(
-                        "Compositor reported no mode within 3s — encoding at the requested {}x{}",
-                        self.config.width, self.config.height
-                    );
-                }
+            if *display_rx.borrow() {
+                self.wait_stream_size().await;
             }
             mode_rx.borrow_and_update();
             stream_rx.borrow_and_update();
 
             // Start encoder if not running
             if self.encoder_child.is_none() {
-                if let Err(e) = self.start_encoder().await {
-                    error!("Failed to start encoder: {}. Retrying in {}ms...", e, backoff_ms);
-                    if let Some(mut h) = self.helper_child.take() {
-                        let _ = h.start_kill();
+                match self.start_session_encoder().await {
+                    Ok(mode) => encoder_mode = Some(mode),
+                    Err(e) => {
+                        error!(
+                            "Failed to start encoder: {}. Retrying in {}ms...",
+                            e, backoff_ms
+                        );
+                        tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
+                        backoff_ms = (backoff_ms * 2).min(30_000);
+                        continue;
                     }
-                    tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)).await;
-                    backoff_ms = (backoff_ms * 2).min(30_000);
-                    continue;
                 }
-                encoder_mode = Some(self.active_mode());
             }
 
             // The blocking encode loop cannot be aborted, so it is asked to
@@ -1136,7 +1181,7 @@ impl CaptureManager {
                 }
                 #[cfg(feature = "inproc-encoder")]
                 {
-                    let (w, h) = self.active_mode();
+                    let (w, h) = encoder_mode.expect("encoder size was selected before starting");
                     let (name, fps, bitrate, quality) = (
                         self.config.encoder.clone(),
                         self.config.fps,
@@ -1187,93 +1232,107 @@ impl CaptureManager {
             // torn down for something spurious.
             #[allow(unused_labels)]
             'session: loop {
-            let mut resume_same_encoder = false;
-            tokio::select! {
-                joined = &mut encode_task => {
-                    match joined {
-                        Ok(Ok(_)) => info!("Encoder finished"),
-                        Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
-                        Err(e) => warn!("Encoder task failed: {}. Restarting...", e),
+                let mut resume_same_encoder = false;
+                #[cfg(feature = "inproc-encoder")]
+                let mut encode_finished = false;
+                tokio::select! {
+                    status = async {
+                        match self.helper_child.as_mut() {
+                            Some(helper) => helper.wait().await,
+                            None => std::future::pending().await,
+                        }
+                    } => {
+                        warn!("Capture helper exited: {:?}. Restarting...", status);
                     }
-                }
-                _ = settings_rx.changed() => {
-                    info!("Settings changed — restarting encoder");
-                    settings_changed = true;
-                }
-                _ = stream_rx.changed() => {
-                    let now = self.active_mode();
-                    if Some(now) == encoder_mode {
-                        resume_same_encoder = true;
-                    } else {
-                        info!("Stream size is now {}x{} — restarting encoder", now.0, now.1);
-                        mode_changed = true;
+                    joined = &mut encode_task => {
+                        #[cfg(feature = "inproc-encoder")]
+                        { encode_finished = true; }
+                        match joined {
+                            Ok(Ok(_)) => info!("Encoder finished"),
+                            Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
+                            Err(e) => warn!("Encoder task failed: {}. Restarting...", e),
+                        }
                     }
-                }
-                _ = mode_rx.changed() => {
-                    let now = self.active_mode();
-                    if Some(now) == encoder_mode {
-                        // KWin re-applying the same mode. Nothing to do.
-                        resume_same_encoder = true;
-                    } else {
-                        info!(
-                            "Virtual output changed to {}x{} — restarting encoder to match",
-                            now.0, now.1
-                        );
-                        mode_changed = true;
+                    _ = settings_rx.changed() => {
+                        info!("Settings changed — restarting encoder");
+                        settings_changed = true;
                     }
-                }
-                _ = display_rx.changed() => {
-                    // The tablet stopped being a screen — either unplugged, or
-                    // switched to pen-only. Neither must leave a monitor behind
-                    // that nobody can see, with windows stranded on it. The
-                    // encoder itself is unaffected either way.
-                    let wanted = *display_rx.borrow();
-                    if wanted {
-                        info!("Tablet is a screen — enabling the virtual display");
-                        Self::enable_evdi_display(card, self.config.position).await;
-                        resume_same_encoder = true;
-                    } else {
-                        // Disable first so KWin moves the windows off it, then
-                        // fall through to the teardown: the helper goes away
-                        // with the session, and the top of the outer loop
-                        // waits for a tablet before bringing anything back.
-                        info!("Tablet is not a screen — disabling the virtual display");
+                    _ = stream_rx.changed() => {
+                        let now = self.active_mode();
+                        if Some(now) == encoder_mode {
+                            resume_same_encoder = true;
+                        } else {
+                            info!("Stream size is now {}x{} — restarting encoder", now.0, now.1);
+                            mode_changed = true;
+                        }
+                    }
+                    _ = mode_rx.changed() => {
+                        let now = self.active_mode();
+                        if Some(now) == encoder_mode {
+                            // KWin re-applying the same mode. Nothing to do.
+                            resume_same_encoder = true;
+                        } else {
+                            info!(
+                                "Virtual output changed to {}x{} — restarting encoder to match",
+                                now.0, now.1
+                            );
+                            mode_changed = true;
+                        }
+                    }
+                    _ = display_rx.changed() => {
+                        // The tablet stopped being a screen — either unplugged, or
+                        // switched to pen-only. Neither must leave a monitor behind
+                        // that nobody can see, with windows stranded on it. The
+                        // encoder itself is unaffected either way.
+                        let wanted = *display_rx.borrow();
+                        if wanted {
+                            info!("Tablet is a screen — enabling the virtual display");
+                            Self::enable_evdi_display(card, self.config.position).await;
+                            resume_same_encoder = true;
+                        } else {
+                            // Disable first so KWin moves the windows off it, then
+                            // fall through to the teardown: the helper goes away
+                            // with the session, and the top of the outer loop
+                            // waits for a tablet before bringing anything back.
+                            info!("Tablet is not a screen — disabling the virtual display");
+                            Self::disable_evdi_display(card).await;
+                            display_dropped = true;
+                        }
+                    }
+                    _ = shutdown_rx.changed() => {
+                        info!("Shutdown requested — tearing down the capture pipeline");
+                        // Drop the encode task, which closes our read end of the
+                        // pipe. Nothing drains it during shutdown, so ffmpeg would
+                        // otherwise block writing into a full pipe and never reach
+                        // its signal handling — a wasted 1.5s SIGTERM timeout on
+                        // every stop. Closed, it gets EPIPE and exits at once.
+                        #[cfg(feature = "inproc-encoder")]
+                        stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
+                        encode_task.abort();
                         Self::disable_evdi_display(card).await;
-                        display_dropped = true;
+                        self.shutdown().await;
+                        return Ok(());
                     }
                 }
-                _ = shutdown_rx.changed() => {
-                    info!("Shutdown requested — tearing down the capture pipeline");
-                    // Drop the encode task, which closes our read end of the
-                    // pipe. Nothing drains it during shutdown, so ffmpeg would
-                    // otherwise block writing into a full pipe and never reach
-                    // its signal handling — a wasted 1.5s SIGTERM timeout on
-                    // every stop. Closed, it gets EPIPE and exits at once.
-                    #[cfg(feature = "inproc-encoder")]
-                    stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
-                    encode_task.abort();
-                    Self::disable_evdi_display(card).await;
-                    self.shutdown().await;
-                    return Ok(());
+
+                if resume_same_encoder {
+                    // Nothing about the encoder changed, so it keeps running and we
+                    // simply go back to waiting on it. The task owns the stream, so
+                    // it must not be torn down and rebuilt for a spurious event.
+                    continue 'session;
                 }
-            }
 
-            if resume_same_encoder {
-                // Nothing about the encoder changed, so it keeps running and we
-                // simply go back to waiting on it. The task owns the stream, so
-                // it must not be torn down and rebuilt for a spurious event.
-                continue 'session;
-            }
+                // Wind the encoder down before rebuilding it.
+                #[cfg(feature = "inproc-encoder")]
+                {
+                    stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
+                    if !encode_finished {
+                        let _ = (&mut encode_task).await;
+                    }
+                }
+                encode_task.abort();
 
-            // Wind the encoder down before rebuilding it.
-            #[cfg(feature = "inproc-encoder")]
-            {
-                stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
-                let _ = (&mut encode_task).await;
-            }
-            encode_task.abort();
-
-            break;
+                break;
             }
 
             // A pipeline that ran for a while was healthy — reset the backoff.
@@ -1289,7 +1348,7 @@ impl CaptureManager {
             // so the virtual display doesn't flicker off.
             if !settings_changed && !mode_changed {
                 if let Some(mut h) = self.helper_child.take() {
-                    let _ = h.start_kill();
+                    Self::terminate(&mut h, "evdi_helper").await;
                 }
             }
             if let Some(mut e) = self.encoder_child.take() {
@@ -1612,10 +1671,7 @@ impl H264AnnexBPacketizer {
                 // Any IRAP picture is a valid place for a decoder to join,
                 // not only an IDR — refusing a CRA would leave a client
                 // waiting for a picture the encoder may never emit.
-                (
-                    kind,
-                    (HEVC_NAL_IRAP_MIN..=HEVC_NAL_IRAP_MAX).contains(&t),
-                )
+                (kind, (HEVC_NAL_IRAP_MIN..=HEVC_NAL_IRAP_MAX).contains(&t))
             }
         };
 
@@ -1660,9 +1716,7 @@ impl H264AnnexBPacketizer {
     fn starts_new_picture(&self, nal: &[u8], header_offset: usize) -> bool {
         match self.codec {
             Codec::H264 => Self::first_mb_in_slice(nal, header_offset) == Some(0),
-            Codec::Hevc => nal
-                .get(header_offset + 2)
-                .is_some_and(|b| b & 0x80 != 0),
+            Codec::Hevc => nal.get(header_offset + 2).is_some_and(|b| b & 0x80 != 0),
         }
     }
 
@@ -1754,6 +1808,227 @@ impl<'a> ExpGolombReader<'a> {
 mod tests {
     use super::*;
 
+    fn test_manager() -> CaptureManager {
+        static INSTANCE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(100_000);
+        let mut manager = CaptureManager::new(CaptureConfig {
+            encoder: "libx264".into(),
+            helper_path: "/nonexistent/uscreen-test-helper".into(),
+            instance: INSTANCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            ..CaptureConfig::default()
+        });
+        // Never address a real connector, even on a machine running UScreen.
+        manager.helper_card = Some(u32::MAX);
+        manager
+    }
+
+    async fn fake_helper() -> (Child, BufReader<tokio::process::ChildStdout>) {
+        let mut child = Command::new("sh")
+            .args([
+                "-c",
+                "trap 'echo stopped; exit 0' TERM; echo ready; while :; do sleep 0.02; done",
+            ])
+            .stdout(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        let mut output = BufReader::new(child.stdout.take().unwrap());
+        let mut ready = String::new();
+        output.read_line(&mut ready).await.unwrap();
+        assert_eq!(ready, "ready\n");
+        (child, output)
+    }
+
+    fn fake_encoder(duration: &str) -> Child {
+        Command::new("sleep")
+            .arg(duration)
+            .stdout(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap()
+    }
+
+    async fn drive_session(manager: &mut CaptureManager, display: bool, change_mode: bool) {
+        let c = &manager.config;
+        let settings = EncoderSettings {
+            encoder: c.encoder.clone(),
+            fps: c.fps + u32::from(change_mode),
+            bitrate: c.bitrate,
+            width: c.width,
+            height: c.height,
+            quality: c.quality,
+            width_mm: c.width_mm,
+            height_mm: c.height_mm,
+            stream_scale: c.stream_scale,
+        };
+        let (_settings_tx, settings_rx) = watch::channel(settings);
+        let (_display_tx, display_rx) = watch::channel(display);
+        let (_shutdown_tx, shutdown_rx) = watch::channel(false);
+        let (tx, _rx) = broadcast::channel(8);
+        let _ = tokio::time::timeout(
+            std::time::Duration::from_millis(200),
+            manager.stream_frames(tx, settings_rx, display_rx, shutdown_rx),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn t018_waits_past_stale_none_until_stream_dimensions_arrive() {
+        let manager = test_manager();
+        manager.stream_tx.send(None).unwrap();
+        assert!(
+            tokio::time::timeout(
+                std::time::Duration::from_millis(20),
+                manager.wait_stream_size()
+            )
+            .await
+            .is_err(),
+            "a stale None is not a negotiated mode"
+        );
+        let send = async {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            manager.stream_tx.send(Some((1280, 720))).unwrap();
+        };
+        let (result, _) = tokio::join!(
+            tokio::time::timeout(
+                std::time::Duration::from_millis(100),
+                manager.wait_stream_size()
+            ),
+            send
+        );
+        assert!(result.is_ok());
+        assert_eq!(manager.active_mode(), (1280, 720));
+    }
+
+    #[tokio::test]
+    async fn t019_encoder_setup_failure_preserves_live_helper() {
+        let mut manager = test_manager();
+        let (child, _output) = fake_helper().await;
+        let pid = child.id();
+        manager.helper_child = Some(child);
+        manager.config.encoder = "invalid-encoder".into();
+        assert!(manager.start_session_encoder().await.is_err());
+        assert_eq!(manager.helper_child.as_ref().and_then(Child::id), pid);
+        assert!(manager
+            .helper_child
+            .as_mut()
+            .unwrap()
+            .try_wait()
+            .unwrap()
+            .is_none());
+        manager.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn t020_encoder_records_the_dimensions_passed_to_its_process() {
+        let mut manager = test_manager();
+        manager.stream_tx.send(Some((1280, 720))).unwrap();
+        let stream_tx = manager.stream_tx.clone();
+        let used = manager
+            .start_encoder_with(|command| {
+                let args: Vec<_> = command.as_std().get_args().collect();
+                assert!(args.windows(2).any(|pair| pair == ["-s", "1280x720"]));
+                // A helper announcement races with spawning the encoder.
+                stream_tx.send(Some((1920, 1080))).unwrap();
+                Ok(fake_encoder("5"))
+            })
+            .unwrap();
+        manager.shutdown().await;
+        assert_eq!(used, (1280, 720));
+    }
+
+    #[tokio::test]
+    async fn t054_vaapi_uses_the_configured_render_node() {
+        let mut manager = test_manager();
+        manager.config.encoder = "h264_vaapi".into();
+        manager.config.vaapi_device = "/dev/dri/renderD129".into();
+        let mut args = Vec::new();
+        manager
+            .start_encoder_with(|command| {
+                args = command
+                    .as_std()
+                    .get_args()
+                    .map(|a| a.to_string_lossy().into_owned())
+                    .collect();
+                Ok(fake_encoder("5"))
+            })
+            .unwrap();
+        manager.shutdown().await;
+        assert!(args
+            .windows(2)
+            .any(|p| p == ["-vaapi_device", "/dev/dri/renderD129"]));
+    }
+
+    #[tokio::test]
+    async fn t055_hevc_vaapi_supports_eight_and_ten_bit_output() {
+        for ten_bit in [false, true] {
+            let mut manager = test_manager();
+            manager.config.encoder = "hevc_vaapi".into();
+            manager.config.ten_bit = ten_bit;
+            let mut args = Vec::new();
+            let result = manager.start_encoder_with(|command| {
+                args = command
+                    .as_std()
+                    .get_args()
+                    .map(|a| a.to_string_lossy().into_owned())
+                    .collect();
+                Ok(fake_encoder("5"))
+            });
+            manager.shutdown().await;
+            result.unwrap();
+            assert!(args.windows(2).any(|p| p == ["-c:v", "hevc_vaapi"]));
+            assert!(args.windows(2).any(|p| p == ["-f", "hevc"]));
+            let filters: Vec<_> = args
+                .windows(2)
+                .filter(|p| p[0] == "-vf")
+                .map(|p| p[1].as_str())
+                .collect();
+            assert_eq!(
+                filters,
+                [if ten_bit {
+                    "format=p010le,hwupload"
+                } else {
+                    "format=nv12,hwupload"
+                }]
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn t021_helper_exit_restarts_session_while_encoder_is_still_alive() {
+        let mut manager = test_manager();
+        manager.stream_tx.send(Some((1280, 720))).unwrap();
+        manager.helper_child = Some(fake_encoder("0.02"));
+        manager.encoder_child = Some(fake_encoder("5"));
+        drive_session(&mut manager, true, false).await;
+        let restarted = manager.encoder_child.is_none();
+        manager.shutdown().await;
+        assert!(
+            restarted,
+            "a dead helper must end the session before the encoder exits"
+        );
+    }
+
+    #[tokio::test]
+    async fn t022_helper_disconnects_cleanly_on_display_off_mode_change_and_crash() {
+        for (display, change_mode) in [(false, false), (false, true), (true, false)] {
+            let mut manager = test_manager();
+            let (child, mut output) = fake_helper().await;
+            manager.helper_child = Some(child);
+            manager.stream_tx.send(Some((1280, 720))).unwrap();
+            if display {
+                manager.encoder_child = Some(fake_encoder("0.02"));
+            }
+            drive_session(&mut manager, display, change_mode).await;
+            manager.shutdown().await;
+            let mut messages = String::new();
+            output.read_to_string(&mut messages).await.unwrap();
+            assert_eq!(
+                messages, "stopped\n",
+                "display={display}, change_mode={change_mode}"
+            );
+        }
+    }
+
     fn nal(nal_type: u8, payload: &[u8]) -> Vec<u8> {
         let mut data = vec![0, 0, 0, 1, nal_type];
         data.extend_from_slice(payload);
@@ -1840,7 +2115,10 @@ mod tests {
         std::fs::write(dir.join("count"), "0\n").unwrap();
         let msg = evdi_setup_problem_in(&dir).expect("no devices is a problem");
         assert!(msg.contains("initial_device_count"), "got: {msg}");
-        assert!(msg.contains("modprobe -r evdi"), "must give the reload, got: {msg}");
+        assert!(
+            msg.contains("modprobe -r evdi"),
+            "must give the reload, got: {msg}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1961,11 +2239,27 @@ mod tests {
             &out[0].data[..],
             &[
                 // SPS
-                0, 0, 0, 1, NAL_TYPE_SPS, 0x64, 0x00,
+                0,
+                0,
+                0,
+                1,
+                NAL_TYPE_SPS,
+                0x64,
+                0x00,
                 // PPS
-                0, 0, 0, 1, NAL_TYPE_PPS, 0xac,
+                0,
+                0,
+                0,
+                1,
+                NAL_TYPE_PPS,
+                0xac,
                 // IDR
-                0, 0, 0, 1, NAL_TYPE_IDR, 0x80
+                0,
+                0,
+                0,
+                1,
+                NAL_TYPE_IDR,
+                0x80
             ]
         );
     }

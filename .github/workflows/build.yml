@@ -23,8 +23,7 @@ jobs:
             libxkbcommon-dev libwayland-dev libxcb-render0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
             libdrm-dev
-          # libevdi headers are needed only for the C helper; not in all repos
-          sudo apt-get install -y libevdi0-dev || echo "libevdi-dev unavailable, helper build will be skipped"
+          sudo apt-get install -y libevdi-dev
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -39,10 +38,10 @@ jobs:
         run: cargo build --release
 
       - name: Run tests
-        run: cargo test --release
+        run: cargo test --release --workspace
 
       - name: Build EVDI helper
-        run: make build-helper || echo "Skipped (libevdi headers not available)"
+        run: make build-helper
 
       - name: Upload host binaries
         uses: actions/upload-artifact@v4
@@ -51,6 +50,7 @@ jobs:
           path: |
             target/release/uscreen
             target/release/uscreen-gui
+            host/evdi/evdi_helper
 
   build-android:
     name: Build Android APK
@@ -71,7 +71,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew testDebugUnitTest assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

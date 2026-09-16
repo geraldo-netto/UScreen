@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
         applyOrientation()
         videoReceiver = VideoReceiver()
         touchCapture = TouchCapture()
-        applyToken(intent, restart = false)
+        applyToken(restart = false)
 
         // Close the host's latency measurement loop: every acknowledged frame
         // lets the host time capture→display on its own clock.
@@ -195,6 +195,7 @@ class MainActivity : ComponentActivity() {
      * the system does honour; the manual modes pin it and ignore the sensor.
      */
     private var tiltListener: android.view.OrientationEventListener? = null
+    private var started = false
 
     private fun applyOrientation() {
         when (prefs.orientation) {
@@ -208,7 +209,7 @@ class MainActivity : ComponentActivity() {
             }
             else -> {
                 requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                startTiltListener()
+                if (started) startTiltListener()
             }
         }
     }
@@ -268,33 +269,17 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Stylus hover, caught at the activity rather than on the SurfaceView.
-     *
-     * A hover listener on the SurfaceView does not reliably receive stylus
-     * hover once Compose is in the picture — anything drawn over the surface
-     * sits between the pointer and that listener. Hover is what moves the
-     * cursor on the host, so without it there is no way to see where the pen
-     * is pointing before it touches down, which matters most in graphics
-     * tablet mode where the host's screen is all you are looking at.
-     *
-     * Safe to take at this level precisely because hover is not a click: it
-     * cannot steal taps from the settings button the way intercepting touch
-     * would.
-     */
-    /**
-     * The daemon launches us with `am start --es token <hex>`; because the
+     * TokenActivity stores an authenticated shell delivery; because the
      * activity is singleTask, a running app receives that here rather than
      * being recreated. A changed token means a new daemon run, so both
      * connections are torn down and rebuilt with it.
      */
     override fun onNewIntent(intent: android.content.Intent?) {
         super.onNewIntent(intent)
-        intent?.let { applyToken(it, restart = true) }
+        applyToken(restart = true)
     }
 
-    private fun applyToken(intent: android.content.Intent, restart: Boolean) {
-        val fromIntent = intent.getStringExtra("token")
-        if (fromIntent != null) prefs.hostToken = fromIntent
+    private fun applyToken(restart: Boolean) {
         val token = prefs.hostToken ?: return
         val changed = touchCapture?.token != token
         touchCapture?.token = token
@@ -313,6 +298,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Stylus hover, caught at the activity rather than on the SurfaceView.
+     *
+     * A hover listener on the SurfaceView does not reliably receive stylus
+     * hover once Compose is in the picture — anything drawn over the surface
+     * sits between the pointer and that listener. Hover is what moves the
+     * cursor on the host, so without it there is no way to see where the pen
+     * is pointing before it touches down, which matters most in graphics
+     * tablet mode where the host's screen is all you are looking at.
+     *
+     * Safe to take at this level precisely because hover is not a click: it
+     * cannot steal taps from the settings button the way intercepting touch
+     * would.
+     */
     override fun onGenericMotionEvent(event: android.view.MotionEvent): Boolean {
         val w = window.decorView.width
         val h = window.decorView.height
@@ -334,6 +333,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        started = true
+        applyOrientation()
         // The foreground service holds the wake and Wi-Fi locks and keeps
         // Samsung from killing the process. It lives exactly as long as we
         // are streaming, i.e. between onStart and onStop: a backgrounded app
@@ -363,6 +364,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        started = false
+        stopTiltListener()
         videoReceiver?.stop()
         touchCapture?.disconnect()
         stopService(Intent(this, StreamingService::class.java))

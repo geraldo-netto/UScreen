@@ -28,6 +28,8 @@ class TouchCapture {
      *  its own screen, so no video will arrive and none should be waited for. */
     @Volatile var isPenOnly = false
         private set
+    @Volatile private var touchEnabled = true
+    @Volatile private var penEnabled = true
     var onModeKnown: ((penOnly: Boolean) -> Unit)? = null
     var onCodecKnown: ((codec: String) -> Unit)? = null
 
@@ -60,6 +62,7 @@ class TouchCapture {
     private val client = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.SECONDS)
         .connectTimeout(5, TimeUnit.SECONDS)
+        .pingInterval(5, TimeUnit.SECONDS)
         .build()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -103,6 +106,8 @@ class TouchCapture {
             // ignored, this channel is otherwise ours to talk on.
             try {
                 val o = JSONObject(text)
+                if (o.has("touch")) touchEnabled = o.getBoolean("touch")
+                if (o.has("pen")) penEnabled = o.getBoolean("pen")
                 if (o.has("codec")) {
                     onCodecKnown?.invoke(o.getString("codec"))
                 }
@@ -158,7 +163,7 @@ class TouchCapture {
         // Without this, the first touch always snaps the cursor to the pen
         // position and fires a click simultaneously (jarring).
         sv.setOnHoverListener { view, event ->
-            if (!isConnected) return@setOnHoverListener false
+            if (!isConnected || !penEnabled) return@setOnHoverListener false
             val vw = view.width.coerceAtLeast(1).toFloat()
             val vh = view.height.coerceAtLeast(1).toFloat()
             when (event.actionMasked) {
@@ -188,6 +193,8 @@ class TouchCapture {
     }
 
     private fun connectWebSocket() {
+        touchEnabled = true
+        penEnabled = true
         webSocket?.cancel()
         val request = Request.Builder()
             .url(WS_URL)
@@ -211,7 +218,7 @@ class TouchCapture {
      * activity might want to do with generic motion events is disturbed.
      */
     fun handleHoverEvent(event: MotionEvent, width: Int, height: Int): Boolean {
-        if (!isConnected) return false
+        if (!isConnected || !penEnabled) return false
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()
         return when (event.actionMasked) {
@@ -245,7 +252,7 @@ class TouchCapture {
     }
 
     fun handleMotionEvent(event: MotionEvent, width: Int, height: Int): Boolean {
-        if (!isConnected) return false
+        if (!isConnected || (!touchEnabled && !penEnabled)) return false
 
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()
@@ -276,6 +283,8 @@ class TouchCapture {
             MotionEvent.ACTION_MOVE -> {
                 for (i in 0 until pointerCount) {
                     if (isPalm(event, i)) continue
+                    if (isPenLike(event, i) && !penEnabled) continue
+                    if (!isPenLike(event, i) && !touchEnabled) continue
                     if (isPenLike(event, i)) {
                         // Android batches several samples between frames.
                         // Forward the historical points too, otherwise fast
@@ -321,6 +330,8 @@ class TouchCapture {
                 // pressed until the pen next left proximity.
                 for (i in 0 until pointerCount) {
                     if (isPalm(event, i)) continue
+                    if (isPenLike(event, i) && !penEnabled) continue
+                    if (!isPenLike(event, i) && !touchEnabled) continue
                     if (isPenLike(event, i)) {
                         sendPenEvent(event, i, 1, vw, vh)
                     } else {
@@ -423,6 +434,7 @@ class TouchCapture {
 
     private fun sendPenEvent(event: MotionEvent, index: Int, action: Int,
                               vw: Float, vh: Float) {
+        if (!penEnabled) return
         val x = event.getX(index) / vw
         val y = event.getY(index) / vh
         val pressure = event.getPressure(index).toDouble()
@@ -435,6 +447,7 @@ class TouchCapture {
 
     private fun emitPen(x: Double, y: Double, pressure: Double,
                         tiltX: Double, tiltY: Double, eraser: Boolean, action: Int) {
+        if (!penEnabled) return
         val msg = JSONObject().apply {
             put("type", "pen")
             put("x", x)
@@ -449,6 +462,7 @@ class TouchCapture {
     }
 
     private fun sendPenButton(down: Boolean) {
+        if (!penEnabled) return
         val msg = JSONObject().apply {
             put("type", "pen")
             put("x", 0.0)
@@ -464,6 +478,7 @@ class TouchCapture {
     }
 
     private fun sendPenProximityExit() {
+        if (!penEnabled) return
         val msg = JSONObject().apply {
             put("type", "pen")
             put("x", 0.0)
@@ -479,6 +494,7 @@ class TouchCapture {
 
     private fun sendTouch(x: Float, y: Float, pressure: Double,
                           action: Int, slot: Int) {
+        if (!touchEnabled) return
         val msg = JSONObject().apply {
             put("type", "touch")
             put("x", x.toDouble())

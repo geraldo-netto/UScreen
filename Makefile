@@ -19,14 +19,13 @@ build: build-helper
 	$(CARGO) build --release
 	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
 
-install: build edid
-	mkdir -p $(BIN_DIR) $(DATA_DIR)/edid
+install: build
+	mkdir -p $(BIN_DIR)
 	# rm first: cp into a running binary fails with "text file busy"
 	rm -f $(BIN_DIR)/uscreen $(BIN_DIR)/uscreen-gui $(BIN_DIR)/evdi_helper
 	cp target/release/uscreen $(BIN_DIR)/uscreen
 	cp target/release/uscreen-gui $(BIN_DIR)/uscreen-gui
 	cp host/evdi/evdi_helper $(BIN_DIR)/evdi_helper
-	cp edid/s9ultra.bin $(DATA_DIR)/edid/
 	@echo "✓ Installed to $(BIN_DIR)/uscreen, $(BIN_DIR)/uscreen-gui and $(BIN_DIR)/evdi_helper"
 	mkdir -p ${HOME}/.local/share/applications
 	cp scripts/uscreen.desktop ${HOME}/.local/share/applications/ 2>/dev/null || true
@@ -41,8 +40,11 @@ install: build edid
 # One-time system setup (needs sudo): pre-create an EVDI device at boot so
 # the daemon never needs root, and load the required modules.
 setup-system:
-	echo "options evdi initial_device_count=1" | sudo tee /etc/modprobe.d/uscreen-evdi.conf
+	echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/uscreen-evdi.conf
 	printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf
+	sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
+	sudo udevadm control --reload
+	sudo udevadm trigger --name-match=uinput
 	sudo modprobe evdi || true
 	sudo modprobe uinput || true
 	@if [ "$$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)" = "0" ]; then \

@@ -21,7 +21,7 @@ class Prefs(context: Context) {
 
         /** Kept in sync with `config::MAX_BITRATE_KBPS` on the host. */
         const val MAX_BITRATE_KBPS = 60_000
-        const val MIN_BITRATE_KBPS = 5_000
+        const val MIN_BITRATE_KBPS = 1_000
 
         /** Values of [orientation]. */
         const val ORIENTATION_AUTO = 0

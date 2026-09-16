@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::watch;
-use tokio_tungstenite::{accept_async_with_config, tungstenite::protocol::WebSocketConfig};
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{accept_async_with_config, tungstenite::protocol::WebSocketConfig};
 use tracing::{debug, error, info, warn};
 
 // Linux input event constants
@@ -86,7 +86,11 @@ pub struct DeviceIdentity {
 
 impl DeviceIdentity {
     pub fn for_instance(instance: u32) -> Self {
-        let suffix = if instance == 0 { String::new() } else { format!(" {}", instance + 1) };
+        let suffix = if instance == 0 {
+            String::new()
+        } else {
+            format!(" {}", instance + 1)
+        };
         let base = (instance as u16) * 16;
         Self {
             touch: format!("{}{}", TOUCH_DEVICE_NAME, suffix),
@@ -212,6 +216,8 @@ pub struct InputResponse {
     /// Tells the tablet not to expect a video stream: it is acting as a
     /// graphics tablet for the host's own screen, not as a display.
     pub pen_only: bool,
+    pub touch: bool,
+    pub pen: bool,
 }
 
 #[derive(Clone)]
@@ -236,6 +242,31 @@ pub struct InputConfig {
 }
 
 impl InputConfig {
+    fn response(
+        &self,
+        status: &str,
+        pen_only: bool,
+        settings: &Option<watch::Sender<EncoderSettings>>,
+    ) -> InputResponse {
+        let codec = settings
+            .as_ref()
+            .map(|tx| {
+                crate::capture::Codec::from_encoder(&tx.borrow().encoder)
+                    .muxer()
+                    .to_string()
+            })
+            .unwrap_or_else(|| self.codec.clone());
+        InputResponse {
+            status: status.into(),
+            width: self.virtual_width,
+            height: self.virtual_height,
+            codec,
+            pen_only,
+            touch: self.touch,
+            pen: self.pen,
+        }
+    }
+
     pub fn any_device(&self) -> bool {
         self.touch || self.pen || (self.pen && self.pointer)
     }
@@ -521,7 +552,11 @@ impl UInputDevice {
     ) -> Result<()> {
         // The active tablet-tool key depends on which end of the pen is in
         // use. An S Pen flipped to its eraser end reports TOOL_TYPE_ERASER.
-        let tool = if eraser { BTN_TOOL_RUBBER } else { BTN_TOOL_PEN };
+        let tool = if eraser {
+            BTN_TOOL_RUBBER
+        } else {
+            BTN_TOOL_PEN
+        };
         match action {
             0 => {
                 // DOWN, in two frames.
@@ -678,18 +713,27 @@ impl InjectDevices {
         let touch = create_device(cfg.touch, "touch", || {
             UInputDevice::new_touch(&ident.touch, ident.product_touch)
         });
-        let pen = create_device(cfg.pen, "pen", || UInputDevice::new_pen(&ident.pen, ident.product_pen));
+        let pen = create_device(cfg.pen, "pen", || {
+            UInputDevice::new_pen(&ident.pen, ident.product_pen)
+        });
         let pointer = create_device(cfg.pen && cfg.pointer, "pointer", || {
             UInputDevice::new_pointer(&ident.pointer, ident.product_pointer)
         });
         if pen.is_some() && pointer.is_none() {
             info!("No pointer device — the cursor will vanish when the pen lifts");
         }
-        Self { touch, pen, pointer, ..Self::empty() }
+        Self {
+            touch,
+            pen,
+            pointer,
+            ..Self::empty()
+        }
     }
 
     fn count(&self) -> usize {
-        self.touch.is_some() as usize + self.pen.is_some() as usize + self.pointer.is_some() as usize
+        self.touch.is_some() as usize
+            + self.pen.is_some() as usize
+            + self.pointer.is_some() as usize
     }
 
     /// Release all active contacts cleanly before the connection closes.
@@ -794,7 +838,36 @@ async fn map_devices_to_output(
     card: Option<u32>,
     expected: usize,
 ) {
+    let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
+    map_devices_using(
+        pen_only,
+        ident,
+        card,
+        expected,
+        &session_type,
+        "xinput",
+        "xrandr",
+        None,
+    )
+    .await;
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn map_devices_using(
+    pen_only: bool,
+    ident: &DeviceIdentity,
+    card: Option<u32>,
+    expected: usize,
+    session_type: &str,
+    xinput: &str,
+    xrandr: &str,
+    connectors: Option<&[crate::vdisplay::EvdiConnector]>,
+) {
     if expected == 0 {
+        return;
+    }
+    if session_type == "x11" {
+        map_x11_devices(pen_only, ident, card, expected, xinput, xrandr, connectors).await;
         return;
     }
     let Some(output) = target_output(pen_only, card, std::time::Duration::from_secs(10)).await
@@ -831,8 +904,7 @@ async fn map_devices_to_output(
             let Some(name) = kwin_device_property(&sysname, "name").await else {
                 continue;
             };
-            if !ident.owns(&name)
-            {
+            if !ident.owns(&name) {
                 continue;
             }
             let ok = crate::kwin::set_property(
@@ -862,7 +934,10 @@ async fn map_devices_to_output(
                         ),
                     }
                 }
-                false => warn!("Could not map '{}': KWin refused the outputName property", name),
+                false => warn!(
+                    "Could not map '{}': KWin refused the outputName property",
+                    name
+                ),
             }
         }
 
@@ -872,6 +947,164 @@ async fn map_devices_to_output(
     }
 
     warn!("Input devices did not appear in KWin within 5s — mapping skipped");
+}
+
+fn x11_connector_matches(output: &str, connector: &str) -> bool {
+    output == connector
+        || output
+            .strip_prefix(connector)
+            .and_then(|s| s.strip_prefix('-'))
+            .is_some_and(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()))
+}
+
+/// Xorg can expose a pen as separate pen/eraser devices. Keep tablet suffixes
+/// exact: "UScreen Pen 2" must never match the first tablet's "UScreen Pen".
+fn x11_device_kind<'a>(name: &str, ident: &'a DeviceIdentity) -> Option<&'a str> {
+    if name == ident.touch {
+        return Some(&ident.touch);
+    }
+    if name == ident.pointer {
+        return Some(&ident.pointer);
+    }
+    if name == ident.pen
+        || name
+            .strip_prefix(&ident.pen)
+            .is_some_and(|suffix| suffix.starts_with(" Pen (") || suffix.starts_with(" Eraser ("))
+    {
+        return Some(&ident.pen);
+    }
+    None
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn map_x11_devices(
+    pen_only: bool,
+    ident: &DeviceIdentity,
+    card: Option<u32>,
+    expected: usize,
+    xinput: &str,
+    xrandr: &str,
+    fixed_connectors: Option<&[crate::vdisplay::EvdiConnector]>,
+) {
+    for attempt in 0..40 {
+        if attempt > 0 {
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+        // Refresh on every retry: the helper may still be enabling its card.
+        let current = crate::vdisplay::evdi_connectors();
+        let connectors = fixed_connectors.unwrap_or(&current);
+        let Ok(randr) = tokio::process::Command::new(xrandr)
+            .arg("--query")
+            .output()
+            .await
+        else {
+            warn!("X11 input mapping needs xrandr");
+            return;
+        };
+        if !randr.status.success() {
+            warn!("xrandr could not query this X11 session");
+            return;
+        }
+        let text = String::from_utf8_lossy(&randr.stdout);
+        let active: Vec<(&str, bool)> = text
+            .lines()
+            .filter_map(|line| {
+                let fields: Vec<_> = line.split_whitespace().collect();
+                if fields.get(1) != Some(&"connected") {
+                    return None;
+                }
+                let has_geometry = fields.iter().any(|f| {
+                    f.split_once('x').is_some_and(|(w, h)| {
+                        w.parse::<u32>().is_ok()
+                            && h.split(['+', '-'])
+                                .next()
+                                .is_some_and(|h| h.parse::<u32>().is_ok())
+                            && (h.contains('+') || h.contains('-'))
+                    })
+                });
+                has_geometry.then_some((fields[0], fields.contains(&"primary")))
+            })
+            .collect();
+        let output = if pen_only {
+            active
+                .iter()
+                .filter(|(name, _)| {
+                    !connectors
+                        .iter()
+                        .any(|c| x11_connector_matches(name, &c.name))
+                })
+                .max_by_key(|(_, primary)| primary)
+                .map(|(name, _)| *name)
+        } else {
+            let candidates: Vec<_> = active
+                .iter()
+                .filter(|(name, _)| {
+                    connectors.iter().any(|c| {
+                        c.connected
+                            && card.is_none_or(|want| c.card == want)
+                            && x11_connector_matches(name, &c.name)
+                    })
+                })
+                .map(|(name, _)| *name)
+                .collect();
+            // Ambiguous names are safer left unmapped than attached to another tablet.
+            if candidates.len() == 1 {
+                candidates.first().copied()
+            } else {
+                None
+            }
+        };
+        let Some(output) = output else {
+            continue;
+        };
+        let Ok(devices) = tokio::process::Command::new(xinput)
+            .args(["list", "--short"])
+            .output()
+            .await
+        else {
+            warn!("X11 input mapping needs xinput");
+            return;
+        };
+        if !devices.status.success() {
+            warn!("xinput could not list input devices");
+            return;
+        }
+        let mut mapped = std::collections::HashSet::new();
+        let mut failed = false;
+        for line in String::from_utf8_lossy(&devices.stdout).lines() {
+            let Some(start) = line.find("UScreen ") else {
+                continue;
+            };
+            let Some((name, rest)) = line[start..].split_once("id=") else {
+                continue;
+            };
+            let Some(kind) = x11_device_kind(name.trim(), ident) else {
+                continue;
+            };
+            let Some(id) = rest
+                .split_whitespace()
+                .next()
+                .filter(|s| s.parse::<u32>().is_ok())
+            else {
+                continue;
+            };
+            let ok = tokio::process::Command::new(xinput)
+                .args(["map-to-output", id, output])
+                .output()
+                .await
+                .is_ok_and(|out| out.status.success());
+            if ok {
+                mapped.insert(kind);
+                info!("Mapped '{}' (X11 id {}) to {}", name.trim(), id, output);
+            } else {
+                failed = true;
+            }
+        }
+        if !failed && mapped.len() >= expected {
+            return;
+        }
+    }
+    warn!("X11 output or input devices not ready after 10s; check xrandr providers and xinput");
 }
 
 /// The outputs KWin currently knows, as reported by `kscreen-doctor -j`.
@@ -930,8 +1163,7 @@ async fn target_output(
                 .collect();
             let enabled = outputs.iter().find(|o| {
                 let name = o.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                mine.contains(&name)
-                    && o.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false)
+                mine.contains(&name) && o.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false)
             });
             if let Some(o) = enabled {
                 return o.get("name").and_then(|v| v.as_str()).map(str::to_string);
@@ -997,19 +1229,17 @@ impl InputServer {
         }
     }
 
-    pub async fn run(&self) -> Result<()> {
-        self.running.store(true, Ordering::SeqCst);
-        // Loopback only — see the note in stream.rs. This socket injects real
-        // mouse/pen/touch events into the desktop through uinput, so exposing
-        // it on the network hands over control of the machine.
+    pub async fn bind(&self) -> Result<TcpListener> {
         let addr = format!("127.0.0.1:{}", self.config.port);
-
         let listener = TcpListener::bind(&addr)
             .await
             .context(format!("Failed to bind input server to {}", addr))?;
-
         info!("Input server on ws://{}", addr);
+        Ok(listener)
+    }
 
+    pub async fn run_with_listener(&self, listener: TcpListener) -> Result<()> {
+        self.running.store(true, Ordering::SeqCst);
         // The devices exist only while a tablet is attached. Created for the
         // daemon's whole lifetime they left a touchscreen and a pen tablet on
         // the desktop with nothing behind them, and merely having those
@@ -1054,9 +1284,10 @@ impl InputServer {
                         let (c, i) = (cfg.clone(), ident_bg.clone());
                         // Device creation sleeps to let udev settle, so it
                         // runs off the async runtime.
-                        let created = tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
-                            .await
-                            .unwrap_or_else(|_| InjectDevices::empty());
+                        let created =
+                            tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
+                                .await
+                                .unwrap_or_else(|_| InjectDevices::empty());
                         count = created.count();
                         let has_touch = created.touch.is_some();
                         if let Ok(mut guard) = devices.lock() {
@@ -1082,11 +1313,21 @@ impl InputServer {
                         info!("Tablet detached — virtual input devices removed");
                         count = 0;
                     } else if attached {
-                        count = devices.lock().map(|mut g| { g.release_all(); g.count() }).unwrap_or(0);
+                        count = devices
+                            .lock()
+                            .map(|mut g| {
+                                g.release_all();
+                                g.count()
+                            })
+                            .unwrap_or(0);
                         if count > 0 {
                             info!(
                                 "Mode is now {} — remapping input devices{}",
-                                if pen_only { "pen-only" } else { "second screen" },
+                                if pen_only {
+                                    "pen-only"
+                                } else {
+                                    "second screen"
+                                },
                                 card.map(|c| format!(" (card{})", c)).unwrap_or_default()
                             );
                         }
@@ -1149,13 +1390,6 @@ impl InputServer {
 
         Ok(())
     }
-
-    /// Counterpart to `run`; shutdown currently goes through task
-    /// cancellation instead, but leaving this makes the lifecycle explicit.
-    #[allow(dead_code)]
-    pub fn stop(&self) {
-        self.running.store(false, Ordering::SeqCst);
-    }
 }
 
 async fn handle_connection(
@@ -1181,10 +1415,12 @@ async fn handle_connection(
 
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
     let mut mode_rx = mode_tx.subscribe();
+    let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
 
     // Authenticate before anything else happens: no greeting, no events.
     if let Some(expected) = config.token.as_deref() {
-        let first = tokio::time::timeout(std::time::Duration::from_secs(3), ws_receiver.next()).await;
+        let first =
+            tokio::time::timeout(std::time::Duration::from_secs(3), ws_receiver.next()).await;
         let ok = match first {
             Ok(Some(Ok(Message::Text(text)))) => matches!(
                 serde_json::from_str::<InputEvent>(&text),
@@ -1198,7 +1434,9 @@ async fn handle_connection(
             static DROPS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
             let n = DROPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             if n < 5 {
-                warn!("Input client did not authenticate — dropped. Re-sending the token to the app.");
+                warn!(
+                    "Input client did not authenticate — dropped. Re-sending the token to the app."
+                );
             } else if n == 5 {
                 warn!("Further unauthenticated clients will be dropped quietly.");
             }
@@ -1210,13 +1448,7 @@ async fn handle_connection(
         }
     }
 
-    let resp = InputResponse {
-        status: "connected".to_string(),
-        width: config.virtual_width,
-        height: config.virtual_height,
-        codec: config.codec.clone(),
-        pen_only: *mode_rx.borrow_and_update(),
-    };
+    let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
 
     ws_sender
         .send(Message::Text(serde_json::to_string(&resp)?))
@@ -1228,6 +1460,19 @@ async fn handle_connection(
                 Some(m) => m,
                 None => break,
             },
+            changed = async {
+                match settings_rx.as_mut() {
+                    Some(rx) => rx.changed().await,
+                    None => std::future::pending().await,
+                }
+            } => {
+                if changed.is_err() { settings_rx = None; continue; }
+                let response = config.response("mode", *mode_rx.borrow(), &settings_tx);
+                if ws_sender.send(Message::Text(serde_json::to_string(&response)?)).await.is_err() {
+                    break;
+                }
+                continue;
+            }
             // The mode changed — here, from the GUI, or from the command line.
             // Whoever changed it, the tablet has to hear about it: it decides
             // from this whether to expect a video stream at all.
@@ -1236,13 +1481,7 @@ async fn handle_connection(
                     break;
                 }
                 let pen_only = *mode_rx.borrow();
-                let resp = InputResponse {
-                    status: "mode".to_string(),
-                    width: config.virtual_width,
-                    height: config.virtual_height,
-                    codec: config.codec.clone(),
-                    pen_only,
-                };
+                let resp = config.response("mode", pen_only, &settings_tx);
                 if ws_sender
                     .send(Message::Text(serde_json::to_string(&resp)?))
                     .await
@@ -1292,7 +1531,9 @@ fn note_pen_action(action: u8) {
     if let Ok(mut c) = PEN_ACTIONS.lock() {
         c[(action as usize).min(7)] += 1;
     }
-    let Ok(mut last) = PEN_LOG_AT.lock() else { return };
+    let Ok(mut last) = PEN_LOG_AT.lock() else {
+        return;
+    };
     let now = std::time::Instant::now();
     match *last {
         Some(t) if t.elapsed().as_secs() < 3 => return,
@@ -1333,7 +1574,10 @@ fn handle_event(
                 let ok = if let Some(ref mut dev) = guard.touch {
                     match dev.inject_touch(abs_x, abs_y, abs_pressure, action, slot) {
                         Ok(_) => true,
-                        Err(e) => { warn!("Failed to inject touch: {}", e); false }
+                        Err(e) => {
+                            warn!("Failed to inject touch: {}", e);
+                            false
+                        }
                     }
                 } else {
                     match action {
@@ -1376,13 +1620,27 @@ fn handle_event(
 
             if let Ok(mut guard) = uinput.lock() {
                 let ok = if let Some(ref mut dev) = guard.pen {
-                    match dev.inject_pen(abs_x, abs_y, abs_pressure, tilt_x_deg, tilt_y_deg, action, eraser) {
+                    match dev.inject_pen(
+                        abs_x,
+                        abs_y,
+                        abs_pressure,
+                        tilt_x_deg,
+                        tilt_y_deg,
+                        action,
+                        eraser,
+                    ) {
                         Ok(_) => true,
-                        Err(e) => { warn!("Failed to inject pen: {}", e); false }
+                        Err(e) => {
+                            warn!("Failed to inject pen: {}", e);
+                            false
+                        }
                     }
                 } else {
                     match action {
-                        0 => debug!("Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device", abs_x, abs_y, eraser, tilt_x, tilt_y),
+                        0 => debug!(
+                            "Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device",
+                            abs_x, abs_y, eraser, tilt_x, tilt_y
+                        ),
                         1 => debug!("Pen UP   at ({}, {}) — no pen device", abs_x, abs_y),
                         _ => {}
                     }
@@ -1428,19 +1686,24 @@ fn handle_event(
                 info!("auto_resolution is off — keeping configured resolution");
                 return;
             }
-            if !(640..=8192).contains(&width) || !(480..=8192).contains(&height) {
+            if !(640..=crate::config::MAX_DIMENSION).contains(&width)
+                || !(480..=crate::config::MAX_DIMENSION).contains(&height)
+            {
                 warn!("Ignoring implausible resolution {}x{}", width, height);
                 return;
             }
             let mut new = tx.borrow().clone();
             // Reject nonsense physical sizes rather than baking them into an
             // EDID: a bad DPI makes the desktop come up at a absurd scale.
-            let (mm_w, mm_h) = if (50..=1000).contains(&width_mm) && (50..=1000).contains(&height_mm)
-            {
-                (width_mm, height_mm)
-            } else {
-                (crate::edid::DEFAULT_WIDTH_MM, crate::edid::DEFAULT_HEIGHT_MM)
-            };
+            let (mm_w, mm_h) =
+                if (50..=1000).contains(&width_mm) && (50..=1000).contains(&height_mm) {
+                    (width_mm, height_mm)
+                } else {
+                    (
+                        crate::edid::DEFAULT_WIDTH_MM,
+                        crate::edid::DEFAULT_HEIGHT_MM,
+                    )
+                };
             if new.width != width
                 || new.height != height
                 || new.width_mm != mm_w
@@ -1487,7 +1750,11 @@ fn handle_event(
                 new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
             }
             if let Some(e) = encoder {
-                new.encoder = e;
+                if crate::config::supported_encoder(&e) {
+                    new.encoder = e;
+                } else {
+                    warn!("Ignoring unsupported encoder from tablet: {}", e);
+                }
             }
             if *tx.borrow() != new {
                 info!(
@@ -1512,14 +1779,205 @@ fn handle_event(
             // and then drop every stroke: a blank tablet. The app's switch
             // follows the mode the daemon reports, so it simply stays off.
             if pen_only && !pen_enabled {
-                warn!("Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored");
+                warn!(
+                    "Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored"
+                );
                 return;
             }
             info!(
                 "Tablet switched to {}",
-                if pen_only { "pen-only mode" } else { "second-screen mode" }
+                if pen_only {
+                    "pen-only mode"
+                } else {
+                    "second-screen mode"
+                }
             );
             let _ = mode_tx.send(pen_only);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn t029_x11_maps_only_this_tablets_devices_and_card() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = std::env::temp_dir().join(format!("uscreen-x11-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let xinput = root.join("xinput");
+        let xrandr = root.join("xrandr");
+        std::fs::write(&xinput, r#"#!/bin/sh
+cd "$(dirname "$0")"
+if [ "$1" = list ]; then
+    printf '%s\n' '↳ UScreen Touch id=10 [slave pointer]' '↳ UScreen Pen Pen (0) id=11 [slave pointer]' '↳ UScreen Touch 2 id=20 [slave pointer]' '↳ UScreen Pen 2 Pen (0) id=21 [slave pointer]' '↳ UScreen Pen 2 Eraser (0) id=22 [slave pointer]' '↳ UScreen Pointer 2 id=23 [slave pointer]'
+else
+    printf '%s %s %s\n' "$1" "$2" "$3" >> mapped
+fi
+"#).unwrap();
+        std::fs::write(&xrandr, "#!/bin/sh\nprintf '%s\n' 'eDP-1 connected primary 1920x1080+0+0' 'DVI-I-1-1 connected 1920x1080+1920+0' 'DVI-I-2-1 connected 1920x1080+3840+0'\n").unwrap();
+        for path in [&xinput, &xrandr] {
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        let connectors = [
+            crate::vdisplay::EvdiConnector {
+                name: "DVI-I-1".into(),
+                card: 8,
+                connected: true,
+            },
+            crate::vdisplay::EvdiConnector {
+                name: "DVI-I-2".into(),
+                card: 9,
+                connected: true,
+            },
+        ];
+        map_devices_using(
+            false,
+            &DeviceIdentity::for_instance(1),
+            Some(9),
+            3,
+            "x11",
+            xinput.to_str().unwrap(),
+            xrandr.to_str().unwrap(),
+            Some(&connectors),
+        )
+        .await;
+        let mapped = std::fs::read_to_string(root.join("mapped")).unwrap_or_default();
+        assert_eq!(
+            mapped.lines().collect::<Vec<_>>(),
+            [
+                "map-to-output 20 DVI-I-2-1",
+                "map-to-output 21 DVI-I-2-1",
+                "map-to-output 22 DVI-I-2-1",
+                "map-to-output 23 DVI-I-2-1"
+            ]
+        );
+        std::fs::remove_file(root.join("mapped")).unwrap();
+        map_devices_using(
+            true,
+            &DeviceIdentity::for_instance(0),
+            Some(8),
+            2,
+            "x11",
+            xinput.to_str().unwrap(),
+            xrandr.to_str().unwrap(),
+            Some(&connectors),
+        )
+        .await;
+        let mapped = std::fs::read_to_string(root.join("mapped")).unwrap();
+        assert_eq!(
+            mapped.lines().collect::<Vec<_>>(),
+            ["map-to-output 10 eDP-1", "map-to-output 11 eDP-1"]
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    use super::*;
+    use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+
+    fn settings(encoder: &str) -> EncoderSettings {
+        EncoderSettings {
+            encoder: encoder.into(),
+            fps: 60,
+            bitrate: 20_000,
+            width: 1920,
+            height: 1080,
+            quality: 18,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+        }
+    }
+
+    async fn connection(
+        encoder: &str,
+    ) -> (
+        WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
+        watch::Sender<EncoderSettings>,
+        tokio::task::JoinHandle<Result<()>>,
+    ) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let (settings_tx, _settings_rx) = watch::channel(settings(encoder));
+        let tx = settings_tx.clone();
+        let task = tokio::spawn(async move {
+            let (socket, _) = listener.accept().await.unwrap();
+            let (mode_tx, _rx) = watch::channel(false);
+            handle_connection(
+                socket,
+                InputConfig {
+                    touch: false,
+                    pen: false,
+                    ..InputConfig::default()
+                },
+                Some(tx),
+                mode_tx,
+                crate::latency::LatencyTracker::new(),
+                Arc::new(std::sync::Mutex::new(InjectDevices::empty())),
+                Arc::new(tokio::sync::Notify::new()),
+            )
+            .await
+        });
+        let (client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
+        (client, settings_tx, task)
+    }
+
+    async fn response(
+        client: &mut WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
+    ) -> serde_json::Value {
+        let msg = tokio::time::timeout(std::time::Duration::from_millis(300), client.next())
+            .await
+            .expect("server must publish settings changes")
+            .unwrap()
+            .unwrap();
+        serde_json::from_str(msg.to_text().unwrap()).unwrap()
+    }
+
+    #[tokio::test]
+    async fn t063_greeting_reports_live_encoder_codec() {
+        let (mut client, _tx, task) = connection("hevc_nvenc").await;
+        let greeting = response(&mut client).await;
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+        assert_eq!(greeting["codec"], "hevc");
+    }
+
+    #[tokio::test]
+    async fn t063_codec_changes_are_pushed_to_connected_clients() {
+        let (mut client, tx, task) = connection("h264_nvenc").await;
+        assert_eq!(response(&mut client).await["codec"], "h264");
+        tx.send_replace(settings("hevc_nvenc"));
+        let update = response(&mut client).await;
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+        assert_eq!(update["codec"], "hevc");
+    }
+
+    #[test]
+    fn t063_unknown_encoder_from_tablet_is_rejected() {
+        let (tx, rx) = watch::channel(settings("libx264"));
+        let (mode_tx, _mode_rx) = watch::channel(false);
+        handle_event(
+            InputEvent::Config {
+                bitrate: None,
+                fps: None,
+                encoder: Some("unknown".into()),
+            },
+            &Arc::new(std::sync::Mutex::new(InjectDevices::empty())),
+            &Some(tx),
+            &mode_tx,
+            &crate::latency::LatencyTracker::new(),
+            true,
+        );
+        assert_eq!(rx.borrow().encoder, "libx264");
+    }
+
+    #[tokio::test]
+    async fn t062_greeting_advertises_disabled_input_devices() {
+        let (mut client, _tx, task) = connection("h264_nvenc").await;
+        let greeting = response(&mut client).await;
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+        assert_eq!(greeting["touch"], false);
+        assert_eq!(greeting["pen"], false);
     }
 }

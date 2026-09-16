@@ -7,7 +7,7 @@
 //! shared capture FIFO interleave at pipe granularity, and no amount of
 //! restarting the daemon fixes it until they are killed.
 
-use crate::capture::fifo_path;
+use crate::capture::fifo_path_for;
 use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS};
 use crate::vdisplay;
 use anyhow::Result;
@@ -23,6 +23,8 @@ enum Level {
 struct Report {
     warnings: u32,
     failures: u32,
+    #[cfg(test)]
+    messages: std::cell::RefCell<Vec<String>>,
 }
 
 impl Report {
@@ -30,10 +32,16 @@ impl Report {
         Self {
             warnings: 0,
             failures: 0,
+            #[cfg(test)]
+            messages: Default::default(),
         }
     }
 
     fn line(&mut self, level: Level, label: &str, detail: &str) {
+        #[cfg(test)]
+        self.messages
+            .borrow_mut()
+            .push(format!("{label}: {detail}"));
         let mark = match level {
             Level::Ok => "  ok  ",
             Level::Warn => " warn ",
@@ -53,6 +61,8 @@ impl Report {
 
     /// A remedy printed under the finding it belongs to.
     fn hint(&self, text: &str) {
+        #[cfg(test)]
+        self.messages.borrow_mut().push(text.into());
         println!("         → {}", text);
     }
 }
@@ -117,14 +127,17 @@ fn check_modules(r: &mut Report, cfg: &FileConfig) {
         Err(_) => {
             r.line(Level::Fail, "evdi module", "not loaded");
             r.hint("install evdi-dkms (on Arch it is in the AUR: yay -S evdi-dkms), then: sudo modprobe evdi");
-            r.hint("sudo modprobe evdi   (install evdi-dkms if that fails)");
         }
     }
 
     let uinput = Path::new("/dev/uinput");
     // With every input device switched off the daemon never opens uinput,
     // so a problem here is worth knowing about but blocks nothing.
-    let uinput_level = if cfg.input_touch || cfg.input_pen { Level::Fail } else { Level::Warn };
+    let uinput_level = if cfg.input_touch || cfg.input_pen {
+        Level::Fail
+    } else {
+        Level::Warn
+    };
     if !uinput.exists() {
         r.line(uinput_level, "uinput device", "/dev/uinput missing");
         r.hint("sudo modprobe uinput");
@@ -134,14 +147,63 @@ fn check_modules(r: &mut Report, cfg: &FileConfig) {
         match std::fs::OpenOptions::new().write(true).open(uinput) {
             Ok(_) => r.line(Level::Ok, "uinput device", "writable"),
             Err(e) => {
-                r.line(uinput_level, "uinput device", &format!("not writable: {}", e));
-                r.hint("sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput");
+                r.line(
+                    uinput_level,
+                    "uinput device",
+                    &format!("not writable: {}", e),
+                );
+                r.hint(&uinput_hint(Path::new("/")));
             }
         }
     }
 }
 
+fn uinput_hint(root: &Path) -> String {
+    if ["etc/udev/rules.d", "usr/lib/udev/rules.d"]
+        .iter()
+        .any(|dir| root.join(dir).join("60-uscreen-uinput.rules").exists())
+    {
+        "rule installed: sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput; log in locally at an active seat to receive the uaccess grant".into()
+    } else {
+        "reinstall the UScreen package or rerun the release tarball's scripts/install.sh to install the uinput rule".into()
+    }
+}
+
 async fn check_tools(r: &mut Report, cfg: &FileConfig) {
+    let helper = crate::find_helper(&std::path::PathBuf::from("host/evdi/evdi_helper"));
+    check_tools_with_helper(r, cfg, &helper).await;
+}
+
+async fn check_tools_with_helper(r: &mut Report, cfg: &FileConfig, helper: &Path) {
+    // With no arguments the helper prints usage and exits before opening EVDI.
+    match tokio::process::Command::new(helper).output().await {
+        Ok(out)
+            if out.status.success()
+                || (out.status.code() == Some(1)
+                    && String::from_utf8_lossy(&out.stderr).contains("Usage:")) =>
+        {
+            r.line(Level::Ok, "evdi_helper", &helper.display().to_string())
+        }
+        Ok(out) => {
+            r.line(
+                Level::Fail,
+                "evdi_helper",
+                &format!(
+                    "could not execute normally: {}",
+                    String::from_utf8_lossy(&out.stderr).trim()
+                ),
+            );
+            r.hint("reinstall UScreen and the libevdi runtime package for this distribution");
+        }
+        Err(e) => {
+            r.line(
+                Level::Fail,
+                "evdi_helper",
+                &format!("could not execute {}: {e}", helper.display()),
+            );
+            r.hint("reinstall UScreen (including evdi_helper) and its libevdi runtime dependency");
+        }
+    }
     for (tool, fatal) in [("ffmpeg", true), ("adb", true), ("kscreen-doctor", false)] {
         if command_exists(tool) {
             r.line(Level::Ok, tool, "found");
@@ -154,7 +216,10 @@ async fn check_tools(r: &mut Report, cfg: &FileConfig) {
     }
 
     if let Some(list) = output_of("ffmpeg", &["-hide_banner", "-encoders"]).await {
-        let has = |name: &str| list.lines().any(|l| l.split_whitespace().any(|t| t == name));
+        let has = |name: &str| {
+            list.lines()
+                .any(|l| l.split_whitespace().any(|t| t == name))
+        };
         if has(&cfg.encoder) {
             r.line(
                 Level::Ok,
@@ -178,10 +243,9 @@ async fn check_tools(r: &mut Report, cfg: &FileConfig) {
 
 /// The check that matters most: more than one helper or encoder means several
 /// processes are writing/reading the same FIFO and every frame is corrupt.
-async fn check_processes(r: &mut Report) {
+async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     let daemons = pids_exact("uscreen").await;
     let helpers = pids_exact("evdi_helper").await;
-    let encoders = pids_full(&format!("ffmpeg.*{}", fifo_path())).await;
 
     // The PID file is the daemon's single slot; anything running beside it is
     // untracked and `uscreen stop` will never reach it.
@@ -189,7 +253,7 @@ async fn check_processes(r: &mut Report) {
     let tracked: Option<u32> = std::fs::read_to_string(&pid_file)
         .ok()
         .and_then(|t| t.trim().parse().ok())
-        .filter(|pid| Path::new(&format!("/proc/{}", pid)).exists());
+        .filter(|pid| config::daemon_is_running(*pid));
 
     match tracked {
         Some(pid) => r.line(Level::Ok, "daemon", &format!("running, PID {}", pid)),
@@ -218,14 +282,43 @@ async fn check_processes(r: &mut Report) {
         r.hint("these fight over the same FIFO and ports — kill them: pkill -x uscreen");
     }
 
-    if helpers.len() > 1 {
+    report_helpers(r, &helpers, tracked, cfg.max_tablets);
+    for instance in 0..cfg.max_tablets {
+        let fifo = fifo_path_for(instance);
+        let encoders = pids_full(&format!("ffmpeg.*{}([[:space:]]|$)", fifo)).await;
+        report_encoders(r, &encoders, tracked, &fifo);
+    }
+}
+
+fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo: &str) {
+    if encoders.len() > 1 {
+        r.line(
+            Level::Fail,
+            &format!("ffmpeg on {fifo}"),
+            &format!("{} running: {:?}", encoders.len(), encoders),
+        );
+        r.hint("two readers on one pipe corrupt frames — kill the strays");
+    } else if encoders.len() == 1 && tracked.is_none() {
+        r.line(Level::Fail, &format!("ffmpeg on {fifo}"), "orphaned");
+        r.hint(&format!("pkill -f 'ffmpeg.*{}'", fifo));
+    } else {
+        r.line(
+            Level::Ok,
+            &format!("ffmpeg on {fifo}"),
+            &format!("{}", encoders.len()),
+        );
+    }
+}
+
+fn report_helpers(r: &mut Report, helpers: &[u32], tracked: Option<u32>, max_tablets: u32) {
+    if helpers.len() > max_tablets as usize {
         r.line(
             Level::Fail,
             "evdi_helper processes",
             &format!("{} running: {:?}", helpers.len(), helpers),
         );
-        r.hint("several writers interleave on the FIFO — torn frames: pkill -x evdi_helper");
-    } else if helpers.len() == 1 && tracked.is_none() {
+        r.hint("more helpers than configured tablet slots: stop UScreen, inspect these PIDs and remove strays before restarting");
+    } else if !helpers.is_empty() && tracked.is_none() {
         r.line(Level::Fail, "evdi_helper", "orphaned (no daemon owns it)");
         r.hint("pkill -x evdi_helper");
     } else {
@@ -235,32 +328,14 @@ async fn check_processes(r: &mut Report) {
             &format!("{}", helpers.len()),
         );
     }
-
-    if encoders.len() > 1 {
-        r.line(
-            Level::Fail,
-            "ffmpeg on capture FIFO",
-            &format!("{} running: {:?}", encoders.len(), encoders),
-        );
-        r.hint("two readers on one pipe corrupt frames — kill the strays");
-    } else if encoders.len() == 1 && tracked.is_none() {
-        r.line(Level::Fail, "ffmpeg on capture FIFO", "orphaned");
-        r.hint(&format!("pkill -f 'ffmpeg.*{}'", &fifo_path()));
-    } else {
-        r.line(
-            Level::Ok,
-            "ffmpeg on capture FIFO",
-            &format!("{}", encoders.len()),
-        );
-    }
 }
 
-async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
+async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Option<String> {
     // `adb get-state` errors out when more than one device is attached, so
     // enumerate instead — that failure mode is silent otherwise.
     let Some(list) = output_of("adb", &["devices"]).await else {
         r.line(Level::Warn, "adb", "could not run");
-        return;
+        return None;
     };
     let devices: Vec<&str> = list
         .lines()
@@ -293,7 +368,7 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
                 r.line(Level::Warn, "tablet", "not connected");
                 r.hint("plug in the USB cable and enable USB debugging");
             }
-            return;
+            return None;
         }
         1 => {
             r.line(Level::Ok, "tablet", devices[0]);
@@ -311,8 +386,11 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
             if usb.len() > 1 {
                 let mut named = Vec::new();
                 for d in &devices {
-                    match output_of("adb", &["-s", d, "shell", "getprop", "ro.product.model"]).await {
-                        Some(m) if !m.trim().is_empty() => named.push(format!("{} ({})", d, m.trim())),
+                    match output_of("adb", &["-s", d, "shell", "getprop", "ro.product.model"]).await
+                    {
+                        Some(m) if !m.trim().is_empty() => {
+                            named.push(format!("{} ({})", d, m.trim()))
+                        }
                         _ => named.push(d.to_string()),
                     }
                 }
@@ -346,19 +424,7 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
     reverse_args.extend_from_slice(&["reverse", "--list"]);
     match output_of("adb", &reverse_args).await {
         Some(reverse) => {
-            for port in [cfg.video_port, cfg.input_port] {
-                let needle = format!("tcp:{}", port);
-                if reverse.contains(&needle) {
-                    r.line(Level::Ok, &format!("adb reverse {}", port), "forwarded");
-                } else {
-                    r.line(
-                        Level::Warn,
-                        &format!("adb reverse {}", port),
-                        "not forwarded",
-                    );
-                    r.hint(&format!("adb reverse tcp:{p} tcp:{p}", p = port));
-                }
-            }
+            report_forwarding(r, cfg, chosen.unwrap_or("SERIAL"), &reverse);
         }
         None => r.line(Level::Warn, "adb reverse", "could not query"),
     }
@@ -374,9 +440,17 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
         let hevc = out.contains("video/hevc");
         let main10 = out.contains("Main10");
         match (hevc, main10, cfg.encoder.contains("hevc")) {
-            (_, _, true) => r.line(Level::Ok, "tablet codec", "HEVC, and the host is sending it"),
+            (_, _, true) => r.line(
+                Level::Ok,
+                "tablet codec",
+                "HEVC, and the host is sending it",
+            ),
             (true, true, false) => {
-                r.line(Level::Ok, "tablet codec", "HEVC Main10 supported in hardware");
+                r.line(
+                    Level::Ok,
+                    "tablet codec",
+                    "HEVC Main10 supported in hardware",
+                );
                 r.hint(
                     "optional: switch the encoder to hevc_nvenc for sharper text at the same \
                      bitrate, and tick 10-bit to smooth gradients",
@@ -401,7 +475,42 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) {
             r.line(Level::Ok, "tablet app", "installed");
         } else {
             r.line(Level::Fail, "tablet app", "com.uscreen not installed");
-            r.hint("adb install android/app/build/outputs/apk/debug/app-debug.apk");
+            r.hint(&format!(
+                "download uscreen.apk from {} then: adb -s {} install -r uscreen.apk",
+                crate::update::RELEASES_PAGE,
+                chosen.unwrap_or("SERIAL")
+            ));
+        }
+    }
+    chosen.map(str::to_owned)
+}
+
+fn report_forwarding(r: &mut Report, cfg: &FileConfig, serial: &str, reverse: &str) {
+    for (app, host) in [
+        (crate::APP_VIDEO_PORT, cfg.video_port),
+        (crate::APP_INPUT_PORT, cfg.input_port),
+    ] {
+        let remote = format!("tcp:{app}");
+        let local = format!("tcp:{host}");
+        let forwarded = reverse.lines().any(|line| {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            fields
+                .windows(2)
+                .any(|pair| pair == [remote.as_str(), local.as_str()])
+        });
+        if forwarded {
+            r.line(
+                Level::Ok,
+                &format!("adb reverse {app}"),
+                &format!("forwarded to {host}"),
+            );
+        } else {
+            r.line(
+                Level::Warn,
+                &format!("adb reverse {app}"),
+                &format!("not forwarded to {host}"),
+            );
+            r.hint(&format!("adb -s {serial} reverse {remote} {local}"));
         }
     }
 }
@@ -455,27 +564,36 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
             r.hint("the daemon enables it on start; nothing is rendered while it is off");
             continue;
         }
-        let w = out.pointer("/size/width").and_then(|v| v.as_i64()).unwrap_or(0);
+        let w = out
+            .pointer("/size/width")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0);
         let h = out
             .pointer("/size/height")
             .and_then(|v| v.as_i64())
             .unwrap_or(0);
-        // A mismatch here is the classic "skewed / torn picture": ffmpeg is
-        // told one frame size while the helper produces another.
-        if w as u32 == cfg.width && h as u32 == cfg.height {
-            r.line(
-                Level::Ok,
-                "KDE output mode",
-                &format!("{} at {}x{}", name, w, h),
-            );
-        } else {
-            r.line(
-                Level::Fail,
-                "KDE output mode",
-                &format!("{} is {}x{}, config says {}x{}", name, w, h, cfg.width, cfg.height),
-            );
-            r.hint("the encoder frame size will not match the capture — picture will be skewed");
-        }
+        report_output_mode(r, cfg, name, w, h);
+    }
+}
+
+fn report_output_mode(r: &mut Report, cfg: &FileConfig, name: &str, w: i64, h: i64) {
+    // Auto resolution follows the tablet. Capture always negotiates the actual mode.
+    if cfg.auto_resolution || (w as u32 == cfg.width && h as u32 == cfg.height) {
+        r.line(
+            Level::Ok,
+            "KDE output mode",
+            &format!("{} at {}x{}", name, w, h),
+        );
+    } else {
+        r.line(
+            Level::Warn,
+            "KDE output mode",
+            &format!(
+                "{} is {}x{}, config says {}x{}",
+                name, w, h, cfg.width, cfg.height
+            ),
+        );
+        r.hint("capture uses this actual mode; choose the configured mode in Display Settings if desired");
     }
 }
 
@@ -484,10 +602,25 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
 /// Reported because it is a global desktop setting, not something the daemon
 /// should quietly decide on the user's behalf.
 async fn check_osk(r: &mut Report) {
+    if std::env::var("XDG_SESSION_TYPE").as_deref() == Ok("x11") {
+        for tool in ["xinput", "xrandr"] {
+            if command_exists(tool) {
+                r.line(Level::Ok, tool, "available for X11 input mapping");
+            } else {
+                r.line(Level::Fail, tool, "not installed");
+                r.hint(&format!("install {tool} for automatic X11 input mapping"));
+            }
+        }
+        return;
+    }
     // Whether we can reach KWin at all decides whether touch and pen land on
     // the tablet's screen, so it is reported first and in its own right.
     match crate::kwin::backend().await {
-        Some(b) => r.line(Level::Ok, "KWin D-Bus", &format!("reachable via {}", b.name())),
+        Some(b) => r.line(
+            Level::Ok,
+            "KWin D-Bus",
+            &format!("reachable via {}", b.name()),
+        ),
         None => {
             r.line(
                 Level::Fail,
@@ -513,11 +646,7 @@ async fn check_osk(r: &mut Report) {
     let mode: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
     match mode.trim() {
         "1" | "2" => {
-            r.line(
-                Level::Warn,
-                "on-screen keyboard",
-                "pops up on touch input",
-            );
+            r.line(Level::Warn, "on-screen keyboard", "pops up on touch input");
             r.hint("the daemon turns this off while it runs and puts it back on exit");
         }
         "0" => r.line(Level::Ok, "on-screen keyboard", "only when asked for"),
@@ -527,7 +656,34 @@ async fn check_osk(r: &mut Report) {
 
 /// Whether plugging the cable in is actually enough on its own.
 async fn check_autostart(r: &mut Report) {
-    match output_of("systemctl", &["--user", "is-enabled", "uscreen.service"]).await {
+    let enabled = output_of("systemctl", &["--user", "is-enabled", "uscreen.service"]).await;
+    let load_state = output_of(
+        "systemctl",
+        &[
+            "--user",
+            "show",
+            "uscreen.service",
+            "-p",
+            "LoadState",
+            "--value",
+        ],
+    )
+    .await
+    .unwrap_or_default();
+    report_autostart(r, load_state.trim(), enabled);
+}
+
+fn report_autostart(r: &mut Report, load_state: &str, enabled: Option<String>) {
+    if load_state == "not-found" {
+        r.line(
+            Level::Warn,
+            "start with the desktop",
+            "service not installed",
+        );
+        r.hint("reinstall the UScreen package or run scripts/install.sh from the release tarball to install uscreen.service");
+        return;
+    }
+    match enabled {
         Some(v) if v.trim() == "enabled" => {
             r.line(Level::Ok, "start with the desktop", "enabled");
         }
@@ -543,13 +699,27 @@ async fn check_autostart(r: &mut Report) {
     }
 }
 
+async fn tablet_setting(
+    program: &str,
+    serial: Option<&str>,
+    namespace: &str,
+    key: &str,
+) -> Option<String> {
+    let serial = serial?;
+    output_of(
+        program,
+        &["-s", serial, "shell", "settings", "get", namespace, key],
+    )
+    .await
+}
+
 /// Colour accuracy, for using the tablet to judge images rather than just to
 /// hold windows. Everything here is a setting rather than a bug, but each one
 /// silently ruins colour and none of them is visible from the host side.
-async fn check_colour(r: &mut Report) {
+async fn check_colour(r: &mut Report, serial: Option<&str>) {
     // Eye comfort / blue light filter warms the whole panel. Nothing on the
     // host can compensate, and it is easy to leave on by accident.
-    match output_of("adb", &["shell", "settings", "get", "system", "blue_light_filter"]).await {
+    match tablet_setting("adb", serial, "system", "blue_light_filter").await {
         Some(v) if v.trim() == "1" => {
             r.line(Level::Fail, "blue light filter", "ON — colours are warmed");
             r.hint("tablet: Settings → Display → Eye comfort shield → off");
@@ -560,8 +730,7 @@ async fn check_colour(r: &mut Report) {
 
     // Samsung's "Vivid" screen mode stretches saturation past sRGB. "Natural"
     // is the colour-accurate one.
-    if let Some(v) = output_of("adb", &["shell", "settings", "get", "system", "screen_mode_setting"]).await
-    {
+    if let Some(v) = tablet_setting("adb", serial, "system", "screen_mode_setting").await {
         let v = v.trim().to_string();
         if v == "2" {
             r.line(Level::Ok, "tablet screen mode", "Natural (sRGB)");
@@ -580,8 +749,7 @@ async fn check_colour(r: &mut Report) {
     // gets 60 and every frame waits an average of 8 ms for vsync instead of
     // 4. Seen on a Tab S9 Ultra: the app asked for the best mode and was
     // handed 60 Hz until this was switched to Adaptive.
-    if let Some(v) = output_of("adb", &["shell", "settings", "get", "secure", "refresh_rate_mode"]).await
-    {
+    if let Some(v) = tablet_setting("adb", serial, "secure", "refresh_rate_mode").await {
         let v = v.trim().to_string();
         if v == "0" {
             r.line(
@@ -591,7 +759,11 @@ async fn check_colour(r: &mut Report) {
             );
             r.hint("tablet: Settings → Display → Motion smoothness → Adaptive (120 Hz)");
         } else if !v.is_empty() && v != "null" {
-            r.line(Level::Ok, "tablet refresh rate", "Motion smoothness: adaptive");
+            r.line(
+                Level::Ok,
+                "tablet refresh rate",
+                "Motion smoothness: adaptive",
+            );
         }
     }
 
@@ -603,7 +775,11 @@ async fn check_colour(r: &mut Report) {
         .collect();
     if let Some(json) = output_of("kscreen-doctor", &["-j"]).await {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(&json) {
-            for out in v.get("outputs").and_then(|o| o.as_array()).unwrap_or(&vec![]) {
+            for out in v
+                .get("outputs")
+                .and_then(|o| o.as_array())
+                .unwrap_or(&vec![])
+            {
                 let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
                 if !names.iter().any(|n| n == name) {
                     continue;
@@ -613,7 +789,11 @@ async fn check_colour(r: &mut Report) {
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 if icc.is_empty() {
-                    r.line(Level::Warn, "colour profile", "none assigned to the virtual display");
+                    r.line(
+                        Level::Warn,
+                        "colour profile",
+                        "none assigned to the virtual display",
+                    );
                     r.hint(
                         "System Settings → Display → pick the UScreen display → Color Profile. \
                          A generic sRGB profile is the right baseline; a measured one needs a \
@@ -629,7 +809,14 @@ async fn check_colour(r: &mut Report) {
 
 async fn check_version(r: &mut Report, cfg: &FileConfig) {
     if !cfg.check_updates {
-        r.line(Level::Ok, "version", &format!("{} (update check disabled)", crate::update::current_version()));
+        r.line(
+            Level::Ok,
+            "version",
+            &format!(
+                "{} (update check disabled)",
+                crate::update::current_version()
+            ),
+        );
         return;
     }
     // One-shot: doctor is its own process and cannot read the daemon's daily
@@ -639,13 +826,21 @@ async fn check_version(r: &mut Report, cfg: &FileConfig) {
         Some(tag) => {
             let latest = tag.trim_start_matches('v').to_string();
             if crate::update::is_newer(&latest, cur) {
-                r.line(Level::Warn, "version", &format!("{} — {} is available", cur, latest));
+                r.line(
+                    Level::Warn,
+                    "version",
+                    &format!("{} — {} is available", cur, latest),
+                );
                 r.hint(crate::update::RELEASES_PAGE);
             } else {
                 r.line(Level::Ok, "version", &format!("{} (latest)", cur));
             }
         }
-        None => r.line(Level::Ok, "version", &format!("{} (could not check for updates)", cur)),
+        None => r.line(
+            Level::Ok,
+            "version",
+            &format!("{} (could not check for updates)", cur),
+        ),
     }
 }
 
@@ -661,17 +856,25 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
     if cfg.max_tablets > 1 {
         let cards = crate::vdisplay::evdi_cards().len() as u32;
         if cards >= cfg.max_tablets {
-            r.line(Level::Ok, "tablet slots", &format!("{} (EVDI devices: {})", cfg.max_tablets, cards));
+            r.line(
+                Level::Ok,
+                "tablet slots",
+                &format!("{} (EVDI devices: {})", cfg.max_tablets, cards),
+            );
         } else {
             r.line(
                 Level::Warn,
                 "tablet slots",
-                &format!("{} wanted, but only {} EVDI device(s) exist", cfg.max_tablets, cards),
+                &format!(
+                    "{} wanted, but only {} EVDI device(s) exist",
+                    cfg.max_tablets, cards
+                ),
             );
             r.hint(&format!(
                 "for this boot: echo 1 | sudo tee /sys/devices/evdi/add   (repeat {} time(s)); \
                  for every boot: initial_device_count={} in /etc/modprobe.d/uscreen-evdi.conf",
-                cfg.max_tablets - cards, cfg.max_tablets
+                cfg.max_tablets - cards,
+                cfg.max_tablets
             ));
         }
     }
@@ -695,9 +898,15 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
         },
     );
     let mut on: Vec<&str> = Vec::new();
-    if cfg.input_touch { on.push("touch"); }
-    if cfg.input_pen { on.push("pen"); }
-    if cfg.input_pen && cfg.input_pointer { on.push("pointer"); }
+    if cfg.input_touch {
+        on.push("touch");
+    }
+    if cfg.input_pen {
+        on.push("pen");
+    }
+    if cfg.input_pen && cfg.input_pointer {
+        on.push("pointer");
+    }
     if on.is_empty() {
         // A deliberate choice, not a fault: opting out is what the switches
         // are for.
@@ -707,7 +916,11 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
             "none — the tablet is display-only (touch and pen are ignored)",
         );
     } else {
-        r.line(Level::Ok, "input devices", &format!("{} (created while a tablet is attached)", on.join(", ")));
+        r.line(
+            Level::Ok,
+            "input devices",
+            &format!("{} (created while a tablet is attached)", on.join(", ")),
+        );
     }
     if cfg.pen_only && !cfg.input_pen {
         r.line(
@@ -726,9 +939,11 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
         r.line(
             Level::Warn,
             "bitrate on disk",
-            &format!("{} Mbps — clamped to {} Mbps at runtime",
+            &format!(
+                "{} Mbps — clamped to {} Mbps at runtime",
                 raw_bitrate / 1000,
-                cfg.bitrate / 1000),
+                cfg.bitrate / 1000
+            ),
         );
         r.hint("rewrite it via uscreen-gui (or the tablet settings) to make the file agree");
     } else {
@@ -782,10 +997,10 @@ pub async fn run() -> Result<()> {
     check_tools(&mut r, &cfg).await;
 
     section("Processes");
-    check_processes(&mut r).await;
+    check_processes(&mut r, &cfg).await;
 
     section("Tablet");
-    check_tablet(&mut r, &cfg).await;
+    let serial = check_tablet(&mut r, &cfg).await;
 
     section("Virtual display");
     check_virtual_display(&mut r, &cfg).await;
@@ -797,7 +1012,7 @@ pub async fn run() -> Result<()> {
     check_osk(&mut r).await;
 
     section("Colour");
-    check_colour(&mut r).await;
+    check_colour(&mut r, serial.as_deref()).await;
 
     section("Configuration");
     check_version(&mut r, &cfg).await;
@@ -822,9 +1037,133 @@ pub async fn run() -> Result<()> {
 /// median suggests — the Wi-Fi tail is several times worse.
 fn report_transport(r: &mut Report, serial: &str) {
     if serial.contains(':') {
-        r.line(Level::Warn, "transport", "Wi-Fi — expect occasional stutter");
+        r.line(
+            Level::Warn,
+            "transport",
+            "Wi-Fi — expect occasional stutter",
+        );
         r.hint("plug the USB cable in for steady latency; the daemon prefers it automatically");
     } else {
         r.line(Level::Ok, "transport", "USB");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn t076_forwarding_checks_exact_app_to_host_ports_and_hints_selected_tablet() {
+        let cfg = FileConfig {
+            video_port: 19000,
+            input_port: 19001,
+            ..Default::default()
+        };
+        let mut r = Report::new();
+        report_forwarding(
+            &mut r,
+            &cfg,
+            "TABLET",
+            "USB tcp:19000 tcp:19000\nUSB tcp:19001 tcp:19001\n",
+        );
+        assert_eq!(r.warnings, 2);
+        let hints = r.messages.borrow().join("\n");
+        assert!(hints.contains("adb -s TABLET reverse tcp:8890 tcp:19000"));
+        assert!(hints.contains("adb -s TABLET reverse tcp:8891 tcp:19001"));
+        let mut healthy = Report::new();
+        report_forwarding(
+            &mut healthy,
+            &cfg,
+            "TABLET",
+            "USB tcp:8890 tcp:19000\nUSB tcp:8891 tcp:19001\n",
+        );
+        assert_eq!(healthy.warnings, 0);
+    }
+
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[tokio::test]
+    async fn t023_missing_or_unloadable_helper_is_reported() {
+        let mut r = Report::new();
+        check_tools_with_helper(
+            &mut r,
+            &FileConfig::default(),
+            Path::new("/nonexistent-uscreen-test/evdi_helper"),
+        )
+        .await;
+        assert!(r
+            .messages
+            .borrow()
+            .iter()
+            .any(|m| m.contains("evdi_helper") && m.contains("could not execute")));
+    }
+
+    #[test]
+    fn t024_one_helper_per_tablet_is_healthy() {
+        let mut r = Report::new();
+        report_helpers(&mut r, &[11, 12], Some(10), 2);
+        assert_eq!(r.failures, 0);
+        report_helpers(&mut r, &[11, 12, 13], Some(10), 2);
+        assert_eq!(r.failures, 1);
+    }
+
+    #[test]
+    fn t025_auto_resolution_does_not_report_a_working_mode_as_corrupt() {
+        let mut r = Report::new();
+        let cfg = FileConfig {
+            auto_resolution: true,
+            ..Default::default()
+        };
+        report_output_mode(&mut r, &cfg, "DVI-I-1", 1920, 1080);
+        assert_eq!(r.failures, 0);
+        assert!(!r.messages.borrow().iter().any(|m| m.contains("skewed")));
+    }
+
+    #[tokio::test]
+    async fn t026_colour_queries_target_the_selected_tablet() {
+        let path = std::env::temp_dir().join(format!("uscreen-adb-colour-{}", std::process::id()));
+        std::fs::write(
+            &path,
+            "#!/bin/sh\n[ \"$1 $2\" = '-s TABLET' ] || exit 1\nprintf '%s' \"$7\"\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        for (namespace, key) in [
+            ("system", "blue_light_filter"),
+            ("system", "screen_mode_setting"),
+            ("secure", "refresh_rate_mode"),
+        ] {
+            assert_eq!(
+                tablet_setting(path.to_str().unwrap(), Some("TABLET"), namespace, key)
+                    .await
+                    .as_deref(),
+                Some(key)
+            );
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn t058_packaged_udev_hint_works_outside_a_source_checkout() {
+        let root = std::env::temp_dir().join(format!("uscreen-udev-doctor-{}", std::process::id()));
+        std::fs::create_dir_all(root.join("usr/lib/udev/rules.d")).unwrap();
+        std::fs::write(
+            root.join("usr/lib/udev/rules.d/60-uscreen-uinput.rules"),
+            "rule",
+        )
+        .unwrap();
+        let hint = uinput_hint(&root);
+        assert!(!hint.contains("packaging/"));
+        assert!(hint.contains("udevadm trigger"));
+        assert!(hint.contains("seat"));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn t060_missing_service_is_distinguished_from_disabled_service() {
+        let mut r = Report::new();
+        report_autostart(&mut r, "not-found", Some(String::new()));
+        let messages = r.messages.borrow().join("\n");
+        assert!(messages.contains("not installed"), "{messages}");
+        assert!(!messages.contains("enable --now"));
     }
 }
