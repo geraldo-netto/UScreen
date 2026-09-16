@@ -115,32 +115,36 @@ fn poll_status() -> Status {
         }
     }
 
-    // Not `adb get-state`: it fails outright as soon as two devices are
-    // reachable, which is the normal state with `adb tcpip` in use - the
-    // window would have said "no tablet" while the daemon was streaming.
     if let Ok(out) = Command::new("adb").args(["devices", "-l"]).output_bounded() {
-        let text = String::from_utf8_lossy(&out.stdout);
-        let ready: Vec<&str> = text
-            .lines()
-            .skip(1)
-            .filter(|l| l.split_whitespace().nth(1) == Some("device"))
-            .collect();
-        // Prefer the USB entry (no colon in the serial), like the daemon does.
-        if let Some(line) = ready
-            .iter()
-            .find(|l| !l.split_whitespace().next().unwrap_or("").contains(':'))
-            .or(ready.first())
-        {
-            s.tablet_connected = true;
-            if let Some(model) = line
-                .split_whitespace()
-                .find_map(|t| t.strip_prefix("model:"))
-            {
-                s.tablet_model = model.replace('_', " ");
-            }
-        }
+        apply_tablet_status(
+            &mut s,
+            &String::from_utf8_lossy(&out.stdout),
+            &uscreen_config::runtime::runtime_dir().join("sessions.json"),
+        );
     }
     s
+}
+
+fn apply_tablet_status(s: &mut Status, text: &str, sessions_path: &std::path::Path) {
+    let mut sessions = uscreen_config::runtime::load_sessions(sessions_path).unwrap_or_default();
+    sessions.sort_by_key(|session| session.instance);
+    let models: Vec<_> = sessions
+        .iter()
+        .filter_map(|session| {
+            let line = text.lines().find(|line| {
+                let mut fields = line.split_whitespace();
+                fields.next() == Some(session.serial.as_str()) && fields.next() == Some("device")
+            })?;
+            Some(
+                line.split_whitespace()
+                    .find_map(|field| field.strip_prefix("model:"))
+                    .unwrap_or(&session.serial)
+                    .replace('_', " "),
+            )
+        })
+        .collect();
+    s.tablet_connected = !models.is_empty();
+    s.tablet_model = models.join(", ");
 }
 
 /// One-time privileged setup via the desktop's graphical password prompt:
@@ -1090,6 +1094,55 @@ mod tests {
         );
         std::fs::remove_file(&path_bin).unwrap();
         assert_eq!(find_uscreen_bin_in(None, local.clone(), path), Some(local));
+    }
+
+    #[test]
+    fn t135_tablet_status_uses_live_assignments_and_all_models() {
+        let sandbox = Sandbox::new();
+        let executable = sandbox.0.join("uscreen");
+        std::os::unix::fs::symlink("/bin/sleep", &executable).unwrap();
+        let mut daemon = Command::new(&executable).arg("30").spawn().unwrap();
+        let pid = daemon.id();
+        let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).unwrap();
+        let start = stat
+            .rsplit_once(") ")
+            .unwrap()
+            .1
+            .split_whitespace()
+            .nth(19)
+            .unwrap();
+        let sessions = sandbox.0.join("sessions.json");
+        let devices = "List of devices attached\nPHONE device model:Charging_Phone\n192.0.2.10:5555 device model:WiFi_Tablet\nUSB_TABLET device model:Second_Tablet\n";
+        let snapshot = format!(
+            r#"{{"pid":{pid},"start_ticks":{start},"sessions":[{{"serial":"192.0.2.10:5555","instance":0,"video_port":19000,"input_port":20000}},{{"serial":"USB_TABLET","instance":1,"video_port":19002,"input_port":20002}}]}}"#
+        );
+        std::fs::write(&sessions, snapshot).unwrap();
+        let mut status = Status::default();
+        apply_tablet_status(&mut status, devices, &sessions);
+        // Reap before assertions so a failing regression leaves no test process.
+        daemon.kill().unwrap();
+        daemon.wait().unwrap();
+        assert!(status.tablet_connected);
+        assert_eq!(status.tablet_model, "WiFi Tablet, Second Tablet");
+        let mut stale = Status::default();
+        apply_tablet_status(&mut stale, devices, &sessions);
+        assert!(
+            !stale.tablet_connected,
+            "dead daemon ledger cannot claim active tablets"
+        );
+    }
+
+    #[test]
+    fn t135_missing_sessions_do_not_claim_a_charging_phone() {
+        let sandbox = Sandbox::new();
+        let mut status = Status::default();
+        apply_tablet_status(
+            &mut status,
+            "List of devices attached\nPHONE device model:Phone\n",
+            &sandbox.0.join("missing.json"),
+        );
+        assert!(!status.tablet_connected);
+        assert!(status.tablet_model.is_empty());
     }
 
     #[test]
