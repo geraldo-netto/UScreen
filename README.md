@@ -132,6 +132,8 @@ extended display, pressure but no tilt.
 
 Everything lives in `~/.config/uscreen/config.toml` and is reachable from
 `uscreen-gui`, the ⚙ sheet in the tablet app, the tray icon, or CLI flags.
+When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
+`$XDG_CONFIG_HOME/uscreen/config.toml`. Empty or relative values use the default.
 
 - **Graphics tablet mode** — flip *Graphics tablet* on the tablet: nothing is
   streamed, the pen drives your own screen, zero display latency. Switch back

@@ -231,8 +231,13 @@ pub fn spawn_reaped(command: &mut std::process::Command) -> std::io::Result<u32>
 }
 
 pub fn config_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_default();
-    PathBuf::from(home).join(".config/uscreen/config.toml")
+    let base = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|path| path.is_absolute())
+        .unwrap_or_else(|| {
+            PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
+        });
+    base.join("uscreen/config.toml")
 }
 
 impl FileConfig {
@@ -404,6 +409,62 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t140_xdg_config_isolation() {
+        if let Ok(mode) = std::env::var("USCREEN_T140_CHILD") {
+            if mode == "absolute" {
+                let expected = PathBuf::from(std::env::var_os("XDG_CONFIG_HOME").unwrap())
+                    .join("uscreen/config.toml");
+                assert_eq!(
+                    config_path(),
+                    expected,
+                    "config must stay inside test's XDG directory"
+                );
+                assert!(!FileConfig::load().check_updates);
+                FileConfig::update(|config| {
+                    config.fps = 30;
+                    Ok(())
+                })
+                .unwrap();
+                assert_eq!(FileConfig::load().fps, 30);
+            } else {
+                let expected = PathBuf::from(std::env::var_os("HOME").unwrap())
+                    .join(".config/uscreen/config.toml");
+                assert_eq!(config_path(), expected);
+            }
+            return;
+        }
+        let temp = tempfile::tempdir().unwrap();
+        std::fs::create_dir(temp.path().join("uscreen")).unwrap();
+        std::fs::write(
+            temp.path().join("uscreen/config.toml"),
+            "check_updates = false\n",
+        )
+        .unwrap();
+        for (mode, value) in [
+            ("absolute", temp.path()),
+            ("relative", Path::new("relative-config")),
+            ("empty", Path::new("")),
+        ] {
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "tests::t140_xdg_config_isolation", "--nocapture"])
+                .env("USCREEN_T140_CHILD", mode)
+                .env("XDG_CONFIG_HOME", value)
+                .output()
+                .unwrap();
+            assert!(
+                result.status.success(),
+                "{mode}: {}{}",
+                String::from_utf8_lossy(&result.stdout),
+                String::from_utf8_lossy(&result.stderr)
+            );
+        }
+        assert_eq!(
+            FileConfig::load_at(&temp.path().join("uscreen/config.toml")).fps,
+            30
+        );
+    }
 
     #[test]
     fn t137_partial_updates_preserve_invalid_existing_config() {
