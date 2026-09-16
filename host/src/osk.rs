@@ -23,6 +23,8 @@ const IFACE: &str = "org.kde.kwin.VirtualKeyboard";
 /// Only when explicitly asked for, rather than on touch input.
 const MODE_MANUAL: &str = "0";
 
+static KEYBOARD_OPERATION: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 fn state_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_default();
     PathBuf::from(home).join(".local/share/uscreen/osk-restore")
@@ -40,7 +42,7 @@ async fn set_mode(mode: &str) -> bool {
 }
 
 /// Turn the on-screen keyboard off, remembering how it was set.
-pub async fn disable() {
+async fn disable() {
     let path = state_path();
     // A state file already present means a previous run never restored. Keep
     // that value: it is the user's, whereas the current one is ours.
@@ -68,6 +70,11 @@ pub async fn disable() {
 
 /// Put the on-screen keyboard back the way the user had it.
 pub async fn restore() {
+    let _operation = KEYBOARD_OPERATION.lock().await;
+    restore_unlocked().await;
+}
+
+async fn restore_unlocked() {
     restore_from(&state_path(), |saved| async move { set_mode(&saved).await }).await;
 }
 
@@ -88,9 +95,109 @@ where
     }
 }
 
+/// Device counts can change while D-Bus is in flight. Serialize with shutdown
+/// restoration and reconcile again before releasing ownership of the keyboard.
+pub async fn sync_touch_state(devices: &std::sync::atomic::AtomicUsize) {
+    reconcile(devices, &KEYBOARD_OPERATION, |wanted| async move {
+        if wanted {
+            disable().await;
+        } else {
+            restore_unlocked().await;
+        }
+    })
+    .await;
+}
+
+async fn reconcile<F, Fut>(
+    devices: &std::sync::atomic::AtomicUsize,
+    serial: &tokio::sync::Mutex<()>,
+    mut apply: F,
+) where
+    F: FnMut(bool) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    let _operation = serial.lock().await;
+    loop {
+        let wanted = devices.load(std::sync::atomic::Ordering::SeqCst) > 0;
+        apply(wanted).await;
+        if wanted == (devices.load(std::sync::atomic::Ordering::SeqCst) > 0) {
+            break;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+    #[tokio::test]
+    async fn t148_detach_during_disable_reconciles_current_device_count() {
+        let devices = AtomicUsize::new(1);
+        let serial = tokio::sync::Mutex::new(());
+        let disabled = AtomicBool::new(false);
+        let started = tokio::sync::Notify::new();
+        let release = tokio::sync::Notify::new();
+        tokio::join!(
+            reconcile(&devices, &serial, async |wanted| {
+                if wanted {
+                    started.notify_one();
+                    release.notified().await;
+                }
+                disabled.store(wanted, Ordering::SeqCst);
+            }),
+            async {
+                started.notified().await;
+                devices.store(0, Ordering::SeqCst);
+                release.notify_one();
+            }
+        );
+        assert!(
+            !disabled.load(Ordering::SeqCst),
+            "T148 late suppression survived detach"
+        );
+    }
+
+    #[tokio::test]
+    async fn t148_concurrent_device_changes_serialize_keyboard_writes() {
+        let devices = AtomicUsize::new(1);
+        let serial = tokio::sync::Mutex::new(());
+        let release = tokio::sync::Notify::new();
+        let disabled = AtomicBool::new(false);
+        let calls = std::sync::Mutex::new(Vec::new());
+        let first = reconcile(&devices, &serial, async |wanted| {
+            calls.lock().unwrap().push(wanted);
+            if wanted {
+                release.notified().await;
+            }
+            disabled.store(wanted, Ordering::SeqCst);
+        });
+        tokio::pin!(first);
+        assert!(futures_util::poll!(&mut first).is_pending());
+        devices.store(0, Ordering::SeqCst);
+        let second = reconcile(&devices, &serial, async |wanted| {
+            calls.lock().unwrap().push(wanted);
+            disabled.store(wanted, Ordering::SeqCst);
+        });
+        tokio::pin!(second);
+        assert!(
+            futures_util::poll!(&mut second).is_pending(),
+            "T148 overlapping keyboard writes"
+        );
+        // Another tablet arrives before either operation finishes.
+        devices.store(1, Ordering::SeqCst);
+        release.notify_one();
+        tokio::join!(first, second);
+        assert!(disabled.load(Ordering::SeqCst));
+        assert_eq!(*calls.lock().unwrap(), [true, true]);
+        devices.store(0, Ordering::SeqCst);
+        reconcile(&devices, &serial, async |wanted| {
+            disabled.store(wanted, Ordering::SeqCst);
+        })
+        .await;
+        assert!(!disabled.load(Ordering::SeqCst));
+    }
+
     #[tokio::test]
     async fn t111_restore_retries_preserved_setting_until_confirmed() {
         let dir = tempfile::tempdir().unwrap();

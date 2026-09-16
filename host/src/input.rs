@@ -628,15 +628,13 @@ fn create_device(
 static TOUCH_DEVICES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
 async fn osk_touch_device_added() {
-    if TOUCH_DEVICES.fetch_add(1, Ordering::SeqCst) == 0 {
-        crate::osk::disable().await;
-    }
+    TOUCH_DEVICES.fetch_add(1, Ordering::SeqCst);
+    crate::osk::sync_touch_state(&TOUCH_DEVICES).await;
 }
 
 async fn osk_touch_device_removed() {
-    if TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst) == 1 {
-        crate::osk::restore().await;
-    }
+    TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst);
+    crate::osk::sync_touch_state(&TOUCH_DEVICES).await;
 }
 
 /// Own device lifetime even when the watcher is cancelled inside an await.
@@ -650,10 +648,11 @@ impl Drop for DeviceOwner {
             devices.release_all();
             *devices = InjectDevices::empty();
         }
-        if self.touch_registered && TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst) == 1 {
+        if self.touch_registered {
+            TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst);
             // Drop cannot await; recovery state remains on disk if runtime shutdown
             // prevents this final restoration from completing.
-            tokio::spawn(crate::osk::restore());
+            tokio::spawn(crate::osk::sync_touch_state(&TOUCH_DEVICES));
         }
     }
 }
