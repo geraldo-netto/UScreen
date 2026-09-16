@@ -23,6 +23,7 @@ class TouchCapture {
     @Volatile var connectionGeneration = 0L
         private set
     private var connectionWanted = false
+    private val touchSlots = mutableMapOf<Int, Int>()
     @Volatile private var isConnected = false
     private var reconnectJob: Job? = null
     private var surfaceView: SurfaceView? = null
@@ -114,7 +115,10 @@ class TouchCapture {
                 // ignored, this channel is otherwise ours to talk on.
                 try {
                     val o = JSONObject(text)
-                    if (o.has("touch")) touchEnabled = o.getBoolean("touch")
+                    if (o.has("touch")) {
+                        touchEnabled = o.getBoolean("touch")
+                        if (!touchEnabled) touchSlots.clear()
+                    }
                     if (o.has("pen")) penEnabled = o.getBoolean("pen")
                     if (o.has("codec")) {
                         onCodecKnown?.invoke(o.getString("codec"))
@@ -215,6 +219,7 @@ class TouchCapture {
 
     @Synchronized private fun connectWebSocket() {
         connectionGeneration++
+        touchSlots.clear()
         touchEnabled = true
         penEnabled = true
         val previous = webSocket
@@ -278,7 +283,7 @@ class TouchCapture {
         }
     }
 
-    fun handleMotionEvent(event: MotionEvent, width: Int, height: Int): Boolean {
+    @Synchronized fun handleMotionEvent(event: MotionEvent, width: Int, height: Int): Boolean {
         if (!isConnected || (!touchEnabled && !penEnabled)) return false
 
         val vw = width.coerceAtLeast(1).toFloat()
@@ -288,6 +293,7 @@ class TouchCapture {
         val actionIndex = event.actionIndex
         val maskedAction = event.actionMasked
 
+        if (maskedAction == MotionEvent.ACTION_DOWN) releaseTouches()
         when (maskedAction) {
             MotionEvent.ACTION_DOWN,
             MotionEvent.ACTION_POINTER_DOWN -> {
@@ -300,10 +306,7 @@ class TouchCapture {
                 if (isPenLike(event, actionIndex)) {
                     sendPenEvent(event, actionIndex, 0, vw, vh)
                 } else {
-                    sendTouch(event.getX(actionIndex) / vw,
-                        event.getY(actionIndex) / vh,
-                        event.getPressure(actionIndex).toDouble(),
-                        0, slotOf(event, actionIndex))
+                    sendFinger(event, actionIndex, 0, vw, vh)
                 }
             }
 
@@ -329,10 +332,7 @@ class TouchCapture {
                         }
                         sendPenEvent(event, i, 2, vw, vh)
                     } else {
-                        sendTouch(event.getX(i) / vw,
-                            event.getY(i) / vh,
-                            event.getPressure(i).toDouble(),
-                            2, slotOf(event, i))
+                        sendFinger(event, i, 2, vw, vh)
                     }
                 }
             }
@@ -345,9 +345,7 @@ class TouchCapture {
                 if (isPenLike(event, actionIndex)) {
                     sendPenEvent(event, actionIndex, 1, vw, vh)
                 } else {
-                    sendTouch(event.getX(actionIndex) / vw,
-                        event.getY(actionIndex) / vh,
-                        0.0, 1, slotOf(event, actionIndex))
+                    sendFinger(event, actionIndex, 1, vw, vh)
                 }
             }
 
@@ -361,35 +359,32 @@ class TouchCapture {
                     if (!isPenLike(event, i) && !touchEnabled) continue
                     if (isPenLike(event, i)) {
                         sendPenEvent(event, i, 1, vw, vh)
-                    } else {
-                        sendTouch(event.getX(i) / vw,
-                            event.getY(i) / vh,
-                            0.0, 1, slotOf(event, i))
                     }
                 }
+                releaseTouches()
             }
         }
         return true
     }
 
-    /**
-     * Multitouch slot for a pointer, derived from its stable pointer *id*.
-     *
-     * The pointer *index* must not be used here: Android repacks indices
-     * whenever a finger lifts, so with two fingers down, lifting the first
-     * renumbers the second from index 1 to index 0. The host would then see
-     * slot 1 released while slot 0 keeps moving under a different finger, and
-     * pinch and two-finger scroll come apart. The pointer id stays with the
-     * finger for the whole gesture.
-     *
-     * Clamped to the 10 slots the uinput touchscreen declares.
-     */
-    private fun slotOf(event: MotionEvent, index: Int): Int {
-        return try {
-            event.getPointerId(index).coerceIn(0, 9)
-        } catch (_: Exception) {
-            index.coerceIn(0, 9)
-        }
+    // Android pointer IDs can be sparse and exceed the host's 10 slots.
+    // Allocate only on DOWN and retain the assignment until UP/CANCEL.
+    private fun sendFinger(event: MotionEvent, index: Int, action: Int, vw: Float, vh: Float) {
+        if (!touchEnabled) return
+        val id = event.getPointerId(index)
+        val slot = touchSlots[id] ?: if (action == 0) {
+            val free = (0..9).firstOrNull { it !in touchSlots.values } ?: return
+            touchSlots[id] = free
+            free
+        } else return
+        sendTouch(event.getX(index) / vw, event.getY(index) / vh,
+            if (action == 1) 0.0 else event.getPressure(index).toDouble(), action, slot)
+        if (action == 1) touchSlots.remove(id)
+    }
+
+    private fun releaseTouches() {
+        for (slot in touchSlots.values) sendTouch(0f, 0f, 0.0, 1, slot)
+        touchSlots.clear()
     }
 
     /** Stylus or its eraser end — both drive the pen/tablet device. */
@@ -606,6 +601,7 @@ class TouchCapture {
 
     @Synchronized fun disconnect() {
         connectionWanted = false
+        touchSlots.clear()
         connectionGeneration++
         reconnectJob?.cancel()
         val previous = webSocket

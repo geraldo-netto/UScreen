@@ -179,6 +179,39 @@ class RegressionTest {
         } finally { set(activity, "started", false); controller.destroy() }
     }
 
+    @Test fun t087_sparsePointerIdsKeepDistinctSlotsAcrossReordering() {
+        val capture = TouchCapture()
+        val socket = Socket()
+        set(capture, "webSocket", socket)
+        set(capture, "isConnected", true)
+        fun send(action: Int, vararg ids: Int): List<org.json.JSONObject> {
+            socket.messages.clear()
+            val e = MotionEvent.obtain(0, 10, action, ids.size,
+                ids.map { MotionEvent.PointerProperties().apply { id = it; toolType = MotionEvent.TOOL_TYPE_FINGER } }.toTypedArray(),
+                ids.map { MotionEvent.PointerCoords().apply { x = it.toFloat(); y = 40f; pressure = 0.5f } }.toTypedArray(),
+                0, 0, 1f, 1f, 0, 0, 0, 0)
+            try { capture.handleMotionEvent(e, 100, 100) } finally { e.recycle() }
+            return socket.messages.map { org.json.JSONObject(it) }
+        }
+        val first = send(MotionEvent.ACTION_DOWN, 10).single().getInt("slot")
+        val second = send(MotionEvent.ACTION_POINTER_DOWN or (1 shl 8), 10, 11).single().getInt("slot")
+        assertNotEquals(first, second)
+        assertEquals(listOf(second, first), send(MotionEvent.ACTION_MOVE, 11, 10).map { it.getInt("slot") })
+        assertEquals(first, send(MotionEvent.ACTION_POINTER_UP or (1 shl 8), 11, 10).single().getInt("slot"))
+        assertEquals(first, send(MotionEvent.ACTION_POINTER_DOWN or (1 shl 8), 11, 31).single().getInt("slot"))
+        assertEquals(setOf(first, second), send(MotionEvent.ACTION_CANCEL, 11, 31).map { it.getInt("slot") }.toSet())
+        assertEquals(first, send(MotionEvent.ACTION_DOWN, 7).single().getInt("slot"))
+        send(MotionEvent.ACTION_CANCEL, 7)
+        val allocated = mutableSetOf<Int>()
+        for (i in 0..10) {
+            val packets = send(if (i == 0) MotionEvent.ACTION_DOWN else MotionEvent.ACTION_POINTER_DOWN or (i shl 8), *(10..(10 + i)).toList().toIntArray())
+            if (i < 10) assertTrue(allocated.add(packets.single().getInt("slot")))
+            else assertTrue("Eleventh contact must not alias an active slot", packets.isEmpty())
+        }
+        assertEquals((0..9).toSet(), allocated)
+        assertEquals(10, send(MotionEvent.ACTION_CANCEL, *(10..20).toList().toIntArray()).size)
+    }
+
     private class Socket : WebSocket {
         val messages = mutableListOf<String>()
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()
