@@ -952,432 +952,439 @@ impl CaptureManager {
     pub async fn stream_frames(
         &mut self,
         tx: broadcast::Sender<VideoPacket>,
-        mut settings_rx: watch::Receiver<EncoderSettings>,
-        mut display_rx: watch::Receiver<bool>,
-        mut shutdown_rx: watch::Receiver<bool>,
+        settings_rx: watch::Receiver<EncoderSettings>,
+        display_rx: watch::Receiver<bool>,
+        shutdown_rx: watch::Receiver<bool>,
     ) -> Result<()> {
-        // Exponential backoff: a crash-looping helper floods KWin with
-        // display hotplug events, which can wedge the whole desktop.
-        let mut backoff_ms: u64 = RECONNECT_DELAY_MS;
-        let mut explained_evdi = false;
-        let mut pipeline_started_at = Instant::now();
-        let mut mode_rx = self.mode_rx.clone();
-        let mut stream_rx = self.stream_rx.clone();
-        // Frame size the running encoder was configured for, so a later mode
-        // change can be detected as a mismatch rather than silently skewing.
-        let mut encoder_mode: Option<(u32, u32)> = None;
-
+        let mut run = CaptureRun {
+            settings_rx,
+            display_rx,
+            shutdown_rx,
+            mode_rx: self.mode_rx.clone(),
+            stream_rx: self.stream_rx.clone(),
+            backoff_ms: RECONNECT_DELAY_MS,
+            explained_evdi: false,
+            pipeline_started_at: Instant::now(),
+            encoder_mode: None,
+        };
         loop {
-            if *shutdown_rx.borrow()
-                || shutdown_rx.has_changed().is_err()
-                || display_rx.has_changed().is_err()
-            {
+            if run.stopped() {
                 self.shutdown().await;
                 return Ok(());
             }
-            // Apply the latest runtime settings before (re)starting anything
-            {
-                let s = settings_rx.borrow_and_update().clone();
-                // The physical size is baked into the EDID alongside the mode,
-                // so a change there needs a fresh helper too.
-                let needs_helper_restart = (s.fps != self.config.fps
-                    || s.width != self.config.width
-                    || s.height != self.config.height
-                    || s.width_mm != self.config.width_mm
-                    || s.height_mm != self.config.height_mm
-                    || s.stream_scale != self.config.stream_scale)
-                    && self.helper_child.is_some();
-                if needs_helper_restart {
-                    // fps is baked into the helper's pacing, and the
-                    // resolution into the EDID — restart with a fresh EDID
-                    info!(
-                        "Display mode change: {}x{}@{} → {}x{}@{}",
-                        self.config.width,
-                        self.config.height,
-                        self.config.fps,
-                        s.width,
-                        s.height,
-                        s.fps
-                    );
-                    if let Some(mut h) = self.helper_child.take() {
-                        Self::terminate(&mut h, "evdi_helper").await;
-                    }
-                    // Give the compositor a moment to process the unplug
-                    Self::while_active(
-                        &mut display_rx,
-                        &mut shutdown_rx,
-                        tokio::time::sleep(std::time::Duration::from_millis(500)),
-                    )
-                    .await;
-                }
-                self.config.encoder = s.encoder;
-                self.config.fps = s.fps;
-                self.config.bitrate = s.bitrate;
-                self.config.width = s.width;
-                self.config.height = s.height;
-                self.config.quality = s.quality;
-                self.config.width_mm = s.width_mm;
-                self.config.height_mm = s.height_mm;
-                self.config.stream_scale = s.stream_scale;
-            }
-
-            // No tablet being used as a screen: no helper, and so no EVDI
-            // connector for the desktop to see. Keeping the helper up "just
-            // in case" put a connected-but-disabled monitor on the desktop
-            // from the moment the daemon started, and KDE remembers layouts
-            // by output — one user had set "show only on the UScreen screen"
-            // once, and from then on every boot came up with the real screens
-            // black and no tablet in sight (#12). Starting the helper only
-            // while a tablet is attached makes the virtual monitor appear and
-            // disappear exactly like a cable being plugged in and out.
-            if !*display_rx.borrow() {
-                if let Some(mut h) = self.helper_child.take() {
-                    info!("No tablet is a screen — disconnecting the virtual display");
-                    Self::terminate(&mut h, "evdi_helper").await;
-                }
-                if let Some(mut e) = self.encoder_child.take() {
-                    let _ = e.start_kill();
-                }
-                encoder_mode = None;
-                tokio::select! {
-                    _ = display_rx.changed() => {}
-                    _ = settings_rx.changed() => {}
-                    _ = shutdown_rx.changed() => {
-                        self.shutdown().await;
-                        return Ok(());
-                    }
+            self.apply_stream_settings(&mut run).await;
+            if !*run.display_rx.borrow() {
+                if self.idle_until_screen_change(&mut run).await {
+                    return Ok(());
                 }
                 continue;
             }
-
-            // Start evdi-helper if not running
-            if self.helper_child.is_none() {
-                let Some(result) =
-                    Self::while_active(&mut display_rx, &mut shutdown_rx, self.start_helper())
-                        .await
-                else {
-                    continue;
-                };
-                if let Err(e) = result {
-                    error!(
-                        "Failed to start helper: {}. Retrying in {}ms...",
-                        e, backoff_ms
-                    );
-                    // Say why, once, instead of repeating an opaque line
-                    // forever. Retrying is right for a transient failure and
-                    // useless for a permissions problem, and the two look
-                    // identical from here without asking.
-                    if !explained_evdi {
-                        if let Some(reason) = evdi_setup_problem() {
-                            explained_evdi = true;
-                            error!("{}", reason);
-                        }
-                    }
-                    Self::while_active(
-                        &mut display_rx,
-                        &mut shutdown_rx,
-                        tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
-                    )
-                    .await;
-                    backoff_ms = (backoff_ms * 2).min(30_000);
-                    continue;
-                }
-                explained_evdi = false;
-                pipeline_started_at = Instant::now();
-            }
-
-            // Enable the display via kscreen-doctor so KWin actively renders
-            // to it (which is what makes evdi_grab_pixels produce anything).
-            //
-            // Only while a tablet is attached and being used as a screen:
-            // enabling it unconditionally puts a monitor on the desktop that
-            // nobody can see, and KDE happily moves windows onto it. The
-            // display_rx branch below enables it the moment that changes.
-            if Self::while_active(
-                &mut display_rx,
-                &mut shutdown_rx,
-                Self::enable_evdi_display(self.helper_card, self.config.position),
-            )
-            .await
-            .is_none()
-            {
+            if !self.prepare_capture_pipeline(&mut run).await {
                 continue;
             }
-
-            // Wait (briefly) for the helper to report the mode the compositor
-            // settled on before configuring ffmpeg's frame size. Guessing here
-            // and getting it wrong yields a skewed picture for the whole
-            // session, so a short wait is cheap insurance.
-            //
-            // Skipped when nothing is using the virtual output: it is
-            // disabled then, so no mode is ever reported and the wait would
-            // just add three seconds and a warning to every daemon start.
-            if Self::while_active(&mut display_rx, &mut shutdown_rx, self.wait_stream_size())
-                .await
-                .is_none()
-            {
-                continue;
-            }
-            mode_rx.borrow_and_update();
-            stream_rx.borrow_and_update();
-
-            // Start encoder if not running
-            if self.encoder_child.is_none() {
-                let Some(result) = Self::while_active(
-                    &mut display_rx,
-                    &mut shutdown_rx,
-                    self.start_session_encoder(),
-                )
-                .await
-                else {
-                    continue;
-                };
-                match result {
-                    Ok(mode) => encoder_mode = Some(mode),
-                    Err(e) => {
-                        error!(
-                            "Failed to start encoder: {}. Retrying in {}ms...",
-                            e, backoff_ms
-                        );
-                        Self::while_active(
-                            &mut display_rx,
-                            &mut shutdown_rx,
-                            tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
-                        )
-                        .await;
-                        backoff_ms = (backoff_ms * 2).min(30_000);
-                        continue;
-                    }
-                }
-            }
-
-            // The blocking encode loop cannot be aborted, so it is asked to
-            // stop through a flag; the helper's keepalive guarantees it wakes
-            // from the FIFO read a few times a second to notice.
-            #[cfg(feature = "inproc-encoder")]
-            let stop_encode = Arc::new(std::sync::atomic::AtomicBool::new(false));
-
-            // Both encoder paths are driven as one task returning the same
-            // type, because tokio::select! cannot take #[cfg] on its branches
-            // and duplicating every arm to satisfy that would be worse.
-            let mut encode_task: tokio::task::JoinHandle<Result<()>> = {
-                #[cfg(not(feature = "inproc-encoder"))]
-                {
-                    let stdout = self
-                        .encoder_child
-                        .as_mut()
-                        .unwrap()
-                        .stdout
-                        .take()
-                        .ok_or_else(|| anyhow::anyhow!("Encoder has no stdout"))?;
-                    let (tx2, cc, lat) =
-                        (tx.clone(), self.codec_config.clone(), self.latency.clone());
-                    let codec = Codec::from_encoder(&self.config.encoder);
-                    tokio::spawn(async move { Self::read_loop(stdout, tx2, cc, lat, codec).await })
-                }
-                #[cfg(feature = "inproc-encoder")]
-                {
-                    let (w, h) = encoder_mode.expect("encoder size was selected before starting");
-                    let (name, fps, bitrate, quality) = (
-                        self.config.encoder.clone(),
-                        self.config.fps,
-                        self.config.bitrate,
-                        self.config.quality,
-                    );
-                    // The in-process encoder feeds libavcodec NV12 straight
-                    // from the FIFO, with no conversion step to hang 10-bit
-                    // on. Say so rather than letting the setting quietly do
-                    // nothing: a setting that is ignored in silence is worse
-                    // than one that is refused out loud.
-                    if self.config.ten_bit {
-                        warn!(
-                            "10-bit is not supported by the in-process encoder — \
-                             encoding 8-bit. Build without --features inproc-encoder for 10-bit."
-                        );
-                    }
-                    // Everything the blocking task needs is copied out first:
-                    // the closure is 'static and must not borrow self.
-                    let fifo = fifo_path_for(self.config.instance);
-                    let (tx2, cc, idr, stopc, lat) = (
-                        tx.clone(),
-                        self.codec_config.clone(),
-                        self.idr_wanted.clone(),
-                        stop_encode.clone(),
-                        self.latency.clone(),
-                    );
-                    tokio::task::spawn_blocking(move || {
-                        crate::encoder::run(
-                            &fifo, &name, w, h, fps, bitrate, quality, tx2, cc, idr, stopc, lat,
-                        )
-                    })
-                }
+            let Some(changes) = self.run_encoder_session(&tx, &mut run).await? else {
+                return Ok(());
             };
+            run.adjust_backoff(changes);
+            self.finish_encoder_session(changes, &mut run).await;
+        }
+    }
 
-            let mut settings_changed = false;
-            // Distinct from `settings_changed`: the mode moved under us, so the
-            // encoder must be rebuilt but the helper and the virtual display
-            // are fine and must not be torn down.
-            let mut mode_changed = false;
-            // The tablet stopped being a screen: a clean stop, not a crash,
-            // so no backoff and no wait before the outer loop parks itself.
-            let mut display_dropped = false;
-            let card = self.helper_card;
+    fn helper_settings_changed(&self, settings: &EncoderSettings) -> bool {
+        settings.fps != self.config.fps
+            || settings.width != self.config.width
+            || settings.height != self.config.height
+            || settings.width_mm != self.config.width_mm
+            || settings.height_mm != self.config.height_mm
+            || settings.stream_scale != self.config.stream_scale
+    }
 
-            // Events that need no restart at all send us back here without
-            // rebuilding the encoder, which now owns the stream and must not be
-            // torn down for something spurious.
-            #[allow(unused_labels)]
-            'session: loop {
-                let mut resume_same_encoder = false;
-                #[cfg(feature = "inproc-encoder")]
-                let mut encode_finished = false;
-                tokio::select! {
-                    status = async {
-                        match self.helper_child.as_mut() {
-                            Some(helper) => helper.wait().await,
-                            None => std::future::pending().await,
+    async fn apply_stream_settings(&mut self, run: &mut CaptureRun) {
+        let s = run.settings_rx.borrow_and_update().clone();
+        // The physical size is baked into the EDID alongside the mode,
+        // so a change there needs a fresh helper too.
+        let needs_helper_restart = self.helper_settings_changed(&s) && self.helper_child.is_some();
+        if needs_helper_restart {
+            // fps is baked into the helper's pacing, and the
+            // resolution into the EDID — restart with a fresh EDID
+            info!(
+                "Display mode change: {}x{}@{} → {}x{}@{}",
+                self.config.width, self.config.height, self.config.fps, s.width, s.height, s.fps
+            );
+            if let Some(mut h) = self.helper_child.take() {
+                Self::terminate(&mut h, "evdi_helper").await;
+            }
+            // Give the compositor a moment to process the unplug
+            Self::while_active(
+                &mut run.display_rx,
+                &mut run.shutdown_rx,
+                tokio::time::sleep(std::time::Duration::from_millis(500)),
+            )
+            .await;
+        }
+        self.config.encoder = s.encoder;
+        self.config.fps = s.fps;
+        self.config.bitrate = s.bitrate;
+        self.config.width = s.width;
+        self.config.height = s.height;
+        self.config.quality = s.quality;
+        self.config.width_mm = s.width_mm;
+        self.config.height_mm = s.height_mm;
+        self.config.stream_scale = s.stream_scale;
+    }
+
+    /// Keep the virtual monitor disconnected until a tablet uses it as a screen.
+    async fn idle_until_screen_change(&mut self, run: &mut CaptureRun) -> bool {
+        if let Some(mut h) = self.helper_child.take() {
+            info!("No tablet is a screen — disconnecting the virtual display");
+            Self::terminate(&mut h, "evdi_helper").await;
+        }
+        if let Some(mut e) = self.encoder_child.take() {
+            let _ = e.start_kill();
+        }
+        run.encoder_mode = None;
+        tokio::select! {
+            _ = run.display_rx.changed() => {}
+            _ = run.settings_rx.changed() => {}
+            _ = run.shutdown_rx.changed() => {
+                self.shutdown().await;
+                return true;
+            }
+        }
+        false
+    }
+
+    async fn ensure_capture_helper(&mut self, run: &mut CaptureRun) -> bool {
+        if self.helper_child.is_some() {
+            return true;
+        }
+        let Some(result) = Self::while_active(
+            &mut run.display_rx,
+            &mut run.shutdown_rx,
+            self.start_helper(),
+        )
+        .await
+        else {
+            return false;
+        };
+        if let Err(e) = result {
+            error!(
+                "Failed to start helper: {}. Retrying in {}ms...",
+                e, run.backoff_ms
+            );
+            // Say why, once, instead of repeating an opaque line
+            // forever. Retrying is right for a transient failure and
+            // useless for a permissions problem, and the two look
+            // identical from here without asking.
+            run.explain_evdi_failure();
+            run.back_off().await;
+            return false;
+        }
+        run.explained_evdi = false;
+        run.pipeline_started_at = Instant::now();
+        true
+    }
+
+    async fn prepare_capture_pipeline(&mut self, run: &mut CaptureRun) -> bool {
+        if !self.ensure_capture_helper(run).await {
+            return false;
+        }
+        // Enable the display via kscreen-doctor so KWin actively renders
+        // to it (which is what makes evdi_grab_pixels produce anything).
+        //
+        // Only while a tablet is attached and being used as a screen:
+        // enabling it unconditionally puts a monitor on the desktop that
+        // nobody can see, and KDE happily moves windows onto it. The
+        // run.display_rx branch below enables it the moment that changes.
+        if Self::while_active(
+            &mut run.display_rx,
+            &mut run.shutdown_rx,
+            Self::enable_evdi_display(self.helper_card, self.config.position),
+        )
+        .await
+        .is_none()
+        {
+            return false;
+        }
+
+        // Wait (briefly) for the helper to report the mode the compositor
+        // settled on before configuring ffmpeg's frame size. Guessing here
+        // and getting it wrong yields a skewed picture for the whole
+        // session, so a short wait is cheap insurance.
+        //
+        // Skipped when nothing is using the virtual output: it is
+        // disabled then, so no mode is ever reported and the wait would
+        // just add three seconds and a warning to every daemon start.
+        if Self::while_active(
+            &mut run.display_rx,
+            &mut run.shutdown_rx,
+            self.wait_stream_size(),
+        )
+        .await
+        .is_none()
+        {
+            return false;
+        }
+        run.mode_rx.borrow_and_update();
+        run.stream_rx.borrow_and_update();
+
+        self.ensure_session_encoder(run).await
+    }
+
+    async fn ensure_session_encoder(&mut self, run: &mut CaptureRun) -> bool {
+        if self.encoder_child.is_some() {
+            return true;
+        }
+        let Some(result) = Self::while_active(
+            &mut run.display_rx,
+            &mut run.shutdown_rx,
+            self.start_session_encoder(),
+        )
+        .await
+        else {
+            return false;
+        };
+        match result {
+            Ok(mode) => run.encoder_mode = Some(mode),
+            Err(e) => {
+                error!(
+                    "Failed to start encoder: {}. Retrying in {}ms...",
+                    e, run.backoff_ms
+                );
+                run.back_off().await;
+                return false;
+            }
+        }
+        true
+    }
+
+    async fn run_encoder_session(
+        &mut self,
+        tx: &broadcast::Sender<VideoPacket>,
+        run: &mut CaptureRun,
+    ) -> Result<Option<SessionChanges>> {
+        // The blocking encode loop cannot be aborted, so it is asked to
+        // stop through a flag; the helper's keepalive guarantees it wakes
+        // from the FIFO read a few times a second to notice.
+        #[cfg(feature = "inproc-encoder")]
+        let stop_encode = Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+        // Both encoder paths are driven as one task returning the same
+        // type, because tokio::select! cannot take #[cfg] on its branches
+        // and duplicating every arm to satisfy that would be worse.
+        let mut encode_task: tokio::task::JoinHandle<Result<()>> = {
+            #[cfg(not(feature = "inproc-encoder"))]
+            {
+                let stdout = self
+                    .encoder_child
+                    .as_mut()
+                    .unwrap()
+                    .stdout
+                    .take()
+                    .ok_or_else(|| anyhow::anyhow!("Encoder has no stdout"))?;
+                let (tx2, cc, lat) = (tx.clone(), self.codec_config.clone(), self.latency.clone());
+                let codec = Codec::from_encoder(&self.config.encoder);
+                tokio::spawn(async move { Self::read_loop(stdout, tx2, cc, lat, codec).await })
+            }
+            #[cfg(feature = "inproc-encoder")]
+            {
+                let (w, h) = run
+                    .encoder_mode
+                    .expect("encoder size was selected before starting");
+                let (name, fps, bitrate, quality) = (
+                    self.config.encoder.clone(),
+                    self.config.fps,
+                    self.config.bitrate,
+                    self.config.quality,
+                );
+                // The in-process encoder feeds libavcodec NV12 straight
+                // from the FIFO, with no conversion step to hang 10-bit
+                // on. Say so rather than letting the setting quietly do
+                // nothing: a setting that is ignored in silence is worse
+                // than one that is refused out loud.
+                if self.config.ten_bit {
+                    warn!(
+                        "10-bit is not supported by the in-process encoder — \
+                         encoding 8-bit. Build without --features inproc-encoder for 10-bit."
+                    );
+                }
+                // Everything the blocking task needs is copied out first:
+                // the closure is 'static and must not borrow self.
+                let fifo = fifo_path_for(self.config.instance);
+                let (tx2, cc, idr, stopc, lat) = (
+                    tx.clone(),
+                    self.codec_config.clone(),
+                    self.idr_wanted.clone(),
+                    stop_encode.clone(),
+                    self.latency.clone(),
+                );
+                tokio::task::spawn_blocking(move || {
+                    crate::encoder::run(
+                        &fifo, &name, w, h, fps, bitrate, quality, tx2, cc, idr, stopc, lat,
+                    )
+                })
+            }
+        };
+
+        let mut settings_changed = false;
+        // Distinct from `settings_changed`: the mode moved under us, so the
+        // encoder must be rebuilt but the helper and the virtual display
+        // are fine and must not be torn down.
+        let mut mode_changed = false;
+        // The tablet stopped being a screen: a clean stop, not a crash,
+        // so no backoff and no wait before the outer loop parks itself.
+        let mut display_dropped = false;
+        let card = self.helper_card;
+
+        // Events that need no restart at all send us back here without
+        // rebuilding the encoder, which now owns the stream and must not be
+        // torn down for something spurious.
+        #[allow(unused_labels)]
+        'session: loop {
+            let mut resume_same_encoder = false;
+            #[cfg(feature = "inproc-encoder")]
+            let mut encode_finished = false;
+            tokio::select! {
+                status = async {
+                    match self.helper_child.as_mut() {
+                        Some(helper) => helper.wait().await,
+                        None => std::future::pending().await,
+                    }
+                } => {
+                    warn!("Capture helper exited: {:?}. Restarting...", status);
+                }
+                joined = &mut encode_task => {
+                    #[cfg(feature = "inproc-encoder")]
+                    { encode_finished = true; }
+                    match joined {
+                        Ok(Ok(_)) => info!("Encoder finished"),
+                        Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
+                        Err(e) => warn!("Encoder task failed: {}. Restarting...", e),
+                    }
+                }
+                _ = run.settings_rx.changed() => {
+                    info!("Settings changed — restarting encoder");
+                    settings_changed = true;
+                }
+                _ = run.stream_rx.changed() => {
+                    let now = self.active_mode();
+                    if Some(now) == run.encoder_mode {
+                        resume_same_encoder = true;
+                    } else {
+                        info!("Stream size is now {}x{} — restarting encoder", now.0, now.1);
+                        mode_changed = true;
+                    }
+                }
+                _ = run.mode_rx.changed() => {
+                    let now = self.active_mode();
+                    if Some(now) == run.encoder_mode {
+                        // KWin re-applying the same mode. Nothing to do.
+                        resume_same_encoder = true;
+                    } else {
+                        info!(
+                            "Virtual output changed to {}x{} — restarting encoder to match",
+                            now.0, now.1
+                        );
+                        mode_changed = true;
+                    }
+                }
+                _ = run.display_rx.changed() => {
+                    // The tablet stopped being a screen — either unplugged, or
+                    // switched to pen-only. Neither must leave a monitor behind
+                    // that nobody can see, with windows stranded on it. The
+                    // encoder itself is unaffected either way.
+                    let wanted = *run.display_rx.borrow();
+                    if wanted {
+                        info!("Tablet is a screen — enabling the virtual display");
+                        Self::while_active(&mut run.display_rx, &mut run.shutdown_rx,
+                            Self::enable_evdi_display(card, self.config.position)).await;
+                        // Leave cancellation pending for the session select.
+                        if *run.shutdown_rx.borrow() || run.shutdown_rx.has_changed().is_err() {
+                            #[cfg(feature = "inproc-encoder")]
+                            stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
+                            encode_task.abort();
+                            self.shutdown().await;
+                            return Ok(None);
                         }
-                    } => {
-                        warn!("Capture helper exited: {:?}. Restarting...", status);
-                    }
-                    joined = &mut encode_task => {
-                        #[cfg(feature = "inproc-encoder")]
-                        { encode_finished = true; }
-                        match joined {
-                            Ok(Ok(_)) => info!("Encoder finished"),
-                            Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
-                            Err(e) => warn!("Encoder task failed: {}. Restarting...", e),
-                        }
-                    }
-                    _ = settings_rx.changed() => {
-                        info!("Settings changed — restarting encoder");
-                        settings_changed = true;
-                    }
-                    _ = stream_rx.changed() => {
-                        let now = self.active_mode();
-                        if Some(now) == encoder_mode {
-                            resume_same_encoder = true;
-                        } else {
-                            info!("Stream size is now {}x{} — restarting encoder", now.0, now.1);
-                            mode_changed = true;
-                        }
-                    }
-                    _ = mode_rx.changed() => {
-                        let now = self.active_mode();
-                        if Some(now) == encoder_mode {
-                            // KWin re-applying the same mode. Nothing to do.
-                            resume_same_encoder = true;
-                        } else {
-                            info!(
-                                "Virtual output changed to {}x{} — restarting encoder to match",
-                                now.0, now.1
-                            );
-                            mode_changed = true;
-                        }
-                    }
-                    _ = display_rx.changed() => {
-                        // The tablet stopped being a screen — either unplugged, or
-                        // switched to pen-only. Neither must leave a monitor behind
-                        // that nobody can see, with windows stranded on it. The
-                        // encoder itself is unaffected either way.
-                        let wanted = *display_rx.borrow();
-                        if wanted {
-                            info!("Tablet is a screen — enabling the virtual display");
-                            Self::while_active(&mut display_rx, &mut shutdown_rx,
-                                Self::enable_evdi_display(card, self.config.position)).await;
-                            // Leave cancellation pending for the session select.
-                            if *shutdown_rx.borrow() || shutdown_rx.has_changed().is_err() {
-                                #[cfg(feature = "inproc-encoder")]
-                                stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
-                                encode_task.abort();
-                                self.shutdown().await;
-                                return Ok(());
-                            }
-                            if !*display_rx.borrow() || display_rx.has_changed().is_err() {
-                                display_dropped = true;
-                            } else {
-                                resume_same_encoder = true;
-                            }
-                        } else {
-                            // Disable first so KWin moves the windows off it, then
-                            // fall through to the teardown: the helper goes away
-                            // with the session, and the top of the outer loop
-                            // waits for a tablet before bringing anything back.
-                            info!("Tablet is not a screen — disabling the virtual display");
-                            let _ = tokio::time::timeout(std::time::Duration::from_millis(500),
-                                Self::disable_evdi_display(card)).await;
+                        if !*run.display_rx.borrow() || run.display_rx.has_changed().is_err() {
                             display_dropped = true;
+                        } else {
+                            resume_same_encoder = true;
                         }
-                    }
-                    _ = shutdown_rx.changed() => {
-                        info!("Shutdown requested — tearing down the capture pipeline");
-                        // Drop the encode task, which closes our read end of the
-                        // pipe. Nothing drains it during shutdown, so ffmpeg would
-                        // otherwise block writing into a full pipe and never reach
-                        // its signal handling — a wasted 1.5s SIGTERM timeout on
-                        // every stop. Closed, it gets EPIPE and exits at once.
-                        #[cfg(feature = "inproc-encoder")]
-                        stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
-                        encode_task.abort();
+                    } else {
+                        // Disable first so KWin moves the windows off it, then
+                        // fall through to the teardown: the helper goes away
+                        // with the session, and the top of the outer loop
+                        // waits for a tablet before bringing anything back.
+                        info!("Tablet is not a screen — disabling the virtual display");
                         let _ = tokio::time::timeout(std::time::Duration::from_millis(500),
-                                Self::disable_evdi_display(card)).await;
-                        self.shutdown().await;
-                        return Ok(());
+                            Self::disable_evdi_display(card)).await;
+                        display_dropped = true;
                     }
                 }
-
-                if resume_same_encoder {
-                    // Nothing about the encoder changed, so it keeps running and we
-                    // simply go back to waiting on it. The task owns the stream, so
-                    // it must not be torn down and rebuilt for a spurious event.
-                    continue 'session;
-                }
-
-                // Wind the encoder down before rebuilding it.
-                #[cfg(feature = "inproc-encoder")]
-                {
+                _ = run.shutdown_rx.changed() => {
+                    info!("Shutdown requested — tearing down the capture pipeline");
+                    // Drop the encode task, which closes our read end of the
+                    // pipe. Nothing drains it during shutdown, so ffmpeg would
+                    // otherwise block writing into a full pipe and never reach
+                    // its signal handling — a wasted 1.5s SIGTERM timeout on
+                    // every stop. Closed, it gets EPIPE and exits at once.
+                    #[cfg(feature = "inproc-encoder")]
                     stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
-                    if !encode_finished {
-                        let _ = (&mut encode_task).await;
-                    }
-                }
-                encode_task.abort();
-
-                break;
-            }
-
-            // A pipeline that ran for a while was healthy — reset the backoff.
-            // A pipeline that died within seconds is crash-looping — back off.
-            if pipeline_started_at.elapsed().as_secs() >= 30 {
-                backoff_ms = RECONNECT_DELAY_MS;
-            } else if !settings_changed && !mode_changed && !display_dropped {
-                backoff_ms = (backoff_ms * 2).min(30_000);
-            }
-
-            // Clean up and retry. On a settings or mode change, keep the helper
-            // alive (an fps/resolution change is handled at the top of the loop)
-            // so the virtual display doesn't flicker off.
-            if !settings_changed && !mode_changed {
-                if let Some(mut h) = self.helper_child.take() {
-                    Self::terminate(&mut h, "evdi_helper").await;
+                    encode_task.abort();
+                    let _ = tokio::time::timeout(std::time::Duration::from_millis(500),
+                            Self::disable_evdi_display(card)).await;
+                    self.shutdown().await;
+                    return Ok(None);
                 }
             }
-            if let Some(mut e) = self.encoder_child.take() {
-                let _ = e.start_kill();
+
+            if resume_same_encoder {
+                // Nothing about the encoder changed, so it keeps running and we
+                // simply go back to waiting on it. The task owns the stream, so
+                // it must not be torn down and rebuilt for a spurious event.
+                continue 'session;
             }
-            encoder_mode = None;
-            // Reset codec config so it gets re-extracted on restart
-            if let Ok(mut config) = self.codec_config.lock() {
-                *config = None;
+
+            // Wind the encoder down before rebuilding it.
+            #[cfg(feature = "inproc-encoder")]
+            {
+                stop_encode.store(true, std::sync::atomic::Ordering::Relaxed);
+                if !encode_finished {
+                    let _ = (&mut encode_task).await;
+                }
             }
-            if !settings_changed && !mode_changed && !display_dropped {
-                Self::while_active(
-                    &mut display_rx,
-                    &mut shutdown_rx,
-                    tokio::time::sleep(std::time::Duration::from_millis(backoff_ms)),
-                )
-                .await;
+            encode_task.abort();
+
+            break;
+        }
+
+        Ok(Some(SessionChanges {
+            settings_changed,
+            mode_changed,
+            display_dropped,
+        }))
+    }
+
+    async fn finish_encoder_session(&mut self, changes: SessionChanges, run: &mut CaptureRun) {
+        // Clean up and retry. On a settings or mode change, keep the helper
+        // alive (an fps/resolution change is handled at the top of the loop)
+        // so the virtual display doesn't flicker off.
+        if !changes.keep_helper() {
+            if let Some(mut h) = self.helper_child.take() {
+                Self::terminate(&mut h, "evdi_helper").await;
             }
+        }
+        if let Some(mut e) = self.encoder_child.take() {
+            let _ = e.start_kill();
+        }
+        run.encoder_mode = None;
+        // Reset codec config so it gets re-extracted on restart
+        if let Ok(mut config) = self.codec_config.lock() {
+            *config = None;
+        }
+        if changes.crashed() {
+            run.pause(run.backoff_ms).await;
         }
     }
 
@@ -1542,6 +1549,73 @@ impl CaptureManager {
                     tokio::time::timeout(std::time::Duration::from_millis(500), child.wait()).await;
             }
         }
+    }
+}
+
+/// Watches and retry state for one capture pipeline.
+struct CaptureRun {
+    settings_rx: watch::Receiver<EncoderSettings>,
+    display_rx: watch::Receiver<bool>,
+    shutdown_rx: watch::Receiver<bool>,
+    mode_rx: watch::Receiver<Option<DetectedMode>>,
+    stream_rx: watch::Receiver<Option<(u32, u32)>>,
+    backoff_ms: u64,
+    explained_evdi: bool,
+    pipeline_started_at: Instant,
+    encoder_mode: Option<(u32, u32)>,
+}
+
+impl CaptureRun {
+    fn stopped(&self) -> bool {
+        *self.shutdown_rx.borrow()
+            || self.shutdown_rx.has_changed().is_err()
+            || self.display_rx.has_changed().is_err()
+    }
+
+    async fn pause(&mut self, milliseconds: u64) {
+        CaptureManager::while_active(
+            &mut self.display_rx,
+            &mut self.shutdown_rx,
+            tokio::time::sleep(std::time::Duration::from_millis(milliseconds)),
+        )
+        .await;
+    }
+
+    async fn back_off(&mut self) {
+        self.pause(self.backoff_ms).await;
+        self.backoff_ms = (self.backoff_ms * 2).min(30_000);
+    }
+
+    fn explain_evdi_failure(&mut self) {
+        if !self.explained_evdi {
+            if let Some(reason) = evdi_setup_problem() {
+                self.explained_evdi = true;
+                error!("{}", reason);
+            }
+        }
+    }
+
+    fn adjust_backoff(&mut self, changes: SessionChanges) {
+        if self.pipeline_started_at.elapsed().as_secs() >= 30 {
+            self.backoff_ms = RECONNECT_DELAY_MS;
+        } else if changes.crashed() {
+            self.backoff_ms = (self.backoff_ms * 2).min(30_000);
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct SessionChanges {
+    settings_changed: bool,
+    mode_changed: bool,
+    display_dropped: bool,
+}
+impl SessionChanges {
+    fn keep_helper(self) -> bool {
+        self.settings_changed || self.mode_changed
+    }
+    fn crashed(self) -> bool {
+        !self.settings_changed && !self.mode_changed && !self.display_dropped
     }
 }
 
