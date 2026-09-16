@@ -339,3 +339,16 @@ fn t118_release_credentials_never_appear_in_command_arguments() {
 fn t117_release_stays_draft_until_all_assets_are_verified() {
     release_tests("t117");
 }
+
+#[test]
+fn t101_package_failures_cannot_reuse_old_assets() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_packages.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

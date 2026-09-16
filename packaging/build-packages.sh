@@ -8,8 +8,12 @@ VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
 D="dist/uscreen-$VERSION"
 [ -x "$D/bin/uscreen" ] || { echo "run scripts/build-release.sh first"; exit 1; }
 
+# Remove prior outputs and success marker before entering the container.
+rm -f "dist/uscreen_${VERSION}_amd64.deb" "dist/uscreen-$VERSION-"*.rpm \
+      "dist/uscreen-$VERSION-PKGBUILD.tar.gz" dist/.packages-ok
+
 distrobox enter "${USCREEN_BUILD_CONTAINER:-uscreen-build}" -- bash -lc '
-  set -e
+  set -euo pipefail
   cd '"$PWD"'
   V='"$VERSION"'; D='"$D"'
 
@@ -39,9 +43,15 @@ distrobox enter "${USCREEN_BUILD_CONTAINER:-uscreen-build}" -- bash -lc '
   sed "s/^Version:.*/Version:        $V/" packaging/rpm/uscreen.spec > $RB/SPECS/uscreen.spec
   rpmbuild --define "_topdir $RB" --define "_userunitdir /usr/lib/systemd/user" --define "_libdir /usr/lib64" \
            --define "_modprobedir /usr/lib/modprobe.d" --define "_modulesloaddir /usr/lib/modules-load.d" --define "_udevrulesdir /usr/lib/udev/rules.d" \
-           -bb $RB/SPECS/uscreen.spec 2>&1 | grep -E "Wrote|error" 
+           -bb $RB/SPECS/uscreen.spec 2>&1 | tee "$RB/build.log"
   cp $RB/RPMS/x86_64/uscreen-$V-*.rpm dist/
+  touch dist/.packages-ok
 '
+[ -f dist/.packages-ok ] || { echo "!! package build inside container failed"; exit 1; }
+rm -f dist/.packages-ok
+[ -s "dist/uscreen_${VERSION}_amd64.deb" ] && [ -s "dist/uscreen-$VERSION-1.x86_64.rpm" ] \
+  || { echo "!! package outputs missing"; exit 1; }
+
 # Arch users get the PKGBUILD as a release file too; makepkg needs the
 # install script next to it, hence a small archive rather than a bare file.
 # pkgver is rewritten like the deb/rpm versions so the archive can never
