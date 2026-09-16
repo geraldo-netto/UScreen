@@ -100,6 +100,85 @@ class RegressionTest {
         assertEquals(5000, (get(capture, "client") as OkHttpClient).pingIntervalMillis)
     }
 
+    @Test fun t112_replacedAndDisconnectedCallbacksCannotResurrectControl() {
+        val capture = TouchCapture()
+        val old = Socket()
+        val current = Socket()
+        val listener = get(capture, "wsListener") as WebSocketListener
+        var callbacks = 0
+        capture.token = "a".repeat(64)
+        capture.sendConfig(2000, 30)
+        capture.onModeKnown = { callbacks++ }
+        capture.onCodecKnown = { callbacks++ }
+        set(capture, "webSocket", current)
+        val response = Response.Builder().request(old.request()).protocol(Protocol.HTTP_1_1).code(101).message("Switching Protocols").build()
+        listener.onOpen(old, response)
+        listener.onMessage(old, """{"pen_only":true,"codec":"hevc"}""")
+        assertFalse(capture.isControlConnected())
+        assertEquals(0, callbacks)
+        assertTrue(old.messages.isEmpty())
+        listener.onOpen(current, response)
+        assertTrue(capture.isControlConnected())
+        assertTrue(current.messages.isNotEmpty())
+        capture.disconnect()
+        current.messages.clear()
+        listener.onOpen(current, response)
+        listener.onMessage(current, """{"pen_only":false,"codec":"h264"}""")
+        assertFalse(capture.isControlConnected())
+        assertEquals(0, callbacks)
+        assertTrue(current.messages.isEmpty())
+    }
+
+    @Test fun t112_closedSocketCannotOpenAgain() {
+        for (failed in listOf(false, true)) {
+            val capture = TouchCapture()
+            val socket = Socket()
+            val listener = get(capture, "wsListener") as WebSocketListener
+            val response = Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1).code(101).message("Switching Protocols").build()
+            set(capture, "webSocket", socket)
+            listener.onOpen(socket, response)
+            if (failed) listener.onFailure(socket, java.io.IOException("closed"), null)
+            else listener.onClosed(socket, 1000, "closed")
+            listener.onOpen(socket, response)
+            try { assertFalse(capture.isControlConnected()) }
+            finally { capture.disconnect() }
+        }
+    }
+
+    @Test fun t112_backgroundModeAndCodecCallbacksCannotStartVideo() {
+        Prefs(app).checkUpdates = false
+        val controller = Robolectric.buildActivity(MainActivity::class.java).create()
+        val activity = controller.get()
+        val capture = get(activity, "touchCapture") as TouchCapture
+        val receiver = get(activity, "videoReceiver") as VideoReceiver
+        try {
+            assertFalse(get(activity, "started") as Boolean)
+            capture.onModeKnown?.invoke(false)
+            capture.onCodecKnown?.invoke("hevc")
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            assertFalse("Background callback started video", get(receiver, "isRunning") as Boolean)
+        } finally { controller.destroy() }
+    }
+
+    @Test @org.robolectric.annotation.LooperMode(org.robolectric.annotation.LooperMode.Mode.PAUSED)
+    fun t112_queuedGreetingCannotAffectReplacementSession() {
+        Prefs(app).checkUpdates = false
+        val controller = Robolectric.buildActivity(MainActivity::class.java).create()
+        val activity = controller.get()
+        val capture = get(activity, "touchCapture") as TouchCapture
+        val receiver = get(activity, "videoReceiver") as VideoReceiver
+        try {
+            set(activity, "started", true)
+            val worker = Thread { capture.onModeKnown?.invoke(false); capture.onCodecKnown?.invoke("hevc") }
+            worker.start()
+            worker.join()
+            capture.disconnect()
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            assertFalse("Queued old greeting started video", get(receiver, "isRunning") as Boolean)
+            assertEquals(VideoReceiver.MIME_TYPE, receiver.mimeType)
+        } finally { set(activity, "started", false); controller.destroy() }
+    }
+
     private class Socket : WebSocket {
         val messages = mutableListOf<String>()
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()

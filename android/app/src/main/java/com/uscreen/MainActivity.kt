@@ -69,26 +69,20 @@ class MainActivity : ComponentActivity() {
         }
         videoReceiver?.streamFps = prefs.fps
         touchCapture?.onCodecKnown = { codec ->
-            val mime = if (codec == "hevc") VideoReceiver.MIME_TYPE_HEVC
-                       else VideoReceiver.MIME_TYPE
-            val vr = videoReceiver
-            if (vr != null && vr.mimeType != mime) {
-                runOnUiThread {
-                    // The decoder is built once per streaming session, so a
-                    // codec change has to restart it. This normally fires
-                    // before the first frame and costs nothing; it only
-                    // restarts anything if the host switched codec while
-                    // connected.
+            withCurrentControl {
+                val mime = if (codec == "hevc") VideoReceiver.MIME_TYPE_HEVC
+                           else VideoReceiver.MIME_TYPE
+                val vr = videoReceiver
+                if (vr != null && vr.mimeType != mime) {
                     Log.i("UScreen", "Host is sending $codec — rebuilding the decoder")
-                    val wasRunning = !penOnlyMode
-                    if (wasRunning) vr.stop()
+                    if (!penOnlyMode) vr.stop()
                     vr.mimeType = mime
-                    if (wasRunning) vr.start()
+                    if (!penOnlyMode) vr.start()
                 }
             }
         }
         touchCapture?.onModeKnown = { penOnly ->
-            runOnUiThread {
+            withCurrentControl {
                 penOnlyMode = penOnly
                 if (penOnly) videoReceiver?.stop() else videoReceiver?.start()
             }
@@ -279,6 +273,16 @@ class MainActivity : ComponentActivity() {
         applyToken(restart = true)
     }
 
+    // A greeting can already be queued on the UI thread when onStop or a
+    // token change retires its socket. Validate again when the action runs.
+    private fun withCurrentControl(action: () -> Unit) {
+        val source = touchCapture ?: return
+        val generation = source.connectionGeneration
+        runOnUiThread {
+            if (started && touchCapture === source && source.connectionGeneration == generation) action()
+        }
+    }
+
     private fun applyToken(restart: Boolean) {
         val token = prefs.hostToken ?: return
         val changed = touchCapture?.token != token
@@ -287,7 +291,7 @@ class MainActivity : ComponentActivity() {
         // Only rebuild live connections. If we are in the background, onStart
         // will connect with the new token anyway; reconnecting here as well
         // would leave a second socket behind.
-        if (restart && changed && touchCapture?.isControlConnected() == true) {
+        if (started && restart && changed && touchCapture?.isControlConnected() == true) {
             Log.i("UScreen", "New session token — reconnecting")
             touchCapture?.disconnect()
             touchCapture?.connect()

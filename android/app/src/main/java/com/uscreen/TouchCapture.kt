@@ -19,7 +19,10 @@ class TouchCapture {
         const val RECONNECT_DELAY_MS = 2000L
     }
 
-    private var webSocket: WebSocket? = null
+    @Volatile private var webSocket: WebSocket? = null
+    @Volatile var connectionGeneration = 0L
+        private set
+    private var connectionWanted = false
     @Volatile private var isConnected = false
     private var reconnectJob: Job? = null
     private var surfaceView: SurfaceView? = null
@@ -69,74 +72,91 @@ class TouchCapture {
 
     private val wsListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            isConnected = true
-            Log.i(TAG, "Connected")
-            // Authenticate before anything else. If we have no token yet the
-            // host will drop us and relaunch the app with one, and the
-            // reconnect logic takes it from there.
-            token?.let { t ->
-                webSocket.send(JSONObject().apply {
-                    put("type", "auth")
-                    put("token", t)
-                }.toString())
-            } ?: Log.w(TAG, "No session token yet — the host will send one")
-            if (nativeWidth > 0 && nativeHeight > 0) {
-                val res = JSONObject().apply {
-                    put("type", "resolution")
-                    put("width", nativeWidth)
-                    put("height", nativeHeight)
-                    if (nativeWidthMm > 0 && nativeHeightMm > 0) {
-                        put("width_mm", nativeWidthMm)
-                        put("height_mm", nativeHeightMm)
+            synchronized(this@TouchCapture) {
+                if (isStale(webSocket)) return
+                isConnected = true
+                Log.i(TAG, "Connected")
+                // Authenticate before anything else. If we have no token yet the
+                // host will drop us and relaunch the app with one, and the
+                // reconnect logic takes it from there.
+                token?.let { t ->
+                    webSocket.send(JSONObject().apply {
+                        put("type", "auth")
+                        put("token", t)
+                    }.toString())
+                } ?: Log.w(TAG, "No session token yet — the host will send one")
+                if (nativeWidth > 0 && nativeHeight > 0) {
+                    val res = JSONObject().apply {
+                        put("type", "resolution")
+                        put("width", nativeWidth)
+                        put("height", nativeHeight)
+                        if (nativeWidthMm > 0 && nativeHeightMm > 0) {
+                            put("width_mm", nativeWidthMm)
+                            put("height_mm", nativeHeightMm)
+                        }
                     }
+                    webSocket.send(res.toString())
+                    Log.i(TAG, "Reported native resolution: ${nativeWidth}x${nativeHeight} " +
+                            "(${nativeWidthMm}x${nativeHeightMm} mm)")
                 }
-                webSocket.send(res.toString())
-                Log.i(TAG, "Reported native resolution: ${nativeWidth}x${nativeHeight} " +
-                        "(${nativeWidthMm}x${nativeHeightMm} mm)")
-            }
-            pendingConfig?.let { webSocket.send(it.toString()) }
-            pendingMode?.let {
-                webSocket.send(it.toString())
-                pendingMode = null
+                pendingConfig?.let { webSocket.send(it.toString()) }
+                pendingMode?.let {
+                    webSocket.send(it.toString())
+                    pendingMode = null
+                }
             }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            // The host greets with its mode; everything else it might say is
-            // ignored, this channel is otherwise ours to talk on.
-            try {
-                val o = JSONObject(text)
-                if (o.has("touch")) touchEnabled = o.getBoolean("touch")
-                if (o.has("pen")) penEnabled = o.getBoolean("pen")
-                if (o.has("codec")) {
-                    onCodecKnown?.invoke(o.getString("codec"))
-                }
-                if (o.has("pen_only")) {
-                    val pen = o.getBoolean("pen_only")
-                    if (pen != isPenOnly) {
-                        isPenOnly = pen
-                        Log.i(TAG, "Host mode: ${if (pen) "pen-only" else "display"}")
+            synchronized(this@TouchCapture) {
+                if (isStale(webSocket)) return
+                // The host greets with its mode; everything else it might say is
+                // ignored, this channel is otherwise ours to talk on.
+                try {
+                    val o = JSONObject(text)
+                    if (o.has("touch")) touchEnabled = o.getBoolean("touch")
+                    if (o.has("pen")) penEnabled = o.getBoolean("pen")
+                    if (o.has("codec")) {
+                        onCodecKnown?.invoke(o.getString("codec"))
                     }
-                    onModeKnown?.invoke(pen)
-                }
-            } catch (_: Exception) {}
+                    if (o.has("pen_only")) {
+                        val pen = o.getBoolean("pen_only")
+                        if (pen != isPenOnly) {
+                            isPenOnly = pen
+                            Log.i(TAG, "Host mode: ${if (pen) "pen-only" else "display"}")
+                        }
+                        onModeKnown?.invoke(pen)
+                    }
+                } catch (_: Exception) {}
+            }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            webSocket.close(1000, null)
+            synchronized(this@TouchCapture) {
+                if (isStale(webSocket)) return
+                webSocket.close(1000, null)
+            }
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            if (isStale(webSocket)) return
-            isConnected = false
-            scheduleReconnect()
+            synchronized(this@TouchCapture) {
+                if (isStale(webSocket)) return
+                this@TouchCapture.webSocket = null
+                connectionGeneration++
+                isConnected = false
+                scheduleReconnect()
+            }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            if (isStale(webSocket)) return
-            isConnected = false
-            Log.w(TAG, "Connection failed: ${t.message}")
-            scheduleReconnect()
+            synchronized(this@TouchCapture) {
+                if (isStale(webSocket)) return
+                this@TouchCapture.webSocket = null
+                connectionGeneration++
+                isConnected = false
+                Log.w(TAG, "Connection failed: ${t.message}")
+                scheduleReconnect()
+            }
         }
 
         /**
@@ -179,7 +199,8 @@ class TouchCapture {
         }
     }
 
-    fun connect() {
+    @Synchronized fun connect() {
+        connectionWanted = true
         // Idempotent: a second connect() must not leave the first socket
         // alive with its listener still flipping isConnected. onStart and a
         // token delivered through onNewIntent can both call this.
@@ -192,22 +213,28 @@ class TouchCapture {
         connectWebSocket()
     }
 
-    private fun connectWebSocket() {
+    @Synchronized private fun connectWebSocket() {
+        connectionGeneration++
         touchEnabled = true
         penEnabled = true
-        webSocket?.cancel()
+        val previous = webSocket
+        webSocket = null
+        previous?.cancel()
         val request = Request.Builder()
             .url(WS_URL)
             .build()
         webSocket = client.newWebSocket(request, wsListener)
     }
 
-    private fun scheduleReconnect() {
+    @Synchronized private fun scheduleReconnect() {
         reconnectJob?.cancel()
+        val generation = connectionGeneration
         reconnectJob = scope.launch {
             delay(RECONNECT_DELAY_MS)
-            if (!isConnected) {
-                connectWebSocket()
+            synchronized(this@TouchCapture) {
+                if (connectionWanted && generation == connectionGeneration && !isConnected) {
+                    connectWebSocket()
+                }
             }
         }
     }
@@ -577,10 +604,13 @@ class TouchCapture {
 
     fun isControlConnected(): Boolean = isConnected
 
-    fun disconnect() {
+    @Synchronized fun disconnect() {
+        connectionWanted = false
+        connectionGeneration++
         reconnectJob?.cancel()
-        webSocket?.close(1000, "Client closing")
+        val previous = webSocket
         webSocket = null
         isConnected = false
+        previous?.close(1000, "Client closing")
     }
 }
