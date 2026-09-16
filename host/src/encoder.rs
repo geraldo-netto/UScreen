@@ -232,15 +232,7 @@ pub fn run(
         let force = idr_wanted.swap(false, Ordering::Relaxed);
         for (data, is_idr) in enc.encode(&buf, force)? {
             if is_idr {
-                if let Some(cfg) =
-                    extract_parameter_sets(&data, crate::capture::Codec::from_encoder(encoder_name))
-                {
-                    if let Ok(mut slot) = codec_config.lock() {
-                        if slot.as_ref() != Some(&cfg) {
-                            *slot = Some(cfg);
-                        }
-                    }
-                }
+                refresh_codec_config(&data, encoder_name, &codec_config);
             }
             if tx.receiver_count() > 0 {
                 latency.on_encoded(seq);
@@ -251,6 +243,22 @@ pub fn run(
         latency.maybe_report();
     }
     Ok(())
+}
+
+fn refresh_codec_config(
+    data: &[u8],
+    encoder_name: &str,
+    codec_config: &std::sync::Mutex<Option<Bytes>>,
+) {
+    if let Some(config) =
+        extract_parameter_sets(data, crate::capture::Codec::from_encoder(encoder_name))
+    {
+        if let Ok(mut slot) = codec_config.lock() {
+            if slot.as_ref() != Some(&config) {
+                *slot = Some(config);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
