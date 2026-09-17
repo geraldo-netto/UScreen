@@ -218,31 +218,23 @@ More in [docs/faq.md](docs/faq.md).
 - [Benchmarks](docs/benchmarks.md) · [Compatibility](docs/compatibility.md) · [FAQ](docs/faq.md)
 - [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
-## Roadmap
+## Plans and proposals
 
-Shipped: extended display over USB, S Pen with pressure/tilt/eraser, graphics-
-tablet mode switchable from the tablet, plug-and-play with autostart, tray
-icon, any-side placement, several tablets, HEVC and 10-bit, Wi-Fi fallback,
-packages for five distribution families, `uscreen doctor`, measured latency.
+The [Windows integration plan](docs/windows-port.md) separates compilation,
+pen-only operation, extended-display support and packaging. It records pending
+OS/driver/testing decisions; Windows host support is not implemented.
 
-Next: **AOA transport** — removing the USB-debugging requirement, the last
-step between this and simply plugging a cable in. Then automatic input mapping
-on GNOME Wayland ([#4](https://github.com/majmichu1/UScreen/issues/4)), and a
-**PipeWire/dmabuf capture path**: the EVDI cycle is serial by design (the
-compositor copies the frame out of the GPU, then the helper copies it again,
-then the compositor renders the next one), which caps native 2960×1848 at
-about 60 frames/s on the reference laptop whatever the target; taking the
-frame straight from the compositor as a GPU buffer would remove both copies.
+Other proposals inherited from upstream are AOA transport to reduce reliance
+on USB debugging, broader Wayland input mapping, and a PipeWire/dmabuf capture
+path. They have no committed fork schedule. Transport compatibility, compositor
+support and performance improvements need implementation and validation.
 
-Explored: HDR, currently blocked by EVDI providing only 8-bit framebuffers.
-Considered, not scheduled: **iPad**. The Linux side would carry over (the
-virtual display, the encoder, the input devices), but the transport would
-have to move from adb to usbmuxd and the app would have to be rebuilt in
-Swift. Since iOS 17.4 the EU's Digital Markets Act allows distribution
-outside the App Store, which removes the review step, but not the rest: the
-app still has to be notarised by Apple, which needs a paid developer account
-and a Mac to build on, and outside the EU it stays App Store only. It is on
-the list; it is not next.
+HDR is not implemented; the current capture path is 8-bit. An iPad client is
+also only a proposal and would need a supported transport, a native client,
+build/signing resources and a distribution plan. No particular Apple
+platform or regional distribution route has been selected or verified.
+
+Current defects and blocked decisions remain in [TODO.md](TODO.md).
 
 ## Contributing
 
