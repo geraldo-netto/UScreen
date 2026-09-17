@@ -284,13 +284,13 @@ static conv_job_t g_jobs[MAX_CONV_THREADS];
 static pthread_mutex_t g_pool_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_pool_go = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t g_pool_done = PTHREAD_COND_INITIALIZER;
-static int g_pool_gen = 0;       /* bumped to dispatch a frame */
+static unsigned int g_pool_gen = 0; /* frame generation; unsigned wrap is defined */
 static int g_pool_active = 0;    /* worker jobs still running this gen */
 static int g_pool_shutdown = 0;
 
 static void *conv_worker(void *arg) {
     int id = (int)(intptr_t)arg;
-    int last_gen = 0;
+    unsigned int last_gen = 0;
     for (;;) {
         pthread_mutex_lock(&g_pool_mtx);
         while (g_pool_gen == last_gen && !g_pool_shutdown)

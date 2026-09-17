@@ -363,16 +363,53 @@ static void test_t013(void) {
     pthread_cond_destroy(&g_frame_ready);
 }
 
-static void test_t047(void) {
-    fail_worker = 2;
-    conv_pool_init();
-    assert(g_nthreads == 2 && "T047: count only successfully created workers");
-    test_conversion(8, 8, 1);
+static void stop_test_pool(void) {
     pthread_mutex_lock(&g_pool_mtx);
     g_pool_shutdown = 1;
     pthread_cond_broadcast(&g_pool_go);
     pthread_mutex_unlock(&g_pool_mtx);
     for (int i = 1; i < g_nthreads; i++) pthread_join(g_pool[i], NULL);
+}
+
+static void test_t047(void) {
+    fail_worker = 2;
+    conv_pool_init();
+    assert(g_nthreads == 2 && "T047: count only successfully created workers");
+    test_conversion(8, 8, 1);
+    stop_test_pool();
+}
+
+/* Dispatch the previous valid jobs at a chosen epoch and wait until each
+ * worker has observed it before exercising the next production dispatch. */
+static void seed_test_pool_epoch(unsigned int epoch) {
+    pthread_mutex_lock(&g_pool_mtx);
+    g_pool_gen = epoch;
+    g_pool_active = g_nthreads - 1;
+    pthread_cond_broadcast(&g_pool_go);
+    while (g_pool_active > 0) pthread_cond_wait(&g_pool_done, &g_pool_mtx);
+    pthread_mutex_unlock(&g_pool_mtx);
+}
+
+static void test_t254(void) {
+    alarm(5); /* A missed dispatch must fail instead of hanging the suite. */
+    unsigned char source[8 * 8 * 4] = {0};
+    unsigned char destination[8 * 8 * 3 / 2];
+    g_mode_w = g_mode_h = g_out_w = g_out_h = 8;
+    g_mode_stride = 8 * 4;
+    g_scale = 1;
+    conv_pool_init();
+    assert(g_nthreads > 1);
+    bgra_to_nv12(source, destination, NULL);
+    seed_test_pool_epoch(INT_MAX);
+    bgra_to_nv12(source, destination, NULL); /* UBSan catches signed overflow. */
+    seed_test_pool_epoch(UINT_MAX);
+    memset(destination, 0, sizeof(destination));
+    bgra_to_nv12(source, destination, NULL);
+    assert(g_pool_gen == 0 && "T254: generation wraps to zero");
+    for (size_t i = 0; i < sizeof(destination); i++)
+        assert(destination[i] == (i < 64 ? 16 : 128) && "T254: all workers finish the wrapped frame");
+    stop_test_pool();
+    alarm(0);
 }
 
 static void test_t048(void) {
@@ -444,6 +481,7 @@ static void test_t052(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T254", test_t254},
         {"T170", test_helper_options},
         {"T108", test_t108},
         {"T082", test_t082},

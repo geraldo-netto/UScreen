@@ -15,6 +15,8 @@ impl Harness {
         let mut compiler = Command::new("cc");
         if case == "T083" {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
+        } else if case == "T254" {
+            compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
         } else if case == "T082" {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
@@ -164,4 +166,9 @@ fn t108_helpers_reserve_distinct_cards_and_find_new_devices() {
 #[test]
 fn t170_helper_options_preserve_bounds_and_missing_values() {
     Harness::build("T170").run("T170");
+}
+
+#[test]
+fn t254_conversion_epochs_wrap_without_overflow_or_stalled_workers() {
+    Harness::build("T254").run("T254");
 }
