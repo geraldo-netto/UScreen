@@ -17,7 +17,7 @@ impl Harness {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
-        } else if case == "T082" {
+        } else if matches!(case, "T082" | "T274") {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler
@@ -178,4 +178,9 @@ fn t254_conversion_epochs_wrap_without_overflow_or_stalled_workers() {
 #[test]
 fn t272_failed_event_channel_exits_without_spinning() {
     Harness::build("T272").run("T272");
+}
+
+#[test]
+fn t274_delayed_writer_cannot_read_replaced_mode_buffers() {
+    Harness::build("T274").run("T274");
 }

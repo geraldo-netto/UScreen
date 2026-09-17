@@ -8,21 +8,34 @@
 static int mock_pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 static long mock_sysconf(int);
 static int mock_poll(struct pollfd *, nfds_t, int);
+static int mock_nanosleep(const struct timespec *, struct timespec *);
 #define pthread_create mock_pthread_create
 #define sysconf mock_sysconf
 #define poll mock_poll
+#define nanosleep mock_nanosleep
 #define main evdi_helper_main
 #include "../evdi/evdi_helper.c"
 #undef main
 #undef pthread_create
 #undef sysconf
 #undef poll
+#undef nanosleep
 #include <assert.h>
 #include <sys/wait.h>
 
 static int fail_worker = 0;
 static int stall_once = 0;
 static int add_result = 0;
+static atomic_int pause_writer = 0;
+static atomic_int writer_paused = 0;
+static int mock_nanosleep(const struct timespec *request, struct timespec *remainder) {
+    if (pause_writer && g_writer_busy) {
+        writer_paused = 1;
+        while (pause_writer) usleep(1000);
+        return 0;
+    }
+    return nanosleep(request, remainder);
+}
 static int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attrs,
                                void *(*start)(void *), void *arg) {
     if (fail_worker && (intptr_t)arg == fail_worker) return EAGAIN;
@@ -427,6 +440,29 @@ static void test_t272(void) {
     assert(close(pipefd[1]) == 0);
 }
 
+static void test_t274(void) {
+    alarm(5);
+    int pipefd[2];
+    pthread_t writer = start_test_writer(pipefd);
+    read_test_frame(pipefd[0], 8, 8);
+    pause_writer = 1;
+    while (!writer_paused) {
+        publish_frame();
+        usleep(1000);
+    }
+    struct evdi_mode smaller = {4, 4, 60, 32, 0x34325258};
+    long long started = now_ms();
+    on_mode_changed(smaller, NULL);
+    assert(now_ms() - started < 2500 && "T274: mode retirement must remain bounded");
+    pause_writer = 0;
+    while (g_writer_busy) usleep(1000);
+    unsigned char bytes[96];
+    assert(read(pipefd[0], bytes, sizeof(bytes)) == 0 &&
+           "T274: retired writer must close without sending stale frame bytes");
+    stop_test_writer(writer, pipefd);
+    alarm(0);
+}
+
 static void test_t254(void) {
     alarm(5); /* A missed dispatch must fail instead of hanging the suite. */
     unsigned char source[8 * 8 * 4] = {0};
@@ -518,6 +554,7 @@ static void test_t052(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T274", test_t274},
         {"T272", test_t272},
         {"T254", test_t254},
         {"T170", test_helper_options},

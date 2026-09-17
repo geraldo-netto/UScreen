@@ -470,7 +470,7 @@ static int configure_mode_geometry(struct evdi_mode mode) {
     return 1;
 }
 
-static void retire_mode_buffers(void) {
+static int retire_mode_buffers(void) {
     pthread_mutex_lock(&g_swap_mutex);
     g_latest_valid = 0;
     g_buffers_ready = 0;
@@ -484,12 +484,13 @@ static void retire_mode_buffers(void) {
     for (int i = 0; i < 1000 && g_writer_busy; i++)
         usleep(1000);
     if (g_writer_busy) {
-        fprintf(stderr, "[evdi-helper] Writer stuck during mode change — leaking old buffers\n");
-        /* Deliberately leak instead of freeing under the writer: a one-off
-           leak beats a use-after-free. */
-        g_fill = NULL;
-        g_latest = NULL;
-        g_write = NULL;
+        fprintf(stderr, "[evdi-helper] Writer stuck during mode change — stopping capture\n");
+        /* The writer may still hold the old size across its pacing sleep.
+           Keep every buffer in place until shutdown joins it; replacing
+           g_write here would pair that old size with a new allocation. */
+        g_have_mode = 0;
+        g_running = 0;
+        return 0;
     }
 
     /* The kernel must drop its reference to the old framebuffer BEFORE we
@@ -498,7 +499,7 @@ static void retire_mode_buffers(void) {
         evdi_unregister_buffer(g_handle, 0);
         g_buffer_registered = 0;
     }
-
+    return 1;
 }
 
 static void allocate_framebuffer(void) {
@@ -566,7 +567,7 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
 
     if (!configure_mode_geometry(mode)) return;
 
-    retire_mode_buffers();
+    if (!retire_mode_buffers()) return;
     allocate_framebuffer();
     allocate_stream_buffers();
 
