@@ -19,6 +19,7 @@ mod media;
 mod osk;
 mod persistence;
 mod runtime;
+mod session;
 mod stream;
 mod tray;
 mod update;
@@ -26,9 +27,14 @@ mod vdisplay;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+#[cfg(test)]
+use session::start_servers;
+use session::Runtime as ExtraSession;
 use std::path::PathBuf;
 use tokio::signal;
-use tokio::sync::{broadcast, watch};
+#[cfg(test)]
+use tokio::sync::broadcast;
+use tokio::sync::watch;
 use tracing::{error, info, warn};
 use uscreen_config::adb::{transport_of, Transport};
 use uscreen_config::commands::AsyncCommandExt;
@@ -1282,28 +1288,6 @@ printf '%s\n' "$2" >> "$0.log"
     }
 }
 
-async fn start_servers(
-    stream_srv: stream::StreamServer,
-    input_srv: input::InputServer,
-    video_tx: broadcast::Sender<media::VideoPacket>,
-) -> Result<(tokio::task::JoinHandle<()>, tokio::task::JoinHandle<()>)> {
-    // Bind both sockets before starting any worker. A failed second bind
-    // drops the first listener and reports startup failure to the caller.
-    let video_listener = stream_srv.bind().await?;
-    let input_listener = input_srv.bind().await?;
-    let stream_handle = tokio::spawn(async move {
-        if let Err(e) = stream_srv.run_with_listener(video_tx, video_listener).await {
-            error!("Stream server failed: {}", e);
-        }
-    });
-    let input_handle = tokio::spawn(async move {
-        if let Err(e) = input_srv.run_with_listener(input_listener).await {
-            error!("Input server failed: {}", e);
-        }
-    });
-    Ok((stream_handle, input_handle))
-}
-
 async fn run_daemon(cli: Cli) -> Result<()> {
     // Validate the complete effective range before claiming resources.
     let file_cfg = config::FileConfig::load();
@@ -1365,46 +1349,22 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     );
 
     let token = create_session_token(file_cfg.require_token)?;
-    let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
-
-    let stream_config = stream::StreamConfig {
-        video_port,
-        token: token.clone(),
-    };
-
-    let input_config = input::InputConfig {
-        port: input_port,
-        instance: 0,
-        token: token.clone(),
-        codec: media::Codec::from_encoder(&encoder).muxer().to_string(),
-        virtual_width: width,
-        virtual_height: height,
-        touch: file_cfg.input_touch,
-        pen: file_cfg.input_pen,
-        pointer: file_cfg.input_pointer,
-    };
-
-    // Which of the two jobs the tablet is doing. Switchable at runtime from
-    // the tablet's own settings, so it lives in a channel the input server,
-    // the capture manager and the config writer all follow.
     let (mode_tx, mode_persistence) = mode_channel(pen_only);
-
-    // Tablet control messages update these settings and restart the encoder.
-    // config.toml is read at daemon startup; file edits require a daemon restart
-    // (the GUI's Apply & Restart does this). Wi-Fi reconnect reads its address
-    // from disk separately on each attempt.
-    let (settings_tx, settings_rx) = watch::channel(media::EncoderSettings {
-        encoder: encoder.clone(),
-        fps,
-        bitrate,
-        width,
-        height,
-        quality,
-        width_mm: edid::DEFAULT_WIDTH_MM,
-        height_mm: edid::DEFAULT_HEIGHT_MM,
-        stream_scale,
-        geometry_ready: false,
-    });
+    let prepared = session::Spec {
+        capture: cap_config.clone(),
+        ports: (video_port, input_port),
+        token: token.clone(),
+        devices: (
+            file_cfg.input_touch,
+            file_cfg.input_pen,
+            file_cfg.input_pointer,
+        ),
+    }
+    .prepare(mode_tx.clone());
+    let settings_rx = prepared.settings.subscribe();
+    let tablet_tx = prepared.tablet.clone();
+    let tray_tablet_rx = tablet_tx.subscribe();
+    let relaunch = prepared.relaunch.clone();
     // Snapshot before any producer runs; scheduling the writer can come later.
     // CLI overrides remain temporary and must never be written back.
     let persistence = persistence::Worker::new(config::storage::ConfigStore::default())?;
@@ -1413,33 +1373,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         CliOverrides::new(&cli),
         persistence.writer(),
     );
-
-    // Tablet presence, published by the ADB monitor.
-    let (tablet_tx, tablet_rx) = watch::channel(false);
-    let tray_tablet_rx = tablet_tx.subscribe();
-
-    let mut capture_mgr = capture::CaptureManager::new(cap_config);
-    let card_rx = capture_mgr.card_rx();
-    let codec_config = capture_mgr.codec_config_arc();
-    let latency = capture_mgr.latency_tracker();
-    let stream_srv =
-        stream::StreamServer::new(stream_config, codec_config, capture_mgr.idr_request_flag());
-    let input_srv = input::InputServer::new(
-        input_config,
-        Some(settings_tx.clone()),
-        mode_tx.clone(),
-        latency,
-        relaunch.clone(),
-        card_rx,
-        tablet_tx.subscribe(),
-    );
-
-    // Deliberately shallow. This ring is pure latency when it fills: 256 frames
-    // is four seconds of backlog at 60 fps, and a client that fell behind would
-    // dutifully receive all of it instead of skipping to something current.
-    // At 8, `RecvError::Lagged` fires early and the skip-to-newest-IDR path in
-    // the stream server actually gets a chance to run.
-    let (video_tx, _) = broadcast::channel(8);
 
     info!("=== uscreen daemon starting ===");
     info!("  Resolution: {}x{} @ {}fps", width, height, fps);
@@ -1452,41 +1385,11 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         file_cfg.input_touch, file_cfg.input_pen, file_cfg.input_pointer
     );
 
-    // What the capture manager actually follows: the virtual display should
-    // exist exactly while a tablet is attached *and* being used as a screen.
-    // Folding the mode in here is what makes switching live — the capture
-    // manager already knows how to raise and tear down the display on this
-    // signal, and cannot tell the difference between an unplugged tablet and
-    // one that is currently a drawing surface.
-    let (gate_tx, gate_rx) = watch::channel(false);
-    spawn_display_gate(gate_tx, tablet_rx, mode_tx.subscribe(), settings_tx.clone());
-
-    // Cooperative shutdown: the capture task must get a chance to kill and reap
-    // ffmpeg/evdi_helper before the process exits, or they linger holding the
-    // capture FIFO and collide with the next start.
-    let (shutdown_tx, shutdown_rx) = watch::channel(false);
-
+    let (shutdown_tx, _) = watch::channel(false);
     if pen_only {
-        info!("Starting in pen-only mode: the tablet drives this machine's own");
-        info!("  screen with the pen. No virtual display, no encoding.");
+        info!("Starting in pen-only mode; no virtual display or encoding until requested");
     }
-
-    let (stream_handle, input_handle) =
-        start_servers(stream_srv, input_srv, video_tx.clone()).await?;
-
-    let video_tx_cap = video_tx.clone();
-    let settings_rx_cap = settings_rx.clone();
-    let mut cap_handle = tokio::spawn(async move {
-        // Started in both modes. In pen-only the gate below holds the virtual
-        // output disabled, with no helper or encoder until a tablet requests
-        // second-screen mode.
-        if let Err(e) = capture_mgr
-            .stream_frames(video_tx_cap, settings_rx_cap, gate_rx, shutdown_rx)
-            .await
-        {
-            error!("Capture manager failed: {}", e);
-        }
-    });
+    let primary = prepared.start(shutdown_tx.subscribe()).await?;
 
     let save_handle = tokio::spawn(save_settings);
 
@@ -1528,26 +1431,11 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let extra = ExtraSessionTemplate {
         max_tablets: file_cfg.max_tablets,
         cap_template: capture::CaptureConfig {
-            helper_path: helper_path.clone(),
             edid_path: None,
-            encoder: encoder.clone(),
-            vaapi_device: file_cfg.vaapi_device.clone(),
-            fps,
-            bitrate,
-            width,
-            height,
-            quality,
-            width_mm: edid::DEFAULT_WIDTH_MM,
-            height_mm: edid::DEFAULT_HEIGHT_MM,
-            stream_scale,
-            position: config::Position::parse_or_default(&file_cfg.position),
-            ten_bit: file_cfg.ten_bit,
-            instance: 0,
-            card: None,
+            ..cap_config
         },
         video_port,
         input_port,
-        codec: media::Codec::from_encoder(&encoder).muxer().to_string(),
         input_touch: file_cfg.input_touch,
         input_pen: file_cfg.input_pen,
         input_pointer: file_cfg.input_pointer,
@@ -1600,13 +1488,12 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // actually reap its children before pulling the rug out.
     let _ = shutdown_tx.send(true);
     if tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        let _ = tokio::join!(&mut cap_handle, &mut adb_handle);
+        let _ = tokio::join!(primary.stop(), &mut adb_handle);
     })
     .await
     .is_err()
     {
         warn!("Capture pipelines did not stop within 5s");
-        cap_handle.abort();
         adb_handle.abort();
     }
 
@@ -1614,8 +1501,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // this covers a shutdown with a tablet still attached.
     osk::restore().await;
 
-    stream_handle.abort();
-    input_handle.abort();
     adb_handle.abort();
     save_handle.abort();
     mode_save_handle.abort();
@@ -1725,36 +1610,6 @@ fn create_session_token(required: bool) -> Result<Option<String>> {
         None
     };
     Ok(token)
-}
-
-fn spawn_display_gate(
-    gate_tx: watch::Sender<bool>,
-    mut tablet_rx: watch::Receiver<bool>,
-    mut mode_rx: watch::Receiver<bool>,
-    settings: watch::Sender<media::EncoderSettings>,
-) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        let mut last = false;
-        loop {
-            let attached = *tablet_rx.borrow();
-            if !attached {
-                settings.send_if_modified(|s| {
-                    let was_ready = s.geometry_ready;
-                    s.geometry_ready = false;
-                    was_ready
-                });
-            }
-            let active = attached && !*mode_rx.borrow();
-            if active != last {
-                last = active;
-                let _ = gate_tx.send(active);
-            }
-            tokio::select! {
-                r = tablet_rx.changed() => if r.is_err() { break },
-                r = mode_rx.changed() => if r.is_err() { break },
-            }
-        }
-    })
 }
 
 fn persist_settings_with(
@@ -1981,15 +1836,13 @@ fn find_helper(explicit: Option<&std::path::Path>) -> Result<PathBuf> {
 }
 
 /// Everything needed to bring up a pipeline for a second (third, ...)
-/// tablet on demand. The first tablet is wired at startup like it always
-/// was; these are spawned when another serial shows up and torn down when
-/// it goes.
+/// tablet on demand. Every slot uses the shared session runtime; only the
+/// primary session participates in daemon configuration persistence.
 struct ExtraSessionTemplate {
     max_tablets: u32,
     cap_template: capture::CaptureConfig,
     video_port: u16,
     input_port: u16,
-    codec: String,
     token: Option<String>,
     /// Which virtual input devices each extra tablet gets; same switches as
     /// the first one.
@@ -1998,41 +1851,6 @@ struct ExtraSessionTemplate {
     input_pointer: bool,
     mode_tx: watch::Sender<bool>,
     shutdown_rx: watch::Receiver<bool>,
-}
-
-/// One extra tablet's running pipeline.
-struct ExtraSession {
-    instance: u32,
-    tablet_tx: watch::Sender<bool>,
-    relaunch: std::sync::Arc<tokio::sync::Notify>,
-    stop_tx: watch::Sender<bool>,
-    tasks: Vec<tokio::task::JoinHandle<()>>,
-    capture: tokio::task::JoinHandle<()>,
-    video_port: u16,
-    input_port: u16,
-}
-
-impl ExtraSession {
-    async fn stop(mut self) {
-        let _ = self.tablet_tx.send(false);
-        let _ = self.stop_tx.send(true);
-        // Let the capture manager disable its output and reap its children
-        // before the tasks are dropped.
-        if tokio::time::timeout(std::time::Duration::from_secs(5), &mut self.capture)
-            .await
-            .is_err()
-        {
-            warn!("Capture pipeline {} did not stop within 5s", self.instance);
-            self.capture.abort();
-            let _ = self.capture.await;
-        }
-        for task in &self.tasks {
-            task.abort();
-        }
-        for task in self.tasks {
-            let _ = task.await;
-        }
-    }
 }
 
 /// Each automatic session has its own FIFO and acquires an exclusive helper
@@ -2055,84 +1873,14 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
         .context("tablet slot outside configured range")?;
     let cfg = slot_capture_config(t.cap_template.clone(), instance);
 
-    let (settings_tx, settings_rx) = watch::channel(media::EncoderSettings {
-        encoder: cfg.encoder.clone(),
-        fps: cfg.fps,
-        bitrate: cfg.bitrate,
-        width: cfg.width,
-        height: cfg.height,
-        quality: cfg.quality,
-        width_mm: cfg.width_mm,
-        height_mm: cfg.height_mm,
-        stream_scale: cfg.stream_scale,
-        geometry_ready: false,
-    });
-    let (tablet_tx, tablet_rx) = watch::channel(false);
-    let mut cap = capture::CaptureManager::new(cfg.clone());
-    let card_rx = cap.card_rx();
-    let codec_config = cap.codec_config_arc();
-    let latency = cap.latency_tracker();
-    let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
-    let stream_srv = stream::StreamServer::new(
-        stream::StreamConfig {
-            video_port,
-            token: t.token.clone(),
-        },
-        codec_config,
-        cap.idr_request_flag(),
-    );
-    let input_srv = input::InputServer::new(
-        input::InputConfig {
-            port: input_port,
-            instance,
-            token: t.token.clone(),
-            codec: t.codec.clone(),
-            virtual_width: cfg.width,
-            virtual_height: cfg.height,
-            touch: t.input_touch,
-            pen: t.input_pen,
-            pointer: t.input_pointer,
-        },
-        Some(settings_tx.clone()),
-        t.mode_tx.clone(),
-        latency,
-        relaunch.clone(),
-        card_rx,
-        tablet_tx.subscribe(),
-    );
-
-    let (gate_tx, gate_rx) = watch::channel(false);
-    let (stop_tx, stop_rx) = watch::channel(false);
-    let (video_tx, _) = broadcast::channel(8);
-    let (stream_handle, input_handle) =
-        start_servers(stream_srv, input_srv, video_tx.clone()).await?;
-    let mut tasks = vec![stream_handle, input_handle];
-    tasks.push(spawn_display_gate(
-        gate_tx,
-        tablet_rx,
-        t.mode_tx.subscribe(),
-        settings_tx,
-    ));
-    // Either the whole daemon stopping or this session being torn down
-    // must wind the capture pipeline down cleanly.
-    let mut daemon_stop = t.shutdown_rx.clone();
-    let (cap_stop_tx, cap_stop_rx) = watch::channel(false);
-    let mut stop_rx_c = stop_rx.clone();
-    tasks.push(tokio::spawn(async move {
-        tokio::select! {
-            _ = daemon_stop.changed() => {}
-            _ = stop_rx_c.changed() => {}
-        }
-        let _ = cap_stop_tx.send(true);
-    }));
-    let capture = tokio::spawn(async move {
-        if let Err(e) = cap
-            .stream_frames(video_tx, settings_rx, gate_rx, cap_stop_rx)
-            .await
-        {
-            error!("Capture manager {} failed: {}", instance, e);
-        }
-    });
+    let prepared = session::Spec {
+        capture: cfg.clone(),
+        ports: (video_port, input_port),
+        token: t.token.clone(),
+        devices: (t.input_touch, t.input_pen, t.input_pointer),
+    }
+    .prepare(t.mode_tx.clone());
+    let runtime = prepared.start(t.shutdown_rx.clone()).await?;
     info!(
         "Tablet slot {} ready: video port {}, input port {}{}",
         instance + 1,
@@ -2142,16 +1890,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
             .map(|c| format!(", EVDI card{}", c))
             .unwrap_or_default()
     );
-    Ok(ExtraSession {
-        instance,
-        tablet_tx,
-        relaunch,
-        stop_tx,
-        tasks,
-        capture,
-        video_port,
-        input_port,
-    })
+    Ok(runtime)
 }
 
 /// Keeps watching for tablets. The first serial seen gets the pipeline wired

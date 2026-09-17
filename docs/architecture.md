@@ -92,6 +92,14 @@ version comparison without filesystem/process adapters. CI checks that boundary
 on WebAssembly; this does not make the daemon or GUI Windows-compatible.
 
 - `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
+  `session::Spec` prepares the same settings, capture and control/video servers
+  for every slot. Preparation exposes settings before producers start so the
+  primary daemon can snapshot persistence and CLI overrides. Both listeners
+  bind before any session worker starts. `session::Runtime` owns the capture,
+  server, display-gate and shutdown tasks; stopping a slot waits for capture
+  cleanup before retiring its remaining tasks. Daemon-wide shutdown reaches
+  every slot, while disconnecting an extra tablet stops only that runtime.
+  Mode/settings persistence remains a primary-daemon responsibility.
 - `evdi_helper`: one per active display slot, leases one free EVDI card.
   Automatic sessions skip connected cards and contend through nonblocking
   exclusive DRM-inode locks. A restarting session prefers its previous card
