@@ -557,11 +557,7 @@ impl CaptureManager {
         use uscreen_config::linux::processes;
         let selected: Vec<_> = processes::same_user_processes()?
             .into_iter()
-            .filter(|process| {
-                (process.executable_named("evdi_helper")
-                    && process.has_path_argument("--capture-fifo", path))
-                    || (process.executable_named("ffmpeg") && process.has_path_argument("-i", path))
-            })
+            .filter(|process| process.capture_role(path).is_some())
             .collect();
         let retired = processes::retire(
             &selected,
@@ -3547,13 +3543,18 @@ mod native_path_tests {
         )
         .await;
         assert_eq!(
-            crate::doctor::encoders_for_fifo(&expected).unwrap(),
+            crate::doctor::encoders_for_fifo(
+                &uscreen_config::linux::processes::same_user_processes().unwrap(),
+                &expected
+            ),
             vec![child.id().unwrap()]
         );
         CaptureManager::retire_orphan_capture(&path).await.unwrap();
-        assert!(crate::doctor::encoders_for_fifo(&expected)
-            .unwrap()
-            .is_empty());
+        assert!(crate::doctor::encoders_for_fifo(
+            &uscreen_config::linux::processes::same_user_processes().unwrap(),
+            &expected
+        )
+        .is_empty());
         assert!(
             child.try_wait().unwrap().is_some(),
             "T348: native-path orphan survived"

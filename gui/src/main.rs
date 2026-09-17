@@ -1514,7 +1514,7 @@ mod tests {
         let fixture = daemon_fixture::Fixture::new();
         let runtime = fixture.root.path().join("runtime");
         std::fs::create_dir(&runtime).unwrap();
-        let daemon = fixture.start(&[]);
+        let daemon = fixture.start_named("uscreen", &[]);
         let diagnostic = fixture.start(&["doctor"]);
         let sandbox = Sandbox::new();
         sandbox.script("adb", "exit 0");

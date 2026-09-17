@@ -4,8 +4,9 @@
 //! This is deliberately the first thing to run whenever the stream "is laggy
 //! again". The most common cause is not the pipeline at all but orphaned
 //! `evdi_helper`/`ffmpeg` processes from a previous run: several writers on the
-//! shared capture FIFO interleave at pipe granularity, and no amount of
-//! restarting the daemon fixes it until they are killed.
+//! shared capture FIFO interleave at pipe granularity. Diagnostics identify
+//! the affected owned pipeline; capture startup retires matching processes
+//! before attaching a replacement helper.
 
 use crate::capture::fifo_path_for;
 use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS, MIN_BITRATE_KBPS, MIN_FPS};
@@ -13,6 +14,7 @@ use crate::vdisplay;
 use anyhow::Result;
 use std::path::Path;
 use uscreen_config::commands::AsyncCommandExt;
+use uscreen_config::linux::processes::{self, CaptureRole, Process};
 
 #[derive(PartialEq)]
 enum Level {
@@ -83,18 +85,6 @@ async fn output_of(program: &str, args: &[&str]) -> Option<String> {
 }
 
 use uscreen_config::linux::programs::command_exists;
-
-/// PIDs whose executable name matches exactly (`pgrep -x`).
-async fn pids_exact(name: &str) -> Vec<u32> {
-    parse_pids(output_of("pgrep", &["-x", name]).await)
-}
-
-fn parse_pids(out: Option<String>) -> Vec<u32> {
-    out.unwrap_or_default()
-        .lines()
-        .filter_map(|l| l.trim().parse::<u32>().ok())
-        .collect()
-}
 
 fn check_modules(r: &mut Report, cfg: &FileConfig) {
     match std::fs::read_to_string("/sys/devices/evdi/count") {
@@ -255,76 +245,62 @@ fn report_encoder_availability(r: &mut Report, cfg: &FileConfig, list: &str) {
 /// Check daemon ownership and per-slot process counts. Each tablet slot has its
 /// own FIFO; duplicate encoders on one FIFO corrupt its frames.
 async fn check_processes(r: &mut Report, cfg: &FileConfig) {
-    let daemons = pids_exact("uscreen").await;
-    let helpers = pids_exact("evdi_helper").await;
-
-    let tracked = report_daemon(r);
-
-    // `pgrep -x uscreen` also matches this very process — excluding it is not
-    // cosmetic: reporting ourselves as an orphan would send the user off to
-    // `pkill -x uscreen` chasing a process that never existed.
-    let self_pid = std::process::id();
-    let untracked: Vec<u32> = daemons
+    let inventory = match processes::same_user_processes() {
+        Ok(inventory) => inventory,
+        Err(error) => {
+            r.line(Level::Warn, "process inspection", &error.to_string());
+            return;
+        }
+    };
+    let pid_file = crate::get_pid_path();
+    let daemons = uscreen_config::linux::daemon::from_processes(&inventory, Some(&pid_file));
+    let tracked = report_daemon(r, &daemons, &pid_file);
+    let fifos = (0..cfg.max_tablets).map(fifo_path_for).collect::<Vec<_>>();
+    let helpers = fifos
         .iter()
-        .copied()
-        .filter(|p| *p != self_pid && Some(*p) != tracked)
-        .collect();
-    if !untracked.is_empty() {
-        r.line(
-            Level::Fail,
-            "orphaned uscreen daemons",
-            &format!("{:?}", untracked),
-        );
-        r.hint("these fight over the same FIFO and ports — kill them: pkill -x uscreen");
-    }
-
+        .flat_map(|fifo| capture_pids(&inventory, CaptureRole::Helper, fifo))
+        .collect::<Vec<_>>();
     report_helpers(r, &helpers, tracked, cfg.max_tablets);
-    for instance in 0..cfg.max_tablets {
-        let fifo = fifo_path_for(instance);
-        let encoders = match encoders_for_fifo(&fifo) {
-            Ok(encoders) => encoders,
-            Err(error) => {
-                r.line(
-                    Level::Warn,
-                    "encoder process inspection",
-                    &error.to_string(),
-                );
-                continue;
-            }
-        };
-        report_encoders(r, &encoders, tracked, &fifo);
+    for fifo in fifos {
+        report_encoders(r, &encoders_for_fifo(&inventory, &fifo), tracked, &fifo);
     }
 }
 
-fn report_daemon(r: &mut Report) -> Option<u32> {
-    // The PID file is the daemon's single slot; anything running beside it is
-    // untracked and `uscreen stop` will never reach it.
-    let pid_file = crate::get_pid_path();
-    let tracked: Option<u32> = std::fs::read_to_string(&pid_file)
-        .ok()
-        .and_then(|t| t.trim().parse().ok())
-        .filter(|pid| config::daemon_is_running(*pid));
-
+fn report_daemon(r: &mut Report, daemons: &[u32], pid_file: &Path) -> Option<u32> {
+    let tracked = daemons.first().copied();
     match tracked {
-        Some(pid) => r.line(Level::Ok, "daemon", &format!("running, PID {}", pid)),
-        None if pid_file.exists() => {
-            r.line(Level::Warn, "daemon", "stale PID file, not running");
-            r.hint(&format!("rm {}", pid_file.display()));
-        }
+        Some(pid) => r.line(Level::Ok, "daemon", &format!("running, PID {pid}")),
         None => r.line(Level::Ok, "daemon", "not running"),
     }
-
+    if daemons.len() > 1 {
+        r.line(
+            Level::Fail,
+            "multiple uscreen daemons",
+            &format!("{daemons:?}"),
+        );
+        r.hint("uscreen stop reaches validated same-user daemons even without a PID file; stop them before starting again");
+    } else if tracked.is_none() && pid_file.exists() {
+        r.line(
+            Level::Warn,
+            "PID file",
+            "stale or not a daemon; no live daemon was found",
+        );
+        r.hint("uscreen start replaces the stale PID file");
+    }
     tracked
 }
 
-pub(crate) fn encoders_for_fifo(fifo: &Path) -> std::io::Result<Vec<u32>> {
-    Ok(uscreen_config::linux::processes::same_user_processes()?
-        .into_iter()
-        .filter(|process| {
-            process.executable_named("ffmpeg") && process.has_path_argument("-i", fifo)
-        })
+fn capture_pids(inventory: &[Process], role: CaptureRole, fifo: &Path) -> Vec<u32> {
+    let uid = unsafe { libc::getuid() };
+    inventory
+        .iter()
+        .filter(|process| process.owned_by(uid) && process.capture_role(fifo) == Some(role))
         .map(|process| process.pid)
-        .collect())
+        .collect()
+}
+
+pub(crate) fn encoders_for_fifo(inventory: &[Process], fifo: &Path) -> Vec<u32> {
+    capture_pids(inventory, CaptureRole::Encoder, fifo)
 }
 
 fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo: &Path) {
@@ -334,7 +310,7 @@ fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo:
             &format!("ffmpeg on {}", fifo.display()),
             &format!("{} running: {:?}", encoders.len(), encoders),
         );
-        r.hint("two readers on one pipe corrupt frames — kill the strays");
+        r.hint("two readers on one pipe corrupt frames; stop and start UScreen to retire matching capture processes before capture begins");
     } else if encoders.len() == 1 && tracked.is_none() {
         r.line(
             Level::Fail,
@@ -358,10 +334,10 @@ fn report_helpers(r: &mut Report, helpers: &[u32], tracked: Option<u32>, max_tab
             "evdi_helper processes",
             &format!("{} running: {:?}", helpers.len(), helpers),
         );
-        r.hint("more helpers than configured tablet slots: stop UScreen, inspect these PIDs and remove strays before restarting");
+        r.hint("more helpers than configured tablet slots: stop and start UScreen; capture startup retires matching helpers before attaching");
     } else if !helpers.is_empty() && tracked.is_none() {
         r.line(Level::Fail, "evdi_helper", "orphaned (no daemon owns it)");
-        r.hint("pkill -x evdi_helper");
+        r.hint("start UScreen and reconnect the tablet; capture startup retires matching helpers before attaching");
     } else {
         r.line(
             Level::Ok,
@@ -1395,6 +1371,187 @@ mod tests {
                 .borrow()
                 .join("\n")
                 .contains("without --features inproc-encoder"));
+        }
+    }
+
+    mod daemon_fixture {
+        include!("../../testdata/daemon_process.rs");
+    }
+
+    #[tokio::test]
+    async fn t251_doctor_recovers_daemons_without_broad_orphan_matches() {
+        if std::env::var_os("USCREEN_T251_CHILD").is_some() {
+            check_t251_report(true).await;
+            return;
+        }
+        let fixture = daemon_fixture::Fixture::new();
+        let daemon = fixture.start(&[]);
+        let diagnostic = fixture.start(&["doctor"]);
+        let unrelated = fixture.start_named(
+            "evdi_helper",
+            &["--capture-fifo", "/unrelated/capture.fifo"],
+        );
+        let fifo = fixture.root.path().join("runtime/uscreen/capture.fifo");
+        let helper =
+            fixture.start_named("evdi_helper", &["--capture-fifo", fifo.to_str().unwrap()]);
+        let encoder = fixture.start_named("ffmpeg", &["-i", fifo.to_str().unwrap()]);
+        run_t251_report_child(
+            &fixture,
+            diagnostic.pid(),
+            Some(daemon.pid()),
+            "doctor::tests::t251_doctor_recovers_daemons_without_broad_orphan_matches",
+        );
+        for pid in [
+            daemon.pid(),
+            diagnostic.pid(),
+            unrelated.pid(),
+            helper.pid(),
+            encoder.pid(),
+        ] {
+            assert!(
+                uscreen_config::linux::processes::Process::read(pid).is_some(),
+                "T251: diagnostics signalled a fixture"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn t251_doctor_ignores_diagnostic_commands_and_unrelated_helpers() {
+        if std::env::var_os("USCREEN_T251_CHILD").is_some() {
+            check_t251_report(false).await;
+            return;
+        }
+        let fixture = daemon_fixture::Fixture::new();
+        let doctor = fixture.start(&["doctor"]);
+        let status = fixture.start(&["status"]);
+        let unrelated = fixture.start_named(
+            "evdi_helper",
+            &["--capture-fifo", "/unrelated/capture.fifo"],
+        );
+        run_t251_report_child(
+            &fixture,
+            doctor.pid(),
+            None,
+            "doctor::tests::t251_doctor_ignores_diagnostic_commands_and_unrelated_helpers",
+        );
+        for pid in [doctor.pid(), status.pid(), unrelated.pid()] {
+            assert!(uscreen_config::linux::processes::Process::read(pid).is_some());
+        }
+    }
+
+    #[test]
+    fn t251_orphan_remediation_uses_validated_lifecycle_commands() {
+        use super::*;
+        let root = tempfile::tempdir().unwrap();
+        let mut report = Report::new();
+        report_helpers(&mut report, &[11], None, 1);
+        report_helpers(&mut report, &[11, 12], Some(10), 1);
+        report_encoders(&mut report, &[13], None, &root.path().join("capture.fifo"));
+        report_encoders(
+            &mut report,
+            &[13, 14],
+            Some(10),
+            &root.path().join("capture.fifo"),
+        );
+        report_daemon(&mut report, &[10, 20], &root.path().join("pid"));
+        assert_eq!(report.failures, 5);
+        let text = report.messages.borrow().join("\n");
+        assert!(!text.contains("pkill"), "T251: {text}");
+        assert!(text.contains("uscreen stop reaches validated same-user daemons"));
+    }
+
+    #[test]
+    fn t251_inventory_filters_foreign_owners_before_classification() {
+        use super::*;
+        let fixture = daemon_fixture::Fixture::new();
+        let daemon = fixture.start(&["start"]);
+        let fifo = fixture.root.path().join("capture.fifo");
+        let helper =
+            fixture.start_named("evdi_helper", &["--capture-fifo", fifo.to_str().unwrap()]);
+        let mut daemon_process = Process::read(daemon.pid()).unwrap();
+        let mut helper_process = Process::read(helper.pid()).unwrap();
+        assert_eq!(
+            uscreen_config::linux::daemon::from_processes(&[daemon_process.clone()], None),
+            [daemon.pid()]
+        );
+        assert_eq!(
+            capture_pids(&[helper_process.clone()], CaptureRole::Helper, &fifo),
+            [helper.pid()]
+        );
+        daemon_process.uid = daemon_process.uid.wrapping_add(1);
+        helper_process.uid = helper_process.uid.wrapping_add(1);
+        assert!(uscreen_config::linux::daemon::from_processes(&[daemon_process], None).is_empty());
+        assert!(capture_pids(&[helper_process], CaptureRole::Helper, &fifo).is_empty());
+    }
+
+    fn run_t251_report_child(
+        fixture: &daemon_fixture::Fixture,
+        diagnostic: u32,
+        daemon: Option<u32>,
+        name: &str,
+    ) {
+        let runtime = fixture.root.path().join("runtime");
+        std::fs::create_dir(&runtime).unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .env("USCREEN_T251_CHILD", "1")
+            .env("USCREEN_T251_DIAGNOSTIC", diagnostic.to_string())
+            .env("USCREEN_T251_DAEMON", daemon.unwrap_or(0).to_string())
+            .env("HOME", fixture.root.path())
+            .env("XDG_RUNTIME_DIR", runtime)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T251: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    async fn check_t251_report(running: bool) {
+        use super::*;
+        let diagnostic = std::env::var("USCREEN_T251_DIAGNOSTIC").unwrap();
+        let daemon = std::env::var("USCREEN_T251_DAEMON").unwrap();
+        let path = crate::get_pid_path();
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        for stale in [
+            None,
+            Some("invalid"),
+            Some("4294967295"),
+            Some(diagnostic.as_str()),
+            Some(daemon.as_str()),
+        ] {
+            let _ = std::fs::remove_file(&path);
+            if let Some(text) = stale {
+                std::fs::write(&path, text).unwrap();
+            }
+            let mut report = Report::new();
+            check_processes(
+                &mut report,
+                &FileConfig {
+                    max_tablets: 1,
+                    ..Default::default()
+                },
+            )
+            .await;
+            let text = report.messages.borrow().join("\n");
+            assert_eq!(report.failures, 0, "T251: {stale:?}: {text}");
+            assert!(
+                !text.contains("pkill"),
+                "T251: broad process remediation: {text}"
+            );
+            let state = if running {
+                format!("running, PID {daemon}")
+            } else {
+                "not running".into()
+            };
+            assert!(text.contains(&format!("daemon: {state}")), "T251: {text}");
+            let helpers = usize::from(running);
+            assert!(
+                text.contains(&format!("evdi_helper processes: {helpers}")),
+                "T251: {text}"
+            );
         }
     }
 

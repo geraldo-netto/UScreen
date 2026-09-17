@@ -20,13 +20,20 @@ pub fn is_daemon_process(pid: u32, uid: u32) -> bool {
 /// Prefer a validated PID-file entry, then recover other same-user daemons.
 /// Diagnostic commands, zombies and this calling process never enter the result.
 pub fn discover(pid_file: Option<&Path>) -> Vec<u32> {
+    from_processes(
+        &processes::same_user_processes().unwrap_or_default(),
+        pid_file,
+    )
+}
+
+/// Select daemon identities from one read-only process inventory.
+pub fn from_processes(processes: &[Process], pid_file: Option<&Path>) -> Vec<u32> {
     let uid = unsafe { libc::getuid() };
     let tracked = pid_file
         .and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|text| text.trim().parse::<u32>().ok());
-    let mut pids = processes::same_user_processes()
-        .unwrap_or_default()
-        .into_iter()
+    let mut pids = processes
+        .iter()
         .filter(|process| process.pid != std::process::id() && matches(process, uid))
         .map(|process| process.pid)
         .collect::<Vec<_>>();

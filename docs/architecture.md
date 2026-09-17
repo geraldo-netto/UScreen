@@ -81,7 +81,12 @@ A PID file is a hint: its entry receives priority only after UID, liveness and
 full command-line validation. Missing, stale or diagnostic-command PID entries
 fall back to process discovery. An active user service routes GUI actions through
 systemd; otherwise a live direct daemon takes precedence over an installed
-inactive unit. Doctor's remaining daemon/helper checks are tracked by T251.
+inactive unit. Doctor uses the same daemon validation and one read-only process
+inventory. Helpers and encoders are associated by same-user ownership, executable
+identity and the configured slot's exact FIFO argument; unrelated capture
+processes and concurrent diagnostic commands do not count as orphans. Its
+remediation uses validated UScreen stop/start operations rather than broad
+process-name signals.
 
 The Android foreground service follows the Activity's started lifecycle,
 including waiting for connection and graphics-tablet mode; it is not proof
@@ -205,5 +210,5 @@ SIGTERM, share a 1.5-second grace, then receive SIGKILL if needed with a further
 0.5-second exit budget. Failure to confirm retirement prevents new capture.
 Orphan retirement requires `pidfd_open` (Linux 5.3+) and `pidfd_send_signal` to be
 available; there is no PID-only signalling fallback. A run without matching
-orphans does not need those syscalls. Doctor's older process/remediation checks
-remain tracked separately by T251.
+orphans does not need those syscalls. Doctor shares the capture-role/FIFO matcher
+for reporting but never signals processes.

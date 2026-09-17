@@ -8,6 +8,12 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CaptureRole {
+    Helper,
+    Encoder,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Process {
     pub pid: u32,
@@ -58,6 +64,16 @@ impl Process {
         let bytes = file.as_bytes();
         // /proc marks an old inode after an atomic binary upgrade.
         bytes.strip_suffix(b" (deleted)").unwrap_or(bytes) == name.as_bytes()
+    }
+
+    pub fn capture_role(&self, fifo: &Path) -> Option<CaptureRole> {
+        if self.executable_named("evdi_helper") && self.has_path_argument("--capture-fifo", fifo) {
+            Some(CaptureRole::Helper)
+        } else if self.executable_named("ffmpeg") && self.has_path_argument("-i", fifo) {
+            Some(CaptureRole::Encoder)
+        } else {
+            None
+        }
     }
 
     pub fn has_path_argument(&self, option: &str, path: &Path) -> bool {

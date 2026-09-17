@@ -28,7 +28,17 @@ impl Fixture {
     }
 
     pub fn start(&self, args: &[&str]) -> Child {
-        let mut child = Child(std::process::Command::new(&self.program).args(args)
+        Self::spawn(&self.program, args)
+    }
+
+    pub fn start_named(&self, name: &str, args: &[&str]) -> Child {
+        let program = self.root.path().join(name);
+        if !program.exists() { std::fs::copy(&self.program, &program).unwrap(); }
+        Self::spawn(&program, args)
+    }
+
+    fn spawn(program: &std::path::Path, args: &[&str]) -> Child {
+        let mut child = Child(std::process::Command::new(program).args(args)
             .stdout(std::process::Stdio::piped()).spawn().unwrap());
         let mut line = String::new();
         std::io::BufReader::new(child.0.stdout.take().unwrap()).read_line(&mut line).unwrap();
