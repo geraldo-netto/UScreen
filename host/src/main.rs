@@ -148,6 +148,85 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 
 #[cfg(test)]
 mod cli_tests {
+    #[tokio::test]
+    async fn t292_queued_first_settings_update_is_persisted() {
+        if std::env::var_os("USCREEN_T292_CHILD").is_none() {
+            let dir = tempfile::tempdir().unwrap();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "cli_tests::t292_queued_first_settings_update_is_persisted",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T292_CHILD", "1")
+                .env("XDG_CONFIG_HOME", dir.path())
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+        let saved = config::FileConfig {
+            encoder: "libx264".into(),
+            ..Default::default()
+        };
+        saved.save().unwrap();
+        let initial = capture::EncoderSettings {
+            encoder: "h264_vaapi".into(),
+            fps: 60,
+            bitrate: 20000,
+            width: 1920,
+            height: 1080,
+            quality: 20,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+            geometry_ready: false,
+        };
+        let (tx, rx) = watch::channel(initial.clone());
+        let cli = Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi"]).unwrap();
+        let persist = persist_settings(rx, CliOverrides::new(&cli));
+        // A GUI edit to an unrelated field must also survive the delayed writer.
+        config::FileConfig::update(|cfg| {
+            cfg.pen_only = true;
+            Ok(())
+        })
+        .unwrap();
+        tx.send(capture::EncoderSettings {
+            encoder: "h264_nvenc".into(),
+            fps: 30,
+            bitrate: 12000,
+            width: 2560,
+            height: 1600,
+            quality: 25,
+            stream_scale: 2,
+            geometry_ready: true,
+            ..initial
+        })
+        .unwrap();
+        drop(tx);
+        persist.await;
+        let expected = config::FileConfig {
+            fps: 30,
+            bitrate: 12000,
+            width: 2560,
+            height: 1600,
+            quality: 25,
+            stream_scale: 2,
+            pen_only: true,
+            ..saved
+        };
+        assert_eq!(
+            config::FileConfig::load(),
+            expected,
+            "T292: a queued first update must not become the persistence baseline"
+        );
+    }
+
     #[test]
     fn t200_runtime_persistence_preserves_cli_and_unchanged_fields() {
         let cli =
@@ -1061,6 +1140,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         stream_scale,
         geometry_ready: false,
     });
+    // Snapshot before any producer runs; scheduling the writer can come later.
+    // CLI overrides remain temporary and must never be written back.
+    let save_settings = persist_settings(settings_rx.clone(), CliOverrides::new(&cli));
 
     // Tablet presence, published by the ADB monitor.
     let (tablet_tx, tablet_rx) = watch::channel(false);
@@ -1136,11 +1218,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         }
     });
 
-    // Fields the user overrode on the command line for this run only. They
-    // must not be written back: a flag is not a settings change, and
-    // persisting one silently rewrites the user's configuration behind them.
-    let cli_overrides = CliOverrides::new(&cli);
-    let save_handle = tokio::spawn(persist_settings(settings_rx.clone(), cli_overrides));
+    let save_handle = tokio::spawn(save_settings);
 
     // Remember which mode the tablet was left in. Unlike the --pen-only flag,
     // which is a one-off for this run and never written back, a switch made
@@ -1398,23 +1476,27 @@ fn spawn_display_gate(
     })
 }
 
-async fn persist_settings(
+fn persist_settings(
     mut settings_rx: watch::Receiver<capture::EncoderSettings>,
     cli_overrides: CliOverrides,
-) {
+) -> impl std::future::Future<Output = ()> + Send {
+    // Capture the baseline at construction, even if this future is polled
+    // after a tablet has already published its first settings change.
     let mut previous = settings_rx.borrow().clone();
-    while settings_rx.changed().await.is_ok() {
-        let s = settings_rx.borrow().clone();
-        let result = config::FileConfig::update(|cfg| {
-            cli_overrides.apply_encoder(cfg, &s, &previous);
-            cli_overrides.apply_geometry(cfg, &s, &previous);
-            Ok(())
-        });
-        previous = s;
-        if let Err(e) = result {
-            warn!("Failed to persist settings: {}", e);
-        } else {
-            info!("Settings saved to {:?}", config::config_path());
+    async move {
+        while settings_rx.changed().await.is_ok() {
+            let s = settings_rx.borrow().clone();
+            let result = config::FileConfig::update(|cfg| {
+                cli_overrides.apply_encoder(cfg, &s, &previous);
+                cli_overrides.apply_geometry(cfg, &s, &previous);
+                Ok(())
+            });
+            previous = s;
+            if let Err(e) = result {
+                warn!("Failed to persist settings: {}", e);
+            } else {
+                info!("Settings saved to {:?}", config::config_path());
+            }
         }
     }
 }
