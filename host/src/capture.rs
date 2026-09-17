@@ -1563,18 +1563,24 @@ impl CaptureManager {
     }
 
     #[cfg(not(feature = "inproc-encoder"))]
+    fn encoder_throughput_rates(total: u64, elapsed: f64) -> (f64, f64) {
+        let megabytes_per_second = if elapsed > 0.0 {
+            (total as f64 / elapsed) / 1_000_000.0
+        } else {
+            0.0
+        };
+        (megabytes_per_second, megabytes_per_second * 8.0 * 1000.0)
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
     fn report_encoder_throughput(frames: &mut u64, total: &mut u64, last_log: &mut Instant) {
         if last_log.elapsed().as_secs() >= 5 {
             let elapsed = last_log.elapsed().as_secs_f64();
-            let mbps = if elapsed > 0.0 {
-                (*total as f64 / elapsed) / 1_048_576.0
-            } else {
-                0.0
-            };
-            let kbps = mbps * 8.0 * 1024.0;
+            let (megabytes_per_second, kilobits_per_second) =
+                Self::encoder_throughput_rates(*total, elapsed);
             info!(
                 "Encoder: {} access units in {:.1}s, {:.1} MB/s ({:.0} kbps)",
-                frames, elapsed, mbps, kbps
+                frames, elapsed, megabytes_per_second, kilobits_per_second
             );
             *frames = 0;
             *total = 0;
@@ -2021,6 +2027,23 @@ impl<'a> ExpGolombReader<'a> {
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t307_encoder_throughput_uses_displayed_decimal_units() {
+        for (bytes, seconds, megabytes, kilobits) in [
+            (0, 5.0, 0.0, 0.0),
+            (1_000_000, 1.0, 1.0, 8000.0),
+            (37_500_000, 5.0, 7.5, 60000.0),
+            (125_000, 0.5, 0.25, 2000.0),
+            (1_000_000, 0.0, 0.0, 0.0),
+        ] {
+            assert_eq!(
+                CaptureManager::encoder_throughput_rates(bytes, seconds),
+                (megabytes, kilobits),
+                "T307: wrong MB/s and kbps for {bytes} bytes over {seconds} seconds"
+            );
+        }
+    }
 
     #[test]
     fn t306_nvenc_preserves_kilobit_bitrate_limits() {
