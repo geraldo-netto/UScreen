@@ -79,8 +79,8 @@ def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm
     edid[18] = 1   # version
     edid[19] = 4   # revision
 
-    # Digital input (8-bit color depth, HDMI/DVI)
-    edid[20] = 0xA5  # Digital, 8 bpc, DVI
+    # Digital input (8-bit color depth, DisplayPort interface code 5)
+    edid[20] = 0xA5  # Digital, 8 bpc, DisplayPort
 
     # Max image size (cm)
     edid[21] = max(1, min(255, width_mm // 10))

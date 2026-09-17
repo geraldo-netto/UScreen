@@ -67,7 +67,7 @@ pub fn make_edid_sized(
     edid[18] = 1; // version
     edid[19] = 4; // revision
 
-    edid[20] = 0xA5; // Digital, 8 bpc, DVI
+    edid[20] = 0xA5; // Digital, 8 bpc, DisplayPort interface code (5)
     edid[21] = (width_mm / 10).clamp(1, 255) as u8; // max image size, cm
     edid[22] = (height_mm / 10).clamp(1, 255) as u8;
     edid[23] = 0x78; // gamma 2.2
