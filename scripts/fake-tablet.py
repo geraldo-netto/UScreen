@@ -81,9 +81,9 @@ def read_exact(s, n):
 def receive_video(video, control, seconds):
     frames = 0
     got_config = False
-    t_end = time.time() + seconds
+    t_end = time.monotonic() + seconds
     seq_last = None
-    while time.time() < t_end:
+    while time.monotonic() < t_end:
         try:
             ln = struct.unpack(">I", read_exact(video, 4))[0]
             body = read_exact(video, ln)

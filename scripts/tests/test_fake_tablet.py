@@ -33,6 +33,20 @@ class FragmentedSocket:
 
 
 class PartialIoTest(unittest.TestCase):
+    def test_t327_video_duration_ignores_wall_clock_corrections(self):
+        packets = [b'\x01' + struct.pack('>I', seq) + b'frame' for seq in range(1, 4)]
+        chunks = [struct.pack('>I', len(packet)) + packet for packet in packets]
+        for wall_times in [[1000, 1000, 2000], [1000, 1000, 0, 0, 1003]]:
+            with self.subTest(wall_times=wall_times), \
+                    patch.object(tablet.time, 'time', side_effect=wall_times), \
+                    patch.object(tablet.time, 'monotonic', side_effect=[10, 10, 11, 12]), \
+                    patch.object(tablet, 'ws_send') as send:
+                control = object()
+                result = tablet.receive_video(FragmentedSocket(chunks), control, 2)
+                self.assertEqual(result, (False, 2, 2),
+                                 'T327: wall-clock correction changed the elapsed video window')
+                self.assertEqual([call.args[1]['seq'] for call in send.call_args_list], [1, 2])
+
     def test_t103_upgrade_preserves_overread_and_short_writes(self):
         sock = FragmentedSocket([b'HTTP/1.1 101 Switching Protocols\r\n', b'\r\n\x81\x05hello'])
         with patch.object(tablet.socket, 'create_connection', return_value=sock):
