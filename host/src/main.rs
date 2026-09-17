@@ -608,6 +608,59 @@ printf '%s\n' "$2" >> "$0.log"
 
     use super::*;
 
+    fn t237_process_fixture(root: &std::path::Path) -> std::path::PathBuf {
+        let source = root.join("child.c");
+        let executable = root.join("uscreen");
+        std::fs::write(&source, "#include <stdio.h>\n#include <unistd.h>\nint main(void) { puts(\"ready\"); fflush(stdout); for (;;) pause(); }\n").unwrap();
+        assert!(std::process::Command::new("cc").arg(&source).arg("-o").arg(&executable).status().unwrap().success());
+        executable
+    }
+
+    async fn t237_child(executable: &std::path::Path, args: &[&str]) -> tokio::process::Child {
+        use tokio::io::AsyncBufReadExt;
+        let mut child = tokio::process::Command::new(executable).args(args)
+            .stdout(std::process::Stdio::piped()).kill_on_drop(true).spawn().unwrap();
+        let mut ready = String::new();
+        tokio::io::BufReader::new(child.stdout.take().unwrap()).read_line(&mut ready).await.unwrap();
+        assert_eq!(ready, "ready\n");
+        child
+    }
+
+    #[tokio::test]
+    async fn t237_discovery_recognizes_default_and_explicit_daemons() {
+        let root = tempfile::tempdir().unwrap();
+        let executable = t237_process_fixture(root.path());
+        for (args, expected) in [(vec![], true), (vec!["start"], true),
+            (vec!["--fps", "30"], true), (vec!["status"], false), (vec!["doctor"], false),
+            (vec!["--helper", "start", "status"], false)] {
+            let mut child = t237_child(&executable, &args).await;
+            let detected = other_daemons().contains(&child.id().unwrap());
+            child.kill().await.unwrap();
+            assert_eq!(detected, expected, "T237: command {args:?}");
+        }
+    }
+
+    #[tokio::test]
+    async fn t237_stop_recovers_missing_and_stale_pid_files_without_touching_other_commands() {
+        let root = tempfile::tempdir().unwrap();
+        let executable = t237_process_fixture(root.path());
+        let pid_path = root.path().join("daemon.pid");
+        let mut unrelated = t237_child(&executable, &["doctor"]).await;
+        for stale in [false, true] {
+            let mut daemon = t237_child(&executable, &[]).await;
+            let pid = daemon.id().unwrap();
+            assert!(!is_daemon_process(pid, unsafe { libc::getuid() }.wrapping_add(1)));
+            if stale { std::fs::write(&pid_path, unrelated.id().unwrap().to_string()).unwrap(); }
+            // Discovery is read-only; constrain all signals to fixture children.
+            let recovered = other_daemons().into_iter().filter(|&found| found == pid).collect();
+            stop_daemon_at(&pid_path, recovered).await.unwrap();
+            assert!(daemon.wait().await.unwrap().code().is_none());
+            assert!(unrelated.try_wait().unwrap().is_none());
+            assert!(!pid_path.exists());
+        }
+        unrelated.kill().await.unwrap();
+    }
+
     #[tokio::test]
     async fn t030_pid_reuse_does_not_mistake_another_process_for_uscreen() {
         let mut child = tokio::process::Command::new("sleep")
@@ -1160,7 +1213,7 @@ fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
     // EVDI FIFO, corrupting frames and starving the encoder.
     if let Ok(existing) = std::fs::read_to_string(pid_path) {
         if let Ok(existing_pid) = existing.trim().parse::<i32>() {
-            let alive = config::daemon_is_running(existing_pid as u32);
+            let alive = is_daemon_process(existing_pid as u32, unsafe { libc::getuid() });
             if alive {
                 anyhow::bail!(
                     "uscreen daemon already running (PID: {}). Run `uscreen stop` first.",
@@ -1355,49 +1408,27 @@ async fn persist_mode(mut mode_rx: watch::Receiver<bool>) {
     }
 }
 
-/// PIDs of every other `uscreen start` process of this user, found by
-/// process name plus argument rather than by grepping full command lines -
-/// `pgrep -f 'uscreen start'` also matched the shells running it, which is
-/// how `uscreen stop` used to kill the terminal it was typed into.
+/// Recover same-user daemons even when their PID file is missing.
 fn other_daemons() -> Vec<u32> {
-    use std::os::unix::fs::MetadataExt;
-    let me = std::process::id();
+    let Ok(entries) = std::fs::read_dir("/proc") else { return Vec::new() };
     let uid = unsafe { libc::getuid() };
-    let mut out = Vec::new();
-    let Ok(dir) = std::fs::read_dir("/proc") else {
-        return out;
-    };
-    for e in dir.flatten() {
-        let Ok(pid) = e.file_name().to_string_lossy().parse::<u32>() else {
-            continue;
-        };
-        if pid == me {
-            continue;
-        }
-        let base = e.path();
-        let Ok(comm) = std::fs::read_to_string(base.join("comm")) else {
-            continue;
-        };
-        if comm.trim() != "uscreen" {
-            continue;
-        }
-        let Ok(cmd) = std::fs::read(base.join("cmdline")) else {
-            continue;
-        };
-        if !cmd.split(|b| *b == 0).any(|a| a == b"start") {
-            continue;
-        }
-        // Same user only: another account's daemon is not ours to touch.
-        if std::fs::metadata(&base)
-            .map(|m| m.uid())
-            .unwrap_or(u32::MAX)
-            != uid
-        {
-            continue;
-        }
-        out.push(pid);
-    }
-    out
+    entries.flatten()
+        .filter_map(|entry| entry.file_name().to_string_lossy().parse::<u32>().ok())
+        .filter(|&pid| pid != std::process::id() && is_daemon_process(pid, uid))
+        .collect()
+}
+
+fn is_daemon_process(pid: u32, uid: u32) -> bool {
+    use std::os::unix::{fs::MetadataExt, ffi::OsStringExt};
+    let base = PathBuf::from(format!("/proc/{pid}"));
+    if std::fs::metadata(&base).map(|m| m.uid()).ok() != Some(uid)
+        || !config::daemon_is_running(pid) { return false; }
+    let Ok(cmdline) = std::fs::read(base.join("cmdline")) else { return false };
+    if cmdline.is_empty() { return false; }
+    let args = cmdline.split(|byte| *byte == 0).filter(|arg| !arg.is_empty())
+        .map(|arg| std::ffi::OsString::from_vec(arg.to_vec()));
+    // Use the real parser: option values named "start" are not subcommands.
+    Cli::try_parse_from(args).is_ok_and(|cli| matches!(cli.command, None | Some(Commands::Start)))
 }
 
 fn remove_pid_file_if_ours(pid_path: &std::path::Path, pid: u32) {
@@ -2709,12 +2740,16 @@ fn forwarding_instructions(video_port: u16, input_port: u16) -> String {
 }
 
 async fn stop_daemon() -> Result<()> {
-    let pid_path = get_pid_path();
+    stop_daemon_at(&get_pid_path(), other_daemons()).await
+}
+
+async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Result<()> {
+    let uid = unsafe { libc::getuid() };
+    pids.retain(|&pid| pid != std::process::id() && is_daemon_process(pid, uid));
     let tracked = std::fs::read_to_string(&pid_path)
         .ok()
         .and_then(|s| s.trim().parse::<u32>().ok());
-    let mut pids = other_daemons();
-    if let Some(pid) = tracked.filter(|&p| p != std::process::id() && config::daemon_is_running(p))
+    if let Some(pid) = tracked.filter(|&p| p != std::process::id() && is_daemon_process(p, uid))
     {
         if !pids.contains(&pid) {
             pids.push(pid);
