@@ -112,8 +112,9 @@ scripts/           install.sh, release build, fake tablet
 docs/              this documentation and the GitHub Pages site
 ```
 
-Design notes for a Windows host, nothing implemented, are in
-[windows-port.md](windows-port.md).
+The proposed [Windows integration plan](windows-port.md) covers pending
+decisions, platform changes, milestones and validation. Windows host support
+is not implemented yet.
 
 ## Command line
 
