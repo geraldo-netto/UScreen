@@ -189,3 +189,8 @@ fn t274_delayed_writer_cannot_read_replaced_mode_buffers() {
 fn t279_failed_mode_allocations_retire_capture() {
     Harness::build("T279").run("T279");
 }
+
+#[test]
+fn t290_capture_poll_deadlines_survive_long_uptimes() {
+    Harness::build("T290").run("T290");
+}

@@ -12,12 +12,14 @@ static int mock_poll(struct pollfd *, nfds_t, int);
 static int mock_nanosleep(const struct timespec *, struct timespec *);
 static void *mock_malloc(size_t);
 static int mock_posix_memalign(void **, size_t, size_t);
+static int mock_clock_gettime(clockid_t, struct timespec *);
 #define pthread_create mock_pthread_create
 #define sysconf mock_sysconf
 #define poll mock_poll
 #define nanosleep mock_nanosleep
 #define malloc mock_malloc
 #define posix_memalign mock_posix_memalign
+#define clock_gettime mock_clock_gettime
 #define main evdi_helper_main
 #include "../evdi/evdi_helper.c"
 #undef main
@@ -27,6 +29,7 @@ static int mock_posix_memalign(void **, size_t, size_t);
 #undef nanosleep
 #undef malloc
 #undef posix_memalign
+#undef clock_gettime
 #include <assert.h>
 #include <sys/wait.h>
 
@@ -34,6 +37,15 @@ static int fail_worker = 0;
 static int stall_once = 0;
 static int add_result = 0;
 static int allocation_countdown = 0;
+static long long mock_monotonic_ms = -1;
+static int mock_clock_gettime(clockid_t clock, struct timespec *value) {
+    if (clock == CLOCK_MONOTONIC && mock_monotonic_ms >= 0) {
+        value->tv_sec = mock_monotonic_ms / 1000;
+        value->tv_nsec = (mock_monotonic_ms % 1000) * 1000000;
+        return 0;
+    }
+    return clock_gettime(clock, value);
+}
 static void *mock_malloc(size_t size) {
     if (allocation_countdown > 0 && --allocation_countdown == 0) return NULL;
     return malloc(size);
@@ -603,9 +615,39 @@ static void test_t052(void) {
     assert(request_evdi_device());
 }
 
+static void test_t290(void) {
+    const long long uptimes[] = {
+        1234, (long long)INT_MAX - 1, (long long)INT_MAX + 17,
+        (long long)INT_MAX + 18, (long long)UINT_MAX + 18,
+        (1LL << 40) + INT_MAX + 1000
+    };
+    for (size_t i = 0; i < sizeof(uptimes) / sizeof(uptimes[0]); i++) {
+        mock_monotonic_ms = uptimes[i];
+        g_have_mode = 1;
+        g_update_pending = 0;
+        g_last_request_ms = 0; /* on_update_ready requests an immediate capture */
+        assert(capture_poll_timeout(16) == 0 && "T290: overdue pipeline capture gained a poll delay");
+        g_last_request_ms = mock_monotonic_ms;
+        assert(capture_poll_timeout(16) == 4);
+        g_last_request_ms = mock_monotonic_ms - 15;
+        assert(capture_poll_timeout(16) == 1);
+        g_last_request_ms = mock_monotonic_ms - 16;
+        assert(capture_poll_timeout(16) == 0);
+        g_update_pending = 1;
+        g_last_request_ms = mock_monotonic_ms - 100;
+        assert(capture_poll_timeout(16) == 150);
+        g_last_request_ms = mock_monotonic_ms - 251;
+        assert(capture_poll_timeout(16) == 0);
+        g_have_mode = 0;
+        assert(capture_poll_timeout(16) == 100);
+    }
+    mock_monotonic_ms = -1;
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T290", test_t290},
         {"T279", test_t279},
         {"T274", test_t274},
         {"T272", test_t272},

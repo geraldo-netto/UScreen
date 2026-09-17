@@ -907,7 +907,7 @@ static int capture_poll_timeout(long request_period_ms) {
        With no mode there is nothing to request, and the deadline below
        would sit permanently in the past — poll would return instantly and
        the loop would spin at 100% of a core. Wait on events only. */
-    int timeout_ms;
+    long long timeout_ms;
     if (!g_have_mode) {
         timeout_ms = 100;
     } else if (g_update_pending) {
@@ -925,12 +925,14 @@ static int capture_poll_timeout(long request_period_ms) {
         timeout_ms = left < 0 ? 0 : (left > 250 ? 250 : (int)left);
     } else {
         long long due = g_last_request_ms + request_period_ms;
-        timeout_ms = (int)(due - now_ms());
+        /* Keep overdue deadlines wide until bounded: pipeline callbacks reset
+           the request time to zero, even after weeks of system uptime. */
+        timeout_ms = due - now_ms();
         if (timeout_ms < 0) timeout_ms = 0;
         if (timeout_ms > 4) timeout_ms = 4;   /* stay responsive to events */
     }
 
-    return timeout_ms;
+    return (int)timeout_ms;
 }
 
 static void request_capture_if_due(evdi_handle handle, long long now, long request_period_ms) {
