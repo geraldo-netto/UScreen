@@ -1,0 +1,94 @@
+//! T390: owned, bounded work per transport; completion never waits for peers.
+use std::collections::{HashMap, VecDeque};
+use std::future::Future;
+use std::pin::Pin;
+use std::task::Poll;
+use tokio::task::{JoinError, JoinHandle};
+
+type Pending<T> = (String, Pin<Box<dyn Future<Output = T> + Send>>);
+
+pub(crate) struct DeviceTasks<T> {
+    limit: usize,
+    queued: VecDeque<Pending<T>>,
+    active: HashMap<String, JoinHandle<T>>,
+}
+
+impl<T: Send + 'static> DeviceTasks<T> {
+    pub fn new(limit: usize) -> Self {
+        assert!(limit > 0);
+        Self {
+            limit,
+            queued: VecDeque::new(),
+            active: HashMap::new(),
+        }
+    }
+
+    pub fn contains(&self, serial: &str) -> bool {
+        self.active.contains_key(serial) || self.queued.iter().any(|(key, _)| key == serial)
+    }
+
+    pub fn schedule(
+        &mut self,
+        serial: String,
+        work: impl Future<Output = T> + Send + 'static,
+    ) -> bool {
+        if self.contains(&serial) {
+            return false;
+        }
+        self.queued.push_back((serial, Box::pin(work)));
+        self.start_ready();
+        true
+    }
+
+    fn start_ready(&mut self) {
+        while self.active.len() < self.limit {
+            let Some((serial, work)) = self.queued.pop_front() else {
+                break;
+            };
+            self.active.insert(serial, tokio::spawn(work));
+        }
+    }
+
+    /// Poll every owned handle; return the first completion, never a batch
+    /// barrier. Polling registers the actual caller's waker, without a racy
+    /// notification sent before Tokio publishes the task's finished state.
+    pub async fn next(&mut self) -> (String, Result<T, JoinError>) {
+        let result = std::future::poll_fn(|context| {
+            for (serial, task) in &mut self.active {
+                if let Poll::Ready(result) = Pin::new(task).poll(context) {
+                    return Poll::Ready((serial.clone(), result));
+                }
+            }
+            Poll::Pending
+        })
+        .await;
+        self.active.remove(&result.0);
+        self.start_ready();
+        result
+    }
+
+    pub fn cancel(&mut self, serial: &str) {
+        self.queued.retain(|(key, _)| key != serial);
+        if let Some(task) = self.active.get(serial) {
+            task.abort();
+        }
+    }
+
+    pub async fn stop(&mut self) {
+        self.queued.clear();
+        for task in self.active.values() {
+            task.abort();
+        }
+        for (_, task) in self.active.drain() {
+            let _ = task.await;
+        }
+    }
+}
+
+impl<T> Drop for DeviceTasks<T> {
+    fn drop(&mut self) {
+        for task in self.active.values() {
+            task.abort();
+        }
+    }
+}

@@ -1,0 +1,86 @@
+    Blocking waiting for file lock on build directory
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.39s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... 
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... T390 scaling clients=1 connect_us=18082 stop_us=316
+T390 scaling clients=2 connect_us=31416 stop_us=19380
+T390 scaling clients=4 connect_us=32821 stop_us=2351
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.29s
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.29s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.41s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... 
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... T390 scaling clients=1 connect_us=18210 stop_us=813
+T390 scaling clients=2 connect_us=19085 stop_us=880
+T390 scaling clients=4 connect_us=31552 stop_us=1099
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.23s
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.24s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... 
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... T390 scaling clients=1 connect_us=12442 stop_us=192
+T390 scaling clients=2 connect_us=12367 stop_us=518
+T390 scaling clients=4 connect_us=17918 stop_us=633
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... 
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... T390 scaling clients=1 connect_us=11847 stop_us=264
+T390 scaling clients=2 connect_us=11634 stop_us=406
+T390 scaling clients=4 connect_us=18257 stop_us=732
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... 
+running 1 test
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... T390 scaling clients=1 connect_us=12052 stop_us=216
+T390 scaling clients=2 connect_us=11532 stop_us=466
+T390 scaling clients=4 connect_us=18145 stop_us=865
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.20s
+

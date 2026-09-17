@@ -150,6 +150,26 @@ on WebAssembly; this does not make the daemon or GUI Windows-compatible.
   restart; tablet control messages can update live settings. The Wi-Fi
   reconnect address is reread from disk for each attempt.
 
+The ADB monitor (`monitor.rs`) consumes device results independently. Discovery
+owns up to four concurrent identity/package probe sequences; device mutation
+jobs own up to four forwarding/launch/recovery sequences, with one mutation
+owner per transport. The two reverse routes and app launch stay ordered within
+that owner. A separate single job serializes this monitor's global inventory
+and Wi-Fi reconnect commands; it does not serialize independent CLI invocations.
+Existing eligible devices remain available while their refresh is pending.
+Known physical identities keep the USB preference and stable primary selection.
+
+Pending extra runtimes belong to the monitor, not to command futures. Disconnect
+cancels that transport's work and retires its runtime independently; a retiring
+slot cannot be reused until cleanup joins. Promoting an extra to primary retires
+its former slot and readiness before replacing its forwarding. Daemon shutdown
+aborts and joins inventory/device jobs, then joins all retiring runtimes. Command
+cancellation has the delegated/privileged-work limits described in
+[development](development.md#lifecycle-command-deadlines); it cannot undo
+remote ADB actions already accepted. The
+[discovery replay](benchmarks/2026-09-17-discovery.md) measures local fairness and
+shutdown without touching EVDI or a desktop.
+
 Attachment metadata is producer-owned (`attachment.rs`). Before forwarding or
 launching a replacement, the monitor advances a control epoch and invalidates
 geometry synchronously. A boolean presence watch can therefore coalesce rapid

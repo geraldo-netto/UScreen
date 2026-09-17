@@ -6,6 +6,8 @@ mod attachment;
 mod capture;
 mod config;
 mod desktop;
+mod device_tasks;
+mod discovery;
 mod doctor;
 mod edid;
 #[cfg(feature = "inproc-encoder")]
@@ -17,6 +19,7 @@ mod kscreen;
 mod kwin;
 mod latency;
 mod media;
+mod monitor;
 mod osk;
 mod persistence;
 mod runtime;
@@ -28,6 +31,9 @@ mod vdisplay;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+#[cfg(test)]
+mod discovery_tests;
+
 #[cfg(test)]
 use session::start_servers;
 use session::Runtime as ExtraSession;
@@ -596,6 +602,15 @@ fi
         }
     }
 
+    // Inter-device completion order is intentionally independent (T390).
+    // Keep exact per-device launch counts across every backoff boundary.
+    fn sorted_launches(path: &std::path::Path) -> String {
+        let log = std::fs::read_to_string(path).unwrap_or_default();
+        let mut lines: Vec<_> = log.lines().collect();
+        lines.sort_unstable();
+        lines.into_iter().map(|line| format!("{line}\n")).collect()
+    }
+
     #[tokio::test]
     async fn t143_crashed_extra_apps_recover_with_per_device_backoff() {
         use std::os::unix::fs::PermissionsExt;
@@ -628,10 +643,7 @@ printf '%s\n' "$2" >> "$0.log"
         )
         .await;
         let log = adb.with_extension("log");
-        assert_eq!(
-            std::fs::read_to_string(&log).unwrap_or_default(),
-            "DEAD\nFAILED\n"
-        );
+        assert_eq!(sorted_launches(&log), "DEAD\nFAILED\n");
         recover_assigned_apps(
             &assigned,
             true,
@@ -641,7 +653,7 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        assert_eq!(std::fs::read_to_string(&log).unwrap(), "DEAD\nFAILED\n");
+        assert_eq!(sorted_launches(&log), "DEAD\nFAILED\n");
         recover_assigned_apps(
             &assigned,
             true,
@@ -651,10 +663,7 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        assert_eq!(
-            std::fs::read_to_string(&log).unwrap(),
-            "DEAD\nFAILED\nDEAD\nFAILED\n"
-        );
+        assert_eq!(sorted_launches(&log), "DEAD\nDEAD\nFAILED\nFAILED\n");
         std::fs::write(adb.with_extension("DEAD.alive"), "").unwrap();
         recover_assigned_apps(
             &assigned,
@@ -675,8 +684,8 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        let expected = "DEAD\nFAILED\nDEAD\nFAILED\nDEAD\n";
-        assert_eq!(std::fs::read_to_string(&log).unwrap(), expected);
+        let expected = "DEAD\nDEAD\nDEAD\nFAILED\nFAILED\n";
+        assert_eq!(sorted_launches(&log), expected);
         recover_assigned_apps(
             &assigned,
             false,
@@ -686,7 +695,7 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        assert_eq!(std::fs::read_to_string(&log).unwrap(), expected);
+        assert_eq!(sorted_launches(&log), expected);
     }
 
     #[tokio::test]
@@ -1937,101 +1946,40 @@ async fn adb_monitor(
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
 ) {
-    let mut ledger = session_ledger();
-    let mut daemon_stop = extra.shutdown_rx.clone();
-    let mut state = TabletMonitor::new();
-    // Polls since the app process was last checked. A tablet that is plugged
-    // in but whose app has gone (swiped out of recents, killed by Android to
-    // free memory, crashed) used to stay a blank screen until the cable was
-    // pulled and put back; now the app comes back by itself. Checked every
-    // fifth poll, so a missing app costs one `adb shell` every ten seconds.
-    let mut polls_since_check: u32 = 0;
-    const APP_CHECK_EVERY: u32 = 5;
-    let reconnect = WifiReconnect::new(config::config_path(), "adb".into());
-    if tokio::process::Command::new("adb")
-        .arg("version")
-        .output_bounded()
-        .await
-        .is_err()
-    {
-        error!("adb is not installed — the tablet can never be found. Install android-tools (or adb) and restart.");
-    }
+    adb_monitor_using(
+        video_port,
+        input_port,
+        auto_launch,
+        tablet_tx,
+        token,
+        relaunch,
+        extra,
+        "adb",
+    )
+    .await;
+}
 
-    loop {
-        if *daemon_stop.borrow() {
-            break;
-        }
-        let mut devices = adb_devices().await;
-        add_fake_tablets(&mut devices);
-        let devices = unique_devices(
-            &devices,
-            state.current.as_deref(),
-            &mut state.identities,
-            "adb",
-        )
-        .await;
-        let devices = app_devices_with(&devices, "adb").await;
-        let preferred = current_transport(&devices, state.current.as_deref(), &state.identities);
-        let found = select_tablet(&devices, preferred.as_deref());
-
-        state
-            .forwarding_backoff
-            .retain(|serial, _| devices.contains(serial));
-        state
-            .update_primary(
-                &found,
-                (video_port, input_port),
-                auto_launch,
-                token.as_deref(),
-                &tablet_tx,
-            )
-            .await;
-
-        state
-            .sync_extra_sessions(
-                &extra,
-                &devices,
-                found.as_deref(),
-                auto_launch,
-                token.as_deref(),
-            )
-            .await;
-
-        state.extra_backoff.retain(|serial, _| {
-            state.current.as_ref() == Some(serial) || state.extras.contains_key(serial)
-        });
-
-        state.publish_sessions(&mut ledger, video_port, input_port);
-
-        // Poll every two seconds, but wake at once if a client turned up
-        // without the token: the app was started by hand, and launching it
-        // again over adb is how it gets one. Rate-limited so a misbehaving
-        // client cannot make us hammer adb.
-        let requests: Vec<_> = state
-            .extras
-            .iter()
-            .map(|(serial, session)| (serial.clone(), session.relaunch.clone()))
-            .collect();
-        let extra_relaunch = wait_extra_relaunch(requests);
-        tokio::select! {
-            _ = daemon_stop.changed() => break,
-            _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)) => {
-                polls_since_check += 1;
-                if polls_since_check < APP_CHECK_EVERY {
-                    continue;
-                }
-                polls_since_check = 0;
-                state.recover_apps(&reconnect, auto_launch, token.as_deref()).await;
-            }
-            _ = relaunch.notified() => {
-                state.redeliver_primary_token(token.as_deref()).await;
-            }
-            serial = extra_relaunch => {
-                deliver_extra_token(&serial, token.as_deref(), &mut state.extra_backoff, std::time::Instant::now(), "adb").await;
-            }
-        }
-    }
-    futures_util::future::join_all(state.extras.into_values().map(ExtraSession::stop)).await;
+#[allow(clippy::too_many_arguments)]
+async fn adb_monitor_using(
+    video_port: u16,
+    input_port: u16,
+    auto_launch: bool,
+    tablet_tx: attachment::Attachment,
+    token: Option<String>,
+    relaunch: std::sync::Arc<tokio::sync::Notify>,
+    extra: ExtraSessionTemplate,
+    adb: &str,
+) {
+    monitor::run(monitor::Config {
+        ports: (video_port, input_port),
+        auto_launch,
+        tablet: tablet_tx,
+        token,
+        relaunch,
+        extra,
+        adb: adb.to_owned(),
+    })
+    .await;
 }
 
 fn session_ledger() -> Option<runtime::SessionLedger> {
@@ -2042,284 +1990,6 @@ fn session_ledger() -> Option<runtime::SessionLedger> {
         Err(error) => {
             warn!("Could not publish tablet sessions: {error}");
             None
-        }
-    }
-}
-
-struct TabletMonitor {
-    current: Option<String>,
-    identities: std::collections::HashMap<String, String>,
-    extra_backoff: std::collections::HashMap<String, RelaunchBackoff>,
-    forwarding_backoff: std::collections::HashMap<String, RelaunchBackoff>,
-    extras: std::collections::HashMap<String, ExtraSession>,
-    // Failed authentication retries grow from 5s to 10 minutes; reconnect resets them.
-    last_relaunch: std::time::Instant,
-    relaunches: u32,
-    relaunch_wait: std::time::Duration,
-    wifi_announced: bool,
-}
-
-impl TabletMonitor {
-    fn new() -> Self {
-        Self {
-            current: None,
-            identities: Default::default(),
-            extra_backoff: Default::default(),
-            forwarding_backoff: Default::default(),
-            extras: Default::default(),
-            last_relaunch: std::time::Instant::now() - std::time::Duration::from_secs(60),
-            relaunches: 0,
-            relaunch_wait: std::time::Duration::from_secs(5),
-            wifi_announced: false,
-        }
-    }
-
-    async fn update_primary(
-        &mut self,
-        found: &Option<String>,
-        ports: (u16, u16),
-        auto_launch: bool,
-        token: Option<&str>,
-        tablet_tx: &attachment::Attachment,
-    ) {
-        let (video_port, input_port) = ports;
-        if self.current != *found {
-            // Prepare the epoch before reverse forwarding or app launch can
-            // deliver new geometry. Only proven identities preserve it.
-            tablet_tx.begin(
-                found
-                    .as_ref()
-                    .map(|serial| attachment_identity(serial, &self.identities)),
-            );
-            if let Some(old) = self.current.as_ref() {
-                info!("Tablet disconnected or changing transport ({old})");
-                disconnected_primary(&mut self.current, &mut self.wifi_announced);
-            }
-            if let Some(serial) = found.as_deref() {
-                let request = TabletConnection {
-                    serial,
-                    video_port,
-                    input_port,
-                    auto_launch,
-                    token,
-                    adb: "adb",
-                };
-                if request
-                    .prepare(
-                        self.forwarding_backoff
-                            .entry(serial.to_string())
-                            .or_default(),
-                        std::time::Instant::now(),
-                    )
-                    .await
-                {
-                    info!(
-                        "Tablet connected over {} ({serial})",
-                        transport_of(serial).label()
-                    );
-                    announce_transport(serial);
-                    let _ = tablet_tx.send(true);
-                    self.current = found.clone();
-                    self.extra_backoff
-                        .insert(serial.to_string(), RelaunchBackoff::default());
-                    self.relaunches = 0;
-                    self.relaunch_wait = std::time::Duration::from_secs(5);
-                }
-            }
-        }
-    }
-
-    async fn sync_extra_sessions(
-        &mut self,
-        extra: &ExtraSessionTemplate,
-        devices: &[String],
-        primary: Option<&str>,
-        auto_launch: bool,
-        token: Option<&str>,
-    ) {
-        if extra.max_tablets > 1 {
-            // Reserve the selected primary even while forwarding is pending.
-            let others = extra_devices(devices, primary);
-            self.remove_gone_extras(&others).await;
-            self.start_new_extras(extra, others, auto_launch, token)
-                .await;
-        }
-    }
-
-    async fn remove_gone_extras(&mut self, others: &[String]) {
-        // Gone
-        let gone: Vec<String> = self
-            .extras
-            .keys()
-            .filter(|k| !others.contains(k))
-            .cloned()
-            .collect();
-        for serial in gone {
-            self.extra_backoff.remove(&serial);
-            if let Some(sess) = self.extras.remove(&serial) {
-                info!("Tablet {} disconnected ({})", sess.instance + 1, serial);
-                sess.stop().await;
-            }
-        }
-    }
-
-    fn available_slot(&self, max_tablets: u32) -> Option<u32> {
-        let used: Vec<u32> = self.extras.values().map(|s| s.instance).collect();
-        (1..max_tablets).find(|i| !used.contains(i))
-    }
-
-    async fn start_new_extras(
-        &mut self,
-        extra: &ExtraSessionTemplate,
-        others: Vec<String>,
-        auto_launch: bool,
-        token: Option<&str>,
-    ) {
-        for serial in others {
-            if self.extras.contains_key(&serial)
-                || self
-                    .forwarding_backoff
-                    .get(&serial)
-                    .is_some_and(|retry| !retry.ready(std::time::Instant::now()))
-            {
-                continue;
-            }
-            let Some(instance) = self.available_slot(extra.max_tablets) else {
-                warn!(
-                    "Tablet {} attached but all {} slots are taken",
-                    serial, extra.max_tablets
-                );
-                continue;
-            };
-            info!(
-                "Tablet {} connected over {} ({})",
-                instance + 1,
-                transport_of(&serial).label(),
-                serial
-            );
-            let sess = match spawn_extra_session(extra, instance).await {
-                Ok(session) => session,
-                Err(error) => {
-                    warn!("Could not start tablet {}: {}", instance + 1, error);
-                    continue;
-                }
-            };
-            sess.tablet_tx
-                .begin(Some(attachment_identity(&serial, &self.identities)));
-            let request = TabletConnection {
-                serial: &serial,
-                video_port: sess.video_port,
-                input_port: sess.input_port,
-                auto_launch,
-                token,
-                adb: "adb",
-            };
-            if !request
-                .prepare(
-                    self.forwarding_backoff.entry(serial.clone()).or_default(),
-                    std::time::Instant::now(),
-                )
-                .await
-            {
-                sess.stop().await;
-                continue;
-            }
-            let _ = sess.tablet_tx.send(true);
-            self.extra_backoff
-                .insert(serial.clone(), RelaunchBackoff::default());
-            self.extras.insert(serial, sess);
-        }
-    }
-
-    async fn recover_apps(
-        &mut self,
-        reconnect: &WifiReconnect,
-        auto_launch: bool,
-        token: Option<&str>,
-    ) {
-        // Nothing attached, but this tablet has been set up for
-        // Wi-Fi: try to get it back. adb answers instantly when the
-        // tablet is not reachable, so this costs nothing while it is
-        // off or out of range.
-        if self.current.is_none() {
-            if let Some(address) = reconnect.connect().await {
-                if !self.wifi_announced {
-                    info!("Reconnected to the tablet over Wi-Fi ({})", address);
-                    self.wifi_announced = true;
-                }
-            }
-        }
-        let assigned: Vec<_> = self
-            .current
-            .iter()
-            .chain(self.extras.keys())
-            .cloned()
-            .collect();
-        recover_assigned_apps(
-            &assigned,
-            auto_launch,
-            token,
-            &mut self.extra_backoff,
-            std::time::Instant::now(),
-            "adb",
-        )
-        .await;
-    }
-
-    async fn redeliver_primary_token(&mut self, token: Option<&str>) {
-        const RELAUNCH_WAIT_MAX: std::time::Duration = std::time::Duration::from_secs(600);
-        if let Some(serial) = self.current.as_deref() {
-            if self.last_relaunch.elapsed() >= self.relaunch_wait {
-                self.last_relaunch = std::time::Instant::now();
-                self.relaunches += 1;
-                if self.relaunches == 3 {
-                    warn!(
-                        "A client keeps connecting without a valid token. Update the \
-                         UScreen app on the tablet (1.1.0 or newer); the token will be \
-                         delivered again, less and less often, until it works."
-                    );
-                }
-                info!(
-                    "Delivering the session token to the app (attempt {}, next in {:?})",
-                    self.relaunches,
-                    self.relaunch_wait.min(RELAUNCH_WAIT_MAX)
-                );
-                launch_app(serial, token).await;
-                self.relaunch_wait = (self.relaunch_wait * 2).min(RELAUNCH_WAIT_MAX);
-            }
-        }
-    }
-
-    fn publish_sessions(
-        &self,
-        ledger: &mut Option<runtime::SessionLedger>,
-        video_port: u16,
-        input_port: u16,
-    ) {
-        if let Some(ledger) = ledger {
-            let mut sessions: Vec<_> = self
-                .current
-                .iter()
-                .map(|serial| runtime::TabletSession {
-                    serial: serial.clone(),
-                    instance: 0,
-                    video_port,
-                    input_port,
-                })
-                .collect();
-            sessions.extend(
-                self.extras
-                    .iter()
-                    .map(|(serial, session)| runtime::TabletSession {
-                        serial: serial.clone(),
-                        instance: session.instance,
-                        video_port: session.video_port,
-                        input_port: session.input_port,
-                    }),
-            );
-            if let Err(error) = ledger.update(sessions) {
-                warn!("Could not update tablet sessions: {error}");
-            }
         }
     }
 }
@@ -2378,6 +2048,7 @@ impl RelaunchBackoff {
     }
 }
 
+#[cfg(test)]
 async fn deliver_extra_token(
     requested: &str,
     token: Option<&str>,
@@ -2394,6 +2065,7 @@ async fn deliver_extra_token(
     }
 }
 
+#[cfg(test)]
 async fn recover_assigned_apps(
     assigned: &[String],
     auto_launch: bool,
@@ -2405,17 +2077,35 @@ async fn recover_assigned_apps(
     if !auto_launch {
         return;
     }
-    for serial in assigned {
-        if is_fake_serial(serial) {
-            continue;
-        }
-        let policy = policies.entry(serial.clone()).or_default();
-        match app_running_with(serial, adb).await {
-            Some(true) => *policy = RelaunchBackoff::default(),
-            Some(false) if policy.allow(now) => launch_app_using(serial, token, adb).await,
-            _ => {}
-        }
+    use futures_util::StreamExt;
+    let work: Vec<_> = assigned
+        .iter()
+        .filter(|serial| !is_fake_serial(serial))
+        .map(|serial| (serial.clone(), policies.remove(serial).unwrap_or_default()))
+        .collect();
+    let mut work = futures_util::stream::iter(
+        work.into_iter()
+            .map(|(serial, policy)| recover_app(serial, policy, token, now, adb)),
+    )
+    .buffer_unordered(4);
+    while let Some((serial, policy)) = work.next().await {
+        policies.insert(serial, policy);
     }
+}
+
+async fn recover_app(
+    serial: String,
+    mut policy: RelaunchBackoff,
+    token: Option<&str>,
+    now: std::time::Instant,
+    adb: &str,
+) -> (String, RelaunchBackoff) {
+    match app_running_with(&serial, adb).await {
+        Some(true) => policy = RelaunchBackoff::default(),
+        Some(false) if policy.allow(now) => launch_app_using(&serial, token, adb).await,
+        _ => {}
+    }
+    (serial, policy)
 }
 
 struct WifiReconnect {
@@ -2671,10 +2361,6 @@ fn app_launch_command(token: Option<&str>) -> String {
     cmd
 }
 
-async fn launch_app(serial: &str, token: Option<&str>) {
-    launch_app_using(serial, token, "adb").await;
-}
-
 async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
     use tokio::io::AsyncWriteExt;
     let cmd = app_launch_command(token);
@@ -2766,16 +2452,21 @@ async fn unique_devices(
     adb: &str,
 ) -> Vec<String> {
     identities.retain(|serial, _| devices.contains(serial) || Some(serial.as_str()) == current);
-    let missing = devices
+    let missing: Vec<_> = devices
         .iter()
-        .filter(|serial| !identities.contains_key(*serial));
-    let probes = missing.map(|serial| probe_device_identity(serial, adb));
-    for (serial, id) in futures_util::future::join_all(probes)
-        .await
-        .into_iter()
-        .flatten()
-    {
-        identities.insert(serial, id);
+        .filter(|serial| !identities.contains_key(*serial))
+        .collect();
+    use futures_util::StreamExt;
+    let mut probes = futures_util::stream::iter(
+        missing
+            .into_iter()
+            .map(|serial| probe_device_identity(serial, adb)),
+    )
+    .buffer_unordered(4);
+    while let Some(result) = probes.next().await {
+        if let Some((serial, id)) = result {
+            identities.insert(serial, id);
+        }
     }
     select_device_transports(devices, current, identities)
 }
@@ -2823,26 +2514,38 @@ fn select_device_transports(
 
 /// Filter once before assigning any display slot. Explicit test serials do
 /// not need a real ADB package manager.
+async fn app_installed_with(serial: &str, adb: &str) -> bool {
+    is_fake_serial(serial)
+        || tokio::process::Command::new(adb)
+            .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
+            .output_bounded()
+            .await
+            .map(|out| {
+                out.status.success()
+                    && String::from_utf8_lossy(&out.stdout)
+                        .lines()
+                        .any(|line| line.starts_with("package:"))
+            })
+            .unwrap_or(false)
+}
+
 async fn app_devices_with(devices: &[String], adb: &str) -> Vec<String> {
-    futures_util::future::join_all(devices.iter().map(|serial| async move {
-        let eligible = is_fake_serial(serial)
-            || tokio::process::Command::new(adb)
-                .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
-                .output_bounded()
-                .await
-                .map(|out| {
-                    out.status.success()
-                        && String::from_utf8_lossy(&out.stdout)
-                            .lines()
-                            .any(|line| line.starts_with("package:"))
-                })
-                .unwrap_or(false);
-        eligible.then(|| serial.clone())
-    }))
-    .await
-    .into_iter()
-    .flatten()
-    .collect()
+    use futures_util::StreamExt;
+    let work: Vec<_> = devices
+        .iter()
+        .cloned()
+        .map(|serial| {
+            let adb = adb.to_owned();
+            async move { app_installed_with(&serial, &adb).await.then_some(serial) }
+        })
+        .collect();
+    futures_util::stream::iter(work)
+        .buffered(4)
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
 }
 
 async fn wifi_device_with(devices: &[String], adb: &str) -> Option<String> {
@@ -2873,7 +2576,11 @@ async fn pick_device_with(devices: &[String], current: Option<&str>, adb: &str) 
 
 /// Every device in state "device", USB entries first.
 async fn adb_devices() -> Vec<String> {
-    let Ok(out) = tokio::process::Command::new("adb")
+    adb_devices_using("adb").await
+}
+
+async fn adb_devices_using(adb: &str) -> Vec<String> {
+    let Ok(out) = tokio::process::Command::new(adb)
         .arg("devices")
         .output_bounded()
         .await

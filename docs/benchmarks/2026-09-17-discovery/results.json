@@ -1,0 +1,88 @@
+{
+  "parent": "ff6fd1a",
+  "method": "Actual monitor with local fake ADB; ready devices plus one indefinitely gated getprop; no capture/encoding/physical tablet",
+  "sources": {
+    "host/src/main.rs": "5dd7cb1463053713ef4ce1a2f6ab17a6ba4f890f1b188219a60cf44397a08f12",
+    "host/src/monitor.rs": "d8ef95710cc68b1416cdc2b9944c239901e5c284df06f6401b623b960b0cf519",
+    "host/src/discovery.rs": "5629baec64e3282a54be3e0ce3a629ac0f55847f8ce5e4995bba3df247f9f9cb",
+    "host/src/device_tasks.rs": "8cd55fc71af2bf82d95aedd6d75a5f08768c0613fdf70b192e0de8e932930d40",
+    "host/src/discovery_tests.rs": "68aa9e7d0f643b927cac6745a4620219f34dcffc312bf730037297a8c2f86239"
+  },
+  "trials": [
+    {
+      "clients": 1,
+      "connect_us": 18082,
+      "stop_us": 316
+    },
+    {
+      "clients": 2,
+      "connect_us": 31416,
+      "stop_us": 19380
+    },
+    {
+      "clients": 4,
+      "connect_us": 32821,
+      "stop_us": 2351
+    },
+    {
+      "clients": 1,
+      "connect_us": 18210,
+      "stop_us": 813
+    },
+    {
+      "clients": 2,
+      "connect_us": 19085,
+      "stop_us": 880
+    },
+    {
+      "clients": 4,
+      "connect_us": 31552,
+      "stop_us": 1099
+    },
+    {
+      "clients": 1,
+      "connect_us": 12442,
+      "stop_us": 192
+    },
+    {
+      "clients": 2,
+      "connect_us": 12367,
+      "stop_us": 518
+    },
+    {
+      "clients": 4,
+      "connect_us": 17918,
+      "stop_us": 633
+    },
+    {
+      "clients": 1,
+      "connect_us": 11847,
+      "stop_us": 264
+    },
+    {
+      "clients": 2,
+      "connect_us": 11634,
+      "stop_us": 406
+    },
+    {
+      "clients": 4,
+      "connect_us": 18257,
+      "stop_us": 732
+    },
+    {
+      "clients": 1,
+      "connect_us": 12052,
+      "stop_us": 216
+    },
+    {
+      "clients": 2,
+      "connect_us": 11532,
+      "stop_us": 466
+    },
+    {
+      "clients": 4,
+      "connect_us": 18145,
+      "stop_us": 865
+    }
+  ]
+}
