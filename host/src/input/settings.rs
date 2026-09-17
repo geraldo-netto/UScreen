@@ -5,7 +5,7 @@ use tracing::{info, warn};
 
 /// Commands accepted from an authenticated controller. Persistence and channel
 /// policy stay in the adapter, not in the wire dispatcher.
-pub(super) trait SettingsSink {
+pub(super) trait SettingsSink: Sync {
     fn resolution(&self, pixels: (u32, u32), millimetres: (u32, u32));
     fn configure(&self, bitrate: Option<u32>, fps: Option<u32>, encoder: Option<String>);
     fn mode(&self, pen_only: bool);

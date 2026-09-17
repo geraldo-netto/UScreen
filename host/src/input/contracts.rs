@@ -145,3 +145,96 @@ async fn t370_server_cancels_injected_backend_when_owner_ends() {
         .await
         .unwrap();
 }
+
+fn t281_attachment() -> crate::attachment::Attachment {
+    crate::session::Spec {
+        capture: Default::default(),
+        ports: (0, 0),
+        token: None,
+        devices: (false, false, false),
+    }
+    .prepare(watch::channel(false).0)
+    .tablet
+}
+
+#[test]
+fn t281_retired_socket_cannot_claim_or_dispatch_into_current_controller() {
+    let tablet = t281_attachment();
+    tablet.begin(Some("a".into()));
+    let old = tablet.lease();
+    tablet.begin(Some("b".into()));
+    let current = tablet.lease();
+    let recorder = Arc::new(Recorder::default());
+    let controllers = Arc::new(Controllers::new(recorder.clone()));
+    let controller = claim_controller(&controllers, Some(&current)).unwrap();
+    assert!(claim_controller(&controllers, Some(&old)).is_none());
+    assert_eq!(*controllers.generation.borrow(), controller.id);
+    let settings = Recorder::default();
+    let latency = crate::latency::LatencyTracker::new();
+    let mut dispatch = ControllerDispatch {
+        controllers: &controllers,
+        controller: controller.id,
+        settings: &settings,
+        latency: &latency,
+        pen_enabled: true,
+        attachment: Some(&old),
+    };
+    let resolution =
+        r#"{"type":"resolution","width":1280,"height":800,"width_mm":240,"height_mm":150}"#;
+    assert!(!dispatch.text(resolution));
+    assert!(settings.0.lock().unwrap().is_empty());
+    dispatch.attachment = Some(&current);
+    assert!(dispatch.text(resolution));
+    assert_eq!(
+        *settings.0.lock().unwrap(),
+        ["resolution (1280, 800) (240, 150)"]
+    );
+}
+
+#[tokio::test]
+async fn t281_socket_accepted_before_replacement_cannot_authenticate_after_it() {
+    let tablet = t281_attachment();
+    tablet.begin(Some("a".into()));
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let socket = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let (accepted, _) = listener.accept().await.unwrap();
+    let mut incoming = PendingInput::new(accepted);
+    incoming.attachment = Some(tablet.lease());
+    let recorder = Arc::new(Recorder::default());
+    let controllers = Arc::new(Controllers::new(recorder.clone()));
+    let task = tokio::spawn(handle_connection(
+        incoming,
+        InputConfig {
+            token: Some("test-token".into()),
+            ..InputConfig::default()
+        },
+        None,
+        watch::channel(false).0,
+        crate::latency::LatencyTracker::new(),
+        controllers,
+        Arc::new(tokio::sync::Notify::new()),
+    ));
+    let (mut ws, _) = tokio_tungstenite::client_async("ws://localhost", socket)
+        .await
+        .unwrap();
+    tablet.begin(Some("b".into()));
+    ws.send(Message::Text(
+        r#"{"type":"auth","token":"test-token"}"#.into(),
+    ))
+    .await
+    .unwrap();
+    let reply = tokio::time::timeout(std::time::Duration::from_secs(1), ws.next())
+        .await
+        .unwrap();
+    assert!(
+        !matches!(reply, Some(Ok(Message::Text(_)))),
+        "T281: retired socket got greeting"
+    );
+    task.await.unwrap().unwrap();
+    assert!(
+        recorder.0.lock().unwrap().is_empty(),
+        "T281: retired socket claimed devices"
+    );
+}

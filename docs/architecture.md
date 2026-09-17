@@ -122,6 +122,22 @@ on WebAssembly; this does not make the daemon or GUI Windows-compatible.
   restart; tablet control messages can update live settings. The Wi-Fi
   reconnect address is reread from disk for each attempt.
 
+Attachment metadata is producer-owned (`attachment.rs`). Before forwarding or
+launching a replacement, the monitor advances a control epoch and invalidates
+geometry synchronously. A boolean presence watch can therefore coalesce rapid
+detach/attach without keeping the previous tablet's geometry. Accepted control
+sockets capture that epoch before authentication; retired sockets cannot claim
+controller ownership or dispatch metadata/input. Each dispatch is serialized
+with epoch invalidation, and retirement cancels a stalled control writer.
+
+A direct USB/Wi-Fi handoff preserves geometry only when discovery proved both
+transports belong to the same physical tablet. It still retires the old control
+epoch. An observed absence or an unknown/different identity requires new native
+and physical dimensions. Metadata received during forwarding setup belongs to
+the new epoch and survives a delayed display-gate consumer. Extra slots apply
+the same rules through their session runtime; their transport migration still
+recreates that slot. Capture waits for current geometry before starting a helper.
+
 The CLI and GUI share the Linux CLI grammar and same-user daemon discovery.
 A PID file is a hint: its entry receives priority only after UID, liveness and
 full command-line validation. Missing, stale or diagnostic-command PID entries

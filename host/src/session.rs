@@ -52,7 +52,7 @@ impl Spec {
     /// before any control message can change them (T292/T296).
     pub fn prepare(self, mode: watch::Sender<bool>) -> Prepared {
         let (settings, settings_rx) = watch::channel(self.settings());
-        let (tablet, _) = watch::channel(false);
+        let tablet = crate::attachment::Attachment::new(settings.clone());
         let relaunch = Arc::new(Notify::new());
         let input_config = self.input_config();
         let capture = capture::CaptureManager::new(self.capture.clone());
@@ -72,7 +72,8 @@ impl Spec {
             relaunch.clone(),
             capture.card_rx(),
             tablet.subscribe(),
-        );
+        )
+        .with_attachment(tablet.clone());
         Prepared {
             settings,
             settings_rx,
@@ -91,7 +92,7 @@ impl Spec {
 pub(crate) struct Prepared {
     pub settings: watch::Sender<media::EncoderSettings>,
     settings_rx: watch::Receiver<media::EncoderSettings>,
-    pub tablet: watch::Sender<bool>,
+    pub tablet: crate::attachment::Attachment,
     pub relaunch: Arc<Notify>,
     mode: watch::Sender<bool>,
     capture: capture::CaptureManager,
@@ -111,12 +112,7 @@ impl Prepared {
         let (stop_tx, stop_rx) = watch::channel(false);
         let (capture_stop, capture_stop_rx) = watch::channel(false);
         let settings_rx = self.settings_rx;
-        let gate = spawn_display_gate(
-            gate_tx,
-            self.tablet.subscribe(),
-            self.mode.subscribe(),
-            self.settings,
-        );
+        let gate = spawn_display_gate(gate_tx, self.tablet.subscribe(), self.mode.subscribe());
         let stop = forward_shutdown(daemon_stop, stop_rx, capture_stop);
         let mut manager = self.capture;
         let instance = self.instance;
@@ -145,7 +141,7 @@ impl Prepared {
 /// failure occurs before workers spawn; teardown waits for capture child reaping.
 pub(crate) struct Runtime {
     pub instance: u32,
-    pub tablet_tx: watch::Sender<bool>,
+    pub tablet_tx: crate::attachment::Attachment,
     pub relaunch: Arc<Notify>,
     pub stop_tx: watch::Sender<bool>,
     pub tasks: Vec<JoinHandle<()>>,
@@ -223,19 +219,11 @@ fn spawn_display_gate(
     gate: watch::Sender<bool>,
     mut tablet: watch::Receiver<bool>,
     mut mode: watch::Receiver<bool>,
-    settings: watch::Sender<media::EncoderSettings>,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         let mut last = false;
         loop {
             let attached = *tablet.borrow();
-            if !attached {
-                settings.send_if_modified(|s| {
-                    let was_ready = s.geometry_ready;
-                    s.geometry_ready = false;
-                    was_ready
-                });
-            }
             let active = attached && !*mode.borrow();
             if active != last {
                 last = active;
@@ -263,6 +251,82 @@ mod tests {
             token: None,
             devices: (false, false, false),
         }
+    }
+
+    #[tokio::test]
+    async fn t281_coalesced_detach_attach_cannot_reuse_previous_geometry() {
+        let (mode, mode_rx) = watch::channel(false);
+        let prepared = spec((0, 0)).prepare(mode);
+        let tablet = prepared.tablet;
+        let settings = prepared.settings;
+        let (gate, active) = watch::channel(false);
+        let task = spawn_display_gate(gate, tablet.subscribe(), mode_rx);
+        let _ = tablet.send(true);
+        settings.send_modify(|s| s.geometry_ready = true);
+        tokio::task::yield_now().await;
+        assert!(*active.borrow());
+        // Both notifications arrive before the consumer gets scheduled.
+        let _ = tablet.send(false);
+        let _ = tablet.send(true);
+        tokio::task::yield_now().await;
+        assert!(
+            !settings.borrow().geometry_ready,
+            "T281: a replacement must negotiate fresh geometry even when presence coalesces"
+        );
+        task.abort();
+    }
+
+    #[tokio::test]
+    async fn t281_current_metadata_survives_delayed_gate_and_transport_migration() {
+        let (mode, mode_rx) = watch::channel(false);
+        let prepared = spec((0, 0)).prepare(mode);
+        let tablet = prepared.tablet;
+        let settings = prepared.settings;
+        let (gate, active) = watch::channel(false);
+        let task = spawn_display_gate(gate, tablet.subscribe(), mode_rx);
+        tablet.begin(Some("tablet-a".into()));
+        let previous = tablet.lease();
+        assert!(previous.apply(|| settings.send_modify(|s| s.geometry_ready = true)));
+        tablet.send(true).unwrap();
+        tokio::task::yield_now().await;
+        // Replace without yielding; old authenticated metadata is rejected.
+        tablet.begin(Some("tablet-b".into()));
+        assert!(!settings.borrow().geometry_ready);
+        assert!(!previous.apply(|| settings.send_modify(|s| s.geometry_ready = true)));
+        let current = tablet.lease();
+        current.apply(|| {
+            settings.send_modify(|s| {
+                s.width = 1280;
+                s.height = 800;
+                s.width_mm = 240;
+                s.height_mm = 150;
+                s.geometry_ready = true;
+            })
+        });
+        tablet.send(true).unwrap();
+        tokio::task::yield_now().await;
+        assert!(*active.borrow());
+        assert!(
+            settings.borrow().geometry_ready,
+            "T281: gate cleared current metadata"
+        );
+        assert_eq!(
+            (settings.borrow().width, settings.borrow().height),
+            (1280, 800)
+        );
+        assert_eq!(
+            (settings.borrow().width_mm, settings.borrow().height_mm),
+            (240, 150)
+        );
+        // Same physical tablet, new transport: preserve geometry but retire its
+        // previous connection. Explicit absence requires a fresh negotiation.
+        tablet.begin(Some("tablet-b".into()));
+        assert!(settings.borrow().geometry_ready);
+        assert!(!current.apply(|| panic!("T281: old transport lease survived")));
+        tablet.send(false).unwrap();
+        tablet.begin(Some("tablet-b".into()));
+        assert!(!settings.borrow().geometry_ready);
+        task.abort();
     }
 
     #[tokio::test]

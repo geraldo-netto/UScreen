@@ -71,6 +71,7 @@ impl Drop for ControllerLease {
 }
 
 pub struct InputServer {
+    attachment: Option<crate::attachment::Attachment>,
     backend: Arc<dyn InputBackend>,
     config: InputConfig,
     running: Arc<AtomicBool>,
@@ -125,6 +126,7 @@ impl InputServer {
     ) -> Self {
         let (card_rx, tablet_rx) = presence;
         Self {
+            attachment: None,
             backend,
             config,
             running: Arc::new(AtomicBool::new(false)),
@@ -135,6 +137,11 @@ impl InputServer {
             card_rx,
             tablet_rx,
         }
+    }
+
+    pub(crate) fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
+        self.attachment = Some(attachment);
+        self
     }
 
     pub async fn bind(&self) -> Result<TcpListener> {
@@ -203,7 +210,11 @@ impl InputServer {
             let Ok(permit) = slots.clone().try_acquire_owned() else {
                 continue;
             };
-            let incoming = PendingInput::new(socket);
+            let mut incoming = PendingInput::new(socket);
+            incoming.attachment = self
+                .attachment
+                .as_ref()
+                .map(|attachment| attachment.lease());
             info!("Input client: {}", peer);
             let cfg = config.clone();
             let settings = self.settings_tx.clone();
@@ -228,12 +239,14 @@ impl InputServer {
 }
 
 struct PendingInput {
+    attachment: Option<crate::attachment::Lease>,
     stream: tokio::net::TcpStream,
     deadline: tokio::time::Instant,
 }
 impl PendingInput {
     fn new(stream: tokio::net::TcpStream) -> Self {
         Self {
+            attachment: None,
             stream,
             deadline: tokio::time::Instant::now() + std::time::Duration::from_secs(3),
         }
@@ -280,35 +293,63 @@ async fn handle_connection(
         return Ok(());
     }
 
-    serve_controller(
+    let channels = (settings_tx, mode_tx);
+    let attachment = incoming.attachment;
+    let mut retirement = attachment
+        .as_ref()
+        .map(crate::attachment::Lease::retirement);
+    let controller = serve_controller(
         ws_sender,
         ws_receiver,
         config,
-        settings_tx,
-        mode_tx,
+        channels,
+        attachment.as_ref(),
         latency,
         controllers,
-    )
-    .await
+    );
+    match retirement.as_mut() {
+        Some(lease) => {
+            // The lease also wraps each dispatch below; cancellation alone
+            // would leave a race between readiness and a final old message.
+            tokio::select! {
+                biased;
+                _ = lease.retired() => Ok(()),
+                result = controller => result,
+            }
+        }
+        None => controller.await,
+    }
 }
 
 async fn serve_controller(
     mut ws_sender: futures_util::stream::SplitSink<InputSocket, Message>,
     mut ws_receiver: futures_util::stream::SplitStream<InputSocket>,
     config: InputConfig,
-    settings_tx: Option<watch::Sender<EncoderSettings>>,
-    mode_tx: watch::Sender<bool>,
+    channels: (Option<watch::Sender<EncoderSettings>>, watch::Sender<bool>),
+    attachment: Option<&crate::attachment::Lease>,
     latency: crate::latency::LatencyTracker,
     controllers: Arc<Controllers>,
 ) -> Result<()> {
+    let (settings_tx, mode_tx) = channels;
     let settings = SessionSettings::new(&settings_tx, &mode_tx, config.pen);
     let mut mode_rx = mode_tx.subscribe();
     let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
     let mut ownership = controllers.generation.subscribe();
-    let lease = controllers.claim();
+    let Some(lease) = claim_controller(&controllers, attachment) else {
+        return Ok(());
+    };
     if *ownership.borrow_and_update() != lease.id {
         return Ok(());
     }
+
+    let dispatch = ControllerDispatch {
+        controllers: &controllers,
+        controller: lease.id,
+        settings: &settings,
+        latency: &latency,
+        pen_enabled: config.pen,
+        attachment,
+    };
 
     let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
 
@@ -366,14 +407,7 @@ async fn serve_controller(
 
         match msg {
             Ok(Message::Text(text)) => {
-                if !dispatch_controller_text(
-                    &text,
-                    &controllers,
-                    lease.id,
-                    &settings,
-                    &latency,
-                    config.pen,
-                ) {
+                if !dispatch.text(&text) {
                     break;
                 }
             }
@@ -391,6 +425,52 @@ async fn serve_controller(
     }
 
     Ok(())
+}
+
+fn claim_controller(
+    controllers: &Arc<Controllers>,
+    attachment: Option<&crate::attachment::Lease>,
+) -> Option<ControllerLease> {
+    let mut lease = None;
+    let mut claim = || lease = Some(controllers.claim());
+    match attachment {
+        Some(attachment) => {
+            attachment.apply(claim);
+        }
+        None => claim(),
+    }
+    lease
+}
+
+struct ControllerDispatch<'a> {
+    controllers: &'a Controllers,
+    controller: u64,
+    settings: &'a dyn SettingsSink,
+    latency: &'a crate::latency::LatencyTracker,
+    pen_enabled: bool,
+    attachment: Option<&'a crate::attachment::Lease>,
+}
+impl ControllerDispatch<'_> {
+    fn text(&self, text: &str) -> bool {
+        let mut accepted = false;
+        let mut dispatch = || {
+            accepted = dispatch_controller_text(
+                text,
+                self.controllers,
+                self.controller,
+                self.settings,
+                self.latency,
+                self.pen_enabled,
+            )
+        };
+        match self.attachment {
+            Some(lease) => {
+                lease.apply(dispatch);
+            }
+            None => dispatch(),
+        }
+        accepted
+    }
 }
 
 fn dispatch_controller_text(

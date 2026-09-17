@@ -2,6 +2,7 @@
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
+mod attachment;
 mod capture;
 mod config;
 mod desktop;
@@ -1151,6 +1152,26 @@ printf '%s\n' "$2" >> "$0.log"
         assert!(!announced);
     }
 
+    #[test]
+    fn t281_attachment_identity_requires_proven_transport_equivalence() {
+        let identities = std::collections::HashMap::from([
+            ("USB-serial".into(), "physical-1".into()),
+            ("192.0.2.1:5555".into(), "physical-1".into()),
+        ]);
+        assert_eq!(
+            attachment_identity("USB-serial", &identities),
+            attachment_identity("192.0.2.1:5555", &identities)
+        );
+        assert_ne!(
+            attachment_identity("unknown", &identities),
+            attachment_identity("physical-1", &identities)
+        );
+        assert_ne!(
+            attachment_identity("physical-1", &identities),
+            attachment_identity("USB-serial", &identities)
+        );
+    }
+
     #[tokio::test]
     async fn t031_server_bind_failure_prevents_successful_startup() {
         for occupied_input in [false, true] {
@@ -1222,7 +1243,14 @@ printf '%s\n' "$2" >> "$0.log"
             tokio::time::sleep(std::time::Duration::from_millis(1600)).await;
             done.store(true, Ordering::SeqCst);
         });
-        let (tablet_tx, _tablet_rx) = watch::channel(true);
+        let prepared = session::Spec {
+            capture: Default::default(),
+            ports: (0, 0),
+            token: None,
+            devices: (false, false, false),
+        }
+        .prepare(watch::channel(false).0);
+        let tablet_tx = prepared.tablet;
         ExtraSession {
             instance: 1,
             tablet_tx,
@@ -1904,7 +1932,7 @@ async fn adb_monitor(
     video_port: u16,
     input_port: u16,
     auto_launch: bool,
-    tablet_tx: watch::Sender<bool>,
+    tablet_tx: attachment::Attachment,
     token: Option<String>,
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
@@ -2052,13 +2080,19 @@ impl TabletMonitor {
         ports: (u16, u16),
         auto_launch: bool,
         token: Option<&str>,
-        tablet_tx: &watch::Sender<bool>,
+        tablet_tx: &attachment::Attachment,
     ) {
         let (video_port, input_port) = ports;
         if self.current != *found {
+            // Prepare the epoch before reverse forwarding or app launch can
+            // deliver new geometry. Only proven identities preserve it.
+            tablet_tx.begin(
+                found
+                    .as_ref()
+                    .map(|serial| attachment_identity(serial, &self.identities)),
+            );
             if let Some(old) = self.current.as_ref() {
                 info!("Tablet disconnected or changing transport ({old})");
-                let _ = tablet_tx.send(false);
                 disconnected_primary(&mut self.current, &mut self.wifi_announced);
             }
             if let Some(serial) = found.as_deref() {
@@ -2170,6 +2204,8 @@ impl TabletMonitor {
                     continue;
                 }
             };
+            sess.tablet_tx
+                .begin(Some(attachment_identity(&serial, &self.identities)));
             let request = TabletConnection {
                 serial: &serial,
                 video_port: sess.video_port,
@@ -2678,6 +2714,16 @@ fn is_fake_serial(serial: &str) -> bool {
     std::env::var("USCREEN_FAKE_TABLET")
         .map(|f| f.split(',').any(|x| x.trim() == serial))
         .unwrap_or(false)
+}
+
+fn attachment_identity(
+    serial: &str,
+    identities: &std::collections::HashMap<String, String>,
+) -> String {
+    match identities.get(serial) {
+        Some(identity) => format!("device:{identity}"),
+        None => format!("transport:{serial}"),
+    }
 }
 
 /// Which of the attached devices to drive.

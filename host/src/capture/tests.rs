@@ -93,7 +93,43 @@ async fn t275_manual_geometry_opens_capture_gate_for_a_larger_native_panel() {
     .await;
 }
 async fn assert_initial_geometry_gate(
+    manager: CaptureManager,
+    negotiate: impl FnOnce(&mut EncoderSettings),
+    expected: (u32, u32, u32, u32),
+) {
+    assert_geometry_gate(manager, |_| {}, negotiate, expected).await;
+}
+
+#[tokio::test]
+async fn t281_replacement_cannot_start_helper_with_old_geometry() {
+    assert_geometry_gate(
+        test_manager(),
+        |settings| {
+            let tablet = crate::attachment::Attachment::new(settings.clone());
+            let _presence = tablet.subscribe();
+            tablet.begin(Some("previous".into()));
+            settings.send_modify(|s| s.geometry_ready = true);
+            tablet.send(true).unwrap();
+            // No yielding: the capture consumer sees only the final presence.
+            tablet.send(false).unwrap();
+            tablet.begin(Some("replacement".into()));
+            tablet.send(true).unwrap();
+        },
+        |s| {
+            s.width = 1280;
+            s.height = 800;
+            s.width_mm = 240;
+            s.height_mm = 150;
+            s.geometry_ready = true;
+        },
+        (1280, 800, 240, 150),
+    )
+    .await;
+}
+
+async fn assert_geometry_gate(
     mut manager: CaptureManager,
+    prepare: impl FnOnce(&watch::Sender<EncoderSettings>),
     negotiate: impl FnOnce(&mut EncoderSettings),
     expected: (u32, u32, u32, u32),
 ) {
@@ -107,6 +143,7 @@ async fn assert_initial_geometry_gate(
     let mut initial = manager_settings(&manager);
     initial.geometry_ready = false;
     let (settings, settings_rx) = watch::channel(initial);
+    prepare(&settings);
     let (_display, display) = watch::channel(true);
     let (shutdown, stop) = watch::channel(false);
     let (video, _) = broadcast::channel(8);
