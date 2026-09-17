@@ -37,15 +37,17 @@ check_release_refs
 
 # Every place that repeats the version has to agree with the Makefile before
 # anything is built, so the public page never advertises the previous release.
+require_metadata_line() {
+  local file="$1" expected="$2"
+  sed 's/^[[:space:]]*//;s/[[:space:]]*$//' "$file" | grep -Fx -- "$expected" >/dev/null \
+    || { echo "!! $file has no exact '$expected' entry"; exit 1; }
+}
 for f in host/Cargo.toml gui/Cargo.toml common/Cargo.toml; do
-  grep -q "^version = \"$VERSION\"" "$f" || { echo "!! $f is not at version $VERSION"; exit 1; }
+  require_metadata_line "$f" "version = \"$VERSION\""
 done
-grep -q "versionName = \"$VERSION\"" android/app/build.gradle.kts \
-  || { echo "!! android/app/build.gradle.kts versionName is not $VERSION"; exit 1; }
-grep -q "^pkgver=$VERSION$" packaging/arch/PKGBUILD \
-  || { echo "!! packaging/arch/PKGBUILD pkgver is not $VERSION"; exit 1; }
-grep -q "^## $VERSION — $RELEASE_DATE" CHANGELOG.md \
-  || { echo "!! CHANGELOG.md has no '## $VERSION — $RELEASE_DATE' entry (set RELEASE_DATE=YYYY-MM-DD if the release is dated differently)"; exit 1; }
+require_metadata_line android/app/build.gradle.kts "versionName = \"$VERSION\""
+require_metadata_line packaging/arch/PKGBUILD "pkgver=$VERSION"
+require_metadata_line CHANGELOG.md "## $VERSION — $RELEASE_DATE"
 ./scripts/update-release-metadata.sh --check "$VERSION" "$RELEASE_DATE" \
   || { echo "!! website/citation metadata is stale — run 'scripts/update-release-metadata.sh $VERSION $RELEASE_DATE', commit, then publish again"; exit 1; }
 

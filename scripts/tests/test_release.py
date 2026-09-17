@@ -64,6 +64,32 @@ class ReleaseTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertFalse((self.base / 'build-called').exists(), result.stdout + result.stderr)
 
+    def retag_fixture(self):
+        self.git('add', '.')
+        self.git('commit', '-qm', 'fixture inputs')
+        self.git('tag', '-fa', 'v1.2.3', '-m', 'fixture release')
+        self.git('push', '-q', '-f', 'origin', 'refs/tags/v1.2.3')
+
+    def test_t262_metadata_requires_literal_versions_and_date(self):
+        self.enable_uploads()
+        self.write('scripts/build-release.sh', '#!/bin/sh\ntouch "$USCREEN_TEST_ROOT/build-called"\nexit 42\n', True)
+        cases = [(name, '1.2.3', '1x2x3') for name in
+                 ['host/Cargo.toml', 'gui/Cargo.toml', 'common/Cargo.toml',
+                  'android/app/build.gradle.kts', 'packaging/arch/PKGBUILD', 'CHANGELOG.md']]
+        cases += [('CHANGELOG.md', '2026-09-16', '2026-09-16-stale')]
+        for name, before, after in cases:
+            with self.subTest(file=name, value=after):
+                path = self.root / name
+                original = path.read_text()
+                path.write_text(original.replace(before, after))
+                self.retag_fixture()
+                (self.base / 'build-called').unlink(missing_ok=True)
+                try:
+                    self.reject_before_build()
+                    self.assertFalse((self.base / 'requests').exists(), 'T262: API reached')
+                finally:
+                    path.write_text(original)
+
     def enable_uploads(self):
         for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
             self.write(name, '#!/bin/sh\nexit 0\n', True)

@@ -476,6 +476,11 @@ fn t100_release_requires_matching_head_local_and_remote_tags() {
 }
 
 #[test]
+fn t262_release_metadata_requires_literal_equality() {
+    release_tests("t262");
+}
+
+#[test]
 fn t118_release_credentials_never_appear_in_command_arguments() {
     release_tests("t118");
 }
