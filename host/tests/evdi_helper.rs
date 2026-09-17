@@ -37,7 +37,8 @@ impl Harness {
             .expect("the EVDI regression suite requires a C compiler (cc)");
         assert!(
             output.status.success(),
-            "{}",
+            "compile helper regression {case}: {}\n{}",
+            output.status,
             String::from_utf8_lossy(&output.stderr)
         );
         harness
@@ -73,7 +74,8 @@ impl Harness {
         };
         assert!(
             output.status.success(),
-            "{}",
+            "helper regression {case}: {}\n{}",
+            output.status,
             String::from_utf8_lossy(&output.stderr)
         );
         String::from_utf8(output.stdout).unwrap()
@@ -171,4 +173,9 @@ fn t170_helper_options_preserve_bounds_and_missing_values() {
 #[test]
 fn t254_conversion_epochs_wrap_without_overflow_or_stalled_workers() {
     Harness::build("T254").run("T254");
+}
+
+#[test]
+fn t272_failed_event_channel_exits_without_spinning() {
+    Harness::build("T272").run("T272");
 }

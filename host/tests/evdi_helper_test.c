@@ -52,6 +52,20 @@ evdi_handle evdi_open(int card) {
 void evdi_close(evdi_handle handle) { close(handle->fd); free(handle); }
 evdi_selectable evdi_get_event_ready(evdi_handle handle) { return handle->fd; }
 
+void evdi_handle_events(evdi_handle handle, struct evdi_event_context *context) {
+    (void)handle; (void)context;
+    assert(0 && "failed event channel must not dispatch EVDI events");
+}
+bool evdi_request_update(evdi_handle handle, int buffer) {
+    (void)handle; (void)buffer;
+    assert(0 && "failed event channel must not request a capture");
+    return false;
+}
+void evdi_grab_pixels(evdi_handle handle, struct evdi_rect *rects, int *count) {
+    (void)handle; (void)rects; (void)count;
+    assert(0 && "failed event channel must not grab pixels");
+}
+
 static void make_test_card(const char *root, int card) {
     char path[4096];
     snprintf(path, sizeof(path), "%s/evdi.%d", root, card); assert(mkdir(path, 0700) == 0);
@@ -390,6 +404,29 @@ static void seed_test_pool_epoch(unsigned int epoch) {
     pthread_mutex_unlock(&g_pool_mtx);
 }
 
+static void test_t272(void) {
+    int pipefd[2];
+    assert(pipe(pipefd) == 0);
+    assert(close(pipefd[1]) == 0);
+    struct evdi_device_context handle = {.fd = pipefd[0]};
+    g_have_mode = 0;
+    g_running = 1;
+    alarm(2); /* T272: a persistent hangup must not spin forever. */
+    run_event_loop(&handle);
+    alarm(0);
+    assert(close(pipefd[0]) == 0);
+    alarm(2); /* T272: POLLNVAL must retire the loop too. */
+    run_event_loop(&handle);
+    alarm(0);
+    assert(pipe(pipefd) == 0);
+    assert(close(pipefd[0]) == 0);
+    handle.fd = pipefd[1];
+    alarm(2); /* T272: a pipe writer without readers reports POLLERR. */
+    run_event_loop(&handle);
+    alarm(0);
+    assert(close(pipefd[1]) == 0);
+}
+
 static void test_t254(void) {
     alarm(5); /* A missed dispatch must fail instead of hanging the suite. */
     unsigned char source[8 * 8 * 4] = {0};
@@ -481,6 +518,7 @@ static void test_t052(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T272", test_t272},
         {"T254", test_t254},
         {"T170", test_helper_options},
         {"T108", test_t108},

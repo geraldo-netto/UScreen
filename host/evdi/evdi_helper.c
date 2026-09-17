@@ -997,6 +997,26 @@ static void report_capture_stats(long long now, long long *last_stats_ms, long l
     (*last_stats_ms) = now;
 }
 
+/* -1: channel failed, 0: interrupted, 1: events handled or timeout elapsed. */
+static int poll_capture_events(evdi_handle handle, struct evdi_event_context *evtctx,
+                               struct pollfd *fd, int timeout_ms) {
+    int ret = poll(fd, 1, timeout_ms);
+    if (ret < 0) {
+        if (errno == EINTR) return 0;
+        fprintf(stderr, "[evdi-helper] poll() error: %s\n", strerror(errno));
+        return -1;
+    }
+    if (fd->revents & (POLLHUP | POLLERR | POLLNVAL)) {
+        fprintf(stderr, "[evdi-helper] Event channel failed (poll flags 0x%x)\n", fd->revents);
+        return -1;
+    }
+    if (ret > 0 && (fd->revents & POLLIN)) {
+        /* update_ready / mode_changed handlers fire from here */
+        evdi_handle_events(handle, evtctx);
+    }
+    return 1;
+}
+
 static void run_event_loop(evdi_handle handle) {
     struct evdi_event_context evtctx = {
         .dpms_handler = on_dpms,
@@ -1021,17 +1041,9 @@ static void run_event_loop(evdi_handle handle) {
     while (g_running) {
         int timeout_ms = capture_poll_timeout(request_period_ms);
 
-        int ret = poll(fds, 1, timeout_ms);
-        if (ret < 0) {
-            if (errno == EINTR) continue;
-            fprintf(stderr, "[evdi-helper] poll() error: %s\n", strerror(errno));
-            break;
-        }
-
-        if (ret > 0 && (fds[0].revents & POLLIN)) {
-            /* update_ready / mode_changed handlers fire from here */
-            evdi_handle_events(handle, &evtctx);
-        }
+        int ret = poll_capture_events(handle, &evtctx, fds, timeout_ms);
+        if (ret < 0) break;
+        if (ret == 0) continue;
 
         if (!g_have_mode)
             continue;
