@@ -205,7 +205,8 @@ them. See the README for config paths and the app gear-menu controls.
 | `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
 
 Independent width/height/FPS limits do not guarantee a valid EDID combination
-(T332). Some controls are config/CLI-only: the GUI omits HEVC VAAPI (T240).
+(T332). The GUI offers all five registered encoders, including HEVC VAAPI;
+10-bit controls are enabled for HEVC. The render-node path remains a config setting.
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only
 in the app and do not set the host stream rate or other apps' display settings.
 
@@ -261,7 +262,7 @@ without maintaining or requiring FFmpeg patches.
 
 ### Encoder policy ownership
 
-`common/src/encoding.rs` owns the encoder registry, preset/tune/quality options,
+`common/src/encoding.rs` owns the encoder registry (also used by the GUI), preset/tune/quality options,
 nominal GOP, maximum-rate value and buffer sizing. NVENC uses a one-frame buffer;
 libx264 uses two frames; both keep the existing 200-kbit minimum and integer
 kilobit rounding. VAAPI retains CQP and its existing maxrate argument, which does

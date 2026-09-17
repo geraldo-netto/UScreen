@@ -789,35 +789,19 @@ impl App {
 
     fn setting_encoder(&mut self, ui: &mut egui::Ui) {
         ui.label("Encoder");
+        let selected = uscreen_config::encoding::find(&self.cfg.encoder)
+            .map(|encoder| encoder.label)
+            .unwrap_or(&self.cfg.encoder);
         egui::ComboBox::from_id_salt("encoder")
-            .selected_text(match self.cfg.encoder.as_str() {
-                "h264_nvenc" => "NVIDIA H.264 (NVENC)",
-                "hevc_nvenc" => "NVIDIA HEVC (NVENC)",
-                "h264_vaapi" | "vaapih264enc" => "AMD / Intel (VAAPI)",
-                "libx264" => "CPU (libx264)",
-                other => other,
-            })
+            .selected_text(selected)
             .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut self.cfg.encoder,
-                    "h264_nvenc".to_string(),
-                    "NVIDIA H.264 (NVENC)",
-                );
-                ui.selectable_value(
-                    &mut self.cfg.encoder,
-                    "hevc_nvenc".to_string(),
-                    "NVIDIA HEVC (NVENC)",
-                );
-                ui.selectable_value(
-                    &mut self.cfg.encoder,
-                    "h264_vaapi".to_string(),
-                    "AMD / Intel (VAAPI)",
-                );
-                ui.selectable_value(
-                    &mut self.cfg.encoder,
-                    "libx264".to_string(),
-                    "CPU (libx264)",
-                );
+                for encoder in uscreen_config::encoding::ENCODERS {
+                    ui.selectable_value(
+                        &mut self.cfg.encoder,
+                        encoder.name.to_string(),
+                        encoder.label,
+                    );
+                }
             });
         ui.end_row();
     }
@@ -940,7 +924,8 @@ impl App {
     fn setting_colour_depth(&mut self, ui: &mut egui::Ui) {
         ui.label("Colour depth");
         ui.vertical(|ui| {
-            let hevc = self.cfg.encoder.contains("hevc");
+            let hevc = uscreen_config::encoding::find(&self.cfg.encoder)
+                .is_some_and(|encoder| encoder.hevc);
             ui.add_enabled(
                 hevc,
                 egui::Checkbox::new(&mut self.cfg.ten_bit, "10-bit (HEVC Main10)"),
@@ -1360,16 +1345,103 @@ mod tests {
         assert_eq!(app.saved_cfg, app.cfg);
     }
 
-    fn collect_painted_text(shape: &egui::Shape, text: &mut Vec<String>) {
+    fn encoder_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        let output = ctx.run(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(700.0, 700.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ctx| {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    egui::Grid::new("encoder-test").show(ui, |ui| {
+                        app.setting_encoder(ui);
+                        app.setting_colour_depth(ui);
+                    });
+                });
+            },
+        );
+        let mut text = Vec::new();
+        for shape in output.shapes {
+            collect_text_rects(&shape.shape, &mut text);
+        }
+        text
+    }
+
+    fn collect_text_rects(shape: &egui::Shape, text: &mut Vec<(String, egui::Rect)>) {
         match shape {
-            egui::Shape::Text(value) => text.push(value.galley.text().to_owned()),
+            egui::Shape::Text(value) => text.push((
+                value.galley.text().to_owned(),
+                egui::Rect::from_min_size(value.pos, value.galley.size()),
+            )),
             egui::Shape::Vec(shapes) => {
                 for shape in shapes {
-                    collect_painted_text(shape, text);
+                    collect_text_rects(shape, text);
                 }
             }
             _ => {}
         }
+    }
+
+    fn click_encoder_text(app: &mut App, ctx: &egui::Context, label: &str) {
+        let text = encoder_test_frame(app, ctx, Vec::new());
+        let pos = text
+            .iter()
+            .find(|(value, _)| value == label)
+            .unwrap_or_else(|| panic!("T240: missing {label}: {text:?}"))
+            .1
+            .center();
+        for pressed in [true, false] {
+            encoder_test_frame(
+                app,
+                ctx,
+                vec![
+                    egui::Event::PointerMoved(pos),
+                    egui::Event::PointerButton {
+                        pos,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            );
+        }
+    }
+
+    #[test]
+    fn t240_gui_selects_hevc_vaapi_and_preserves_depth_and_device() {
+        let root = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Video);
+        app.store = ConfigStore::new(root.path().join("config.toml"));
+        app.cfg.vaapi_device = "/dev/dri/renderD129".into();
+        let ctx = egui::Context::default();
+        click_encoder_text(&mut app, &ctx, "NVIDIA H.264 (NVENC)");
+        click_encoder_text(&mut app, &ctx, "AMD / Intel HEVC (VAAPI)");
+        assert_eq!(
+            app.cfg.encoder, "hevc_vaapi",
+            "T240: selection did not apply"
+        );
+        click_encoder_text(&mut app, &ctx, "10-bit (HEVC Main10)");
+        assert!(app.cfg.ten_bit, "T240: HEVC depth control is disabled");
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.message, "Settings saved");
+        let saved = app.store.load();
+        assert_eq!(saved.encoder, "hevc_vaapi");
+        assert!(saved.ten_bit);
+        assert_eq!(saved.vaapi_device, "/dev/dri/renderD129");
+        app.cfg = saved;
+        let text = encoder_test_frame(&mut app, &ctx, Vec::new());
+        assert!(text
+            .iter()
+            .any(|(value, _)| value == "AMD / Intel HEVC (VAAPI)"));
     }
 
     #[test]
@@ -1394,8 +1466,9 @@ mod tests {
                 );
                 let mut text = Vec::new();
                 for shape in output.shapes {
-                    collect_painted_text(&shape.shape, &mut text);
+                    collect_text_rects(&shape.shape, &mut text);
                 }
+                let text = text.into_iter().map(|(value, _)| value).collect::<Vec<_>>();
                 assert_eq!(
                     text.iter()
                         .filter(|line| line.as_str() == "Apply & restart")
