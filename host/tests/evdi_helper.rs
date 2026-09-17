@@ -17,7 +17,7 @@ impl Harness {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
-        } else if matches!(case, "T082" | "T274") {
+        } else if matches!(case, "T082" | "T274" | "T340") {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler
@@ -216,4 +216,12 @@ fn t294_capture_watchdog_recovers_at_poll_deadline() {
 #[test]
 fn t324_mode_retirement_during_pacing_discards_claimed_frame() {
     Harness::build("T324").run("T324");
+}
+
+#[test]
+fn t340_unreadable_edid_never_acquires_a_display_device() {
+    let harness = Harness::build("T340");
+    for case in ["missing", "directory", "empty", "oversized", "readable"] {
+        harness.run(&format!("T340-{case}"));
+    }
 }

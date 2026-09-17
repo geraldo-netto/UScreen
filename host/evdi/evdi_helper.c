@@ -1378,18 +1378,19 @@ int main(int argc, char *argv[]) {
 
     initialize_helper_runtime();
 
-    int dev_idx = -1;
-    evdi_handle handle = acquire_capture_device(&dev_idx);
-    if (handle == EVDI_INVALID_HANDLE) return 1;
-    g_device_index = dev_idx;
-    g_handle = handle;
-
+    /* File errors must fail before opening DRM cards or creating devices. */
     long edid_size;
     unsigned char *edid = read_edid_file(edid_path, &edid_size);
-    if (!edid) {
-        evdi_close(handle);
+    if (!edid) return 1;
+
+    int dev_idx = -1;
+    evdi_handle handle = acquire_capture_device(&dev_idx);
+    if (handle == EVDI_INVALID_HANDLE) {
+        free(edid);
         return 1;
     }
+    g_device_index = dev_idx;
+    g_handle = handle;
 
     fprintf(stderr, "[evdi-helper] Connecting with EDID (%ld bytes)...\n", edid_size);
     evdi_connect(handle, edid, (unsigned int)edid_size, 0);

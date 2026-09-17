@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <dirent.h>
+static DIR *mock_opendir(const char *);
 static int mock_pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 static long mock_sysconf(int);
 static int mock_poll(struct pollfd *, nfds_t, int);
@@ -20,6 +22,7 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #define malloc mock_malloc
 #define posix_memalign mock_posix_memalign
 #define clock_gettime mock_clock_gettime
+#define opendir mock_opendir
 #define main evdi_helper_main
 #include "../evdi/evdi_helper.c"
 #undef main
@@ -30,12 +33,15 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #undef malloc
 #undef posix_memalign
 #undef clock_gettime
+#undef opendir
 #include <assert.h>
 #include <sys/wait.h>
 
 static int fail_worker = 0;
 static int stall_once = 0;
 static int add_result = 0;
+static int mock_add_calls;
+static int mock_discovery_calls;
 static int allocation_countdown = 0;
 static long long mock_monotonic_ms = -1;
 static int mock_grab_calls = -1;
@@ -78,11 +84,21 @@ static int mock_poll(struct pollfd *fds, nfds_t n, int timeout) {
     if (stall_once) { stall_once = 0; return 0; }
     return poll(fds, n, timeout);
 }
-int evdi_add_device(void) { return add_result; }
+int evdi_add_device(void) { mock_add_calls++; return add_result; }
 
 static char mock_card_root[4096];
+static DIR *mock_opendir(const char *path) {
+    if (strcmp(path, "/sys/devices/platform") == 0) {
+        assert(mock_card_root[0] && "test must never inspect host DRM devices");
+        mock_discovery_calls++;
+        return opendir(mock_card_root);
+    }
+    return opendir(path);
+}
 struct evdi_device_context { int fd; };
+static int mock_open_calls;
 evdi_handle evdi_open(int card) {
+    mock_open_calls++;
     char path[4096];
     snprintf(path, sizeof(path), "%s/card%d", mock_card_root, card);
     int fd = open(path, O_RDWR);
@@ -95,6 +111,10 @@ evdi_handle evdi_open(int card) {
 void evdi_close(evdi_handle handle) { close(handle->fd); free(handle); }
 static int mock_disconnect_calls;
 void evdi_disconnect(evdi_handle handle) { (void)handle; mock_disconnect_calls++; }
+void evdi_connect(evdi_handle handle, const unsigned char *edid, unsigned int length, uint32_t limit) {
+    (void)handle; (void)edid; (void)length; (void)limit;
+    assert(0 && "startup validation must not connect a display");
+}
 evdi_selectable evdi_get_event_ready(evdi_handle handle) { return handle->fd; }
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *context) {
@@ -763,9 +783,46 @@ static void test_t290(void) {
     mock_monotonic_ms = -1;
 }
 
+static void t340_startup_case(int bytes) {
+    char root[] = "/tmp/uscreen-t340-XXXXXX";
+    assert(mkdtemp(root));
+    snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/edid", root);
+    if (bytes >= 0) {
+        int fd = open(path, O_CREAT | O_WRONLY, 0600);
+        assert(fd >= 0);
+        assert(ftruncate(fd, bytes) == 0);
+        close(fd);
+    } else if (bytes == -2) {
+        assert(mkdir(path, 0700) == 0);
+    }
+    char *args[] = {"evdi_helper", "--edid", path};
+    int status = evdi_helper_main(3, args);
+    if (bytes == -2) assert(rmdir(path) == 0);
+    else if (bytes >= 0) assert(unlink(path) == 0);
+    assert(rmdir(root) == 0);
+    assert(status == 1);
+    assert(mock_open_calls == 0);
+    int readable = bytes == 128;
+    assert(mock_add_calls == readable && "T340: unreadable EDID requested a kernel device");
+    assert(mock_discovery_calls == readable && "T340: unreadable EDID reached DRM discovery");
+}
+
+static void test_t340_missing(void) { t340_startup_case(-1); }
+static void test_t340_directory(void) { t340_startup_case(-2); }
+static void test_t340_empty(void) { t340_startup_case(0); }
+static void test_t340_oversized(void) { t340_startup_case(32769); }
+static void test_t340_readable(void) { t340_startup_case(128); }
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T340-missing", test_t340_missing},
+        {"T340-directory", test_t340_directory},
+        {"T340-empty", test_t340_empty},
+        {"T340-oversized", test_t340_oversized},
+        {"T340-readable", test_t340_readable},
         {"T324", test_t324},
         {"T294", test_t294},
         {"T293", test_t293},
