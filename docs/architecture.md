@@ -1,85 +1,132 @@
 # Architecture
 
+This describes the Linux host and Android client in the current checkout.
+Windows remains a [proposed integration](windows-port.md). Known behavioral
+limits are tracked in [TODO.md](../TODO.md); describing a path does not certify
+it on every desktop or device.
+
 ## Pipeline
 
-1. **Virtual display.** The daemon starts a small C helper that opens an EVDI
-   device (`/dev/dri/cardN` provided by the `evdi` kernel module) and presents
-   a generated EDID with the tablet's resolution and physical size. KWin sees a
-   new monitor and starts rendering to it; the daemon enables it and places it
-   next to the real screens through `kscreen-doctor`.
-2. **Capture.** The helper runs an event-driven `request_update` / `grab_pixels`
-   cycle at the target frame rate, converts BGRA to NV12 (BT.709, limited
-   range) and writes whole frames into a FIFO in the per-user runtime
-   directory. Only rows the compositor reported as damaged are converted.
-3. **Encode.** `ffmpeg` (or libavcodec in-process) encodes with NVENC, VAAPI or
-   libx264 in constant-quality mode, no B-frames, no lookahead. The default
-   FFmpeg CLI schedules an IDR every second using capture wall-clock timestamps,
-   including at the 5 fps idle floor. Join/recovery then waits at most one
-   scheduled interval plus capture, packetization, encoding and transport time
-   (the software-encoder regression checks under 1.6 seconds at idle). The
-   optional in-process encoder also honors a next-frame keyframe request on
-   join; its periodic GOP is counted in frames. The CLI cannot accept those
-   live requests and uses its wall-clock schedule instead.
-4. **Stream.** A TCP server on loopback sends length-prefixed Annex B access
-   units; `adb reverse` carries the port to the tablet over USB. A client that
-   falls behind is skipped forward to the newest keyframe rather than fed a
-   backlog.
-5. **Decode.** The Android app feeds the stream to a MediaCodec hardware
-   decoder rendering straight to a SurfaceView, low-latency mode where the
-   device offers it.
-6. **Input.** Touch and pen events go back over a WebSocket on a second port
-   and are injected through three uinput devices (touchscreen, pen tablet with
-   pressure/tilt/eraser/button, absolute pointer), created while a tablet is
-   attached and removed when it goes. On KDE the daemon maps
-   these devices onto the virtual output over KWin's D-Bus interface so
-   coordinates land on the right screen.
-7. **Latency loop.** Every frame carries a sequence number; the app echoes it
-   after its render callback. The daemon logs packet-readiness-to-acknowledgement
-   p50/p95, including the return message and excluding capture, encoding and
-   packetizer assembly. See [measurement boundaries](benchmarks.md#how-latency-is-measured).
+1. **Virtual display.** A C helper opens an EVDI device and presents a generated
+   EDID for the selected resolution and physical size. The desktop compositor
+   supplies frames. Automatic placement uses `kscreen-doctor`; calls are not
+   fully restricted to supported desktops yet (T224).
+2. **Capture.** The helper requests updates, grabs BGRA pixels, converts damaged
+   rows to NV12 (BT.709, limited range) and sends raw frames through a FIFO in
+   the runtime directory. FIFO writes can be partial; correct recovery from an
+   interrupted partial frame remains unresolved (T226). The target FPS is not
+   a guarantee of capture throughput.
+3. **Encode.** The default FFmpeg child uses NVENC, VAAPI or software libx264.
+   NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
+   CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
+   B-frames/lookahead are disabled on the low-latency paths. An optional
+   in-process libavcodec encoder avoids the child process; it does not support
+   the `ten_bit` option.
+4. **Keyframes and delivery.** The FFmpeg CLI requests an IDR each second of
+   capture wall-clock time, including the five-fps idle floor. Actual recovery
+   also waits for capture, encoding, packetization and transport. The software
+   regression checks recovery under 1.6 seconds at idle. The optional in-process
+   encoder can honor a next-frame keyframe request; its periodic GOP counts
+   frames. The TCP server skips a lagging client's backlog to a retained IDR,
+   or waits for another IDR if necessary.
+5. **Decode.** Android receives length-prefixed Annex B access units through
+   adb forwarding and feeds MediaCodec, rendering to a SurfaceView. It requests
+   low-latency hints where supported. MediaCodec selection does not guarantee a
+   hardware decoder; codec/profile/resolution support is device-dependent.
+6. **Input.** A WebSocket carries touch, pen and control messages back to the
+   host. Enabled uinput devices exist while a tablet is attached: touchscreen,
+   pressure/tilt/eraser/button pen, and an absolute pointer used with the pen.
+   `input_touch`, `input_pen` and `input_pointer` control creation; the pointer
+   also requires the pen. KDE Wayland mapping uses KWin D-Bus; X11 uses
+   `xinput`/`xrandr`. Other desktops need their own mapping facilities.
+7. **Latency loop.** Every video frame has a sequence number, echoed after the
+   Android render callback. Host p50/p95 measure encoded-packet readiness to
+   acknowledgement receipt, including the return path and excluding capture,
+   encoding and packetizer assembly. See [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
-## Processes
+## Processes and settings
 
-- `uscreen` — the daemon: adb monitor, per-tablet sessions, tray icon, config.
-- `evdi_helper` — one per tablet slot, owns one EVDI card.
-- `ffmpeg` — one per slot (unless built with the in-process encoder).
-- `uscreen-gui` — optional settings window. Apply & Restart saves the config
-  file and restarts the daemon; the PID file supplies process status for
-  unmanaged launches. Encoder/display file edits take effect on daemon restart.
-  Tablet control messages update the running encoder directly. The Wi-Fi
-  reconnect address is a separate exception: each attempt reads it from disk.
+- `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
+- `evdi_helper`: one per active display slot, owns one EVDI card. The daemon's
+  card assignment can pin an occupied card despite free capacity (T330).
+- `ffmpeg`: one per active encoding slot, unless built with the optional
+  in-process encoder.
+- `uscreen-gui`: host configuration and start/stop controls. Apply & Restart
+  saves and restarts. Encoder/display edits on disk generally require a daemon
+  restart; tablet control messages can update live settings. The Wi-Fi
+  reconnect address is reread from disk for each attempt.
+
+The Android foreground service follows the Activity's started lifecycle,
+including waiting for connection and graphics-tablet mode; it is not proof
+that video is currently being decoded. Window brightness and preferred display
+mode are app-local controls, separate from host stream FPS and encoding.
 
 ## Protocol
 
-**Video (TCP, loopback, port 8890 + 2·slot).** The client first sends the
-64-character hex session token. Then the server sends packets of
-`u32 length (big-endian)`, `u8 type`, payload: type 0 is codec configuration
-(SPS/PPS, plus VPS for HEVC), type 1 is a frame with a `u32` sequence number
-before the Annex B data.
+Slot indices start at zero. Default video port is `8890 + 2*slot`; default
+input port is `8891 + 2*slot`. Both listeners bind to `127.0.0.1`; configured
+base ports must leave non-overlapping valid ports for every slot.
 
-**Input (WebSocket, loopback, port 8891 + 2·slot).** JSON messages. The first
-must be `{"type":"auth","token":"…"}`; the server then replies with a greeting
-`{"status":"connected","width":…,"height":…,"fps":…,"codec":"h264"|"hevc","pen_only":bool}`
-and repeats it whenever the mode changes. Client messages:
+With default token authentication enabled, both connections must present the
+same per-run 64-character hex token. Video authentication has a three-second
+deadline; WebSocket upgrade and input authentication share a three-second
+accept-to-authentication deadline. Disabling token checks changes the wire
+handshake and is incompatible with the current Android video client (T267).
+
+### Video TCP
+
+The client sends exactly 64 ASCII token bytes, with **no newline or length
+prefix**. After authentication, the server sends:
+
+| Field | Encoding |
+| --- | --- |
+| Packet length | Four-byte unsigned big-endian integer; excludes these four bytes, includes type and all payload bytes |
+| Packet type | One byte: 0 for codec configuration, 1 for frame |
+| Type 0 payload | Annex B codec parameter sets: SPS/PPS for H.264, VPS/SPS/PPS for HEVC |
+| Type 1 payload | Four-byte unsigned big-endian sequence number, then Annex B access-unit bytes |
+
+The codec is announced on the input/control connection; there is no separate
+codec-name field in the video packet header.
+
+### Input/control WebSocket
+
+The first message is `{"type":"auth","token":"…"}` when authentication is
+required. A representative host greeting is valid JSON:
+
+```json
+{"status":"connected","width":2960,"height":1848,"fps":60,"codec":"h264","pen_only":false,"touch":true,"pen":true}
+```
+
+The server sends `status: "mode"` for subsequent mode/settings notifications.
+`codec` is `h264` or `hevc`; FPS is omitted if no shared settings source exists.
+Width/height currently come from startup input configuration and can be stale
+after geometry negotiation (T276); they are not reliable current-stream dimensions.
+The Android client reads the settings fields, but checks `type: "connected"`
+instead of `status` to mark its pen-only control connection authenticated.
+That disagreement can leave the reconnect overlay visible (T247).
+
+Examples of individual client messages (one JSON object per WebSocket message):
 
 ```json
 {"type":"touch","x":0.5,"y":0.3,"pressure":1.0,"action":0,"slot":0}
 {"type":"pen","x":0.5,"y":0.3,"pressure":0.8,"tilt_x":12.0,"tilt_y":-3.0,"eraser":false,"action":2}
 {"type":"resolution","width":2960,"height":1848,"width_mm":314,"height_mm":195}
-{"type":"config","bitrate":20000,"fps":60}
+{"type":"config","bitrate":20000,"fps":60,"encoder":"h264_nvenc"}
 {"type":"mode","pen_only":true}
 {"type":"rendered","seq":1234,"decode_us":14200}
 ```
 
-Coordinates are normalised 0–1; tilt is in degrees; touch actions are
-0 down, 1 up, 2 move; pen actions add 3 hover, 4 hover exit, 5/6 stylus
-button down/up.
+Coordinates are normalized to 0–1; wire tilt values are degrees. Touch actions
+are 0 down, 1 up, 2 move; pen adds 3 hover, 4 hover exit, 5/6 stylus-button
+down/up. Physical dimensions, eraser and decode timing have defaults when
+omitted; config messages may omit settings they do not change. Pen tilt's
+uinput axis metadata has a separate unresolved libinput scaling issue (T287).
 
 ## Security model
 
-Loopback-only ports, a per-run random token required before any data flows,
-private runtime directory for the FIFO and token. USB mode carries screen and
-input over the cable; optional ADB Wi-Fi transport carries them over the local
-network. Neither sends them to a cloud service. The optional GitHub update
-check is the only automatic internet request. Details and threat model in
-[SECURITY.md](../SECURITY.md).
+Default authentication, local token storage and loopback binding restrict
+access but do not protect against processes with the same-user/adb privileges.
+Existing runtime-directory validation is incomplete (T252). USB carries the
+stream over the cable; Wi-Fi setup opens the tablet's adb TCP listener and
+carries the stream over that connection. See [SECURITY.md](../SECURITY.md) for
+trust boundaries, update checks and uninstall behavior.
