@@ -179,6 +179,8 @@ install_binaries() {
     if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
         src_bin="$PROJECT_DIR/bin"
     else
+        # Make builds into this directory explicitly, regardless of Cargo's
+        # environment/config target-dir. Keep every source consumer aligned.
         src_bin="$PROJECT_DIR/target/release"
     fi
 

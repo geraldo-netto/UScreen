@@ -596,3 +596,17 @@ fn t220_make_shares_jobserver_without_executing_dry_runs() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t336_source_workflows_consume_their_selected_build_outputs() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_build_output.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

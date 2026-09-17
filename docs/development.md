@@ -52,10 +52,11 @@ in a terminal. See [installation](installation.md) before attaching EVDI.
 The source helper normally finds the system libevdi installed above; bundling
 is a separate release step. Add `~/.local/bin` to PATH if needed.
 
-The Make/install workflows currently assume `target/release` (T336). Keep the
-default Cargo target directory for these commands: an environment/config
-override can build one location while installing stale files from another.
-The isolated CI scripts explicitly manage their own target directory.
+Native Linux Make/source-install workflows explicitly build into the repository's
+`target/release`, overriding Cargo target-directory environment/config settings.
+Install, run, status, stop, list, local packaging and clean use that same output
+directory. Direct Cargo commands still honor their normal target-directory
+settings; the isolated CI scripts explicitly manage their own directory.
 
 The Android app needs JDK 17 or 21 and Android SDK platform 34 / build-tools
 34.0.0. Use the committed Gradle wrapper (8.5); set `ANDROID_HOME` to the SDK

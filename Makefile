@@ -27,8 +27,8 @@ build-helper:
 	@echo "✓ EVDI helper: host/evdi/evdi_helper"
 
 build: build-helper
-	$(recursive_prefix)$(CARGO) build --release
-	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
+	$(recursive_prefix)$(CARGO) build --release --target-dir $(call quote,$(CURDIR)/target)
+	@printf '✓ Binaries: %s/uscreen and uscreen-gui\n' $(call quote,$(CURDIR)/target/release)
 
 install: build
 	bash scripts/install.sh --binaries-only $(call quote,$(BIN_DIR))
@@ -129,7 +129,7 @@ dist-local: build
 	@echo "✓ Release: dist/uscreen-$(VERSION)-linux-x86_64.tar.gz"
 
 clean:
-	cd host && $(CARGO) clean
+	$(CARGO) clean --target-dir $(call quote,$(CURDIR)/target)
 	rm -f host/evdi/evdi_helper
 	rm -rf dist
 	@echo "✓ Cleaned"
