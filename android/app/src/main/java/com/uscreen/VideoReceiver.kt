@@ -9,6 +9,7 @@ import android.view.Surface
 import android.view.SurfaceView
 import kotlinx.coroutines.*
 import java.io.InputStream
+import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -35,7 +36,7 @@ internal class ReceiverStatistics {
     }
 }
 
-class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) }) {
+class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
     companion object {
         const val HOST = "127.0.0.1"
         const val PORT = 8890
@@ -450,24 +451,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                     continue
                 }
                 Log.i(TAG, "Connecting to $HOST:$PORT...")
-                val connection = openSocket()
+                val connection = createSocket()
                 sessionSocket = connection
-                connection.apply {
-                    tcpNoDelay = true
-                    soTimeout = 10000 // 10s read timeout
-                    // Small on purpose. A 1 MB receive buffer let the host run
-                    // ahead and park whole frames here, where they are pure
-                    // delay that neither side can see or skip past. Keeping it
-                    // shallow pushes backpressure back to the host, which does
-                    // know how to drop stale frames.
-                    receiveBufferSize = 128 * 1024
-                }
-                val input = connection.getInputStream()
-                synchronized(this@VideoReceiver) {
-                    if (!isCurrent(generation)) return
-                    socket = connection
-                    inputStream = input
-                }
+                val input = connectSocket(generation, connection) ?: return
                 sessionToken?.let { t ->
                     connection.getOutputStream().apply {
                         write(t.toByteArray(Charsets.US_ASCII))
@@ -483,13 +469,36 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             } catch (e: java.io.EOFException) {
                 disconnectAndPause(generation, 1000) { Log.i(TAG, "Stream ended (server closed)") }
             } catch (e: java.net.SocketTimeoutException) {
-                disconnectAndPause(generation, 500) { Log.w(TAG, "Stream read timeout, reconnecting") }
+                disconnectAndPause(generation, 500) { Log.w(TAG, "Video socket timeout, reconnecting") }
             } catch (e: Exception) {
                 disconnectAndPause(generation, 1000) { Log.e(TAG, "Stream error: ${e.message}") }
             } finally {
                 retireSessionSocket(sessionSocket)
             }
         }
+    }
+
+    private fun connectSocket(generation: Long, connection: Socket): InputStream? {
+        // Publish before blocking: stop/surface retirement must also close a
+        // socket still connecting, since cancelling its coroutine cannot.
+        synchronized(this) {
+            if (!isCurrent(generation)) return null
+            socket = connection
+        }
+        connection.connect(InetSocketAddress(HOST, PORT), 5000)
+        connection.apply {
+            tcpNoDelay = true
+            soTimeout = 10000 // 10s read timeout
+            // A shallow receive queue exposes backpressure to the host so it
+            // can discard stale frames instead of hiding them in the kernel.
+            receiveBufferSize = 128 * 1024
+        }
+        val input = connection.getInputStream()
+        synchronized(this) {
+            if (!isCurrent(generation)) return null
+            inputStream = input
+        }
+        return input
     }
 
     private suspend fun awaitSurface(generation: Long) {

@@ -58,10 +58,56 @@ class DecoderSetupTest {
     @Test fun t243_invalidPacketReportsDisconnectionBeforeRetry() = checkDisconnected("invalid-packet")
     @Test fun t243_decoderResetReportsDisconnectionBeforeRetry() = checkDisconnected("input-timeout")
 
+    private class ConnectingSocket : java.net.Socket() {
+        val entered = java.util.concurrent.CountDownLatch(1)
+        private val released = java.util.concurrent.CountDownLatch(1)
+        @Volatile var deadline = -1
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) {
+            deadline = timeout
+            entered.countDown()
+            check(released.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            throw java.net.SocketException("fixture connection closed")
+        }
+        override fun close() { super.close(); released.countDown() }
+    }
+
+    @Test fun t333_stopCancelsPendingVideoConnect() = checkPendingConnect(true)
+    @Test fun t333_videoConnectHasABoundedDeadline() = checkPendingConnect(false)
+
+    private fun checkPendingConnect(checkCancellation: Boolean) {
+        val socket = ConnectingSocket()
+        val receiver = VideoReceiver { socket }
+        (get(receiver, "surfaceReady") as java.util.concurrent.atomic.AtomicBoolean).set(true)
+        set(receiver, "mediaCodec", MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE))
+        var job: kotlinx.coroutines.Job? = null
+        try {
+            receiver.start()
+            job = get(receiver, "job") as kotlinx.coroutines.Job
+            assertTrue("T333: connect was not attempted",
+                socket.entered.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            if (checkCancellation) {
+                receiver.stop()
+                val retired = kotlinx.coroutines.runBlocking {
+                    kotlinx.coroutines.withTimeoutOrNull(1000) { job.join(); true } ?: false
+                }
+                assertTrue("T333: stopping left the video connection worker blocked", retired)
+                assertTrue("T333: pending socket was not closed", socket.isClosed)
+            } else {
+                assertTrue("T333: connect has no bounded deadline: ${socket.deadline}",
+                    socket.deadline in 1..10_000)
+            }
+        } finally {
+            receiver.stop()
+            socket.close()
+            kotlinx.coroutines.runBlocking { kotlinx.coroutines.withTimeout(2000) { job?.join() } }
+        }
+    }
+
     private class RecoverySocket(private val bytes: ByteArray?, private val holdAfterBytes: Boolean = false) : java.net.Socket() {
         private val releaseRead = java.util.concurrent.CountDownLatch(1)
         val blockedRead = java.util.concurrent.CountDownLatch(1)
         @Volatile private var closed = false
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) {}
         override fun setTcpNoDelay(value: Boolean) {}
         override fun setSoTimeout(value: Int) {}
         override fun setReceiveBufferSize(value: Int) {}

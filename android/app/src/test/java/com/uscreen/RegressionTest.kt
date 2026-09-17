@@ -509,25 +509,27 @@ class RegressionTest {
         assertEquals(10, send(MotionEvent.ACTION_CANCEL, *(10..20).toList().toIntArray()).size)
     }
 
-    @Test fun t088_lateOldCleanupLeavesReplacementSocketAndDecoderAlive() {
-        class VideoSocket : java.net.Socket() {
-            val reading = java.util.concurrent.CountDownLatch(1)
-            val releaseRead = java.util.concurrent.CountDownLatch(1)
-            @Volatile var closed = false
-            override fun setTcpNoDelay(value: Boolean) {}
-            override fun setSoTimeout(value: Int) {}
-            override fun setReceiveBufferSize(value: Int) {}
-            override fun getInputStream() = object : java.io.InputStream() {
-                override fun read(): Int = error("use bulk read")
-                override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
-                    reading.countDown()
-                    check(releaseRead.await(3, java.util.concurrent.TimeUnit.SECONDS))
-                    throw java.io.EOFException()
-                }
+    private class VideoSocket : java.net.Socket() {
+        val reading = java.util.concurrent.CountDownLatch(1)
+        val releaseRead = java.util.concurrent.CountDownLatch(1)
+        @Volatile var closed = false
+        override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) {}
+        override fun setTcpNoDelay(value: Boolean) {}
+        override fun setSoTimeout(value: Int) {}
+        override fun setReceiveBufferSize(value: Int) {}
+        override fun getInputStream() = object : java.io.InputStream() {
+            override fun read(): Int = error("use bulk read")
+            override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+                reading.countDown()
+                check(releaseRead.await(3, java.util.concurrent.TimeUnit.SECONDS))
+                throw java.io.EOFException()
             }
-            override fun getOutputStream() = java.io.ByteArrayOutputStream()
-            override fun close() { closed = true }
         }
+        override fun getOutputStream() = java.io.ByteArrayOutputStream()
+        override fun close() { closed = true }
+    }
+
+    @Test fun t088_lateOldCleanupLeavesReplacementSocketAndDecoderAlive() {
         val old = VideoSocket()
         val next = VideoSocket()
         val sockets = java.util.concurrent.LinkedBlockingQueue<java.net.Socket>().apply { add(old); add(next) }
