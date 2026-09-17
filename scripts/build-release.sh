@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Build release binaries against an old glibc so they run on any current
-# distribution. Built on the developer's own machine they required glibc 2.43
-# (uscreen-gui) and 2.39 (uscreen), which rules out every Debian and Ubuntu
-# release in use. Debian 12 has 2.36, and anything built there runs on
-# everything newer.
+# Build Linux x86-64 binaries against Debian 12 and validate glibc <= 2.36.
+# Local builds can require newer glibc versions. This ABI check does not
+# establish runtime dependency, GPU, kernel or compositor compatibility.
 #
 # Needs a distrobox container named "uscreen-build" made from debian:12 with
 # build-essential, pkg-config, libdrm-dev, the X11/Wayland dev packages for

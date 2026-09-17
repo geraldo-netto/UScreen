@@ -2,6 +2,11 @@
 
 ## Building from source
 
+These instructions target the Linux host. The [Windows plan](windows-port.md)
+is proposed work, not a supported build procedure. Use the fork checkout and
+record `git rev-parse HEAD` when sharing results; version 1.2.3 alone does not
+identify its unreleased changes.
+
 Host build needs stable Rust/Cargo, a C/C++ compiler, make, pkg-config,
 libdrm headers, the **libevdi userspace development library** (including the
 unversioned `libevdi.so` linker name), and the GUI platform headers below.
@@ -30,14 +35,27 @@ sudo ldconfig
 
 Runtime additionally needs `ffmpeg`, `adb`/`android-tools`, a compatible evdi
 kernel module, and the permissions installed by `make setup-system`.
-KDE mapping needs `kscreen-doctor` plus `busctl` or `qdbus`; X11 mapping needs
+KDE output placement needs `kscreen-doctor`; KWin input mapping uses `busctl`
+or a supported `qdbus` variant. X11 mapping needs
 `xinput` and `xrandr`. See [installation.md](installation.md).
 
 ```bash
 make build            # EVDI helper (C) + Rust daemon + GUI
-make install          # copies to ~/.local/bin, installs the systemd user unit
+make install          # copies to ~/.local/bin, installs/reloads the user unit
 make setup-system     # modprobe.d / modules-load.d / udev rule (sudo)
 ```
+
+These install/setup commands modify the machine. For a configured systemd
+desktop, explicitly enable/start with `systemctl --user enable --now uscreen`;
+`make install` does not do that. Without a user manager, launch `uscreen start`
+in a terminal. See [installation](installation.md) before attaching EVDI.
+The source helper normally finds the system libevdi installed above; bundling
+is a separate release step. Add `~/.local/bin` to PATH if needed.
+
+The Make/install workflows currently assume `target/release` (T336). Keep the
+default Cargo target directory for these commands: an environment/config
+override can build one location while installing stale files from another.
+The isolated CI scripts explicitly manage their own target directory.
 
 The Android app needs JDK 17 or 21 and Android SDK platform 34 / build-tools
 34.0.0. Use the committed Gradle wrapper (8.5); set `ANDROID_HOME` to the SDK
@@ -57,8 +75,14 @@ Or open `android/` in Android Studio.
 
 ## Running and testing
 
+For a live foreground run, first stop any service/direct daemon, then use
+`RUST_LOG=uscreen=debug uscreen start` in the desktop session. This can attach
+a virtual display; it is separate from automated validation and inappropriate
+for reproducing the known Cinnamon crash on a working desktop.
+
+Normal automated checks (with their prerequisites installed):
+
 ```bash
-RUST_LOG=uscreen=debug uscreen start      # in a terminal, with the tablet attached
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ./android/gradlew -p android testDebugUnitTest assembleDebug lintDebug
@@ -82,7 +106,11 @@ tests use Robolectric API 27 and 34; Gradle downloads their test images.
 `scripts/fake-tablet.py` pretends to be a tablet on the loopback ports
 (authenticates, reports a resolution, acks frames). With
 `USCREEN_FAKE_TABLET=fake1,fake2` and `max_tablets = 2` it exercises a
-second pipeline without a second device.
+second pipeline without a second physical tablet. It still drives the real
+host capture/encoder pipeline and can attach EVDI; it is not an isolated unit
+test or a measure of tablet decoding. The script's token-path fallback differs
+from the daemon when runtime directories are absent (T242); use a valid
+XDG_RUNTIME_DIR shared by both until that is corrected.
 
 ## Project layout
 
@@ -109,7 +137,7 @@ gui/               egui desktop app: status, settings, start/stop
 android/           Kotlin/Compose app: MediaCodec decoder, touch/pen capture
 packaging/         deb control/postinst, rpm spec, PKGBUILD, udev/modprobe files
 scripts/           install.sh, release build, fake tablet
-docs/              this documentation and the GitHub Pages site
+docs/              documentation and proposed static-site source
 ```
 
 The proposed [Windows integration plan](windows-port.md) covers pending
@@ -126,7 +154,7 @@ COMMANDS
   stop            stop the daemon
   status          show daemon status
   list-displays   show compositor displays and PipeWire status
-  wifi            put the tablet on the network (--off to undo)
+  wifi            enable ADB TCP; --off forgets/disconnects the saved address
   doctor          diagnose the setup and print fixes
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
@@ -135,11 +163,19 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
   --bitrate <KBPS>      rate-control limit (1000–60000; not enforced by VAAPI CQP)
   --width/--height <N>  capture size (auto_resolution off)
   --quality <Q>         constant-quality target, 12–32, lower is sharper
-  --stream-scale <N>    downscale the stream only, 1 = native, 2 = half
+  --stream-scale <N>    stream-only integer downscale, 1–4; 2 halves both axes
   --pen-only            graphics-tablet mode for this run
   --video-port/--input-port <PORT>
   --helper <PATH>, --edid <PATH>
+  -h, --help; -V, --version
 ```
+
+No subcommand defaults to `start`. `--width`/`--height` do not turn off
+auto-resolution: set `auto_resolution = false` in config for a manual mode.
+Oversized tablet metadata can still block an otherwise valid manual mode
+(T275). An explicit `--edid` pins the supplied EDID instead of generating one.
+`list-displays` invokes `kscreen-doctor -o` and, when present, `wpctl status`;
+it is not a universal compositor enumeration API.
 
 ## Settings defaults and scope
 
@@ -205,6 +241,10 @@ RPM Fusion's `ffmpeg-devel`) and clang development package. Check that
 container can supply the build environment; the installed binary still needs
 ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
 on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
+**In-process VAAPI is currently broken**: the encoder lacks the required
+hardware-frames context/render-node integration (T284). Use the default
+FFmpeg path for VAAPI; successfully compiling the optional feature does not
+validate every encoder.
 
 ## Release APK
 
@@ -216,12 +256,21 @@ keytool -genkeypair -keystore uscreen-release.keystore -alias uscreen \
 ./gradlew assembleRelease     # app/build/outputs/apk/release/app-release.apk
 ```
 
-The keystore and `keystore.properties` are gitignored. The same key must sign
-every future release or users cannot update in place.
+The keystore and `keystore.properties` are gitignored. Create a new key only
+for a new signing identity; do not regenerate an established release key.
+The fork's official identity and migration policy remain pending (T250);
+a developer's new key is not automatically the official fork key. Android
+requires compatible signing credentials for in-place updates. Debug and
+release APKs normally use different keys. See [release integrity](../SECURITY.md#release-integrity).
 
 ## Releasing (maintainers)
 
-Binaries are built in a Debian 12 container for glibc 2.36 or newer (Debian 12+, Ubuntu 24.04+):
+The portable workflow builds in a Debian 12 container and checks a glibc
+2.36 ceiling. This addresses the Linux x86-64 ABI baseline, not GPU/kernel
+compatibility. Packaging needs both `rpm` and `rpmbuild`; the host also needs
+Python 3.11+, binutils (including `readelf`), distrobox, Git and the Android
+build/signing environment:
+
 
 ```bash
 distrobox create --image debian:12 --name uscreen-build
@@ -236,7 +285,7 @@ Set `USCREEN_BUILD_CONTAINER=name` to use a differently named build container
 with `make dist` or `make publish`; an empty or unset value uses `uscreen-build`.
 
 `make publish` runs `scripts/build-release.sh` and `packaging/build-packages.sh`,
-requires HEAD and both local/origin tag objects to match, and refuses to
+checks that HEAD and both local/origin tag objects match, and refuses to
 continue unless all five release files exist. It creates a **draft**, uploads
 those files plus `SHA256SUMS`, verifies the complete server asset inventory,
 sizes and SHA-256 digests, then publishes. Any earlier failure leaves the draft
@@ -244,6 +293,11 @@ unpublished. Publishing needs Python 3.11+ on the host and `GH_TOKEN` with
 release write access; credentials are read from the environment inside Python.
 The Android release build runs on the host and needs the SDK/JDK and signing
 key described above. No publishing command belongs in routine validation.
+Existing publication limitations remain: the version checks use permissive
+regular expressions (T262), source mutations during the build are not rejected
+(T263), and the fork signing/package-maintainer policies are pending
+(T250/T308). Do not interpret successful guards as verification of these
+unimplemented guarantees.
 
 `make dist-local` uses the local toolchain and requires a successful signed APK
 build. It bundles libevdi v1.15.0 beside the helper; if the compiler cannot find
@@ -280,7 +334,9 @@ Update documentation branch links when the development work is merged.
 ## Portable build and package checks
 
 `packaging/ci/Dockerfile` supplies Rust 1.90 on Debian 12, the pinned EVDI
-userspace library, GUI libraries, sanitizers and every workspace test tool.
+userspace library, GUI libraries, sanitizers and the default workspace test
+tools. Optional-encoder FFmpeg/libclang development packages are installed
+by the separate build workflow, not this container.
 The Docker base image is pinned by digest; Cargo uses `Cargo.lock`. Debian
 security package updates remain enabled. Build/test tools include **both
 `rpm` and the `rpmbuild` executable**, plus `dpkg-deb` and `fakeroot`.
