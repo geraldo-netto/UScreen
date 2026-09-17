@@ -212,3 +212,8 @@ fn t293_nv12_preserves_neutral_gray_and_bt709_colors() {
 fn t294_capture_watchdog_recovers_at_poll_deadline() {
     Harness::build("T294").run("T294");
 }
+
+#[test]
+fn t324_mode_retirement_during_pacing_discards_claimed_frame() {
+    Harness::build("T324").run("T324");
+}

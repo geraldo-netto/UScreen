@@ -721,9 +721,8 @@ static int fifo_write_retryable(ssize_t written) {
 
 /* A live reader may stall briefly under load. Keep the same frame across
    poll timeouts, but bound a continuous stall and notice mode changes. */
-static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
+static size_t write_fifo_bytes(const unsigned char *ptr, size_t remaining, unsigned generation) {
     long long deadline = now_ms() + 1000;
-    unsigned generation = g_mode_generation;
     while (remaining > 0 && g_running && generation == g_mode_generation) {
         enum fifo_wait_result ready = wait_fifo_writable(deadline);
         if (ready == FIFO_RETRY) continue;
@@ -737,6 +736,15 @@ static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining) {
         remaining -= (size_t)written;
         deadline = now_ms() + 1000;
     }
+    return remaining;
+}
+
+static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining, unsigned generation) {
+    /* Keep the generation from claim_writer_frame, including across pacing.
+       An obsolete frame that has not started needs no FIFO resynchronization;
+       completed earlier frames remain intact. Shutdown still closes the pipe. */
+    if (generation != g_mode_generation && g_running) return remaining;
+    remaining = write_fifo_bytes(ptr, remaining, generation);
     if (remaining > 0) {
         fprintf(stderr, "[evdi-helper] Incomplete frame — closing FIFO to resync\n");
         close(g_capture_fifo_fd);
@@ -889,7 +897,7 @@ static void *writer_thread(void *arg) {
         if (claimed == 0) continue;
         if (!writer_frame_due(fresh)) continue;
         pace_writer(&state);
-        size_t remaining = write_fifo_frame(g_write, (size_t)size);
+        size_t remaining = write_fifo_frame(g_write, (size_t)size, state.frame_generation);
         g_writer_busy = 0;
         /* Repeated keepalives measure stale frame age, not capture latency. */
         if (fresh && remaining == 0) record_latency(g_write_grab_us);

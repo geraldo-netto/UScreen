@@ -230,7 +230,7 @@ static void assert_stalled_write_exits(int reader, int cancel) {
     unsigned char *frame = calloc(1, size);
     assert(frame);
     long long start = now_ms();
-    size_t remaining = write_fifo_frame(frame, size);
+    size_t remaining = write_fifo_frame(frame, size, g_mode_generation);
     assert(remaining > 0 && g_capture_fifo_fd == -1);
     assert(now_ms() - start < (cancel ? 600 : 1400));
     if (cancel) pthread_join(cancellation, NULL);
@@ -504,6 +504,33 @@ static void test_t315_channel(void) { check_t315_exit_status(0, 1); }
 static void test_t315_mode(void) { check_t315_exit_status(1, 1); }
 static void test_t315_signal(void) { check_t315_exit_status(2, 0); }
 
+static void test_t324(void) {
+    alarm(5);
+    int pipefd[2];
+    pthread_t writer = start_test_writer(pipefd);
+    read_test_frame(pipefd[0], 8, 8);
+    pause_writer = 1;
+    while (!writer_paused) {
+        publish_frame();
+        usleep(1000);
+    }
+    /* Begin mode retirement while the writer is paused, without timing out. */
+    pthread_mutex_lock(&g_swap_mutex);
+    g_buffers_ready = 0;
+    g_latest_valid = 0;
+    g_mode_generation++;
+    pthread_mutex_unlock(&g_swap_mutex);
+    pause_writer = 0;
+    while (g_writer_busy) usleep(1000);
+    unsigned char bytes[96];
+    ssize_t received = read(pipefd[0], bytes, sizeof(bytes));
+    int running = g_running;
+    stop_test_writer(writer, pipefd);
+    assert(running && "T324: discard a retired frame without stopping capture");
+    assert(received <= 0 && "T324: writer sent a retired frame after its pacing sleep");
+    alarm(0);
+}
+
 static void test_t274(void) {
     alarm(5);
     int pipefd[2];
@@ -601,7 +628,7 @@ static void test_t049(void) {
     g_capture_fifo_fd = pipefd[1];
     stall_once = 1;
     const unsigned char frame[] = {1, 2, 3, 4};
-    assert(write_fifo_frame(frame, sizeof(frame)) == 0 && "T049: transient poll timeout lost frame");
+    assert(write_fifo_frame(frame, sizeof(frame), g_mode_generation) == 0 && "T049: transient poll timeout lost frame");
     unsigned char received[4];
     assert(read(pipefd[0], received, sizeof(received)) == sizeof(received));
     assert(memcmp(frame, received, sizeof(frame)) == 0);
@@ -739,6 +766,7 @@ static void test_t290(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T324", test_t324},
         {"T294", test_t294},
         {"T293", test_t293},
         {"T290", test_t290},
