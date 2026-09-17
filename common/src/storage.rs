@@ -13,6 +13,40 @@ pub fn config_path() -> PathBuf {
     base.join("uscreen/config.toml")
 }
 
+/// A filesystem adapter with an explicit location, shared by UI and daemon
+/// workers. Keep synchronous transactions off their event/render threads.
+#[derive(Clone, Debug)]
+pub struct ConfigStore {
+    path: PathBuf,
+}
+
+impl Default for ConfigStore {
+    fn default() -> Self {
+        Self::new(config_path())
+    }
+}
+
+impl ConfigStore {
+    pub fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    pub fn load(&self) -> FileConfig {
+        FileConfig::load_at(&self.path)
+    }
+
+    pub fn update(&self, edit: impl FnOnce(&mut FileConfig) -> Result<()>) -> Result<FileConfig> {
+        FileConfig::update_at(&self.path, edit)
+    }
+
+    pub fn save_edits(&self, edited: &FileConfig, baseline: &FileConfig) -> Result<FileConfig> {
+        self.update(|latest| {
+            *latest = edited.merge_edits(baseline, latest.clone())?;
+            Ok(())
+        })
+    }
+}
+
 impl FileConfig {
     pub fn load() -> Self {
         Self::load_at(&config_path())
@@ -36,14 +70,11 @@ impl FileConfig {
 
     /// Serialize the entire read/modify/write operation across processes.
     pub fn update(edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
-        Self::update_at(&config_path(), edit)
+        ConfigStore::default().update(edit)
     }
 
     pub fn save_edits(&self, baseline: &Self) -> Result<Self> {
-        Self::update(|latest| {
-            *latest = self.merge_edits(baseline, latest.clone())?;
-            Ok(())
-        })
+        ConfigStore::default().save_edits(self, baseline)
     }
 
     fn lock_at(path: &Path) -> Result<std::fs::File> {

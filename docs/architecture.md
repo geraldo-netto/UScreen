@@ -65,7 +65,14 @@ on WebAssembly; this does not make the daemon or GUI Windows-compatible.
 - `ffmpeg`: one per active encoding slot, unless built with the optional
   in-process encoder.
 - `uscreen-gui`: host configuration and start/stop controls. Apply & Restart
-  saves and restarts. Encoder/display edits on disk generally require a daemon
+  runs one background save and restarts only after successful persistence.
+  Controls remain editable during a save; completion preserves those newer
+  edits and merges unrelated disk changes into the saved baseline. Save,
+  Discard and daemon actions wait for that operation to finish. A save failure
+  retains edits for retry; a restart failure still leaves the saved baseline
+  current. Closing the process can interrupt a pending job; atomic replacement
+  preserves either the old or new config, not a partial file.
+  Encoder/display edits on disk generally require a daemon
   restart; tablet control messages can update live settings. The Wi-Fi
   reconnect address is reread from disk for each attempt.
 

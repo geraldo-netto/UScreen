@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod settings;
+
 use eframe::egui;
 use std::path::PathBuf;
 use std::process::Command;
@@ -11,7 +13,7 @@ use uscreen_config::linux::daemon_is_running;
 use uscreen_config::model::{
     FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
 };
-use uscreen_config::storage::config_path;
+use uscreen_config::storage::{config_path, ConfigStore};
 
 /// Whether the systemd user service is enabled, i.e. whether plugging the
 /// cable in is enough on its own.
@@ -297,6 +299,8 @@ fn dispatch_action(
 }
 
 struct App {
+    store: ConfigStore,
+    save: Option<settings::PendingSave>,
     cfg: FileConfig,
     saved_cfg: FileConfig,
     status: Arc<Mutex<Status>>,
@@ -423,6 +427,8 @@ impl App {
         });
 
         Self {
+            store: ConfigStore::default(),
+            save: None,
             saved_cfg: cfg.clone(),
             cfg,
             status,
@@ -434,30 +440,47 @@ impl App {
     }
 
     fn run_action(&mut self, action: impl FnOnce() -> String + Send + 'static) {
-        if self.action.is_none() {
+        if !self.busy() {
             self.message = "Working…".into();
             self.action = Some(dispatch_action(action));
         }
     }
 
     fn apply(&mut self, restart: bool) {
-        if self.action.is_some() {
+        if self.busy() {
             return;
         }
-        match self.cfg.save_edits(&self.saved_cfg) {
-            Ok(merged) => {
-                self.cfg = merged.clone();
-                self.saved_cfg = merged;
-                self.message = "Settings saved".into();
-                if restart {
-                    self.run_action(|| {
-                        restart_daemon()
-                            .map(|_| "Settings saved — daemon restarted".into())
-                            .unwrap_or_else(|e| e)
-                    });
+        let restart = restart.then(|| Box::new(restart_daemon) as settings::Restart);
+        self.save = Some(settings::PendingSave::start(
+            self.store.clone(),
+            self.cfg.clone(),
+            self.saved_cfg.clone(),
+            restart,
+        ));
+        self.message = "Saving…".into();
+    }
+
+    fn busy(&self) -> bool {
+        self.action.is_some() || self.save.is_some()
+    }
+
+    fn poll_save(&mut self) {
+        if !self.save.as_ref().is_some_and(|save| save.is_finished()) {
+            return;
+        }
+        let save = self.save.take().unwrap();
+        let submitted = save.submitted.clone();
+        match save.finish() {
+            Ok(saved) => {
+                self.message = saved.message();
+                // Only edits made after submission override the committed
+                // snapshot, including concurrent disk changes merged by it.
+                if let Ok(edited) = self.cfg.merge_edits(&submitted, saved.config.clone()) {
+                    self.cfg = edited;
                 }
+                self.saved_cfg = saved.config;
             }
-            Err(e) => self.message = format!("Save failed: {}", e),
+            Err(error) => self.message = error,
         }
     }
 }
@@ -529,6 +552,7 @@ impl App {
     }
 
     fn poll_action(&mut self) {
+        self.poll_save();
         if let Some(receiver) = &self.action {
             match receiver.try_recv() {
                 Ok(message) => {
@@ -555,10 +579,17 @@ impl App {
                 } else {
                     "Save"
                 };
-                if ui.add_enabled(dirty, egui::Button::new(label)).clicked() {
+                if ui
+                    .add_enabled(dirty && !self.busy(), egui::Button::new(label))
+                    .clicked()
+                {
                     self.apply(status.daemon_running);
                 }
-                if dirty && ui.button("Discard").clicked() {
+                if dirty
+                    && ui
+                        .add_enabled(!self.busy(), egui::Button::new("Discard"))
+                        .clicked()
+                {
                     self.cfg = self.saved_cfg.clone();
                 }
             });
@@ -1210,6 +1241,8 @@ mod tests {
             ..saved_cfg.clone()
         };
         App {
+            store: ConfigStore::default(),
+            save: None,
             cfg,
             saved_cfg,
             tab,
@@ -1225,6 +1258,90 @@ mod tests {
             })),
             update: Arc::new(Mutex::new(None)),
         }
+    }
+
+    #[test]
+    fn t378_held_config_lock_does_not_block_apply_or_lose_edits() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("config.toml");
+        let store = ConfigStore::new(path.clone());
+        store.update(|_| Ok(())).unwrap();
+        let lock = std::fs::File::open(path.with_extension("lock")).unwrap();
+        lock.lock().unwrap();
+        let (release, wait) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let _ = wait.recv_timeout(Duration::from_secs(2));
+            drop(lock);
+        });
+        let mut app = settings_test_app(Tab::Video);
+        app.store = store;
+        app.cfg.fps = 30;
+        let started = std::time::Instant::now();
+        app.apply(false);
+        let elapsed = started.elapsed();
+        // Stay inside the same range enforced by the real quality slider.
+        app.cfg.quality = MIN_QUALITY + 1;
+        app.cfg.fps = 45;
+        app.apply(false); // A pending save must not enqueue another transaction.
+                          // The fixture owns the lock: simulate a separate disk edit before the
+                          // queued GUI transaction is allowed to read/merge it.
+        let external = FileConfig {
+            position: "left".into(),
+            ..Default::default()
+        };
+        std::fs::write(path, toml::to_string(&external).unwrap()).unwrap();
+        let _ = release.send(());
+        holder.join().unwrap();
+        assert!(
+            elapsed < Duration::from_millis(200),
+            "T378: apply blocked for {elapsed:?}"
+        );
+        wait_for_save(&mut app);
+        assert_eq!(app.saved_cfg.fps, 30);
+        assert_eq!(app.saved_cfg.position, "left");
+        assert_eq!(
+            app.cfg.quality,
+            MIN_QUALITY + 1,
+            "T378: edits made during save survive"
+        );
+        assert_eq!(app.cfg.fps, 45);
+        assert_ne!(app.cfg, app.saved_cfg);
+        assert_eq!(app.store.load(), app.saved_cfg);
+    }
+
+    fn wait_for_save(app: &mut App) {
+        wait_for_work(app);
+        assert_eq!(app.saved_cfg.fps, 30, "{}", app.message);
+    }
+
+    fn wait_for_work(app: &mut App) {
+        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        while app.busy() && std::time::Instant::now() < deadline {
+            app.poll_action();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!app.busy(), "T378: worker did not finish");
+    }
+
+    #[test]
+    fn t378_save_failure_retains_baseline_and_edits_for_retry() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(&path, "invalid = [").unwrap();
+        let mut app = settings_test_app(Tab::Video);
+        app.store = ConfigStore::new(path.clone());
+        let baseline = app.saved_cfg.clone();
+        app.cfg.fps = 30;
+        let edits = app.cfg.clone();
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert!(app.message.starts_with("Save failed:"), "{}", app.message);
+        assert_eq!(app.saved_cfg, baseline);
+        assert_eq!(app.cfg, edits);
+        std::fs::write(&path, "").unwrap();
+        app.apply(false);
+        wait_for_save(&mut app);
+        assert_eq!(app.saved_cfg, app.cfg);
     }
 
     fn collect_painted_text(shape: &egui::Shape, text: &mut Vec<String>) {
