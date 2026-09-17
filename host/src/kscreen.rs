@@ -54,7 +54,8 @@ impl Geometry {
     fn logical_size(out: &Value, path: &str, scale: f64) -> i64 {
         let raw = out.pointer(path).and_then(Value::as_i64).unwrap_or(0);
         if scale > 0.0 {
-            (raw as f64 / scale).round() as i64
+            // Match KScreen's occupied logical bounds at fractional scales.
+            (raw as f64 / scale).ceil() as i64
         } else {
             raw
         }
@@ -206,6 +207,41 @@ mod tests {
     fn screen(id: u32, name: &str, enabled: bool, x: i64, y: i64) -> Value {
         json!({"id": id, "name": name, "enabled": enabled, "pos": {"x": x, "y": y},
             "size": {"width": 1000, "height": 500}, "scale": 1.0})
+    }
+
+    #[test]
+    fn t298_fractional_scale_neighbors_do_not_overlap() {
+        // KScreen's logicalSizeForOutputInt uses ceil for the occupied bounds.
+        // 1920x1080 / 1.75 occupies 1098x618; 1280x800 occupies 732x458.
+        let mut desktop = screen(1, "eDP-1", true, 0, 0);
+        desktop["size"] = json!({"width": 1920, "height": 1080});
+        desktop["scale"] = json!(1.75);
+        let mut tablet = screen(2, "DVI-I-1", false, 0, 0);
+        tablet["size"] = json!({"width": 1280, "height": 800});
+        tablet["scale"] = json!(1.75);
+        for (direction, x, y, shift_x, shift_y) in [
+            (Position::Right, 1098, 0, 0, 0),
+            (Position::Below, 0, 618, 0, 0),
+            (Position::Left, 0, 0, 732, 0),
+            (Position::Above, 0, 0, 0, 458),
+        ] {
+            let mut outputs = [desktop.clone(), tablet.clone()];
+            let names = ["DVI-I-1".into()];
+            let plan = placement(&outputs, &names, direction).unwrap();
+            assert_eq!(
+                (plan.x, plan.y, plan.shift_x, plan.shift_y),
+                (x, y, shift_x, shift_y),
+                "T298: fractional-scale placement overlaps in {direction:?}"
+            );
+            outputs[0]["pos"] = json!({"x": shift_x, "y": shift_y});
+            outputs[1]["pos"] = json!({"x": x, "y": y});
+            outputs[1]["enabled"] = json!(true);
+            assert!(
+                placement(&outputs, &names, direction)
+                    .unwrap()
+                    .already_applied
+            );
+        }
     }
 
     #[test]
