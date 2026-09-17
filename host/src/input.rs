@@ -885,9 +885,9 @@ impl InjectDevices {
 
 const KWIN_INPUT_IFACE: &str = "org.kde.KWin.InputDevice";
 
-/// The screen the user is actually looking at: the first enabled output that is
-/// not one of ours. In pen-only mode the tablet drives this one, so the pen has
-/// to be mapped onto it rather than onto the virtual display.
+/// Prefer the enabled primary physical output; otherwise use the first enabled
+/// physical output in the inventory. Pen-only mode drives this host screen,
+/// never another tablet's EVDI connector.
 async fn primary_non_evdi_output() -> Option<String> {
     let evdi: Vec<String> = crate::vdisplay::evdi_connectors()
         .into_iter()
@@ -2195,6 +2195,136 @@ fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled:
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t299_primary_selection_reaches_kwin_mapping_arguments() {
+        const NAME: &str = "input::tests::t299_primary_selection_reaches_kwin_mapping_arguments";
+        if std::env::var_os("USCREEN_T299_CHILD").is_none() {
+            run_t299_mapping_fixture(NAME);
+            return;
+        }
+        let selected = super::primary_non_evdi_output().await.unwrap();
+        assert!(
+            super::map_kwin_device(
+                "event-fixture",
+                &super::DeviceIdentity::for_instance(0),
+                &selected
+            )
+            .await
+        );
+        let trace =
+            std::fs::read_to_string(std::env::var_os("USCREEN_T299_TRACE").unwrap()).unwrap();
+        assert!(
+            trace.contains("outputName s HDMI-A-1"),
+            "T299: wrong mapping arguments: {trace}"
+        );
+    }
+
+    fn run_t299_mapping_fixture(name: &str) {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let scripts = [
+            (
+                "kscreen-doctor",
+                r#"#!/bin/sh
+printf '%s' '{"outputs":[{"name":"eDP-1","enabled":true,"priority":2},{"name":"HDMI-A-1","enabled":true,"priority":1}]}'
+"#,
+            ),
+            (
+                "busctl",
+                r#"#!/bin/sh
+printf '%s\n' "$*" >> "$USCREEN_T299_TRACE"
+if [ "$2" = set-property ]; then printf '%s' "$8" > "$USCREEN_T299_VALUE"; exit 0; fi
+case "$6" in
+ available) printf 'b true\n';;
+ name) printf 's "UScreen Pen"\n';;
+ outputName) printf 's "%s"\n' "$(/bin/cat "$USCREEN_T299_VALUE")";;
+ *) exit 43;;
+esac
+"#,
+            ),
+        ];
+        for (program, source) in scripts {
+            let path = dir.path().join(program);
+            std::fs::write(&path, source).unwrap();
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .env("USCREEN_T299_CHILD", "1")
+            .env("PATH", dir.path())
+            .env("USCREEN_T299_TRACE", dir.path().join("trace"))
+            .env("USCREEN_T299_VALUE", dir.path().join("value"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    #[test]
+    fn t299_primary_selection_accepts_current_and_legacy_schemas() {
+        use serde_json::json;
+        let secondary = json!({"name":"eDP-1","enabled":true,"priority":2});
+        let primary = json!({"name":"HDMI-A-1","enabled":true,"priority":1});
+        let cases = [
+            (vec![secondary.clone(), primary], "HDMI-A-1"),
+            (
+                vec![
+                    secondary.clone(),
+                    json!({"name":"DP-1","enabled":true,"primary":true}),
+                ],
+                "DP-1",
+            ),
+            (
+                vec![
+                    json!({"name":"DVI-I-1","enabled":true,"priority":1}),
+                    secondary.clone(),
+                ],
+                "eDP-1",
+            ),
+            (
+                vec![
+                    json!({"name":"DP-1","enabled":false,"priority":1}),
+                    secondary.clone(),
+                ],
+                "eDP-1",
+            ),
+            (
+                vec![json!({"name":"DP-1","enabled":true}), secondary.clone()],
+                "DP-1",
+            ),
+        ];
+        for (raw, expected) in cases {
+            let outputs =
+                crate::kscreen::parse(&serde_json::to_vec(&json!({"outputs":raw})).unwrap())
+                    .unwrap();
+            assert_eq!(
+                super::primary_physical_output(&outputs, &["DVI-I-1".into()]).as_deref(),
+                Some(expected),
+                "T299"
+            );
+        }
+        for priority in [
+            json!(null),
+            json!("1"),
+            json!(-1),
+            json!(1.5),
+            json!(true),
+            json!(0),
+        ] {
+            let raw =
+                json!({"outputs":[secondary, {"name":"DP-1","enabled":true,"priority":priority}]});
+            let outputs = crate::kscreen::parse(&serde_json::to_vec(&raw).unwrap()).unwrap();
+            assert_eq!(
+                super::primary_physical_output(&outputs, &[]).as_deref(),
+                Some("eDP-1")
+            );
+        }
+    }
+
     #[test]
     fn t372_mapping_selects_from_the_shared_inventory() {
         let outputs =

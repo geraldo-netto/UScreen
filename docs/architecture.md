@@ -93,8 +93,9 @@ inventory. Placement derives logical bounds from pixels and scale; input
 mapping chooses a connector; diagnostics report raw mode dimensions and color
 profiles. They share parsing without conflating these policies. Missing fields
 retain the established defaults, and a missing connector name remains distinct
-from an empty name. Modern primary-output selection is tracked separately in
-T299.
+from an empty name. Graphics-tablet mapping prefers an enabled physical output
+marked primary by either the legacy boolean or modern `priority: 1` schema,
+then falls back to the first enabled physical output in inventory order.
 
 ## Protocol
 

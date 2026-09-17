@@ -24,10 +24,13 @@ impl Output {
                 .get("enabled")
                 .and_then(Value::as_bool)
                 .unwrap_or(false),
-            primary: value
-                .get("primary")
-                .and_then(Value::as_bool)
-                .unwrap_or(false),
+            // Plasma 6 serializes priority (1 is primary); retain the legacy
+            // boolean schema for older inventories.
+            primary: value.get("priority").and_then(Value::as_u64) == Some(1)
+                || value
+                    .get("primary")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
             position: (integer(value, "/pos/x"), integer(value, "/pos/y")),
             pixel_size: (
                 integer(value, "/size/width"),
