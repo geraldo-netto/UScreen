@@ -1,1395 +1,42 @@
+//! Control transport and controller ownership; platform work lives in adapters.
+mod backend;
+mod config;
+#[cfg(test)]
+mod contracts;
+mod linux;
+mod mapping;
+mod settings;
+mod wire;
+
 use crate::media::EncoderSettings;
 use anyhow::{Context, Result};
+use backend::{InputBackend, InputSink, PenSample};
+pub use config::InputConfig;
 use futures_util::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
-use std::fs::{File, OpenOptions};
-use std::io::Write;
-use std::os::unix::io::AsRawFd;
+#[cfg(test)]
+use linux::*;
+#[cfg(test)]
+use mapping::*;
+#[cfg(test)]
+pub(crate) use settings::negotiated_geometry;
+use settings::*;
+#[cfg(test)]
+use std::os::fd::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::watch;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{accept_async_with_config, tungstenite::protocol::WebSocketConfig};
-use tracing::{debug, error, info, warn};
-use uscreen_config::commands::AsyncCommandExt;
-
-// Linux input event constants
-const EV_SYN: u16 = 0x00;
-const EV_KEY: u16 = 0x01;
-const EV_ABS: u16 = 0x03;
-
-const SYN_REPORT: u16 = 0x00;
-
-const BTN_TOUCH: u16 = 0x14a;
-const BTN_TOOL_FINGER: u16 = 0x145;
-const BTN_TOOL_PEN: u16 = 0x140;
-const BTN_TOOL_RUBBER: u16 = 0x141;
-
-const ABS_X: u16 = 0x00;
-const ABS_Y: u16 = 0x01;
-const ABS_PRESSURE: u16 = 0x18;
-const ABS_MT_SLOT: u16 = 0x2f;
-const ABS_MT_POSITION_X: u16 = 0x35;
-const ABS_MT_POSITION_Y: u16 = 0x36;
-const ABS_MT_TRACKING_ID: u16 = 0x39;
-const ABS_MT_PRESSURE: u16 = 0x3a;
-const ABS_TILT_X: u16 = 0x1a;
-const ABS_TILT_Y: u16 = 0x1b;
-
-const BTN_STYLUS: u16 = 0x14b;
-const BTN_LEFT: u16 = 0x110;
-
-// uinput ioctl constants (modern UI_DEV_SETUP/UI_ABS_SETUP API — the legacy
-// uinput_user_dev write() API cannot declare axis resolution, which makes
-// libinput reject the device: "missing tablet capabilities ... resolution")
-const UI_SET_EVBIT: libc::c_ulong = 0x40045564;
-const UI_SET_KEYBIT: libc::c_ulong = 0x40045565;
-const UI_SET_ABSBIT: libc::c_ulong = 0x40045567;
-const UI_SET_PROPBIT: libc::c_ulong = 0x4004556e;
-const UI_DEV_SETUP: libc::c_ulong = 0x405c5503;
-const UI_ABS_SETUP: libc::c_ulong = 0x401c5504;
-const UI_DEV_CREATE: libc::c_ulong = 0x5501;
-const UI_DEV_DESTROY: libc::c_ulong = 0x5502;
-
-const BUS_VIRTUAL: u16 = 0x06;
-const INPUT_PROP_DIRECT: i32 = 0x01;
-
-/// Coordinates are injected in a fixed 0..65535 space — the compositor maps
-/// the device onto the output, so the virtual display resolution can change
-/// at runtime without recreating uinput devices.
-const COORD_MAX: i32 = 65535;
-
-/// Identity of the virtual input devices. These must stay stable: KDE keys the
-/// device→output association in kcminputrc on vendor/product/name, so changing
-/// any of them silently orphans the mapping written by `map_devices_to_output`.
-const UINPUT_VENDOR: u16 = 0x4553;
-const PRODUCT_TOUCH: u16 = 0x0001;
-const PRODUCT_PEN: u16 = 0x0002;
-const PRODUCT_POINTER: u16 = 0x0003;
-const TOUCH_DEVICE_NAME: &str = "UScreen Touch";
-const PEN_DEVICE_NAME: &str = "UScreen Pen";
-const POINTER_DEVICE_NAME: &str = "UScreen Pointer";
-
-/// Device names and product ids for the N-th tablet. The first keeps the
-/// original names and ids so existing KWin input mappings stay valid; every
-/// further one gets a numbered name and its own product range, since KWin
-/// keys its per-device settings on vendor/product/name.
-#[derive(Clone, Debug)]
-pub struct DeviceIdentity {
-    pub touch: String,
-    pub pen: String,
-    pub pointer: String,
-    pub product_touch: u16,
-    pub product_pen: u16,
-    pub product_pointer: u16,
-}
-
-impl DeviceIdentity {
-    pub fn for_instance(instance: u32) -> Self {
-        let suffix = if instance == 0 {
-            String::new()
-        } else {
-            format!(" {}", instance + 1)
-        };
-        let base = (instance as u16) * 16;
-        Self {
-            touch: format!("{}{}", TOUCH_DEVICE_NAME, suffix),
-            pen: format!("{}{}", PEN_DEVICE_NAME, suffix),
-            pointer: format!("{}{}", POINTER_DEVICE_NAME, suffix),
-            product_touch: PRODUCT_TOUCH + base,
-            product_pen: PRODUCT_PEN + base,
-            product_pointer: PRODUCT_POINTER + base,
-        }
-    }
-    fn owns(&self, name: &str) -> bool {
-        name == self.touch || name == self.pen || name == self.pointer
-    }
-}
-/// ~310mm wide active area → 65535/310 ≈ 211 units/mm.
-/// libinput requires a resolution on touchscreen/tablet axes.
-const RESOLUTION_UNITS_PER_MM: i32 = 211;
-
-#[repr(C)]
-#[derive(Clone, Copy, Default)]
-struct InputAbsInfo {
-    value: i32,
-    minimum: i32,
-    maximum: i32,
-    fuzz: i32,
-    flat: i32,
-    resolution: i32,
-}
-
-// Linux/libinput angular resolution is units per radian. Milliradians keep
-// wire degrees within 0.03 degrees after integer quantization (T287).
-const TILT_UNITS_PER_RADIAN: i32 = 1000;
-
-fn tilt_axis_units(degrees: f64) -> i32 {
-    (degrees.clamp(-90.0, 90.0).to_radians() * f64::from(TILT_UNITS_PER_RADIAN)).round() as i32
-}
-
-fn pen_tilt_info() -> InputAbsInfo {
-    InputAbsInfo {
-        minimum: tilt_axis_units(-90.0),
-        maximum: tilt_axis_units(90.0),
-        resolution: TILT_UNITS_PER_RADIAN,
-        ..Default::default()
-    }
-}
-
-#[repr(C)]
-struct UinputAbsSetup {
-    code: u16,
-    _pad: u16,
-    absinfo: InputAbsInfo,
-}
-
-#[repr(C)]
-struct UinputSetup {
-    bustype: u16,
-    vendor: u16,
-    product: u16,
-    version: u16,
-    name: [u8; 80],
-    ff_effects_max: u32,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(tag = "type")]
-pub enum InputEvent {
-    #[serde(rename = "touch")]
-    Touch {
-        x: f64,
-        y: f64,
-        pressure: f64,
-        action: u8,
-        slot: u8,
-    },
-    #[serde(rename = "pen")]
-    Pen {
-        x: f64,
-        y: f64,
-        pressure: f64,
-        tilt_x: f64,
-        tilt_y: f64,
-        /// True when the pen's eraser end is in use (TOOL_TYPE_ERASER).
-        /// Emitted as BTN_TOOL_RUBBER so GIMP's eraser works.
-        #[serde(default)]
-        eraser: bool,
-        /// Current primary stylus-button state on positional samples. Legacy
-        /// clients omit this and retain explicit action 5/6 behavior.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        button: Option<bool>,
-        /// 0=down 1=up 2=move 3=hover 4=hover_exit
-        /// 5=stylus button down 6=stylus button up
-        action: u8,
-    },
-    #[serde(rename = "resolution")]
-    Resolution {
-        width: u32,
-        height: u32,
-        /// Physical panel size, when the tablet knows it. Feeds the EDID so
-        /// the desktop derives the right DPI and default scale.
-        #[serde(default)]
-        width_mm: u32,
-        #[serde(default)]
-        height_mm: u32,
-    },
-    /// Settings pushed from the tablet app's settings UI
-    #[serde(rename = "config")]
-    Config {
-        bitrate: Option<u32>,
-        fps: Option<u32>,
-        encoder: Option<String>,
-    },
-    /// The tablet asking to switch between being a second screen and being a
-    /// graphics tablet. Applied live: the host remaps the input devices onto
-    /// the other output and brings the virtual display up or down to match.
-    #[serde(rename = "mode")]
-    Mode { pen_only: bool },
-    /// Must be the first message on the socket. Proves the client is the
-    /// tablet this daemon launched, not some other process on the loopback.
-    #[serde(rename = "auth")]
-    Auth { token: String },
-    /// The tablet has this frame on screen. Closes the latency measurement
-    /// loop — the host times encoded-packet readiness through acknowledgement
-    /// receipt on its own clock, without clock agreement between devices.
-    #[serde(rename = "rendered")]
-    Rendered {
-        seq: u32,
-        /// Microseconds the tablet spent between receiving the frame and
-        /// putting it on screen. Subtracting it leaves host queueing, delivery,
-        /// and acknowledgement return time; it is not a pure transport measure.
-        #[serde(default)]
-        decode_us: i64,
-    },
-}
-
-#[derive(Serialize)]
-pub struct InputResponse {
-    pub status: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fps: Option<u32>,
-    pub width: u32,
-    pub height: u32,
-    /// Which bitstream the tablet should expect: "h264" or "hevc". It has to
-    /// build the decoder before the first frame arrives, and the frames
-    /// themselves carry nothing that identifies the codec.
-    pub codec: String,
-    /// Tells the tablet not to expect a video stream: it is acting as a
-    /// graphics tablet for the host's own screen, not as a display.
-    pub pen_only: bool,
-    pub touch: bool,
-    pub pen: bool,
-}
-
-#[derive(Clone)]
-pub struct InputConfig {
-    pub port: u16,
-    /// Which tablet this server belongs to (0 = the first). Decides device
-    /// names, product ids, and which virtual output the devices map to.
-    pub instance: u32,
-    /// Session token the client must present first; `None` disables it.
-    pub token: Option<String>,
-    /// Bitstream the encoder produces, so connecting clients can be told.
-    pub codec: String,
-    pub virtual_width: u32,
-    pub virtual_height: u32,
-    /// Which virtual input devices to create while a tablet is attached. A
-    /// device that is off is never registered with the kernel: the desktop
-    /// does not see it, and input of that kind from the tablet is dropped
-    /// (logged at debug level). The pointer needs the pen.
-    pub touch: bool,
-    pub pen: bool,
-    pub pointer: bool,
-}
-
-impl InputConfig {
-    fn response(
-        &self,
-        status: &str,
-        pen_only: bool,
-        settings: &Option<watch::Sender<EncoderSettings>>,
-    ) -> InputResponse {
-        // Keep one read guard: codec and frame rate must describe the same
-        // settings revision even while another controller applies a change.
-        let settings = settings.as_ref().map(|tx| tx.borrow());
-        let codec = settings
-            .as_ref()
-            .map(|current| {
-                crate::media::Codec::from_encoder(&current.encoder)
-                    .muxer()
-                    .to_string()
-            })
-            .unwrap_or_else(|| self.codec.clone());
-        InputResponse {
-            status: status.into(),
-            fps: settings.as_ref().map(|current| current.fps),
-            width: self.virtual_width,
-            height: self.virtual_height,
-            codec,
-            pen_only,
-            touch: self.touch,
-            pen: self.pen,
-        }
-    }
-
-    pub fn any_device(&self) -> bool {
-        self.touch || self.pen
-    }
-}
-
-impl Default for InputConfig {
-    fn default() -> Self {
-        Self {
-            port: 8891,
-            instance: 0,
-            token: None,
-            codec: "h264".into(),
-            virtual_width: 2960,
-            virtual_height: 1848,
-            touch: true,
-            pen: true,
-            pointer: true,
-        }
-    }
-}
-
-// Linux input_event struct (for writing to uinput)
-#[repr(C, packed)]
-#[derive(Clone, Copy)]
-struct LinuxInputEvent {
-    tv_sec: i64,
-    tv_usec: i64,
-    type_: u16,
-    code: u16,
-    value: i32,
-}
-
-/// A uinput virtual input device for injecting touch/pen events into Linux.
-/// Touch and pen are SEPARATE devices: libinput classifies a touchscreen and
-/// a tablet pen differently and rejects a device that mixes both.
-struct UInputDevice {
-    file: File,
-}
-
-impl UInputDevice {
-    fn open_uinput() -> Result<File> {
-        OpenOptions::new()
-            .write(true)
-            .open("/dev/uinput")
-            .context("Failed to open /dev/uinput. Ensure the uinput module is loaded and you have permissions (try: sudo modprobe uinput)")
-    }
-
-    /// Touchscreen device: multitouch + single-touch axes, INPUT_PROP_DIRECT.
-    fn new_touch(name: &str, product: u16) -> Result<Self> {
-        let file = Self::open_uinput()?;
-        let fd = file.as_raw_fd();
-        let w = COORD_MAX + 1;
-        let h = COORD_MAX + 1;
-
-        unsafe {
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_SYN as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_KEY as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_ABS as i32)?;
-            Self::ioctl_val(fd, UI_SET_PROPBIT, INPUT_PROP_DIRECT)?;
-
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_TOUCH as i32)?;
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_TOOL_FINGER as i32)?;
-
-            Self::abs_setup(fd, ABS_X, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_Y, 0, h - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_PRESSURE, 0, 4096, 0)?;
-            Self::abs_setup(fd, ABS_MT_SLOT, 0, 9, 0)?;
-            Self::abs_setup(fd, ABS_MT_POSITION_X, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_MT_POSITION_Y, 0, h - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_MT_TRACKING_ID, 0, 65535, 0)?;
-            Self::abs_setup(fd, ABS_MT_PRESSURE, 0, 4096, 0)?;
-
-            Self::dev_setup_and_create(fd, name, product)?;
-        }
-
-        info!("uinput touchscreen '{}' created", name);
-        std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
-    }
-
-    /// Pen tablet device: stylus tool + pressure + tilt.
-    /// No INPUT_PROP_DIRECT — that flag means "touchscreen" and causes KDE to
-    /// activate the on-screen keyboard on every pen tap. Without it, libinput
-    /// classifies this as a tablet tool (Wacom-style): the cursor follows the
-    /// pen position and clicks work as mouse clicks.
-    fn new_pen(name: &str, product: u16) -> Result<Self> {
-        let file = Self::open_uinput()?;
-        let fd = file.as_raw_fd();
-        let w = COORD_MAX + 1;
-        let h = COORD_MAX + 1;
-
-        unsafe {
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_SYN as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_KEY as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_ABS as i32)?;
-
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_TOUCH as i32)?;
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_TOOL_PEN as i32)?;
-            // Eraser end: reported as TOOL_TYPE_ERASER on Android, mapped to
-            // BTN_TOOL_RUBBER here so GIMP's eraser tool follows the pen.
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_TOOL_RUBBER as i32)?;
-            // libinput requires the stylus button capability on pen devices
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_STYLUS as i32)?;
-
-            Self::abs_setup(fd, ABS_X, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_Y, 0, h - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_PRESSURE, 0, 4096, 0)?;
-            Self::abs_setup_info(fd, ABS_TILT_X, pen_tilt_info())?;
-            Self::abs_setup_info(fd, ABS_TILT_Y, pen_tilt_info())?;
-
-            Self::dev_setup_and_create(fd, name, product)?;
-        }
-
-        info!("uinput pen tablet '{}' created", name);
-        std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
-    }
-
-    /// An absolute-positioning pointer, the same shape as a VM's virtual
-    /// tablet. It exists for one reason: a tablet tool's cursor is hidden the
-    /// moment the tool leaves proximity, which is correct for a Wacom on a desk
-    /// but wrong here — lift the pen and you lose all sense of where you were
-    /// pointing. Parking this pointer at the last pen position leaves an
-    /// ordinary mouse cursor sitting there.
-    ///
-    /// No INPUT_PROP_DIRECT (that would make it a touchscreen and bring the
-    /// on-screen keyboard with it) and no BTN_TOOL_PEN (that would make it a
-    /// second tablet).
-    fn new_pointer(name: &str, product: u16) -> Result<Self> {
-        let file = Self::open_uinput()?;
-        let fd = file.as_raw_fd();
-        let w = COORD_MAX + 1;
-
-        unsafe {
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_SYN as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_KEY as i32)?;
-            Self::ioctl_val(fd, UI_SET_EVBIT, EV_ABS as i32)?;
-            Self::ioctl_val(fd, UI_SET_KEYBIT, BTN_LEFT as i32)?;
-            Self::abs_setup(fd, ABS_X, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::abs_setup(fd, ABS_Y, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
-            Self::dev_setup_and_create(fd, name, product)?;
-        }
-
-        info!("uinput pointer '{}' created", name);
-        std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
-    }
-
-    unsafe fn abs_setup(fd: i32, code: u16, min: i32, max: i32, resolution: i32) -> Result<()> {
-        Self::abs_setup_info(
-            fd,
-            code,
-            InputAbsInfo {
-                minimum: min,
-                maximum: max,
-                resolution,
-                ..Default::default()
-            },
-        )
-    }
-
-    unsafe fn abs_setup_info(fd: i32, code: u16, absinfo: InputAbsInfo) -> Result<()> {
-        let setup = UinputAbsSetup {
-            code,
-            _pad: 0,
-            absinfo,
-        };
-        Self::ioctl_val(fd, UI_SET_ABSBIT, code as i32)?;
-        if libc::ioctl(fd, UI_ABS_SETUP, &setup as *const UinputAbsSetup) < 0 {
-            anyhow::bail!(
-                "UI_ABS_SETUP({:#x}) failed: {}",
-                code,
-                std::io::Error::last_os_error()
-            );
-        }
-        Ok(())
-    }
-
-    unsafe fn dev_setup_and_create(fd: i32, name: &str, product: u16) -> Result<()> {
-        let mut setup = UinputSetup {
-            bustype: BUS_VIRTUAL,
-            vendor: UINPUT_VENDOR,
-            product,
-            version: 1,
-            name: [0u8; 80],
-            ff_effects_max: 0,
-        };
-        let name_bytes = name.as_bytes();
-        let len = name_bytes.len().min(79);
-        setup.name[..len].copy_from_slice(&name_bytes[..len]);
-
-        if libc::ioctl(fd, UI_DEV_SETUP, &setup as *const UinputSetup) < 0 {
-            anyhow::bail!("UI_DEV_SETUP failed: {}", std::io::Error::last_os_error());
-        }
-        if libc::ioctl(fd, UI_DEV_CREATE) < 0 {
-            anyhow::bail!("UI_DEV_CREATE failed: {}", std::io::Error::last_os_error());
-        }
-        Ok(())
-    }
-
-    unsafe fn ioctl_val(fd: i32, request: libc::c_ulong, value: i32) -> Result<()> {
-        if libc::ioctl(fd, request as libc::c_ulong, value) < 0 {
-            anyhow::bail!(
-                "ioctl({:#x}, {}) failed: {}",
-                request,
-                value,
-                std::io::Error::last_os_error()
-            );
-        }
-        Ok(())
-    }
-
-    fn emit(&mut self, type_: u16, code: u16, value: i32) -> Result<()> {
-        let ev = LinuxInputEvent {
-            tv_sec: 0,
-            tv_usec: 0,
-            type_,
-            code,
-            value,
-        };
-        let bytes: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                &ev as *const LinuxInputEvent as *const u8,
-                std::mem::size_of::<LinuxInputEvent>(),
-            )
-        };
-        self.file.write_all(bytes)?;
-        Ok(())
-    }
-
-    fn syn(&mut self) -> Result<()> {
-        self.emit(EV_SYN, SYN_REPORT, 0)?;
-        self.file.flush()?;
-        Ok(())
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn inject_pen(
-        &mut self,
-        x: i32,
-        y: i32,
-        pressure: i32,
-        tilt_x: i32,
-        tilt_y: i32,
-        action: u8,
-        eraser: bool,
-        button: Option<bool>,
-    ) -> Result<()> {
-        // The active tablet-tool key depends on which end of the pen is in
-        // use. An S Pen flipped to its eraser end reports TOOL_TYPE_ERASER.
-        let tool = if eraser {
-            BTN_TOOL_RUBBER
-        } else {
-            BTN_TOOL_PEN
-        };
-        match action {
-            0 => {
-                // DOWN: proximity first, changed button state if any, then tip.
-                //
-                // A tablet tool has to enter proximity before it can touch:
-                // libinput wants to see the tool appear at a position, and only
-                // then the tip come down. Announcing both in a single event
-                // frame makes the first tap after picking up the pen land at
-                // the previous cursor position, or get dropped entirely.
-                self.emit(EV_KEY, tool, 1)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
-                self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
-                self.syn()?;
-
-                self.inject_pen_button(button)?;
-                self.emit(EV_KEY, BTN_TOUCH, 1)?;
-                self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
-                self.syn()?;
-            }
-            1 => {
-                // UP lifts the tip but keeps the tool and held button in range.
-                // Only explicit exit/cancel or controller teardown ends proximity.
-                self.inject_pen_button(button)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
-                self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
-                self.emit(EV_KEY, BTN_TOUCH, 0)?;
-                self.emit(EV_ABS, ABS_PRESSURE, 0)?;
-                self.syn()?;
-            }
-            2 => {
-                // MOVE (pressing)
-                self.inject_pen_button(button)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
-                self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
-                self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
-                self.syn()?;
-            }
-            3 => {
-                // HOVER — pen near screen, cursor follows without clicking.
-                // Requires no INPUT_PROP_DIRECT on the device (we removed it)
-                // so libinput classifies this as a tablet tool in proximity.
-                self.emit(EV_KEY, tool, 1)?;
-                self.emit(EV_ABS, ABS_X, x)?;
-                self.emit(EV_ABS, ABS_Y, y)?;
-                self.emit(EV_ABS, ABS_PRESSURE, 0)?;
-                self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
-                self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
-                self.syn()?;
-                self.inject_pen_button(button)?;
-            }
-            4 => {
-                // Explicit exit/cancel from the Android input surface.
-                // Release the kernel key too: libinput clears its own button
-                // state on proximity-out, but a latched uinput key would make
-                // the kernel suppress the next press as a duplicate (T317).
-                self.emit(EV_KEY, BTN_STYLUS, 0)?;
-                self.emit(EV_KEY, BTN_TOUCH, 0)?;
-                self.emit(EV_KEY, BTN_TOOL_PEN, 0)?;
-                self.emit(EV_KEY, BTN_TOOL_RUBBER, 0)?;
-                self.emit(EV_ABS, ABS_PRESSURE, 0)?;
-                self.syn()?;
-            }
-            5 => {
-                // STYLUS BUTTON DOWN (S Pen side button → right-click in GIMP)
-                self.emit(EV_KEY, BTN_STYLUS, 1)?;
-                self.syn()?;
-            }
-            6 => {
-                // STYLUS BUTTON UP
-                self.emit(EV_KEY, BTN_STYLUS, 0)?;
-                self.syn()?;
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn inject_pen_button(&mut self, button: Option<bool>) -> Result<()> {
-        if let Some(down) = button {
-            self.emit(EV_KEY, BTN_STYLUS, i32::from(down))?;
-            self.syn()?;
-        }
-        Ok(())
-    }
-}
-
-impl Drop for UInputDevice {
-    fn drop(&mut self) {
-        unsafe {
-            let fd = self.file.as_raw_fd();
-            libc::ioctl(fd, UI_DEV_DESTROY as libc::c_ulong);
-        }
-        info!("uinput device destroyed");
-    }
-}
-
-/// One virtual input device, or `None` with the reason logged: off in the
-/// config (debug, it is a choice) or refused by uinput (warn, it is a fault).
-fn create_device(
-    enabled: bool,
-    what: &str,
-    make: impl FnOnce() -> Result<UInputDevice>,
-) -> Option<UInputDevice> {
-    if !enabled {
-        debug!("{} device off by config", what);
-        return None;
-    }
-    match make() {
-        Ok(dev) => Some(dev),
-        Err(e) => {
-            warn!("No {} device: {}. {} input will be dropped.", what, e, what);
-            None
-        }
-    }
-}
-
-/// How many attached tablets currently have a touch device. The on-screen
-/// keyboard is suppressed while that is non-zero: the desktop sees a
-/// touchscreen and would pop the keyboard over the screen used as a monitor.
-static TOUCH_DEVICES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-
-async fn osk_touch_device_added() {
-    TOUCH_DEVICES.fetch_add(1, Ordering::SeqCst);
-    crate::osk::sync_touch_state(&TOUCH_DEVICES).await;
-}
-
-async fn osk_touch_device_removed() {
-    TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst);
-    crate::osk::sync_touch_state(&TOUCH_DEVICES).await;
-}
-
-/// Own device lifetime even when the watcher is cancelled inside an await.
-struct DeviceOwner {
-    devices: Arc<std::sync::Mutex<InjectDevices>>,
-    touch_registered: bool,
-}
-impl DeviceOwner {
-    async fn create_devices(&mut self, cfg: &InputConfig, ident: &DeviceIdentity) -> usize {
-        let (c, i) = (cfg.clone(), ident.clone());
-        // Device creation sleeps to let udev settle, so it
-        // runs off the async runtime.
-        let created = tokio::task::spawn_blocking(move || InjectDevices::create(&c, &i))
-            .await
-            .unwrap_or_else(|_| InjectDevices::empty());
-        let count = created.count();
-        let has_touch = created.touch.is_some();
-        if let Ok(mut guard) = self.devices.lock() {
-            *guard = created;
-        }
-        if has_touch {
-            self.touch_registered = true;
-            osk_touch_device_added().await;
-        }
-        count
-    }
-
-    async fn remove_devices(&mut self) {
-        let old = self
-            .devices
-            .lock()
-            .map(|mut g| {
-                g.release_all();
-                std::mem::replace(&mut *g, InjectDevices::empty())
-            })
-            .ok();
-        let had_touch = old.as_ref().is_some_and(|d| d.touch.is_some());
-        drop(old);
-        if had_touch {
-            self.touch_registered = false;
-            osk_touch_device_removed().await;
-        }
-        info!("Tablet detached — virtual input devices removed");
-    }
-
-    fn release_for_remap(&self, pen_only: bool, card: Option<u32>) -> usize {
-        let count = self
-            .devices
-            .lock()
-            .map(|mut g| {
-                g.release_all();
-                g.count()
-            })
-            .unwrap_or(0);
-        if count > 0 {
-            info!(
-                "Mode is now {} — remapping input devices{}",
-                if pen_only {
-                    "pen-only"
-                } else {
-                    "second screen"
-                },
-                card.map(|c| format!(" (card{})", c)).unwrap_or_default()
-            );
-        }
-        count
-    }
-}
-
-impl Drop for DeviceOwner {
-    fn drop(&mut self) {
-        if let Ok(mut devices) = self.devices.lock() {
-            devices.release_all();
-            *devices = InjectDevices::empty();
-        }
-        if self.touch_registered {
-            TOUCH_DEVICES.fetch_sub(1, Ordering::SeqCst);
-            // Drop cannot await; recovery state remains on disk if runtime shutdown
-            // prevents this final restoration from completing.
-            tokio::spawn(crate::osk::sync_touch_state(&TOUCH_DEVICES));
-        }
-    }
-}
-
-/// The virtual input devices backing one tablet connection.
-struct InjectDevices {
-    touch: Option<UInputDevice>,
-    pen: Option<UInputDevice>,
-    /// Takes over the cursor when the pen leaves proximity, so it stays where
-    /// the user last pointed instead of vanishing.
-    pointer: Option<UInputDevice>,
-    last_pen_pos: (i32, i32),
-    /// Bitmask of MT slots that currently have an active tracking ID
-    /// (DOWN received, no matching UP yet). Bit N identifies slot N, 0–9.
-    active_slots: u16,
-    touch_contacts: [Option<(i32, i32, i32)>; 10],
-    pen_proximity: bool,
-    /// S Pen side button currently held (BTN_STYLUS). Tracked so a held
-    /// button is released cleanly if the connection drops.
-    pen_button: bool,
-}
-
-impl InjectDevices {
-    fn empty() -> Self {
-        Self {
-            touch: None,
-            pen: None,
-            pointer: None,
-            last_pen_pos: (0, 0),
-            active_slots: 0,
-            touch_contacts: [None; 10],
-            pen_proximity: false,
-            pen_button: false,
-        }
-    }
-
-    /// Creates whichever devices the config asks for. The pointer only
-    /// exists to park the cursor when the pen lifts, so it is tied to the
-    /// pen here and nowhere else has to know that rule.
-    fn create(cfg: &InputConfig, ident: &DeviceIdentity) -> Self {
-        let touch = create_device(cfg.touch, "touch", || {
-            UInputDevice::new_touch(&ident.touch, ident.product_touch)
-        });
-        let pen = create_device(cfg.pen, "pen", || {
-            UInputDevice::new_pen(&ident.pen, ident.product_pen)
-        });
-        let pointer = create_device(cfg.pen && cfg.pointer, "pointer", || {
-            UInputDevice::new_pointer(&ident.pointer, ident.product_pointer)
-        });
-        if pen.is_some() && pointer.is_none() {
-            info!("No pointer device — the cursor will vanish when the pen lifts");
-        }
-        Self {
-            touch,
-            pen,
-            pointer,
-            ..Self::empty()
-        }
-    }
-
-    fn count(&self) -> usize {
-        self.touch.is_some() as usize
-            + self.pen.is_some() as usize
-            + self.pointer.is_some() as usize
-    }
-
-    fn inject_touch(&mut self, x: i32, y: i32, pressure: i32, action: u8, slot: u8) -> Result<()> {
-        let Some(contact) = self.touch_contacts.get_mut(slot as usize) else {
-            return Ok(());
-        };
-        let Some(dev) = self.touch.as_mut() else {
-            return Ok(());
-        };
-        match action {
-            0 => {
-                *contact = Some((x, y, pressure));
-                self.active_slots |= 1 << slot;
-            }
-            1 if contact.is_some() => {
-                *contact = None;
-                self.active_slots &= !(1 << slot);
-            }
-            2 if contact.is_some() => {
-                *contact = Some((x, y, pressure));
-            }
-            _ => return Ok(()),
-        }
-        dev.emit(EV_ABS, ABS_MT_SLOT, slot as i32)?;
-        match action {
-            0 => dev.emit(EV_ABS, ABS_MT_TRACKING_ID, slot as i32)?,
-            1 => dev.emit(EV_ABS, ABS_MT_TRACKING_ID, -1)?,
-            _ => {}
-        }
-        if action != 1 {
-            dev.emit(EV_ABS, ABS_MT_POSITION_X, x)?;
-            dev.emit(EV_ABS, ABS_MT_POSITION_Y, y)?;
-            dev.emit(EV_ABS, ABS_MT_PRESSURE, pressure)?;
-        }
-        // Legacy single-touch consumers follow the first remaining contact.
-        let primary = self.touch_contacts.iter().flatten().next();
-        dev.emit(EV_KEY, BTN_TOUCH, i32::from(primary.is_some()))?;
-        dev.emit(EV_KEY, BTN_TOOL_FINGER, i32::from(primary.is_some()))?;
-        if let Some(&(x, y, pressure)) = primary {
-            dev.emit(EV_ABS, ABS_X, x)?;
-            dev.emit(EV_ABS, ABS_Y, y)?;
-            dev.emit(EV_ABS, ABS_PRESSURE, pressure)?;
-        } else {
-            dev.emit(EV_ABS, ABS_PRESSURE, 0)?;
-        }
-        dev.syn()
-    }
-
-    /// Release all active contacts cleanly before the connection closes.
-    /// Without this, a stuck MT slot or a pen left in proximity causes
-    /// the next connection to inherit phantom input events.
-    fn release_all(&mut self) {
-        if let Some(ref mut dev) = self.touch {
-            for slot in 0u8..16 {
-                if self.active_slots & (1u16 << slot) != 0 {
-                    let _ = dev.emit(EV_ABS, ABS_MT_SLOT, slot as i32);
-                    let _ = dev.emit(EV_ABS, ABS_MT_TRACKING_ID, -1);
-                }
-            }
-            if self.active_slots != 0 {
-                let _ = dev.emit(EV_KEY, BTN_TOUCH, 0);
-                let _ = dev.emit(EV_KEY, BTN_TOOL_FINGER, 0);
-                let _ = dev.emit(EV_ABS, ABS_PRESSURE, 0);
-                let _ = dev.syn();
-            }
-        }
-        self.active_slots = 0;
-        self.touch_contacts = [None; 10];
-
-        if self.pen_proximity {
-            if let Some(ref mut dev) = self.pen {
-                let _ = dev.emit(EV_KEY, BTN_TOUCH, 0);
-                let _ = dev.emit(EV_KEY, BTN_TOOL_PEN, 0);
-                let _ = dev.emit(EV_KEY, BTN_TOOL_RUBBER, 0);
-                let _ = dev.emit(EV_ABS, ABS_PRESSURE, 0);
-                let _ = dev.syn();
-            }
-        }
-        self.pen_proximity = false;
-
-        if self.pen_button {
-            if let Some(ref mut dev) = self.pen {
-                let _ = dev.emit(EV_KEY, BTN_STYLUS, 0);
-                let _ = dev.syn();
-            }
-        }
-        self.pen_button = false;
-    }
-}
-
-const KWIN_INPUT_IFACE: &str = "org.kde.KWin.InputDevice";
-
-/// Prefer the enabled primary physical output; otherwise use the first enabled
-/// physical output in the inventory. Pen-only mode drives this host screen,
-/// never another tablet's EVDI connector.
-async fn primary_non_evdi_output() -> Option<String> {
-    let evdi: Vec<String> = crate::vdisplay::evdi_connectors()
-        .into_iter()
-        .map(|c| c.name)
-        .collect();
-    primary_physical_output(&crate::kscreen::outputs().await?, &evdi)
-}
-
-fn primary_physical_output(outputs: &[crate::kscreen::Output], evdi: &[String]) -> Option<String> {
-    let mut fallback = None;
-    for o in outputs {
-        let name = o.name.clone()?;
-        if evdi.contains(&name) || !o.enabled {
-            continue;
-        }
-        if o.primary {
-            return Some(name);
-        }
-        fallback.get_or_insert(name);
-    }
-    fallback
-}
-
-async fn kwin_device_property(sysname: &str, property: &str) -> Option<String> {
-    crate::kwin::get_property(
-        &format!("/org/kde/KWin/InputDevice/{}", sysname),
-        KWIN_INPUT_IFACE,
-        property,
-    )
-    .await
-}
-
-/// Pin the virtual input devices to the virtual display.
-///
-/// An absolute-positioning device is meaningless without knowing which screen
-/// it addresses. Left unmapped, libinput spreads it across the whole desktop:
-/// touching the middle of the tablet lands the cursor somewhere on the laptop
-/// panel, and drawing with the pen goes to the wrong monitor entirely.
-///
-/// This is done over KWin's D-Bus interface rather than by writing kcminputrc.
-/// Writing the config file looks like the obvious route and does produce the
-/// documented `[Libinput][vendor][product][name] OutputName=` entry, but KWin
-/// does not apply it to these devices — verified by reading the property back
-/// and finding it empty, both when written before and after device creation.
-/// Setting the property directly takes effect immediately, and KWin persists it
-/// itself.
-/// `expected` is how many devices this instance actually created; the retry
-/// loop stops once that many are mapped rather than assuming all three exist.
-async fn map_devices_to_output(
-    pen_only: bool,
-    ident: &DeviceIdentity,
-    card: Option<u32>,
-    expected: usize,
-) {
-    let session_type = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
-    map_devices_using(
-        pen_only,
-        ident,
-        card,
-        expected,
-        &session_type,
-        "xinput",
-        "xrandr",
-        None,
-    )
-    .await;
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn map_devices_using(
-    pen_only: bool,
-    ident: &DeviceIdentity,
-    card: Option<u32>,
-    expected: usize,
-    session_type: &str,
-    xinput: &str,
-    xrandr: &str,
-    connectors: Option<&[crate::vdisplay::EvdiConnector]>,
-) {
-    if expected == 0 {
-        return;
-    }
-    if session_type == "x11" {
-        map_x11_devices(pen_only, ident, card, expected, xinput, xrandr, connectors).await;
-        return;
-    }
-    let Some(output) = target_output(pen_only, card, std::time::Duration::from_secs(10)).await
-    else {
-        if pen_only {
-            warn!("No physical output found — pen will address the whole desktop");
-        } else {
-            warn!("No EVDI output found — touch and pen will address the whole desktop");
-        }
-        return;
-    };
-
-    // KWin registers a device slightly after uinput creates it, so retry
-    // rather than racing it. The same loop also covers a mapping that KWin
-    // accepted but did not keep, which is what the read-back below catches.
-    for attempt in 0..20 {
-        if attempt > 0 {
-            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-        }
-
-        let Some(devices) = crate::kwin::list_strings(
-            "/org/kde/KWin/InputDevice",
-            "org.kde.KWin.InputDeviceManager",
-            "devicesSysNames",
-        )
-        .await
-        else {
-            warn!("KWin did not answer — input devices stay unmapped");
-            return;
-        };
-
-        let mut mapped = 0;
-        for sysname in devices {
-            mapped += usize::from(map_kwin_device(&sysname, ident, &output).await);
-        }
-
-        if mapped >= expected {
-            return;
-        }
-    }
-
-    warn!("Input devices did not appear in KWin within 5s — mapping skipped");
-}
-
-async fn map_kwin_device(sysname: &str, ident: &DeviceIdentity, output: &str) -> bool {
-    let Some(name) = kwin_device_property(sysname, "name").await else {
-        return false;
-    };
-    if !ident.owns(&name) {
-        return false;
-    }
-    let ok = crate::kwin::set_property(
-        &format!("/org/kde/KWin/InputDevice/{}", sysname),
-        KWIN_INPUT_IFACE,
-        "outputName",
-        "s",
-        output,
-    )
-    .await;
-    match ok {
-        true => {
-            // A successful Set is not proof: KWin answers ok and then
-            // keeps the old value when the output is not usable yet.
-            // Only what reads back counts, so a lost mapping is
-            // retried on the next pass instead of logged as done.
-            match kwin_device_property(sysname, "outputName").await {
-                Some(now) if now == output => {
-                    info!("Mapped '{}' ({}) to output {}", name, sysname, output);
-                    return true;
-                }
-                now => warn!(
-                    "Mapping '{}' to {} did not take (KWin reports {:?}) — retrying",
-                    name,
-                    output,
-                    now.unwrap_or_default()
-                ),
-            }
-        }
-        false => warn!(
-            "Could not map '{}': KWin refused the outputName property",
-            name
-        ),
-    }
-    false
-}
-
-fn x11_connector_matches(output: &str, connector: &str) -> bool {
-    output == connector
-        || output
-            .strip_prefix(connector)
-            .and_then(|s| s.strip_prefix('-'))
-            .is_some_and(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()))
-}
-
-/// Xorg can expose a pen as separate pen/eraser devices. Keep tablet suffixes
-/// exact: "UScreen Pen 2" must never match the first tablet's "UScreen Pen".
-fn x11_device_kind<'a>(name: &str, ident: &'a DeviceIdentity) -> Option<&'a str> {
-    if name == ident.touch {
-        return Some(&ident.touch);
-    }
-    if name == ident.pointer {
-        return Some(&ident.pointer);
-    }
-    if name == ident.pen
-        || name
-            .strip_prefix(&ident.pen)
-            .is_some_and(|suffix| suffix.starts_with(" Pen (") || suffix.starts_with(" Eraser ("))
-    {
-        return Some(&ident.pen);
-    }
-    None
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn map_x11_devices(
-    pen_only: bool,
-    ident: &DeviceIdentity,
-    card: Option<u32>,
-    expected: usize,
-    xinput: &str,
-    xrandr: &str,
-    fixed_connectors: Option<&[crate::vdisplay::EvdiConnector]>,
-) {
-    for attempt in 0..40 {
-        if attempt > 0 {
-            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-        }
-        // Refresh on every retry: the helper may still be enabling its card.
-        let current = crate::vdisplay::evdi_connectors();
-        let connectors = fixed_connectors.unwrap_or(&current);
-        let Some(randr) = x11_query(
-            xrandr,
-            &["--query"],
-            "xrandr",
-            "xrandr could not query this X11 session",
-        )
-        .await
-        else {
-            return;
-        };
-        let text = String::from_utf8_lossy(&randr.stdout);
-        let active = x11_active_outputs(&text);
-        let Some(output) = x11_target_output(pen_only, &active, connectors, card) else {
-            continue;
-        };
-        let Some(devices) = x11_query(
-            xinput,
-            &["list", "--short"],
-            "xinput",
-            "xinput could not list input devices",
-        )
-        .await
-        else {
-            return;
-        };
-        if map_x11_list(
-            &String::from_utf8_lossy(&devices.stdout),
-            ident,
-            xinput,
-            output,
-            expected,
-        )
-        .await
-        {
-            return;
-        }
-    }
-    warn!("X11 output or input devices not ready after 10s; check xrandr providers and xinput");
-}
-
-async fn x11_query(
-    program: &str,
-    args: &[&str],
-    tool: &str,
-    failure: &str,
-) -> Option<std::process::Output> {
-    let Ok(output) = tokio::process::Command::new(program)
-        .args(args)
-        .output_bounded()
-        .await
-    else {
-        warn!("X11 input mapping needs {}", tool);
-        return None;
-    };
-    if !output.status.success() {
-        warn!("{}", failure);
-        return None;
-    }
-    Some(output)
-}
-
-fn x11_has_geometry(field: &str) -> bool {
-    field.split_once('x').is_some_and(|(w, h)| {
-        w.parse::<u32>().is_ok()
-            && h.split(['+', '-'])
-                .next()
-                .is_some_and(|h| h.parse::<u32>().is_ok())
-            && (h.contains('+') || h.contains('-'))
-    })
-}
-
-fn x11_active_outputs(text: &str) -> Vec<(&str, bool)> {
-    text.lines()
-        .filter_map(|line| {
-            let fields: Vec<_> = line.split_whitespace().collect();
-            if fields.get(1) != Some(&"connected") {
-                return None;
-            }
-            fields
-                .iter()
-                .any(|field| x11_has_geometry(field))
-                .then_some((fields[0], fields.contains(&"primary")))
-        })
-        .collect()
-}
-
-fn x11_capture_output(
-    name: &str,
-    connectors: &[crate::vdisplay::EvdiConnector],
-    card: Option<u32>,
-) -> bool {
-    connectors.iter().any(|c| {
-        c.connected
-            && card.is_none_or(|want| c.card == want)
-            && x11_connector_matches(name, &c.name)
-    })
-}
-
-fn x11_target_output<'a>(
-    pen_only: bool,
-    active: &[(&'a str, bool)],
-    connectors: &[crate::vdisplay::EvdiConnector],
-    card: Option<u32>,
-) -> Option<&'a str> {
-    if pen_only {
-        active
-            .iter()
-            .filter(|(name, _)| {
-                !connectors
-                    .iter()
-                    .any(|c| x11_connector_matches(name, &c.name))
-            })
-            .max_by_key(|(_, primary)| primary)
-            .map(|(name, _)| *name)
-    } else {
-        let candidates: Vec<_> = active
-            .iter()
-            .filter(|(name, _)| x11_capture_output(name, connectors, card))
-            .map(|(name, _)| *name)
-            .collect();
-        // Ambiguous names must not attach input to another tablet.
-        if candidates.len() == 1 {
-            candidates.first().copied()
-        } else {
-            None
-        }
-    }
-}
-
-fn x11_list_entry<'a, 'b>(
-    line: &'a str,
-    ident: &'b DeviceIdentity,
-) -> Option<(&'a str, &'a str, &'b str)> {
-    let start = line.find("UScreen ")?;
-    let (name, rest) = line[start..].split_once("id=")?;
-    let kind = x11_device_kind(name.trim(), ident)?;
-    let id = rest
-        .split_whitespace()
-        .next()
-        .filter(|s| s.parse::<u32>().is_ok())?;
-    Some((id, name.trim(), kind))
-}
-
-async fn map_x11_list(
-    text: &str,
-    ident: &DeviceIdentity,
-    xinput: &str,
-    output: &str,
-    expected: usize,
-) -> bool {
-    let mut mapped = std::collections::HashSet::new();
-    let mut failed = false;
-    for line in text.lines() {
-        let Some((id, name, kind)) = x11_list_entry(line, ident) else {
-            continue;
-        };
-        let ok = tokio::process::Command::new(xinput)
-            .args(["map-to-output", id, output])
-            .output_bounded()
-            .await
-            .is_ok_and(|out| out.status.success());
-        if ok {
-            mapped.insert(kind);
-            info!("Mapped '{}' (X11 id {}) to {}", name, id, output);
-        } else {
-            failed = true;
-        }
-    }
-    !failed && mapped.len() >= expected
-}
-
-/// The output the devices should address in this mode, returned only once
-/// KWin lists it as enabled.
-///
-/// Mapping is not something that can be done ahead of time: set `outputName`
-/// while the virtual display is still being brought back and KWin keeps the
-/// previous mapping, so after leaving graphics-tablet mode the pen and touch
-/// would go on driving the laptop screen (issue #6). Leaving display mode has
-/// the opposite problem — the physical screen is always there, but the EVDI
-/// output is going away at that moment. So this polls the output list up to
-/// `timeout` and only then falls back to the best name it knows, so a mapping
-/// is at least attempted on a desktop where kscreen-doctor cannot answer.
-async fn target_output(
-    pen_only: bool,
-    card: Option<u32>,
-    timeout: std::time::Duration,
-) -> Option<String> {
-    let deadline = tokio::time::Instant::now() + timeout;
-    loop {
-        if pen_only {
-            if let Some(name) = primary_non_evdi_output().await {
-                return Some(name);
-            }
-            // No kscreen-doctor means no KDE session: nothing to wait for.
-            crate::kscreen::outputs().await?;
-        } else {
-            let connectors = crate::vdisplay::evdi_connectors();
-            // Keep this tablet's assigned card, including during discovery gaps.
-            let fallback = fallback_output(&connectors, card);
-            let Some(outputs) = crate::kscreen::outputs().await else {
-                return fallback;
-            };
-            let enabled = enabled_named_output(&outputs, fallback.as_deref());
-            if let Some(o) = enabled {
-                return o.name.clone();
-            }
-            if tokio::time::Instant::now() >= deadline {
-                if fallback.is_some() {
-                    warn!(
-                        "EVDI output not enabled within {:?} — mapping onto {:?} anyway",
-                        timeout, fallback
-                    );
-                }
-                return fallback;
-            }
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return None;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-    }
-}
-
-fn enabled_named_output<'a>(
-    outputs: &'a [crate::kscreen::Output],
-    name: Option<&str>,
-) -> Option<&'a crate::kscreen::Output> {
-    outputs
-        .iter()
-        .find(|output| output.name.as_deref() == name && output.enabled)
-}
-
-fn fallback_output(
-    connectors: &[crate::vdisplay::EvdiConnector],
-    card: Option<u32>,
-) -> Option<String> {
-    // A known card must remain ours even while its connector is absent. With
-    // no card yet, wait unless there is exactly one possible connector.
-    match card {
-        Some(card) => connectors.iter().find(|connector| connector.card == card),
-        None if connectors.len() == 1 => connectors.first(),
-        None => None,
-    }
-    .map(|connector| connector.name.clone())
-}
+use tracing::{error, info, warn};
+pub use wire::InputEvent;
 
 struct Controllers {
-    devices: Arc<std::sync::Mutex<InjectDevices>>,
+    devices: Arc<dyn InputSink>,
     generation: watch::Sender<u64>,
 }
 impl Controllers {
-    fn new(devices: Arc<std::sync::Mutex<InjectDevices>>) -> Self {
+    fn new(devices: Arc<dyn InputSink>) -> Self {
         Self {
             devices,
             generation: watch::channel(0).0,
@@ -1398,9 +45,7 @@ impl Controllers {
     fn claim(self: &Arc<Self>) -> ControllerLease {
         let mut id = 0;
         self.generation.send_modify(|generation| {
-            if let Ok(mut devices) = self.devices.lock() {
-                devices.release_all();
-            }
+            self.devices.release_all();
             *generation = generation.wrapping_add(1);
             id = *generation;
         });
@@ -1420,14 +65,13 @@ impl Drop for ControllerLease {
         // interleave after the ownership check and before device cleanup.
         let generation = self.controllers.generation.borrow();
         if *generation == self.id {
-            if let Ok(mut devices) = self.controllers.devices.lock() {
-                devices.release_all();
-            }
+            self.controllers.devices.release_all();
         }
     }
 }
 
 pub struct InputServer {
+    backend: Arc<dyn InputBackend>,
     config: InputConfig,
     running: Arc<AtomicBool>,
     settings_tx: Option<watch::Sender<EncoderSettings>>,
@@ -1459,7 +103,29 @@ impl InputServer {
         card_rx: watch::Receiver<Option<u32>>,
         tablet_rx: watch::Receiver<bool>,
     ) -> Self {
+        Self::with_backend(
+            config,
+            settings_tx,
+            mode_tx,
+            latency,
+            relaunch,
+            (card_rx, tablet_rx),
+            Arc::new(linux::Backend::default()),
+        )
+    }
+
+    fn with_backend(
+        config: InputConfig,
+        settings_tx: Option<watch::Sender<EncoderSettings>>,
+        mode_tx: watch::Sender<bool>,
+        latency: crate::latency::LatencyTracker,
+        relaunch: Arc<tokio::sync::Notify>,
+        presence: (watch::Receiver<Option<u32>>, watch::Receiver<bool>),
+        backend: Arc<dyn InputBackend>,
+    ) -> Self {
+        let (card_rx, tablet_rx) = presence;
         Self {
+            backend,
             config,
             running: Arc::new(AtomicBool::new(false)),
             settings_tx,
@@ -1490,15 +156,13 @@ impl InputServer {
         // safe: DeviceIdentity is fixed per instance, names and product ids
         // alike, so the desktop's per-device settings and the output mapping
         // below find the same device every time.
-        let ident = DeviceIdentity::for_instance(self.config.instance);
         if !self.config.any_device() {
             info!(
                 "Virtual input devices are all off (input_touch / input_pen / \
                  input_pointer in config.toml) — the tablet is display-only"
             );
         }
-        let uinput = Arc::new(std::sync::Mutex::new(InjectDevices::empty()));
-        let controllers = Arc::new(Controllers::new(uinput.clone()));
+        let controllers = Arc::new(Controllers::new(self.backend.sink()));
         let mut tasks = tokio::task::JoinSet::new();
         let slots = Arc::new(tokio::sync::Semaphore::new(16));
 
@@ -1507,12 +171,10 @@ impl InputServer {
         // them; a mode or card switch moves them onto the other output and
         // drops anything held at that moment — a finger or pen tip that was
         // down would otherwise stay down on a screen no longer listening.
-        tasks.spawn(follow_input_devices(
+        tasks.spawn(self.backend.follow(
             self.tablet_rx.clone(),
             self.mode_tx.subscribe(),
             self.card_rx.clone(),
-            uinput.clone(),
-            ident,
             self.config.clone(),
         ));
 
@@ -1562,77 +224,6 @@ impl InputServer {
 
         tasks.shutdown().await;
         Ok(())
-    }
-}
-
-async fn follow_input_devices(
-    mut tablet_rx: watch::Receiver<bool>,
-    mut mode_rx: watch::Receiver<bool>,
-    mut card_rx: watch::Receiver<Option<u32>>,
-    devices: Arc<std::sync::Mutex<InjectDevices>>,
-    ident: DeviceIdentity,
-    cfg: InputConfig,
-) {
-    let mut owner = DeviceOwner {
-        devices: devices.clone(),
-        touch_registered: false,
-    };
-    let mut present = false;
-    tablet_rx.borrow_and_update();
-    mode_rx.borrow_and_update();
-    card_rx.borrow_and_update();
-    loop {
-        let attached = *tablet_rx.borrow();
-        let pen_only = *mode_rx.borrow();
-        let card = *card_rx.borrow();
-        let count;
-        if attached && !present {
-            present = true;
-            count = owner.create_devices(&cfg, &ident).await;
-        } else if !attached && present {
-            present = false;
-            owner.remove_devices().await;
-            count = 0;
-        } else if attached {
-            count = owner.release_for_remap(pen_only, card);
-        } else {
-            count = 0;
-        }
-        // Leaving display mode tears the virtual output down and
-        // entering it brings the output back. map_devices_to_output
-        // waits for the output it needs to actually be enabled, so
-        // a change during the wait simply restarts it.
-        if !wait_for_mapping_change(&mut tablet_rx, &mut mode_rx, &mut card_rx, async {
-            if count > 0 {
-                map_devices_to_output(pen_only, &ident, card, count).await;
-            }
-        })
-        .await
-        {
-            break;
-        }
-    }
-}
-
-async fn wait_for_mapping_change(
-    tablet: &mut watch::Receiver<bool>,
-    mode: &mut watch::Receiver<bool>,
-    card: &mut watch::Receiver<Option<u32>>,
-    mapping: impl std::future::Future<Output = ()>,
-) -> bool {
-    let changed = async {
-        tokio::select! {
-            biased;
-            result = tablet.changed() => result.is_ok(),
-            result = mode.changed() => result.is_ok(),
-            result = card.changed() => result.is_ok(),
-        }
-    };
-    tokio::pin!(changed);
-    tokio::select! {
-        biased;
-        result = &mut changed => result,
-        _ = mapping => changed.await,
     }
 }
 
@@ -1710,6 +301,7 @@ async fn serve_controller(
     latency: crate::latency::LatencyTracker,
     controllers: Arc<Controllers>,
 ) -> Result<()> {
+    let settings = SessionSettings::new(&settings_tx, &mode_tx, config.pen);
     let mut mode_rx = mode_tx.subscribe();
     let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
     let mut ownership = controllers.generation.subscribe();
@@ -1778,8 +370,7 @@ async fn serve_controller(
                     &text,
                     &controllers,
                     lease.id,
-                    &settings_tx,
-                    &mode_tx,
+                    &settings,
                     &latency,
                     config.pen,
                 ) {
@@ -1806,8 +397,7 @@ fn dispatch_controller_text(
     text: &str,
     controllers: &Controllers,
     lease: u64,
-    settings_tx: &Option<watch::Sender<EncoderSettings>>,
-    mode_tx: &watch::Sender<bool>,
+    settings: &dyn SettingsSink,
     latency: &crate::latency::LatencyTracker,
     pen_enabled: bool,
 ) -> bool {
@@ -1817,14 +407,7 @@ fn dispatch_controller_text(
             if *generation != lease {
                 return false;
             }
-            handle_event(
-                event,
-                &controllers.devices,
-                settings_tx,
-                mode_tx,
-                latency,
-                pen_enabled,
-            );
+            handle_event(event, &controllers.devices, settings, latency, pen_enabled);
         }
         Err(e) => warn!("Invalid input: {} - {}", e, text),
     }
@@ -1890,40 +473,10 @@ async fn authenticate_input(
     true
 }
 
-/// Counts of pen actions received, logged periodically. Hover in particular is
-/// easy to lose somewhere between the tablet's view hierarchy and here, and
-/// without a count there is no way to tell "not sent" from "sent but ignored".
-static PEN_ACTIONS: std::sync::Mutex<[u32; 8]> = std::sync::Mutex::new([0; 8]);
-static PEN_LOG_AT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-
-fn note_pen_action(action: u8) {
-    if let Ok(mut c) = PEN_ACTIONS.lock() {
-        c[(action as usize).min(7)] += 1;
-    }
-    let Ok(mut last) = PEN_LOG_AT.lock() else {
-        return;
-    };
-    let now = std::time::Instant::now();
-    match *last {
-        Some(t) if t.elapsed().as_secs() < 3 => return,
-        _ => *last = Some(now),
-    }
-    if let Ok(mut c) = PEN_ACTIONS.lock() {
-        if c.iter().any(|&n| n > 0) {
-            info!(
-                "Pen events: down={} up={} move={} hover={} hover_exit={} btn_down={} btn_up={}",
-                c[0], c[1], c[2], c[3], c[4], c[5], c[6]
-            );
-            *c = [0; 8];
-        }
-    }
-}
-
 fn handle_event(
     event: InputEvent,
-    uinput: &Arc<std::sync::Mutex<InjectDevices>>,
-    settings_tx: &Option<watch::Sender<EncoderSettings>>,
-    mode_tx: &watch::Sender<bool>,
+    uinput: &dyn InputSink,
+    settings: &dyn SettingsSink,
     latency: &crate::latency::LatencyTracker,
     pen_enabled: bool,
 ) {
@@ -1935,12 +488,7 @@ fn handle_event(
             action,
             slot,
         } => {
-            inject_touch_event(
-                uinput,
-                AbsoluteContact::from_normalized(x, y, pressure),
-                action,
-                slot,
-            );
+            uinput.touch((x, y, pressure), action, slot);
         }
         InputEvent::Pen {
             x,
@@ -1952,13 +500,14 @@ fn handle_event(
             button,
             action,
         } => {
-            inject_pen_event(
-                uinput,
-                AbsoluteContact::from_normalized(x, y, pressure),
-                (tilt_x, tilt_y),
-                eraser,
-                action,
-                button,
+            uinput.pen(
+                PenSample {
+                    position: (x, y, pressure),
+                    tilt: (tilt_x, tilt_y),
+                    eraser,
+                    action,
+                    button,
+                },
                 pen_enabled,
             );
         }
@@ -1968,7 +517,7 @@ fn handle_event(
             width_mm,
             height_mm,
         } => {
-            apply_tablet_resolution(settings_tx, width, height, width_mm, height_mm);
+            settings.resolution((width, height), (width_mm, height_mm));
         }
         InputEvent::Rendered { seq, decode_us } => latency.on_rendered(seq, decode_us),
         InputEvent::Config {
@@ -1976,282 +525,12 @@ fn handle_event(
             fps,
             encoder,
         } => {
-            apply_tablet_config(settings_tx, bitrate, fps, encoder);
+            settings.configure(bitrate, fps, encoder);
         }
         // Already consumed by handle_connection; a second one is harmless.
         InputEvent::Auth { .. } => {}
-        InputEvent::Mode { pen_only } => apply_tablet_mode(mode_tx, pen_only, pen_enabled),
+        InputEvent::Mode { pen_only } => settings.mode(pen_only),
     }
-}
-
-struct AbsoluteContact {
-    x: i32,
-    y: i32,
-    pressure: i32,
-}
-impl AbsoluteContact {
-    fn from_normalized(x: f64, y: f64, pressure: f64) -> Self {
-        Self {
-            x: (x.clamp(0.0, 1.0) * COORD_MAX as f64) as i32,
-            y: (y.clamp(0.0, 1.0) * COORD_MAX as f64) as i32,
-            pressure: (pressure.clamp(0.0, 1.0) * 4096.0) as i32,
-        }
-    }
-}
-
-fn inject_touch_event(
-    devices: &std::sync::Mutex<InjectDevices>,
-    contact: AbsoluteContact,
-    action: u8,
-    slot: u8,
-) {
-    if let Ok(mut guard) = devices.lock() {
-        if let Err(error) = guard.inject_touch(contact.x, contact.y, contact.pressure, action, slot)
-        {
-            warn!("Failed to inject touch: {}", error);
-        }
-    }
-}
-
-fn inject_pen_event(
-    devices: &std::sync::Mutex<InjectDevices>,
-    contact: AbsoluteContact,
-    tilt: (f64, f64),
-    eraser: bool,
-    action: u8,
-    button: Option<bool>,
-    pen_enabled: bool,
-) {
-    if pen_enabled {
-        note_pen_action(action);
-    }
-    if let Ok(mut guard) = devices.lock() {
-        guard.apply_pen(contact, tilt, eraser, action, button);
-    }
-}
-
-impl InjectDevices {
-    fn apply_pen(
-        &mut self,
-        contact: AbsoluteContact,
-        tilt: (f64, f64),
-        eraser: bool,
-        action: u8,
-        button: Option<bool>,
-    ) {
-        // Position samples restore actual button state after Android hover exits.
-        // Avoid emitting duplicate key/SYN frames for unchanged historical samples.
-        let button = button.filter(|down| action <= 3 && *down != self.pen_button);
-        // Preserve wire degrees; advertise and emit Linux milliradians.
-        let tilt_x = tilt_axis_units(tilt.0);
-        let tilt_y = tilt_axis_units(tilt.1);
-        let ok = if let Some(dev) = self.pen.as_mut() {
-            match dev.inject_pen(
-                contact.x,
-                contact.y,
-                contact.pressure,
-                tilt_x,
-                tilt_y,
-                action,
-                eraser,
-                button,
-            ) {
-                Ok(_) => true,
-                Err(e) => {
-                    warn!("Failed to inject pen: {}", e);
-                    false
-                }
-            }
-        } else {
-            log_missing_pen(&contact, tilt, eraser, action);
-            false
-        };
-        if ok {
-            self.record_pen_state(&contact, action, button);
-        }
-    }
-
-    fn record_pen_state(&mut self, contact: &AbsoluteContact, action: u8, button: Option<bool>) {
-        if matches!(action, 0..=3) {
-            self.last_pen_pos = (contact.x, contact.y);
-        }
-        if let Some(down) = button {
-            self.pen_button = down;
-        }
-        // Keep an ordinary cursor at the last pen position when proximity ends.
-        if action == 4 {
-            self.park_pointer();
-        }
-        match action {
-            0 | 3 => self.pen_proximity = true,
-            4 => {
-                self.pen_proximity = false;
-                self.pen_button = false;
-            }
-            5 => self.pen_button = true,
-            6 => self.pen_button = false,
-            _ => {}
-        }
-    }
-
-    fn park_pointer(&mut self) {
-        let (x, y) = self.last_pen_pos;
-        if let Some(dev) = self.pointer.as_mut() {
-            let _ = dev.emit(EV_ABS, ABS_X, x);
-            let _ = dev.emit(EV_ABS, ABS_Y, y);
-            let _ = dev.syn();
-        }
-    }
-}
-
-fn log_missing_pen(contact: &AbsoluteContact, tilt: (f64, f64), eraser: bool, action: u8) {
-    match action {
-        0 => debug!(
-            "Pen DOWN at ({}, {}), eraser={}, tilt=({:.1},{:.1}) — no pen device",
-            contact.x, contact.y, eraser, tilt.0, tilt.1
-        ),
-        1 => debug!("Pen UP   at ({}, {}) — no pen device", contact.x, contact.y),
-        _ => {}
-    }
-}
-
-fn physical_dimensions(width: u32, height: u32) -> (u32, u32) {
-    // Reject nonsense physical sizes instead of baking an absurd DPI into EDID.
-    if (50..=1000).contains(&width) && (50..=1000).contains(&height) {
-        (width, height)
-    } else {
-        (
-            crate::edid::DEFAULT_WIDTH_MM,
-            crate::edid::DEFAULT_HEIGHT_MM,
-        )
-    }
-}
-
-fn apply_tablet_resolution(
-    settings_tx: &Option<watch::Sender<EncoderSettings>>,
-    width: u32,
-    height: u32,
-    width_mm: u32,
-    height_mm: u32,
-) {
-    info!(
-        "Tablet reports native resolution: {}x{} ({}x{} mm)",
-        width, height, width_mm, height_mm
-    );
-    let Some(tx) = settings_tx else { return };
-    let Some(new) = negotiated_geometry(
-        &tx.borrow(),
-        (width, height),
-        (width_mm, height_mm),
-        crate::config::FileConfig::load().auto_resolution,
-    ) else {
-        return;
-    };
-    tx.send_if_modified(|current| {
-        if *current == new {
-            return false;
-        }
-        *current = new;
-        true
-    });
-}
-
-pub(crate) fn negotiated_geometry(
-    current: &EncoderSettings,
-    pixels: (u32, u32),
-    millimetres: (u32, u32),
-    auto_resolution: bool,
-) -> Option<EncoderSettings> {
-    if pixels.0 == 0 || pixels.1 == 0 {
-        warn!("Ignoring empty native resolution {}x{}", pixels.0, pixels.1);
-        return None;
-    }
-    let selected = if auto_resolution {
-        pixels
-    } else {
-        (current.width, current.height)
-    };
-    if !(640..=crate::config::MAX_DIMENSION).contains(&selected.0)
-        || !(480..=crate::config::MAX_DIMENSION).contains(&selected.1)
-    {
-        warn!(
-            "Ignoring unsupported capture resolution {}x{}",
-            selected.0, selected.1
-        );
-        return None;
-    }
-    let mut settings = current.clone();
-    (settings.width, settings.height) = selected;
-    (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
-    settings.geometry_ready = true;
-    Some(settings)
-}
-
-fn apply_tablet_config(
-    settings_tx: &Option<watch::Sender<EncoderSettings>>,
-    bitrate: Option<u32>,
-    fps: Option<u32>,
-    encoder: Option<String>,
-) {
-    let Some(tx) = settings_tx else {
-        warn!("Received config from tablet but live settings are disabled");
-        return;
-    };
-    let mut new = tx.borrow().clone();
-    if let Some(b) = bitrate {
-        // Clamped to the same ceiling the config file uses: an
-        // unclamped value here would be persisted and poison every
-        // later run, which is exactly how installs ended up pinned at
-        // 200 Mbps with seconds of queueing delay.
-        new.bitrate = b.clamp(
-            crate::config::MIN_BITRATE_KBPS,
-            crate::config::MAX_BITRATE_KBPS,
-        );
-        if new.bitrate != b {
-            warn!("Tablet asked for {} kbps — clamped to {}", b, new.bitrate);
-        }
-    }
-    if let Some(f) = fps {
-        new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
-    }
-    if let Some(e) = encoder {
-        match crate::config::validate_encoder_for_build(&e) {
-            Ok(()) => new.encoder = e,
-            Err(error) => warn!("Ignoring unsupported encoder from tablet: {e}: {error}"),
-        }
-    }
-    if *tx.borrow() != new {
-        info!(
-            "Tablet pushed settings: encoder={} {}kbps @{}fps",
-            new.encoder, new.bitrate, new.fps
-        );
-        let _ = tx.send(new);
-    }
-}
-
-fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled: bool) {
-    // Only publish a real change. A watch send always wakes every
-    // follower, so re-sending the current mode would tear the virtual
-    // display down and back up for nothing.
-    if *mode_tx.borrow() == pen_only {
-        return;
-    }
-    // Pen-only mode with no pen device would tear the display down
-    // and then drop every stroke: a blank tablet. The app's switch
-    // follows the mode the daemon reports, so it simply stays off.
-    if pen_only && !pen_enabled {
-        warn!("Tablet asked for pen-only mode, but input_pen is off in config.toml — ignored");
-        return;
-    }
-    info!(
-        "Tablet switched to {}",
-        if pen_only {
-            "pen-only mode"
-        } else {
-            "second-screen mode"
-        }
-    );
-    let _ = mode_tx.send(pen_only);
 }
 
 #[cfg(test)]
@@ -2542,8 +821,7 @@ esac
                 handle_event(
                     serde_json::from_value(wire).unwrap(),
                     &devices,
-                    &None,
-                    &mode,
+                    &SessionSettings::new(&None, &mode, true),
                     &tracker,
                     true,
                 );
@@ -2592,8 +870,7 @@ esac
                 handle_event(
                     serde_json::from_value(step["wire"].clone()).unwrap(),
                     &devices,
-                    &None,
-                    &mode,
+                    &SessionSettings::new(&None, &mode, true),
                     &tracker,
                     true,
                 );
@@ -2896,7 +1173,13 @@ esac
                         slot: 0,
                     }
                 };
-                handle_event(event, &devices, &None, &mode, &tracker, pen);
+                handle_event(
+                    event,
+                    &devices,
+                    &SessionSettings::new(&None, &mode, pen),
+                    &tracker,
+                    pen,
+                );
             };
             let last = |code| last_input_value(file.path(), code);
             send(0, -0.2, 1.4, 2.0);
@@ -2933,8 +1216,7 @@ esac
                     pressure,
                 },
                 &devices,
-                &None,
-                &mode,
+                &SessionSettings::new(&None, &mode, false),
                 &tracker,
                 false,
             )
@@ -3543,8 +1825,7 @@ fi
                 encoder: Some("unknown".into()),
             },
             &Arc::new(std::sync::Mutex::new(InjectDevices::empty())),
-            &Some(tx),
-            &mode_tx,
+            &SessionSettings::new(&Some(tx), &mode_tx, true),
             &crate::latency::LatencyTracker::new(),
             true,
         );

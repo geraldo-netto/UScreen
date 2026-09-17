@@ -219,6 +219,14 @@ settings. `MotionTranslator` owns pointer slots and ordered Android samples;
 `PenMessage` and `TouchMessage` own their JSON field layouts. Connection callbacks
 and touch handling share the facade monitor so input cannot overtake the opening
 handshake. The control session accepts a WebSocket factory for isolated tests.
+Host control transport/controller leases live in `input.rs`; `input/wire.rs`
+owns the JSON schema. Dispatch uses narrow `InputSink` and `SettingsSink`
+interfaces. The Linux backend owns uinput devices and follows attachment, mode
+and card changes; KWin/X11 output selection lives in its mapping adapter.
+`SessionSettings` applies geometry/configuration policy, including the existing
+live persistent auto-resolution setting. Greetings still snapshot live encoder
+settings. Adapter contract tests run without desktop services or real devices.
+
 The shared `input-motion.json` fixture is checked against Android translation
 and Rust deserialization/serialization; stylus history has separate ordering,
 pressure, tilt and eraser coverage.
