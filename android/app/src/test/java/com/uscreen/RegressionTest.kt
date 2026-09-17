@@ -23,6 +23,67 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t282_concurrentControlMessagesFollowAuthentication() {
+        assertAuthFirst("config") { it.sendConfig(2000, 30) }
+        assertAuthFirst("mode") { it.sendMode(true) }
+        assertAuthFirst("rendered") { it.sendRendered(12, 100) }
+        for (action in listOf(MotionEvent.ACTION_HOVER_MOVE, MotionEvent.ACTION_HOVER_EXIT,
+                              MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.ACTION_BUTTON_RELEASE)) {
+            assertAuthFirst("pen") { capture ->
+                val motion = event(MotionEvent.TOOL_TYPE_STYLUS, action)
+                try { capture.handleHoverEvent(motion, 100, 100) }
+                finally { motion.recycle() }
+            }
+        }
+    }
+
+    private fun controlWorker(failures: java.util.Queue<Throwable>, action: () -> Unit): Thread =
+        Thread { try { action() } catch (failure: Throwable) { failures.add(failure) } }.apply { start() }
+
+    private fun awaitBlockedOrFinished(thread: Thread) {
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3)
+        while (thread.isAlive && thread.state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+            Thread.sleep(1)
+        }
+        assertTrue("T282 worker must reach the send or connection monitor",
+            !thread.isAlive || thread.state == Thread.State.BLOCKED)
+    }
+
+    private fun assertAuthFirst(type: String, action: (TouchCapture) -> Unit) {
+        val capture = TouchCapture().apply { token = "a".repeat(64) }
+        val authEntered = java.util.concurrent.CountDownLatch(1)
+        val authRelease = java.util.concurrent.CountDownLatch(1)
+        val socket = Socket {
+            if (org.json.JSONObject(it).getString("type") == "auth") {
+                authEntered.countDown()
+                check(authRelease.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            }
+        }
+        set(capture, "webSocket", socket)
+        val listener = get(capture, "wsListener") as WebSocketListener
+        val response = Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+            .code(101).message("Switching Protocols").build()
+        val failures = java.util.concurrent.ConcurrentLinkedQueue<Throwable>()
+        val opener = controlWorker(failures) { listener.onOpen(socket, response) }
+        var sender: Thread? = null
+        try {
+            assertTrue(authEntered.await(3, java.util.concurrent.TimeUnit.SECONDS))
+            sender = controlWorker(failures) { action(capture) }
+            awaitBlockedOrFinished(sender)
+        } finally {
+            authRelease.countDown()
+            opener.join(3000)
+            sender?.join(3000)
+            capture.disconnect()
+        }
+        assertFalse(opener.isAlive)
+        assertFalse(sender!!.isAlive)
+        assertTrue("T282 worker failed: $failures", failures.isEmpty())
+        val types = socket.messages.map { org.json.JSONObject(it).getString("type") }
+        assertEquals("T282 $type overtook authentication: $types", "auth", types.first())
+        assertTrue("T282 lost requested $type: $types", types.drop(1).contains(type))
+    }
+
     @Test fun t253_arrivalHistorySurvivesCounterOverflowAndRingWraps() {
         val receiver = VideoReceiver()
         set(receiver, "arrivalWrite", Int.MAX_VALUE - 1)
@@ -388,11 +449,11 @@ class RegressionTest {
         } finally { receiver.stop() }
     }
 
-    private class Socket : WebSocket {
-        val messages = mutableListOf<String>()
+    private class Socket(private val beforeSend: (String) -> Unit = {}) : WebSocket {
+        val messages = java.util.concurrent.CopyOnWriteArrayList<String>()
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()
         override fun queueSize() = 0L
-        override fun send(text: String): Boolean { messages.add(text); return true }
+        override fun send(text: String): Boolean { beforeSend(text); messages.add(text); return true }
         override fun send(bytes: ByteString) = false
         override fun close(code: Int, reason: String?) = true
         override fun cancel() {}

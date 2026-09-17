@@ -481,7 +481,7 @@ class TouchCapture {
             put("eraser", eraser)
             put("action", action)
         }
-        webSocket?.send(msg.toString())
+        sendWhenConnected(msg)
     }
 
     private fun sendPenButton(down: Boolean) {
@@ -497,7 +497,7 @@ class TouchCapture {
             // 5 = stylus button down, 6 = stylus button up
             put("action", if (down) 5 else 6)
         }
-        webSocket?.send(msg.toString())
+        sendWhenConnected(msg)
     }
 
     private fun sendPenProximityExit() {
@@ -512,7 +512,7 @@ class TouchCapture {
             put("eraser", false)
             put("action", 4) // HOVER_EXIT / pen left proximity
         }
-        webSocket?.send(msg.toString())
+        sendWhenConnected(msg)
     }
 
     private fun sendTouch(x: Float, y: Float, pressure: Double,
@@ -526,7 +526,7 @@ class TouchCapture {
             put("action", action)
             put("slot", slot)
         }
-        webSocket?.send(msg.toString())
+        sendWhenConnected(msg)
     }
 
     /**
@@ -534,7 +534,7 @@ class TouchCapture {
      * the new parameters and persists them in its config file. Settings are
      * also remembered here and re-sent on every reconnect.
      */
-    fun sendConfig(bitrateKbps: Int, fps: Int) {
+    @Synchronized fun sendConfig(bitrateKbps: Int, fps: Int) {
         val msg = JSONObject().apply {
             put("type", "config")
             put("bitrate", bitrateKbps)
@@ -565,7 +565,7 @@ class TouchCapture {
             // The host subtracts it to see what the wire actually costs.
             if (decodeUs >= 0) put("decode_us", decodeUs)
         }
-        webSocket?.send(msg.toString())
+        sendWhenConnected(msg)
     }
 
     /**
@@ -573,7 +573,7 @@ class TouchCapture {
      * graphics tablet. The host applies it and answers with its new mode, so
      * the UI follows [onModeKnown] rather than assuming this succeeded.
      */
-    fun sendMode(penOnly: Boolean) {
+    @Synchronized fun sendMode(penOnly: Boolean) {
         val msg = JSONObject().apply {
             put("type", "mode")
             put("pen_only", penOnly)
@@ -600,6 +600,12 @@ class TouchCapture {
         event.getToolType(index) == TOOL_TYPE_PALM
 
     fun isControlConnected(): Boolean = isConnected
+
+    // onOpen holds this monitor until auth and initial metadata are queued.
+    // UI input and decoder acknowledgements must not overtake that handshake.
+    @Synchronized private fun sendWhenConnected(message: JSONObject) {
+        if (isConnected) webSocket?.send(message.toString())
+    }
 
     @Synchronized fun disconnect() {
         connectionWanted = false
