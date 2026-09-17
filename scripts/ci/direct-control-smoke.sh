@@ -18,7 +18,7 @@ chmod +x "$SMOKE_ROOT/helper"
 uscreen --encoder libx264 --helper "$SMOKE_ROOT/helper" > "$SMOKE_ROOT/daemon.log" 2>&1 &
 DAEMON_PID=$!
 trap 'kill "$DAEMON_PID" 2>/dev/null || true; wait "$DAEMON_PID" 2>/dev/null || true; rm -rf "$SMOKE_ROOT"' EXIT
-for attempt in {1..50}; do
+for _ in {1..50}; do
     if ! kill -0 "$DAEMON_PID"; then cat "$SMOKE_ROOT/daemon.log"; exit 1; fi
     if grep -q "daemon running" "$SMOKE_ROOT/daemon.log"; then break; fi
     sleep 0.1
