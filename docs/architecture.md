@@ -76,6 +76,13 @@ on WebAssembly; this does not make the daemon or GUI Windows-compatible.
   restart; tablet control messages can update live settings. The Wi-Fi
   reconnect address is reread from disk for each attempt.
 
+The CLI and GUI share the Linux CLI grammar and same-user daemon discovery.
+A PID file is a hint: its entry receives priority only after UID, liveness and
+full command-line validation. Missing, stale or diagnostic-command PID entries
+fall back to process discovery. An active user service routes GUI actions through
+systemd; otherwise a live direct daemon takes precedence over an installed
+inactive unit. Doctor's remaining daemon/helper checks are tracked by T251.
+
 The Android foreground service follows the Activity's started lifecycle,
 including waiting for connection and graphics-tablet mode; it is not proof
 that video is currently being decoded. Window brightness and preferred display

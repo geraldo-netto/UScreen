@@ -1,4 +1,6 @@
 //! Linux process and runtime adapters.
+pub mod cli;
+pub mod daemon;
 pub mod processes;
 pub mod programs;
 pub mod runtime;

@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use uscreen_config::commands::SyncCommandExt;
 use uscreen_config::commands::{daemon_command_timeout, spawn_reaped};
-use uscreen_config::linux::daemon_is_running;
+use uscreen_config::linux::daemon;
 use uscreen_config::model::{
     FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
 };
@@ -107,13 +107,9 @@ fn poll_status() -> Status {
         .open("/dev/uinput")
         .is_ok();
 
-    if let Ok(pid_str) = std::fs::read_to_string(pid_path()) {
-        if let Ok(pid) = pid_str.trim().parse::<u32>() {
-            if daemon_is_running(pid) {
-                s.daemon_running = true;
-                s.daemon_pid = pid;
-            }
-        }
+    if let Some(pid) = daemon::discover(Some(&pid_path())).first() {
+        s.daemon_running = true;
+        s.daemon_pid = *pid;
     }
 
     if let Ok(out) = Command::new("adb").args(["devices", "-l"]).output_bounded() {
@@ -207,11 +203,7 @@ fn service_managed() -> bool {
     {
         return true;
     }
-    let running_directly = std::fs::read_to_string(pid_path())
-        .ok()
-        .and_then(|s| s.trim().parse::<u32>().ok())
-        .is_some_and(daemon_is_running);
-    if running_directly {
+    if !daemon::discover(Some(&pid_path())).is_empty() {
         return false;
     }
     Command::new("systemctl")
@@ -1507,6 +1499,92 @@ mod tests {
         });
         assert!(start.elapsed() < Duration::from_millis(50));
         assert_eq!(result.recv_timeout(Duration::from_secs(1)).unwrap(), "done");
+    }
+
+    mod daemon_fixture {
+        include!("../../testdata/daemon_process.rs");
+    }
+
+    #[test]
+    fn t260_gui_recovers_daemons_and_routes_actions_without_trusting_pid_files() {
+        if let Some(pid) = std::env::var_os("USCREEN_T260_DAEMON") {
+            check_t260_gui_state(pid.to_str().unwrap().parse().unwrap());
+            return;
+        }
+        let fixture = daemon_fixture::Fixture::new();
+        let runtime = fixture.root.path().join("runtime");
+        std::fs::create_dir(&runtime).unwrap();
+        let daemon = fixture.start(&[]);
+        let diagnostic = fixture.start(&["doctor"]);
+        let sandbox = Sandbox::new();
+        sandbox.script("adb", "exit 0");
+        sandbox.script("systemctl", "case \"$2\" in is-active) exit 1;; show) echo loaded;; is-enabled) echo disabled;; *) exit 99;; esac");
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::t260_gui_recovers_daemons_and_routes_actions_without_trusting_pid_files",
+                "--nocapture",
+            ])
+            .env("USCREEN_T260_DAEMON", daemon.pid().to_string())
+            .env("USCREEN_T260_DIAGNOSTIC", diagnostic.pid().to_string())
+            .env("HOME", fixture.root.path())
+            .env("XDG_RUNTIME_DIR", runtime)
+            .env("PATH", &sandbox.0)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T260: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    fn check_t260_gui_state(daemon: u32) {
+        let diagnostic: u32 = std::env::var("USCREEN_T260_DIAGNOSTIC")
+            .unwrap()
+            .parse()
+            .unwrap();
+        std::fs::create_dir_all(pid_path().parent().unwrap()).unwrap();
+        for stale in [
+            None,
+            Some("0".into()),
+            Some("4294967295".into()),
+            Some("invalid".into()),
+            Some(diagnostic.to_string()),
+            Some(daemon.to_string()),
+        ] {
+            let _ = std::fs::remove_file(pid_path());
+            if let Some(text) = &stale {
+                std::fs::write(pid_path(), text).unwrap();
+            }
+            let status = poll_status();
+            assert!(
+                status.daemon_running,
+                "T260: live daemon reported stopped with PID file {stale:?}"
+            );
+            if stale.as_deref() == Some(daemon.to_string().as_str()) {
+                assert_eq!(
+                    status.daemon_pid, daemon,
+                    "T260: valid tracked daemon lost priority"
+                );
+            }
+            assert_ne!(
+                status.daemon_pid, diagnostic,
+                "T260: doctor is not a daemon"
+            );
+            assert!(
+                !service_managed(),
+                "T260: inactive installed service captured direct-daemon actions"
+            );
+            let command = daemon_command(
+                std::path::Path::new("/fixture/uscreen"),
+                "stop",
+                service_managed(),
+            );
+            assert_eq!(command.get_program(), "/fixture/uscreen");
+            assert_eq!(command.get_args().collect::<Vec<_>>(), ["stop"]);
+        }
     }
 
     struct Sandbox(PathBuf);

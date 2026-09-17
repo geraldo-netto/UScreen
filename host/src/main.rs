@@ -20,85 +20,13 @@ mod update;
 mod vdisplay;
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::path::PathBuf;
 use tokio::signal;
 use tokio::sync::{broadcast, watch};
 use tracing::{error, info, warn};
 use uscreen_config::commands::AsyncCommandExt;
-
-#[derive(Parser)]
-#[command(
-    name = "uscreen",
-    version,
-    about = "USB second-screen server for Linux"
-)]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-
-    /// Explicit EDID override. By default an EDID is generated at runtime
-    /// for the configured (or tablet-reported) resolution.
-    #[arg(long = "edid")]
-    edid: Option<PathBuf>,
-
-    #[arg(long = "helper")]
-    helper: Option<PathBuf>,
-
-    /// Defaults come from ~/.config/uscreen/config.toml; CLI flags override.
-    #[arg(long = "encoder")]
-    encoder: Option<String>,
-
-    #[arg(long = "fps")]
-    fps: Option<u32>,
-
-    #[arg(long = "bitrate")]
-    bitrate: Option<u32>,
-
-    #[arg(long = "width")]
-    width: Option<u32>,
-
-    #[arg(long = "height")]
-    height: Option<u32>,
-
-    #[arg(long = "quality")]
-    quality: Option<u32>,
-
-    /// Integer downscale for the stream only; the desktop keeps its native mode.
-    #[arg(long = "stream-scale")]
-    stream_scale: Option<u32>,
-
-    /// Drive the laptop's own screen with the pen instead of streaming a second
-    /// display to the tablet.
-    #[arg(long = "pen-only")]
-    pen_only: bool,
-
-    #[arg(long = "video-port")]
-    video_port: Option<u16>,
-
-    #[arg(long = "input-port")]
-    input_port: Option<u16>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Start the uscreen daemon
-    Start,
-    /// Stop the uscreen daemon
-    Stop,
-    /// Show daemon status
-    Status,
-    /// List available displays
-    ListDisplays,
-    /// Set the tablet up to connect over Wi-Fi, so the cable becomes optional
-    Wifi {
-        /// Forget the remembered address and stop reconnecting
-        #[arg(long = "off")]
-        off: bool,
-    },
-    /// Diagnose the whole setup and report what is wrong
-    Doctor,
-}
+use uscreen_config::linux::cli::{Cli, Commands};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -1871,37 +1799,11 @@ fn persist_settings(
 
 /// Recover same-user daemons even when their PID file is missing.
 fn other_daemons() -> Vec<u32> {
-    let Ok(entries) = std::fs::read_dir("/proc") else {
-        return Vec::new();
-    };
-    let uid = unsafe { libc::getuid() };
-    entries
-        .flatten()
-        .filter_map(|entry| entry.file_name().to_string_lossy().parse::<u32>().ok())
-        .filter(|&pid| pid != std::process::id() && is_daemon_process(pid, uid))
-        .collect()
+    uscreen_config::linux::daemon::discover(None)
 }
 
 fn is_daemon_process(pid: u32, uid: u32) -> bool {
-    use std::os::unix::{ffi::OsStringExt, fs::MetadataExt};
-    let base = PathBuf::from(format!("/proc/{pid}"));
-    if std::fs::metadata(&base).map(|m| m.uid()).ok() != Some(uid)
-        || !config::daemon_is_running(pid)
-    {
-        return false;
-    }
-    let Ok(cmdline) = std::fs::read(base.join("cmdline")) else {
-        return false;
-    };
-    if cmdline.is_empty() {
-        return false;
-    }
-    let args = cmdline
-        .split(|byte| *byte == 0)
-        .filter(|arg| !arg.is_empty())
-        .map(|arg| std::ffi::OsString::from_vec(arg.to_vec()));
-    // Use the real parser: option values named "start" are not subcommands.
-    Cli::try_parse_from(args).is_ok_and(|cli| matches!(cli.command, None | Some(Commands::Start)))
+    uscreen_config::linux::daemon::is_daemon_process(pid, uid)
 }
 
 fn remove_pid_file_if_ours(pid_path: &std::path::Path, pid: u32) {

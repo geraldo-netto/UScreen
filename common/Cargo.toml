@@ -7,12 +7,13 @@ edition = "2021"
 default = ["storage", "commands", "platform-linux"]
 storage = ["dep:tempfile"]
 commands = ["dep:tempfile", "dep:tokio"]
-platform-linux = ["storage", "commands", "dep:libc"]
+platform-linux = ["storage", "commands", "dep:libc", "dep:clap"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { version = "0.2", optional = true }
 
 [dependencies]
+clap = { version = "4", features = ["derive"], optional = true }
 serde_json = "1"
 semver = "1"
 anyhow = "1"
