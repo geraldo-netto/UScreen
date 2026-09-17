@@ -107,6 +107,9 @@ Both user installers share the same paths: launchers and icons go under
 relative XDG values use those defaults, matching UScreen's configuration-path
 policy. Program binaries remain in `~/.local/bin`; these XDG overrides do not
 change that location. Native packages use their system-wide package paths.
+For a custom program directory, use `make install BIN_DIR=/absolute/path`.
+The generated launcher and user service both refer to that selected directory,
+including the service's helper and stop commands.
 
 If `~/.local/bin` is not on PATH yet, use `~/.local/bin/uscreen` or add the
 directory to your shell's PATH. Run `uscreen doctor` to inspect the setup.

@@ -29,8 +29,9 @@ build: build-helper
 	$(recursive_prefix)$(CARGO) build --release --target-dir $(call quote,$(CURDIR)/target)
 	@printf '✓ Binaries: %s/uscreen and uscreen-gui\n' $(call quote,$(CURDIR)/target/release)
 
+install: export USCREEN_INSTALL_BIN_DIR = $(BIN_DIR)
 install: build
-	bash scripts/install.sh --user-install $(call quote,$(BIN_DIR))
+	bash scripts/install.sh --user-install "$$USCREEN_INSTALL_BIN_DIR"
 
 # One-time system setup (needs sudo): pre-create an EVDI device at boot so
 # the daemon never needs root, and load the required modules.

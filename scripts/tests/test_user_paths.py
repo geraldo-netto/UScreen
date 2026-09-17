@@ -8,6 +8,33 @@ from test_build_output import fixture, write
 
 
 class UserPathsTest(unittest.TestCase):
+    def test_t396_service_commands_follow_the_installed_binary_prefix(self):
+        # Golden spellings follow systemd syntax: quote/C-escape arguments,
+        # double specifiers, and suppress environment expansion with ':' prefix.
+        names = [('.local/bin', '.local/bin'), ('custom bin', 'custom bin'),
+                 ('bin "quoted" \\ $HOME %h `tick`', r'bin \"quoted\" \\ $HOME %%h `tick`'),
+                 ('bin\n\tcarriage\r', r'bin\n\tcarriage\r')]
+        for installer in ['make', 'script']:
+            for name, encoded in names:
+                with self.subTest(installer=installer, name=name), tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    env, (_, config) = self.environment(root, 'unset')
+                    prefix = root / 'home' / name
+                    escaped = str(root / 'home') + '/' + encoded
+                    command = ['make', 'install', 'BIN_DIR=' + str(prefix).replace('$', '$$')]
+                    if installer == 'script':
+                        # Exercise the full install-files entry point, without dependencies/system setup.
+                        source = (root / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
+                        write(root, 'scripts/install-fixture.sh', source + '\nBIN_DIR=$1\ninstall_files\n')
+                        command = ['bash', 'scripts/install-fixture.sh', str(prefix)]
+                    result = subprocess.run(command, cwd=root, env=env, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    for binary in ['uscreen', 'evdi_helper']:
+                        self.assertTrue((prefix / binary).is_file())
+                    unit = (config / 'systemd/user/uscreen.service').read_text()
+                    self.assertIn(f'ExecStart=:/usr/bin/env "{escaped}/uscreen" --helper "{escaped}/evdi_helper" start\n', unit)
+                    self.assertIn(f'ExecStop=:/usr/bin/env "{escaped}/uscreen" stop\n', unit)
+
     def environment(self, root, mode):
         env, _ = fixture(root, 'relative', True)
         write(root, 'host/evdi/evdi_helper', '#!/bin/sh\nexit 0\n', True)
@@ -28,8 +55,11 @@ class UserPathsTest(unittest.TestCase):
         for name in ['uscreen.svg', 'uscreen-pen.svg']:
             self.assertEqual((data / 'icons/hicolor/scalable/apps' / name).read_bytes(),
                              (root / 'packaging/icons' / name).read_bytes())
-        self.assertEqual((config / 'systemd/user/uscreen.service').read_bytes(),
-                         (root / 'scripts/uscreen.service').read_bytes())
+        template = (root / 'scripts/uscreen.service').read_text().splitlines()
+        installed = (config / 'systemd/user/uscreen.service').read_text().splitlines()
+        # T396 substitutes the selected prefix; all other unit policy is retained.
+        self.assertEqual([line for line in installed if not line.startswith('Exec')],
+                         [line for line in template if not line.startswith('Exec')])
         self.assertFalse((root / 'injected').exists())
         self.assertFalse((root / 'relative-path').exists())
 
