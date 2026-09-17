@@ -38,6 +38,62 @@ class SettingsLayoutTest {
         compose.runOnIdle { assertTrue(applied); assertTrue(dismissed) }
     }
 
+    @Test fun t337_githubLinkWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Open GitHub")
+    @Test fun t337_updatePillWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Update 9.9.9 available")
+    @Test fun t337_settingsUpdateWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Update available: 9.9.9")
+    @Test fun t337_browserReceivesAllForkLinks() = checkWebLinks(true,
+        "Open GitHub", "Update 9.9.9 available", "Update available: 9.9.9")
+
+    private fun checkWebLinks(browserAvailable: Boolean, vararg labels: String) {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val shadow = org.robolectric.Shadows.shadowOf(app)
+        var dismissed = false
+        compose.setContent { UScreenTheme {
+            UScreenMain({}, updateAvailable = "9.9.9", showThanks = true,
+                onDismissThanks = { dismissed = true })
+        } }
+        shadow.checkActivities(true)
+        try {
+            for (label in labels) {
+                val url = if (label == "Open GitHub") "https://github.com/geraldo-netto/UScreen"
+                          else UpdateCheck.RELEASES_PAGE
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                if (browserAvailable) registerBrowser(app, intent)
+                if (label.startsWith("Update available:")) {
+                    compose.onNodeWithText("⚙").performClick()
+                    compose.onNodeWithText(label).performScrollTo()
+                }
+                compose.onNodeWithText(label).performClick()
+                compose.runOnIdle {
+                    if (browserAvailable) {
+                        val launched = shadow.nextStartedActivity
+                        assertNotNull("T337: browser was not launched", launched)
+                        assertEquals(android.content.Intent.ACTION_VIEW, launched.action)
+                        assertEquals(url, launched.dataString)
+                    } else {
+                        assertEquals("No browser available to open this link.",
+                            org.robolectric.shadows.ShadowToast.getTextOfLatestToast())
+                    }
+                }
+            }
+            if ("Open GitHub" in labels) assertEquals(browserAvailable, dismissed)
+        } finally { shadow.checkActivities(false) }
+    }
+
+    private fun registerBrowser(app: android.app.Application, intent: android.content.Intent) {
+        val activity = android.content.pm.ActivityInfo().apply {
+            packageName = "fixture.browser"
+            name = "BrowserActivity"
+            exported = true
+            applicationInfo = android.content.pm.ApplicationInfo().apply {
+                packageName = "fixture.browser"
+                enabled = true
+            }
+        }
+        org.robolectric.Shadows.shadowOf(app.packageManager).addResolveInfoForIntent(intent,
+            android.content.pm.ResolveInfo().apply { activityInfo = activity })
+    }
+
     private val draw = "Draw here — it goes to the screen on your computer."
 
     @Test fun t300_queuedVideoCallbacksCannotUndoNewerConnectionState() {

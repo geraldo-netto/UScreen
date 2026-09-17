@@ -500,12 +500,7 @@ fun UScreenMain(
                 prefs = prefs,
                 updateAvailable = updateAvailable,
                 onOpenUpdate = {
-                    context.startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(UpdateCheck.RELEASES_PAGE)
-                        )
-                    )
+                    openWebLink(context, UpdateCheck.RELEASES_PAGE)
                 },
                 penOnly = penOnly,
                 onPenOnlyChange = { wantPenOnly ->
@@ -616,6 +611,17 @@ private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, co
 
 }
 
+private fun openWebLink(context: android.content.Context, url: String): Boolean {
+    return try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        true
+    } catch (_: android.content.ActivityNotFoundException) {
+        android.widget.Toast.makeText(context, "No browser available to open this link.",
+            android.widget.Toast.LENGTH_SHORT).show()
+        false
+    }
+}
+
 @Composable
 private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> Unit, updateAvailable: String?) {
     val context = LocalContext.current
@@ -640,9 +646,9 @@ private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> U
                 Row(modifier = Modifier.padding(top = 10.dp)) {
                     Text("Open GitHub", fontSize = 13.sp, color = Accent,
                         modifier = Modifier.clickable {
-                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("https://github.com/geraldo-netto/UScreen")))
-                            onDismissThanks()
+                            if (openWebLink(context, "https://github.com/geraldo-netto/UScreen")) {
+                                onDismissThanks()
+                            }
                         }.padding(end = 20.dp))
                     Text("Dismiss", fontSize = 13.sp, color = Color(0xFF9A9AB0),
                         modifier = Modifier.clickable { onDismissThanks() })
@@ -661,12 +667,7 @@ private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> U
                 .clip(RoundedCornerShape(14.dp))
                 .background(Color(0xCC20202C))
                 .clickable {
-                    context.startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(UpdateCheck.RELEASES_PAGE)
-                        )
-                    )
+                    openWebLink(context, UpdateCheck.RELEASES_PAGE)
                 }
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
