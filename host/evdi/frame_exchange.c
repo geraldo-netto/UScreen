@@ -1,0 +1,162 @@
+#define _GNU_SOURCE
+#include "frame_exchange.h"
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <errno.h>
+#include <unistd.h>
+
+void frame_exchange_init(frame_exchange_t *frames) {
+    pthread_condattr_t attributes;
+    pthread_condattr_init(&attributes);
+    pthread_condattr_setclock(&attributes, CLOCK_MONOTONIC);
+    pthread_cond_init(&frames->ready, &attributes);
+    pthread_condattr_destroy(&attributes);
+}
+
+void frame_exchange_mark_all(frame_exchange_t *frames) {
+    if (!frames->dirty_fill) return;
+    memset(frames->dirty_fill,   0xFF, (size_t)frames->dirty_bytes);
+    memset(frames->dirty_latest, 0xFF, (size_t)frames->dirty_bytes);
+    memset(frames->dirty_write,  0xFF, (size_t)frames->dirty_bytes);
+}
+
+void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) {
+    if (!frames->dirty_fill || frames->chroma_rows <= 0) return;
+    if (y1 < y0) { int t = y0; y0 = y1; y1 = t; }
+    /* Source rows map onto output chroma rows through the scale: one
+       chroma row covers 2*scale source rows. */
+    int div = 2 * scale;
+    int c0 = y0 / div, c1 = (y1 + div - 1) / div;
+    if (c0 < 0) c0 = 0;
+    if (c1 > frames->chroma_rows) c1 = frames->chroma_rows;
+    for (int cy = c0; cy < c1; cy++) {
+        unsigned char bit = (unsigned char)(1u << (cy & 7));
+        frames->dirty_fill[cy >> 3]   |= bit;
+        frames->dirty_latest[cy >> 3] |= bit;
+        frames->dirty_write[cy >> 3]  |= bit;
+    }
+}
+
+void frame_exchange_resize(frame_exchange_t *frames, int width, int height) {
+    frames->width = width;
+    frames->height = height;
+    /* Packed buffers hold NV12 (Y plane + half-size interleaved CbCr). */
+    frames->size = frames->width * frames->height * 3 / 2;
+    free(frames->fill);   frames->fill = malloc(frames->size);
+    free(frames->latest); frames->latest = malloc(frames->size);
+    free(frames->write);  frames->write = malloc(frames->size);
+
+    /* Fresh buffers hold nothing, so every row is stale in all of them. */
+    frames->chroma_rows = frames->height / 2;
+    frames->dirty_bytes = (frames->chroma_rows + 7) / 8;
+    free(frames->dirty_fill);   frames->dirty_fill   = malloc((size_t)frames->dirty_bytes);
+    free(frames->dirty_latest); frames->dirty_latest = malloc((size_t)frames->dirty_bytes);
+    free(frames->dirty_write);  frames->dirty_write  = malloc((size_t)frames->dirty_bytes);
+    if (frames->dirty_fill && frames->dirty_latest && frames->dirty_write)
+        frame_exchange_mark_all(frames);
+}
+
+int frame_exchange_allocated(const frame_exchange_t *frames) {
+    return frames->fill && frames->latest && frames->write && frames->dirty_fill
+        && frames->dirty_latest && frames->dirty_write;
+}
+
+int frame_exchange_retire(frame_exchange_t *frames) {
+    pthread_mutex_lock(&frames->mutex);
+    frames->latest_valid = 0;
+    frames->buffers_ready = 0;
+    frames->generation++;
+    pthread_mutex_unlock(&frames->mutex);
+    for (int i = 0; i < 1000 && frames->writer_busy; i++) usleep(1000);
+    return !frames->writer_busy;
+}
+
+void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
+    memset(frames->dirty_fill, 0, (size_t)frames->dirty_bytes);
+    pthread_mutex_lock(&frames->mutex);
+    unsigned char *data = frames->latest;
+    frames->latest = frames->fill;
+    frames->fill = data;
+    unsigned char *dirty = frames->dirty_latest;
+    frames->dirty_latest = frames->dirty_fill;
+    frames->dirty_fill = dirty;
+    frames->latest_valid = 1;
+    frames->latest_grab_us = grabbed_us;
+    pthread_cond_signal(&frames->ready);
+    pthread_mutex_unlock(&frames->mutex);
+}
+
+static void add_period(struct timespec *time, long period_ns) {
+    time->tv_nsec += period_ns;
+    while (time->tv_nsec >= 1000000000L) {
+        time->tv_nsec -= 1000000000L;
+        time->tv_sec += 1;
+    }
+}
+
+static void wait_for_frame(frame_exchange_t *frames, const atomic_int *running, long period_ns) {
+    /* Wait for a frame, but no longer than one period so shutdown and
+       mode changes are still noticed promptly. */
+    while (atomic_load(running) && (!frames->buffers_ready || !frames->latest_valid)) {
+        struct timespec wait_until;
+        clock_gettime(CLOCK_MONOTONIC, &wait_until);
+        add_period(&wait_until, period_ns);
+        if (pthread_cond_timedwait(&frames->ready, &frames->mutex,
+                                   &wait_until) == ETIMEDOUT)
+            break;
+    }
+}
+
+int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
+                         const atomic_int *running, long period_ns, frame_lease_t *lease) {
+    pthread_mutex_lock(&frames->mutex);
+    wait_for_frame(frames, running, period_ns);
+    if (!atomic_load(running)) {
+        pthread_mutex_unlock(&frames->mutex);
+        return -1;
+    }
+    if (!frames->buffers_ready) {
+        pthread_mutex_unlock(&frames->mutex);
+        return 0;
+    }
+    if (cursor->generation != frames->generation) {
+        /* Buffers were reallocated; previous frames->write content is gone */
+        cursor->generation = frames->generation;
+        cursor->have_frame = 0;
+    }
+    lease->fresh = 0;
+    if (frames->latest_valid) {
+        unsigned char *tmp = frames->write;
+        frames->write = frames->latest;
+        frames->latest = tmp;
+        unsigned char *dtmp = frames->dirty_write;
+        frames->dirty_write = frames->dirty_latest;
+        frames->dirty_latest = dtmp;
+        frames->latest_valid = 0;
+        frames->write_grab_us = frames->latest_grab_us;
+        cursor->have_frame = 1;
+        lease->fresh = 1;
+    }
+    lease->data = frames->write;
+    lease->size = (size_t)frames->size;
+    lease->generation = cursor->generation;
+    lease->grabbed_us = frames->write_grab_us;
+    frames->writer_busy = cursor->have_frame;
+    pthread_mutex_unlock(&frames->mutex);
+
+    return cursor->have_frame;
+}
+
+void frame_exchange_release(frame_exchange_t *frames) {
+    frames->writer_busy = 0;
+}
+
+void frame_exchange_free(frame_exchange_t *frames) {
+    free(frames->fill); frames->fill = NULL;
+    free(frames->latest); frames->latest = NULL;
+    free(frames->write); frames->write = NULL;
+    free(frames->dirty_fill); frames->dirty_fill = NULL;
+    free(frames->dirty_latest); frames->dirty_latest = NULL;
+    free(frames->dirty_write); frames->dirty_write = NULL;
+}

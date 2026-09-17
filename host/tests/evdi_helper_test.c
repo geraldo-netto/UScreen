@@ -24,6 +24,13 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #define clock_gettime mock_clock_gettime
 #define opendir mock_opendir
 #define main evdi_helper_main
+#include "../evdi/conversion.c"
+#define add_period frame_test_add_period
+#include "../evdi/frame_exchange.c"
+#include "../evdi/fifo_writer.c"
+#include "../evdi/capture.c"
+#undef add_period
+#include "../evdi/writer.c"
 #include "../evdi/evdi_helper.c"
 #undef main
 #undef pthread_create
@@ -36,6 +43,12 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #undef opendir
 #include <assert.h>
 #include <sys/wait.h>
+
+static long long now_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
 
 static int fail_worker = 0;
 static int stall_once = 0;
@@ -65,7 +78,7 @@ static int mock_posix_memalign(void **pointer, size_t alignment, size_t size) {
 static atomic_int pause_writer = 0;
 static atomic_int writer_paused = 0;
 static int mock_nanosleep(const struct timespec *request, struct timespec *remainder) {
-    if (pause_writer && g_writer_busy) {
+    if (pause_writer && g_frames.writer_busy) {
         writer_paused = 1;
         while (pause_writer) usleep(1000);
         return 0;
@@ -74,7 +87,7 @@ static int mock_nanosleep(const struct timespec *request, struct timespec *remai
 }
 static int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attrs,
                                void *(*start)(void *), void *arg) {
-    if (fail_worker && (intptr_t)arg == fail_worker) return EAGAIN;
+    if (fail_worker && start == conv_worker && ((conv_worker_arg_t *)arg)->id == fail_worker) return EAGAIN;
     return pthread_create(thread, attrs, start, arg);
 }
 static long mock_sysconf(int name) {
@@ -150,7 +163,7 @@ static atomic_int sample_finished = 0;
 static void *sample_latency(void *arg) {
     (void)arg;
     atomic_store(&sample_started, 1);
-    record_latency(now_us() - 1000);
+    record_latency(&g_writer, writer_now_us() - 1000);
     atomic_store(&sample_finished, 1);
     return NULL;
 }
@@ -170,19 +183,19 @@ void evdi_unregister_buffer(evdi_handle handle, int id) {
  * Guard bytes detect writes past the allocation; plane contents detect a
  * wrong destination stride, even when the write stays inside the buffer. */
 static void test_conversion(int width, int height, int scale) {
-    g_mode_w = width;
-    g_mode_h = height;
-    g_mode_stride = (width * 4 + 63) & ~63;
-    g_scale = scale;
-    g_out_w = (width / scale) & ~1;
-    g_out_h = (height / scale) & ~1;
-    const size_t pixels = (size_t)g_out_w * g_out_h;
+    g_capture.mode_w = width;
+    g_capture.mode_h = height;
+    g_capture.mode_stride = (width * 4 + 63) & ~63;
+    g_capture.scale = scale;
+    g_frames.width = (width / scale) & ~1;
+    g_frames.height = (height / scale) & ~1;
+    const size_t pixels = (size_t)g_frames.width * g_frames.height;
     const size_t size = pixels * 3 / 2;
-    unsigned char *source = calloc((size_t)g_mode_stride, height);
+    unsigned char *source = calloc((size_t)g_capture.mode_stride, height);
     unsigned char *dest = malloc(size + 64);
     assert(source && dest);
     memset(dest, 0xa5, size + 64);
-    bgra_to_nv12(source, dest, NULL);
+    bgra_to_nv12(&g_capture, source, dest, NULL);
     for (size_t i = size; i < size + 64; i++)
         assert(dest[i] == 0xa5 && "T012: conversion wrote beyond packed NV12 buffer");
     for (size_t i = 0; i < pixels; i++)
@@ -197,15 +210,15 @@ static pthread_t start_test_writer(int pipefd[2]) {
     pthread_condattr_t attr;
     pthread_condattr_init(&attr);
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-    pthread_cond_init(&g_frame_ready, &attr);
+    pthread_cond_init(&g_frames.ready, &attr);
     pthread_condattr_destroy(&attr);
     assert(pipe2(pipefd, O_NONBLOCK) == 0);
-    g_capture_fifo_fd = pipefd[1];
-    g_fps = 100;
+    g_fifo.fd = pipefd[1];
+    g_writer.fps = g_capture.fps = 100;
     struct evdi_mode mode = {8, 8, 60, 32, 0x34325258};
-    on_mode_changed(mode, NULL);
+    on_mode_changed(mode, &g_capture);
     pthread_t writer;
-    assert(pthread_create(&writer, NULL, writer_thread, NULL) == 0);
+    assert(pthread_create(&writer, NULL, writer_run, &g_writer) == 0);
     return writer;
 }
 
@@ -223,21 +236,21 @@ static void read_test_frame(int fd, int width, int height) {
 
 static void stop_test_writer(pthread_t writer, int pipefd[2]) {
     g_running = 0;
-    pthread_mutex_lock(&g_swap_mutex);
-    pthread_cond_broadcast(&g_frame_ready);
-    pthread_mutex_unlock(&g_swap_mutex);
+    pthread_mutex_lock(&g_frames.mutex);
+    pthread_cond_broadcast(&g_frames.ready);
+    pthread_mutex_unlock(&g_frames.mutex);
     pthread_join(writer, NULL);
     close(pipefd[0]);
-    if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
-    free(g_framebuffer);
-    free(g_fill); free(g_latest); free(g_write);
-    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
-    pthread_cond_destroy(&g_frame_ready);
+    if (g_fifo.fd >= 0) close(g_fifo.fd);
+    free(g_capture.framebuffer);
+    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
+    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    pthread_cond_destroy(&g_frames.ready);
 }
 
 static void *cancel_fifo_write(void *arg) {
     usleep(50000);
-    if ((intptr_t)arg == 1) g_mode_generation++;
+    if ((intptr_t)arg == 1) g_frames.generation++;
     else handle_signal(SIGTERM);
     return NULL;
 }
@@ -250,8 +263,8 @@ static void assert_stalled_write_exits(int reader, int cancel) {
     unsigned char *frame = calloc(1, size);
     assert(frame);
     long long start = now_ms();
-    size_t remaining = write_fifo_frame(frame, size, g_mode_generation);
-    assert(remaining > 0 && g_capture_fifo_fd == -1);
+    size_t remaining = fifo_writer_write(&g_fifo, frame, size, g_frames.generation);
+    assert(remaining > 0 && g_fifo.fd == -1);
     assert(now_ms() - start < (cancel ? 600 : 1400));
     if (cancel) pthread_join(cancellation, NULL);
     free(frame);
@@ -265,9 +278,9 @@ static void test_stalled_fifo(int cancel) {
     assert(mkfifo(path, 0600) == 0);
     int reader = open(path, O_RDONLY | O_NONBLOCK);
     assert(reader >= 0);
-    g_fifo_path = path;
-    g_capture_fifo_fd = try_open_fifo();
-    assert(g_capture_fifo_fd >= 0);
+    g_fifo.path = path;
+    g_fifo.fd = fifo_writer_open(&g_fifo);
+    assert(g_fifo.fd >= 0);
     pid_t child = fork();
     assert(child >= 0);
     if (child == 0) {
@@ -283,8 +296,8 @@ static void test_stalled_fifo(int cancel) {
     }
     if (!finished) { kill(child, SIGKILL); waitpid(child, &status, 0); }
     close(reader);
-    close(g_capture_fifo_fd);
-    g_capture_fifo_fd = -1;
+    close(g_fifo.fd);
+    g_fifo.fd = -1;
     unlink(path);
     rmdir(root);
     assert(finished && WIFEXITED(status) && WEXITSTATUS(status) == 0 && "T113: stalled FIFO ignores deadline/cancellation");
@@ -296,15 +309,15 @@ static void test_helper_options(void) {
     helper_options_t options = parse_helper_options((int)(sizeof(args) / sizeof(args[0])), args);
     assert(strcmp(options.edid_path, "sample.edid") == 0);
     assert(strcmp(options.fifo_path, "/tmp/sample.fifo") == 0);
-    assert(g_fps == 60);
-    assert(g_scale == 4);
+    assert(g_capture.fps == 60);
+    assert(g_capture.scale == 4);
     assert(g_pin_card == 4);
     char *low[] = {"helper", "--scale", "0", "--fps", "0", "--card", "-1"};
     options = parse_helper_options((int)(sizeof(low) / sizeof(low[0])), low);
     assert(options.edid_path == NULL);
     assert(options.fifo_path == NULL);
-    assert(g_scale == 1);
-    assert(g_fps == 60);
+    assert(g_capture.scale == 1);
+    assert(g_capture.fps == 60);
     assert(g_pin_card == -1);
     char *preferred[] = {"helper", "--preferred-card", "7"};
     parse_helper_options((int)(sizeof(preferred) / sizeof(preferred[0])), preferred);
@@ -366,28 +379,28 @@ static void assert_small_scaled_modes(int scale) {
         for (int axis = 0; axis < 2; axis++) {
             g_running = 1;
             struct evdi_mode mode = {axis ? 2 * scale : small, axis ? small : 2 * scale, 60, 32, 0x34325258};
-            on_mode_changed(mode, NULL);
-            assert(!g_have_mode && !g_buffers_ready && !g_running && "T082: undersized mode reaches conversion");
+            on_mode_changed(mode, &g_capture);
+            assert(!g_capture.have_mode && !g_frames.buffers_ready && !g_running && "T082: undersized mode reaches conversion");
         }
     }
 }
 
 static void test_t082(void) {
-    pthread_cond_init(&g_frame_ready, NULL);
+    pthread_cond_init(&g_frames.ready, NULL);
     for (int scale = 1; scale <= 4; scale++) {
-        g_scale = scale;
+        g_capture.scale = scale;
         assert_small_scaled_modes(scale);
         g_running = 1;
         struct evdi_mode mode = {2 * scale, 2 * scale, 60, 32, 0x34325258};
-        on_mode_changed(mode, NULL);
-        assert(g_out_w == 2 && g_out_h == 2 && g_have_mode);
+        on_mode_changed(mode, &g_capture);
+        assert(g_frames.width == 2 && g_frames.height == 2 && g_capture.have_mode);
         test_conversion(2 * scale, 2 * scale, scale);
         test_conversion(2 * scale + 1, 2 * scale + 1, scale);
     }
-    free(g_framebuffer);
-    free(g_fill); free(g_latest); free(g_write);
-    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
-    pthread_cond_destroy(&g_frame_ready);
+    free(g_capture.framebuffer);
+    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
+    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    pthread_cond_destroy(&g_frames.ready);
 }
 
 static void test_t113(void) {
@@ -402,8 +415,8 @@ static void test_t083(void) {
     read_test_frame(pipefd[0], 8, 8);
     for (int i = 0; i < 50; i++) {
         struct evdi_mode mode = {8 + (i % 2) * 2, 8, 60, 32, 0x34325258};
-        on_mode_changed(mode, NULL);
-        publish_frame();
+        on_mode_changed(mode, &g_capture);
+        publish_frame(&g_capture);
         read_test_frame(pipefd[0], mode.width, mode.height);
     }
     signal(SIGTERM, handle_signal);
@@ -419,7 +432,7 @@ static void test_t081(void) {
         usleep(50000); /* several unchanged frames, before the idle keepalive */
         long long start = now_ms();
         struct evdi_mode mode = {10 + i * 2, 8, 60, 32, 0x34325258};
-        on_mode_changed(mode, NULL);
+        on_mode_changed(mode, &g_capture);
         assert(now_ms() - start < 250 && "T081: idle writer falsely retains buffer ownership");
         read_test_frame(pipefd[0], mode.width, mode.height);
     }
@@ -437,36 +450,36 @@ static void test_t012(void) {
 static void test_t013(void) {
     /* TODO T013: announce the packed size on initial and changed modes,
      * without emitting a false change for repeated compositor events. */
-    pthread_cond_init(&g_frame_ready, NULL);
-    g_scale = 2;
+    pthread_cond_init(&g_frames.ready, NULL);
+    g_capture.scale = 2;
     struct evdi_mode mode = {13, 9, 60, 32, 0x34325258};
-    on_mode_changed(mode, NULL);
-    on_mode_changed(mode, NULL);
+    on_mode_changed(mode, &g_capture);
+    on_mode_changed(mode, &g_capture);
     mode.width = 20;
     mode.height = 12;
-    on_mode_changed(mode, NULL);
-    free(g_framebuffer);
-    free(g_fill);
-    free(g_latest);
-    free(g_write);
-    free(g_dirty_fill);
-    free(g_dirty_latest);
-    free(g_dirty_write);
-    pthread_cond_destroy(&g_frame_ready);
+    on_mode_changed(mode, &g_capture);
+    free(g_capture.framebuffer);
+    free(g_frames.fill);
+    free(g_frames.latest);
+    free(g_frames.write);
+    free(g_frames.dirty_fill);
+    free(g_frames.dirty_latest);
+    free(g_frames.dirty_write);
+    pthread_cond_destroy(&g_frames.ready);
 }
 
 static void stop_test_pool(void) {
-    pthread_mutex_lock(&g_pool_mtx);
-    g_pool_shutdown = 1;
-    pthread_cond_broadcast(&g_pool_go);
-    pthread_mutex_unlock(&g_pool_mtx);
-    for (int i = 1; i < g_nthreads; i++) pthread_join(g_pool[i], NULL);
+    pthread_mutex_lock(&g_conversion.mutex);
+    g_conversion.shutdown = 1;
+    pthread_cond_broadcast(&g_conversion.ready);
+    pthread_mutex_unlock(&g_conversion.mutex);
+    for (int i = 1; i < g_conversion.count; i++) pthread_join(g_conversion.threads[i], NULL);
 }
 
 static void test_t047(void) {
     fail_worker = 2;
     conv_pool_init();
-    assert(g_nthreads == 2 && "T047: count only successfully created workers");
+    assert(g_conversion.count == 2 && "T047: count only successfully created workers");
     test_conversion(8, 8, 1);
     stop_test_pool();
 }
@@ -474,12 +487,12 @@ static void test_t047(void) {
 /* Dispatch the previous valid jobs at a chosen epoch and wait until each
  * worker has observed it before exercising the next production dispatch. */
 static void seed_test_pool_epoch(unsigned int epoch) {
-    pthread_mutex_lock(&g_pool_mtx);
-    g_pool_gen = epoch;
-    g_pool_active = g_nthreads - 1;
-    pthread_cond_broadcast(&g_pool_go);
-    while (g_pool_active > 0) pthread_cond_wait(&g_pool_done, &g_pool_mtx);
-    pthread_mutex_unlock(&g_pool_mtx);
+    pthread_mutex_lock(&g_conversion.mutex);
+    g_conversion.generation = epoch;
+    g_conversion.active = g_conversion.count - 1;
+    pthread_cond_broadcast(&g_conversion.ready);
+    while (g_conversion.active > 0) pthread_cond_wait(&g_conversion.done, &g_conversion.mutex);
+    pthread_mutex_unlock(&g_conversion.mutex);
 }
 
 static void test_t272(void) {
@@ -487,20 +500,20 @@ static void test_t272(void) {
     assert(pipe(pipefd) == 0);
     assert(close(pipefd[1]) == 0);
     struct evdi_device_context handle = {.fd = pipefd[0]};
-    g_have_mode = 0;
+    g_capture.have_mode = 0;
     g_running = 1;
     alarm(2); /* T272: a persistent hangup must not spin forever. */
-    run_event_loop(&handle);
+    capture_run(&g_capture, &handle);
     alarm(0);
     assert(close(pipefd[0]) == 0);
     alarm(2); /* T272: POLLNVAL must retire the loop too. */
-    run_event_loop(&handle);
+    capture_run(&g_capture, &handle);
     alarm(0);
     assert(pipe(pipefd) == 0);
     assert(close(pipefd[0]) == 0);
     handle.fd = pipefd[1];
     alarm(2); /* T272: a pipe writer without readers reports POLLERR. */
-    run_event_loop(&handle);
+    capture_run(&g_capture, &handle);
     alarm(0);
     assert(close(pipefd[1]) == 0);
 }
@@ -512,11 +525,11 @@ static void check_t315_exit_status(int condition, int expected) {
     evdi_handle handle = malloc(sizeof(*handle));
     assert(handle);
     handle->fd = pipefd[0];
-    g_handle = handle;
+    g_capture.handle = handle;
     initialize_helper_runtime();
     if (condition == 1) {
         struct evdi_mode mode = {.bits_per_pixel = 16};
-        assert(!validate_frame_format(mode));
+        assert(!validate_frame_format(&g_capture, mode));
     } else if (condition == 2) {
         handle_signal(SIGTERM);
     }
@@ -524,7 +537,7 @@ static void check_t315_exit_status(int condition, int expected) {
     int status = run_capture(handle, 0);
     alarm(0);
     assert(mock_disconnect_calls == 1 && "T315: every exit must disconnect");
-    assert(g_handle == EVDI_INVALID_HANDLE && "T315: every exit must close the device");
+    assert(g_capture.handle == EVDI_INVALID_HANDLE && "T315: every exit must close the device");
     assert(status == expected && "T315: fatal errors must not report successful shutdown");
 }
 
@@ -539,17 +552,17 @@ static void test_t324(void) {
     read_test_frame(pipefd[0], 8, 8);
     pause_writer = 1;
     while (!writer_paused) {
-        publish_frame();
+        publish_frame(&g_capture);
         usleep(1000);
     }
     /* Begin mode retirement while the writer is paused, without timing out. */
-    pthread_mutex_lock(&g_swap_mutex);
-    g_buffers_ready = 0;
-    g_latest_valid = 0;
-    g_mode_generation++;
-    pthread_mutex_unlock(&g_swap_mutex);
+    pthread_mutex_lock(&g_frames.mutex);
+    g_frames.buffers_ready = 0;
+    g_frames.latest_valid = 0;
+    g_frames.generation++;
+    pthread_mutex_unlock(&g_frames.mutex);
     pause_writer = 0;
-    while (g_writer_busy) usleep(1000);
+    while (g_frames.writer_busy) usleep(1000);
     unsigned char bytes[96];
     ssize_t received = read(pipefd[0], bytes, sizeof(bytes));
     int running = g_running;
@@ -566,15 +579,15 @@ static void test_t274(void) {
     read_test_frame(pipefd[0], 8, 8);
     pause_writer = 1;
     while (!writer_paused) {
-        publish_frame();
+        publish_frame(&g_capture);
         usleep(1000);
     }
     struct evdi_mode smaller = {4, 4, 60, 32, 0x34325258};
     long long started = now_ms();
-    on_mode_changed(smaller, NULL);
+    on_mode_changed(smaller, &g_capture);
     assert(now_ms() - started < 2500 && "T274: mode retirement must remain bounded");
     pause_writer = 0;
-    while (g_writer_busy) usleep(1000);
+    while (g_frames.writer_busy) usleep(1000);
     unsigned char bytes[96];
     assert(read(pipefd[0], bytes, sizeof(bytes)) == 0 &&
            "T274: retired writer must close without sending stale frame bytes");
@@ -583,21 +596,21 @@ static void test_t274(void) {
 }
 
 static void check_allocation_failure(int allocation, int changed_mode) {
-    pthread_cond_init(&g_frame_ready, NULL);
+    pthread_cond_init(&g_frames.ready, NULL);
     struct evdi_mode mode = {8, 8, 60, 32, 0x34325258};
     if (changed_mode) {
-        on_mode_changed(mode, NULL);
-        assert(g_have_mode && g_buffers_ready && g_buffer_registered);
+        on_mode_changed(mode, &g_capture);
+        assert(g_capture.have_mode && g_frames.buffers_ready && g_capture.buffer_registered);
         mode.width = 10;
     }
     allocation_countdown = allocation;
-    on_mode_changed(mode, NULL);
+    on_mode_changed(mode, &g_capture);
     assert(!g_running && "T279: failed allocation must allow helper-exit recovery");
-    assert(!g_have_mode && !g_buffers_ready && !g_buffer_registered);
-    free(g_framebuffer);
-    free(g_fill); free(g_latest); free(g_write);
-    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
-    pthread_cond_destroy(&g_frame_ready);
+    assert(!g_capture.have_mode && !g_frames.buffers_ready && !g_capture.buffer_registered);
+    free(g_capture.framebuffer);
+    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
+    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    pthread_cond_destroy(&g_frames.ready);
 }
 
 static void test_t279(void) {
@@ -621,18 +634,18 @@ static void test_t254(void) {
     alarm(5); /* A missed dispatch must fail instead of hanging the suite. */
     unsigned char source[8 * 8 * 4] = {0};
     unsigned char destination[8 * 8 * 3 / 2];
-    g_mode_w = g_mode_h = g_out_w = g_out_h = 8;
-    g_mode_stride = 8 * 4;
-    g_scale = 1;
+    g_capture.mode_w = g_capture.mode_h = g_frames.width = g_frames.height = 8;
+    g_capture.mode_stride = 8 * 4;
+    g_capture.scale = 1;
     conv_pool_init();
-    assert(g_nthreads > 1);
-    bgra_to_nv12(source, destination, NULL);
+    assert(g_conversion.count > 1);
+    bgra_to_nv12(&g_capture, source, destination, NULL);
     seed_test_pool_epoch(INT_MAX);
-    bgra_to_nv12(source, destination, NULL); /* UBSan catches signed overflow. */
+    bgra_to_nv12(&g_capture, source, destination, NULL); /* UBSan catches signed overflow. */
     seed_test_pool_epoch(UINT_MAX);
     memset(destination, 0, sizeof(destination));
-    bgra_to_nv12(source, destination, NULL);
-    assert(g_pool_gen == 0 && "T254: generation wraps to zero");
+    bgra_to_nv12(&g_capture, source, destination, NULL);
+    assert(g_conversion.generation == 0 && "T254: generation wraps to zero");
     for (size_t i = 0; i < sizeof(destination); i++)
         assert(destination[i] == (i < 64 ? 16 : 128) && "T254: all workers finish the wrapped frame");
     stop_test_pool();
@@ -640,23 +653,23 @@ static void test_t254(void) {
 }
 
 static void test_t048(void) {
-    pthread_cond_init(&g_frame_ready, NULL);
+    pthread_cond_init(&g_frames.ready, NULL);
     struct evdi_mode mode = {8, 8, 60, 16, 0x36314752};
-    on_mode_changed(mode, NULL);
-    assert(!g_have_mode && !g_buffers_ready && "T048: reject non-BGRA data before conversion");
+    on_mode_changed(mode, &g_capture);
+    assert(!g_capture.have_mode && !g_frames.buffers_ready && "T048: reject non-BGRA data before conversion");
     mode.bits_per_pixel = 32;
     mode.pixel_format = 0x34324258; /* XBGR8888 is not XRGB8888. */
-    on_mode_changed(mode, NULL);
-    assert(!g_have_mode && !g_buffers_ready);
+    on_mode_changed(mode, &g_capture);
+    assert(!g_capture.have_mode && !g_frames.buffers_ready);
 }
 
 static void test_t049(void) {
     int pipefd[2];
     assert(pipe2(pipefd, O_NONBLOCK) == 0);
-    g_capture_fifo_fd = pipefd[1];
+    g_fifo.fd = pipefd[1];
     stall_once = 1;
     const unsigned char frame[] = {1, 2, 3, 4};
-    assert(write_fifo_frame(frame, sizeof(frame), g_mode_generation) == 0 && "T049: transient poll timeout lost frame");
+    assert(fifo_writer_write(&g_fifo, frame, sizeof(frame), g_frames.generation) == 0 && "T049: transient poll timeout lost frame");
     unsigned char received[4];
     assert(read(pipefd[0], received, sizeof(received)) == sizeof(received));
     assert(memcmp(frame, received, sizeof(frame)) == 0);
@@ -666,15 +679,15 @@ static void test_t049(void) {
 
 static void test_t050(void) {
     pthread_t thread;
-    pthread_mutex_lock(&g_swap_mutex);
+    pthread_mutex_lock(&g_frames.mutex);
     assert(pthread_create(&thread, NULL, sample_latency, NULL) == 0);
     while (!atomic_load(&sample_started)) usleep(1000);
     usleep(20000);
     int finished_while_locked = atomic_load(&sample_finished);
-    pthread_mutex_unlock(&g_swap_mutex);
+    pthread_mutex_unlock(&g_frames.mutex);
     pthread_join(thread, NULL);
     assert(!finished_while_locked && "T050: writer bypassed the statistics lock");
-    assert(g_lat_count == 1);
+    assert(g_frames.latency_count == 1);
 }
 
 static void test_t051(void) {
@@ -706,10 +719,10 @@ static void test_t052(void) {
 }
 
 static void t293_uniform_color(int red, int green, int blue, int scale) {
-    g_mode_w = g_mode_h = 16;
-    g_mode_stride = 80; /* exercise padded source rows */
-    g_scale = scale;
-    g_out_w = g_out_h = (16 / scale) & ~1;
+    g_capture.mode_w = g_capture.mode_h = 16;
+    g_capture.mode_stride = 80; /* exercise padded source rows */
+    g_capture.scale = scale;
+    g_frames.width = g_frames.height = (16 / scale) & ~1;
     unsigned char source[16 * 80] = {0}, dest[16 * 16 * 3 / 2];
     for (int y = 0; y < 16; y++) {
         for (int x = 0; x < 16; x++) {
@@ -717,14 +730,14 @@ static void t293_uniform_color(int red, int green, int blue, int scale) {
             pixel[0] = blue; pixel[1] = green; pixel[2] = red; pixel[3] = 255;
         }
     }
-    bgra_to_nv12(source, dest, NULL);
+    bgra_to_nv12(&g_capture, source, dest, NULL);
     /* Independent equations from ITU-R BT.709-6, section 3.2–3.4.
        Input RGB is full-range 8-bit; output Y/Cb/Cr is limited-range. */
     const double luma = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0;
     const int expected_y = (int)(16 + 219 * luma + 0.5);
     const int expected_u = (int)(128 + 224 * (blue / 255.0 - luma) / 1.8556 + 0.5);
     const int expected_v = (int)(128 + 224 * (red / 255.0 - luma) / 1.5748 + 0.5);
-    const int pixels = g_out_w * g_out_h;
+    const int pixels = g_frames.width * g_frames.height;
     for (int i = 0; i < pixels; i++) assert(abs(dest[i] - expected_y) <= 1);
     const int tolerance = (red == green && green == blue) ? 0 : 1;
     for (int i = pixels; i < pixels * 3 / 2; i += 2) {
@@ -743,19 +756,19 @@ static void test_t293(void) {
 }
 
 static void test_t294(void) {
-    g_have_mode = 1;
+    g_capture.have_mode = 1;
     for (long long elapsed = 249; elapsed <= 251; elapsed++) {
         mock_grab_calls = 0;
-        g_update_pending = 1;
-        g_last_request_ms = 1000;
+        g_capture.update_pending = 1;
+        g_capture.last_request_ms = 1000;
         mock_monotonic_ms = 1000 + elapsed;
         long long last_fallback = mock_monotonic_ms;
         const int expired = elapsed >= 250;
-        assert(capture_poll_timeout(16) == (expired ? 0 : 1));
-        recover_capture_if_stalled(mock_monotonic_ms, &last_fallback);
-        assert(g_update_pending == !expired && "T294: zero-timeout polling cannot retain an expired request");
+        assert(capture_poll_timeout(&g_capture, 16) == (expired ? 0 : 1));
+        recover_capture_if_stalled(&g_capture, mock_monotonic_ms, &last_fallback);
+        assert(g_capture.update_pending == !expired && "T294: zero-timeout polling cannot retain an expired request");
         assert(mock_grab_calls == expired);
-        recover_capture_if_stalled(mock_monotonic_ms, &last_fallback);
+        recover_capture_if_stalled(&g_capture, mock_monotonic_ms, &last_fallback);
         assert(mock_grab_calls == expired && "T294: watchdog must not grab twice");
     }
     mock_monotonic_ms = -1;
@@ -770,23 +783,23 @@ static void test_t290(void) {
     };
     for (size_t i = 0; i < sizeof(uptimes) / sizeof(uptimes[0]); i++) {
         mock_monotonic_ms = uptimes[i];
-        g_have_mode = 1;
-        g_update_pending = 0;
-        g_last_request_ms = 0; /* on_update_ready requests an immediate capture */
-        assert(capture_poll_timeout(16) == 0 && "T290: overdue pipeline capture gained a poll delay");
-        g_last_request_ms = mock_monotonic_ms;
-        assert(capture_poll_timeout(16) == 4);
-        g_last_request_ms = mock_monotonic_ms - 15;
-        assert(capture_poll_timeout(16) == 1);
-        g_last_request_ms = mock_monotonic_ms - 16;
-        assert(capture_poll_timeout(16) == 0);
-        g_update_pending = 1;
-        g_last_request_ms = mock_monotonic_ms - 100;
-        assert(capture_poll_timeout(16) == 150);
-        g_last_request_ms = mock_monotonic_ms - 251;
-        assert(capture_poll_timeout(16) == 0);
-        g_have_mode = 0;
-        assert(capture_poll_timeout(16) == 100);
+        g_capture.have_mode = 1;
+        g_capture.update_pending = 0;
+        g_capture.last_request_ms = 0; /* on_update_ready requests an immediate capture */
+        assert(capture_poll_timeout(&g_capture, 16) == 0 && "T290: overdue pipeline capture gained a poll delay");
+        g_capture.last_request_ms = mock_monotonic_ms;
+        assert(capture_poll_timeout(&g_capture, 16) == 4);
+        g_capture.last_request_ms = mock_monotonic_ms - 15;
+        assert(capture_poll_timeout(&g_capture, 16) == 1);
+        g_capture.last_request_ms = mock_monotonic_ms - 16;
+        assert(capture_poll_timeout(&g_capture, 16) == 0);
+        g_capture.update_pending = 1;
+        g_capture.last_request_ms = mock_monotonic_ms - 100;
+        assert(capture_poll_timeout(&g_capture, 16) == 150);
+        g_capture.last_request_ms = mock_monotonic_ms - 251;
+        assert(capture_poll_timeout(&g_capture, 16) == 0);
+        g_capture.have_mode = 0;
+        assert(capture_poll_timeout(&g_capture, 16) == 100);
     }
     mock_monotonic_ms = -1;
 }
@@ -878,8 +891,8 @@ static void t343_regular_destination(void) {
     int file = mkstemp(path);
     assert(file >= 0);
     assert(write(file, original, sizeof(original)) == sizeof(original));
-    g_fifo_path = path;
-    int writer = try_open_fifo();
+    g_fifo.path = path;
+    int writer = fifo_writer_open(&g_fifo);
     if (writer >= 0) {
         assert(write(writer, "frame", 5) == 5);
         close(writer);
@@ -899,19 +912,19 @@ static void t343_fifo_destination(void) {
     snprintf(path, sizeof(path), "%s/capture pipe", root);
     snprintf(link, sizeof(link), "%s/linked pipe", root);
     assert(mkfifo(path, 0600) == 0);
-    g_fifo_path = path;
-    assert(try_open_fifo() < 0 && "T343: FIFO without reader should fail promptly");
+    g_fifo.path = path;
+    assert(fifo_writer_open(&g_fifo) < 0 && "T343: FIFO without reader should fail promptly");
     int reader = open(path, O_RDONLY | O_NONBLOCK);
     assert(reader >= 0);
-    int writer = try_open_fifo();
+    int writer = fifo_writer_open(&g_fifo);
     assert(writer >= 0);
     assert(write(writer, "frame", 5) == 5);
     char actual[5];
     assert(read(reader, actual, sizeof(actual)) == sizeof(actual));
     assert(memcmp(actual, "frame", sizeof(actual)) == 0);
     assert(symlink("capture pipe", link) == 0);
-    g_fifo_path = link;
-    assert(try_open_fifo() < 0 && "T343: symlink destination must remain rejected");
+    g_fifo.path = link;
+    assert(fifo_writer_open(&g_fifo) < 0 && "T343: symlink destination must remain rejected");
     close(writer);
     close(reader);
     assert(unlink(link) == 0);
@@ -949,33 +962,33 @@ static void test_t226(void) {
     assert(mkfifo(path, 0600) == 0);
     int old_reader = open(path, O_RDONLY | O_NONBLOCK);
     assert(old_reader >= 0);
-    g_fifo_path = path;
-    assert(ensure_writer_fifo());
-    size_t capacity = (size_t)fcntl(g_capture_fifo_fd, F_GETPIPE_SZ);
+    g_fifo.path = path;
+    assert(ensure_writer_fifo(&g_writer));
+    size_t capacity = (size_t)fcntl(g_fifo.fd, F_GETPIPE_SZ);
     size_t size = capacity + 64;
     unsigned char *frame = malloc(size);
     assert(frame);
     memset(frame, 48, size);
-    assert(write_fifo_frame(frame, size, g_mode_generation) == 64);
-    assert(!ensure_writer_fifo() && "T226: immediate reopen can join two frame generations");
+    assert(fifo_writer_write(&g_fifo, frame, size, g_frames.generation) == 64);
+    assert(!ensure_writer_fifo(&g_writer) && "T226: immediate reopen can join two frame generations");
     unsigned char *old = malloc(size);
     assert(old);
     assert(read(old_reader, old, size) == (ssize_t)capacity);
     assert(read(old_reader, old, size) == -1 && errno == EAGAIN &&
            "T226: premature EOF lets encoder exit race the reset announcement");
-    assert(!ensure_writer_fifo() && "T226: draining the pipe does not authorize reuse");
+    assert(!ensure_writer_fifo(&g_writer) && "T226: draining the pipe does not authorize reuse");
     /* Allocate the replacement while the old inode still exists. */
     assert(mkfifo(fresh, 0600) == 0);
     assert(rename(fresh, path) == 0);
     int new_reader = open(path, O_RDONLY | O_NONBLOCK);
-    assert(new_reader >= 0 && ensure_writer_fifo());
+    assert(new_reader >= 0 && ensure_writer_fifo(&g_writer));
     memset(frame, 160, 64);
-    assert(write_fifo_frame(frame, 64, g_mode_generation) == 0);
+    assert(fifo_writer_write(&g_fifo, frame, 64, g_frames.generation) == 0);
     assert(read(new_reader, old, size) == 64);
     assert(memcmp(frame, old, 64) == 0);
     assert(read(old_reader, old, size) == 0 && "T226: old reader received replacement bytes");
-    close(old_reader); close(new_reader); close(g_capture_fifo_fd);
-    g_capture_fifo_fd = -1;
+    close(old_reader); close(new_reader); close(g_fifo.fd);
+    g_fifo.fd = -1;
     free(frame); free(old); unlink(path); rmdir(root);
 }
 
@@ -994,14 +1007,14 @@ static void t226_requests(const char *root, int *live, int *stale) {
     if (!*live && access(path, F_OK) == 0) {
         *live = 1;
         /* Exercise the same recovery announcement after encoding is active. */
-        retire_partial_fifo();
+        retire_partial_fifo(&g_fifo);
         t226_mark(root, "live");
     }
     snprintf(path, sizeof(path), "%s/request-stale", root);
     if (!*stale && access(path, F_OK) == 0) {
         *stale = 1;
-        printf("FIFO_RESET %ju %ju\n", (uintmax_t)g_retired_fifo_device,
-               (uintmax_t)g_retired_fifo_inode);
+        printf("FIFO_RESET %ju %ju\n", (uintmax_t)g_fifo.retired_device,
+               (uintmax_t)g_fifo.retired_inode);
         fflush(stdout);
         t226_mark(root, "stale");
     }
@@ -1011,34 +1024,34 @@ static void t226_requests(const char *root, int *live, int *stale) {
 static int t226_command(int argc, char **argv, const char *root) {
     helper_options_t options = parse_helper_options(argc, argv);
     assert(options.fifo_path);
-    g_fifo_path = options.fifo_path;
+    g_fifo.path = options.fifo_path;
     signal(SIGTERM, handle_signal);
     signal(SIGPIPE, SIG_IGN);
     alarm(20);
     t226_mark(root, "starts");
     printf("EVDI_CONNECTED card4294967295\nSTREAM_SIZE 1024 1024\n");
     fflush(stdout);
-    while (g_running && !ensure_writer_fifo()) {}
+    while (g_running && !ensure_writer_fifo(&g_writer)) {}
     size_t size = 1024 * 1024 * 3 / 2;
     unsigned char *frame = malloc(size);
     assert(frame);
     memset(frame, 48, 1024 * 1024);
     memset(frame + 1024 * 1024, 128, size - 1024 * 1024);
-    size_t remaining = write_fifo_frame(frame, size, g_mode_generation);
+    size_t remaining = fifo_writer_write(&g_fifo, frame, size, g_frames.generation);
     assert(remaining > 0 && remaining < size);
     /* Reopen before the old reader drains, the original corruption trigger. */
-    ensure_writer_fifo();
+    ensure_writer_fifo(&g_writer);
     t226_mark(root, "partial");
     memset(frame, 160, 1024 * 1024);
     int live = 0, stale = 0;
     while (g_running) {
         t226_requests(root, &live, &stale);
-        if (!ensure_writer_fifo()) continue;
-        write_fifo_frame(frame, size, g_mode_generation);
+        if (!ensure_writer_fifo(&g_writer)) continue;
+        fifo_writer_write(&g_fifo, frame, size, g_frames.generation);
         usleep(50000);
     }
     free(frame);
-    if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
+    if (g_fifo.fd >= 0) close(g_fifo.fd);
     return 0;
 }
 

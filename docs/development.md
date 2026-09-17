@@ -149,6 +149,12 @@ host/              Rust daemon
   src/vdisplay.rs    EVDI discovery via sysfs
   src/edid.rs        EDID generation for the virtual display
   evdi/              C helper: EVDI framebuffer capture → NV12 → FIFO
+    capture.c        EVDI callbacks, mode and framebuffer lifetime
+    conversion.c     per-context workers and native/scaled BT.709 kernels
+    frame_exchange.c triple buffers, dirty histories and generation-tagged leases
+    fifo_writer.c    nonblocking writes and damaged-inode quarantine
+    writer.c         lease ownership, pacing and idle keepalives
+    evdi_helper.c    options, device acquisition, signals and teardown
 common/            settings, commands, version parsing, runtime session ledger
 gui/               egui desktop app: status, settings, start/stop
 android/           Kotlin/Compose app: MediaCodec decoder, touch/pen capture

@@ -62,6 +62,29 @@ Android and Rust/C measurements and improvements; these are not benchmark result
 
 ## Processes and settings
 
+The C helper is assembled from independently linked modules. `capture.c` owns
+the EVDI mode, registered BGRA framebuffer and event callbacks; callbacks receive
+that capture context through EVDI's `user_data`. `conversion.c` owns a worker
+pool whose jobs borrow input, output and dirty masks until conversion completes.
+Native and scaled conversion retain their separate inner loops and BT.709 math.
+`frame_exchange.c` owns three NV12 buffers with matching dirty-row histories.
+Publishing swaps pointers; the writer claims an immutable lease containing the
+pointer, size, generation and capture timestamp. That lease spans pacing and
+every partial write. Mode retirement invalidates the generation and waits for
+the lease to end before reallocating; a stalled writer keeps the old allocations
+alive until shutdown joins it. The kernel buffer is unregistered before mode
+replacement frees it.
+
+`writer.c` owns FIFO pacing and idle keepalives. `fifo_writer.c` owns the active
+descriptor and quarantined inode/descriptor, retaining the same `FIFO_RESET`
+contract with the Rust supervisor. Shutdown joins the writer and conversion
+workers before freeing their buffers. These ownership interfaces retain mutexes,
+condition variables and atomics; moving state into contexts does not replace
+synchronization. `evdi_helper.c` remains the process composition root for options,
+device acquisition, signals and ordered teardown. The module test links the C
+files separately, while the existing injected-syscall harness retains the full
+helper regressions, including sanitizer checks and FIFO recovery integration.
+
 The Rust `capture` module supervises settings changes, startup cancellation,
 encoder sessions and retry ordering. `capture::helper` owns the helper child,
 FIFO creation, preferred-card identity and geometry announcements;
