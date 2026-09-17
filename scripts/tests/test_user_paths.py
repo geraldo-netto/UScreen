@@ -2,12 +2,64 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import unittest
 
 from test_build_output import fixture, write
 
 
 class UserPathsTest(unittest.TestCase):
+    def test_t231_unreachable_enabled_service_does_not_create_a_second_startup(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            env, (_, config) = self.environment(root, 'unset')
+            write(root, 'tools/systemctl', '#!/bin/sh\n[ "$2" = is-enabled ]\n', True)
+            source = (root / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
+            write(root, 'scripts/install-fixture.sh', source + '\ninstall_files\n')
+            result = subprocess.run(['bash', 'scripts/install-fixture.sh'], cwd=root, env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse((config / 'autostart/uscreen.desktop').exists())
+
+    def test_t231_failed_enable_is_not_reported_as_success(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            env, _ = self.environment(root, 'unset')
+            write(root, 'tools/systemctl', '#!/bin/sh\n[ "$2" != enable ]\n', True)
+            source = (root / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
+            write(root, 'scripts/install-fixture.sh', source + '\ninstall_files\n')
+            result = subprocess.run(['bash', 'scripts/install-fixture.sh'], cwd=root, env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('User service enabled', result.stdout)
+
+    def test_t231_installer_uses_desktop_autostart_without_a_user_manager(self):
+        for unavailable in [1, 127]:
+            for enable in [True, False]:
+                with self.subTest(unavailable=unavailable, enable=enable), tempfile.TemporaryDirectory() as temp:
+                    root = Path(temp)
+                    env, (_, config) = self.environment(root, 'absolute')
+                    write(root, 'tools/systemctl', f'#!/bin/sh\nexit {unavailable}\n', True)
+                    env['USCREEN_AUTOSTART_LAUNCH'] = str(root / 'launched')
+                    write(root, 'target/release/uscreen', '#!/bin/sh\nprintf "%s\\n" "$0" "$@" > "$USCREEN_AUTOSTART_LAUNCH"\n', True)
+                    source = (root / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
+                    write(root, 'scripts/install-fixture.sh', source + '\ninstall_files "$1"\n')
+                    result = subprocess.run(['bash', 'scripts/install-fixture.sh', 'enable' if enable else 'no-enable'],
+                                            cwd=root, env=env, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    entry = config / 'autostart/uscreen.desktop'
+                    self.assertEqual(entry.exists(), enable, 'T231: fallback did not preserve autostart choice')
+                    self.assertIn('desktop', result.stdout.lower(), 'T231: missing fallback explanation')
+                    if enable:
+                        self.verify_autostart_launch(entry, env)
+
+    def verify_autostart_launch(self, entry, env):
+        result = subprocess.run(['gio', 'launch', str(entry)], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        marker = Path(env['USCREEN_AUTOSTART_LAUNCH'])
+        deadline = time.monotonic() + 2
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual(marker.read_text().splitlines(), [str(Path(env['HOME']) / '.local/bin/uscreen'), 'start'])
+
     def test_t396_service_commands_follow_the_installed_binary_prefix(self):
         # Golden spellings follow systemd syntax: quote/C-escape arguments,
         # double specifiers, and suppress environment expansion with ':' prefix.

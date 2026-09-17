@@ -94,6 +94,12 @@ processes and concurrent diagnostic commands do not count as orphans. Its
 remediation uses validated UScreen stop/start operations rather than broad
 process-name signals.
 
+Autostart uses the loaded systemd user unit when available, with an XDG desktop
+entry as the fallback. The installer and GUI share the fallback template and
+test their generated commands against each other. The GUI persists the login
+preference separately from controlling the current daemon; direct start/stop
+still follows the same validated daemon-discovery rules.
+
 The Android foreground service follows the Activity's started lifecycle,
 including waiting for connection and graphics-tablet mode; it is not proof
 that video is currently being decoded. Window brightness and preferred display

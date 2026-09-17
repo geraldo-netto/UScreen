@@ -27,6 +27,18 @@ ls() { return 1; }
 
 
 class InstallerTest(unittest.TestCase):
+    def test_t231_other_init_systems_receive_boot_module_guidance(self):
+        output = self.run_installer(r'''
+sudo() { if [[ $1 == tee ]]; then command cat >/dev/null; fi; }
+[() {
+    if [[ $* == '! -d /run/systemd/system ]' ]]; then return 0;
+    else builtin [ "$@"; fi
+}
+configure_boot_modules
+''')
+        self.assertIn('Configure your init system to load evdi and uinput at boot', output)
+        self.assertIn('modules-load.d support is not guaranteed', output)
+
     def rpm_fixture(self, distro, version='9.4', fedora_macro='%fedora', immutable=False):
         stubs = r'''
 sudo() { printf 'packages: %s\n' "$*"; }

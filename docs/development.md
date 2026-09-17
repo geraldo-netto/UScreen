@@ -430,8 +430,9 @@ GUI under an isolated Xvfb and requires its window to open without a panic;
 this catches runtime-loaded libraries that `ldd` cannot inspect. The test
 installs only the display server and inspection tools in addition to the
 package's own dependencies. These checks do not validate EVDI kernel
-attachment or desktop/compositor compatibility. Service-manager/autostart
-limitations remain tracked separately in `TODO.md`.
+attachment or desktop/compositor compatibility. Separate autostart fixtures
+exercise systemd availability/failure, XDG fallback and actual desktop-entry
+launch using disposable programs; they do not exercise a real desktop login.
 
 To generate the same Linux package fixtures locally:
 

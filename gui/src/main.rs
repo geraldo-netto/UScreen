@@ -15,27 +15,28 @@ use uscreen_config::model::{
 };
 use uscreen_config::storage::{config_path, ConfigStore};
 
-/// Whether the systemd user service is enabled, i.e. whether plugging the
-/// cable in is enough on its own.
+/// Autostart can be a user service or an XDG desktop entry.
 fn autostart_enabled() -> bool {
-    Command::new("systemctl")
-        .args(["--user", "is-enabled", "uscreen.service"])
-        .output_bounded()
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "enabled")
-        .unwrap_or(false)
+    uscreen_config::linux::autostart::enabled()
 }
 
 fn set_autostart(on: bool) -> Result<(), String> {
-    let verb = if on { "enable" } else { "disable" };
-    let out = Command::new("systemctl")
-        .args(["--user", verb, "--now", "uscreen.service"])
-        .output_timeout(daemon_command_timeout(true))
-        .map_err(|e| format!("systemctl failed: {}", e))?;
-    if out.status.success() {
-        Ok(())
+    let bin = if on {
+        find_uscreen_bin().ok_or("uscreen binary not found")?
     } else {
-        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
-    }
+        PathBuf::new()
+    };
+    uscreen_config::linux::autostart::set_enabled(on, &bin).map_err(|e| e.to_string())?;
+    let result = if on {
+        if daemon::discover(Some(&pid_path())).is_empty() {
+            start_daemon()
+        } else {
+            Ok(())
+        }
+    } else {
+        stop_daemon()
+    };
+    result.map_err(|e| format!("Autostart preference saved; daemon action failed: {e}"))
 }
 
 #[derive(Default, Clone)]
@@ -206,17 +207,7 @@ fn service_managed() -> bool {
     if !daemon::discover(Some(&pid_path())).is_empty() {
         return false;
     }
-    Command::new("systemctl")
-        .args([
-            "--user",
-            "show",
-            "-p",
-            "LoadState",
-            "--value",
-            "uscreen.service",
-        ])
-        .output_bounded()
-        .is_ok_and(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "loaded")
+    uscreen_config::linux::autostart::systemd_available()
 }
 
 fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
@@ -1503,6 +1494,110 @@ mod tests {
 
     mod daemon_fixture {
         include!("../../testdata/daemon_process.rs");
+    }
+
+    #[test]
+    fn t231_autostart_supports_a_desktop_without_a_user_manager() {
+        if std::env::var_os("USCREEN_T231_CHILD").is_some() {
+            if std::env::var("USCREEN_T231_CHILD").unwrap() == "offline-enabled" {
+                let path = uscreen_config::linux::autostart::desktop_path();
+                let original = std::fs::read(&path).unwrap();
+                assert!(
+                    set_autostart(false).is_err(),
+                    "T231: unreachable enabled service was reported disabled"
+                );
+                assert!(autostart_enabled());
+                assert_eq!(std::fs::read(path).unwrap(), original);
+                return;
+            }
+            assert!(
+                autostart_enabled(),
+                "T231: enabled desktop autostart was ignored"
+            );
+            set_autostart(false).unwrap();
+            assert!(
+                !autostart_enabled(),
+                "T231: disabling autostart did not persist"
+            );
+            set_autostart(true).unwrap();
+            assert!(
+                autostart_enabled(),
+                "T231: enabling autostart did not persist"
+            );
+            let log = std::env::var_os("USCREEN_T231_ACTIONS").unwrap();
+            let deadline = std::time::Instant::now() + Duration::from_secs(2);
+            while std::fs::read_to_string(&log).unwrap_or_default() != "stop\nstart\n"
+                && std::time::Instant::now() < deadline
+            {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            assert_eq!(
+                std::fs::read_to_string(log).unwrap(),
+                "stop\nstart\n",
+                "T231: autostart toggle lost current-daemon actions"
+            );
+            return;
+        }
+        for mode in [
+            "unavailable",
+            "exit127",
+            "missing",
+            "managed",
+            "offline-enabled",
+        ] {
+            let sandbox = Sandbox::new();
+            let home = sandbox.0.join("home");
+            let config = sandbox.0.join("config space");
+            std::fs::create_dir_all(config.join("autostart")).unwrap();
+            std::fs::write(config.join("autostart/uscreen.desktop"),
+                "[Desktop Entry]\nType=Application\nName=UScreen\nExec=uscreen start\nHidden=false\n").unwrap();
+            install_t231_systemctl(&sandbox, mode);
+            sandbox.script(
+                "uscreen",
+                "printf '%s\\n' \"$*\" >> \"$USCREEN_T231_ACTIONS\"",
+            );
+            let output = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "tests::t231_autostart_supports_a_desktop_without_a_user_manager",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T231_CHILD", mode)
+                .env("HOME", &home)
+                .env("XDG_CONFIG_HOME", &config)
+                .env("USCREEN_T231_ACTIONS", sandbox.0.join("actions"))
+                .env("USCREEN_T231_STATE", sandbox.0.join("enabled"))
+                .env("PATH", &sandbox.0)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "T231 systemctl {mode}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
+
+    fn install_t231_systemctl(sandbox: &Sandbox, mode: &str) {
+        let script = match mode {
+            "missing" => return,
+            "exit127" => "exit 127",
+            "offline-enabled" => "if [ \"$2\" = is-enabled ]; then echo enabled; else exit 1; fi",
+            "managed" => {
+                r#"case "$2" in
+show) echo loaded ;;
+is-active) exit 1 ;;
+is-enabled) [ -f "$USCREEN_T231_STATE" ] && echo enabled ;;
+enable) : > "$USCREEN_T231_STATE" ;;
+disable) /bin/rm -f "$USCREEN_T231_STATE" ;;
+start|stop) printf '%s\n' "$2" >> "$USCREEN_T231_ACTIONS" ;;
+*) exit 99 ;;
+esac"#
+            }
+            _ => "exit 1",
+        };
+        sandbox.script("systemctl", script);
     }
 
     #[test]

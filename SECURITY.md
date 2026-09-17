@@ -67,9 +67,9 @@ for normal streaming.
 
 | Installed or changed state | Purpose |
 | --- | --- |
-| User-local binaries, desktop entry, icons and user service, or their package-managed counterparts | Application launch and optional desktop-session autostart |
+| User-local binaries, menu entry, icons, user service and optional `XDG_CONFIG_HOME/autostart/uscreen.desktop`, or their package-managed counterparts | Application launch and optional desktop-session autostart |
 | `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package) | Default `options evdi initial_device_count=2` at module load |
-| `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package) | Boot-time loading of `evdi` and `uinput` |
+| `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package) | Boot-module list for init systems that read `modules-load.d`; other init systems need their own configuration |
 | `/etc/udev/rules.d/60-uscreen-uinput.rules` or `/usr/lib/udev/rules.d/60-uscreen-uinput.rules` | Seat-user access to `/dev/uinput`; this permits synthetic input |
 | Distribution packages and, where the full script selects them, RPM Fusion configuration or rpm-ostree layers | Runtime/build dependencies |
 
@@ -99,11 +99,16 @@ installation method you used**:
 rm -f ~/.local/bin/uscreen ~/.local/bin/uscreen-gui ~/.local/bin/evdi_helper
 rm -f ~/.local/bin/libevdi.so.1 ~/.local/bin/libevdi.so.1.15.0
 rm -f ~/.config/systemd/user/uscreen.service
+rm -f ~/.config/autostart/uscreen.desktop
 rm -f ~/.local/share/applications/uscreen.desktop
 rm -f ~/.local/share/icons/hicolor/scalable/apps/uscreen.svg
 rm -f ~/.local/share/icons/hicolor/scalable/apps/uscreen-pen.svg
 systemctl --user daemon-reload
 ```
+
+Run the final reload command only when a systemd user manager is available.
+Remove the desktop-autostart entry after either installation method if the GUI
+or installer created it; native package removal does not remove user preferences.
 
 Adapt the binary path if you selected a custom `BIN_DIR`. The full script
 uses `$XDG_DATA_HOME/icons/hicolor/scalable/apps` for icons when that variable

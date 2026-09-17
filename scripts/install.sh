@@ -298,7 +298,7 @@ write_user_service() {
     done < "$SCRIPT_DIR/uscreen.service"
 }
 
-install_user_service() {
+write_installed_user_service() {
     mkdir -p "$CONFIG_BASE/systemd/user" || return
     local staged
     staged=$(mktemp "$CONFIG_BASE/systemd/user/.uscreen.XXXXXXXX") || return
@@ -308,13 +308,41 @@ install_user_service() {
         rm -f "$staged"
         return 1
     fi
-    systemctl --user daemon-reload 2>/dev/null || true
-    # Enabled, not started: the system setup below (evdi module, udev rule)
-    # has not run yet, so a start here would fail on a fresh machine. The
-    # closing message says how to start it now; it starts by itself from the
-    # next login on.
-    if [ "${1:-enable}" = enable ]; then
-        systemctl --user enable uscreen.service 2>/dev/null || true
+}
+
+install_desktop_autostart() {
+    if systemctl --user is-enabled --quiet uscreen.service 2>/dev/null; then
+        error "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart"
+        return 1
+    fi
+    local directory="$CONFIG_BASE/autostart" staged
+    mkdir -p "$directory" || return
+    staged=$(mktemp "$directory/.uscreen.XXXXXXXX") || return
+    if bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen-autostart.desktop" start > "$staged" &&
+       mv -f "$staged" "$directory/uscreen.desktop"; then
+        return 0
+    fi
+    rm -f "$staged"
+    return 1
+}
+
+install_user_service() {
+    write_installed_user_service || return
+    # A successful reload proves a usable user manager. No process is started
+    # here: module/uinput setup still follows in a full installation.
+    if systemctl --user daemon-reload 2>/dev/null; then
+        if [ "${1:-enable}" = enable ]; then
+            systemctl --user enable uscreen.service || return
+            rm -f "$CONFIG_BASE/autostart/uscreen.desktop" || return
+            info "User service enabled for desktop login; start now with: systemctl --user start uscreen"
+        else
+            info "User service installed; desktop autostart preference unchanged"
+        fi
+    elif [ "${1:-enable}" = enable ]; then
+        install_desktop_autostart || return
+        info "Desktop autostart enabled (no systemd user manager); start now with: uscreen start"
+    else
+        info "No systemd user manager; desktop autostart preference unchanged. Enable it in UScreen settings."
     fi
 }
 
@@ -335,6 +363,9 @@ configure_boot_modules() {
         || warn "Could not write /etc/modprobe.d/uscreen-evdi.conf"
     printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf >/dev/null \
         || warn "Could not write /etc/modules-load.d/uscreen.conf"
+    if [ ! -d /run/systemd/system ]; then
+        warn "Configure your init system to load evdi and uinput at boot; modules-load.d support is not guaranteed. See docs/installation.md."
+    fi
 }
 
 configure_uinput() {
@@ -344,8 +375,8 @@ configure_uinput() {
     if [ ! -e /etc/udev/rules.d/60-uscreen-uinput.rules ] && [ ! -e /usr/lib/udev/rules.d/60-uscreen-uinput.rules ]; then
         if [ -f "$PROJECT_DIR/packaging/60-uscreen-uinput.rules" ]; then
             sudo install -Dm644 "$PROJECT_DIR/packaging/60-uscreen-uinput.rules" /etc/udev/rules.d/60-uscreen-uinput.rules
-            sudo udevadm control --reload 2>/dev/null || true
-            sudo udevadm trigger --name-match=uinput 2>/dev/null || true
+            sudo udevadm control --reload 2>/dev/null || warn "Reload the uinput rule with your device manager"
+            sudo udevadm trigger --name-match=uinput 2>/dev/null || warn "Activate the uinput permissions with your device manager"
         else
             warn "packaging/60-uscreen-uinput.rules not found — /dev/uinput may stay root-only"
         fi
@@ -357,7 +388,7 @@ activate_evdi() {
 }
 
 system_setup() {
-    info "System setup (needs sudo): EVDI device at every boot"
+    info "System setup (needs sudo): EVDI module and input permissions"
     configure_boot_modules
     configure_uinput
     activate_evdi
@@ -388,7 +419,6 @@ main() {
     system_setup
     echo ""
     info "Done! Launch 'UScreen' from your app menu (or run: uscreen-gui)"
-    info "The daemon starts with your next login; to start it now: systemctl --user start uscreen"
     info "Install the APK on your tablet, enable USB debugging, plug in — that's it."
     check_path
 }

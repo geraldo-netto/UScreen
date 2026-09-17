@@ -68,8 +68,9 @@ or produced from the checkout you intend to install:
 | `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
 
 On a systemd desktop, enable/start the installed service with
-`systemctl --user enable --now uscreen`. The full installer attempts to enable
-it, while `make install` only installs/reloads it. Read
+`systemctl --user enable --now uscreen`. The full installer enables autostart
+through a user service or an XDG desktop entry; `make install` preserves that
+preference. The GUI can toggle either route. Read
 [installation details](docs/installation.md) first: full installer/native
 package hooks can reload EVDI and disrupt an active display session (T269).
 

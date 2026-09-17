@@ -93,13 +93,32 @@ After a native package installation, on a desktop with a systemd user manager:
 systemctl --user enable --now uscreen
 ```
 
-The full tarball/source installer attempts to enable the service, but does
-not start it. Start it with `systemctl --user start uscreen`. `make install`
-only installs/reloads the user unit; enable/start it explicitly. Autostart
-also depends on the desktop activating `graphical-session.target`; service-manager support remains limited
-(T231).
-Without a user service manager, `uscreen start` runs a foreground session;
-arrange autostart through your desktop separately if needed.
+The full tarball/source installer enables the user service when it can reach
+the user manager, and otherwise creates an XDG desktop autostart entry. It
+reports the selected route and does not start the daemon during installation.
+`make install` installs user files while preserving the autostart preference.
+The GUI's **Start UScreen with the desktop** setting enables/disables the
+available route and starts/stops the current daemon.
+
+Systemd autostart depends on the desktop activating `graphical-session.target`.
+The fallback uses `XDG_CONFIG_HOME/autostart/uscreen.desktop` (default
+`~/.config/autostart/uscreen.desktop`) on desktops implementing the
+[XDG autostart specification](https://specifications.freedesktop.org/autostart/latest/).
+It runs a direct daemon without service restart supervision. `uscreen start`
+also runs a foreground session from a terminal. Enabling the systemd route
+removes UScreen's fallback entry to avoid duplicate startup.
+If systemctl still reports an enabled unit while its manager is unreachable,
+autostart changes report an error; restore the user manager before switching
+routes or disabling that unit.
+
+Autostart does not provide kernel modules or input permissions. On another
+init system, configure `evdi` and `uinput` to load at boot; do not assume it
+reads `/etc/modules-load.d`. For example, OpenRC supplies a `modules` setting
+in [`/etc/conf.d/modules`](https://github.com/OpenRC/openrc/blob/master/conf.d/modules);
+add these modules to the existing list using your distribution's service setup.
+The installer writes modprobe options and a udev rule. A device manager without
+udev-compatible rules needs its own `/dev/uinput` access configuration; verify
+module availability and permissions with `uscreen doctor` before streaming.
 
 Both user installers share the same paths: launchers and icons go under
 `XDG_DATA_HOME` (default `~/.local/share`), and the user unit goes under

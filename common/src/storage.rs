@@ -3,14 +3,17 @@ use crate::model::{slot_ports, FileConfig};
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-pub fn config_path() -> PathBuf {
-    let base = std::env::var_os("XDG_CONFIG_HOME")
+pub fn config_home() -> PathBuf {
+    std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
         .unwrap_or_else(|| {
             PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
-        });
-    base.join("uscreen/config.toml")
+        })
+}
+
+pub fn config_path() -> PathBuf {
+    config_home().join("uscreen/config.toml")
 }
 
 /// A filesystem adapter with an explicit location, shared by UI and daemon

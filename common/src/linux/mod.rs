@@ -1,4 +1,5 @@
 //! Linux process and runtime adapters.
+pub mod autostart;
 pub mod cli;
 pub mod daemon;
 pub mod processes;
