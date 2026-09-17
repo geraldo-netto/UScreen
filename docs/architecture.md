@@ -169,3 +169,14 @@ Existing runtime-directory validation is incomplete (T252). USB carries the
 stream over the cable; Wi-Fi setup opens the tablet's adb TCP listener and
 carries the stream over that connection. See [SECURITY.md](../SECURITY.md) for
 trust boundaries, update checks and uninstall behavior.
+
+### Keyboard restoration state
+
+KWin keyboard suppression requires a valid restore mode (0, 1 or 2). A saved
+mode from an interrupted run takes precedence over the current desktop value.
+New state is written and synchronized in a temporary file, published without
+replacing an existing backup, and followed by a directory sync before suppression.
+An empty, invalid, unreadable or nonregular `~/.local/share/uscreen/osk-restore`
+file leaves the live keyboard unchanged and is retained for manual repair.
+Failed D-Bus restoration retains valid state for retry. These rules also apply
+when the KWin mode interface is absent: UScreen leaves the keyboard unchanged.
