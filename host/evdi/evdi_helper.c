@@ -955,7 +955,7 @@ static void request_capture_if_due(evdi_handle handle, long long now, long reque
 static void recover_capture_if_stalled(long long now, long long *last_fallback_grab_ms) {
     /* Watchdog: if a request got lost (compositor hiccup), don't stay
        stuck waiting for update_ready forever. */
-    if (g_update_pending && (now - g_last_request_ms) > 250) {
+    if (g_update_pending && (now - g_last_request_ms) >= 250) {
         g_update_pending = 0;
         grab_now();
     }

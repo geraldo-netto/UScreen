@@ -38,6 +38,7 @@ static int stall_once = 0;
 static int add_result = 0;
 static int allocation_countdown = 0;
 static long long mock_monotonic_ms = -1;
+static int mock_grab_calls = -1;
 static int mock_clock_gettime(clockid_t clock, struct timespec *value) {
     if (clock == CLOCK_MONOTONIC && mock_monotonic_ms >= 0) {
         value->tv_sec = mock_monotonic_ms / 1000;
@@ -105,6 +106,11 @@ bool evdi_request_update(evdi_handle handle, int buffer) {
 }
 void evdi_grab_pixels(evdi_handle handle, struct evdi_rect *rects, int *count) {
     (void)handle; (void)rects; (void)count;
+    if (mock_grab_calls >= 0) {
+        mock_grab_calls++;
+        *count = 0;
+        return;
+    }
     assert(0 && "failed event channel must not grab pixels");
 }
 
@@ -652,6 +658,26 @@ static void test_t293(void) {
     }
 }
 
+static void test_t294(void) {
+    g_have_mode = 1;
+    for (long long elapsed = 249; elapsed <= 251; elapsed++) {
+        mock_grab_calls = 0;
+        g_update_pending = 1;
+        g_last_request_ms = 1000;
+        mock_monotonic_ms = 1000 + elapsed;
+        long long last_fallback = mock_monotonic_ms;
+        const int expired = elapsed >= 250;
+        assert(capture_poll_timeout(16) == (expired ? 0 : 1));
+        recover_capture_if_stalled(mock_monotonic_ms, &last_fallback);
+        assert(g_update_pending == !expired && "T294: zero-timeout polling cannot retain an expired request");
+        assert(mock_grab_calls == expired);
+        recover_capture_if_stalled(mock_monotonic_ms, &last_fallback);
+        assert(mock_grab_calls == expired && "T294: watchdog must not grab twice");
+    }
+    mock_monotonic_ms = -1;
+    mock_grab_calls = -1;
+}
+
 static void test_t290(void) {
     const long long uptimes[] = {
         1234, (long long)INT_MAX - 1, (long long)INT_MAX + 17,
@@ -684,6 +710,7 @@ static void test_t290(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T294", test_t294},
         {"T293", test_t293},
         {"T290", test_t290},
         {"T279", test_t279},

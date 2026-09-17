@@ -199,3 +199,8 @@ fn t290_capture_poll_deadlines_survive_long_uptimes() {
 fn t293_nv12_preserves_neutral_gray_and_bt709_colors() {
     Harness::build("T293").run("T293");
 }
+
+#[test]
+fn t294_capture_watchdog_recovers_at_poll_deadline() {
+    Harness::build("T294").run("T294");
+}
