@@ -43,6 +43,48 @@ fn repo() -> &'static Path {
 }
 
 #[test]
+fn t342_build_outputs_are_ignored_but_sources_are_visible() {
+    let sandbox = Sandbox::new("build-ignores");
+    sandbox.write(
+        ".gitignore",
+        &std::fs::read_to_string(repo().join(".gitignore")).unwrap(),
+    );
+    assert!(Command::new("git")
+        .arg("init")
+        .arg(&sandbox.0)
+        .output()
+        .unwrap()
+        .status
+        .success());
+    for tree in ["target", "target-deb12", "target-portability"] {
+        let path = sandbox.write(&format!("{tree}/release/uscreen"), "generated output");
+        assert!(
+            Command::new("git")
+                .args(["-c", "core.excludesFile=/dev/null"])
+                .args(["check-ignore", "-q"])
+                .arg(path)
+                .current_dir(&sandbox.0)
+                .status()
+                .unwrap()
+                .success(),
+            "build output in {tree} is visible to Git"
+        );
+    }
+    let source = sandbox.write("host/src/main.rs", "project source");
+    assert_eq!(
+        Command::new("git")
+            .args(["-c", "core.excludesFile=/dev/null"])
+            .args(["check-ignore", "-q"])
+            .arg(source)
+            .current_dir(&sandbox.0)
+            .status()
+            .unwrap()
+            .code(),
+        Some(1)
+    );
+}
+
+#[test]
 fn t034_ci_propagates_helper_build_failure_and_ships_helper() {
     let yaml = std::fs::read_to_string(repo().join(".github/workflows/build.yml")).unwrap();
     let step = yaml
