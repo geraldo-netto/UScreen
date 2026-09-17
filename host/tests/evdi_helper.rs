@@ -225,3 +225,8 @@ fn t340_unreadable_edid_never_acquires_a_display_device() {
         harness.run(&format!("T340-{case}"));
     }
 }
+
+#[test]
+fn t341_fifo_edid_fails_without_waiting_for_a_writer() {
+    Harness::build("T341").run("T341");
+}

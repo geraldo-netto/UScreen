@@ -1289,8 +1289,22 @@ static evdi_handle acquire_capture_device(int *index) {
     return handle;
 }
 
+static FILE *open_edid_file(const char *path) {
+    /* Do not wait for a FIFO writer before discovering it cannot be sought. */
+    int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0) return NULL;
+    struct stat info;
+    if (fstat(fd, &info) != 0 || !S_ISREG(info.st_mode)) {
+        close(fd);
+        return NULL;
+    }
+    FILE *file = fdopen(fd, "rb");
+    if (!file) close(fd);
+    return file;
+}
+
 static unsigned char *read_edid_file(const char *edid_path, long *size) {
-    FILE *f = fopen(edid_path, "rb");
+    FILE *f = open_edid_file(edid_path);
     if (!f) {
         fprintf(stderr, "[evdi-helper] Failed to open EDID file: %s\n", edid_path);
         return NULL;

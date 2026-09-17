@@ -815,9 +815,59 @@ static void test_t340_empty(void) { t340_startup_case(0); }
 static void test_t340_oversized(void) { t340_startup_case(32769); }
 static void test_t340_readable(void) { t340_startup_case(128); }
 
+static void t341_regular_edid(void) {
+    char root[] = "/tmp/uscreen-t341-regular-XXXXXX", path[4096], link[4096];
+    assert(mkdtemp(root));
+    snprintf(path, sizeof(path), "%s/custom edid.bin", root);
+    snprintf(link, sizeof(link), "%s/linked edid.bin", root);
+    unsigned char expected[128];
+    memset(expected, 0x5a, sizeof(expected));
+    int fd = open(path, O_CREAT | O_WRONLY, 0600);
+    assert(fd >= 0);
+    assert(write(fd, expected, sizeof(expected)) == sizeof(expected));
+    close(fd);
+    assert(symlink("custom edid.bin", link) == 0);
+    const char *inputs[] = {path, link};
+    for (int i = 0; i < 2; i++) {
+        long size = 0;
+        unsigned char *edid = read_edid_file(inputs[i], &size);
+        assert(edid && "T341: readable EDID or symlink rejected");
+        assert(size == sizeof(expected));
+        assert(memcmp(edid, expected, sizeof(expected)) == 0);
+        free(edid);
+    }
+    assert(unlink(link) == 0);
+    assert(unlink(path) == 0);
+    assert(rmdir(root) == 0);
+}
+
+static void test_t341(void) {
+    t341_regular_edid();
+    char root[] = "/tmp/uscreen-t341-XXXXXX", path[4096];
+    assert(mkdtemp(root));
+    snprintf(path, sizeof(path), "%s/edid", root);
+    assert(mkfifo(path, 0600) == 0);
+    pid_t reader = fork();
+    assert(reader >= 0);
+    if (reader == 0) {
+        alarm(2);
+        long size;
+        unsigned char *edid = read_edid_file(path, &size);
+        assert(edid == NULL && "T341: FIFO cannot supply seekable EDID input");
+        _exit(0);
+    }
+    int status;
+    assert(waitpid(reader, &status, 0) == reader);
+    assert(unlink(path) == 0);
+    assert(rmdir(root) == 0);
+    assert(WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
+           "T341: EDID reader blocked waiting for a FIFO writer");
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T341", test_t341},
         {"T340-missing", test_t340_missing},
         {"T340-directory", test_t340_directory},
         {"T340-empty", test_t340_empty},
