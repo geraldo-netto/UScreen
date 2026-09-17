@@ -21,7 +21,8 @@ it on every desktop or device.
    CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
    B-frames/lookahead are disabled on the low-latency paths. An optional
    in-process libavcodec encoder avoids the child process; it does not support
-   the `ten_bit` option.
+   `ten_bit`, and its VAAPI initialization is incomplete (T284). VAAPI needs
+   the default FFmpeg path until hardware-frame integration is implemented.
 4. **Keyframes and delivery.** The FFmpeg CLI requests an IDR each second of
    capture wall-clock time, including the five-fps idle floor. Actual recovery
    also waits for capture, encoding, packetization and transport. The software

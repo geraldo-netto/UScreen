@@ -51,7 +51,7 @@
     "Graphics-tablet mode without a streamed-video path",
     "NVENC/VAAPI hardware encoding or libx264 software encoding; MediaCodec decoding",
     "Measured 22 ms median encoded-packet-to-render-acknowledgement latency over USB",
-    "Packages for Debian, Ubuntu, Fedora, openSUSE, Arch, Bazzite",
+    "Packaging recipes for Debian/Ubuntu, Fedora/openSUSE, Arch and compatible Linux systems",
     "One to four configurable tablet slots; physical multi-tablet coverage remains limited",
     "App-only adjustable brightness and refresh preference, defaulting to 50% and 60 Hz"
   ]
@@ -62,12 +62,13 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "What is the best open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "UScreen for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay supports Windows hosts and Android clients; its official FAQ says no Linux or macOS port is planned."}},
+    {"@type": "Question", "name": "Is UScreen an open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "UScreen for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay supports Windows hosts and Android clients; its official FAQ says no Linux or macOS port is planned."}},
     {"@type": "Question", "name": "Can an Android tablet be used as a real second monitor on Linux?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. UScreen creates a virtual display through the EVDI kernel module, so the tablet appears in the display settings like any monitor. It extends the desktop rather than mirroring it."}},
-    {"@type": "Question", "name": "Does UScreen require USB tethering or Wi-Fi?", "acceptedAnswer": {"@type": "Answer", "text": "No. It uses the adb connection provided by USB debugging over a normal data-capable USB cable; USB debugging must be enabled on the tablet, USB tethering is not needed. Wi-Fi works as a fallback with more stutter."}},
+    {"@type": "Question", "name": "Does UScreen require USB tethering or Wi-Fi?", "acceptedAnswer": {"@type": "Answer", "text": "No. It uses the adb connection provided by USB debugging over a normal data-capable USB cable; USB debugging must be enabled on the tablet, USB tethering is not needed. Wi-Fi is optional; historical tests had longer tail delays."}},
     {"@type": "Question", "name": "Does UScreen support Samsung S Pen pressure and tilt?", "acceptedAnswer": {"@type": "Answer", "text": "Yes: pressure, tilt, the eraser end and the stylus button are forwarded to Linux as a graphics-tablet device, so Krita, GIMP and Blender see a real tablet."}},
-    {"@type": "Question", "name": "Does UScreen work on Bazzite and KDE Wayland?", "acceptedAnswer": {"@type": "Answer", "text": "That is the reference setup. KDE Plasma on Wayland gets automatic display placement, input mapping and on-screen keyboard suppression. X11 desktops get automatic input mapping with xinput and xrandr; place outputs in desktop settings. Other Wayland desktops require manual input mapping."}},
+    {"@type": "Question", "name": "Does UScreen work on Bazzite and KDE Wayland?", "acceptedAnswer": {"@type": "Answer", "text": "That is the historical upstream reference setup. KDE Plasma on Wayland gets automatic display placement, input mapping and on-screen keyboard suppression. X11 desktops get automatic input mapping with xinput and xrandr; place outputs in desktop settings. Other Wayland desktops depend on compositor facilities and manual mapping; see known limitations."}},
     {"@type": "Question", "name": "Does UScreen require a dummy HDMI plug?", "acceptedAnswer": {"@type": "Answer", "text": "No. The virtual display is created in software by the EVDI kernel module."}},
+    {"@type": "Question", "name": "Can I change brightness and refresh rate?", "acceptedAnswer": {"@type": "Answer", "text": "The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect UScreen only. Other apps retain normal settings; Android may override the requested refresh mode. Stream FPS is separate."}},
     {"@type": "Question", "name": "What Android versions are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Android 8.1/API 27 and newer; the device decoder must support the selected codec, profile, resolution and frame rate."}},
     {"@type": "Question", "name": "Is screen or input data sent to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release on GitHub, which can be turned off."}},
     {"@type": "Question", "name": "How is UScreen different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse."}},
@@ -254,7 +255,7 @@
   <div>
     <p class="kicker">Open-source SuperDisplay alternative for Linux</p>
     <h1>Your Android tablet, as a <em>real</em> second monitor. Over one USB cable.</h1>
-    <p class="lead">UScreen creates an extended display on the Linux side, streams it to the tablet with hardware encoding, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
+    <p class="lead">UScreen creates an extended display on the Linux side, streams it to the tablet with the selected encoder, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
     <div class="cta">
       <a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/development.md#building-from-source">Build from source</a>
       <a class="btn" href="#install">Install in three steps</a>
@@ -318,7 +319,7 @@
   <div><div class="v">22<small>ms</small></div><div class="k">packet-to-ack median, USB, H.264</div></div>
   <div><div class="v">15–18<small>ms</small></div><div class="k">with HEVC</div></div>
   <div><div class="v">0<small>bytes</small></div><div class="k">of screen or input data sent to any cloud</div></div>
-  <div><div class="v">5<small>families</small></div><div class="k">of Linux packages</div></div>
+  <div><div class="v">4<small>formats</small></div><div class="k">of Linux packaging outputs</div></div>
 </div>
 
 <p style="margin:28px var(--gutter)">Current fork limitations include an unresolved Cinnamon/Xorg crash during EVDI attachment and a graphics-tablet status-message mismatch. Read <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/compatibility.md#current-fork-limitations">compatibility and known limitations</a> before setup.</p>
@@ -326,14 +327,14 @@
 <section id="why">
   <div class="sec-head">
     <h2>Not a mirror.<br>A monitor.</h2>
-    <p>Most tablet-as-display tools show you a copy of a screen that already exists. UScreen makes a new one, through the same kernel interface DisplayLink docks use, and the desktop treats it like any other output.</p>
+    <p>UScreen creates a virtual output through EVDI so the desktop can extend onto the tablet. Successful attachment depends on the kernel module, compositor and chosen display mode.</p>
   </div>
   <div class="facts">
     <article><h3>Extended display through EVDI</h3><p>A virtual output with the tablet's own resolution and physical size. It appears in Display settings; you drag windows onto it; KDE places it next to your real screens for you.</p></article>
     <article><h3>S Pen as a tablet device</h3><p>Pressure, tilt, eraser end and the stylus button arrive in Linux as a real graphics-tablet device, mapped to the right screen. Krita, GIMP and Blender see a tablet, not a mouse.</p></article>
-    <article><h3>Graphics-tablet mode</h3><p>One tap and nothing is streamed: the pen drives the screen you are already looking at, like a Wacom Intuos, without a streamed-video path; input latency remains.</p></article>
+    <article><h3>Graphics-tablet mode</h3><p>Graphics-tablet mode uses a host screen without a streamed-video path. Input latency remains, and a known status-message mismatch can leave its reconnect overlay visible.</p></article>
     <article><h3>Connection automation</h3><p>A configured user service can start with the desktop. The daemon watches adb, launches the app by default and negotiates geometry. Autostart, mapping and EVDI support depend on the desktop; diagnostics do not replace compatibility testing.</p></article>
-    <article><h3>Encoder choices</h3><p>NVENC or VAAPI encoding on the host, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. libx264 is a software fallback. The reported packet-to-ack timings exclude encoding and capture.</p></article>
+    <article><h3>Encoder choices</h3><p>NVENC or VAAPI on the default FFmpeg host path, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. In-process VAAPI is currently incomplete. libx264 is a software fallback. The reported packet-to-ack timings exclude encoding and capture.</p></article>
     <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener; existing runtime-directory validation remains a known limitation. See the security guide for trust boundaries.</p></article>
   </div>
 </section>
@@ -356,9 +357,9 @@
   </table>
   </div>
   <div class="steps" style="margin-top:40px">
-    <div><h3>Start the daemon</h3><p>After a package install: <code>systemctl --user enable --now uscreen</code>. The tarball installer adds a menu entry and enables startup at the next login; to start immediately, run <code>systemctl --user start uscreen</code>.</p></div>
+    <div><h3>Start the daemon</h3><p>On a systemd desktop: <code>systemctl --user enable --now uscreen</code>. The full installer attempts to enable autostart but does not start the service. Check the installation guide and live-module reload limitation before setup.</p></div>
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
-    <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Input mapping depends on the desktop and tools; check the compatibility guide. Flip <em>Graphics tablet</em> in the app when you want to draw on the laptop screen instead.</p></div>
+    <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Input mapping depends on the desktop and tools; check the compatibility guide. Graphics-tablet mode targets a host screen; the current status-message mismatch can leave its reconnect overlay visible.</p></div>
   </div>
   <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
 </section>
@@ -411,10 +412,10 @@
     <h2>Questions people ask</h2>
     <p>Short answers. Longer ones in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/faq.md">docs/faq.md</a>.</p>
   </div>
-  <details open><summary>Does it need Wi-Fi or USB tethering?</summary><p>No. It uses the adb connection that USB debugging provides, over a normal data-capable USB cable — USB debugging has to be on, USB tethering does not. Wi-Fi is an optional fallback with more stutter.</p></details>
+  <details open><summary>Does it need Wi-Fi or USB tethering?</summary><p>No. It uses the adb connection that USB debugging provides, over a normal data-capable USB cable — USB debugging has to be on, USB tethering does not. Wi-Fi is optional; historical tests had longer tail delays.</p></details>
   <details><summary>Is it a mirror or an extension?</summary><p>An extension — a real monitor in your display settings. Graphics-tablet mode is a separate, non-display mode.</p></details>
   <details><summary>Does S Pen pressure and tilt work?</summary><p>Yes, plus the eraser end and the stylus button, as a proper tablet device.</p></details>
-  <details><summary>Does it work on Bazzite and KDE Wayland?</summary><p>That is the reference setup. X11 desktops get automatic input mapping with <code>xinput</code> and <code>xrandr</code>; place outputs in desktop settings. Other Wayland desktops, including GNOME, require manual input mapping.</p></details>
+  <details><summary>Does it work on Bazzite and KDE Wayland?</summary><p>That is the historical upstream reference setup. X11 desktops get automatic input mapping with <code>xinput</code> and <code>xrandr</code>; place outputs in desktop settings. Other Wayland desktops depend on compositor facilities and manual mapping; see known limitations.</p></details>
   <details><summary>Does it need a dummy HDMI plug?</summary><p>No. The virtual display is created in software by EVDI.</p></details>
   <details><summary>Can I change brightness and refresh rate?</summary><p>The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect UScreen only; other apps retain normal system settings. Choose System default for refresh or a preferred rate; Android may override it. Stream FPS is separate.</p></details>
   <details><summary>Which Android versions?</summary><p>8.1/API 27 and newer; the decoder must also support the selected stream.</p></details>

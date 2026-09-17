@@ -36,20 +36,21 @@ before setup. Packaging recipes target several Linux distribution families.
   and you move windows onto it.
 - **Pen that works like a tablet.** Pressure, tilt, eraser and button arrive
   in Linux as a graphics-tablet device — Krita, GIMP and Blender see a tablet.
-  A one-tap *graphics tablet* mode uses the pen on your own screen with no streamed-video decode/display path. Input latency remains.
-- **Low latency, measured.** About 22 ms median from encoded packet
+  Graphics-tablet mode uses the pen on a host screen without a streamed-video
+  path. Input latency and the current T247 overlay issue remain.
+- **Historical upstream measurements.** About 22 ms median from encoded packet
   readiness to render acknowledgement over USB with
   H.264, 15–18 ms with HEVC, on the reference hardware — the
   [numbers and the method](docs/benchmarks.md) are published.
-- **Plug in and it works.** With a configured user service and supported desktop, the daemon finds the
-  tablet over adb, launches the app on it and sizes the display to its panel.
+- **Connection automation.** With a configured user service and supported
+  desktop, the daemon finds the tablet over adb, launches the app by default
+  and negotiates geometry.
 - **Local transport.** Loopback-only host ports, session authentication on by
   default, no application telemetry or account. See the trust boundaries and
   known limitations in [SECURITY.md](SECURITY.md).
-- **Honest about its edges.** Wi-Fi is a fallback and the stutter is
-  [quantified](docs/benchmarks.md#usb-vs-wi-fi-h264-quiet-link); KDE gets the
-  full automation. X11 input maps automatically with `xinput` and `xrandr`;
-  other Wayland desktops need manual input mapping.
+- **Desktop-specific integration.** KDE Wayland has the most automation;
+  X11 input mapping uses `xinput` and `xrandr`. Other Wayland desktops depend
+  on compositor support. [Compatibility](docs/compatibility.md) lists known limits.
 
 ## Quick install
 
@@ -66,13 +67,15 @@ or produced from the checkout you intend to install:
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
 
-Then `systemctl --user enable --now uscreen` (the tarball installer enables
-it for you; start it once with `systemctl --user start uscreen`). Full
-details, including what the installer changes on the system, in
-[docs/installation.md](docs/installation.md).
+On a systemd desktop, enable/start the installed service with
+`systemctl --user enable --now uscreen`. The full installer attempts to enable
+it, while `make install` only installs/reloads it. Read
+[installation details](docs/installation.md) first: full installer/native
+package hooks can reload EVDI and disrupt an active display session (T269).
 
-**2. Tablet** — install `uscreen.apk` and enable USB debugging (Settings →
-Developer options).
+**2. Tablet** — install the APK from the same checkout (for a debug build,
+`android/app/build/outputs/apk/debug/app-debug.apk`; release bundles use
+`uscreen.apk`). Enable USB debugging in Developer options.
 
 **3. Plug in.** The daemon sets up forwarding and launches the app by default. Check
 desktop display settings and input mapping; `uscreen doctor` helps diagnose
@@ -100,8 +103,7 @@ also matter. These reports describe upstream builds, not current fork validation
 ## Performance
 
 Historical upstream measurements on the reference hardware over USB
-(2960×1848, 90 fps target,
-constant-quality encoding). Times run from encoded packet readiness to receipt
+(2960×1848, 90 fps target, constant-quality encoding). Times run from encoded packet readiness to receipt
 of the tablet's render acknowledgement; capture and encoding are excluded:
 
 | | median | p95 |
@@ -110,7 +112,7 @@ of the tablet's render acknowledgement; capture and encoding are excluded:
 | HEVC, NVENC | 15–18 ms | 20–23 ms |
 | Wi-Fi fallback (H.264) | 22.8 ms | 78.6 ms, worst frames in seconds |
 
-The tablet reports ~15 ms from frame arrival to render callback. The remaining
+The tablet reported ~15 ms from frame arrival to render callback. The remaining
 5–7 ms includes host queueing and both transport directions. Method, CPU figures
 and measurement limits in
 [docs/benchmarks.md](docs/benchmarks.md).
@@ -174,8 +176,9 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   over, remembers the address and reconnects to it by itself whenever the
   cable is out. `uscreen wifi --off` forgets the address and disconnects; it
   does not disable the tablet's network adb listener. See [SECURITY.md](SECURITY.md).
-  The daemon prefers the cable
-  when both are there, and the stutter is [quantified](docs/benchmarks.md).
+  USB preference works for recognized transports; mDNS wireless identifiers
+  have a known classification bug (T278). See [benchmarks](docs/benchmarks.md)
+  for historical Wi-Fi results.
 - **Updates** — the app, the GUI and the tray tell you when a newer release
   exists; nothing installs itself. `check_updates = false` disables host checks;
   the tablet app has its own update-check switch.
@@ -190,9 +193,10 @@ is an optional fallback.
 display settings. Graphics-tablet mode is a separate, non-display mode.
 
 **Does S Pen pressure and tilt work?** Yes, plus eraser and button, as a
-proper tablet device.
+proper tablet device. Tilt scaling and hover/button transitions have known
+limitations (T287/T318); see [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
 
-**Does it work on Bazzite / KDE Wayland?** That is the reference setup.
+**Does it work on Bazzite / KDE Wayland?** That is the historical upstream reference setup.
 X11 desktops get automatic input mapping with `xinput` and `xrandr`; place
 outputs through desktop display settings. Other Wayland desktops depend on
 compositor support and manual mapping; see [compatibility](docs/compatibility.md).
@@ -239,8 +243,7 @@ Current defects and blocked decisions remain in [TODO.md](https://github.com/ger
 ## Contributing
 
 Compatibility reports are the most useful thing right now; see
-[CONTRIBUTING.md](CONTRIBUTING.md). Issues tagged `good first issue` are
-self-contained. Questions and reports go to
+[CONTRIBUTING.md](CONTRIBUTING.md). Questions and reports go to
 [Issues](https://github.com/geraldo-netto/UScreen/issues).
 
 ## License

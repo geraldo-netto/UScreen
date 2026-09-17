@@ -1,7 +1,7 @@
 # FAQ
 
-**What is the best open-source SuperDisplay alternative for Linux?**
-UScreen is built for exactly that: a real extended display on an Android
+**Is UScreen an open-source SuperDisplay alternative for Linux?**
+Yes. It provides a real extended display on an Android
 tablet over a USB cable, with S Pen pressure and tilt, on a Linux host.
 SuperDisplay supports Windows hosts and Android clients; its
 [official FAQ](https://superdisplay.app/help/) says no Linux or macOS port is planned
@@ -20,10 +20,10 @@ no USB tethering.
 
 **Does UScreen require USB tethering or Wi-Fi?**
 No. USB tethering is not needed; USB debugging is. Wi-Fi works as a fallback,
-with noticeably more stutter — see the benchmarks.
+with longer tail delays in the historical test — see the benchmarks.
 
 **Can I adjust the tablet's brightness and refresh rate?**
-Open UScreen's gear menu. Brightness starts at 50% and display refresh rate at
+Open UScreen's gear menu. Brightness starts at 50% and the display refresh-rate preference at
 60 Hz. Both controls apply immediately and remember your choices, including in
 graphics-tablet mode. They affect only UScreen; other apps keep the tablet's
 normal settings. Refresh-rate choices use the current display resolution,
@@ -45,7 +45,8 @@ adbd to USB mode.
 **Does UScreen support Samsung S Pen pressure and tilt?**
 Yes: pressure, tilt, the eraser end and the stylus button are all forwarded
 to Linux as a real graphics-tablet device, so Krita, GIMP, Blender and the
-rest see it as a tablet.
+rest see it as a tablet. Tilt-axis scaling and hover/button state have known
+limitations (T287/T318); consult the linked [compatibility guide](compatibility.md).
 
 **Does UScreen extend the desktop or only mirror the screen?**
 It extends. There is also a "graphics tablet" mode in which nothing is
@@ -53,7 +54,7 @@ streamed and the pen drives your existing screen. The current fork has a
 status-message mismatch that can leave its reconnect overlay visible (T247).
 
 **Does UScreen work on Bazzite and KDE Wayland?**
-That is the reference setup. KDE on Wayland gets automatic output placement,
+That is the historical upstream reference setup. KDE on Wayland gets automatic output placement,
 input mapping and on-screen-keyboard suppression. X11 desktops get automatic
 input mapping when `xinput` and `xrandr` are installed; place outputs through
 desktop display settings. Other Wayland desktops depend on their compositor
@@ -88,14 +89,15 @@ uses adb to carry video and input over USB. This comparison does not imply
 that Sunshine/Moonlight lacks stylus support.
 
 **What latency should I expect?**
-On the reference hardware: about 19–22 ms median with H.264, 15–18 ms with
+Historical upstream results on the reference hardware: 18–22 ms median with H.264, 15–18 ms with
 HEVC, over USB, measured from encoded packet readiness to receipt of the
 render acknowledgement. Capture, encoding and packetizer assembly are excluded;
 see [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
 **Can I use two tablets?**
-Yes, `max_tablets` up to 4; each becomes its own screen. Verified with one
-real tablet plus a loopback stand-in — reports with two real ones welcome.
+The configuration supports 1–4 slots. Historical validation used one real
+tablet plus a simulated client; card allocation still has a known limitation
+(T330). Reports with multiple physical tablets are welcome.
 
 **How do I uninstall UScreen completely?**
 Instructions for package and source installs, custom paths and residual

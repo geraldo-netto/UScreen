@@ -60,6 +60,9 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 - **T247:** host status greetings and Android message dispatch disagree,
   affecting connection/graphics-tablet state. Pen-only mode is not validated
   as fully working by the feature description alone.
+- **T284:** the optional in-process encoder lacks working VAAPI initialization;
+  use the default FFmpeg path for VAAPI.
+- **T287/T318:** tilt-axis scaling and hover/button transitions need correction.
 - **T330:** a busy enumerated EVDI card can block a slot despite another free card.
 - **T332:** accepted dimensions/FPS can exceed the EDID pixel-clock limit;
   3840×2160 at 90 fps is one example. Lowering FPS can produce a valid mode.
