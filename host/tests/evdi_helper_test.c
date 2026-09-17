@@ -864,9 +864,64 @@ static void test_t341(void) {
            "T341: EDID reader blocked waiting for a FIFO writer");
 }
 
+static void t343_regular_destination(void) {
+    char path[] = "/tmp/uscreen-t343-file-XXXXXX";
+    const char original[] = "existing file contents";
+    int file = mkstemp(path);
+    assert(file >= 0);
+    assert(write(file, original, sizeof(original)) == sizeof(original));
+    g_fifo_path = path;
+    int writer = try_open_fifo();
+    if (writer >= 0) {
+        assert(write(writer, "frame", 5) == 5);
+        close(writer);
+    }
+    char actual[sizeof(original)];
+    assert(pread(file, actual, sizeof(actual), 0) == sizeof(actual));
+    close(file);
+    assert(unlink(path) == 0);
+    assert(memcmp(actual, original, sizeof(original)) == 0 &&
+           "T343: capture overwrote an ordinary file");
+    assert(writer < 0 && "T343: accepted a non-FIFO capture destination");
+}
+
+static void t343_fifo_destination(void) {
+    char root[] = "/tmp/uscreen-t343-fifo-XXXXXX", path[4096], link[4096];
+    assert(mkdtemp(root));
+    snprintf(path, sizeof(path), "%s/capture pipe", root);
+    snprintf(link, sizeof(link), "%s/linked pipe", root);
+    assert(mkfifo(path, 0600) == 0);
+    g_fifo_path = path;
+    assert(try_open_fifo() < 0 && "T343: FIFO without reader should fail promptly");
+    int reader = open(path, O_RDONLY | O_NONBLOCK);
+    assert(reader >= 0);
+    int writer = try_open_fifo();
+    assert(writer >= 0);
+    assert(write(writer, "frame", 5) == 5);
+    char actual[5];
+    assert(read(reader, actual, sizeof(actual)) == sizeof(actual));
+    assert(memcmp(actual, "frame", sizeof(actual)) == 0);
+    assert(symlink("capture pipe", link) == 0);
+    g_fifo_path = link;
+    assert(try_open_fifo() < 0 && "T343: symlink destination must remain rejected");
+    close(writer);
+    close(reader);
+    assert(unlink(link) == 0);
+    assert(unlink(path) == 0);
+    assert(rmdir(root) == 0);
+}
+
+static void test_t343(void) {
+    alarm(2);
+    t343_regular_destination();
+    t343_fifo_destination();
+    alarm(0);
+}
+
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T343", test_t343},
         {"T341", test_t341},
         {"T340-missing", test_t340_missing},
         {"T340-directory", test_t340_directory},

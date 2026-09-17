@@ -89,6 +89,11 @@ impl Drop for Harness {
 }
 
 #[test]
+fn t343_capture_destination_must_be_a_fifo() {
+    Harness::build("T343").run("T343");
+}
+
+#[test]
 fn t012_nv12_crops_odd_dimensions_without_overwriting_buffers() {
     Harness::build("T012").run("T012");
 }

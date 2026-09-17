@@ -681,6 +681,13 @@ static int try_open_fifo(void) {
     int fd = open(g_fifo_path, O_WRONLY | O_NONBLOCK | O_NOFOLLOW);
     if (fd < 0)
         return -1;
+    /* Validate the opened object, so a mistaken path cannot overwrite a
+       regular file and a path replacement cannot bypass the type check. */
+    struct stat info;
+    if (fstat(fd, &info) != 0 || !S_ISFIFO(info.st_mode)) {
+        close(fd);
+        return -1;
+    }
     /* Keep writes nonblocking: POLLOUT promises some space, not enough for
        an entire frame. The writer owns this fd until it closes/reopens it. */
     /* Enlarge the pipe so a full-frame write doesn't take hundreds of
