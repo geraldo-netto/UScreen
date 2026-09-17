@@ -444,6 +444,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                 Log.i(TAG, "Connected to video stream")
 
                 receivePackets(generation, connection, input)
+                // Protocol rejection and decoder retirement return normally.
+                // They still end the visible connection, just like EOF does.
+                disconnectAndPause(generation, 500) { Log.i(TAG, "Stream retired, reconnecting") }
             } catch (e: java.io.EOFException) {
                 disconnectAndPause(generation, 1000) { Log.i(TAG, "Stream ended (server closed)") }
             } catch (e: java.net.SocketTimeoutException) {

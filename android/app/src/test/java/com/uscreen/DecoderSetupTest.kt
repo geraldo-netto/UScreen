@@ -43,6 +43,7 @@ class FailingCodecShadow : ShadowMediaCodec() {
     }
     @Implementation fun getInputBuffer(index: Int): java.nio.ByteBuffer? =
         if (failAt == "null-input") null else java.nio.ByteBuffer.allocate(1)
+    @Implementation fun queueInputBuffer(index: Int, offset: Int, size: Int, presentationTimeUs: Long, flags: Int) {}
     @Implementation fun dequeueOutputBuffer(info: MediaCodec.BufferInfo, timeoutUs: Long): Int {
         throw IllegalStateException("injected output failure")
     }
@@ -53,6 +54,56 @@ class FailingCodecShadow : ShadowMediaCodec() {
 class DecoderSetupTest {
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
+
+    @Test fun t243_invalidPacketReportsDisconnectionBeforeRetry() = checkDisconnected("invalid-packet")
+    @Test fun t243_decoderResetReportsDisconnectionBeforeRetry() = checkDisconnected("input-timeout")
+
+    private class RecoverySocket(private val bytes: ByteArray?) : java.net.Socket() {
+        private val releaseRead = java.util.concurrent.CountDownLatch(1)
+        @Volatile private var closed = false
+        override fun setTcpNoDelay(value: Boolean) {}
+        override fun setSoTimeout(value: Int) {}
+        override fun setReceiveBufferSize(value: Int) {}
+        override fun isClosed() = closed
+        override fun getInputStream(): java.io.InputStream = bytes?.inputStream() ?: object : java.io.InputStream() {
+            override fun read(): Int {
+                check(releaseRead.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                throw java.io.EOFException()
+            }
+        }
+        override fun close() { closed = true; releaseRead.countDown() }
+    }
+
+    private fun checkDisconnected(stage: String) {
+        // One frame followed by an unknown packet. The timeout variant resets
+        // the decoder while feeding that frame and returns before the next read.
+        val original = RecoverySocket(byteArrayOf(0, 0, 0, 6, 1, 0, 0, 0, 1, 42, 0, 0, 0, 2, 99, 0))
+        val replacement = RecoverySocket(null)
+        val opens = java.util.concurrent.atomic.AtomicInteger()
+        val disconnected = java.util.concurrent.CountDownLatch(1)
+        val connected = java.util.concurrent.atomic.AtomicBoolean()
+        val receiver = VideoReceiver { if (opens.getAndIncrement() == 0) original else replacement }
+        FailingCodecShadow.failAt = "none"
+        (get(receiver, "surfaceReady") as java.util.concurrent.atomic.AtomicBoolean).set(true)
+        set(receiver, "mediaCodec", MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE))
+        receiver.onConnected = {
+            connected.set(true)
+            if (stage == "input-timeout") FailingCodecShadow.failAt = stage
+        }
+        receiver.onDisconnected = { connected.set(false); disconnected.countDown() }
+        try {
+            receiver.start()
+            assertTrue("T243: $stage retained a connected UI after stream retirement",
+                disconnected.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            assertFalse("A replacement without a frame must remain disconnected", connected.get())
+        } finally {
+            val job = get(receiver, "job") as? kotlinx.coroutines.Job
+            receiver.stop()
+            original.close()
+            replacement.close()
+            kotlinx.coroutines.runBlocking { kotlinx.coroutines.withTimeout(2000) { job?.join() } }
+        }
+    }
 
     @Test fun t134_inputTimeoutReconnects() = checkRecovery("input-timeout")
     @Test fun t134_feedErrorReconnects() = checkRecovery("feed-error")
