@@ -188,6 +188,9 @@ def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm
     edid[idx+16] = 0
     edid[idx+17] = 0x1E
 
+    # === Unused descriptor (bytes 72-89): EDID dummy tag, zero payload ===
+    edid[75] = 0x10
+
     # === Monitor name descriptor (bytes 90-107) ===
     idx = 90
     edid[idx] = 0x00

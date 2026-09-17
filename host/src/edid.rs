@@ -127,6 +127,9 @@ pub fn make_edid_sized(
     edid[i + 14] = ((((h_image >> 8) & 0x0F) << 4) | ((v_image >> 8) & 0x0F)) as u8;
     edid[i + 17] = 0x1E; // non-interlaced, digital separate sync, +h +v
 
+    // === Unused descriptor (bytes 72-89): EDID dummy tag, zero payload ===
+    edid[75] = 0x10;
+
     // === Monitor name descriptor (bytes 90-107) ===
     let i = 90;
     edid[i + 3] = 0xFC;
@@ -169,7 +172,7 @@ pub fn make_edid(width: u32, height: u32, refresh: u32) -> Vec<u8> {
 /// Bumped whenever the generator changes. It is part of the cache filename so
 /// that fixing a bug here actually reaches existing installs — without it, a
 /// stale file from a previous version would be reused forever.
-const EDID_GENERATION: u32 = 5;
+const EDID_GENERATION: u32 = 6;
 
 /// Write (or reuse) a generated EDID for this mode and return its path.
 pub fn ensure_edid_sized(
@@ -228,6 +231,33 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_t320_dummy_descriptor(edid: &[u8]) {
+        // EDID base-block display descriptor: zero clock/reserved bytes,
+        // dummy tag 0x10, and zero reserved payload. All-zero is invalid.
+        assert_eq!(edid.len(), 128);
+        assert_eq!(&edid[72..75], &[0, 0, 0]);
+        assert_eq!(edid[75], 0x10, "T320: unused descriptor has no dummy tag");
+        assert!(edid[76..90].iter().all(|&byte| byte == 0));
+        assert_eq!(
+            edid.iter().map(|&byte| u32::from(byte)).sum::<u32>() % 256,
+            0
+        );
+    }
+
+    #[test]
+    fn t320_rust_unused_descriptor_is_valid() {
+        for (width, height, fps) in [(1920, 1080, 60), (2960, 1848, 90), (1024, 4095, 10)] {
+            assert_t320_dummy_descriptor(&make_edid(width, height, fps));
+        }
+    }
+
+    #[test]
+    fn t320_python_unused_descriptor_is_valid() {
+        for (width, height, fps) in [(1920, 1080, 60), (2960, 1848, 90), (1024, 4095, 10)] {
+            assert_t320_dummy_descriptor(&python_edid(width, height, fps, 310, 194).unwrap());
+        }
+    }
 
     #[test]
     fn t246_repairs_incomplete_and_wrong_generated_edids() {
