@@ -152,6 +152,47 @@ class DecoderWatchdogTest {
         assertTrue("T404: old callback acknowledged after replacement: $acknowledgements", acknowledgements.isEmpty())
     }
 
+    @Test fun t386_retiredOutputCannotUpdateReplacementWatchdog() {
+        WatchdogCodecShadow.outputs.clear()
+        val entered = CountDownLatch(1)
+        val resume = CountDownLatch(1)
+        val decoder = DecoderSession(Any(), { true }, FrameTiming(), object : DecoderEvents {
+            override fun rendered(sequence: Int, decodeMicros: Int) {}
+            override fun invalidated() {}
+        }, { ReceiverStatistics() })
+        decoder.outputClock = {
+            if (Thread.currentThread().name == "uscreen-render") {
+                entered.countDown()
+                check(resume.await(3, TimeUnit.SECONDS))
+                7_000_000_000L
+            } else 5_000_000_000L
+        }
+        val surface = Surface(SurfaceTexture(1))
+        val parameters = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
+        var oldWorker: Thread? = null
+        try {
+            assertTrue(decoder.setupCodec(surface, parameters))
+            oldWorker = decoder.javaClass.getDeclaredField("outputThread")
+                .apply { isAccessible = true }.get(decoder) as Thread
+            WatchdogCodecShadow.outputs.put(WatchdogCodecShadow.Output(7))
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+            decoder.resetCodec()
+            assertTrue(decoder.setupCodec(surface, parameters))
+            resume.countDown()
+            oldWorker.join(2_000)
+            val watchdog = decoder.javaClass.getDeclaredField("outputWatchdog")
+                .apply { isAccessible = true }.get(decoder)
+            val last = watchdog.javaClass.getDeclaredField("lastOutput")
+                .apply { isAccessible = true }.getLong(watchdog)
+            assertEquals("T386: retired output changed the replacement watchdog", 5_000_000_000L, last)
+        } finally {
+            resume.countDown()
+            oldWorker?.join(2_000)
+            decoder.releaseCodec()
+            surface.release()
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val receiver = VideoReceiver()
         val now = AtomicLong(1_000_000_000)

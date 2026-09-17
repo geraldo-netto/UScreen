@@ -304,11 +304,13 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
     @Synchronized internal fun setupCodec(surface: Surface): Boolean =
         decoder.setupCodec(surface, DecoderFormat(mimeType, formatWidth, formatHeight, streamFps))
 
-    @Synchronized internal fun feedDecoder(
+    internal fun feedDecoder(
         generation: Long, codec: MediaCodec, data: ByteArray, offset: Int, size: Int,
         isConfig: Boolean, presentationTimeUs: Long, arrivalNanos: Long = System.nanoTime(),
     ) {
-        if (!isCurrent(generation) || decoder.mediaCodec !== codec) return
+        synchronized(this) {
+            if (!isCurrent(generation) || decoder.mediaCodec !== codec) return
+        }
         decoder.feedDecoder(codec, data, offset, size, isConfig, presentationTimeUs, arrivalNanos)
     }
 

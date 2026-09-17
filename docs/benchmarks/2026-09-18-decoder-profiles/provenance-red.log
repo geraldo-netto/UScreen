@@ -1,0 +1,34 @@
+F
+======================================================================
+FAIL: test_t386_selected_variants_match_provenance_and_trials (test_decoder_benchmark.DecoderBenchmarkTests.test_t386_selected_variants_match_provenance_and_trials)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_decoder_benchmark.py", line 27, in test_t386_selected_variants_match_provenance_and_trials
+    self.assertEqual(metadata['variants'], [list(item) for item in selected])
+AssertionError: Lists differ: [['baseline', 'legacy'], ['candidate', 'lega[175 chars]ed']] != [['candidate', 'callback-unhinted']]
+
+First differing element 0:
+['baseline', 'legacy']
+['candidate', 'callback-unhinted']
+
+First list contains 6 additional elements.
+First extra element 1:
+['candidate', 'legacy']
+
+- [['baseline', 'legacy'],
+-  ['candidate', 'legacy'],
+-  ['candidate', 'sync-normal'],
+-  ['candidate', 'callback-legacy'],
+-  ['candidate', 'callback-supported'],
+-  ['candidate', 'callback-supported1'],
+-  ['candidate', 'callback-unhinted']]
+? ^
+
++ [['candidate', 'callback-unhinted']]
+? ^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (failures=1)

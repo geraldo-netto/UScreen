@@ -1,0 +1,30 @@
+| Scene / FPS | Profile | Trials | CPU % of one core | Callback p50 ms | Callback p99 ms | Output dequeues/s |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| motion / 5 | baseline/legacy | 3 | 7.45 | 216.37 | 219.33 | 93.57 |
+| motion / 5 | candidate/callback-legacy | 3 | 4.46 | 217.62 | 220.93 | 0.00 |
+| motion / 5 | candidate/callback-supported | 3 | 4.47 | 217.65 | 220.66 | 0.00 |
+| motion / 5 | candidate/callback-supported1 | 3 | 4.52 | 217.67 | 220.89 | 0.00 |
+| motion / 5 | candidate/callback-unhinted | 3 | 4.48 | 217.86 | 220.94 | 0.00 |
+| motion / 5 | candidate/legacy | 3 | 7.85 | 216.56 | 219.97 | 92.77 |
+| motion / 5 | candidate/sync-normal | 3 | 7.89 | 216.32 | 219.82 | 92.87 |
+| motion / 60 | baseline/legacy | 3 | 40.20 | 30.76 | 33.85 | 119.79 |
+| motion / 60 | candidate/callback-legacy | 3 | 41.87 | 31.79 | 37.50 | 0.00 |
+| motion / 60 | candidate/callback-supported | 3 | 41.54 | 31.78 | 37.33 | 0.00 |
+| motion / 60 | candidate/callback-supported1 | 3 | 42.00 | 31.79 | 37.01 | 0.00 |
+| motion / 60 | candidate/callback-unhinted | 3 | 41.63 | 31.83 | 37.23 | 0.00 |
+| motion / 60 | candidate/legacy | 3 | 41.89 | 30.92 | 33.91 | 119.67 |
+| motion / 60 | candidate/sync-normal | 3 | 41.99 | 30.91 | 33.85 | 119.78 |
+| static / 5 | baseline/legacy | 3 | 7.41 | 216.15 | 219.18 | 93.46 |
+| static / 5 | candidate/callback-legacy | 3 | 4.42 | 217.17 | 220.54 | 0.00 |
+| static / 5 | candidate/callback-supported | 3 | 4.42 | 217.56 | 220.59 | 0.00 |
+| static / 5 | candidate/callback-supported1 | 3 | 4.40 | 217.84 | 220.75 | 0.00 |
+| static / 5 | candidate/callback-unhinted | 3 | 4.40 | 217.51 | 220.56 | 0.00 |
+| static / 5 | candidate/legacy | 3 | 7.85 | 216.39 | 219.86 | 92.90 |
+| static / 5 | candidate/sync-normal | 3 | 7.81 | 216.03 | 219.83 | 92.87 |
+| static / 60 | baseline/legacy | 3 | 40.46 | 30.68 | 33.50 | 119.79 |
+| static / 60 | candidate/callback-legacy | 3 | 40.87 | 31.58 | 37.10 | 0.00 |
+| static / 60 | candidate/callback-supported | 3 | 41.20 | 31.61 | 37.03 | 0.00 |
+| static / 60 | candidate/callback-supported1 | 3 | 40.76 | 31.56 | 36.73 | 0.00 |
+| static / 60 | candidate/callback-unhinted | 3 | 41.02 | 31.54 | 37.00 | 0.00 |
+| static / 60 | candidate/legacy | 3 | 41.80 | 30.85 | 33.94 | 119.74 |
+| static / 60 | candidate/sync-normal | 3 | 41.89 | 30.79 | 33.61 | 119.82 |

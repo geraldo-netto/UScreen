@@ -46,8 +46,11 @@ from the existing implementation.
    or waits for another IDR if necessary.
 5. **Decode.** Android receives length-prefixed Annex B access units through
    adb forwarding and feeds MediaCodec, rendering to a SurfaceView. It requests
-   low-latency hints where supported. MediaCodec selection does not guarantee a
-   hardware decoder; codec/profile/resolution support is device-dependent.
+   the legacy low-latency hints (including a Qualcomm vendor key) and a 2x
+   operating rate without querying advertised support. Experimental profiles
+   separately gate standard hints on codec capabilities or omit them. None of
+   these requests confirms effective latency or throughput. MediaCodec selection
+   does not guarantee a hardware decoder; support is device-dependent.
    The output watchdog reconnects after four queued frames and more than 1.5
    seconds without output. Two stalls disable latency hints. Only four output
    frames spanning at least 1.5 seconds, with no gap longer than that window,
@@ -381,15 +384,33 @@ using that storage before the next read. Framing tests cover split headers,
 payloads, EOF, invalid lengths/types, sequence wrap and buffer growth.
 
 `DecoderSession` owns MediaCodec, its render/callback threads and the output
-watchdog, with injectable codec/thread factories and watchdog clock. Receiver
-and decoder retain a common monitor for Surface/generation handoffs; blocking
-network reads remain outside it. Codec retirement interrupts the transport so
-reconnect obtains fresh configuration and a keyframe. Every feed still checks
-both run generation and codec identity; callbacks check codec ownership and
-running state. `FrameTiming` owns arrival/release measurements with a monotonic
-clock seam, and `ReceiverStatistics` retains separate counters for each run.
-This extraction preserves synchronous codec operation and watchdog fallback;
-callback scheduling and compressed-input copies are separate experiments.
+watchdog, with injectable codec/thread factories and clocks. Receiver and
+decoder retain a common monitor for Surface/generation handoffs. Blocking input
+and output operations borrow a `CodecLifetime` outside that monitor. Retirement
+closes admission, detaches the codec and waits at most 500 ms for its cleanup
+worker; native stop/release waits until every borrowed operation finishes. A
+process-wide retirement registry prevents a newly created Activity/receiver
+from allocating another codec while native cleanup remains unfinished. This is
+a retirement barrier, not a one-active-codec limit. A permanently stuck native
+call retains its storage and prevents decoder reconnection in that process.
+Codec creation/configuration still occurs within the receiver monitor.
+
+Codec invalidation interrupts the transport so reconnect obtains fresh
+configuration and a keyframe. Feeds check run generation and codec identity;
+output workers revalidate ownership before updating the watchdog. Render
+callbacks revalidate ownership before acknowledgement. `FrameTiming` owns
+arrival/release measurements per epoch; `ReceiverStatistics` retains separate
+counters for each run.
+
+Synchronous input/output and the legacy hint profile remain the default.
+Experimental callback operation confines codec input/output to a Handler and
+owns at most two detached access units, including the one being submitted.
+Admission and pending input share a 200 ms deadline; expiry resets/reconnects
+rather than dropping a dependent encoded frame. Closing the mailbox wakes
+blocked producers. Callback mode does not call synchronous dequeue methods.
+The normal-priority callback Handler is separate from the selectable synchronous
+output-thread priority. The [decoder replay](benchmarks/2026-09-18-decoder-profiles.md)
+records the measured tradeoffs and the limits of render-notification timing.
 
 Android's `TouchCapture` is the Activity-facing facade. `ControlSession` owns
 socket generations, authentication, reconnects, host greetings and pending
