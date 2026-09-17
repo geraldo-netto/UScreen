@@ -28,7 +28,9 @@ Container installation/build checks are described in [development.md](developmen
   Cinnamon has an unresolved attachment-related Xorg crash (T222).
 - **Other Wayland desktops:** support depends on that compositor's EVDI and
   input-mapping facilities. No blanket GNOME/Sway compatibility is established;
-  manual configuration may be required or unavailable.
+  manual configuration may be required or unavailable. Doctor reports manual
+  mapping guidance instead of requiring KWin; display-only configurations skip
+  input-mapping dependency checks.
 - **Encoding:** select NVENC for supported NVIDIA setups, VAAPI for supported
   AMD/Intel setups, or `libx264` for CPU encoding. The default is
   `h264_nvenc`; there is no automatic fallback to the correct GPU encoder.
@@ -58,8 +60,6 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
 - **T269:** full installer/native package hooks may unload a live EVDI module.
-- **T234:** diagnostics can report missing KWin as a failure on other Wayland
-  desktops.
 - **T284:** the optional in-process encoder lacks working VAAPI initialization;
   use the default FFmpeg path for VAAPI.
 - **T287/T318:** tilt-axis scaling and hover/button transitions need correction.

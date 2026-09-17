@@ -690,18 +690,41 @@ fn report_output_mode(r: &mut Report, cfg: &FileConfig, name: &str, w: i64, h: i
 /// tablet's touch device is exactly that as far as the desktop is concerned.
 /// Reported because it is a global desktop setting, not something the daemon
 /// should quietly decide on the user's behalf.
-async fn check_osk(r: &mut Report) {
-    if std::env::var("XDG_SESSION_TYPE").as_deref() == Ok("x11") {
-        for tool in ["xinput", "xrandr"] {
-            if command_exists(tool) {
-                r.line(Level::Ok, tool, "available for X11 input mapping");
-            } else {
-                r.line(Level::Fail, tool, "not installed");
-                r.hint(&format!("install {tool} for automatic X11 input mapping"));
-            }
-        }
+async fn check_osk(r: &mut Report, cfg: &FileConfig) {
+    if !cfg.input_touch && !cfg.input_pen {
+        r.line(
+            Level::Ok,
+            "input mapping",
+            "disabled — no virtual input devices requested",
+        );
         return;
     }
+    match crate::desktop::Desktop::current() {
+        crate::desktop::Desktop::X11 => report_x11_mapping_tools(r),
+        crate::desktop::Desktop::KdeWayland => check_kwin_input(r).await,
+        crate::desktop::Desktop::Other => {
+            r.line(
+                Level::Warn,
+                "input mapping",
+                "manual compositor-specific mapping may be required",
+            );
+            r.hint("KWin automation applies to KDE Wayland; use your compositor's input/output settings on other desktops. Support depends on that compositor.");
+        }
+    }
+}
+
+fn report_x11_mapping_tools(r: &mut Report) {
+    for tool in ["xinput", "xrandr"] {
+        if command_exists(tool) {
+            r.line(Level::Ok, tool, "available for X11 input mapping");
+        } else {
+            r.line(Level::Fail, tool, "not installed");
+            r.hint(&format!("install {tool} for automatic X11 input mapping"));
+        }
+    }
+}
+
+async fn check_kwin_input(r: &mut Report) {
     // Whether we can reach KWin at all decides whether touch and pen land on
     // the tablet's screen, so it is reported first and in its own right.
     match crate::kwin::backend().await {
@@ -1165,7 +1188,7 @@ pub async fn run() -> Result<()> {
     check_autostart(&mut r).await;
 
     section("Desktop");
-    check_osk(&mut r).await;
+    check_osk(&mut r, &cfg).await;
 
     section("Colour");
     for serial in &serials {
@@ -1208,6 +1231,99 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn t234_input_diagnostics_follow_desktop_and_requested_devices() {
+        const TEST: &str =
+            "doctor::tests::t234_input_diagnostics_follow_desktop_and_requested_devices";
+        if let Ok(input) = std::env::var("USCREEN_T234_INPUT") {
+            let enabled = input == "true";
+            let cfg = super::FileConfig {
+                input_touch: enabled,
+                input_pen: enabled,
+                ..Default::default()
+            };
+            let mut report = super::Report::new();
+            super::check_osk(&mut report, &cfg).await;
+            let expected: u32 = std::env::var("USCREEN_T234_FAILURES")
+                .unwrap()
+                .parse()
+                .unwrap();
+            assert_eq!(
+                report.failures,
+                expected,
+                "T234: {:?}",
+                report.messages.borrow()
+            );
+            let trace = std::path::PathBuf::from(std::env::var_os("USCREEN_T234_TRACE").unwrap());
+            assert_eq!(
+                trace.exists(),
+                expected > 0,
+                "T234: queried KWin without a KDE input requirement"
+            );
+            if enabled && crate::desktop::Desktop::current() == crate::desktop::Desktop::Other {
+                assert!(report.warnings > 0);
+                assert!(report
+                    .messages
+                    .borrow()
+                    .iter()
+                    .any(|message| message.contains("manual")));
+            }
+            if !enabled {
+                assert!(report
+                    .messages
+                    .borrow()
+                    .iter()
+                    .any(|message| message.contains("disabled")));
+            }
+            return;
+        }
+        for (desktop, session, inputs, failures) in [
+            ("GNOME", "wayland", true, 0),
+            ("sway", "wayland", true, 0),
+            ("KDE", "wayland", false, 0),
+            ("X-Cinnamon", "x11", true, 0),
+            ("KDE", "wayland", true, 1),
+            ("", "wayland", true, 0),
+        ] {
+            run_t234_fixture(TEST, desktop, session, inputs, failures);
+        }
+    }
+
+    fn run_t234_fixture(test: &str, desktop: &str, session: &str, inputs: bool, failures: u32) {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        for tool in ["busctl", "qdbus", "qdbus6", "qdbus-qt6", "qdbus-qt5"] {
+            let path = dir.path().join(tool);
+            std::fs::write(
+                &path,
+                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$USCREEN_T234_TRACE\"\nexit 1\n",
+            )
+            .unwrap();
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        for tool in ["xinput", "xrandr"] {
+            let path = dir.path().join(tool);
+            std::fs::write(&path, "#!/bin/sh\nexit 0\n").unwrap();
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test, "--nocapture"])
+            .env("PATH", dir.path())
+            .env("XDG_CURRENT_DESKTOP", desktop)
+            .env("XDG_SESSION_TYPE", session)
+            .env("USCREEN_T234_INPUT", inputs.to_string())
+            .env("USCREEN_T234_FAILURES", failures.to_string())
+            .env("USCREEN_T234_TRACE", dir.path().join("trace"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
     #[test]
     fn t372_diagnostics_read_raw_dimensions_from_the_shared_inventory() {
         let outputs =
