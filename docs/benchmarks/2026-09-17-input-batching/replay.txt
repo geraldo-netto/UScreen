@@ -1,0 +1,18 @@
+     Locking 12 packages to latest compatible versions
+   Compiling zmij v1.0.21
+   Compiling serde_core v1.0.228
+   Compiling serde_json v1.0.150
+   Compiling libc v0.2.186
+   Compiling memchr v2.8.1
+   Compiling itoa v1.0.18
+   Compiling uscreen-input-batching-replay v0.0.0 (/tmp/uscreen-input-batching-d97tko36/baseline)
+    Finished `release` profile [optimized] target(s) in 2.00s
+     Locking 12 packages to latest compatible versions
+   Compiling zmij v1.0.21
+   Compiling serde_core v1.0.228
+   Compiling serde_json v1.0.150
+   Compiling libc v0.2.186
+   Compiling memchr v2.8.1
+   Compiling itoa v1.0.18
+   Compiling uscreen-input-batching-replay v0.0.0 (/tmp/uscreen-input-batching-d97tko36/candidate)
+    Finished `release` profile [optimized] target(s) in 1.87s

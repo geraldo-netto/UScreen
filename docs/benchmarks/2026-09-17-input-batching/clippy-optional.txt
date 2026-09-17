@@ -1,0 +1,2 @@
+    Checking uscreen v1.2.3 (/work/host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.24s

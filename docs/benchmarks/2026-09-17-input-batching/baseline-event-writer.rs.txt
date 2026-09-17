@@ -1,0 +1,43 @@
+//! Native event serialization and SYN-bounded writes (T406).
+use std::io::{self, Write};
+// Linux input_event struct (for writing to uinput)
+#[repr(C, packed)]
+#[derive(Clone, Copy)]
+pub(super) struct LinuxInputEvent {
+    pub(super) tv_sec: i64,
+    pub(super) tv_usec: i64,
+    pub(super) type_: u16,
+    pub(super) code: u16,
+    pub(super) value: i32,
+}
+
+#[derive(Default)]
+pub(super) struct EventBatch;
+impl EventBatch {
+    pub(super) fn emit(
+        &mut self,
+        writer: &mut impl Write,
+        type_: u16,
+        code: u16,
+        value: i32,
+    ) -> io::Result<()> {
+        let event = LinuxInputEvent {
+            tv_sec: 0,
+            tv_usec: 0,
+            type_,
+            code,
+            value,
+        };
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                (&event as *const LinuxInputEvent).cast::<u8>(),
+                std::mem::size_of::<LinuxInputEvent>(),
+            )
+        };
+        writer.write_all(bytes)
+    }
+    pub(super) fn syn(&mut self, writer: &mut impl Write) -> io::Result<()> {
+        self.emit(writer, super::linux::EV_SYN, super::linux::SYN_REPORT, 0)?;
+        writer.flush()
+    }
+}

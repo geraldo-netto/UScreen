@@ -1,5 +1,7 @@
 //! Linux virtual-device lifetime, coordinate conversion and event emission.
 use super::backend::{InputBackend, InputSink, PenSample};
+#[cfg(test)]
+pub(super) use super::event_writer::LinuxInputEvent;
 use super::mapping::map_devices_to_output;
 use super::InputConfig;
 use anyhow::{Context, Result};
@@ -213,22 +215,12 @@ pub(super) struct UinputSetup {
     pub(super) ff_effects_max: u32,
 }
 
-// Linux input_event struct (for writing to uinput)
-#[repr(C, packed)]
-#[derive(Clone, Copy)]
-pub(super) struct LinuxInputEvent {
-    pub(super) tv_sec: i64,
-    pub(super) tv_usec: i64,
-    pub(super) type_: u16,
-    pub(super) code: u16,
-    pub(super) value: i32,
-}
-
 /// A uinput virtual input device for injecting touch/pen events into Linux.
 /// Touch and pen are SEPARATE devices: libinput classifies a touchscreen and
 /// a tablet pen differently and rejects a device that mixes both.
-pub(super) struct UInputDevice {
-    pub(super) file: File,
+pub(super) struct UInputDevice<W: Write + AsRawFd = File> {
+    pub(super) file: W,
+    batch: super::event_writer::EventBatch,
 }
 
 impl UInputDevice {
@@ -269,7 +261,7 @@ impl UInputDevice {
 
         info!("uinput touchscreen '{}' created", name);
         std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
+        Ok(Self::from_writer(file))
     }
 
     /// Pen tablet device: stylus tool + pressure + tilt.
@@ -307,7 +299,7 @@ impl UInputDevice {
 
         info!("uinput pen tablet '{}' created", name);
         std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
+        Ok(Self::from_writer(file))
     }
 
     /// An absolute-positioning pointer, the same shape as a VM's virtual
@@ -337,7 +329,7 @@ impl UInputDevice {
 
         info!("uinput pointer '{}' created", name);
         std::thread::sleep(std::time::Duration::from_millis(200));
-        Ok(Self { file })
+        Ok(Self::from_writer(file))
     }
 
     pub(super) unsafe fn abs_setup(
@@ -409,28 +401,21 @@ impl UInputDevice {
         }
         Ok(())
     }
+}
 
+impl<W: Write + AsRawFd> UInputDevice<W> {
+    pub(super) fn from_writer(file: W) -> Self {
+        Self {
+            file,
+            batch: Default::default(),
+        }
+    }
     pub(super) fn emit(&mut self, type_: u16, code: u16, value: i32) -> Result<()> {
-        let ev = LinuxInputEvent {
-            tv_sec: 0,
-            tv_usec: 0,
-            type_,
-            code,
-            value,
-        };
-        let bytes: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                &ev as *const LinuxInputEvent as *const u8,
-                std::mem::size_of::<LinuxInputEvent>(),
-            )
-        };
-        self.file.write_all(bytes)?;
+        self.batch.push(type_, code, value)?;
         Ok(())
     }
-
     pub(super) fn syn(&mut self) -> Result<()> {
-        self.emit(EV_SYN, SYN_REPORT, 0)?;
-        self.file.flush()?;
+        self.batch.finish(&mut self.file)?;
         Ok(())
     }
 
@@ -545,7 +530,7 @@ impl UInputDevice {
     }
 }
 
-impl Drop for UInputDevice {
+impl<W: Write + AsRawFd> Drop for UInputDevice<W> {
     fn drop(&mut self) {
         unsafe {
             let fd = self.file.as_raw_fd();
@@ -678,12 +663,12 @@ impl Drop for DeviceOwner {
 }
 
 /// The virtual input devices backing one tablet connection.
-pub(super) struct InjectDevices {
-    pub(super) touch: Option<UInputDevice>,
-    pub(super) pen: Option<UInputDevice>,
+pub(super) struct InjectDevices<W: Write + AsRawFd = File> {
+    pub(super) touch: Option<UInputDevice<W>>,
+    pub(super) pen: Option<UInputDevice<W>>,
     /// Takes over the cursor when the pen leaves proximity, so it stays where
     /// the user last pointed instead of vanishing.
-    pub(super) pointer: Option<UInputDevice>,
+    pub(super) pointer: Option<UInputDevice<W>>,
     pub(super) last_pen_pos: (i32, i32),
     /// Bitmask of MT slots that currently have an active tracking ID
     /// (DOWN received, no matching UP yet). Bit N identifies slot N, 0–9.
@@ -695,7 +680,7 @@ pub(super) struct InjectDevices {
     pub(super) pen_button: bool,
 }
 
-impl InjectDevices {
+impl<W: Write + AsRawFd> InjectDevices<W> {
     pub(super) fn empty() -> Self {
         Self {
             touch: None,
@@ -706,30 +691,6 @@ impl InjectDevices {
             touch_contacts: [None; 10],
             pen_proximity: false,
             pen_button: false,
-        }
-    }
-
-    /// Creates whichever devices the config asks for. The pointer only
-    /// exists to park the cursor when the pen lifts, so it is tied to the
-    /// pen here and nowhere else has to know that rule.
-    pub(super) fn create(cfg: &InputConfig, ident: &DeviceIdentity) -> Self {
-        let touch = create_device(cfg.touch, "touch", || {
-            UInputDevice::new_touch(&ident.touch, ident.product_touch)
-        });
-        let pen = create_device(cfg.pen, "pen", || {
-            UInputDevice::new_pen(&ident.pen, ident.product_pen)
-        });
-        let pointer = create_device(cfg.pen && cfg.pointer, "pointer", || {
-            UInputDevice::new_pointer(&ident.pointer, ident.product_pointer)
-        });
-        if pen.is_some() && pointer.is_none() {
-            info!("No pointer device — the cursor will vanish when the pen lifts");
-        }
-        Self {
-            touch,
-            pen,
-            pointer,
-            ..Self::empty()
         }
     }
 
@@ -915,7 +876,7 @@ pub(super) fn inject_pen_event(
     }
 }
 
-impl InjectDevices {
+impl<W: Write + AsRawFd> InjectDevices<W> {
     pub(super) fn apply_pen(
         &mut self,
         contact: AbsoluteContact,
@@ -1078,5 +1039,31 @@ pub(super) async fn wait_for_mapping_change(
         biased;
         result = &mut changed => result,
         _ = mapping => changed.await,
+    }
+}
+
+impl InjectDevices<File> {
+    /// Creates whichever devices the config asks for. The pointer only
+    /// exists to park the cursor when the pen lifts, so it is tied to the
+    /// pen here and nowhere else has to know that rule.
+    pub(super) fn create(cfg: &InputConfig, ident: &DeviceIdentity) -> Self {
+        let touch = create_device(cfg.touch, "touch", || {
+            UInputDevice::new_touch(&ident.touch, ident.product_touch)
+        });
+        let pen = create_device(cfg.pen, "pen", || {
+            UInputDevice::new_pen(&ident.pen, ident.product_pen)
+        });
+        let pointer = create_device(cfg.pen && cfg.pointer, "pointer", || {
+            UInputDevice::new_pointer(&ident.pointer, ident.product_pointer)
+        });
+        if pen.is_some() && pointer.is_none() {
+            info!("No pointer device — the cursor will vanish when the pen lifts");
+        }
+        Self {
+            touch,
+            pen,
+            pointer,
+            ..Self::empty()
+        }
     }
 }

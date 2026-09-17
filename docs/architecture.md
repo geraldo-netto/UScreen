@@ -393,6 +393,18 @@ and card changes; KWin/X11 output selection lives in its mapping adapter.
 live persistent auto-resolution setting. Greetings still snapshot live encoder
 settings. Adapter contract tests run without desktop services or real devices.
 
+`input::event_writer` serializes native `input_event` fields into a reusable,
+zeroed 64-event buffer per device. Each existing `SYN_REPORT` boundary flushes
+that frame immediately; proximity, button and tip frames stay separate and no
+future input sample is awaited. Native sizes/offsets come from libc, keeping
+timestamps and padding initialized without reading Rust struct padding. The
+writer retains `write_all` short-write/interruption handling. A failed batch is
+retired before I/O so the next sample cannot replay a delivered prefix; already
+accepted kernel events cannot be rolled back. Overflow fails without emitting
+a partial batch, and dropping a device does not flush unfinished input. Generic
+writers exercise the same pen/touch methods in the normal regression suite.
+See the [T406 replay](benchmarks/2026-09-17-input-batching.md).
+
 The shared `input-motion.json` fixture is checked against Android translation
 and Rust deserialization/serialization; stylus history has separate ordering,
 pressure, tilt and eraser coverage.

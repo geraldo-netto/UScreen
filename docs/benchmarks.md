@@ -24,6 +24,11 @@ The [CLI assembly replay](benchmarks/2026-09-17-cli-assembly.md) records T407's
 owned reads, bounded assembly and 1/2/4-session comparison with committed T384.
 It retains both the original push replay and the actual read-boundary measurements.
 
+The [input batching replay](benchmarks/2026-09-17-input-batching.md) verifies
+native bytes and synchronization boundaries while reducing complete writes
+from 256 to 38 per recorded pen/touch/pointer sequence. It uses counting writers,
+not live desktop input, and makes no physical input-latency claim.
+
 The [readiness replay](benchmarks/2026-09-17-readiness.md) compares T405's
 actual native writer and optional Rust reader with their preceding revision,
 including idle cancellation and paced 1/2/4-session CPU, reads and frame age.

@@ -1,0 +1,330 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.96s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-5d6aa94d0dbacbd7)
+
+running 225 tests
+test capture::card_allocation_tests::t330_daemon_slots_share_free_card_leases_across_restarts ... ok
+test capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug ... ok
+test capture::helper::tests::evdi_problem_reports_a_missing_module ... ok
+test capture::helper::tests::evdi_problem_reports_a_module_with_no_devices ... ok
+test capture::helper::tests::evdi_problem_stays_quiet_when_a_device_exists ... ok
+test capture::inproc_tests::t284_vaapi_is_rejected_before_fifo_or_helper_creation ... ok
+test capture::inproc_tests::t322_cancelled_inprocess_session_releases_fifo ... ok
+test capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources ... ok
+test capture::orphan_tests::t245_changed_or_foreign_process_identity_is_never_signalled ... ok
+test capture::orphan_tests::t245_orphan_cleanup_matches_literal_fifo_arguments_and_programs ... ok
+test capture::orphan_tests::t245_retirement_waits_for_term_resistant_children ... ok
+test capture::placement::tests::t224_kde_wayland_still_enables_positions_and_disables_output ... ok
+test capture::placement::tests::t224_non_kde_sessions_skip_placement_commands_and_retries ... ok
+test cli_tests::t030_pid_reuse_does_not_mistake_another_process_for_uscreen ... ok
+test cli_tests::t031_server_bind_failure_prevents_successful_startup ... ok
+test cli_tests::t032_extra_tablets_exclude_the_selected_primary_not_the_first_entry ... ok
+test cli_tests::t033_stop_waits_for_daemon_cleanup ... ok
+test cli_tests::t039_host_sends_tokens_only_to_the_protected_activity ... ok
+test cli_tests::t065_dead_flags_are_rejected_instead_of_silently_ignored ... ok
+test cli_tests::t066_cli_overrides_use_the_same_limits_as_saved_settings ... ok
+test cli_tests::t067_manual_forwarding_uses_custom_host_ports ... ok
+test cli_tests::t068_extra_session_waits_for_capture_cleanup ... ok
+test cli_tests::t069_each_disappearance_allows_a_new_wifi_announcement ... ok
+test cli_tests::t072_launched_children_are_reaped_after_exit ... ok
+test cli_tests::t105_live_wifi_off_and_address_changes_reach_adb ... ok
+test cli_tests::t106_usb_migration_preserves_physical_tablet_identity ... ok
+test cli_tests::t107_dual_transports_use_one_physical_slot ... ok
+test cli_tests::t108_t330_extra_slots_do_not_inherit_card_pins ... ok
+test cli_tests::t110_extra_token_delivery_is_targeted_and_rate_limited ... ok
+test cli_tests::t122_cli_distinguishes_omitted_helper_from_explicit_override ... ok
+test cli_tests::t122_explicit_missing_helper_cannot_fall_back ... ok
+test cli_tests::t142_every_slot_and_wifi_setup_require_the_app ... ok
+test cli_tests::t143_crashed_extra_apps_recover_with_per_device_backoff ... ok
+test cli_tests::t144_primary_and_extra_wait_for_both_reverse_mappings_and_retry ... ok
+test cli_tests::t200_runtime_persistence_preserves_cli_and_unchanged_fields ... ok
+test cli_tests::t237_discovery_recognizes_default_and_explicit_daemons ... ok
+test cli_tests::t237_stop_recovers_missing_and_stale_pid_files_without_touching_other_commands ... ok
+test cli_tests::t244_status_recovers_daemon_despite_stale_pid_file ... ok
+test cli_tests::t278_network_serial_forms_do_not_claim_usb_transport ... ok
+test cli_tests::t278_usb_replaces_current_mdns_without_guessing_unknown_identities ... ok
+test cli_tests::t278_wifi_setup_never_uses_mdns_as_the_usb_prerequisite ... ok
+test cli_tests::t281_attachment_identity_requires_proven_transport_equivalence ... ok
+test cli_tests::t284_start_rejects_vaapi_before_runtime_or_helper_setup ... ok
+test cli_tests::t292_queued_first_settings_update_is_persisted ... ok
+test cli_tests::t296_mode_changes_before_writer_start_are_persisted ... ok
+test cli_tests::t297_failed_settings_save_is_retried_on_next_update ... ok
+test cli_tests::t305_shutdown_already_requested_is_not_lost ... ok
+test cli_tests::t305_shutdown_waits_for_true_or_channel_closure ... ok
+test cli_tests::t385_mode_persistence_does_not_block_runtime ... ok
+test cli_tests::t385_settings_persistence_does_not_block_runtime ... ok
+test config::tests::t284_encoder_capabilities_preserve_default_vaapi_and_supported_alternatives ... ok
+test discovery_tests::t390_device_jobs_cancel_without_ever_starting_queued_work ... ok
+test discovery_tests::t390_device_jobs_complete_independently_and_bound_concurrency ... ok
+test discovery_tests::t390_initial_discovery_connects_fast_tablet_before_slow_probe ... ok
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... ok
+test discovery_tests::t390_slow_recovery_cannot_delay_another_tablet ... ok
+test doctor::tests::t023_missing_or_unloadable_helper_is_reported ... ok
+test doctor::tests::t024_one_helper_per_tablet_is_healthy ... ok
+test doctor::tests::t025_auto_resolution_does_not_report_a_working_mode_as_corrupt ... ok
+test doctor::tests::t026_colour_queries_target_the_selected_tablet ... ok
+test doctor::tests::t058_packaged_udev_hint_works_outside_a_source_checkout ... ok
+test doctor::tests::t060_missing_service_is_distinguished_from_disabled_service ... ok
+test doctor::tests::t076_forwarding_checks_exact_app_to_host_ports_and_hints_selected_tablet ... ok
+test doctor::tests::t098_codec_report_requires_decoder_evidence ... ok
+test doctor::tests::t099_doctor_targets_active_sessions_and_actual_ports ... ok
+test doctor::tests::t149_config_health_distinguishes_invalid_missing_and_valid_files ... ok
+test doctor::tests::t232_executable_discovery_without_which ... ok
+test doctor::tests::t234_input_diagnostics_follow_desktop_and_requested_devices ... ok
+test doctor::tests::t251_doctor_ignores_diagnostic_commands_and_unrelated_helpers ... ok
+test doctor::tests::t251_doctor_recovers_daemons_without_broad_orphan_matches ... ok
+test doctor::tests::t251_inventory_filters_foreign_owners_before_classification ... ok
+test doctor::tests::t251_orphan_remediation_uses_validated_lifecycle_commands ... ok
+test doctor::tests::t278_doctor_uses_the_same_mdns_network_classification ... ok
+test doctor::tests::t284_doctor_rejects_vaapi_even_when_ffmpeg_lists_it ... ok
+test doctor::tests::t301_saved_bitrate_warnings_cover_both_limits ... ok
+test doctor::tests::t301_saved_fps_warnings_cover_both_limits ... ok
+test doctor::tests::t313_doctor_accepts_the_cli_vaapi_alias ... ok
+test doctor::tests::t372_diagnostics_read_raw_dimensions_from_the_shared_inventory ... ok
+test edid::tests::edid_checksum_is_valid ... ok
+test edid::tests::t061_rejects_unrepresentable_edid_modes ... ok
+test edid::tests::t114_old_edid_cache_is_not_reused ... ok
+test edid::tests::t114_python_dtd_reports_exact_physical_size ... ok
+test edid::tests::t114_rust_dtd_reports_exact_physical_size ... ok
+test edid::tests::t115_both_generators_reject_unrepresentable_or_unsupported_values ... ok
+test edid::tests::t115_generators_agree_on_boundaries_color_and_ranges ... ok
+test edid::tests::t115_old_range_cache_is_not_reused ... ok
+test edid::tests::t246_cache_directory_is_not_returned_as_an_edid ... ok
+test edid::tests::t246_repairs_incomplete_and_wrong_generated_edids ... ok
+test edid::tests::t320_python_unused_descriptor_is_valid ... ok
+test edid::tests::t320_rust_unused_descriptor_is_valid ... ok
+test encoder::packet_tests::t402_delayed_bytes_survive_later_encode_and_encoder_retirement ... [libx264 @ 0x7a6c44002d40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44002d40] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44002d40] frame I:1     Avg QP:17.00  size:   748
+[libx264 @ 0x7a6c44002d40] frame P:32    Avg QP:11.00  size:    45
+[libx264 @ 0x7a6c44002d40] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44002d40] mb P  I16..4: 93.9%  0.0%  0.0%  P16..4:  6.1%  0.0%  0.0%  0.0%  0.0%    skip: 0.0%
+[libx264 @ 0x7a6c44002d40] coded y,uvDC,uvAC intra: 0.0% 0.2% 0.0% inter: 100.0% 100.0% 0.0%
+[libx264 @ 0x7a6c44002d40] i16 v,h,dc,p: 80%  0% 20%  0%
+[libx264 @ 0x7a6c44002d40] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c44002d40] kb/s:32.03
+ok
+test encoder::packet_tests::t402_delayed_large_packet_decodes_like_a_detached_copy ... [libx264 @ 0x7a6c44002c40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44002c40] profile Constrained Baseline, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44002c40] VBV underflow (frame 1, -5637400 bits)
+[libx264 @ 0x7a6c44002c40] frame I:1     Avg QP:50.95  size:165261
+[libx264 @ 0x7a6c44002c40] frame P:4     Avg QP:31.00  size:272653
+[libx264 @ 0x7a6c44002c40] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44002c40] mb P  I16..4:  0.0%  0.0%  0.0%  P16..4: 50.7%  0.0%  0.0%  0.0%  0.0%    skip:49.3%
+[libx264 @ 0x7a6c44002c40] coded y,uvDC,uvAC intra: 100.0% 100.0% 100.0% inter: 47.6% 49.4% 47.3%
+[libx264 @ 0x7a6c44002c40] i16 v,h,dc,p:  7%  3% 89%  1%
+[libx264 @ 0x7a6c44002c40] i8c dc,h,v,p: 96%  3%  1%  0%
+[libx264 @ 0x7a6c44002c40] kb/s:120563.80
+ok
+test encoder::packet_tests::t402_large_encoded_packets_avoid_the_drain_payload_copy ... [libx264 @ 0x7a6c44002c40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44002c40] profile Constrained Baseline, level 5.0, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44002c40] frame I:1     Avg QP:50.95  size:163217
+[libx264 @ 0x7a6c44002c40] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44002c40] coded y,uvDC,uvAC intra: 100.0% 100.0% 100.0%
+[libx264 @ 0x7a6c44002c40] i16 v,h,dc,p:  7%  3% 89%  1%
+[libx264 @ 0x7a6c44002c40] i8c dc,h,v,p: 96%  3%  1%  1%
+[libx264 @ 0x7a6c44002c40] kb/s:78344.16
+ok
+test encoder::packet_tests::t402_packet_storage_replay ... ignored, T402 optional microbenchmark; does not change production ownership
+test encoder::storage::tests::t402_multiple_packets_keep_independent_charges_during_cancellation ... ok
+test encoder::storage::tests::t402_publication_releases_unrelated_packet_owned_buffers ... ok
+test encoder::storage::tests::t402_slow_broadcast_consumer_cancellation_releases_after_encoder_retirement ... ok
+test encoder::storage::tests::t402_subrange_charges_complete_allocation_and_releases_once_after_retirement ... ok
+test encoder::storage::tests::t402_tiny_buffer_views_detach_without_retaining_large_allocations ... ok
+test encoder::storage::tests::t402_unknown_buffer_views_copy_and_detach ... ok
+test encoder::storage_replay::t402_packet_boundary_replay ... ignored, T402 optional paired allocator/publication boundary benchmark
+test encoder::tests::t119_libx264_respects_vbv_ceiling_on_complex_frames ... [libx264 @ 0x7a6c44002c40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44002c40] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44002c40] VBV underflow (frame 0, -27104 bits)
+[libx264 @ 0x7a6c44002c40] frame I:3     Avg QP:46.11  size:  8744
+[libx264 @ 0x7a6c44002c40] frame P:177   Avg QP:51.00  size:   418
+[libx264 @ 0x7a6c44002c40] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44002c40] mb P  I16..4:  4.2%  0.0%  0.0%  P16..4: 53.5%  0.0%  0.0%  0.0%  0.0%    skip:42.2%
+[libx264 @ 0x7a6c44002c40] coded y,uvDC,uvAC intra: 48.4% 72.0% 25.5% inter: 0.3% 55.9% 1.6%
+[libx264 @ 0x7a6c44002c40] i16 v,h,dc,p: 70%  3% 27%  0%
+[libx264 @ 0x7a6c44002c40] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c44002c40] kb/s:267.39
+ok
+test encoder::tests::t228_inproc_sequences_survive_restart ... [libx264 @ 0x7a6c3c000fc0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c3c000fc0] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c3c000fc0] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c3c000fc0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c3c000fc0] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c3c000fc0] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c3c000fc0] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c3c000fc0] kb/s:352.80
+[libx264 @ 0x7a6c3c002e80] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c3c002e80] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c3c002e80] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c3c002e80] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c3c002e80] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c3c002e80] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c3c002e80] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c3c002e80] kb/s:352.80
+ok
+test encoder::tests::t265_drain_preserves_packets_and_normal_exhaustion ... [libx264 @ 0x7a6c44003580] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44003580] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44003580] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c44003580] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44003580] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c44003580] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c44003580] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c44003580] kb/s:352.80
+ok
+test encoder::tests::t265_drain_reports_codec_errors ... ok
+test encoder::tests::t266_reused_input_preserves_retained_frame_planes ... [libx264 @ 0x7a6c44003580] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44003580] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44003580] frame I:1     Avg QP:17.00  size:   748
+[libx264 @ 0x7a6c44003580] frame P:1     Avg QP:11.00  size:    41
+[libx264 @ 0x7a6c44003580] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44003580] mb P  I16..4: 100.0%  0.0%  0.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip: 0.0%
+[libx264 @ 0x7a6c44003580] coded y,uvDC,uvAC intra: 0.0% 6.2% 0.0%
+[libx264 @ 0x7a6c44003580] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c44003580] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c44003580] kb/s:189.36
+ok
+test encoder::tests::t284_vaapi_reports_build_limit_before_codec_initialization ... ok
+test encoder::tests::t310_encoded_bitstream_preserves_bt709_color_description ... [libx264 @ 0x7a6c44003580] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c44003580] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c44003580] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c44003580] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c44003580] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c44003580] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c44003580] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c44003580] kb/s:352.80
+ok
+test encoder::tests::t348_inproc_reads_native_fifo_paths ... [libx264 @ 0x7a6c3c000f40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c3c000f40] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c3c000f40] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c3c000f40] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c3c000f40] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c3c000f40] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c3c000f40] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c3c000f40] kb/s:352.80
+[libx264 @ 0x7a6c3c002c00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x7a6c3c002c00] profile Constrained Baseline, level 1.3, 4:2:0, 8-bit
+[libx264 @ 0x7a6c3c002c00] frame I:1     Avg QP:17.00  size:   735
+[libx264 @ 0x7a6c3c002c00] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x7a6c3c002c00] coded y,uvDC,uvAC intra: 0.0% 0.0% 0.0%
+[libx264 @ 0x7a6c3c002c00] i16 v,h,dc,p: 75%  0% 25%  0%
+[libx264 @ 0x7a6c3c002c00] i8c dc,h,v,p: 100%  0%  0%  0%
+[libx264 @ 0x7a6c3c002c00] kb/s:352.80
+ok
+test encoder::tests::t373_inproc_dictionary_preserves_boundary_policy_and_adapter_differences ... ok
+test encoder_io::fifo::tests::t405_cancellation_latches_before_wait_and_descriptors_are_owned ... ok
+test encoder_io::fifo::tests::t405_empty_fifo_waits_for_readiness_instead_of_repeated_eagain_reads ... ok
+test encoder_io::fifo::tests::t405_inode_move_falls_back_without_losing_live_writer_data ... ok
+test encoder_io::fifo::tests::t405_no_inotify_fallback_reconnects_and_still_cancels ... ok
+test encoder_io::fifo::tests::t405_no_writer_fifo_waits_for_an_event_instead_of_repeated_eof_reads ... ok
+test encoder_io::fifo::tests::t405_partial_eof_discards_old_bytes_before_writer_reconnect ... ok
+test encoder_io::fifo::tests::t405_partial_frame_cancellation_needs_no_more_input ... ok
+test encoder_io::fifo::tests::t405_writer_notifications_follow_opened_inode_after_path_replacement ... ok
+test encoder_io::tests::t027_discards_partial_frame_when_fifo_writer_disconnects ... ok
+test encoder_io::tests::t028_extracts_hevc_vps_sps_pps ... ok
+test encoder_io::tests::t028_preserves_h264_parameter_sets ... ok
+test input::batching_tests::t406_dropping_device_does_not_publish_an_unfinished_frame ... ok
+test input::batching_tests::t406_event_bound_never_splits_or_leaks_an_unsynchronized_frame ... ok
+test input::batching_tests::t406_failed_batch_never_replays_a_delivered_prefix ... ok
+test input::batching_tests::t406_native_bytes_match_linux_input_header_layout ... ok
+test input::batching_tests::t406_pen_down_preserves_proximity_button_tip_boundaries ... ok
+test input::batching_tests::t406_pending_events_wait_for_the_current_syn_boundary ... ok
+test input::batching_tests::t406_recorded_replay_preserves_every_native_byte ... ok
+test input::batching_tests::t406_replay_writes_once_per_existing_sync_frame ... ok
+test input::batching_tests::t406_short_and_interrupted_writes_preserve_every_byte ... ok
+test input::batching_tests::t406_zero_write_and_flush_errors_retire_the_batch ... ok
+test input::contracts::t281_retired_socket_cannot_claim_or_dispatch_into_current_controller ... ok
+test input::contracts::t281_socket_accepted_before_replacement_cannot_authenticate_after_it ... ok
+test input::contracts::t370_dispatch_preserves_order_and_controller_ownership_with_adapters ... ok
+test input::contracts::t370_server_cancels_injected_backend_when_owner_ends ... ok
+test input::tests::t029_x11_maps_only_this_tablets_devices_and_card ... ok
+test input::tests::t062_greeting_advertises_disabled_input_devices ... ok
+test input::tests::t063_codec_changes_are_pushed_to_connected_clients ... ok
+test input::tests::t063_greeting_reports_live_encoder_codec ... ok
+test input::tests::t063_unknown_encoder_from_tablet_is_rejected ... ok
+test input::tests::t084_stopping_server_closes_clients_and_watcher ... ok
+test input::tests::t085_reconnect_preserves_current_controller_contacts ... ok
+test input::tests::t086_touch_stays_down_until_last_contact_lifts ... ok
+test input::tests::t092_idle_and_partial_upgrades_expire ... ok
+test input::tests::t092_pending_connections_are_bounded ... ok
+test input::tests::t109_state_changes_cancel_pending_mapping ... ok
+test input::tests::t120_greeting_and_apply_report_effective_frame_rate ... ok
+test input::tests::t145_fallback_preserves_card_ownership ... ok
+test input::tests::t146_normalized_input_stays_in_axes_and_releases ... ok
+test input::tests::t223_fixed_resolution_keeps_pixels_but_negotiates_physical_size ... ok
+test input::tests::t247_connected_fixture_matches_production_response ... ok
+test input::tests::t275_manual_geometry_is_independent_of_native_edid_limits ... ok
+test input::tests::t275_selected_manual_and_automatic_modes_keep_edid_bounds ... ok
+test input::tests::t284_tablet_cannot_switch_inproc_capture_to_vaapi ... ok
+test input::tests::t286_hover_exit_parks_pointer_at_final_release_position ... ok
+test input::tests::t286_release_updates_pen_axes_before_leaving_proximity ... ok
+test input::tests::t287_wire_tilt_reconstructs_physical_degrees_from_declared_axes ... ok
+test input::tests::t299_primary_selection_accepts_current_and_legacy_schemas ... ok
+test input::tests::t299_primary_selection_reaches_kwin_mapping_arguments ... ok
+test input::tests::t317_proximity_exit_releases_stylus_button_for_next_press ... ok
+test input::tests::t318_pen_lifecycle_matches_android_samples ... ok
+test input::tests::t323_replacement_cancels_a_backpressured_control_writer ... ok
+test input::tests::t346_greeting_uses_one_encoder_settings_snapshot ... ok
+test input::tests::t372_mapping_selects_from_the_shared_inventory ... ok
+test input::tests::t375_android_motion_fixture_matches_host_fields ... ok
+test input::wake_tests::t405_idle_input_listener_has_no_periodic_wakeups ... ok
+test kscreen::tests::t171_normalization_is_idempotent_and_preserves_other_outputs ... ok
+test kscreen::tests::t171_scaled_layout_preserves_all_four_positions ... ok
+test kscreen::tests::t298_fractional_scale_neighbors_do_not_overlap ... ok
+test kscreen::tests::t372_inventory_command_is_injectable_and_preserves_json_on_failed_exit ... ok
+test kscreen::tests::t372_parser_preserves_missing_and_wrong_type_defaults ... ok
+test kscreen::tests::t372_shared_inventory_preserves_placement_and_connector_identity ... ok
+test kwin::tests::busctl_scalar_drops_the_signature_and_quotes ... ok
+test kwin::tests::busctl_string_array_is_split_on_quotes ... ok
+test kwin::tests::t064_transient_probe_failure_is_retried_until_backend_is_available ... ok
+test latency::tests::t228_retired_ack_cannot_consume_new_generation ... ok
+test media::codec_config_tests::t405_headers_published_without_waiters_survive_clone_and_reset ... ok
+test media::tests::codec_is_picked_from_the_encoder_name ... ok
+test media::tests::t401_delayed_packet_lease_keeps_storage_after_producer_retirement ... ok
+test media_storage::tests::t391_shared_backing_cannot_escape_to_an_unaccounted_session ... ok
+test media_storage::tests::t391_slice_retains_full_capacity_once_until_final_release ... ok
+test monitor::tests::t390_promoting_an_extra_retires_its_previous_slot ... ok
+test osk::tests::t111_restore_retries_preserved_setting_until_confirmed ... ok
+test osk::tests::t148_concurrent_device_changes_serialize_keyboard_writes ... ok
+test osk::tests::t148_detach_during_disable_reconciles_current_device_count ... ok
+test osk::tests::t334_failed_or_interrupted_writes_never_publish_empty_or_replace_valid_state ... ok
+test osk::tests::t334_invalid_existing_backup_never_suppresses_or_restores ... ok
+test osk::tests::t334_new_state_must_be_saved_before_suppression ... ok
+test osk::tests::t334_saved_state_must_be_a_regular_file_without_symlinks ... ok
+test osk::tests::t334_unreadable_state_never_changes_the_keyboard ... ok
+test osk::tests::t334_unwritable_state_destination_does_not_suppress ... ok
+test osk::tests::t334_valid_backup_is_preserved_and_restoration_can_retry ... ok
+test persistence::tests::t385_settings_and_mode_transactions_share_one_ordered_worker ... ok
+test persistence::tests::t385_shutdown_cancels_lock_wait_and_queued_work_then_joins ... ok
+test session::tests::t281_coalesced_detach_attach_cannot_reuse_previous_geometry ... ok
+test session::tests::t281_current_metadata_survives_delayed_gate_and_transport_migration ... ok
+test session::tests::t368_runtime_owns_listeners_and_queued_initial_settings ... ok
+test session::tests::t368_second_bind_failure_releases_first_listener ... ok
+test stream::resources::t391_one_two_four_sessions_release_resources ... ok
+test stream::tests::t056_idle_server_does_not_count_as_a_video_client ... ok
+test stream::tests::t071_frame_header_and_payload_share_one_write_and_handle_short_writes ... ok
+test stream::tests::t138_server_shutdown_retires_authenticated_clients ... ok
+test stream::tests::t139_idle_authenticated_disconnect_frees_capture ... ok
+test stream::tests::t139_only_authenticated_clients_request_capture ... ok
+test stream::tests::t139_pending_admission_is_bounded_and_reusable ... ok
+test stream::tests::t227_queued_frame_keeps_its_codec_configuration ... ok
+test stream::tests::t227_retired_batches_are_discarded_across_codec_and_resolution_changes ... ok
+test stream::tests::t267_disabled_auth_bounds_optional_prefix_and_rejects_extra_input ... ok
+test stream::tests::t267_disabled_auth_keeps_legacy_tokenless_video_and_idle_cleanup ... ok
+test stream::tests::t267_enabled_auth_rejects_stale_and_missing_tokens_before_video ... ok
+test stream::tests::t267_saved_android_token_survives_enabled_disabled_enabled_transitions ... ok
+test stream::tests::t391_initial_config_counts_backing_before_first_frame ... ok
+test stream::tests::t391_replay_batch_allocations ... ok
+test stream::tests::t391_stalled_frame_and_config_writes_have_a_deadline ... ok
+test stream::wake_tests::t405_codec_config_publication_wakes_waiters_immediately ... ok
+test stream::wake_tests::t405_codec_config_wait_has_only_its_final_deadline ... ok
+test stream::wake_tests::t405_idle_listener_has_no_periodic_wakeups ... ok
+test stream::wake_tests::t405_stop_before_first_poll_remains_latched ... ok
+test stream::wake_tests::t405_stop_wakes_listener_without_waiting_for_a_tick ... ok
+test update::tests::t123_update_versions_follow_shared_validation_and_precedence ... ok
+test update::tests::t374_release_json_contract ... ok
+test update::tests::tag_is_read_from_release_json ... ok
+test update::tests::version_comparison ... ok
+test video_queue::tests::t391_budget_pressure_requires_idr_and_counts_shared_config_once ... ok
+test video_queue::tests::t391_unauthenticated_receivers_and_oversized_packets_retain_nothing ... ok
+
+test result: ok. 223 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 26.96s

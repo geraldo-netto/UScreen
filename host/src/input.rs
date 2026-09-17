@@ -3,9 +3,12 @@
 mod wake_tests;
 
 mod backend;
+#[cfg(test)]
+mod batching_tests;
 mod config;
 #[cfg(test)]
 mod contracts;
+mod event_writer;
 mod linux;
 mod mapping;
 mod settings;
@@ -874,9 +877,7 @@ esac
         for eraser in [false, true] {
             let file = tempfile::NamedTempFile::new().unwrap();
             let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
-                pen: Some(UInputDevice {
-                    file: file.reopen().unwrap(),
-                }),
+                pen: Some(UInputDevice::from_writer(file.reopen().unwrap())),
                 ..InjectDevices::empty()
             }));
             let (mode, _rx) = watch::channel(false);
@@ -929,9 +930,7 @@ esac
         for case in cases {
             let file = tempfile::NamedTempFile::new().unwrap();
             let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
-                pen: Some(UInputDevice {
-                    file: file.reopen().unwrap(),
-                }),
+                pen: Some(UInputDevice::from_writer(file.reopen().unwrap())),
                 ..InjectDevices::empty()
             }));
             let (mode, _rx) = watch::channel(false);
@@ -1027,9 +1026,7 @@ esac
         for eraser in [false, true] {
             let file = tempfile::NamedTempFile::new().unwrap();
             let mut devices = InjectDevices {
-                pen: Some(UInputDevice {
-                    file: file.reopen().unwrap(),
-                }),
+                pen: Some(UInputDevice::from_writer(file.reopen().unwrap())),
                 ..InjectDevices::empty()
             };
             for action in [3, 5, 0, 1] {
@@ -1103,9 +1100,7 @@ esac
     fn t286_release_updates_pen_axes_before_leaving_proximity() {
         for eraser in [false, true] {
             let file = tempfile::NamedTempFile::new().unwrap();
-            let mut pen = UInputDevice {
-                file: file.reopen().unwrap(),
-            };
+            let mut pen = UInputDevice::from_writer(file.reopen().unwrap());
             pen.inject_pen(100, 200, 1000, 10, 20, 0, eraser, None)
                 .unwrap();
             pen.inject_pen(300, 400, 123, 30, -40, 1, eraser, None)
@@ -1169,12 +1164,8 @@ esac
             let pen = tempfile::NamedTempFile::new().unwrap();
             let pointer = tempfile::NamedTempFile::new().unwrap();
             let mut devices = InjectDevices {
-                pen: Some(UInputDevice {
-                    file: pen.reopen().unwrap(),
-                }),
-                pointer: Some(UInputDevice {
-                    file: pointer.reopen().unwrap(),
-                }),
+                pen: Some(UInputDevice::from_writer(pen.reopen().unwrap())),
+                pointer: Some(UInputDevice::from_writer(pointer.reopen().unwrap())),
                 ..InjectDevices::empty()
             };
             for (action, x, y) in [(0, 100, 200), (1, 300, 400), (4, 0, 0)] {
@@ -1210,9 +1201,7 @@ esac
     fn t146_normalized_input_stays_in_axes_and_releases() {
         for pen in [false, true] {
             let file = tempfile::NamedTempFile::new().unwrap();
-            let device = UInputDevice {
-                file: file.reopen().unwrap(),
-            };
+            let device = UInputDevice::from_writer(file.reopen().unwrap());
             let mut devices = InjectDevices::empty();
             if pen {
                 devices.pen = Some(device);
@@ -1269,9 +1258,7 @@ esac
     fn t086_touch_stays_down_until_last_contact_lifts() {
         let file = tempfile::NamedTempFile::new().unwrap();
         let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
-            touch: Some(UInputDevice {
-                file: file.reopen().unwrap(),
-            }),
+            touch: Some(UInputDevice::from_writer(file.reopen().unwrap())),
             ..InjectDevices::empty()
         }));
         let (mode, _rx) = watch::channel(false);
@@ -1459,9 +1446,7 @@ esac
     async fn t085_reconnect_preserves_current_controller_contacts() {
         let file = tempfile::NamedTempFile::new().unwrap();
         let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
-            touch: Some(UInputDevice {
-                file: file.reopen().unwrap(),
-            }),
+            touch: Some(UInputDevice::from_writer(file.reopen().unwrap())),
             ..InjectDevices::empty()
         }));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
