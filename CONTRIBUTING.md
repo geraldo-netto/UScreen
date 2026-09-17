@@ -17,7 +17,7 @@ involved, the log (`RUST_LOG=uscreen=debug uscreen start`, or
 - Build with `make build` (Rust host + C helper) and `cd android && ./gradlew
   assembleDebug` for the app. See [docs/development.md](docs/development.md).
 - Run `cargo test --release --workspace`, `cargo clippy --workspace --all-targets`,
-  and `cd android && ./gradlew testDebugUnitTest` before opening a pull request.
+  and `cd android && ./gradlew lintDebug testDebugUnitTest` before opening a pull request.
   Behavioral fixes need permanent regressions linked to the issue/TODO ID;
   show each test failing before the fix and passing afterward. The host
   suite needs a C compiler and make; Android tests run with Robolectric.

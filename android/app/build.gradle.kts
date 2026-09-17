@@ -51,6 +51,11 @@ android {
 
     sourceSets.getByName("test").resources.srcDir("../../testdata")
 
+    lint {
+        // T258: a successful scan must not silently omit library checks.
+        fatal += "ObsoleteLintCustomCheck"
+    }
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
