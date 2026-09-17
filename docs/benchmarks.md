@@ -1,5 +1,9 @@
 # Benchmarks
 
+For the current fork's proposed measurement matrix and optimization work, see
+the [performance and scalability research](reviews/2026-09-17-performance-scalability.md).
+That report separates code-derived hypotheses from measurements still needed.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

@@ -21,9 +21,11 @@ the daemon can change the live display configuration.
 
 - Record every finding as a uniquely identified row in `TODO.md` **before**
   fixing it, preserving the existing table format.
-- Record contradictions as **blocked** rows: identify both conflicting
-  statements/behaviors, their sources and the exact resolution condition.
-  Keep them blocked until resolved; do independent work while awaiting a decision.
+- Record contradictions with both conflicting statements/behaviors, their
+  sources and the exact resolution condition. Use **open** for actionable work.
+  Reserve **blocked** for an actual missing decision, evidence or prerequisite,
+  and name what is missing. Move it to open when that obstacle is removed;
+  remove the row only after resolution. Continue independent work meanwhile.
 - For each confirmed behavioral bug, add a permanent automated regression to
   the normal suite **before** the fix. Show it failing, then passing after the
   fix, and link it to the issue/TODO ID. Retain it after completion; do not

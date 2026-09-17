@@ -5,6 +5,11 @@ Windows remains a [proposed integration](windows-port.md). Known behavioral
 limits are tracked in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md); describing a path does not certify
 it on every desktop or device.
 
+The [2026-09-17 architecture review](reviews/2026-09-17-architecture.md) records
+merge/split opportunities, ownership boundaries and required regression coverage.
+Its [performance research](reviews/2026-09-17-performance-scalability.md) proposes
+Android and Rust/C measurements and improvements; these are not benchmark results.
+
 ## Pipeline
 
 1. **Virtual display.** A C helper opens an EVDI device and presents a generated
