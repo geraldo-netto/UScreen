@@ -318,6 +318,36 @@ mod tests {
         );
     }
 
+    // T242: the fake tablet consumes the same base-selection fixture.
+    #[test]
+    fn t242_fake_tablet_runtime_fixture_matches_the_host() {
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../../testdata/runtime-bases.json")).unwrap();
+        for case in cases {
+            let root = tempfile::tempdir().unwrap();
+            for directory in case["directories"].as_array().unwrap() {
+                std::fs::create_dir(root.path().join(directory.as_str().unwrap())).unwrap();
+            }
+            let actual = select_runtime_base(
+                t242_fixture_path(root.path(), &case["xdg"]),
+                root.path().join("run"),
+                t242_fixture_path(root.path(), &case["home"]),
+            );
+            let expected = t242_fixture_path(root.path(), &case["expected"]).unwrap();
+            assert_eq!(actual, PathBuf::from(expected), "T242 {}", case["name"]);
+        }
+    }
+
+    fn t242_fixture_path(
+        root: &std::path::Path,
+        value: &serde_json::Value,
+    ) -> Option<std::ffi::OsString> {
+        value.as_str().map(|path| match path {
+            "" | ".cache" => path.into(),
+            _ => root.join(path).into_os_string(),
+        })
+    }
+
     #[test]
     fn t252_base_permissions_and_symlink_policy_are_explicit() {
         use std::os::unix::fs::PermissionsExt;

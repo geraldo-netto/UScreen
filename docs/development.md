@@ -119,9 +119,12 @@ require review; this is not a native SonarQube analysis.
 `USCREEN_FAKE_TABLET=fake1,fake2` and `max_tablets = 2` it exercises a
 second pipeline without a second physical tablet. It still drives the real
 host capture/encoder pipeline and can attach EVDI; it is not an isolated unit
-test or a measure of tablet decoding. The script's token-path fallback differs
-from the daemon when runtime directories are absent (T242); use a valid
-XDG_RUNTIME_DIR shared by both until that is corrected.
+test or a measure of tablet decoding. Token discovery uses the daemon's base
+selection: an existing XDG_RUNTIME_DIR, then an existing /run/user/<uid>, then
+HOME/.cache (/tmp/.cache when HOME is absent). Both resolve base aliases before
+using the uscreen/token path. Run with the daemon's environment; the script
+reads the token and does not create runtime directories. Rust and Python test
+this order against the shared runtime-bases.json fixture.
 
 ## Project layout
 

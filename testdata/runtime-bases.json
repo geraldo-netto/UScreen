@@ -1,0 +1,10 @@
+[
+  {"name":"xdg-first","xdg":"xdg","home":"home","directories":["xdg","run"],"expected":"xdg"},
+  {"name":"invalid-xdg-uses-user-runtime","xdg":"missing","home":"home","directories":["run"],"expected":"run"},
+  {"name":"unset-xdg-uses-user-runtime","xdg":null,"home":"home","directories":["run"],"expected":"run"},
+  {"name":"empty-xdg-uses-user-runtime","xdg":"","home":"home","directories":["run"],"expected":"run"},
+  {"name":"invalid-xdg-and-user-runtime-use-home","xdg":"missing","home":"home","directories":[],"expected":"home/.cache"},
+  {"name":"unset-xdg-and-user-runtime-use-home","xdg":null,"home":"home","directories":[],"expected":"home/.cache"},
+  {"name":"no-home-uses-tmp-cache","xdg":null,"home":null,"directories":[],"expected":"/tmp/.cache"},
+  {"name":"empty-home-retains-relative-cache","xdg":null,"home":"","directories":[],"expected":".cache"}
+]

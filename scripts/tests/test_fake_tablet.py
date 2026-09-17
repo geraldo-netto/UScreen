@@ -82,5 +82,39 @@ class PartialIoTest(unittest.TestCase):
         self.assertEqual(tablet.receive_video(FragmentedSocket([]), control, 5), (False, 0, None))
 
 
+class RuntimePaths(unittest.TestCase):
+    """T242: shared with the Rust selector; no host runtime directory is written."""
+    def test_t242_shared_runtime_base_contract(self):
+        import json
+        import os
+        from unittest import mock
+        fixture = Path(__file__).parents[2] / 'testdata/runtime-bases.json'
+        cases = json.loads(fixture.read_text())
+        paths = {'xdg': '/fixture/xdg with spaces', 'home': '/fixture/home',
+                 'run': f'/run/user/{os.getuid()}', 'missing': '/fixture/missing'}
+        for case in cases:
+            with self.subTest(case=case['name']):
+                env = {key: paths.get(case[name], case[name]) for key, name in
+                       [('XDG_RUNTIME_DIR', 'xdg'), ('HOME', 'home')] if case[name] is not None}
+                exists = {paths[name] for name in case['directories']}
+                expected = case['expected'].replace('home/', paths['home'] + '/')
+                expected = paths.get(expected, expected)
+                with mock.patch.dict(os.environ, env, clear=True), \
+                        mock.patch.object(os.path, 'isdir', side_effect=lambda path: path in exists):
+                    self.assertEqual(tablet.runtime_dir(), os.path.join(os.path.realpath(expected), 'uscreen'))
+
+    def test_t242_runtime_base_alias_resolves_like_the_host(self):
+        import os
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as root:
+            base = Path(root) / 'actual'
+            base.mkdir()
+            alias = Path(root) / 'alias'
+            alias.symlink_to(base, target_is_directory=True)
+            with mock.patch.dict(os.environ, {'XDG_RUNTIME_DIR': str(alias)}):
+                self.assertEqual(tablet.runtime_dir(), str(base / 'uscreen'))
+
+
 if __name__ == '__main__':
     unittest.main()

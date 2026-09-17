@@ -12,8 +12,14 @@ a second slot with a single physical tablet.
 import argparse, base64, json, os, socket, struct, sys, time, threading
 
 def runtime_dir():
-    base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
-    return os.path.join(base, "uscreen")
+    # T242: same selection order as common/src/linux/runtime.rs. This client
+    # only locates an existing token; the daemon creates/validates the directory.
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    if base is None or not os.path.isdir(base):
+        base = f"/run/user/{os.getuid()}"
+    if not os.path.isdir(base):
+        base = os.path.join(os.environ.get("HOME", "/tmp"), ".cache")
+    return os.path.join(os.path.realpath(base), "uscreen")
 
 class BufferedSocket:
     """Keep bytes received after the HTTP upgrade for the first WS frame."""
