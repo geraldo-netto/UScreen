@@ -64,6 +64,14 @@ kernel fix. A packaged userspace library is not the kernel module.
 Portable tarballs/native packages bundle libevdi v1.15.0 next to the helper
 and use an `$ORIGIN` lookup. A normal source installation may instead use the
 system library installed during the build; see [development.md](development.md).
+The Debian-family installer installs FFmpeg/ADB and GUI libraries independently
+from libevdi and DKMS. It skips a libevdi package when the required library is
+already present: a bundle/system `libevdi.so.1` for prebuilt programs, or the
+system `libevdi.so` linker file for a source build. Standard system library
+locations and `/usr/local/lib`, `/usr/local/lib64` and their architecture
+subdirectories are checked. Otherwise it requests `libevdi1` for prebuilt
+programs or `libevdi-dev` for source builds. The kernel module remains a separate
+requirement even when the bundle supplies its userspace library.
 
 ## Start the host
 

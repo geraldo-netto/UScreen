@@ -12,6 +12,31 @@ info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+is_prebuilt() { [ -f "$PROJECT_DIR/bin/uscreen" ]; }
+
+has_evdi_library() {
+    # Source linking needs the unversioned development link. A prebuilt helper
+    # instead needs its runtime SONAME, supplied by a bundle or the system.
+    local name=libevdi.so directory
+    if is_prebuilt; then
+        name=libevdi.so.1
+        [ -f "$PROJECT_DIR/bin/$name" ] && return 0
+    fi
+    for directory in /usr/local/lib /usr/local/lib64 /usr/local/lib/* \
+                     /usr/lib /usr/lib64 /usr/lib/* /lib /lib64 /lib/*; do
+        [ -f "$directory/$name" ] && return 0
+    done
+    return 1
+}
+
+install_debian_evdi_library() {
+    has_evdi_library && return 0
+    local package=libevdi-dev
+    if is_prebuilt; then package=libevdi1; fi
+    sudo apt-get install -y "$package" || \
+        warn "$package did not install — supply libevdi separately (see docs/development.md)"
+}
+
 # Package names verified against real systems, not from memory: an Arch
 # container, a Debian container and a Fedora container, each asked what it
 # actually has. Three of the four families had at least one name wrong.
@@ -55,16 +80,12 @@ install_fedora_deps() {
 install_debian_deps() {
     local gui_deps=(libx11-6 libx11-xcb1 libxcursor1 libxi6 libxkbcommon-x11-0)
     sudo apt-get update
-    # libevdi0 does not exist: the runtime library is libevdi1, and
-    # libevdi0-dev is only a transitional package. Asking for the
-    # wrong one made the whole line fail, and the fallback quietly
-    # installed no library at all.
-    # Userspace first, kernel module second: a dkms build that fails
-    # (no headers, unsupported kernel) must not stop ffmpeg and adb
-    # from being installed.
-    sudo apt-get install -y ffmpeg adb libevdi1 libevdi-dev "${gui_deps[@]}" || \
-    sudo apt-get install -y ffmpeg android-tools-adb libevdi1 "${gui_deps[@]}" || \
+    # Independent transactions: missing libevdi or a failed DKMS build must
+    # not prevent runtime tools from installing, including in prebuilt bundles.
+    sudo apt-get install -y ffmpeg adb "${gui_deps[@]}" || \
+    sudo apt-get install -y ffmpeg android-tools-adb "${gui_deps[@]}" || \
         warn "Check the package names for your release"
+    install_debian_evdi_library
     sudo apt-get install -y evdi-dkms || \
         warn "evdi-dkms did not install — you may need linux-headers-$(uname -r)"
 }
@@ -125,9 +146,8 @@ check_deps() {
     local missing=0
     command -v ffmpeg >/dev/null 2>&1 || { warn "ffmpeg not found"; missing=1; }
     command -v adb    >/dev/null 2>&1 || { warn "adb not found"; missing=1; }
-    ls /usr/lib*/libevdi.so* >/dev/null 2>&1 || \
-        ls /usr/lib/*/libevdi.so* >/dev/null 2>&1 || \
-        { warn "libevdi not found — the helper will not build"; missing=1; }
+    has_evdi_library || \
+        { warn "libevdi not found for the selected source/runtime route (see docs/development.md)"; missing=1; }
     [ "$missing" = 0 ] && info "Dependencies look complete"
     return 0
 }
@@ -146,7 +166,7 @@ check_path() {
 
 build_if_needed() {
     # Release tarballs ship prebuilt binaries next to this script's parent
-    if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
+    if is_prebuilt; then
         return
     fi
     # Cargo tracks source/dependency changes; make also rebuilds the helper.
@@ -176,7 +196,7 @@ stage_install_binaries() {
 
 install_binaries() {
     local src_bin staged
-    if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
+    if is_prebuilt; then
         src_bin="$PROJECT_DIR/bin"
     else
         # Make builds into this directory explicitly, regardless of Cargo's

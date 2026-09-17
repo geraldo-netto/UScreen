@@ -8,8 +8,76 @@ import unittest
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = (REPO / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
 
+DEPENDENCY_STUBS = r'''
+PROJECT_DIR=$1
+MOCK_SYSTEM=$2
+sudo() {
+    if [[ ${REFUSE_EVDI:-0} == 1 && $* == *libevdi* ]]; then return 1; fi
+    printf 'installed: %s\n' "$*"
+}
+ffmpeg() { :; }
+adb() { :; }
+ls() { return 1; }
+[() {
+    if [[ $1 == -f && ( $2 == /usr/* || $2 == /lib/* || $2 == /lib64/* ) ]]; then
+        builtin [ -f "$MOCK_SYSTEM$2" ]
+    else builtin [ "$@"; fi
+}
+'''
+
 
 class InstallerTest(unittest.TestCase):
+    def dependency_fixture(self, root, prebuilt, library):
+        project, system = root / 'project', root / 'system'
+        project.mkdir()
+        system.mkdir()
+        if prebuilt:
+            (project / 'bin').mkdir()
+            (project / 'bin/uscreen').write_text('fixture')
+        if library:
+            base = project if library.startswith('bin/') else system
+            path = base / library
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('fixture library')
+        return project, system
+
+    def dependency_output(self, fixture, commands):
+        result = subprocess.run(['bash', '-s', '--', *map(str, fixture)],
+            input=SOURCE + DEPENDENCY_STUBS + commands, cwd=REPO, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return result.stdout
+
+    def test_t229_missing_evdi_packages_do_not_block_runtime_tools(self):
+        for prebuilt in [True, False]:
+            with self.subTest(prebuilt=prebuilt), tempfile.TemporaryDirectory() as temp:
+                fixture = self.dependency_fixture(Path(temp), prebuilt, None)
+                output = self.dependency_output(fixture, 'REFUSE_EVDI=1\ninstall_debian_deps\n')
+                installed = [line.split() for line in output.splitlines() if line.startswith('installed:')]
+                self.assertTrue(any('ffmpeg' in args and 'adb' in args for args in installed),
+                                'T229: missing libevdi prevented runtime tools installation')
+                self.assertTrue(any('evdi-dkms' in args for args in installed))
+
+    def test_t229_library_requirements_follow_bundle_or_source(self):
+        cases = [
+            (True, 'bin/libevdi.so.1', None, True),
+            (True, 'usr/local/lib/libevdi.so.1', None, True),
+            (True, None, 'libevdi1', False),
+            (False, 'usr/local/lib/libevdi.so', None, True),
+            (False, 'usr/local/lib/libevdi.so.1', 'libevdi-dev', False),
+            (False, 'bin/libevdi.so.1', 'libevdi-dev', False),
+            (False, None, 'libevdi-dev', False),
+        ]
+        for prebuilt, library, package, complete in cases:
+            with self.subTest(prebuilt=prebuilt, library=library), tempfile.TemporaryDirectory() as temp:
+                fixture = self.dependency_fixture(Path(temp), prebuilt, library)
+                output = self.dependency_output(fixture, 'install_debian_deps\ncheck_deps\n')
+                packages = [part for line in output.splitlines() if line.startswith('installed:')
+                            for part in line.split() if part.startswith('libevdi')]
+                self.assertEqual(packages, [] if package is None else [package],
+                                 'T229: source and runtime library requirements were mixed')
+                self.assertEqual('Dependencies look complete' in output, complete,
+                                 'T229: library availability did not match the build/load route')
+
     def test_t345_installed_binaries_are_executable(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-executable-install-') as tmp:
             source, installed = self.upgrade_fixture(Path(tmp))
@@ -110,7 +178,7 @@ class InstallerTest(unittest.TestCase):
         ]
         stubs = r'''
 sudo() {
-    if [[ ${FAIL_DEBIAN:-0} == 1 && $* == *libevdi-dev* ]]; then return 1; fi
+    if [[ ${FAIL_DEBIAN:-0} == 1 && ( $* == *libevdi-dev* || $* == *'ffmpeg adb '* ) ]]; then return 1; fi
     printf 'packages: %s\n' "$*"
 }
 pacman() { return 1; }
@@ -139,10 +207,11 @@ pacman() { return 1; }
 yay() { printf 'yay %s\\n' "$*"; }
 dnf() { return 1; }
 rpm() { echo 42; }
+has_evdi_library() { return 1; }
 '''
         families = {
             'fedora': ['ffmpeg android-tools'],
-            'ubuntu debian': ['apt-get update', 'ffmpeg adb libevdi1 libevdi-dev', 'evdi-dkms'],
+            'ubuntu debian': ['apt-get update', 'ffmpeg adb', 'apt-get install -y libevdi-dev', 'evdi-dkms'],
             'cachyos arch': ['pacman -S --needed --noconfirm ffmpeg android-tools', 'yay -S --needed --noconfirm evdi-dkms'],
             'opensuse': ['zypper --non-interactive install --no-recommends ffmpeg android-tools', 'evdi libevdi1'],
             'unknown': ['Unknown distro. Install manually:'],
@@ -157,11 +226,13 @@ rpm() { echo 42; }
         output = self.run_installer('''
 sudo() {
     printf 'sudo %s\\n' "$*"
-    case "$*" in *libevdi-dev*) return 1 ;; esac
+    case "$*" in *'ffmpeg adb '*|*libevdi-dev*) return 1 ;; esac
 }
+has_evdi_library() { return 1; }
 install_debian_deps
 ''')
-        self.assertIn('ffmpeg android-tools-adb libevdi1', output)
+        self.assertIn('ffmpeg android-tools-adb', output)
+        self.assertIn('apt-get install -y libevdi-dev', output)
         self.assertIn('apt-get install -y evdi-dkms', output)
 
     def test_t216_system_setup_keeps_boot_configuration_and_live_fallback(self):
