@@ -93,6 +93,8 @@ evdi_handle evdi_open(int card) {
     return handle;
 }
 void evdi_close(evdi_handle handle) { close(handle->fd); free(handle); }
+static int mock_disconnect_calls;
+void evdi_disconnect(evdi_handle handle) { (void)handle; mock_disconnect_calls++; }
 evdi_selectable evdi_get_event_ready(evdi_handle handle) { return handle->fd; }
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *context) {
@@ -475,6 +477,33 @@ static void test_t272(void) {
     assert(close(pipefd[1]) == 0);
 }
 
+static void check_t315_exit_status(int condition, int expected) {
+    int pipefd[2];
+    assert(pipe(pipefd) == 0);
+    assert(close(pipefd[1]) == 0);
+    evdi_handle handle = malloc(sizeof(*handle));
+    assert(handle);
+    handle->fd = pipefd[0];
+    g_handle = handle;
+    initialize_helper_runtime();
+    if (condition == 1) {
+        struct evdi_mode mode = {.bits_per_pixel = 16};
+        assert(!validate_frame_format(mode));
+    } else if (condition == 2) {
+        handle_signal(SIGTERM);
+    }
+    alarm(2);
+    int status = run_capture(handle, 0);
+    alarm(0);
+    assert(mock_disconnect_calls == 1 && "T315: every exit must disconnect");
+    assert(g_handle == EVDI_INVALID_HANDLE && "T315: every exit must close the device");
+    assert(status == expected && "T315: fatal errors must not report successful shutdown");
+}
+
+static void test_t315_channel(void) { check_t315_exit_status(0, 1); }
+static void test_t315_mode(void) { check_t315_exit_status(1, 1); }
+static void test_t315_signal(void) { check_t315_exit_status(2, 0); }
+
 static void test_t274(void) {
     alarm(5);
     int pipefd[2];
@@ -716,6 +745,9 @@ int main(int argc, char **argv) {
         {"T279", test_t279},
         {"T274", test_t274},
         {"T272", test_t272},
+        {"T315-channel", test_t315_channel},
+        {"T315-mode", test_t315_mode},
+        {"T315-signal", test_t315_signal},
         {"T254", test_t254},
         {"T170", test_helper_options},
         {"T108", test_t108},

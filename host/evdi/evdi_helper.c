@@ -28,6 +28,8 @@ static int g_device_index = -1;
    both threads. volatile alone supplies neither ordering nor race safety. */
 _Static_assert(ATOMIC_INT_LOCK_FREE == 2, "signal shutdown requires lock-free int atomics");
 static atomic_int g_running = 1;
+/* Written only by the event-loop thread; signals request a clean shutdown. */
+static int g_capture_failed = 0;
 
 static int g_capture_fifo_fd = -1;
 static const char *g_fifo_path = NULL;
@@ -415,6 +417,7 @@ static void reject_mode(void) {
     pthread_mutex_lock(&g_swap_mutex);
     g_buffers_ready = 0;
     pthread_mutex_unlock(&g_swap_mutex);
+    g_capture_failed = 1;
     g_running = 0;
 }
 
@@ -489,6 +492,7 @@ static int retire_mode_buffers(void) {
            Keep every buffer in place until shutdown joins it; replacing
            g_write here would pair that old size with a new allocation. */
         g_have_mode = 0;
+        g_capture_failed = 1;
         g_running = 0;
         return 0;
     }
@@ -1020,7 +1024,7 @@ static int poll_capture_events(evdi_handle handle, struct evdi_event_context *ev
     return 1;
 }
 
-static void run_event_loop(evdi_handle handle) {
+static int run_event_loop(evdi_handle handle) {
     struct evdi_event_context evtctx = {
         .dpms_handler = on_dpms,
         .mode_changed_handler = on_mode_changed,
@@ -1045,7 +1049,7 @@ static void run_event_loop(evdi_handle handle) {
         int timeout_ms = capture_poll_timeout(request_period_ms);
 
         int ret = poll_capture_events(handle, &evtctx, fds, timeout_ms);
-        if (ret < 0) break;
+        if (ret < 0) return 1;
         if (ret == 0) continue;
 
         if (!g_have_mode)
@@ -1061,6 +1065,7 @@ static void run_event_loop(evdi_handle handle) {
             report_capture_stats(now, &last_stats_ms, &stats_grab_base);
         }
     }
+    return g_capture_failed;
 }
 
 static int choose_card_after(const char *name, int after, int found) {
@@ -1347,6 +1352,12 @@ static void shutdown_capture(evdi_handle handle, pthread_t writer) {
     fprintf(stderr, "[evdi-helper] Done.\n");
 }
 
+static int run_capture(evdi_handle handle, pthread_t writer) {
+    int status = run_event_loop(handle);
+    shutdown_capture(handle, writer);
+    return status;
+}
+
 int main(int argc, char *argv[]) {
     helper_options_t options = parse_helper_options(argc, argv);
     const char *edid_path = options.edid_path;
@@ -1383,8 +1394,5 @@ int main(int argc, char *argv[]) {
     if (!start_capture_writer(fifo_path, &writer)) return 1;
 
     fprintf(stderr, "[evdi-helper] Connected. Capture at %d fps. Entering event loop.\n", g_fps);
-    run_event_loop(handle);
-
-    shutdown_capture(handle, writer);
-    return 0;
+    return run_capture(handle, writer);
 }

@@ -181,6 +181,14 @@ fn t272_failed_event_channel_exits_without_spinning() {
 }
 
 #[test]
+fn t315_fatal_errors_fail_after_cleanup_and_signals_succeed() {
+    let harness = Harness::build("T315");
+    for case in ["T315-signal", "T315-channel", "T315-mode"] {
+        harness.run(case);
+    }
+}
+
+#[test]
 fn t274_delayed_writer_cannot_read_replaced_mode_buffers() {
     Harness::build("T274").run("T274");
 }
