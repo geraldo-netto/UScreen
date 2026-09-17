@@ -1,4 +1,5 @@
 //! Linux process and runtime adapters.
+pub mod processes;
 pub mod programs;
 pub mod runtime;
 use std::path::PathBuf;

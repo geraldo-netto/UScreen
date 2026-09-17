@@ -525,7 +525,7 @@ impl CaptureManager {
     async fn start_helper(&mut self) -> Result<()> {
         let fifo = fifo_path_for(self.config.instance);
         Self::ensure_fifo(&fifo)?;
-        Self::retire_orphan_capture(&fifo).await;
+        Self::retire_orphan_capture(&fifo).await?;
         let mut child = self
             .helper_command(&fifo)?
             .spawn()
@@ -553,39 +553,30 @@ impl CaptureManager {
         Ok(())
     }
 
-    async fn retire_orphan_capture(fifo: &str) {
-        // Kill any stray helper from a previous run before spawning a new one.
-        // kill_on_drop only fires on a graceful exit; if the daemon was
-        // SIGKILLed, pkill'd, or crashed, its helper is orphaned and keeps
-        // writing full frames into the shared FIFO. Several such orphans
-        // interleave their output, which the encoder reads as a single
-        // stream — producing torn, banded frames mixing several captures.
-        // Matched on this instance's FIFO: with several tablets each has a
-        // helper of its own, and killing by name alone took the other
-        // tablet's helper down on every start. The daemon's own command line
-        // never carries --capture-fifo, so this cannot hit the daemon.
-        let killed_helper = Command::new("pkill")
-            .args(["-f", &format!("evdi_helper.*--capture-fifo {}( |$)", fifo)])
-            .output_bounded()
-            .await
-            .map(|s| s.status.success())
-            .unwrap_or(false);
-        // A stray ffmpeg reading the same FIFO is just as bad as a stray
-        // helper writing it — two readers/writers on one pipe interleave at
-        // pipe granularity and corrupt frames. Match on the FIFO path so we
-        // never touch an unrelated ffmpeg invocation.
-        let killed_ffmpeg = Command::new("pkill")
-            .args(["-f", &format!("ffmpeg.*{}", fifo)])
-            .output_bounded()
-            .await
-            .map(|s| s.status.success())
-            .unwrap_or(false);
-        if killed_helper || killed_ffmpeg {
-            warn!("Killed stray evdi_helper/ffmpeg process(es) before starting");
-            // Give the kernel a moment to release the EVDI device(s) and
-            // drop the old FIFO write end before we open a fresh one.
-            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    async fn retire_orphan_capture(fifo: &str) -> Result<()> {
+        use uscreen_config::linux::processes;
+        let path = std::path::Path::new(fifo);
+        let selected: Vec<_> = processes::same_user_processes()?
+            .into_iter()
+            .filter(|process| {
+                (process.executable_named("evdi_helper")
+                    && process.has_path_argument("--capture-fifo", path))
+                    || (process.executable_named("ffmpeg") && process.has_path_argument("-i", path))
+            })
+            .collect();
+        let retired = processes::retire(
+            &selected,
+            std::time::Duration::from_millis(1500),
+            std::time::Duration::from_millis(500),
+        )
+        .await?;
+        if retired > 0 {
+            warn!(
+                "Retired {} stray capture process(es) before starting",
+                retired
+            );
         }
+        Ok(())
     }
 
     fn helper_command(&self, fifo: &str) -> Result<Command> {
@@ -3376,6 +3367,142 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
             assert!(packetizer.push(&sei[5..]).is_empty());
             assert!(packetizer.push(&first).is_empty());
             assert_eq!(packetizer.finish()[0].data.as_ref(), [sei, first].concat());
+        }
+    }
+}
+
+#[cfg(test)]
+mod orphan_tests {
+    use super::*;
+
+    fn fixture_programs(root: &std::path::Path) {
+        let source = root.join("fixture.c");
+        std::fs::write(
+            &source,
+            r#"
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+int main(void) {
+    if (getenv("USCREEN_IGNORE_TERM")) signal(SIGTERM, SIG_IGN);
+    puts("ready"); fflush(stdout);
+    for (;;) pause();
+}
+"#,
+        )
+        .unwrap();
+        let output = std::process::Command::new("cc")
+            .arg(&source)
+            .arg("-o")
+            .arg(root.join("ffmpeg"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        for name in ["evdi_helper", "unrelated"] {
+            std::fs::copy(root.join("ffmpeg"), root.join(name)).unwrap();
+        }
+    }
+
+    async fn fixture_child(
+        program: &std::path::Path,
+        flag: &str,
+        fifo: &std::path::Path,
+        ignore_term: bool,
+    ) -> Child {
+        let mut command = Command::new(program);
+        command
+            .args([std::ffi::OsStr::new(flag), fifo.as_os_str()])
+            .stdout(Stdio::piped())
+            .kill_on_drop(true);
+        if ignore_term {
+            command.env("USCREEN_IGNORE_TERM", "1");
+        }
+        let mut child = command.spawn().unwrap();
+        let mut lines = BufReader::new(child.stdout.take().unwrap()).lines();
+        assert_eq!(lines.next_line().await.unwrap().as_deref(), Some("ready"));
+        child
+    }
+
+    #[tokio::test]
+    async fn t245_retirement_waits_for_term_resistant_children() {
+        let dir = tempfile::tempdir().unwrap();
+        fixture_programs(dir.path());
+        let fifo = dir.path().join("capture.fifo");
+        let mut child = fixture_child(&dir.path().join("ffmpeg"), "-i", &fifo, true).await;
+        let start = Instant::now();
+        CaptureManager::retire_orphan_capture(fifo.to_str().unwrap())
+            .await
+            .unwrap();
+        let elapsed = start.elapsed();
+        assert!(elapsed >= std::time::Duration::from_millis(1500));
+        assert!(
+            elapsed < std::time::Duration::from_secs(3),
+            "T245: retirement exceeded its budget"
+        );
+        use std::os::unix::process::ExitStatusExt;
+        assert_eq!(child.wait().await.unwrap().signal(), Some(libc::SIGKILL));
+    }
+
+    #[tokio::test]
+    async fn t245_changed_or_foreign_process_identity_is_never_signalled() {
+        use uscreen_config::linux::processes::{retire, Process};
+        let dir = tempfile::tempdir().unwrap();
+        fixture_programs(dir.path());
+        let fifo = dir.path().join("capture.fifo");
+        let mut child = fixture_child(&dir.path().join("ffmpeg"), "-i", &fifo, false).await;
+        let process = Process::read(child.id().unwrap()).unwrap();
+        let mut stale = process.clone();
+        stale.start_ticks += 1;
+        let budget = std::time::Duration::from_millis(20);
+        assert_eq!(retire(&[stale], budget, budget).await.unwrap(), 0);
+        let mut foreign = process.clone();
+        foreign.uid = foreign.uid.wrapping_add(1);
+        assert!(retire(&[foreign], budget, budget).await.is_err());
+        assert!(child.try_wait().unwrap().is_none());
+        assert_eq!(retire(&[process], budget, budget).await.unwrap(), 1);
+        child.wait().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn t245_orphan_cleanup_matches_literal_fifo_arguments_and_programs() {
+        let dir = tempfile::tempdir().unwrap();
+        fixture_programs(dir.path());
+        let fifo = dir.path().join("runtime space [1]/capture.fifo");
+        let regex_neighbor = dir.path().join("runtime space 1/captureXfifo");
+        let prefix_neighbor = fifo.with_extension("fifo-other");
+        let cases = [
+            ("evdi_helper", "--capture-fifo", &fifo, true),
+            ("ffmpeg", "-i", &fifo, true),
+            ("evdi_helper", "--capture-fifo", &regex_neighbor, false),
+            ("ffmpeg", "-i", &regex_neighbor, false),
+            ("evdi_helper", "--capture-fifo", &prefix_neighbor, false),
+            ("ffmpeg", "-i", &prefix_neighbor, false),
+            ("ffmpeg", "-metadata", &fifo, false),
+            ("unrelated", "--capture-fifo", &fifo, false),
+        ];
+        let mut children = Vec::new();
+        for (program, flag, path, _) in &cases {
+            children.push(fixture_child(&dir.path().join(program), flag, path, false).await);
+        }
+        CaptureManager::retire_orphan_capture(fifo.to_str().unwrap())
+            .await
+            .unwrap();
+        for (child, (_, _, _, retired)) in children.iter_mut().zip(cases) {
+            assert_eq!(
+                child.try_wait().unwrap().is_some(),
+                retired,
+                "T245: wrong process selected: {:?}",
+                child.id()
+            );
+        }
+        for child in &mut children {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
         }
     }
 }

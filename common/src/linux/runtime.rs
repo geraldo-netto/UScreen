@@ -184,13 +184,7 @@ struct SessionSnapshot {
 }
 
 fn process_start(pid: u32) -> Option<u64> {
-    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-    stat.rsplit_once(") ")?
-        .1
-        .split_whitespace()
-        .nth(19)?
-        .parse()
-        .ok()
+    super::processes::start_ticks(pid)
 }
 
 pub fn load_sessions(path: &std::path::Path) -> Option<Vec<TabletSession>> {

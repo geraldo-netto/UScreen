@@ -180,3 +180,18 @@ An empty, invalid, unreadable or nonregular `~/.local/share/uscreen/osk-restore`
 file leaves the live keyboard unchanged and is retained for manual repair.
 Failed D-Bus restoration retains valid state for retry. These rules also apply
 when the KWin mode interface is absent: UScreen leaves the keyboard unchanged.
+
+### Capture orphan retirement
+
+Before attaching, capture scans same-user processes and checks executable names
+and native argument boundaries: `evdi_helper --capture-fifo <path>` or
+`ffmpeg -i <path>` for this session's FIFO. Spaces, regular-expression characters
+and neighboring FIFO names do not widen the match. Process snapshots are
+revalidated after opening [Linux PID file descriptors](https://man7.org/linux/man-pages/man2/pidfd_open.2.html),
+so signals remain bound to the original process. All selected processes receive
+SIGTERM, share a 1.5-second grace, then receive SIGKILL if needed with a further
+0.5-second exit budget. Failure to confirm retirement prevents new capture.
+Orphan retirement requires `pidfd_open` (Linux 5.3+) and `pidfd_send_signal` to be
+available; there is no PID-only signalling fallback. A run without matching
+orphans does not need those syscalls. Doctor's older process/remediation checks
+remain tracked separately by T251.
