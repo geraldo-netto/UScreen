@@ -662,6 +662,40 @@ printf '%s\n' "$2" >> "$0.log"
     }
 
     #[tokio::test]
+    async fn t244_status_recovers_daemon_despite_stale_pid_file() {
+        if std::env::var_os("USCREEN_T244_CHILD").is_some() {
+            show_status().await.unwrap();
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        let executable = t237_process_fixture(root.path());
+        let mut unrelated = t237_child(&executable, &["doctor"]).await;
+        let pid_path = root.path().join(".local/share/uscreen/uscreen.pid");
+        std::fs::create_dir_all(pid_path.parent().unwrap()).unwrap();
+        let mut daemon = t237_child(&executable, &[]).await;
+        let pid = daemon.id().unwrap();
+        let mut reports = Vec::new();
+        for stale in ["4294967295".to_string(), "0".into(), "broken".into(), unrelated.id().unwrap().to_string()] {
+            std::fs::write(&pid_path, &stale).unwrap();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "cli_tests::t244_status_recovers_daemon_despite_stale_pid_file", "--nocapture"])
+                .env("USCREEN_T244_CHILD", "1").env("HOME", root.path()).output().unwrap();
+            reports.push((stale, output));
+        }
+        daemon.kill().await.unwrap();
+        unrelated.kill().await.unwrap();
+        for (stale, output) in reports {
+            assert!(output.status.success());
+            let text = String::from_utf8(output.stdout).unwrap();
+            let reported = text.split("uscreen is running (PID: ").nth(1)
+                .and_then(|tail| tail.split(')').next()).unwrap_or("");
+            assert!(reported.split_whitespace().any(|value| value == pid.to_string()),
+                "T244: PID file {stale:?} hid daemon {pid}: {text}");
+            assert!(!reported.split_whitespace().any(|value| value == stale), "T244: unrelated process reported: {text}");
+        }
+    }
+
+    #[tokio::test]
     async fn t030_pid_reuse_does_not_mistake_another_process_for_uscreen() {
         let mut child = tokio::process::Command::new("sleep")
             .arg("5")
@@ -2765,35 +2799,20 @@ async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Resul
 
 async fn show_status() -> Result<()> {
     let pid_path = get_pid_path();
-    let my_pid = std::process::id();
-
-    if pid_path.exists() {
-        let pid_str = std::fs::read_to_string(&pid_path)?;
-        let pid: u32 = pid_str.trim().parse().unwrap_or(0);
-
-        if pid > 0 && pid != my_pid {
-            // Check if the process is actually running
-            if config::daemon_is_running(pid) {
-                println!("uscreen is running (PID: {})", pid);
-            } else {
-                println!("uscreen is not running (stale PID file)");
-                let _ = std::fs::remove_file(&pid_path);
-            }
-        } else {
-            println!("uscreen is not running");
-        }
+    // PID files can be lost, corrupt, or refer to a reused non-daemon PID.
+    // Apply the same identity checks as start/stop in every case.
+    let pids = other_daemons();
+    let tracked = std::fs::read_to_string(&pid_path)
+        .ok()
+        .and_then(|text| text.trim().parse::<u32>().ok());
+    if let Some(stale) = tracked.filter(|pid| !pids.contains(pid)) {
+        remove_pid_file_if_ours(&pid_path, stale);
+    }
+    if pids.is_empty() {
+        println!("uscreen is not running");
     } else {
-        // Fallback: pgrep excluding self
-        let pids = other_daemons()
-            .iter()
-            .map(|p| p.to_string())
-            .collect::<Vec<_>>()
-            .join(" ");
-        if !pids.is_empty() {
-            println!("uscreen is running (PID: {})", pids);
-        } else {
-            println!("uscreen is not running");
-        }
+        let pids = pids.iter().map(u32::to_string).collect::<Vec<_>>().join(" ");
+        println!("uscreen is running (PID: {})", pids);
     }
     Ok(())
 }
