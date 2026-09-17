@@ -130,13 +130,20 @@ base ports must leave non-overlapping valid ports for every slot.
 With default token authentication enabled, both connections must present the
 same per-run 64-character hex token. Video authentication has a three-second
 deadline; WebSocket upgrade and input authentication share a three-second
-accept-to-authentication deadline. Disabling token checks changes the wire
-handshake and is incompatible with the current Android video client (T267).
+accept-to-authentication deadline. With checks disabled, video accepts either
+no token or one saved 64-byte hexadecimal token; neither is authenticated.
+This permits existing Android preferences and legacy tokenless clients to work
+without changing the enabled-authentication handshake.
 
 ### Video TCP
 
 The client sends exactly 64 ASCII token bytes, with **no newline or length
-prefix**. After authentication, the server sends:
+prefix** when authentication is enabled. With authentication disabled, the
+server starts sending immediately and concurrently consumes an optional token.
+Once that optional prefix begins, its remaining bytes must arrive within three
+seconds. Malformed, incomplete or extra client input closes the viewer; EOF
+releases its capture subscription even when no video frames are available.
+The server sends:
 
 | Field | Encoding |
 | --- | --- |

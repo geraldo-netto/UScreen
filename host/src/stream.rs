@@ -132,8 +132,8 @@ impl StreamServer {
         // Disable Nagle's algorithm for lower latency
         socket.set_nodelay(true)?;
 
-        // Nothing leaves this socket until the client has proved it is the
-        // tablet we launched. The first 64 bytes are the session token in
+        // With authentication enabled, nothing leaves this socket until the
+        // client has proved it is the tablet we launched. The first 64 bytes are the session token in
         // hex; anything else, or silence, and the connection is dropped.
         if let Some(expected) = token.as_deref() {
             use tokio::io::AsyncReadExt;
@@ -160,17 +160,16 @@ impl StreamServer {
         // write, which is exactly what the backlog handling needs to react to.
         Self::set_send_buffer(&socket, SEND_BUFFER_BYTES);
 
-        // Only authenticated peers count as viewers or request encoder work.
+        // Only admitted peers count as viewers or request encoder work.
         let rx = video_tx.subscribe();
         idr_wanted.store(true, Ordering::SeqCst);
         let (mut reader, writer) = socket.into_split();
-        use tokio::io::AsyncReadExt;
-        let mut unexpected = [0];
         tokio::select! {
             result = Self::stream_packets(writer, rx, codec_config) => result,
-            // The client sends only its initial token. EOF or more input ends
-            // the session, including while no captured frames are available.
-            _ = reader.read(&mut unexpected) => Ok(()),
+            // Disabled authentication accepts the Android client's saved token
+            // as an optional prelude, without delaying tokenless legacy clients.
+            // EOF, malformed/extra input and incomplete preludes end the viewer.
+            _ = watch_client_input(&mut reader, token.is_none()) => Ok(()),
         }
     }
 
@@ -274,7 +273,29 @@ impl StreamServer {
     }
 }
 
-/// Decode readiness and backlog state owned by one authenticated viewer.
+/// Monitor disconnects while streaming. With checks disabled, consume at most
+/// one optional 64-byte hex token; after its first byte the usual auth deadline
+/// bounds completion. This never participates in enabled authentication.
+async fn watch_client_input(
+    reader: &mut (impl tokio::io::AsyncRead + Unpin),
+    optional_token: bool,
+) -> Result<()> {
+    use tokio::io::AsyncReadExt;
+    let first = reader.read_u8().await?;
+    if !optional_token || !first.is_ascii_hexdigit() {
+        return Ok(());
+    }
+    let mut rest = [0u8; 63];
+    tokio::time::timeout(AUTH_TIMEOUT, reader.read_exact(&mut rest)).await??;
+    if !rest.iter().all(u8::is_ascii_hexdigit) {
+        return Ok(());
+    }
+    // No more client input belongs on the video socket after this prelude.
+    let _ = reader.read_u8().await?;
+    Ok(())
+}
+
+/// Decode readiness and backlog state owned by one admitted viewer.
 struct ClientPlayback {
     socket: tokio::net::tcp::OwnedWriteHalf,
     last_sent_config: Option<Bytes>,
@@ -509,6 +530,140 @@ mod tests {
     async fn t227_retired_batches_are_discarded_across_codec_and_resolution_changes() {
         t227_retirement_case(b"h264-1920x1080").await;
         t227_retirement_case(b"hevc-1920x1080").await;
+    }
+
+    async fn t267_connection(
+        expected: Option<String>,
+    ) -> (
+        TcpStream,
+        broadcast::Sender<VideoPacket>,
+        tokio::task::JoinHandle<Result<()>>,
+    ) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (socket, _) = listener.accept().await.unwrap();
+        let (tx, _) = broadcast::channel(8);
+        let task = tokio::spawn(StreamServer::handle_client(
+            socket,
+            tx.clone(),
+            Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+            expected,
+            Default::default(),
+        ));
+        (viewer, tx, task)
+    }
+
+    async fn t267_expect_stream(expected: Option<String>, saved: Option<&str>) {
+        use tokio::time::{timeout, Duration};
+        let (mut viewer, tx, task) = t267_connection(expected).await;
+        if let Some(token) = saved {
+            // Android writes the saved token before reading any video. TCP
+            // fragmentation must not turn that optional prefix into extra input.
+            for chunk in token.as_bytes().chunks(3) {
+                viewer.write_all(chunk).await.unwrap();
+                tokio::task::yield_now().await;
+            }
+        }
+        assert_eq!(
+            timeout(Duration::from_secs(1), t227_read_packet(&mut viewer))
+                .await
+                .unwrap(),
+            (PACKET_TYPE_CONFIG, b"headers".to_vec())
+        );
+        // Ensure the monitor has consumed the prefix before sending a new IDR.
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        assert_eq!(
+            tx.receiver_count(),
+            1,
+            "T267 saved token disconnected a viewer"
+        );
+        tx.send(VideoPacket {
+            seq: 42,
+            is_idr: true,
+            data: Bytes::from_static(b"frame"),
+            codec_config: Some(Bytes::from_static(b"headers")),
+            generation: Arc::new(AtomicBool::new(true)),
+        })
+        .ok()
+        .unwrap();
+        let (kind, data) = timeout(Duration::from_secs(1), t227_read_packet(&mut viewer))
+            .await
+            .unwrap();
+        assert_eq!(kind, PACKET_TYPE_FRAME);
+        assert_eq!(&data[..4], &42u32.to_be_bytes());
+        assert_eq!(&data[4..], b"frame");
+        drop(viewer);
+        timeout(Duration::from_secs(1), task)
+            .await
+            .expect("T267 idle disconnect leaked capture")
+            .unwrap()
+            .unwrap();
+        assert_eq!(tx.receiver_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn t267_saved_android_token_survives_enabled_disabled_enabled_transitions() {
+        let saved = "a".repeat(64);
+        t267_expect_stream(Some(saved.clone()), Some(&saved)).await;
+        t267_expect_stream(None, Some(&saved)).await;
+        t267_expect_stream(Some(saved.clone()), Some(&saved)).await;
+        let rotated = "b".repeat(64);
+        t267_expect_stream(Some(rotated.clone()), Some(&rotated)).await;
+    }
+
+    #[tokio::test]
+    async fn t267_disabled_auth_keeps_legacy_tokenless_video_and_idle_cleanup() {
+        t267_expect_stream(None, None).await;
+    }
+
+    #[tokio::test]
+    async fn t267_enabled_auth_rejects_stale_and_missing_tokens_before_video() {
+        use tokio::io::AsyncReadExt;
+        for presented in ["a".repeat(64), String::new()] {
+            let (mut viewer, tx, task) = t267_connection(Some("b".repeat(64))).await;
+            viewer.write_all(presented.as_bytes()).await.unwrap();
+            viewer.shutdown().await.unwrap();
+            assert_eq!(
+                tokio::time::timeout(AUTH_TIMEOUT, viewer.read(&mut [0]))
+                    .await
+                    .unwrap()
+                    .unwrap(),
+                0
+            );
+            task.await.unwrap().unwrap();
+            assert_eq!(tx.receiver_count(), 0);
+        }
+    }
+
+    #[tokio::test]
+    async fn t267_disabled_auth_bounds_optional_prefix_and_rejects_extra_input() {
+        use tokio::io::AsyncReadExt;
+        for prefix in [
+            b"x".to_vec(),
+            [vec![b'a'; 63], vec![b'z']].concat(),
+            [vec![b'a'; 64], vec![b'x']].concat(),
+            vec![b'a'],
+        ] {
+            let (mut viewer, tx, task) = t267_connection(None).await;
+            let _ = viewer.write_all(&prefix).await;
+            let mut received = Vec::new();
+            let closed = tokio::time::timeout(
+                AUTH_TIMEOUT + std::time::Duration::from_secs(1),
+                viewer.read_to_end(&mut received),
+            )
+            .await;
+            assert!(
+                closed.is_ok(),
+                "T267 malformed/partial prefix retained viewer"
+            );
+            // No frames were offered; disabled authentication may send its
+            // cached header before the prefix monitor rejects the connection.
+            assert!(received.len() <= 12);
+            task.await.unwrap().unwrap();
+            assert_eq!(tx.receiver_count(), 0);
+        }
     }
 
     async fn authenticated_test_server() -> (

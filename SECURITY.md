@@ -10,8 +10,11 @@ With the default `require_token = true`, each daemon run creates a random
 256-bit token, encoded as 64 hex characters. The host delivers it over adb
 on stdin, rather than in process arguments. The video and input connections
 must authenticate before receiving video or injecting input. Keep token
-authentication enabled: disabling it removes that protection and is also
-incompatible with the current Android video handshake (T267 in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md)).
+authentication enabled: disabling it removes that protection. In disabled
+mode, video accepts tokenless clients or consumes one optional saved 64-byte
+hex token without checking its value. This compatibility path is never used
+when token authentication is enabled. Incomplete optional prefixes expire
+three seconds after their first byte; malformed or extra input closes the viewer.
 
 Processes running as the same Linux user can read the token. Authorized adb
 hosts and privileged Android apps are also inside the trust boundary: the
