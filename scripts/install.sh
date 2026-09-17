@@ -5,7 +5,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BIN_DIR="${HOME}/.local/bin"
-APP_DIR="${HOME}/.local/share/applications"
+
+# Match the configuration adapter: unset, empty or relative XDG values use
+# HOME defaults. A relative value must not install files into the checkout.
+xdg_base() {
+    case "$1" in
+        /*) printf '%s' "$1" ;;
+        *) printf '%s' "$2" ;;
+    esac
+}
+DATA_BASE=$(xdg_base "${XDG_DATA_HOME:-}" "$HOME/.local/share")
+CONFIG_BASE=$(xdg_base "${XDG_CONFIG_HOME:-}" "$HOME/.config")
+APP_DIR="$DATA_BASE/applications"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
@@ -249,7 +260,7 @@ install_desktop_entry() {
 install_icons() {
     # The menu entry and the tray look the icon up by name in the hicolor
     # theme; without this they fall back to a generic or blank picture.
-    local ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
+    local ICON_DIR="$DATA_BASE/icons/hicolor/scalable/apps"
     if [ -f "$PROJECT_DIR/packaging/icons/uscreen.svg" ]; then
         mkdir -p "$ICON_DIR"
         cp "$PROJECT_DIR/packaging/icons/uscreen.svg" "$PROJECT_DIR/packaging/icons/uscreen-pen.svg" "$ICON_DIR/"
@@ -261,14 +272,16 @@ install_icons() {
 }
 
 install_user_service() {
-    mkdir -p "${HOME}/.config/systemd/user"
-    cp "$SCRIPT_DIR/uscreen.service" "${HOME}/.config/systemd/user/" 2>/dev/null || true
+    mkdir -p "$CONFIG_BASE/systemd/user"
+    cp "$SCRIPT_DIR/uscreen.service" "$CONFIG_BASE/systemd/user/" 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true
     # Enabled, not started: the system setup below (evdi module, udev rule)
     # has not run yet, so a start here would fail on a fresh machine. The
     # closing message says how to start it now; it starts by itself from the
     # next login on.
-    systemctl --user enable uscreen.service 2>/dev/null || true
+    if [ "${1:-enable}" = enable ]; then
+        systemctl --user enable uscreen.service 2>/dev/null || true
+    fi
 }
 
 install_files() {
@@ -276,7 +289,7 @@ install_files() {
     install_binaries
     install_desktop_entry
     install_icons
-    install_user_service
+    install_user_service "${1:-enable}"
 }
 
 configure_boot_modules() {
@@ -317,6 +330,13 @@ system_setup() {
 }
 
 main() {
+    # Make has built the programs; install only user files without enabling
+    # autostart, installing dependencies or changing system/module settings.
+    if [[ ${1:-} == --user-install ]]; then
+        BIN_DIR="$2"
+        install_files no-enable
+        return
+    fi
     # Make has already built the source tree and owns the remaining setup.
     if [[ ${1:-} == --binaries-only ]]; then
         BIN_DIR="$2"

@@ -297,21 +297,14 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
         let mut command = if installer == "make" {
             sandbox.write(
                 "Makefile",
-                &std::fs::read_to_string(repo().join("Makefile"))
-                    .unwrap()
-                    .replace("${HOME}", "$(value USCREEN_TEST_ROOT)")
-                    .replace("$(value HOME)", "$(value USCREEN_TEST_ROOT)"),
+                &std::fs::read_to_string(repo().join("Makefile")).unwrap(),
             );
             let mut command = Command::new("make");
             command.args(["-o", "build", "install"]);
             command
         } else {
             let source = std::fs::read_to_string(repo().join("scripts/install.sh")).unwrap();
-            let source = source
-                .strip_suffix("main \"$@\"\n")
-                .unwrap()
-                .replace("${HOME}", "${USCREEN_TEST_ROOT}")
-                .replace("$HOME", "$USCREEN_TEST_ROOT");
+            let source = source.strip_suffix("main \"$@\"\n").unwrap();
             let script =
                 sandbox.script("scripts/install.sh", &format!("{source}\ninstall_files\n"));
             Command::new(script)
@@ -319,8 +312,9 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
         let output = command
             .current_dir(&sandbox.0)
             .env("PATH", sandbox.path())
-            .env("USCREEN_TEST_ROOT", &home)
+            .env("HOME", &home)
             .env("XDG_DATA_HOME", home.join(".local/share"))
+            .env("XDG_CONFIG_HOME", home.join(".config"))
             .output()
             .unwrap();
         assert!(
@@ -359,10 +353,7 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         "scripts/install.sh",
         &std::fs::read_to_string(repo().join("scripts/install.sh")).unwrap(),
     );
-    let makefile = std::fs::read_to_string(repo().join("Makefile"))
-        .unwrap()
-        .replace("${HOME}", sandbox.0.to_str().unwrap())
-        .replace("$(value HOME)", sandbox.0.to_str().unwrap());
+    let makefile = std::fs::read_to_string(repo().join("Makefile")).unwrap();
     sandbox.write("Makefile", &makefile);
     for name in ["uscreen", "uscreen-gui"] {
         sandbox.script(
@@ -385,6 +376,9 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         .args(["-o", "build", "install"])
         .current_dir(&sandbox.0)
         .env("PATH", sandbox.path())
+        .env("HOME", &sandbox.0)
+        .env("XDG_DATA_HOME", sandbox.0.join(".local/share"))
+        .env("XDG_CONFIG_HOME", sandbox.0.join(".config"))
         .output()
         .unwrap();
     assert!(
@@ -601,6 +595,20 @@ fn t220_make_shares_jobserver_without_executing_dry_runs() {
 fn t336_source_workflows_consume_their_selected_build_outputs() {
     let output = Command::new("python3")
         .arg(repo().join("scripts/tests/test_build_output.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn t233_user_installers_share_xdg_paths() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_user_paths.py"))
         .output()
         .unwrap();
     assert!(

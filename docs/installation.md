@@ -97,9 +97,16 @@ The full tarball/source installer attempts to enable the service, but does
 not start it. Start it with `systemctl --user start uscreen`. `make install`
 only installs/reloads the user unit; enable/start it explicitly. Autostart
 also depends on the desktop activating `graphical-session.target`; service-manager support remains limited
-(T231), and custom XDG installation paths are inconsistent (T233).
+(T231).
 Without a user service manager, `uscreen start` runs a foreground session;
 arrange autostart through your desktop separately if needed.
+
+Both user installers share the same paths: launchers and icons go under
+`XDG_DATA_HOME` (default `~/.local/share`), and the user unit goes under
+`XDG_CONFIG_HOME/systemd/user` (default `~/.config/systemd/user`). Empty or
+relative XDG values use those defaults, matching UScreen's configuration-path
+policy. Program binaries remain in `~/.local/bin`; these XDG overrides do not
+change that location. Native packages use their system-wide package paths.
 
 If `~/.local/bin` is not on PATH yet, use `~/.local/bin/uscreen` or add the
 directory to your shell's PATH. Run `uscreen doctor` to inspect the setup.

@@ -29,7 +29,7 @@ def fixture(root, selection, stale):
     shutil.copy(REPO / 'testdata/cargo_output.py', tools / 'cargo')
     (tools / 'cargo').chmod(0o755)
     write(root, 'tools/gcc', '#!/bin/sh\nmkdir -p host/evdi\nprintf "#!/bin/sh\\necho fresh-helper\\n" > host/evdi/evdi_helper\nchmod +x host/evdi/evdi_helper\n', True)
-    for tool in ['sudo', 'systemctl']:
+    for tool in ['sudo', 'systemctl', 'gtk-update-icon-cache', 'kbuildsycoca6']:
         write(root, 'tools/' + tool, '#!/bin/sh\nexit 0\n', True)
     write(root, 'android/gradlew', '#!/bin/sh\nexit 0\n', True)
     write(root, 'android/app/build/outputs/apk/release/app-release.apk', 'fixture-apk')
@@ -39,7 +39,8 @@ def fixture(root, selection, stale):
             write(root, 'target/release/' + name, '#!/bin/sh\necho stale\n', True)
     env = dict(os.environ, HOME=str(root / 'home'), PATH=str(tools) + os.pathsep + os.environ['PATH'],
                USCREEN_T336_CARGO_LOG=str(root / 'cargo.log'))
-    for key in ['CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET_DIR', 'MAKEFLAGS', 'MFLAGS', 'CARGO_MAKEFLAGS']:
+    for key in ['CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET_DIR', 'MAKEFLAGS', 'MFLAGS', 'CARGO_MAKEFLAGS',
+                'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME']:
         env.pop(key, None)
     selected = "cache's space;$(touch injected)"
     if selection == 'absolute':

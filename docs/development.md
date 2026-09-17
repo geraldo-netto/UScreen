@@ -49,6 +49,9 @@ These install/setup commands modify the machine. For a configured systemd
 desktop, explicitly enable/start with `systemctl --user enable --now uscreen`;
 `make install` does not do that. Without a user manager, launch `uscreen start`
 in a terminal. See [installation](installation.md) before attaching EVDI.
+Make delegates user-file installation to `scripts/install.sh --user-install`;
+both routes honor absolute XDG data/config base directories, falling back to
+HOME defaults for unset, empty or relative values.
 The source helper normally finds the system libevdi installed above; bundling
 is a separate release step. Add `~/.local/bin` to PATH if needed.
 

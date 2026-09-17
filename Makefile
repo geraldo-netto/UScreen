@@ -15,7 +15,6 @@ ADB = adb
 # Release bundles pin the same libevdi as the portable build. Override its path when needed.
 LIBEVDI ?= $(shell $(CC) -print-file-name=libevdi.so.1.15.0)
 BIN_DIR = $(value HOME)/.local/bin
-DATA_DIR = $(value HOME)/.local/share/uscreen
 # Keep literal user paths out of shell evaluation.
 quote = '$(subst ','"'"',$(1))'
 
@@ -31,17 +30,7 @@ build: build-helper
 	@printf '✓ Binaries: %s/uscreen and uscreen-gui\n' $(call quote,$(CURDIR)/target/release)
 
 install: build
-	bash scripts/install.sh --binaries-only $(call quote,$(BIN_DIR))
-	@printf '✓ Binaries installed to %s\n' $(call quote,$(BIN_DIR))
-	mkdir -p $(call quote,$(value HOME)/.local/share/applications)
-	bash scripts/write-desktop-entry.sh $(call quote,$(BIN_DIR)/uscreen-gui) scripts/uscreen.desktop > $(call quote,$(value HOME)/.local/share/applications/uscreen.desktop)
-	mkdir -p $(call quote,$(value HOME)/.local/share/icons/hicolor/scalable/apps)
-	cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg $(call quote,$(value HOME)/.local/share/icons/hicolor/scalable/apps/) 2>/dev/null || true
-	@echo "✓ Desktop entry and icons installed (UScreen in the app menu)"
-	mkdir -p $(call quote,$(value HOME)/.config/systemd/user/) 2>/dev/null || true
-	cp scripts/uscreen.service $(call quote,$(value HOME)/.config/systemd/user/) 2>/dev/null || true
-	systemctl --user daemon-reload 2>/dev/null || true
-	@echo "✓ systemd user service installed"
+	bash scripts/install.sh --user-install $(call quote,$(BIN_DIR))
 
 # One-time system setup (needs sudo): pre-create an EVDI device at boot so
 # the daemon never needs root, and load the required modules.
