@@ -229,6 +229,25 @@ The Android client marks its control connection authenticated only after
 callbacks from replaced sockets cannot restore it. Rust serialization and
 Android's pen-mode UI use the same `control-connected.json` regression fixture.
 
+Android's `VideoReceiver` coordinates run generations, Surface readiness and
+visible connection state. `VideoTransport` owns the socket from before blocking
+connect until retirement, with a socket factory for tests; an old worker closes
+only its own socket. `VideoPacketReader` owns reusable framed-input storage and
+passes borrowed config/frame payloads through `VideoPacketSink`. Consumers finish
+using that storage before the next read. Framing tests cover split headers,
+payloads, EOF, invalid lengths/types, sequence wrap and buffer growth.
+
+`DecoderSession` owns MediaCodec, its render/callback threads and the output
+watchdog, with injectable codec/thread factories and watchdog clock. Receiver
+and decoder retain a common monitor for Surface/generation handoffs; blocking
+network reads remain outside it. Codec retirement interrupts the transport so
+reconnect obtains fresh configuration and a keyframe. Every feed still checks
+both run generation and codec identity; callbacks check codec ownership and
+running state. `FrameTiming` owns arrival/release measurements with a monotonic
+clock seam, and `ReceiverStatistics` retains separate counters for each run.
+This extraction preserves synchronous codec operation and watchdog fallback;
+callback scheduling and compressed-input copies are separate experiments.
+
 Android's `TouchCapture` is the Activity-facing facade. `ControlSession` owns
 socket generations, authentication, reconnects, host greetings and pending
 settings. `MotionTranslator` owns pointer slots and ordered Android samples;

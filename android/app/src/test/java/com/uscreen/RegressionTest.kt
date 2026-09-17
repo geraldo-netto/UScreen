@@ -21,6 +21,8 @@ import org.robolectric.annotation.Config
 class RegressionTest {
     private val app get() = RuntimeEnvironment.getApplication()
     private fun owner(target: Any, name: String): Any = when {
+        target is VideoReceiver && name == "mediaCodec" -> target.decoder
+        target is VideoReceiver && name == "socket" -> target.transport
         target !is TouchCapture -> target
         name == "touchSlots" -> target.motion
         else -> target.control
@@ -239,20 +241,17 @@ class RegressionTest {
     }
 
     @Test fun t253_arrivalHistorySurvivesCounterOverflowAndRingWraps() {
-        val receiver = VideoReceiver()
-        set(receiver, "arrivalWrite", Int.MAX_VALUE - 1)
-        val arrival = VideoReceiver::class.java.getDeclaredMethod("noteArrival", Int::class.javaPrimitiveType).apply { isAccessible = true }
-        val release = VideoReceiver::class.java.getDeclaredMethod("noteReleased", Int::class.javaPrimitiveType).apply { isAccessible = true }
-        val latency = VideoReceiver::class.java.getDeclaredMethod("decodeMicrosFor", Int::class.javaPrimitiveType).apply { isAccessible = true }
+        val timing = FrameTiming()
+        set(timing, "arrivalWrite", Int.MAX_VALUE - 1)
         val first = 1000
         val last = first + VideoReceiver.ARRIVAL_RING * 2
         for (seq in first..last) {
-            arrival.invoke(receiver, seq)
-            release.invoke(receiver, seq)
-            assertTrue("T253: just-arrived frame must retain its timestamp", (latency.invoke(receiver, seq) as Int) >= 0)
+            timing.noteArrival(seq)
+            timing.noteReleased(seq)
+            assertTrue("T253: just-arrived frame must retain its timestamp", timing.decodeMicrosFor(seq) >= 0)
         }
-        assertEquals(-1, latency.invoke(receiver, first))
-        assertTrue((latency.invoke(receiver, last - VideoReceiver.ARRIVAL_RING + 1) as Int) >= 0)
+        assertEquals(-1, timing.decodeMicrosFor(first))
+        assertTrue(timing.decodeMicrosFor(last - VideoReceiver.ARRIVAL_RING + 1) >= 0)
     }
 
     @Test fun t133_tokenRotationRestartsActiveReconnectsOnly() {

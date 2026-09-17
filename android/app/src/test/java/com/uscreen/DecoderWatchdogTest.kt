@@ -28,10 +28,13 @@ class WatchdogCodecShadow : ShadowMediaCodec() {
     companion object {
         val outputs = LinkedBlockingQueue<Output>()
         var format: MediaFormat? = null
+        val callbacks = java.util.concurrent.CopyOnWriteArrayList<MediaCodec.OnFrameRenderedListener>()
     }
     @Implementation fun configure(value: MediaFormat, surface: Surface?, crypto: MediaCrypto?, flags: Int) { format = value }
     @Implementation fun setVideoScalingMode(mode: Int) {}
-    @Implementation fun setOnFrameRenderedListener(listener: MediaCodec.OnFrameRenderedListener, handler: Handler) {}
+    @Implementation fun setOnFrameRenderedListener(listener: MediaCodec.OnFrameRenderedListener, handler: Handler) {
+        callbacks.add(listener)
+    }
     @Implementation fun start() {}
     @Implementation fun stop() {}
     @Implementation fun release() {}
@@ -50,6 +53,41 @@ class WatchdogCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [WatchdogCodecShadow::class])
 class DecoderWatchdogTest {
+    @Test fun t376_retiredCodecCallbacksCannotAcknowledgeReplacement() {
+        WatchdogCodecShadow.outputs.clear()
+        WatchdogCodecShadow.callbacks.clear()
+        val monitor = Any()
+        var running = true
+        val acknowledgements = mutableListOf<Int>()
+        var retirements = 0
+        val statistics = ReceiverStatistics()
+        val decoder = DecoderSession(monitor, { running }, FrameTiming(), object : DecoderEvents {
+            override fun rendered(sequence: Int, decodeMicros: Int) { acknowledgements.add(sequence) }
+            override fun invalidated() { retirements++ }
+        }, { statistics })
+        val formats = mutableListOf<String>()
+        decoder.createCodec = { formats.add(it); MediaCodec.createDecoderByType(it) }
+        val surface = Surface(SurfaceTexture(1))
+        val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
+        try {
+            assertTrue(decoder.setupCodec(surface, format))
+            val oldCodec = decoder.mediaCodec!!
+            val oldCallback = WatchdogCodecShadow.callbacks.last()
+            decoder.resetCodec()
+            assertEquals(1, retirements)
+            assertTrue(surface.isValid)
+            assertTrue(decoder.setupCodec(surface, format))
+            val current = decoder.mediaCodec!!
+            val callback = WatchdogCodecShadow.callbacks.last()
+            oldCallback.onFrameRendered(oldCodec, 17, 0)
+            callback.onFrameRendered(current, 18, 0)
+            running = false
+            callback.onFrameRendered(current, 19, 0)
+            assertEquals(listOf(18), acknowledgements)
+            assertEquals(listOf(format.mimeType, format.mimeType), formats)
+        } finally { decoder.releaseCodec(); surface.release() }
+    }
+
     private class Fixture : AutoCloseable {
         val receiver = VideoReceiver()
         val now = AtomicLong(1_000_000_000)
@@ -57,17 +95,15 @@ class DecoderWatchdogTest {
         private var socket = Socket()
         init {
             WatchdogCodecShadow.outputs.clear()
-            receiver.outputClock = now::get
+            receiver.decoder.outputClock = now::get
         }
-        private fun set(name: String, value: Any) = VideoReceiver::class.java.getDeclaredField(name)
-            .apply { isAccessible = true }.set(receiver, value)
+        private fun set(name: String, value: Any) = VideoTransport::class.java.getDeclaredField(name)
+            .apply { isAccessible = true }.set(receiver.transport, value)
         fun restart() {
             socket.close()
             socket = Socket()
             set("socket", socket)
-            val setup = VideoReceiver::class.java.getDeclaredMethod("setupCodec", Surface::class.java)
-                .apply { isAccessible = true }
-            assertEquals(true, setup.invoke(receiver, surface))
+            assertEquals(true, receiver.setupCodec(surface))
         }
         fun output(elapsedNanos: Long = 0) {
             now.addAndGet(elapsedNanos)
@@ -78,9 +114,7 @@ class DecoderWatchdogTest {
         }
         fun stall() {
             now.addAndGet(2_000_000_000)
-            val check = VideoReceiver::class.java.getDeclaredMethod("checkOutputProgress")
-                .apply { isAccessible = true }
-            synchronized(receiver) { repeat(4) { check.invoke(receiver) } }
+            synchronized(receiver) { repeat(4) { receiver.decoder.checkOutputProgress() } }
             assertTrue("T339: watchdog did not retire the socket", socket.isClosed)
         }
         fun assertHints(enabled: Boolean) {

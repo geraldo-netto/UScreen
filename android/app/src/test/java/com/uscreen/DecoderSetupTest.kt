@@ -52,8 +52,19 @@ class FailingCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [FailingCodecShadow::class])
 class DecoderSetupTest {
-    private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
-    private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
+    private fun owner(target: Any, name: String): Any = when {
+        target is VideoReceiver && name == "socket" -> target.transport
+        target is VideoReceiver && name in setOf("mediaCodec", "codecAlive", "outputThread") -> target.decoder
+        else -> target
+    }
+    private fun set(target: Any, name: String, value: Any?) {
+        val owner = owner(target, name)
+        owner.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(owner, value)
+    }
+    private fun get(target: Any, name: String): Any? {
+        val owner = owner(target, name)
+        return owner.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(owner)
+    }
 
     @Test fun t243_invalidPacketReportsDisconnectionBeforeRetry() = checkDisconnected("invalid-packet")
     @Test fun t243_decoderResetReportsDisconnectionBeforeRetry() = checkDisconnected("input-timeout")
@@ -201,10 +212,6 @@ class DecoderSetupTest {
     @Test fun t134_surfaceReplacementReconnects() = checkRecovery("surface")
 
     private fun checkRecovery(stage: String) {
-        val feed = VideoReceiver::class.java.getDeclaredMethod("feedDecoder",
-            Long::class.javaPrimitiveType, MediaCodec::class.java, ByteArray::class.java,
-            Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType, Long::class.javaPrimitiveType).apply { isAccessible = true }
         run {
             val receiver = VideoReceiver()
             val socket = java.net.Socket()
@@ -220,7 +227,7 @@ class DecoderSetupTest {
             pending.set(surface)
             try {
                 if (stage == "surface") receiver.onSurfaceDestroyed()
-                else feed.invoke(receiver, 0L, codec, byteArrayOf(1, 2), 0, 2, false, 1L)
+                else receiver.feedDecoder(0L, codec, byteArrayOf(1, 2), 0, 2, false, 1L)
                 assertTrue("$stage retained a stream without fresh codec headers", socket.isClosed)
                 assertNull("$stage must let reconnect create the replacement decoder", get(receiver, "mediaCodec"))
                 assertEquals("$stage leaked or double-released its codec", 1, FailingCodecShadow.releases)
@@ -235,9 +242,8 @@ class DecoderSetupTest {
         set(receiver, "mediaCodec", codec)
         set(receiver, "socket", socket)
         set(receiver, "codecAlive", true)
-        val start = VideoReceiver::class.java.getDeclaredMethod("startOutputThread", MediaCodec::class.java).apply { isAccessible = true }
         try {
-            start.invoke(receiver, codec)
+            receiver.decoder.startOutputThread(codec)
             (get(receiver, "outputThread") as? Thread)?.join(2000)
             assertTrue("Failed output thread retained the stream", socket.isClosed)
             assertNull(get(receiver, "mediaCodec"))
@@ -246,13 +252,12 @@ class DecoderSetupTest {
 
     @Test fun t120_decoderHintsUseTheEffectiveRateAcrossRestarts() {
         val receiver = VideoReceiver()
-        val setup = VideoReceiver::class.java.getDeclaredMethod("setupCodec", Surface::class.java).apply { isAccessible = true }
         val surface = Surface(android.graphics.SurfaceTexture(1))
         FailingCodecShadow.failAt = "start"
         try {
             for (fps in listOf(30, 90, 60)) {
                 receiver.streamFps = fps
-                assertEquals(false, setup.invoke(receiver, surface))
+                assertEquals(false, receiver.setupCodec(surface))
                 assertEquals(fps, FailingCodecShadow.lastFormat!!.getInteger(MediaFormat.KEY_FRAME_RATE))
                 assertEquals(fps * 2, FailingCodecShadow.lastFormat!!.getInteger("operating-rate"))
                 receiver.stop()
@@ -270,16 +275,15 @@ class DecoderSetupTest {
         val threads = mutableListOf<HandlerThread>()
         var quits = 0
         val receiver = VideoReceiver()
-        receiver.callbackThreadFactory = {
+        receiver.decoder.callbackThreadFactory = {
             object : HandlerThread("uscreen-test-frame-cb") {
                 override fun quitSafely(): Boolean { quits++; return super.quitSafely() }
             }.also { threads.add(it) }
         }
-        val setup = VideoReceiver::class.java.getDeclaredMethod("setupCodec", Surface::class.java).apply { isAccessible = true }
         val surface = Surface(android.graphics.SurfaceTexture(1))
         try {
             for (attempt in 1..2) {
-                assertEquals(false, setup.invoke(receiver, surface))
+                assertEquals(false, receiver.setupCodec(surface))
                 assertEquals("$stage leaked codec on attempt $attempt", attempt, FailingCodecShadow.releases)
                 assertEquals(threads.size, quits)
                 threads.forEach { it.join(500); assertFalse("Callback thread leaked", it.isAlive) }
