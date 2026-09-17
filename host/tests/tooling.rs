@@ -45,7 +45,9 @@ fn repo() -> &'static Path {
 #[test]
 fn t382_benchmark_units_and_window_statistics() {
     let output = Command::new("python3")
-        .arg(repo().join("scripts/tests/test_benchmark.py"))
+        .args(["-m", "unittest", "discover", "-s"])
+        .arg(repo().join("scripts/tests"))
+        .args(["-p", "test_benchmark*.py"])
         .output()
         .unwrap();
     assert!(

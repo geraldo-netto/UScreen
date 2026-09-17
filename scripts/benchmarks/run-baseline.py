@@ -31,7 +31,8 @@ def ensure_target(geometry):
         raise ValueError('This workload requires a 1280x800 target geometry')
     code, monitors, _ = command(['xrandr', '--listmonitors'])
     position = f'+{match[1]}+{match[2]}'
-    valid = [line for line in monitors.splitlines() if position in line and '1280/' in line]
+    target = re.compile(rf'\s1280/\d+x800/\d+{re.escape(position)}(?:\s|$)')
+    valid = [line for line in monitors.splitlines() if target.search(line)]
     if code or not valid or '*' in valid[0]:
         raise ValueError('Target must be an existing non-primary 1280x800 monitor')
     return monitors

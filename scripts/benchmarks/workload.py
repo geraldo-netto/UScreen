@@ -1,7 +1,6 @@
 """Deterministic T382 Tk text/grid workload on one existing X11 display."""
 import math
 import time
-import tkinter as tk
 
 
 def phases(seconds, warmup):
@@ -15,6 +14,8 @@ def phases(seconds, warmup):
 
 class Workload:
     def __init__(self, geometry, plan, state, event):
+        import tkinter as tk
+
         self.root = tk.Tk()
         self.root.title('UScreen T382 reproducible baseline')
         self.root.overrideredirect(True)
