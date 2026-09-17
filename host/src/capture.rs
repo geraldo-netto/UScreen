@@ -848,7 +848,6 @@ impl CaptureManager {
         // Frame-count GOP bounds busy streams; forced IDRs also bound idle joins.
         let gop = fps.max(1);
         if encoder.ends_with("_nvenc") {
-            let bitrate_m = bitrate as f64 / 1000.0;
             // bufsize = 1 frame of bits: keeps VBV under 1-frame delay.
             let bufsize_k = (bitrate / fps.max(1)).max(200);
             args.extend_from_slice(&[
@@ -882,7 +881,7 @@ impl CaptureManager {
                 "-b:v".into(),
                 "0".into(),
                 "-maxrate".into(),
-                format!("{:.1}M", bitrate_m),
+                format!("{}k", bitrate),
                 "-bufsize".into(),
                 format!("{}k", bufsize_k),
                 "-g".into(),
@@ -2022,6 +2021,34 @@ impl<'a> ExpGolombReader<'a> {
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t306_nvenc_preserves_kilobit_bitrate_limits() {
+        for encoder in ["h264_nvenc", "hevc_nvenc"] {
+            for bitrate in [1000, 1001, 1049, 1051, 19999, 20000, 59999, 60000] {
+                let manager = CaptureManager::new(CaptureConfig {
+                    bitrate,
+                    ..Default::default()
+                });
+                let mut args = Vec::new();
+                manager
+                    .encoder_quality_args(&mut args, encoder, false)
+                    .unwrap();
+                let limit = &args.windows(2).find(|pair| pair[0] == "-maxrate").unwrap()[1];
+                // Decode SI units independently; either exact k or M is valid.
+                let (number, multiplier) = match limit.as_bytes().last() {
+                    Some(b'k') => (&limit[..limit.len() - 1], 1_000.0),
+                    Some(b'M') => (&limit[..limit.len() - 1], 1_000_000.0),
+                    _ => (limit.as_str(), 1.0),
+                };
+                assert_eq!(
+                    number.parse::<f64>().unwrap() * multiplier,
+                    f64::from(bitrate) * 1000.0,
+                    "T306: {encoder} rounded {bitrate} kbps to {limit}"
+                );
+            }
+        }
+    }
 
     #[tokio::test]
     async fn t228_sequences_survive_encoder_restarts_before_ack() {
