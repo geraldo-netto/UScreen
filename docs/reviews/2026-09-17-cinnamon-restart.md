@@ -7,6 +7,18 @@ attached an EVDI display. LightDM subsequently started another Cinnamon
 session. The crash preceded UScreen's corrective resolution switch.
 The exact Xorg failure trigger and a safe mitigation remain unverified (T222).
 
+## Current disposition (2026-09-17)
+
+This report preserves the incident evidence and source locations at the reviewed
+commit; they are not line references to current code. T223 was subsequently
+fixed in commit `77045bd`. Permanent coverage in `host/src/capture.rs` includes
+`t223_initial_attach_waits_for_geometry_on_each_daemon_start` and
+`t223_setup_observes_settings_without_hotplug_for_encoder_only_changes`.
+T222 (the Xorg crash) and T224 (KScreen calls on an unsupported backend)
+remain unresolved in [TODO.md](../../TODO.md). The T223 fix does not prove
+that the session crash is prevented. The findings and validation below describe
+the original review, not a new reproduction during this documentation update.
+
 ## Evidence
 
 Sources: the current boot's journal, `coredumpctl info 2392`, and
