@@ -113,15 +113,10 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
      * 16 did — one frame rendered, then silence, while the host kept sending
      * (issue #10). Frames queued since the last output, and when that was.
      */
-    private val queuedSinceOutput = AtomicInteger(0)
-    @Volatile private var lastOutputNanos = 0L
-    private var outputStalls = 0
-    /**
-     * Whether to ask for low-latency decoding. Off after the second stall in
-     * a row: those hints are exactly the kind of thing a decoder can accept
-     * and then misbehave on, and a picture that is late beats no picture.
-     */
-    @Volatile private var lowLatencyHints = true
+    internal var outputClock: () -> Long = System::nanoTime
+    // Keep failure history until output sustains a full watchdog window.
+    // Once hints are disabled, retain that fallback for this receiver's lifetime.
+    private val outputWatchdog = DecoderOutputWatchdog()
 
     /**
      * seq → nanoTime the frame finished arriving, so the render callback can
@@ -270,8 +265,7 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
         var pendingThread: HandlerThread? = null
         try {
             val format = decoderFormat()
-            queuedSinceOutput.set(0)
-            lastOutputNanos = System.nanoTime()
+            outputWatchdog.restarted(outputClock())
 
             val codec = MediaCodec.createDecoderByType(mimeType)
             pendingCodec = codec
@@ -338,8 +332,8 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
         } catch (_: Exception) {}
 
         // Low latency flags (safe to set, ignored if unsupported) — unless
-        // this decoder has already stalled on them, see lowLatencyHints.
-        if (lowLatencyHints) {
+        // this receiver has already fallen back after repeated output stalls.
+        if (outputWatchdog.lowLatencyHints) {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
             }
@@ -375,9 +369,7 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
                     if (index >= 0) {
                         val seq = info.presentationTimeUs.toInt()
                         codec.releaseOutputBuffer(index, true)
-                        lastOutputNanos = System.nanoTime()
-                        queuedSinceOutput.set(0)
-                        outputStalls = 0
+                        outputWatchdog.output(outputClock())
                         noteReleased(seq)
                         outputStatistics.frameRendered()
                         rendered++
@@ -678,24 +670,15 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
     }
 
     private fun checkOutputProgress() {
-        val queued = queuedSinceOutput.incrementAndGet()
-        val silentNs = System.nanoTime() - lastOutputNanos
-        if (queued >= 4 && silentNs > 1_500_000_000L) {
-            outputStalls++
-            val dropHints = outputStalls >= 2 && lowLatencyHints
-            Log.w(
-                TAG,
-                "Decoder took $queued frames and showed none for " +
-                    "${silentNs / 1_000_000} ms — restarting" +
-                    (if (dropHints) " without low-latency hints" else "")
-            )
-            if (dropHints) lowLatencyHints = false
-            // A fresh decoder needs the codec config and a
-            // keyframe again, and the host sends both to a
-            // client that (re)connects — so drop the socket
-            // too, and let the read loop come back.
-            resetCodec()
-        }
+        val stall = outputWatchdog.queued(outputClock()) ?: return
+        Log.w(
+            TAG,
+            "Decoder took ${stall.queued} frames and showed none for " +
+                "${stall.silentNanos / 1_000_000} ms — restarting" +
+                (if (stall.droppedHints) " without low-latency hints" else "")
+        )
+        // A fresh decoder needs config and a keyframe; reconnect obtains both.
+        resetCodec()
     }
 
     /** Tear the decoder down without touching the surface or the socket. */

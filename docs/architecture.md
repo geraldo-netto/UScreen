@@ -39,6 +39,12 @@ Android and Rust/C measurements and improvements; these are not benchmark result
    adb forwarding and feeds MediaCodec, rendering to a SurfaceView. It requests
    low-latency hints where supported. MediaCodec selection does not guarantee a
    hardware decoder; codec/profile/resolution support is device-dependent.
+   The output watchdog reconnects after four queued frames and more than 1.5
+   seconds without output. Two stalls disable latency hints. Only four output
+   frames spanning at least 1.5 seconds, with no gap longer than that window,
+   clear the failure streak. Recreating the codec starts a new recovery window;
+   once selected, the hint fallback persists for that receiver's lifetime,
+   including stop/start and codec changes.
 6. **Input.** A WebSocket carries touch, pen and control messages back to the
    host. Enabled uinput devices exist while a tablet is attached: touchscreen,
    pressure/tilt/eraser/button pen, and an absolute pointer used with the pen.
