@@ -577,6 +577,10 @@ impl UInputDevice {
             }
             4 => {
                 // HOVER_EXIT — pen left proximity
+                // Release the kernel key too: libinput clears its own button
+                // state on proximity-out, but a latched uinput key would make
+                // the kernel suppress the next press as a duplicate (T317).
+                self.emit(EV_KEY, BTN_STYLUS, 0)?;
                 self.emit(EV_KEY, BTN_TOUCH, 0)?;
                 self.emit(EV_KEY, BTN_TOOL_PEN, 0)?;
                 self.emit(EV_KEY, BTN_TOOL_RUBBER, 0)?;
@@ -1981,7 +1985,11 @@ impl InjectDevices {
         }
         match action {
             0 | 3 => self.pen_proximity = true,
-            1 | 4 => self.pen_proximity = false,
+            1 => self.pen_proximity = false,
+            4 => {
+                self.pen_proximity = false;
+                self.pen_button = false;
+            }
             5 => self.pen_button = true,
             6 => self.pen_button = false,
             _ => {}
@@ -2209,6 +2217,80 @@ mod tests {
         }
         assert!(frame.is_empty(), "input frame was not synchronized");
         frames
+    }
+
+    #[test]
+    fn t317_proximity_exit_releases_stylus_button_for_next_press() {
+        for eraser in [false, true] {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            let mut devices = InjectDevices {
+                pen: Some(UInputDevice {
+                    file: file.reopen().unwrap(),
+                }),
+                ..InjectDevices::empty()
+            };
+            for action in [3, 5, 0, 1] {
+                devices.apply_pen(
+                    AbsoluteContact {
+                        x: 100,
+                        y: 200,
+                        pressure: 1000,
+                    },
+                    (0.0, 0.0),
+                    eraser,
+                    action,
+                );
+            }
+            // Lifting the tip alone must preserve a physically held button.
+            assert!(devices.pen_button);
+            assert_eq!(last_input_value(file.path(), BTN_STYLUS), 1);
+            devices.apply_pen(
+                AbsoluteContact {
+                    x: 0,
+                    y: 0,
+                    pressure: 0,
+                },
+                (0.0, 0.0),
+                eraser,
+                4,
+            );
+            assert_eq!(
+                last_input_value(file.path(), BTN_STYLUS),
+                0,
+                "T317: proximity-out left the kernel key state pressed"
+            );
+            assert!(!devices.pen_button, "T317: stale controller button state");
+            assert!(!devices.pen_proximity);
+            for action in [3, 5, 6, 4] {
+                devices.apply_pen(
+                    AbsoluteContact {
+                        x: 300,
+                        y: 400,
+                        pressure: 0,
+                    },
+                    (0.0, 0.0),
+                    eraser,
+                    action,
+                );
+            }
+            // Model Linux input_get_disposition's duplicate-key filtering.
+            // Both gestures must contain a distinct press and release.
+            let mut state = 0;
+            let transitions: Vec<_> = input_frames(file.path())
+                .into_iter()
+                .flatten()
+                .filter(|&(kind, code, _)| kind == EV_KEY && code == BTN_STYLUS)
+                .filter_map(|(_, _, value)| {
+                    if value == state {
+                        return None;
+                    }
+                    state = value;
+                    Some(value)
+                })
+                .collect();
+            assert_eq!(transitions, [1, 0, 1, 0], "T317: next click was lost");
+            assert!(!devices.pen_button);
+        }
     }
 
     #[test]
