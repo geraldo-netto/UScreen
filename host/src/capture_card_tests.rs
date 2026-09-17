@@ -1,5 +1,6 @@
 //! T330: real daemon helper commands and C allocation, entirely fake DRM.
 use super::*;
+use std::path::{Path, PathBuf};
 
 fn compile_helper(root: &Path) -> PathBuf {
     let binary = root.join("evdi_helper");
@@ -56,12 +57,12 @@ fn manager(root: &Path, instance: u32) -> CaptureManager {
 }
 
 async fn reconnect_prefers_its_previous_card(root: &Path, manager: &mut CaptureManager) {
-    let previous = manager.helper_card.unwrap();
+    let previous = manager.helper.card.unwrap();
     manager.shutdown().await;
     card(root, 1, false); // A new, lower-numbered free card must not reshuffle a session.
     manager.start_helper().await.unwrap();
     assert_eq!(
-        manager.helper_card,
+        manager.helper.card,
         Some(previous),
         "T330 avoid avoidable card churn"
     );
@@ -71,20 +72,20 @@ async fn reconnect_prefers_its_previous_card(root: &Path, manager: &mut CaptureM
     std::fs::remove_dir_all(root.join(format!("evdi.{previous}"))).unwrap();
     manager.start_helper().await.unwrap();
     assert_eq!(
-        manager.helper_card,
+        manager.helper.card,
         Some(1),
         "T330 removed card stranded its session"
     );
 }
 
 async fn occupied_preference_is_not_stolen(root: &Path, manager: &mut CaptureManager) {
-    let previous = manager.helper_card.unwrap();
+    let previous = manager.helper.card.unwrap();
     manager.shutdown().await;
     card(root, previous, true); // Another application acquired it while we were stopped.
     card(root, 8, false);
     manager.start_helper().await.unwrap();
     assert_eq!(
-        manager.helper_card,
+        manager.helper.card,
         Some(8),
         "T330 occupied preference stranded a session"
     );
@@ -104,8 +105,8 @@ async fn allocation_lifecycle(root: &Path) {
     first.expect("T330 primary pinned to an occupied card despite free capacity");
     second.unwrap();
     let actual = std::collections::BTreeSet::from([
-        primary.helper_card.unwrap(),
-        secondary.helper_card.unwrap(),
+        primary.helper.card.unwrap(),
+        secondary.helper.card.unwrap(),
     ]);
     assert_eq!(actual, std::collections::BTreeSet::from([2, 4]));
     let mut extra = manager(root, 2);
@@ -114,14 +115,14 @@ async fn allocation_lifecycle(root: &Path) {
         "T330 exhausted pool stole an active card"
     );
     reconnect_prefers_its_previous_card(root, &mut primary).await;
-    let second_card = secondary.helper_card;
+    let second_card = secondary.helper.card;
     secondary.shutdown().await;
     secondary.start_helper().await.unwrap();
-    assert_eq!(secondary.helper_card, second_card);
+    assert_eq!(secondary.helper.card, second_card);
     card(root, 6, false);
     extra.start_helper().await.unwrap();
     assert_eq!(
-        extra.helper_card,
+        extra.helper.card,
         Some(6),
         "T330 new capacity was not discovered"
     );

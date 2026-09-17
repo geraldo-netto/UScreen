@@ -58,6 +58,20 @@ Android and Rust/C measurements and improvements; these are not benchmark result
 
 ## Processes and settings
 
+The Rust `capture` module supervises settings changes, startup cancellation,
+encoder sessions and retry ordering. `capture::helper` owns the helper child,
+FIFO creation, preferred-card identity and geometry announcements;
+`capture::encoding` owns encoder children/tasks and the in-process cancellation
+flag. `capture::cli_encoder` translates policy to FFmpeg arguments and drains its
+encoded output. `capture::placement` handles desktop placement, while
+`capture::process` provides bounded termination and validated orphan retirement.
+The `media` module owns codec, packet, generation and live-settings contracts,
+so streaming, input and encoding do not depend on capture management.
+`annex_b` assembles access units using `encoder_io`'s shared NAL scanner; partial
+NAL buffering, per-frame codec configuration and generation retirement remain
+part of that boundary. This split preserves the raw FIFO transport and does not
+resolve its interrupted-frame recovery problem (T226).
+
 `uscreen-config::model` owns the portable settings schema, sanitization and edit
 merging. Its `storage` adapter owns transactional files; `commands` owns bounded
 process execution; `linux` owns Linux process/runtime state. Default features

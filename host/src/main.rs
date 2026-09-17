@@ -1,3 +1,5 @@
+#[cfg(not(feature = "inproc-encoder"))]
+mod annex_b;
 mod capture;
 mod config;
 mod desktop;
@@ -11,6 +13,7 @@ mod input;
 mod kscreen;
 mod kwin;
 mod latency;
+mod media;
 mod osk;
 mod persistence;
 mod runtime;
@@ -174,7 +177,7 @@ mod cli_tests {
         if isolated_config_test("cli_tests::t385_settings_persistence_does_not_block_runtime") {
             return;
         }
-        let initial = capture::EncoderSettings {
+        let initial = media::EncoderSettings {
             encoder: "h264_nvenc".into(),
             fps: 60,
             bitrate: 20000,
@@ -190,7 +193,7 @@ mod cli_tests {
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
         let writer = persist_settings(receiver, CliOverrides::new(&cli));
         sender
-            .send(capture::EncoderSettings { fps: 30, ..initial })
+            .send(media::EncoderSettings { fps: 30, ..initial })
             .unwrap();
         drop(sender);
         assert_persistence_keeps_runtime_responsive(writer).await;
@@ -204,7 +207,7 @@ mod cli_tests {
         }
         let saved = config::FileConfig::default();
         saved.save().unwrap();
-        let initial = capture::EncoderSettings {
+        let initial = media::EncoderSettings {
             encoder: saved.encoder.clone(),
             fps: saved.fps,
             bitrate: saved.bitrate,
@@ -222,7 +225,7 @@ mod cli_tests {
         let writer = persist_settings_with(receiver, CliOverrides::new(&cli), worker.writer());
         tokio::pin!(writer);
         std::fs::write(config::config_path(), "invalid = [").unwrap();
-        let unsaved = capture::EncoderSettings {
+        let unsaved = media::EncoderSettings {
             bitrate: 12000,
             ..initial
         };
@@ -242,7 +245,7 @@ mod cli_tests {
         .save()
         .unwrap();
         sender
-            .send(capture::EncoderSettings { fps: 30, ..unsaved })
+            .send(media::EncoderSettings { fps: 30, ..unsaved })
             .unwrap();
         drop(sender);
         writer.await;
@@ -304,7 +307,7 @@ mod cli_tests {
             ..Default::default()
         };
         saved.save().unwrap();
-        let initial = capture::EncoderSettings {
+        let initial = media::EncoderSettings {
             encoder: "h264_vaapi".into(),
             fps: 60,
             bitrate: 20000,
@@ -325,7 +328,7 @@ mod cli_tests {
             Ok(())
         })
         .unwrap();
-        tx.send(capture::EncoderSettings {
+        tx.send(media::EncoderSettings {
             encoder: "h264_nvenc".into(),
             fps: 30,
             bitrate: 12000,
@@ -361,7 +364,7 @@ mod cli_tests {
         let cli =
             Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi", "--width", "1280"]).unwrap();
         let overrides = CliOverrides::new(&cli);
-        let previous = capture::EncoderSettings {
+        let previous = media::EncoderSettings {
             encoder: "h264_vaapi".into(),
             fps: 90,
             bitrate: 10000,
@@ -373,7 +376,7 @@ mod cli_tests {
             stream_scale: 1,
             geometry_ready: true,
         };
-        let changed = capture::EncoderSettings {
+        let changed = media::EncoderSettings {
             encoder: "h264_nvenc".into(),
             bitrate: 12000,
             width: 2560,
@@ -1153,7 +1156,7 @@ printf '%s\n' "$2" >> "$0.log"
                 Default::default(),
                 Default::default(),
             );
-            let (settings_tx, _settings_rx) = watch::channel(capture::EncoderSettings {
+            let (settings_tx, _settings_rx) = watch::channel(media::EncoderSettings {
                 encoder: "libx264".into(),
                 fps: 60,
                 bitrate: 20000,
@@ -1280,7 +1283,7 @@ printf '%s\n' "$2" >> "$0.log"
 async fn start_servers(
     stream_srv: stream::StreamServer,
     input_srv: input::InputServer,
-    video_tx: broadcast::Sender<capture::VideoPacket>,
+    video_tx: broadcast::Sender<media::VideoPacket>,
 ) -> Result<(tokio::task::JoinHandle<()>, tokio::task::JoinHandle<()>)> {
     // Bind both sockets before starting any worker. A failed second bind
     // drops the first listener and reports startup failure to the caller.
@@ -1371,7 +1374,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         port: input_port,
         instance: 0,
         token: token.clone(),
-        codec: capture::Codec::from_encoder(&encoder).muxer().to_string(),
+        codec: media::Codec::from_encoder(&encoder).muxer().to_string(),
         virtual_width: width,
         virtual_height: height,
         touch: file_cfg.input_touch,
@@ -1388,7 +1391,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // config.toml is read at daemon startup; file edits require a daemon restart
     // (the GUI's Apply & Restart does this). Wi-Fi reconnect reads its address
     // from disk separately on each attempt.
-    let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
+    let (settings_tx, settings_rx) = watch::channel(media::EncoderSettings {
         encoder: encoder.clone(),
         fps,
         bitrate,
@@ -1542,7 +1545,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         },
         video_port,
         input_port,
-        codec: capture::Codec::from_encoder(&encoder).muxer().to_string(),
+        codec: media::Codec::from_encoder(&encoder).muxer().to_string(),
         input_touch: file_cfg.input_touch,
         input_pen: file_cfg.input_pen,
         input_pointer: file_cfg.input_pointer,
@@ -1726,7 +1729,7 @@ fn spawn_display_gate(
     gate_tx: watch::Sender<bool>,
     mut tablet_rx: watch::Receiver<bool>,
     mut mode_rx: watch::Receiver<bool>,
-    settings: watch::Sender<capture::EncoderSettings>,
+    settings: watch::Sender<media::EncoderSettings>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut last = false;
@@ -1753,7 +1756,7 @@ fn spawn_display_gate(
 }
 
 fn persist_settings_with(
-    mut settings_rx: watch::Receiver<capture::EncoderSettings>,
+    mut settings_rx: watch::Receiver<media::EncoderSettings>,
     cli_overrides: CliOverrides,
     writer: persistence::Writer,
 ) -> impl std::future::Future<Output = ()> + Send {
@@ -1809,8 +1812,8 @@ impl CliOverrides {
     fn apply_encoder(
         &self,
         cfg: &mut config::FileConfig,
-        s: &capture::EncoderSettings,
-        previous: &capture::EncoderSettings,
+        s: &media::EncoderSettings,
+        previous: &media::EncoderSettings,
     ) {
         if !self.encoder && s.encoder != previous.encoder {
             cfg.encoder = s.encoder.clone();
@@ -1828,8 +1831,8 @@ impl CliOverrides {
     fn apply_geometry(
         &self,
         cfg: &mut config::FileConfig,
-        s: &capture::EncoderSettings,
-        previous: &capture::EncoderSettings,
+        s: &media::EncoderSettings,
+        previous: &media::EncoderSettings,
     ) {
         if !self.width && s.width != previous.width {
             cfg.width = s.width;
@@ -1880,7 +1883,7 @@ async fn persist_mode(mut mode_rx: watch::Receiver<bool>, writer: persistence::W
 
 #[cfg(test)]
 fn persist_settings(
-    settings_rx: watch::Receiver<capture::EncoderSettings>,
+    settings_rx: watch::Receiver<media::EncoderSettings>,
     cli: CliOverrides,
 ) -> impl std::future::Future<Output = ()> + Send {
     let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
@@ -2050,7 +2053,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
         .context("tablet slot outside configured range")?;
     let cfg = slot_capture_config(t.cap_template.clone(), instance);
 
-    let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
+    let (settings_tx, settings_rx) = watch::channel(media::EncoderSettings {
         encoder: cfg.encoder.clone(),
         fps: cfg.fps,
         bitrate: cfg.bitrate,

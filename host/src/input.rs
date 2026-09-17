@@ -1,4 +1,4 @@
-use crate::capture::EncoderSettings;
+use crate::media::EncoderSettings;
 use anyhow::{Context, Result};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -278,7 +278,7 @@ impl InputConfig {
         let codec = settings
             .as_ref()
             .map(|current| {
-                crate::capture::Codec::from_encoder(&current.encoder)
+                crate::media::Codec::from_encoder(&current.encoder)
                     .muxer()
                     .to_string()
             })

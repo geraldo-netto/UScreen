@@ -8,8 +8,8 @@
 //! the affected owned pipeline; capture startup retires matching processes
 //! before attaching a replacement helper.
 
-use crate::capture::fifo_path_for;
 use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS, MIN_BITRATE_KBPS, MIN_FPS};
+use crate::runtime::fifo_path_for;
 use crate::vdisplay;
 use anyhow::Result;
 use std::path::Path;

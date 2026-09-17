@@ -184,7 +184,7 @@ pub fn run(
     fps: u32,
     bitrate_kbps: u32,
     quality: u32,
-    tx: tokio::sync::broadcast::Sender<crate::capture::VideoPacket>,
+    tx: tokio::sync::broadcast::Sender<crate::media::VideoPacket>,
     codec_config: std::sync::Arc<std::sync::Mutex<Option<Bytes>>>,
     idr_wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -214,7 +214,7 @@ pub fn run(
     );
 
     let mut buf = vec![0u8; frame_size];
-    let generation = crate::capture::EncoderGeneration::new();
+    let generation = crate::media::EncoderGeneration::new();
 
     while !stop.load(Ordering::Relaxed) {
         match read_frame(&mut fifo, &mut buf, &stop) {
@@ -231,7 +231,7 @@ pub fn run(
             let seq = latency.next_sequence();
             if tx.receiver_count() > 0 {
                 latency.on_encoded(seq);
-                let _ = tx.send(crate::capture::VideoPacket {
+                let _ = tx.send(crate::media::VideoPacket {
                     data,
                     is_idr,
                     seq,
@@ -251,7 +251,7 @@ fn refresh_codec_config(
     codec_config: &std::sync::Mutex<Option<Bytes>>,
 ) {
     if let Some(config) =
-        extract_parameter_sets(data, crate::capture::Codec::from_encoder(encoder_name))
+        extract_parameter_sets(data, crate::media::Codec::from_encoder(encoder_name))
     {
         if let Ok(mut slot) = codec_config.lock() {
             if slot.as_ref() != Some(&config) {

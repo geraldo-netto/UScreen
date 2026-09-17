@@ -1,4 +1,4 @@
-use crate::capture::VideoPacket;
+use crate::media::VideoPacket;
 use anyhow::Result;
 use bytes::Bytes;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -487,10 +487,10 @@ mod tests {
             wait_for_idr: true,
             dropped: 0,
         };
-        let old = crate::capture::EncoderGeneration::new();
-        let fresh = crate::capture::EncoderGeneration::new();
+        let old = crate::media::EncoderGeneration::new();
+        let fresh = crate::media::EncoderGeneration::new();
         let packet =
-            |seq, is_idr, data: &'static [u8], generation: &crate::capture::EncoderGeneration| {
+            |seq, is_idr, data: &'static [u8], generation: &crate::media::EncoderGeneration| {
                 VideoPacket {
                     seq,
                     is_idr,

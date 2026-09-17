@@ -131,7 +131,10 @@ this order against the shared runtime-bases.json fixture.
 ```
 host/              Rust daemon
   src/main.rs        CLI, orchestration, adb monitor, per-tablet sessions
-  src/capture.rs     EVDI helper + encoder management, display placement
+  src/media.rs       Shared codec, frame-generation and live-settings contracts
+  src/annex_b.rs     Incremental H.264/HEVC access-unit assembly
+  src/capture.rs     Capture supervision: settings, cancellation, retries
+  src/capture/       Helper/FIFO, encoder, process and desktop adapters
   src/encoder.rs     optional in-process libavcodec encoder
   src/stream.rs      TCP video server, session token, IDR-aware backlog skipping
   src/input.rs       WebSocket input server, uinput devices, KWin mapping

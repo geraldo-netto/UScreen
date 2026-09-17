@@ -1,0 +1,495 @@
+//! Distribution FFmpeg CLI adapter and encoded stdout drain.
+use super::{fifo_path_for, CaptureConfig};
+use crate::annex_b::AnnexBPacketizer;
+use crate::media::{Codec, VideoPacket};
+use anyhow::{Context, Result};
+use bytes::Bytes;
+use std::process::Stdio;
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+use tokio::io::AsyncReadExt;
+use tokio::process::Command;
+use tokio::sync::broadcast;
+use tracing::{info, warn};
+
+pub(super) struct CliEncoder<'a> {
+    pub(super) config: &'a CaptureConfig,
+}
+impl CliEncoder<'_> {
+    pub(super) fn log_encoder_dimensions(&self, w: u32, h: u32) {
+        let n = self.config.stream_scale.max(1);
+        let expected = (
+            ((self.config.width / n) & !1).max(2),
+            ((self.config.height / n) & !1).max(2),
+        );
+        if (w, h) != expected {
+            warn!(
+                "Encoding at {}x{}, expected {}x{} — the compositor did not honour \
+                     the requested mode",
+                w, h, expected.0, expected.1
+            );
+        } else if n > 1 {
+            info!(
+                "Encoding at {}x{} (desktop {}x{}, stream scale {})",
+                w, h, self.config.width, self.config.height, n
+            );
+        }
+    }
+
+    pub(super) fn encoder_command(&self, w: u32, h: u32) -> Result<Command> {
+        let encoder = crate::config::ffmpeg_encoder_name(&self.config.encoder);
+        let codec = Codec::from_encoder(encoder);
+        // 10-bit only makes sense on HEVC here: NVENC's H.264 encoder is
+        // 8-bit, so asking for it there would silently do nothing.
+        let ten_bit = self.config.ten_bit && codec == Codec::Hevc;
+        if self.config.ten_bit && !ten_bit {
+            warn!(
+                "10-bit was asked for but {} is 8-bit only — ignoring",
+                encoder
+            );
+        }
+        let encoder_args = self.encoder_arguments(encoder, codec, ten_bit, w, h)?;
+        let mut cmd = Command::new("ffmpeg");
+        cmd.args(&encoder_args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .stdin(Stdio::null())
+            .kill_on_drop(true);
+
+        Ok(cmd)
+    }
+
+    fn encoder_arguments(
+        &self,
+        encoder: &str,
+        codec: Codec,
+        ten_bit: bool,
+        w: u32,
+        h: u32,
+    ) -> Result<Vec<std::ffi::OsString>> {
+        let fps = self.config.fps;
+        let mut encoder_args: Vec<std::ffi::OsString> = vec!["-hide_banner".into()];
+
+        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+            encoder_args.extend_from_slice(&[
+                "-vaapi_device".into(),
+                self.config.vaapi_device.clone().into(),
+            ]);
+        }
+
+        encoder_args.extend_from_slice(&[
+            "-fflags".into(),
+            "nobuffer".into(),
+            "-flags".into(),
+            "low_delay".into(),
+            // The helper emits BT.709 limited-range NV12. Say so on the
+            // INPUT side, before -i. Given as output options (where they used
+            // to be), ffmpeg 7+ treats them as a request to *convert* an
+            // untagged input to BT.709, auto-inserts a scale filter and runs
+            // every frame through swscale via an RGB intermediate on the CPU:
+            // measured ~4 cores at 60 fps, 2960x1848, against 0.4 without,
+            // plus a full-frame conversion's worth of latency and a colour
+            // shift from treating 709 data as 601. Tagged on the input, the
+            // stream still carries bt709/tv in the SPS and nothing is
+            // converted. Full range was tried and reverted — see the note in
+            // evdi_helper.c.
+            "-color_primaries".into(),
+            "bt709".into(),
+            "-color_trc".into(),
+            "bt709".into(),
+            "-colorspace".into(),
+            "bt709".into(),
+            "-color_range".into(),
+            "tv".into(),
+            "-f".into(),
+            "rawvideo".into(),
+            "-pix_fmt".into(),
+            // The helper converts the BGRA framebuffer to NV12 before the
+            // FIFO: 1.5 bytes/px instead of 4, so the raw-frame copies that
+            // bottleneck the pipeline shrink 2.7x and NVENC takes it directly.
+            "nv12".into(),
+            "-s".into(),
+            format!("{}x{}", w, h).into(),
+            "-framerate".into(),
+            fps.to_string().into(),
+            "-use_wallclock_as_timestamps".into(),
+            "1".into(),
+            "-i".into(),
+            fifo_path_for(self.config.instance)?.into_os_string(),
+        ]);
+
+        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+            encoder_args.extend_from_slice(&[
+                "-vf".into(),
+                if ten_bit {
+                    "format=p010le,hwupload"
+                } else {
+                    "format=nv12,hwupload"
+                }
+                .into(),
+            ]);
+        }
+
+        // The FIFO carries 8-bit NV12, so 10-bit encoding needs a conversion
+        // first. Done here rather than in the helper to keep the FIFO format
+        // single: the helper stays the one thing that never has to know which
+        // codec is in use.
+        if ten_bit && !encoder.ends_with("_vaapi") {
+            encoder_args.extend_from_slice(&["-vf".into(), "format=p010le".into()]);
+        }
+
+        encoder_args.extend_from_slice(&[
+            "-c:v".into(),
+            encoder.into(),
+            "-fps_mode".into(),
+            "passthrough".into(),
+            "-force_key_frames".into(),
+            "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into(),
+        ]);
+
+        let mut quality_args = Vec::new();
+        self.encoder_quality_args(&mut quality_args, encoder, ten_bit)?;
+        encoder_args.extend(quality_args.into_iter().map(std::ffi::OsString::from));
+        encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
+        Ok(encoder_args)
+    }
+
+    pub(super) fn encoder_quality_args(
+        &self,
+        args: &mut Vec<String>,
+        encoder: &str,
+        ten_bit: bool,
+    ) -> Result<()> {
+        let profile = uscreen_config::encoding::Profile::new(
+            encoder,
+            self.config.fps,
+            self.config.bitrate,
+            self.config.quality,
+        )?;
+        args.extend(
+            profile
+                .cli_options(ten_bit)
+                .into_iter()
+                .flat_map(|(key, value)| [key, value]),
+        );
+        Ok(())
+    }
+}
+pub(super) async fn read_loop(
+    mut stdout: impl tokio::io::AsyncRead + Unpin,
+    tx: broadcast::Sender<VideoPacket>,
+    codec_config: Arc<Mutex<Option<Bytes>>>,
+    latency: crate::latency::LatencyTracker,
+    codec: Codec,
+) -> Result<()> {
+    let mut buf = vec![0u8; 512 * 1024];
+    let mut total: u64 = 0;
+    let mut frames: u64 = 0;
+    let mut last_log = Instant::now();
+    let mut packetizer = AnnexBPacketizer::new(codec, latency.clone());
+    let mut config_extracted = codec_config.lock().ok().and_then(|g| g.clone()).is_some();
+
+    loop {
+        let n = stdout
+            .read(&mut buf)
+            .await
+            .context("Read error from encoder")?;
+
+        if n == 0 {
+            for data in packetizer.finish() {
+                if tx.receiver_count() > 0 {
+                    latency.on_encoded(data.seq);
+                    let _ = tx.send(data);
+                }
+            }
+            return Ok(());
+        }
+
+        total += n as u64;
+
+        let chunk = &buf[..n];
+        let access_units = packetizer.push(chunk);
+
+        publish_initial_codec_config(&packetizer, &codec_config, &mut config_extracted, total);
+
+        for data in access_units {
+            frames += 1;
+            if tx.receiver_count() > 0 {
+                latency.on_encoded(data.seq);
+                let _ = tx.send(data);
+            }
+        }
+        latency.maybe_report();
+
+        report_encoder_throughput(&mut frames, &mut total, &mut last_log);
+    }
+}
+
+fn publish_initial_codec_config(
+    packetizer: &AnnexBPacketizer,
+    codec_config: &Arc<Mutex<Option<Bytes>>>,
+    config_extracted: &mut bool,
+    total: u64,
+) {
+    if !*config_extracted {
+        if let Some(config) = packetizer.codec_config() {
+            info!("Extracted codec config (SPS+PPS): {} bytes", config.len());
+            if let Ok(mut cc) = codec_config.lock() {
+                *cc = Some(config);
+            }
+            *config_extracted = true;
+        } else if total > 1024 * 1024 {
+            warn!("Could not find SPS/PPS in first 1MB of stream");
+            *config_extracted = true;
+        }
+    }
+}
+
+fn encoder_throughput_rates(total: u64, elapsed: f64) -> (f64, f64) {
+    let megabytes_per_second = if elapsed > 0.0 {
+        (total as f64 / elapsed) / 1_000_000.0
+    } else {
+        0.0
+    };
+    (megabytes_per_second, megabytes_per_second * 8.0 * 1000.0)
+}
+
+fn report_encoder_throughput(frames: &mut u64, total: &mut u64, last_log: &mut Instant) {
+    if last_log.elapsed().as_secs() >= 5 {
+        let elapsed = last_log.elapsed().as_secs_f64();
+        let (megabytes_per_second, kilobits_per_second) = encoder_throughput_rates(*total, elapsed);
+        info!(
+            "Encoder: {} access units in {:.1}s, {:.1} MB/s ({:.0} kbps)",
+            frames, elapsed, megabytes_per_second, kilobits_per_second
+        );
+        *frames = 0;
+        *total = 0;
+        *last_log = Instant::now();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn t307_encoder_throughput_uses_displayed_decimal_units() {
+        for (bytes, seconds, megabytes, kilobits) in [
+            (0, 5.0, 0.0, 0.0),
+            (1_000_000, 1.0, 1.0, 8000.0),
+            (37_500_000, 5.0, 7.5, 60000.0),
+            (125_000, 0.5, 0.25, 2000.0),
+            (1_000_000, 0.0, 0.0, 0.0),
+        ] {
+            assert_eq!(
+                encoder_throughput_rates(bytes, seconds),
+                (megabytes, kilobits),
+                "T307: wrong MB/s and kbps for {bytes} bytes over {seconds} seconds"
+            );
+        }
+    }
+    #[test]
+    fn t306_nvenc_preserves_kilobit_bitrate_limits() {
+        for encoder in ["h264_nvenc", "hevc_nvenc"] {
+            for bitrate in [1000, 1001, 1049, 1051, 19999, 20000, 59999, 60000] {
+                let config = CaptureConfig {
+                    bitrate,
+                    ..Default::default()
+                };
+                let manager = CliEncoder { config: &config };
+                let mut args = Vec::new();
+                manager
+                    .encoder_quality_args(&mut args, encoder, false)
+                    .unwrap();
+                let limit = &args.windows(2).find(|pair| pair[0] == "-maxrate").unwrap()[1];
+                // Decode SI units independently; either exact k or M is valid.
+                let (number, multiplier) = match limit.as_bytes().last() {
+                    Some(b'k') => (&limit[..limit.len() - 1], 1_000.0),
+                    Some(b'M') => (&limit[..limit.len() - 1], 1_000_000.0),
+                    _ => (limit.as_str(), 1.0),
+                };
+                assert_eq!(
+                    number.parse::<f64>().unwrap() * multiplier,
+                    f64::from(bitrate) * 1000.0,
+                    "T306: {encoder} rounded {bitrate} kbps to {limit}"
+                );
+            }
+        }
+    }
+    #[tokio::test]
+    async fn t228_sequences_survive_encoder_restarts_before_ack() {
+        let latency = crate::latency::LatencyTracker::new();
+        let (tx, mut rx) = broadcast::channel(8);
+        let input = [
+            vec![0, 0, 0, 1, 5, 0x80, 0x11],
+            vec![0, 0, 0, 1, 1, 0x80, 0x22],
+        ]
+        .concat();
+        let mut sequences = Vec::new();
+        for _ in 0..2 {
+            read_loop(
+                input.as_slice(),
+                tx.clone(),
+                Arc::new(Mutex::new(None)),
+                latency.clone(),
+                Codec::H264,
+            )
+            .await
+            .unwrap();
+            sequences.push(rx.recv().await.unwrap().seq);
+            sequences.push(rx.recv().await.unwrap().seq);
+        }
+        assert_eq!(
+            sequences,
+            vec![0, 1, 2, 3],
+            "T228: restarted encoders must not reuse pending ACK identifiers"
+        );
+        latency.on_rendered(sequences[2], 0);
+        latency.on_rendered(sequences[0], 0); // delayed ACK from retired encoder
+        latency.on_rendered(sequences[3], 0);
+    }
+}
+#[cfg(test)]
+mod encoder_policy_tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn cli_pairs(args: &[String]) -> BTreeMap<&str, &str> {
+        let pairs = args
+            .chunks_exact(2)
+            .map(|p| (p[0].as_str(), p[1].as_str()))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(
+            pairs.len() * 2,
+            args.len(),
+            "T373: duplicate or incomplete option"
+        );
+        pairs
+    }
+
+    #[test]
+    fn t373_cli_quality_profiles_keep_adapter_contracts() {
+        for (fps, bitrate, quality, nvbuf, swbuf) in
+            [(10, 1000, 12, 200, 200), (90, 60000, 32, 666, 1333)]
+        {
+            for encoder in [
+                "h264_nvenc",
+                "hevc_nvenc",
+                "h264_vaapi",
+                "hevc_vaapi",
+                "libx264",
+            ] {
+                let config = CaptureConfig {
+                    fps,
+                    bitrate,
+                    quality,
+                    instance: u32::MAX,
+                    ..Default::default()
+                };
+                let manager = CliEncoder { config: &config };
+                for ten_bit in [false, true] {
+                    let mut args = Vec::new();
+                    manager
+                        .encoder_quality_args(&mut args, encoder, ten_bit)
+                        .unwrap();
+                    let expected =
+                        cli_expected(encoder, fps, bitrate, quality, nvbuf, swbuf, ten_bit);
+                    let expected = expected
+                        .split_whitespace()
+                        .map(str::to_string)
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        cli_pairs(&args),
+                        cli_pairs(&expected),
+                        "T373: {encoder}, {fps}, {ten_bit}"
+                    );
+                }
+            }
+        }
+    }
+
+    // Fixed boundary expectations characterize the existing adapter before sharing policy.
+    fn cli_expected(
+        name: &str,
+        fps: u32,
+        bitrate: u32,
+        quality: u32,
+        nvbuf: u32,
+        swbuf: u32,
+        ten_bit: bool,
+    ) -> String {
+        let limits = format!("-maxrate {bitrate}k -g {fps}");
+        if name.ends_with("_nvenc") {
+            let depth = if ten_bit { "-profile:v main10" } else { "" };
+            format!("-preset p1 -tune ull -zerolatency 1 -delay 0 -bf 0 -rc-lookahead 0 -multipass 0 -rc vbr -cq {quality} -b:v 0 -bufsize {nvbuf}k -forced-idr 1 {limits} {depth}")
+        } else if name.ends_with("_vaapi") {
+            format!("-rc_mode CQP -qp {quality} -bf 0 -idr_interval 0 {limits}")
+        } else {
+            format!("-preset ultrafast -tune zerolatency -crf {quality} -bufsize {swbuf}k -x264-params scenecut=0 {limits}")
+        }
+    }
+
+    #[test]
+    fn t373_cli_color_depth_and_periodic_idr_remain_explicit() {
+        for encoder in [
+            "h264_nvenc",
+            "hevc_nvenc",
+            "h264_vaapi",
+            "hevc_vaapi",
+            "libx264",
+        ] {
+            for ten_bit in [false, true] {
+                let config = CaptureConfig {
+                    encoder: encoder.into(),
+                    ten_bit,
+                    instance: u32::MAX,
+                    ..Default::default()
+                };
+                let manager = CliEncoder { config: &config };
+                let command = manager.encoder_command(640, 480).unwrap();
+                let args = command
+                    .as_std()
+                    .get_args()
+                    .map(|a| a.to_string_lossy().into_owned())
+                    .collect::<Vec<_>>();
+                assert_input_colors(&args);
+                let value = |flag| {
+                    args.windows(2)
+                        .find(|p| p[0] == flag)
+                        .map(|p| p[1].as_str())
+                };
+                assert_eq!(
+                    value("-force_key_frames"),
+                    Some("expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))")
+                );
+                let depth = ten_bit && encoder.starts_with("hevc");
+                let filter = expected_filter(encoder.ends_with("_vaapi"), depth);
+                assert_eq!(value("-vf"), filter, "T373: {encoder}, {ten_bit}");
+            }
+        }
+    }
+
+    fn expected_filter(vaapi: bool, ten_bit: bool) -> Option<&'static str> {
+        match (vaapi, ten_bit) {
+            (true, true) => Some("format=p010le,hwupload"),
+            (true, false) => Some("format=nv12,hwupload"),
+            (false, true) => Some("format=p010le"),
+            (false, false) => None,
+        }
+    }
+
+    fn assert_input_colors(args: &[String]) {
+        let input = args.iter().position(|a| a == "-i").unwrap();
+        for (flag, value) in [
+            ("-color_primaries", "bt709"),
+            ("-color_trc", "bt709"),
+            ("-colorspace", "bt709"),
+            ("-color_range", "tv"),
+            ("-pix_fmt", "nv12"),
+        ] {
+            assert!(
+                args[..input].windows(2).any(|p| p == [flag, value]),
+                "T373: input {flag}"
+            );
+        }
+    }
+}

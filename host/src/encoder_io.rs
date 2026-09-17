@@ -1,4 +1,4 @@
-use crate::capture::Codec;
+use crate::media::Codec;
 use bytes::Bytes;
 
 /// Fill `buf` completely, tolerating a FIFO that has no data yet and a writer
