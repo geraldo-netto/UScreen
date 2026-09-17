@@ -717,13 +717,8 @@ impl CaptureManager {
 
     #[cfg(not(feature = "inproc-encoder"))]
     fn encoder_command(&self, w: u32, h: u32) -> Result<Command> {
-        // Accept the old gstreamer-style name as an alias
-        let encoder = if self.config.encoder == "vaapih264enc" {
-            "h264_vaapi".to_string()
-        } else {
-            self.config.encoder.clone()
-        };
-        let codec = Codec::from_encoder(&encoder);
+        let encoder = crate::config::ffmpeg_encoder_name(&self.config.encoder);
+        let codec = Codec::from_encoder(encoder);
         // 10-bit only makes sense on HEVC here: NVENC's H.264 encoder is
         // 8-bit, so asking for it there would silently do nothing.
         let ten_bit = self.config.ten_bit && codec == Codec::Hevc;
@@ -733,7 +728,7 @@ impl CaptureManager {
                 encoder
             );
         }
-        let encoder_args = self.encoder_arguments(&encoder, codec, ten_bit, w, h)?;
+        let encoder_args = self.encoder_arguments(encoder, codec, ten_bit, w, h)?;
         let mut cmd = Command::new("ffmpeg");
         cmd.args(&encoder_args)
             .stdout(Stdio::piped())

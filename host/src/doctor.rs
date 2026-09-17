@@ -229,28 +229,32 @@ fn check_required_commands(r: &mut Report) {
 
 async fn check_encoder_availability(r: &mut Report, cfg: &FileConfig) {
     if let Some(list) = output_of("ffmpeg", &["-hide_banner", "-encoders"]).await {
-        let has = |name: &str| {
-            list.lines()
-                .any(|l| l.split_whitespace().any(|t| t == name))
-        };
-        if has(&cfg.encoder) {
-            r.line(
-                Level::Ok,
-                "configured encoder",
-                &format!("{} available", cfg.encoder),
-            );
-        } else {
-            r.line(
-                Level::Fail,
-                "configured encoder",
-                &format!("{} NOT available in ffmpeg", cfg.encoder),
-            );
-            let alternatives: Vec<&str> = ["h264_nvenc", "h264_vaapi", "libx264"]
-                .into_iter()
-                .filter(|e| has(e))
-                .collect();
-            r.hint(&format!("available instead: {}", alternatives.join(", ")));
-        }
+        report_encoder_availability(r, cfg, &list);
+    }
+}
+
+fn report_encoder_availability(r: &mut Report, cfg: &FileConfig, list: &str) {
+    let has = |name: &str| {
+        list.lines()
+            .any(|l| l.split_whitespace().any(|t| t == name))
+    };
+    if has(config::ffmpeg_encoder_name(&cfg.encoder)) {
+        r.line(
+            Level::Ok,
+            "configured encoder",
+            &format!("{} available", cfg.encoder),
+        );
+    } else {
+        r.line(
+            Level::Fail,
+            "configured encoder",
+            &format!("{} NOT available in ffmpeg", cfg.encoder),
+        );
+        let alternatives: Vec<&str> = ["h264_nvenc", "h264_vaapi", "libx264"]
+            .into_iter()
+            .filter(|e| has(e))
+            .collect();
+        r.hint(&format!("available instead: {}", alternatives.join(", ")));
     }
 }
 
@@ -1221,6 +1225,31 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t313_doctor_accepts_the_cli_vaapi_alias() {
+        use super::*;
+        let inventory = " V....D h264_vaapi H.264/AVC (VAAPI)\n V....D libx264 H.264/AVC\n";
+        for (encoder, failures) in [("h264_vaapi", 0), ("vaapih264enc", 0), ("hevc_vaapi", 1)] {
+            let mut cfg = FileConfig {
+                encoder: encoder.into(),
+                ..Default::default()
+            };
+            cfg.sanitize();
+            assert_eq!(cfg.encoder, encoder, "T313: accepted configuration changed");
+            let mut report = Report::new();
+            report_encoder_availability(&mut report, &cfg, inventory);
+            assert_eq!(report.failures, failures, "T313: encoder {encoder}");
+            assert_eq!(report.warnings, 0);
+            if failures > 0 {
+                assert!(report
+                    .messages
+                    .borrow()
+                    .iter()
+                    .any(|message| message == "available instead: h264_vaapi, libx264"));
+            }
+        }
+    }
+
     #[test]
     fn t301_saved_bitrate_warnings_cover_both_limits() {
         use super::*;

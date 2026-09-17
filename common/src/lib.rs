@@ -60,6 +60,14 @@ pub fn slot_ports(video: u16, input: u16, slots: u32) -> Result<Vec<(u16, u16)>>
     Ok(ports)
 }
 
+/// Preserve the legacy GStreamer-style setting while using FFmpeg's name.
+pub fn ffmpeg_encoder_name(name: &str) -> &str {
+    match name {
+        "vaapih264enc" => "h264_vaapi",
+        _ => name,
+    }
+}
+
 pub fn supported_encoder(name: &str) -> bool {
     matches!(
         name,
