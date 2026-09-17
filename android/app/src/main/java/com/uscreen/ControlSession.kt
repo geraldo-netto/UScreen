@@ -1,6 +1,7 @@
 package com.uscreen
 
 import android.util.Log
+import android.os.SystemClock
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +39,7 @@ internal class ControlSession(
     @Volatile var connectionGeneration = 0L
         private set
     private var connectionWanted = false
+    private val statistics = ControlStatistics()
     @Volatile private var isConnected = false
     private val authenticatedControl = MutableStateFlow(false)
     val controlConnected = authenticatedControl.asStateFlow()
@@ -85,34 +87,10 @@ internal class ControlSession(
                 if (isStale(webSocket)) return
                 isConnected = true
                 Log.i(TAG, "Connected")
-                // Authenticate before anything else. If we have no token yet the
-                // host will drop us and relaunch the app with one, and the
-                // reconnect logic takes it from there.
-                token?.let { t ->
-                    webSocket.send(JSONObject().apply {
-                        put("type", "auth")
-                        put("token", t)
-                    }.toString())
-                } ?: Log.w(TAG, "No session token yet — the host will send one")
-                if (nativeWidth > 0 && nativeHeight > 0) {
-                    val res = JSONObject().apply {
-                        put("type", "resolution")
-                        put("width", nativeWidth)
-                        put("height", nativeHeight)
-                        if (nativeWidthMm > 0 && nativeHeightMm > 0) {
-                            put("width_mm", nativeWidthMm)
-                            put("height_mm", nativeHeightMm)
-                        }
-                    }
-                    webSocket.send(res.toString())
-                    Log.i(TAG, "Reported native resolution: ${nativeWidth}x${nativeHeight} " +
-                            "(${nativeWidthMm}x${nativeHeightMm} mm)")
-                }
-                pendingConfig?.let { webSocket.send(it.toString()) }
-                pendingMode?.let {
-                    webSocket.send(it.toString())
-                    pendingMode = null
-                }
+                if (!sendAuthentication()) return
+                if (!sendResolution()) return
+                pendingConfig?.let { if (!enqueue(it)) return }
+                flushPendingMode()
             }
         }
 
@@ -170,6 +148,39 @@ internal class ControlSession(
          * off and cancel the socket that replaced them.
          */
         private fun isStale(ws: WebSocket) = ws !== this@ControlSession.webSocket
+    }
+
+    // Authentication must be accepted before any other message is offered.
+    private fun sendAuthentication(): Boolean {
+        val currentToken = token
+        if (currentToken == null) {
+            Log.w(TAG, "No session token yet — the host will send one")
+            return true
+        }
+        return enqueue(JSONObject().apply {
+            put("type", "auth")
+            put("token", currentToken)
+        })
+    }
+
+    private fun sendResolution(): Boolean {
+        if (nativeWidth <= 0 || nativeHeight <= 0) return true
+        return enqueue(JSONObject().apply {
+            put("type", "resolution")
+            put("width", nativeWidth)
+            put("height", nativeHeight)
+            if (nativeWidthMm > 0 && nativeHeightMm > 0) {
+                put("width_mm", nativeWidthMm)
+                put("height_mm", nativeHeightMm)
+            }
+        })
+    }
+
+    private fun flushPendingMode() {
+        val message = pendingMode ?: return
+        // Acceptance means queued, not a host acknowledgement. Preserve the
+        // existing one-shot policy once accepted; rejected choices remain pending.
+        if (enqueue(message)) pendingMode = null
     }
 
     private fun applyInputGreeting(o: JSONObject) {
@@ -252,10 +263,7 @@ internal class ControlSession(
             put("fps", fps)
         }
         pendingConfig = msg
-        if (isConnected) {
-            webSocket?.send(msg.toString())
-            Log.i(TAG, "Sent config: $msg")
-        }
+        if (enqueue(msg)) Log.i(TAG, "Queued config: $msg")
     }
 
     /**
@@ -289,26 +297,50 @@ internal class ControlSession(
             put("type", "mode")
             put("pen_only", penOnly)
         }
-        if (isConnected) {
-            webSocket?.send(msg.toString())
-            Log.i(TAG, "Requested mode: ${if (penOnly) "pen-only" else "display"}")
-        } else {
-            // Held rather than replayed forever: the host is the source of
-            // truth for the mode, and re-asserting a stale choice on every
-            // reconnect would fight whatever it was set to in the meantime.
-            pendingMode = msg
-        }
+        // Keep the latest choice until the transport accepts it. The host
+        // remains authoritative after acceptance, so don't replay it forever.
+        pendingMode = msg
+        if (isConnected) flushPendingMode()
     }
 
     fun isControlConnected(): Boolean = isConnected
 
     // onOpen holds this monitor until auth and initial metadata are queued.
     // UI input and decoder acknowledgements must not overtake that handshake.
-    fun sendWhenConnected(message: JSONObject): Unit = synchronized(lock) {
-        if (isConnected) webSocket?.send(message.toString())
+    fun sendWhenConnected(message: JSONObject, sampleTimeMs: Long? = null): Unit = synchronized(lock) {
+        enqueue(message, sampleTimeMs)
+    }
+
+    // Caller holds the same lock as handshake, input translation and settings.
+    private fun enqueue(message: JSONObject, sampleTimeMs: Long? = null): Boolean {
+        if (!isConnected) return false
+        val socket = webSocket ?: return false
+        val text = message.toString()
+        val age = sampleTimeMs?.let { SystemClock.uptimeMillis() - it }
+        val before = socket.queueSize()
+        val accepted = socket.send(text)
+        statistics.record(accepted, before, socket.queueSize(), age)
+        if (accepted) return true
+        // A refused ordered event makes the whole gesture uncertain. Stop using
+        // this socket, causing the host to release its controller's devices.
+        // Never buffer/replay a partial stroke on a replacement connection.
+        Log.w(TAG, "Control send rejected; reconnecting (queued_bytes=${socket.queueSize()})")
+        webSocket = null
+        connectionGeneration++
+        isConnected = false
+        authenticatedControl.value = false
+        input.forgetTouches()
+        socket.cancel()
+        scheduleReconnect()
+        return false
+    }
+
+    fun statistics(): ControlStatisticsSnapshot = synchronized(lock) {
+        statistics.snapshot(webSocket?.queueSize() ?: 0)
     }
 
     fun disconnect(): Unit = synchronized(lock) {
+        if (webSocket != null) Log.i(TAG, "Control statistics: ${statistics()}")
         connectionWanted = false
         input.forgetTouches()
         connectionGeneration++

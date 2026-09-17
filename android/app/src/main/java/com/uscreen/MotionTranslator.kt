@@ -7,7 +7,7 @@ import kotlin.math.sin
 import org.json.JSONObject
 
 /** Translates Android samples into ordered wire events; owns pointer-to-slot assignments. */
-internal class MotionTranslator(private val send: (JSONObject) -> Unit) : ControlInputState {
+internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) : ControlInputState {
     private companion object { const val TOOL_TYPE_PALM = 5 }
     private val touchSlots = mutableMapOf<Int, Int>()
     @Volatile private var touchEnabled = true
@@ -38,7 +38,7 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
                 if (isPenLike(event, 0)) sendPenEvent(event, 0, 3, vw, vh)
             }
             MotionEvent.ACTION_HOVER_EXIT -> {
-                if (isPenLike(event, 0)) sendPenProximityExit()
+                if (isPenLike(event, 0)) sendPenProximityExit(event.eventTime)
             }
         }
         return true
@@ -60,7 +60,7 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
                 true
             }
             MotionEvent.ACTION_HOVER_EXIT -> {
-                sendPenProximityExit()
+                sendPenProximityExit(event.eventTime)
                 true
             }
             // S-Pen side button. Android delivers BUTTON_PRESS/RELEASE as
@@ -68,11 +68,11 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
             // the only place they can be caught. Forwarded as the stylus
             // button (right-click in GIMP).
             MotionEvent.ACTION_BUTTON_PRESS -> {
-                sendPenButton(true)
+                sendPenButton(true, event.eventTime)
                 true
             }
             MotionEvent.ACTION_BUTTON_RELEASE -> {
-                sendPenButton(false)
+                sendPenButton(false, event.eventTime)
                 true
             }
             else -> false
@@ -138,7 +138,7 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
                 getHistoricalAxis(event, MotionEvent.AXIS_TILT, index, h),
                 getHistoricalAxis(event, MotionEvent.AXIS_ORIENTATION, index, h))
             emitPen(hx.toDouble(), hy.toDouble(), hp, htx, hty,
-                isEraser(event, index), 2)
+                isEraser(event, index), 2, event.getHistoricalEventTime(h))
         }
     }
 
@@ -162,12 +162,13 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
             free
         } else return
         sendTouch(event.getX(index) / vw, event.getY(index) / vh,
-            if (action == 1) 0.0 else event.getPressure(index).toDouble(), action, slot)
+            if (action == 1) 0.0 else event.getPressure(index).toDouble(), action, slot, event.eventTime)
         if (action == 1) touchSlots.remove(id)
     }
 
     private fun releaseTouches() {
-        for (slot in touchSlots.values) sendTouch(0f, 0f, 0.0, 1, slot)
+        // A refused send retires the connection and clears slots synchronously.
+        for (slot in touchSlots.values.toList()) sendTouch(0f, 0f, 0.0, 1, slot)
         touchSlots.clear()
     }
 
@@ -248,25 +249,25 @@ internal class MotionTranslator(private val send: (JSONObject) -> Unit) : Contro
             getAxis(event, MotionEvent.AXIS_TILT, index),
             getAxis(event, MotionEvent.AXIS_ORIENTATION, index))
         emitPen(x.toDouble(), y.toDouble(), pressure, tiltX, tiltY,
-            isEraser(event, index), action)
+            isEraser(event, index), action, event.eventTime)
     }
 
     private fun emitPen(x: Double, y: Double, pressure: Double,
-                        tiltX: Double, tiltY: Double, eraser: Boolean, action: Int) {
+                        tiltX: Double, tiltY: Double, eraser: Boolean, action: Int, sampleTimeMs: Long) {
         if (!penEnabled) return
-        send(PenMessage(action, x, y, pressure, tiltX, tiltY, eraser).toJson())
+        send(PenMessage(action, x, y, pressure, tiltX, tiltY, eraser).toJson(), sampleTimeMs)
     }
 
-    private fun sendPenButton(down: Boolean) {
-        if (penEnabled) send(PenMessage(if (down) 5 else 6).toJson())
+    private fun sendPenButton(down: Boolean, sampleTimeMs: Long) {
+        if (penEnabled) send(PenMessage(if (down) 5 else 6).toJson(), sampleTimeMs)
     }
 
-    private fun sendPenProximityExit() {
-        if (penEnabled) send(PenMessage(4).toJson())
+    private fun sendPenProximityExit(sampleTimeMs: Long) {
+        if (penEnabled) send(PenMessage(4).toJson(), sampleTimeMs)
     }
 
-    private fun sendTouch(x: Float, y: Float, pressure: Double, action: Int, slot: Int) {
-        if (touchEnabled) send(TouchMessage(action, slot, x.toDouble(), y.toDouble(), pressure).toJson())
+    private fun sendTouch(x: Float, y: Float, pressure: Double, action: Int, slot: Int, sampleTimeMs: Long? = null) {
+        if (touchEnabled) send(TouchMessage(action, slot, x.toDouble(), y.toDouble(), pressure).toJson(), sampleTimeMs)
     }
 
     /**

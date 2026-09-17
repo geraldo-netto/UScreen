@@ -176,6 +176,20 @@ The shared `input-motion.json` fixture is checked against Android translation
 and Rust deserialization/serialization; stylus history has separate ordering,
 pressure, tilt and eraser coverage.
 
+Every control send checks transport acceptance. A refused send cancels that
+socket, clears authenticated state and local touch slots, and schedules a new
+connection. Host controller teardown releases active contacts. Interrupted input
+is not replayed; accepted samples keep their original order. The latest encoder
+settings are replayed on reconnect. A pending mode choice survives refusal and
+is cleared once queued; queue acceptance does not prove delivery or host adoption.
+No second application queue or history/ACK sampling is introduced.
+
+Scalar counters record accepted/refused sends, current and peak socket queue
+bytes, and Android sample age at enqueue. They retain no message content and are
+logged on explicit disconnect. Queue bytes exclude framing and OS buffering;
+sample age uses Android uptime and excludes time waiting inside the socket queue.
+See the [replay workload and measurement limits](benchmarks.md#android-control-replay).
+
 Examples of individual client messages (one JSON object per WebSocket message):
 
 ```json

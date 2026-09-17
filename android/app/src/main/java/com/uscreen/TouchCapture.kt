@@ -12,7 +12,7 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
         const val RECONNECT_DELAY_MS = 2000L
     }
 
-    internal val motion: MotionTranslator = MotionTranslator { control.sendWhenConnected(it) }
+    internal val motion: MotionTranslator = MotionTranslator { message, sampleTimeMs -> control.sendWhenConnected(message, sampleTimeMs) }
     internal val control: ControlSession = ControlSession(this, motion, factory)
     val connectionGeneration get() = control.connectionGeneration
     val controlConnected get() = control.controlConnected
@@ -34,6 +34,7 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
         control.setNativeResolution(width, height, widthMm, heightMm)
     fun connect() = control.connect()
     fun disconnect() = control.disconnect()
+    internal fun controlStatistics() = control.statistics()
     fun isControlConnected() = control.isControlConnected()
     fun sendConfig(bitrateKbps: Int, fps: Int) = control.sendConfig(bitrateKbps, fps)
     fun sendMode(penOnly: Boolean) = control.sendMode(penOnly)

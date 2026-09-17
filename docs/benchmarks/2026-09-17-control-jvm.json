@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "test_timestamp": "2026-09-17T12:59:45",
+  "source_base": "4702e3fc9c597724a186b75b60c5d3469c35daff",
+  "changes": "T387 implementation in the commit containing this artifact",
+  "source_sha256": {
+    "android/app/src/main/java/com/uscreen/ControlSession.kt": "d8207863f34ff3d1057690fc96f20820499eff1b68a1cd805b26513a6705bb11",
+    "android/app/src/main/java/com/uscreen/ControlStatistics.kt": "091b1ce4447efc510d200825076291ab2f0ca7c64ec08692f8ea3468190098e0",
+    "android/app/src/main/java/com/uscreen/TouchCapture.kt": "1e309b2469bc57b452fe6620d1fe3142ce17b54645d8d453d50f2cd0aa099028",
+    "android/app/src/main/java/com/uscreen/MotionTranslator.kt": "dda55fb20fc083662a24bb08094849373778a0c9efea6d70294102761052aa4b",
+    "android/app/src/main/java/com/uscreen/InputMessages.kt": "17bcd11189011114d971fd8ac617ac969bb4c6c8665d6900f811009835811df6",
+    "android/app/src/test/java/com/uscreen/ControlLoadTest.kt": "3684d2399b292ac2b557ab51f9600a46bac8dbf7c6cf7fc0c66b9abd5f803b1d"
+  },
+  "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpu": "AMD Ryzen 9 7945HX with Radeon Graphics",
+  "jdk": "openjdk version \"21.0.12\" 2026-07-21\nOpenJDK Runtime Environment (build 21.0.12+8-1-24.04-Ubuntu)\nOpenJDK 64-Bit Server VM (build 21.0.12+8-1-24.04-Ubuntu, mixed mode, sharing)",
+  "robolectric": "4.17",
+  "okhttp": "4.12.0",
+  "build": "debug unit test",
+  "notes": [
+    "Single JVM replay, not a speedup comparison or physical-device baseline.",
+    "Four historical/current samples per MotionEvent; constructed sample ages 12, 8, 4, 0 milliseconds.",
+    "Allocation counter covers replay on the test thread, including MotionEvents, JSON and fake UTF-8 enqueue; GC counters cover the entire test JVM.",
+    "Fake transport either drains every send or stalls at 8192 bytes; no actual network or ART collector.",
+    "Timing excludes setup; no performance pass/fail threshold."
+  ],
+  "results": [
+    {
+      "schema": 1,
+      "runtime": "Robolectric/JVM API34",
+      "scenario": "immediate-drain",
+      "elapsed_ns": 91419545,
+      "thread_allocated_bytes": 49231328,
+      "jvm_gc_count": 3,
+      "jvm_gc_ms": 5,
+      "accepted": 20401,
+      "rejected": 0,
+      "peak_queue_bytes": 0,
+      "sample_count": 19200,
+      "sample_age_total_ms": 115200,
+      "sample_age_max_ms": 12
+    },
+    {
+      "schema": 1,
+      "runtime": "Robolectric/JVM API34",
+      "scenario": "stalled-8KiB",
+      "elapsed_ns": 767394,
+      "thread_allocated_bytes": 187456,
+      "jvm_gc_count": 0,
+      "jvm_gc_ms": 0,
+      "accepted": 80,
+      "rejected": 1,
+      "peak_queue_bytes": 8112,
+      "sample_count": 75,
+      "sample_age_total_ms": 456,
+      "sample_age_max_ms": 12
+    }
+  ]
+}

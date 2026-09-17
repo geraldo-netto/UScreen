@@ -135,3 +135,43 @@ Reports with other hardware are welcome as
 include the exact commit, hardware, encoder/settings, workload and several
 `Latency encode→display` log lines. The log label alone does not describe a
 reproducible benchmark.
+
+
+## Android control replay
+
+T387 adds `ControlLoadTest`, a normal automated test with a repeatable synthetic
+input workload. Run it with:
+
+```sh
+./android/gradlew -p android testDebugUnitTest --tests com.uscreen.ControlLoadTest --rerun-tasks
+```
+
+The test replays up to 4,800 stylus MotionEvents, each with three historical
+samples plus its current sample, and one rendered-frame acknowledgement every
+four events. One fake socket drains immediately; another stops at an intentionally
+small 8 KiB queue to exercise refusal and whole-connection recovery. The test
+asserts ordering-related counts, queue bounds and recovery, without elapsed-time
+or allocation thresholds. Per-message JSON remains unchanged.
+
+`T387_RESULT` JSON lines appear in the test XML's `system-out` under
+`android/app/build/test-results/testDebugUnitTest/`. The
+[2026-09-17 raw result](benchmarks/2026-09-17-control-jvm.json) records the source
+hashes, JDK, host and method. In that replay the draining case accepted 20,401
+messages; the stalled case accepted 80, refused one and retired the connection
+at a peak measured queue of 8,112 bytes. This fake limit is not a production
+queue policy: UScreen retains OkHttp's existing queue bound.
+
+The artifact's allocation count is the test thread's JVM allocation during the
+replay, including synthetic MotionEvents and fake transport encoding. Its GC
+count/time applies to the entire test JVM. The sample-age distribution was
+constructed at 12, 8, 4 and 0 ms; it validates measurement plumbing and is not an
+observed tablet-input latency distribution. These single-run figures establish
+neither an Android ART baseline nor a performance improvement. Physical device,
+network, thermal and multi-tablet baselines remain tracked in T382/T388.
+
+Runtime `ControlStatisticsSnapshot` summaries in `UScreenTouch` logcat provide
+accepted/refused counts, current/peak queue bytes and sample-age count/sum/max.
+The counters use scalar storage and exclude tokens and input coordinates.
+Measure ART allocation/GC with Perfetto or the Android profiler alongside these
+counters when collecting a device baseline. Queue size cannot show delivery or
+remote application of a message; use the host response for authoritative mode.
