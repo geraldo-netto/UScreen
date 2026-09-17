@@ -34,6 +34,7 @@ impl Encoder {
         quality: u32,
     ) -> Result<Self> {
         crate::config::validate_encoder_for_build(name)?;
+        let profile = uscreen_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?;
         ffmpeg_next::init().context("initialise libavcodec")?;
 
         let codec = ffmpeg_next::encoder::find_by_name(name)
@@ -51,17 +52,17 @@ impl Encoder {
         ctx.set_frame_rate(Some(ffmpeg_next::Rational(fps.max(1) as i32, 1)));
         // One nominal second in frames; longer at idle. Client joins can
         // request an IDR on the next captured frame.
-        ctx.set_gop(fps.max(1));
+        ctx.set_gop(profile.gop);
         ctx.set_max_b_frames(0);
         ctx.set_bit_rate(0);
-        ctx.set_max_bit_rate((bitrate_kbps as usize) * 1000);
+        ctx.set_max_bit_rate(profile.max_rate_bps as usize);
         ctx.set_colorspace(ffmpeg_next::color::Space::BT709);
         ctx.set_color_range(ffmpeg_next::color::Range::MPEG);
         ctx.set_color_primaries(ffmpeg_next::color::Primaries::BT709);
         ctx.set_color_transfer_characteristic(ffmpeg_next::color::TransferCharacteristic::BT709);
 
         let mut opts = ffmpeg_next::Dictionary::new();
-        Self::low_latency_options(name, quality, bitrate_kbps, fps, &mut opts);
+        Self::low_latency_options(&profile, &mut opts)?;
 
         let inner = ctx
             .open_with(opts)
@@ -81,40 +82,15 @@ impl Encoder {
         })
     }
 
-    /// Encoder-specific knobs. Kept in one place so the CLI path and this one
-    /// cannot drift apart in what they actually ask the hardware for.
+    /// Translate shared policy to libavcodec dictionary values. Context fields stay typed.
     fn low_latency_options(
-        name: &str,
-        quality: u32,
-        bitrate_kbps: u32,
-        fps: u32,
+        profile: &uscreen_config::encoding::Profile,
         opts: &mut ffmpeg_next::Dictionary,
-    ) {
-        let bufsize = ((bitrate_kbps / fps.max(1)).max(200) * 1000).to_string();
-        if name.contains("nvenc") {
-            for (k, v) in [
-                ("preset", "p1"),
-                ("tune", "ull"),
-                ("zerolatency", "1"),
-                ("delay", "0"),
-                ("rc", "vbr"),
-                ("multipass", "0"),
-                ("rc-lookahead", "0"),
-                ("forced-idr", "1"),
-            ] {
-                opts.set(k, v);
-            }
-            opts.set("cq", &quality.to_string());
-            opts.set("bufsize", &bufsize);
-        } else {
-            opts.set("preset", "ultrafast");
-            opts.set("tune", "zerolatency");
-            opts.set("crf", &quality.to_string());
-            // Match the CLI's two-frame reservoir (minimum 200 kbit).
-            // libx264 ignores max_bit_rate entirely without a VBV buffer.
-            let bufsize = ((bitrate_kbps * 2 / fps.max(1)).max(200) * 1000).to_string();
-            opts.set("bufsize", &bufsize);
+    ) -> Result<()> {
+        for (key, value) in profile.inproc_options()? {
+            opts.set(key, &value);
         }
+        Ok(())
     }
 
     /// Feed one packed NV12 frame and collect whatever access units come out.
@@ -292,6 +268,34 @@ mod tests {
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     };
+
+    #[test]
+    fn t373_inproc_dictionary_preserves_boundary_policy_and_adapter_differences() {
+        use std::collections::BTreeMap;
+        for (fps, bitrate, quality, nvbuf, swbuf) in [
+            (10, 1000, 12, 200000, 200000),
+            (90, 60000, 32, 666000, 1333000),
+        ] {
+            for name in ["h264_nvenc", "hevc_nvenc", "libx264"] {
+                let mut options = ffmpeg_next::Dictionary::new();
+                let profile =
+                    uscreen_config::encoding::Profile::new(name, fps, bitrate, quality).unwrap();
+                Encoder::low_latency_options(&profile, &mut options).unwrap();
+                let actual = options.iter().collect::<BTreeMap<_, _>>();
+                let expected = if name.ends_with("_nvenc") {
+                    format!("preset p1 tune ull zerolatency 1 delay 0 rc vbr multipass 0 rc-lookahead 0 forced-idr 1 cq {quality} bufsize {nvbuf}")
+                } else {
+                    format!("preset ultrafast tune zerolatency crf {quality} bufsize {swbuf}")
+                };
+                let pairs = expected.split_whitespace().collect::<Vec<_>>();
+                let expected = pairs
+                    .chunks_exact(2)
+                    .map(|p| (p[0], p[1]))
+                    .collect::<BTreeMap<_, _>>();
+                assert_eq!(actual, expected, "T373: {name}, {fps}");
+            }
+        }
+    }
 
     #[test]
     fn t284_vaapi_reports_build_limit_before_codec_initialization() {

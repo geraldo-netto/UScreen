@@ -866,103 +866,18 @@ impl CaptureManager {
         encoder: &str,
         ten_bit: bool,
     ) -> Result<()> {
-        let fps = self.config.fps;
-        let bitrate = self.config.bitrate;
-        // Frame-count GOP bounds busy streams; forced IDRs also bound idle joins.
-        let gop = fps.max(1);
-        if encoder.ends_with("_nvenc") {
-            // bufsize = 1 frame of bits: keeps VBV under 1-frame delay.
-            let bufsize_k = (bitrate / fps.max(1)).max(200);
-            args.extend_from_slice(&[
-                "-preset".into(),
-                "p1".into(),
-                "-tune".into(),
-                "ull".into(),
-                "-zerolatency".into(),
-                "1".into(),
-                "-delay".into(),
-                "0".into(),
-                "-bf".into(),
-                "0".into(),
-                "-rc-lookahead".into(),
-                "0".into(),
-                "-multipass".into(),
-                "0".into(),
-                // Constant-quality VBR, not CBR.
-                //
-                // CBR pads every frame to hit the target rate, so a completely
-                // motionless desktop still pushed the full bitrate down the USB
-                // link — measured at 7.5 MB/s with nothing moving on screen.
-                // That traffic buys nothing and leaves no headroom for the
-                // moments that do need it. With `-b:v 0` plus `-cq`, NVENC
-                // spends bits only where the picture actually changes and
-                // `-maxrate` still caps the bursts.
-                "-rc".into(),
-                "vbr".into(),
-                "-cq".into(),
-                self.config.quality.to_string(),
-                "-b:v".into(),
-                "0".into(),
-                "-maxrate".into(),
-                format!("{}k", bitrate),
-                "-bufsize".into(),
-                format!("{}k", bufsize_k),
-                "-g".into(),
-                gop.to_string(),
-                "-forced-idr".into(),
-                "1".into(),
-            ]);
-            if ten_bit {
-                // The source is 8-bit — EVDI hands over ARGB8888 and there is
-                // no 10-bit path below us — so this adds no colour the desktop
-                // did not have. What it buys is precision in the encoder's own
-                // arithmetic: quantisation and motion compensation round in
-                // 10 bits instead of 8, which is what smooths the banding that
-                // shows up on gradients at low bitrates.
-                args.extend_from_slice(&["-profile:v".into(), "main10".into()]);
-            }
-        } else if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
-            // Constant quality, for the same reason as NVENC above: a static
-            // desktop should cost nothing, and the bitrate is only a ceiling.
-            args.extend_from_slice(&[
-                "-rc_mode".into(),
-                "CQP".into(),
-                "-qp".into(),
-                self.config.quality.to_string(),
-                "-maxrate".into(),
-                format!("{}k", bitrate),
-                "-bf".into(),
-                "0".into(),
-                "-g".into(),
-                gop.to_string(),
-                "-idr_interval".into(),
-                "0".into(),
-            ]);
-        } else if encoder == "libx264" {
-            let bufsize_k = (bitrate * 2 / fps.max(1)).max(200);
-            args.extend_from_slice(&[
-                "-preset".into(),
-                "ultrafast".into(),
-                "-tune".into(),
-                "zerolatency".into(),
-                "-crf".into(),
-                self.config.quality.to_string(),
-                "-maxrate".into(),
-                format!("{}k", bitrate),
-                "-bufsize".into(),
-                format!("{}k", bufsize_k),
-                "-g".into(),
-                gop.to_string(),
-                "-x264-params".into(),
-                "scenecut=0".into(),
-            ]);
-        } else {
-            anyhow::bail!(
-                "Unknown encoder: {}. Use h264_nvenc, hevc_nvenc, h264_vaapi, hevc_vaapi, or libx264",
-                encoder
-            );
-        }
-
+        let profile = uscreen_config::encoding::Profile::new(
+            encoder,
+            self.config.fps,
+            self.config.bitrate,
+            self.config.quality,
+        )?;
+        args.extend(
+            profile
+                .cli_options(ten_bit)
+                .into_iter()
+                .flat_map(|(key, value)| [key, value]),
+        );
         Ok(())
     }
 
@@ -3654,5 +3569,149 @@ mod native_path_tests {
                 .any(|pair| pair[0] == flag && pair[1] == path.as_os_str()),
             "T348: native argument lost: {args:?}"
         );
+    }
+}
+
+#[cfg(all(test, not(feature = "inproc-encoder")))]
+mod encoder_policy_tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn cli_pairs(args: &[String]) -> BTreeMap<&str, &str> {
+        let pairs = args
+            .chunks_exact(2)
+            .map(|p| (p[0].as_str(), p[1].as_str()))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(
+            pairs.len() * 2,
+            args.len(),
+            "T373: duplicate or incomplete option"
+        );
+        pairs
+    }
+
+    #[test]
+    fn t373_cli_quality_profiles_keep_adapter_contracts() {
+        for (fps, bitrate, quality, nvbuf, swbuf) in
+            [(10, 1000, 12, 200, 200), (90, 60000, 32, 666, 1333)]
+        {
+            for encoder in [
+                "h264_nvenc",
+                "hevc_nvenc",
+                "h264_vaapi",
+                "hevc_vaapi",
+                "libx264",
+            ] {
+                let manager = CaptureManager::new(CaptureConfig {
+                    fps,
+                    bitrate,
+                    quality,
+                    instance: u32::MAX,
+                    ..Default::default()
+                });
+                for ten_bit in [false, true] {
+                    let mut args = Vec::new();
+                    manager
+                        .encoder_quality_args(&mut args, encoder, ten_bit)
+                        .unwrap();
+                    let expected =
+                        cli_expected(encoder, fps, bitrate, quality, nvbuf, swbuf, ten_bit);
+                    let expected = expected
+                        .split_whitespace()
+                        .map(str::to_string)
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        cli_pairs(&args),
+                        cli_pairs(&expected),
+                        "T373: {encoder}, {fps}, {ten_bit}"
+                    );
+                }
+            }
+        }
+    }
+
+    // Fixed boundary expectations characterize the existing adapter before sharing policy.
+    fn cli_expected(
+        name: &str,
+        fps: u32,
+        bitrate: u32,
+        quality: u32,
+        nvbuf: u32,
+        swbuf: u32,
+        ten_bit: bool,
+    ) -> String {
+        let limits = format!("-maxrate {bitrate}k -g {fps}");
+        if name.ends_with("_nvenc") {
+            let depth = if ten_bit { "-profile:v main10" } else { "" };
+            format!("-preset p1 -tune ull -zerolatency 1 -delay 0 -bf 0 -rc-lookahead 0 -multipass 0 -rc vbr -cq {quality} -b:v 0 -bufsize {nvbuf}k -forced-idr 1 {limits} {depth}")
+        } else if name.ends_with("_vaapi") {
+            format!("-rc_mode CQP -qp {quality} -bf 0 -idr_interval 0 {limits}")
+        } else {
+            format!("-preset ultrafast -tune zerolatency -crf {quality} -bufsize {swbuf}k -x264-params scenecut=0 {limits}")
+        }
+    }
+
+    #[test]
+    fn t373_cli_color_depth_and_periodic_idr_remain_explicit() {
+        for encoder in [
+            "h264_nvenc",
+            "hevc_nvenc",
+            "h264_vaapi",
+            "hevc_vaapi",
+            "libx264",
+        ] {
+            for ten_bit in [false, true] {
+                let manager = CaptureManager::new(CaptureConfig {
+                    encoder: encoder.into(),
+                    ten_bit,
+                    instance: u32::MAX,
+                    ..Default::default()
+                });
+                let command = manager.encoder_command(640, 480).unwrap();
+                let args = command
+                    .as_std()
+                    .get_args()
+                    .map(|a| a.to_string_lossy().into_owned())
+                    .collect::<Vec<_>>();
+                assert_input_colors(&args);
+                let value = |flag| {
+                    args.windows(2)
+                        .find(|p| p[0] == flag)
+                        .map(|p| p[1].as_str())
+                };
+                assert_eq!(
+                    value("-force_key_frames"),
+                    Some("expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))")
+                );
+                let depth = ten_bit && encoder.starts_with("hevc");
+                let filter = expected_filter(encoder.ends_with("_vaapi"), depth);
+                assert_eq!(value("-vf"), filter, "T373: {encoder}, {ten_bit}");
+            }
+        }
+    }
+
+    fn expected_filter(vaapi: bool, ten_bit: bool) -> Option<&'static str> {
+        match (vaapi, ten_bit) {
+            (true, true) => Some("format=p010le,hwupload"),
+            (true, false) => Some("format=nv12,hwupload"),
+            (false, true) => Some("format=p010le"),
+            (false, false) => None,
+        }
+    }
+
+    fn assert_input_colors(args: &[String]) {
+        let input = args.iter().position(|a| a == "-i").unwrap();
+        for (flag, value) in [
+            ("-color_primaries", "bt709"),
+            ("-color_trc", "bt709"),
+            ("-colorspace", "bt709"),
+            ("-color_range", "tv"),
+            ("-pix_fmt", "nv12"),
+        ] {
+            assert!(
+                args[..input].windows(2).any(|p| p == [flag, value]),
+                "T373: input {flag}"
+            );
+        }
     }
 }

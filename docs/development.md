@@ -259,6 +259,23 @@ Keep FFmpeg unmodified. Use distribution packages and their matching development
 libraries; implement compatibility and encoder integration in UScreen's adapters
 without maintaining or requiring FFmpeg patches.
 
+### Encoder policy ownership
+
+`common/src/encoding.rs` owns the encoder registry, preset/tune/quality options,
+nominal GOP, maximum-rate value and buffer sizing. NVENC uses a one-frame buffer;
+libx264 uses two frames; both keep the existing 200-kbit minimum and integer
+kilobit rounding. VAAPI retains CQP and its existing maxrate argument, which does
+not establish a rate ceiling (T259).
+
+The CLI adapter adds command syntax, periodic wall-clock IDRs, explicit
+`scenecut=0` for x264, VAAPI upload filters and optional HEVC depth conversion.
+The in-process adapter sets bitrate/GOP/B-frame/color fields through the typed
+libavcodec context, passes buffer sizes in bits, and requests IDRs on frames.
+Its input remains 8-bit NV12 and VAAPI is rejected. Both adapters use BT.709
+limited-range input; CLI color tags stay before `-i` to avoid conversion.
+T373 boundary tests preserve these adapter differences, while the existing
+software encode/decode regressions verify color and rate behavior.
+
 ## Release APK
 
 ```bash

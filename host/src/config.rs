@@ -2,14 +2,11 @@ pub use uscreen_config::*;
 
 /// Validate adapter capabilities before claiming capture resources or publishing settings.
 pub fn validate_encoder_for_build(name: &str) -> anyhow::Result<()> {
-    anyhow::ensure!(supported_encoder(name), "Unknown encoder: {name}");
-    #[cfg(feature = "inproc-encoder")]
-    anyhow::ensure!(
-        !matches!(ffmpeg_encoder_name(name), "h264_vaapi" | "hevc_vaapi"),
-        "VAAPI is unavailable in this in-process build: UScreen does not create a \
-         hardware-frames context or use vaapi_device here. Build without --features \
-         inproc-encoder to use VAAPI, or select libx264/NVENC."
-    );
+    let encoder = uscreen_config::encoding::find(name)
+        .ok_or_else(|| anyhow::anyhow!("Unknown encoder: {name}"))?;
+    if cfg!(feature = "inproc-encoder") {
+        encoder.validate_inproc()?;
+    }
     Ok(())
 }
 
