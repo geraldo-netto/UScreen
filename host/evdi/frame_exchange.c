@@ -72,13 +72,20 @@ int frame_exchange_allocated(const frame_exchange_t *frames) {
 }
 
 int frame_exchange_retire(frame_exchange_t *frames) {
+    struct timespec deadline;
+    clock_gettime(CLOCK_MONOTONIC, &deadline);
+    deadline.tv_sec++;
     pthread_mutex_lock(&frames->mutex);
     frames->latest_valid = 0;
     frames->buffers_ready = 0;
     frames->generation++;
+    while (frames->writer_busy) {
+        int result = pthread_cond_timedwait(&frames->ready, &frames->mutex, &deadline);
+        if (result != 0) break;
+    }
+    int released = !frames->writer_busy;
     pthread_mutex_unlock(&frames->mutex);
-    for (int i = 0; i < 1000 && frames->writer_busy; i++) usleep(1000);
-    return !frames->writer_busy;
+    return released;
 }
 
 void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
@@ -148,7 +155,12 @@ int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
 }
 
 void frame_exchange_release(frame_exchange_t *frames) {
+    pthread_mutex_lock(&frames->mutex);
     frames->writer_busy = 0;
+    /* A writer can also be waiting on this condition during retirement. Wake
+       every predicate owner so publication/shutdown cannot consume a release. */
+    pthread_cond_broadcast(&frames->ready);
+    pthread_mutex_unlock(&frames->mutex);
 }
 
 void frame_exchange_free(frame_exchange_t *frames) {

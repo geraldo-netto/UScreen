@@ -136,13 +136,11 @@ static int retire_mode_buffers(capture_context_t *capture) {
 
 static void allocate_framebuffer(capture_context_t *capture) {
     free(capture->framebuffer);
-    /* The kernel copies the damaged part of the scanout buffer into this
-       on every grab — the whole 22 MB when the compositor reports full
-       damage, which KWin does for this output. That copy is a large share
-       of the capture cycle (measured 4-7 ms at 2960x1848), and copy_to_user
-       into ordinary 4 KiB pages pays a TLB miss every page. Ask for
-       transparent huge pages and touch the memory once now, so the copies
-       run over 2 MiB mappings that are already faulted in. */
+    /* Page-aligned, prefaulted capture storage. MADV_HUGEPAGE is best-effort:
+       accepting the advice does not prove huge-page backing or remove the
+       kernel-to-userspace capture copy. Measure actual backing and faults
+       before attributing a speedup to page size; retain ordinary allocation
+       when aligned allocation is unavailable. */
     {
         size_t huge = 2u << 20;
         size_t len = ((size_t)capture->fb_size + huge - 1) / huge * huge;

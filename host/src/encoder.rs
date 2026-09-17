@@ -1,23 +1,25 @@
 //! In-process H.264 encoding through libavcodec.
 //!
-//! The default path pipes raw NV12 into an `ffmpeg` child process. That works,
-//! but ffmpeg reads its input in ~32KB chunks (its `-blocksize` option applies
-//! to output only), so an 8.2MB frame costs roughly 250 read syscalls — about
-//! 12,500 a second at 50fps, which is the likeliest source of the ~337% CPU the
-//! encoder process burns under load.
+//! The default path sends packed NV12 through a FIFO to stock FFmpeg. This
+//! optional path still reads that FIFO, but aligned frames are filled directly
+//! into writable AVFrame planes. Padded widths use reusable packed staging.
+//! Partial-read counts depend on pipe capacity and producer progress; neither
+//! requested read length nor moving libavcodec in process guarantees a syscall
+//! count or explains historical encoder CPU usage.
 //!
-//! Encoding here removes that process boundary, and with it the ability to ask
-//! for a keyframe on demand stops being impossible: the CLI has no way to force
-//! one mid-stream. The CLI instead schedules periodic wall-clock IDRs;
-//! this path can respond on the next captured frame.
+//! In-process submission can request an IDR on the next captured frame. The
+//! CLI instead schedules periodic wall-clock IDRs. See the raw-input benchmark
+//! for measured copy and transport costs; FFmpeg itself is not modified.
 //!
 //! Built only with the `inproc-encoder` feature; see host/Cargo.toml for why.
 
-use crate::encoder_io::{extract_parameter_sets, read_frame, FifoReader, StopSignal};
+use crate::encoder_io::{extract_parameter_sets, FifoReader, StopSignal};
 use crate::media::CodecConfig;
 use crate::media_storage::MediaBytes as Bytes;
 use anyhow::{Context, Result};
 
+#[path = "encoder_frame.rs"]
+mod input_frame;
 #[path = "encoder_storage.rs"]
 mod storage;
 
@@ -109,33 +111,20 @@ impl Encoder {
     /// `force_idr` makes the next frame a keyframe, which is what lets a client
     /// that just connected start decoding immediately instead of waiting for
     /// the next scheduled one.
+    #[cfg(test)]
     pub fn encode(&mut self, nv12: &[u8], force_idr: bool) -> Result<Vec<(Bytes, bool)>> {
         let (w, h) = (self.frame.width() as usize, self.frame.height() as usize);
         if nv12.len() < w * h * 3 / 2 {
             anyhow::bail!("short NV12 frame: {} bytes for {}x{}", nv12.len(), w, h);
         }
 
-        // libavcodec can retain the previous input. Detach shared buffers
-        // before writing the next frame, and read strides after detachment.
-        let writable = unsafe { ffmpeg_next::ffi::av_frame_make_writable(self.frame.as_mut_ptr()) };
-        if writable < 0 {
-            return Err(ffmpeg_next::Error::from(writable)).context("make encoder frame writable");
-        }
+        input_frame::writable(&mut self.frame)?;
+        input_frame::copy_nv12(&mut self.frame, nv12);
+        self.encode_prepared(force_idr)
+    }
 
-        // libavcodec frames are stride-padded; the helper packs tightly, so
-        // copy row by row rather than assuming the two agree. Strides are read
-        // first: taking them while a mutable borrow of the plane is live would
-        // not pass the borrow checker.
-        let (y_stride, uv_stride) = (self.frame.stride(0), self.frame.stride(1));
-        copy_plane(self.frame.data_mut(0), y_stride, &nv12[..w * h], w, h);
-        copy_plane(
-            self.frame.data_mut(1),
-            uv_stride,
-            &nv12[w * h..w * h * 3 / 2],
-            w,
-            h / 2,
-        );
-
+    /// Submit a complete input frame after its exclusive writable borrow ends.
+    fn encode_prepared(&mut self, force_idr: bool) -> Result<Vec<(Bytes, bool)>> {
         self.frame.set_pts(Some(self.pts));
         self.pts += 1;
         if force_idr {
@@ -170,22 +159,10 @@ impl Encoder {
     }
 }
 
-fn copy_plane(dst: &mut [u8], stride: usize, src: &[u8], row_bytes: usize, rows: usize) {
-    for y in 0..rows {
-        let d = y * stride;
-        let s = y * row_bytes;
-        if d + row_bytes <= dst.len() && s + row_bytes <= src.len() {
-            dst[d..d + row_bytes].copy_from_slice(&src[s..s + row_bytes]);
-        }
-    }
-}
-
-/// Read whole NV12 frames from the helper's FIFO, encode them, and publish the
-/// access units. Replaces spawning ffmpeg and parsing Annex B out of its stdout.
-///
-/// Reads a frame at a time rather than in the ~32KB chunks ffmpeg's I/O layer
-/// uses, which is most of the point: at 8.2MB a frame that is the difference
-/// between four syscalls and two hundred and fifty.
+/// Read complete NV12 frames from the helper FIFO and publish access units.
+/// The aligned path reads into encoder input planes; it still crosses the
+/// kernel FIFO boundary. Padding, cancellation and writer restart semantics
+/// belong to the input adapter, independently of codec submission.
 // Blocking thread boundary takes owned session settings and channel handles.
 #[allow(clippy::too_many_arguments)]
 pub fn run(
@@ -205,7 +182,6 @@ pub fn run(
     use std::sync::atomic::Ordering;
 
     let mut enc = Encoder::new(encoder_name, width, height, fps, bitrate_kbps, quality)?;
-    let frame_size = (width as usize) * (height as usize) * 3 / 2;
 
     // Opened non-blocking on purpose. A plain open() on a FIFO blocks until a
     // writer appears, and with no tablet attached the display stays off and the
@@ -226,18 +202,18 @@ pub fn run(
         height
     );
 
-    let mut buf = vec![0u8; frame_size];
+    let mut raw_input = input_frame::RawInput::default();
     let generation = crate::media::EncoderGeneration::new();
 
     while !stop.requested() {
-        match read_frame(&mut fifo, &mut buf, &stop) {
+        match raw_input.read(&mut enc.frame, &mut fifo, &stop) {
             Ok(true) => {}
             Ok(false) => break, // asked to stop mid-frame
             Err(e) => return Err(e).context("read frame from capture FIFO"),
         }
 
         let force = idr_wanted.swap(false, Ordering::Relaxed);
-        for (data, is_idr) in enc.encode(&buf, force)? {
+        for (data, is_idr) in enc.encode_prepared(force)? {
             if is_idr {
                 refresh_codec_config(&data, encoder_name, &codec_config);
             }

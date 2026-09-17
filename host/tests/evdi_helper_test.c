@@ -422,7 +422,7 @@ static void assert_small_scaled_modes(int scale) {
 }
 
 static void test_t082(void) {
-    pthread_cond_init(&g_frames.ready, NULL);
+    frame_exchange_init(&g_frames);
     for (int scale = 1; scale <= 4; scale++) {
         g_capture.scale = scale;
         assert_small_scaled_modes(scale);
@@ -486,7 +486,7 @@ static void test_t012(void) {
 static void test_t013(void) {
     /* TODO T013: announce the packed size on initial and changed modes,
      * without emitting a false change for repeated compositor events. */
-    pthread_cond_init(&g_frames.ready, NULL);
+    frame_exchange_init(&g_frames);
     g_capture.scale = 2;
     struct evdi_mode mode = {13, 9, 60, 32, 0x34325258};
     on_mode_changed(mode, &g_capture);
@@ -650,7 +650,7 @@ static void test_t274(void) {
 }
 
 static void check_allocation_failure(int allocation, int changed_mode) {
-    pthread_cond_init(&g_frames.ready, NULL);
+    frame_exchange_init(&g_frames);
     struct evdi_mode mode = {8, 8, 60, 32, 0x34325258};
     if (changed_mode) {
         on_mode_changed(mode, &g_capture);
@@ -707,7 +707,7 @@ static void test_t254(void) {
 }
 
 static void test_t048(void) {
-    pthread_cond_init(&g_frames.ready, NULL);
+    frame_exchange_init(&g_frames);
     struct evdi_mode mode = {8, 8, 60, 16, 0x36314752};
     on_mode_changed(mode, &g_capture);
     assert(!g_capture.have_mode && !g_frames.buffers_ready && "T048: reject non-BGRA data before conversion");

@@ -73,9 +73,7 @@ static int writer_frame_due(writer_context_t *writer, writer_state_t *state, int
        encoder and the client's read timeout alive. */
     long long now_ms_write = writer_now_ms();
     if (!fresh && (now_ms_write - state->last_write_ms) < IDLE_KEEPALIVE_MS) {
-        pthread_mutex_lock(&writer->frames->mutex);
         frame_exchange_release(writer->frames);
-        pthread_mutex_unlock(&writer->frames->mutex);
         return 0;
     }
     state->last_write_ms = now_ms_write;

@@ -1,0 +1,2730 @@
+{
+  "raw": [
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 1,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3050.791974579852,
+          "minimum": 2574.695860475515,
+          "maximum": 3153.1368193362964
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5056591166666666,
+          "minimum": 0.48774448888888894,
+          "maximum": 0.5945872722222222
+        },
+        "p50_ms": {
+          "median": 0.389664,
+          "minimum": 0.380956,
+          "maximum": 0.452779
+        },
+        "p95_ms": {
+          "median": 0.538368,
+          "minimum": 0.514903,
+          "maximum": 0.640462
+        },
+        "p99_ms": {
+          "median": 0.596444,
+          "minimum": 0.553629,
+          "maximum": 0.754388
+        },
+        "reads_per_frame": {
+          "median": 2.977777777777778,
+          "minimum": 2.95,
+          "maximum": 3.0
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 1,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3222.0732928233992,
+          "minimum": 2914.4518991086697,
+          "maximum": 3577.173554742888
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5139405833333334,
+          "minimum": 0.4808498722222222,
+          "maximum": 0.5948240333333333
+        },
+        "p50_ms": {
+          "median": 0.335636,
+          "minimum": 0.298573,
+          "maximum": 0.363703
+        },
+        "p95_ms": {
+          "median": 0.486837,
+          "minimum": 0.433731,
+          "maximum": 0.519662
+        },
+        "p99_ms": {
+          "median": 0.603227,
+          "minimum": 0.470054,
+          "maximum": 0.688116
+        },
+        "reads_per_frame": {
+          "median": 3.15,
+          "minimum": 3.066666666666667,
+          "maximum": 3.2222222222222223
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 1,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2753.834883364995,
+          "minimum": 2470.722385830561,
+          "maximum": 3227.921723758978
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5551907166666666,
+          "minimum": 0.4662994111111111,
+          "maximum": 0.6209639499999999
+        },
+        "p50_ms": {
+          "median": 0.429162,
+          "minimum": 0.358722,
+          "maximum": 0.44844
+        },
+        "p95_ms": {
+          "median": 0.615512,
+          "minimum": 0.518149,
+          "maximum": 0.870819
+        },
+        "p99_ms": {
+          "median": 0.698117,
+          "minimum": 0.614119,
+          "maximum": 0.983964
+        },
+        "reads_per_frame": {
+          "median": 2.9833333333333334,
+          "minimum": 2.977777777777778,
+          "maximum": 2.9944444444444445
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 2,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 5613.095589006522,
+          "minimum": 4845.747148186945,
+          "maximum": 6103.753431962528
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5254767305555555,
+          "minimum": 0.5026878722222222,
+          "maximum": 0.6175330027777777
+        },
+        "p50_ms": {
+          "median": 0.411637,
+          "minimum": 0.400315,
+          "maximum": 0.46836
+        },
+        "p95_ms": {
+          "median": 0.618428,
+          "minimum": 0.556315,
+          "maximum": 0.720401
+        },
+        "p99_ms": {
+          "median": 0.740099,
+          "minimum": 0.60455,
+          "maximum": 0.877101
+        },
+        "reads_per_frame": {
+          "median": 2.9833333333333334,
+          "minimum": 2.9722222222222223,
+          "maximum": 2.9916666666666667
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 2,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 5577.804453455422,
+          "minimum": 5009.111992139701,
+          "maximum": 5782.691745022809
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5750785805555555,
+          "minimum": 0.561176575,
+          "maximum": 0.6358259861111111
+        },
+        "p50_ms": {
+          "median": 0.3728,
+          "minimum": 0.354213,
+          "maximum": 0.390806
+        },
+        "p95_ms": {
+          "median": 0.636484,
+          "minimum": 0.536225,
+          "maximum": 0.697014
+        },
+        "p99_ms": {
+          "median": 0.754748,
+          "minimum": 0.617977,
+          "maximum": 0.89147
+        },
+        "reads_per_frame": {
+          "median": 3.236111111111111,
+          "minimum": 3.191666666666667,
+          "maximum": 3.3027777777777776
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 2,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 5336.036450820731,
+          "minimum": 4791.582339808718,
+          "maximum": 5598.1429964455365
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.54376835,
+          "minimum": 0.5333154916666667,
+          "maximum": 0.6249873777777777
+        },
+        "p50_ms": {
+          "median": 0.41813,
+          "minimum": 0.408161,
+          "maximum": 0.479382
+        },
+        "p95_ms": {
+          "median": 0.642355,
+          "minimum": 0.616684,
+          "maximum": 0.694519
+        },
+        "p99_ms": {
+          "median": 0.840148,
+          "minimum": 0.756682,
+          "maximum": 0.913484
+        },
+        "reads_per_frame": {
+          "median": 2.9916666666666667,
+          "minimum": 2.966666666666667,
+          "maximum": 2.9972222222222222
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 4,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 7550.515940387083,
+          "minimum": 7022.240890112726,
+          "maximum": 8759.064628247414
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.780216723611111,
+          "minimum": 0.6840662458333333,
+          "maximum": 0.8266238958333334
+        },
+        "p50_ms": {
+          "median": 0.607075,
+          "minimum": 0.536655,
+          "maximum": 0.618147
+        },
+        "p95_ms": {
+          "median": 1.074813,
+          "minimum": 0.86674,
+          "maximum": 1.175785
+        },
+        "p99_ms": {
+          "median": 1.475489,
+          "minimum": 1.200533,
+          "maximum": 1.817559
+        },
+        "reads_per_frame": {
+          "median": 2.9458333333333333,
+          "minimum": 2.9166666666666665,
+          "maximum": 2.9902777777777776
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 4,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 8885.449671381517,
+          "minimum": 7689.767686457669,
+          "maximum": 9302.439037499373
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.7120311444444445,
+          "minimum": 0.6740228444444444,
+          "maximum": 0.8211155652777777
+        },
+        "p50_ms": {
+          "median": 0.476456,
+          "minimum": 0.431757,
+          "maximum": 0.506876
+        },
+        "p95_ms": {
+          "median": 0.830489,
+          "minimum": 0.750761,
+          "maximum": 0.919936
+        },
+        "p99_ms": {
+          "median": 1.068522,
+          "minimum": 1.009053,
+          "maximum": 1.221455
+        },
+        "reads_per_frame": {
+          "median": 3.2819444444444446,
+          "minimum": 3.263888888888889,
+          "maximum": 3.3402777777777777
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "sessions": 4,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 7595.897333471846,
+          "minimum": 6859.92099448046,
+          "maximum": 8182.198468087892
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.7707574319444445,
+          "minimum": 0.6785549513888889,
+          "maximum": 0.8510775347222223
+        },
+        "p50_ms": {
+          "median": 0.583789,
+          "minimum": 0.523981,
+          "maximum": 0.607856
+        },
+        "p95_ms": {
+          "median": 1.048241,
+          "minimum": 1.005005,
+          "maximum": 1.23922
+        },
+        "p99_ms": {
+          "median": 1.62662,
+          "minimum": 1.333778,
+          "maximum": 2.179627
+        },
+        "reads_per_frame": {
+          "median": 2.975,
+          "minimum": 2.959722222222222,
+          "maximum": 2.9805555555555556
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 1,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2994.1746336386136,
+          "minimum": 2962.7461338385015,
+          "maximum": 3144.9666067445696
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5133653555555555,
+          "minimum": 0.49100506666666666,
+          "maximum": 0.5221574722222222
+        },
+        "p50_ms": {
+          "median": 0.391815,
+          "minimum": 0.383219,
+          "maximum": 0.397387
+        },
+        "p95_ms": {
+          "median": 0.527834,
+          "minimum": 0.488868,
+          "maximum": 0.57581
+        },
+        "p99_ms": {
+          "median": 0.638754,
+          "minimum": 0.539107,
+          "maximum": 0.66687
+        },
+        "reads_per_frame": {
+          "median": 3.0,
+          "minimum": 2.9722222222222223,
+          "maximum": 3.033333333333333
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 1,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2920.3621145186908,
+          "minimum": 2752.8262119707383,
+          "maximum": 3055.5968391208744
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5260653333333334,
+          "minimum": 0.5050630444444445,
+          "maximum": 0.5559393388888889
+        },
+        "p50_ms": {
+          "median": 0.404351,
+          "minimum": 0.392868,
+          "maximum": 0.415703
+        },
+        "p95_ms": {
+          "median": 0.546542,
+          "minimum": 0.525911,
+          "maximum": 0.624416
+        },
+        "p99_ms": {
+          "median": 0.645678,
+          "minimum": 0.561391,
+          "maximum": 0.741718
+        },
+        "reads_per_frame": {
+          "median": 2.9944444444444445,
+          "minimum": 2.9833333333333334,
+          "maximum": 3.0055555555555555
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 1,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2655.9043128433364,
+          "minimum": 2308.105280991045,
+          "maximum": 3289.809579059178
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5774832277777778,
+          "minimum": 0.46530580555555556,
+          "maximum": 0.6638040444444445
+        },
+        "p50_ms": {
+          "median": 0.435733,
+          "minimum": 0.359612,
+          "maximum": 0.513988
+        },
+        "p95_ms": {
+          "median": 0.645968,
+          "minimum": 0.461514,
+          "maximum": 0.795545
+        },
+        "p99_ms": {
+          "median": 0.775775,
+          "minimum": 0.531412,
+          "maximum": 0.986813
+        },
+        "reads_per_frame": {
+          "median": 2.9833333333333334,
+          "minimum": 2.9555555555555557,
+          "maximum": 2.9944444444444445
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 2,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 5375.263815335081,
+          "minimum": 4693.953391363723,
+          "maximum": 5614.177795084694
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5649423361111111,
+          "minimum": 0.5392158222222222,
+          "maximum": 0.6501061333333333
+        },
+        "p50_ms": {
+          "median": 0.423579,
+          "minimum": 0.41913,
+          "maximum": 0.492404
+        },
+        "p95_ms": {
+          "median": 0.640799,
+          "minimum": 0.59075,
+          "maximum": 0.71744
+        },
+        "p99_ms": {
+          "median": 0.849051,
+          "minimum": 0.65651,
+          "maximum": 1.17741
+        },
+        "reads_per_frame": {
+          "median": 2.986111111111111,
+          "minimum": 2.963888888888889,
+          "maximum": 2.9944444444444445
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 2,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 5598.734412306914,
+          "minimum": 4401.2832870583225,
+          "maximum": 5979.014456459754
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.5377072472222223,
+          "minimum": 0.49914818333333333,
+          "maximum": 0.6444503083333334
+        },
+        "p50_ms": {
+          "median": 0.417867,
+          "minimum": 0.37902,
+          "maximum": 0.459199
+        },
+        "p95_ms": {
+          "median": 0.606971,
+          "minimum": 0.575199,
+          "maximum": 0.8591
+        },
+        "p99_ms": {
+          "median": 0.779152,
+          "minimum": 0.665558,
+          "maximum": 1.395893
+        },
+        "reads_per_frame": {
+          "median": 2.9916666666666667,
+          "minimum": 2.977777777777778,
+          "maximum": 3.0194444444444444
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 2,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 4795.846924452675,
+          "minimum": 4205.06631996985,
+          "maximum": 5581.698318229645
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.6224023222222222,
+          "minimum": 0.5398778861111111,
+          "maximum": 0.7153722722222222
+        },
+        "p50_ms": {
+          "median": 0.459179,
+          "minimum": 0.418709,
+          "maximum": 0.516202
+        },
+        "p95_ms": {
+          "median": 0.709764,
+          "minimum": 0.620418,
+          "maximum": 0.971773
+        },
+        "p99_ms": {
+          "median": 0.854251,
+          "minimum": 0.769493,
+          "maximum": 1.218752
+        },
+        "reads_per_frame": {
+          "median": 2.9916666666666667,
+          "minimum": 2.977777777777778,
+          "maximum": 3.013888888888889
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 4,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 6782.238842475297,
+          "minimum": 6223.796896622967,
+          "maximum": 8004.017839088159
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8561507013888888,
+          "minimum": 0.7314018236111112,
+          "maximum": 0.9308277625
+        },
+        "p50_ms": {
+          "median": 0.671198,
+          "minimum": 0.564016,
+          "maximum": 0.721287
+        },
+        "p95_ms": {
+          "median": 1.073906,
+          "minimum": 0.974118,
+          "maximum": 1.221097
+        },
+        "p99_ms": {
+          "median": 1.541291,
+          "minimum": 1.252969,
+          "maximum": 1.572242
+        },
+        "reads_per_frame": {
+          "median": 2.948611111111111,
+          "minimum": 2.9291666666666667,
+          "maximum": 2.995833333333333
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 4,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 6546.227000240574,
+          "minimum": 6184.215089886793,
+          "maximum": 7864.858658003437
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8573203361111111,
+          "minimum": 0.751504748611111,
+          "maximum": 0.9416642152777778
+        },
+        "p50_ms": {
+          "median": 0.667851,
+          "minimum": 0.559718,
+          "maximum": 0.73258
+        },
+        "p95_ms": {
+          "median": 1.213151,
+          "minimum": 1.044287,
+          "maximum": 1.343889
+        },
+        "p99_ms": {
+          "median": 1.751637,
+          "minimum": 1.35409,
+          "maximum": 1.965781
+        },
+        "reads_per_frame": {
+          "median": 2.941666666666667,
+          "minimum": 2.938888888888889,
+          "maximum": 2.9625
+        }
+      }
+    },
+    {
+      "width": 1282,
+      "height": 800,
+      "sessions": 4,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 7778.335837363295,
+          "minimum": 6451.158142821599,
+          "maximum": 8418.549516189467
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.7499204333333334,
+          "minimum": 0.7133393777777778,
+          "maximum": 0.9273615472222222
+        },
+        "p50_ms": {
+          "median": 0.56607,
+          "minimum": 0.551562,
+          "maximum": 0.702039
+        },
+        "p95_ms": {
+          "median": 0.971372,
+          "minimum": 0.900563,
+          "maximum": 1.330062
+        },
+        "p99_ms": {
+          "median": 1.238531,
+          "minimum": 1.188472,
+          "maximum": 2.088724
+        },
+        "reads_per_frame": {
+          "median": 2.9611111111111112,
+          "minimum": 2.941666666666667,
+          "maximum": 2.9680555555555554
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 1,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 1512.911184044637,
+          "minimum": 1368.3173877860204,
+          "maximum": 1596.0470666831745
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8968570555555555,
+          "minimum": 0.8518939388888889,
+          "maximum": 0.9672395333333333
+        },
+        "p50_ms": {
+          "median": 0.804777,
+          "minimum": 0.713035,
+          "maximum": 0.832072
+        },
+        "p95_ms": {
+          "median": 1.135014,
+          "minimum": 1.086437,
+          "maximum": 1.270752
+        },
+        "p99_ms": {
+          "median": 1.385922,
+          "minimum": 1.252506,
+          "maximum": 1.891845
+        },
+        "reads_per_frame": {
+          "median": 4.966666666666667,
+          "minimum": 4.944444444444445,
+          "maximum": 4.983333333333333
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 1,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 1586.238835257958,
+          "minimum": 1332.5561569702293,
+          "maximum": 1688.8483765438325
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.9428825611111111,
+          "minimum": 0.8778280833333334,
+          "maximum": 1.1377142722222222
+        },
+        "p50_ms": {
+          "median": 0.673728,
+          "minimum": 0.632295,
+          "maximum": 0.75608
+        },
+        "p95_ms": {
+          "median": 1.010406,
+          "minimum": 0.875769,
+          "maximum": 1.232778
+        },
+        "p99_ms": {
+          "median": 1.164051,
+          "minimum": 1.044313,
+          "maximum": 1.503795
+        },
+        "reads_per_frame": {
+          "median": 5.127777777777778,
+          "minimum": 5.044444444444444,
+          "maximum": 5.266666666666667
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 1,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 1561.2732756029409,
+          "minimum": 1510.9605709382768,
+          "maximum": 1629.1273341401075
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8621090388888889,
+          "minimum": 0.8243798166666666,
+          "maximum": 0.8924867111111111
+        },
+        "p50_ms": {
+          "median": 0.786411,
+          "minimum": 0.749307,
+          "maximum": 0.79083
+        },
+        "p95_ms": {
+          "median": 1.07843,
+          "minimum": 0.96196,
+          "maximum": 1.12306
+        },
+        "p99_ms": {
+          "median": 1.296484,
+          "minimum": 1.058141,
+          "maximum": 1.809382
+        },
+        "reads_per_frame": {
+          "median": 4.983333333333333,
+          "minimum": 4.961111111111111,
+          "maximum": 4.9944444444444445
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 2,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2296.720447161774,
+          "minimum": 1862.9680692396093,
+          "maximum": 2335.1456571752424
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.1626892,
+          "minimum": 1.147657011111111,
+          "maximum": 1.4297608
+        },
+        "p50_ms": {
+          "median": 1.077549,
+          "minimum": 0.996899,
+          "maximum": 1.264881
+        },
+        "p95_ms": {
+          "median": 1.820173,
+          "minimum": 1.716387,
+          "maximum": 2.112153
+        },
+        "p99_ms": {
+          "median": 2.242952,
+          "minimum": 2.094948,
+          "maximum": 6.216709
+        },
+        "reads_per_frame": {
+          "median": 4.944444444444445,
+          "minimum": 4.938888888888889,
+          "maximum": 4.969444444444444
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 2,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2787.2283097912286,
+          "minimum": 2377.842031472879,
+          "maximum": 2918.1268446513286
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.0102541027777778,
+          "minimum": 0.99434975,
+          "maximum": 1.2042709416666666
+        },
+        "p50_ms": {
+          "median": 0.769167,
+          "minimum": 0.71515,
+          "maximum": 0.848003
+        },
+        "p95_ms": {
+          "median": 1.170563,
+          "minimum": 1.081266,
+          "maximum": 1.425229
+        },
+        "p99_ms": {
+          "median": 1.339539,
+          "minimum": 1.209951,
+          "maximum": 5.022429
+        },
+        "reads_per_frame": {
+          "median": 5.183333333333334,
+          "minimum": 5.108333333333333,
+          "maximum": 5.216666666666667
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 2,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2609.316045425844,
+          "minimum": 2247.976006702665,
+          "maximum": 2778.5824947172587
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.007685336111111,
+          "minimum": 0.9715729444444445,
+          "maximum": 1.1755710444444443
+        },
+        "p50_ms": {
+          "median": 0.905808,
+          "minimum": 0.874796,
+          "maximum": 1.024633
+        },
+        "p95_ms": {
+          "median": 1.498785,
+          "minimum": 1.407533,
+          "maximum": 1.788631
+        },
+        "p99_ms": {
+          "median": 1.989409,
+          "minimum": 1.975962,
+          "maximum": 2.323762
+        },
+        "reads_per_frame": {
+          "median": 4.958333333333333,
+          "minimum": 4.933333333333334,
+          "maximum": 4.986111111111111
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 4,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2740.438896057124,
+          "minimum": 2124.125529233989,
+          "maximum": 2872.6067604900995
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.9935165916666666,
+          "minimum": 1.881939461111111,
+          "maximum": 2.521437136111111
+        },
+        "p50_ms": {
+          "median": 1.784712,
+          "minimum": 1.648992,
+          "maximum": 2.429161
+        },
+        "p95_ms": {
+          "median": 3.709342,
+          "minimum": 3.565355,
+          "maximum": 4.332137
+        },
+        "p99_ms": {
+          "median": 5.277764,
+          "minimum": 4.632334,
+          "maximum": 5.896082
+        },
+        "reads_per_frame": {
+          "median": 4.944444444444445,
+          "minimum": 4.934722222222222,
+          "maximum": 4.970833333333333
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 4,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3222.983121286634,
+          "minimum": 2841.120717633,
+          "maximum": 3475.9903593793606
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.7112309902777778,
+          "minimum": 1.6194545083333334,
+          "maximum": 1.978166986111111
+        },
+        "p50_ms": {
+          "median": 1.22919,
+          "minimum": 1.147297,
+          "maximum": 1.429307
+        },
+        "p95_ms": {
+          "median": 2.368451,
+          "minimum": 2.149976,
+          "maximum": 2.758334
+        },
+        "p99_ms": {
+          "median": 3.252185,
+          "minimum": 2.93788,
+          "maximum": 4.366194
+        },
+        "reads_per_frame": {
+          "median": 5.230555555555555,
+          "minimum": 5.194444444444445,
+          "maximum": 5.352777777777778
+        }
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "sessions": 4,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2552.3057487595865,
+          "minimum": 2058.558433672165,
+          "maximum": 2998.2579746385104
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.932442651388889,
+          "minimum": 1.7221481763888888,
+          "maximum": 2.452007751388889
+        },
+        "p50_ms": {
+          "median": 1.733321,
+          "minimum": 1.484876,
+          "maximum": 2.405123
+        },
+        "p95_ms": {
+          "median": 4.173703,
+          "minimum": 3.532259,
+          "maximum": 5.378754
+        },
+        "p99_ms": {
+          "median": 5.203607,
+          "minimum": 4.330283,
+          "maximum": 6.437495
+        },
+        "reads_per_frame": {
+          "median": 4.9527777777777775,
+          "minimum": 4.944444444444445,
+          "maximum": 4.973611111111111
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 1,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 247.22973688834844,
+          "minimum": 238.88205967105836,
+          "maximum": 251.56081009440075
+        },
+        "cpu_ms_per_frame": {
+          "median": 4.757346072222223,
+          "minimum": 4.6794098,
+          "maximum": 4.910114944444444
+        },
+        "p50_ms": {
+          "median": 4.752056,
+          "minimum": 4.715473,
+          "maximum": 4.850815
+        },
+        "p95_ms": {
+          "median": 7.059937,
+          "minimum": 6.640262,
+          "maximum": 7.602365
+        },
+        "p99_ms": {
+          "median": 8.324565,
+          "minimum": 7.498966,
+          "maximum": 8.853175
+        },
+        "reads_per_frame": {
+          "median": 22.961111111111112,
+          "minimum": 22.92222222222222,
+          "maximum": 22.966666666666665
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 1,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 278.6026566125365,
+          "minimum": 256.30788660221435,
+          "maximum": 295.5256582937062
+        },
+        "cpu_ms_per_frame": {
+          "median": 4.090072027777778,
+          "minimum": 3.8624525944444446,
+          "maximum": 4.464706355555556
+        },
+        "p50_ms": {
+          "median": 3.673177,
+          "minimum": 3.521887,
+          "maximum": 3.892432
+        },
+        "p95_ms": {
+          "median": 5.351736,
+          "minimum": 4.763301,
+          "maximum": 6.347682
+        },
+        "p99_ms": {
+          "median": 6.306027,
+          "minimum": 5.543138,
+          "maximum": 8.355746
+        },
+        "reads_per_frame": {
+          "median": 23.88888888888889,
+          "minimum": 23.883333333333333,
+          "maximum": 23.927777777777777
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 1,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 189.94019592586574,
+          "minimum": 180.48402657456833,
+          "maximum": 195.88747863664761
+        },
+        "cpu_ms_per_frame": {
+          "median": 5.9670582111111115,
+          "minimum": 5.832263538888888,
+          "maximum": 6.274648066666667
+        },
+        "p50_ms": {
+          "median": 6.41148,
+          "minimum": 6.179422,
+          "maximum": 6.927811
+        },
+        "p95_ms": {
+          "median": 9.071528,
+          "minimum": 8.223496,
+          "maximum": 9.63435
+        },
+        "p99_ms": {
+          "median": 9.795247,
+          "minimum": 9.184743,
+          "maximum": 11.645149
+        },
+        "reads_per_frame": {
+          "median": 22.95,
+          "minimum": 22.916666666666668,
+          "maximum": 22.966666666666665
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 2,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 280.62514973739,
+          "minimum": 255.78710091555632,
+          "maximum": 346.77384310793883
+        },
+        "cpu_ms_per_frame": {
+          "median": 8.111465072222222,
+          "minimum": 6.609238419444445,
+          "maximum": 8.810892755555555
+        },
+        "p50_ms": {
+          "median": 8.76996,
+          "minimum": 7.123197,
+          "maximum": 9.560004
+        },
+        "p95_ms": {
+          "median": 12.483363,
+          "minimum": 9.910645,
+          "maximum": 14.635622
+        },
+        "p99_ms": {
+          "median": 14.795478,
+          "minimum": 11.23418,
+          "maximum": 18.143806
+        },
+        "reads_per_frame": {
+          "median": 22.880555555555556,
+          "minimum": 22.822222222222223,
+          "maximum": 22.92222222222222
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 2,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 438.24793141924346,
+          "minimum": 426.1819572359506,
+          "maximum": 443.71078564190947
+        },
+        "cpu_ms_per_frame": {
+          "median": 5.2140905166666665,
+          "minimum": 5.089324136111111,
+          "maximum": 5.3605005666666665
+        },
+        "p50_ms": {
+          "median": 4.68677,
+          "minimum": 4.578458,
+          "maximum": 4.751438
+        },
+        "p95_ms": {
+          "median": 6.724763,
+          "minimum": 6.242982,
+          "maximum": 7.562585
+        },
+        "p99_ms": {
+          "median": 8.039671,
+          "minimum": 7.51279,
+          "maximum": 8.38224
+        },
+        "reads_per_frame": {
+          "median": 23.833333333333332,
+          "minimum": 23.819444444444443,
+          "maximum": 23.877777777777776
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 2,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 259.4793038755835,
+          "minimum": 232.60722717297054,
+          "maximum": 286.9927790966571
+        },
+        "cpu_ms_per_frame": {
+          "median": 8.646148980555555,
+          "minimum": 7.835517797222222,
+          "maximum": 9.598800369444445
+        },
+        "p50_ms": {
+          "median": 9.421393,
+          "minimum": 8.662944,
+          "maximum": 11.023835
+        },
+        "p95_ms": {
+          "median": 13.463405,
+          "minimum": 10.964194,
+          "maximum": 15.602911
+        },
+        "p99_ms": {
+          "median": 14.950171,
+          "minimum": 12.347917,
+          "maximum": 17.442408
+        },
+        "reads_per_frame": {
+          "median": 22.908333333333335,
+          "minimum": 22.883333333333333,
+          "maximum": 22.916666666666668
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 4,
+      "mode": "contiguous",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 289.2380622374862,
+          "minimum": 279.2724436808698,
+          "maximum": 317.98193289193756
+        },
+        "cpu_ms_per_frame": {
+          "median": 15.215673844444444,
+          "minimum": 13.888178522222223,
+          "maximum": 15.877523315277777
+        },
+        "p50_ms": {
+          "median": 17.257243,
+          "minimum": 15.424936,
+          "maximum": 18.493478
+        },
+        "p95_ms": {
+          "median": 23.810449,
+          "minimum": 21.498471,
+          "maximum": 25.453775
+        },
+        "p99_ms": {
+          "median": 26.726562,
+          "minimum": 24.108669,
+          "maximum": 29.185634
+        },
+        "reads_per_frame": {
+          "median": 22.830555555555556,
+          "minimum": 22.744444444444444,
+          "maximum": 22.856944444444444
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 4,
+      "mode": "direct",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 448.66218582424204,
+          "minimum": 402.04668655914753,
+          "maximum": 488.340616489374
+        },
+        "cpu_ms_per_frame": {
+          "median": 10.115161173611112,
+          "minimum": 9.211121354166666,
+          "maximum": 11.221618716666667
+        },
+        "p50_ms": {
+          "median": 9.24984,
+          "minimum": 8.610421,
+          "maximum": 10.335127
+        },
+        "p95_ms": {
+          "median": 12.974504,
+          "minimum": 11.290743,
+          "maximum": 13.844809
+        },
+        "p99_ms": {
+          "median": 14.651389,
+          "minimum": 12.100147,
+          "maximum": 15.967651
+        },
+        "reads_per_frame": {
+          "median": 23.572222222222223,
+          "minimum": 23.558333333333334,
+          "maximum": 23.71388888888889
+        }
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "sessions": 4,
+      "mode": "rows",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 285.6160762864355,
+          "minimum": 280.4425489367184,
+          "maximum": 304.32804606875015
+        },
+        "cpu_ms_per_frame": {
+          "median": 15.207723270833334,
+          "minimum": 14.553880883333333,
+          "maximum": 15.75820518611111
+        },
+        "p50_ms": {
+          "median": 17.415454,
+          "minimum": 16.722702,
+          "maximum": 18.120025
+        },
+        "p95_ms": {
+          "median": 23.62155,
+          "minimum": 21.561692,
+          "maximum": 24.001119
+        },
+        "p99_ms": {
+          "median": 25.784333,
+          "minimum": 23.693582,
+          "maximum": 28.155931
+        },
+        "reads_per_frame": {
+          "median": 22.834722222222222,
+          "minimum": 22.78472222222222,
+          "maximum": 22.86111111111111
+        }
+      }
+    }
+  ],
+  "ring": [
+    {
+      "size": 1536000,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3142.7203926171255,
+          "minimum": 3047.143917592471,
+          "maximum": 3173.7231297260178
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.48309457,
+          "minimum": 0.47754131,
+          "maximum": 0.4979472266666667
+        },
+        "p50_ms": {
+          "median": 0.347207,
+          "minimum": 0.342738,
+          "maximum": 0.365022
+        },
+        "p95_ms": {
+          "median": 0.482705,
+          "minimum": 0.476042,
+          "maximum": 0.494448
+        },
+        "p99_ms": {
+          "median": 0.611249,
+          "minimum": 0.576241,
+          "maximum": 0.64167
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0
+        }
+      },
+      "allocation_name": "aligned",
+      "allocation": {
+        "touch_ns": {
+          "median": 2389789,
+          "minimum": 2171296,
+          "maximum": 3164342
+        },
+        "touch_minor_faults": {
+          "median": 1551,
+          "minimum": 1551,
+          "maximum": 1552
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3059.3382516750744,
+          "minimum": 2975.4797556936724,
+          "maximum": 3110.159485246212
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.4960905566666666,
+          "minimum": 0.4893324766666667,
+          "maximum": 0.5120406033333333
+        },
+        "p50_ms": {
+          "median": 0.352918,
+          "minimum": 0.345243,
+          "maximum": 0.364722
+        },
+        "p95_ms": {
+          "median": 0.521903,
+          "minimum": 0.49508,
+          "maximum": 0.555008
+        },
+        "p99_ms": {
+          "median": 0.70262,
+          "minimum": 0.618424,
+          "maximum": 0.85906
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 2325322,
+          "minimum": 2304250,
+          "maximum": 2668180
+        },
+        "touch_minor_faults": {
+          "median": 1544,
+          "minimum": 1544,
+          "maximum": 1545
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 3232.6225231013173,
+          "minimum": 2980.587285977067,
+          "maximum": 3349.5650277185437
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.4708711066666667,
+          "minimum": 0.45114087333333336,
+          "maximum": 0.5105679166666667
+        },
+        "p50_ms": {
+          "median": 0.345894,
+          "minimum": 0.332247,
+          "maximum": 0.372267
+        },
+        "p95_ms": {
+          "median": 0.485501,
+          "minimum": 0.447345,
+          "maximum": 0.532754
+        },
+        "p99_ms": {
+          "median": 0.602974,
+          "minimum": 0.562954,
+          "maximum": 0.86921
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 2080076,
+          "minimum": 310104,
+          "maximum": 3310371
+        },
+        "touch_minor_faults": {
+          "median": 11,
+          "minimum": 11,
+          "maximum": 11
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 6144,
+          "minimum": 6144,
+          "maximum": 6144
+        },
+        "advice_accepted": {
+          "median": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 1,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 56499.111645634555,
+          "minimum": 55335.23932491008,
+          "maximum": 58500.412135403494
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.021891136666666665,
+          "minimum": 0.021106656666666664,
+          "maximum": 0.02234072
+        },
+        "p50_ms": {
+          "median": 0.02034,
+          "minimum": 0.019589,
+          "maximum": 0.020681
+        },
+        "p95_ms": {
+          "median": 0.020851,
+          "minimum": 0.020711,
+          "maximum": 0.023296
+        },
+        "p99_ms": {
+          "median": 0.024288,
+          "minimum": 0.024177,
+          "maximum": 0.025791
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 3136246,
+          "minimum": 2774110,
+          "maximum": 3682968
+        },
+        "touch_minor_faults": {
+          "median": 1545,
+          "minimum": 1545,
+          "maximum": 1545
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 1,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 55962.120359970744,
+          "minimum": 54288.472657158345,
+          "maximum": 61193.10647416947
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.022297729999999998,
+          "minimum": 0.0203095,
+          "maximum": 0.022608903333333333
+        },
+        "p50_ms": {
+          "median": 0.02024,
+          "minimum": 0.018707,
+          "maximum": 0.020811
+        },
+        "p95_ms": {
+          "median": 0.021663,
+          "minimum": 0.019558,
+          "maximum": 0.024238
+        },
+        "p99_ms": {
+          "median": 0.027003,
+          "minimum": 0.022504,
+          "maximum": 0.032925
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 3097871,
+          "minimum": 2786324,
+          "maximum": 3355891
+        },
+        "touch_minor_faults": {
+          "median": 1545,
+          "minimum": 1545,
+          "maximum": 1545
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 6150.672690614998,
+          "minimum": 6050.816054148188,
+          "maximum": 6580.634124930059
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.9195950816666667,
+          "minimum": 0.8868491983333333,
+          "maximum": 0.9567998108333333
+        },
+        "p50_ms": {
+          "median": 0.683212,
+          "minimum": 0.663503,
+          "maximum": 0.69211
+        },
+        "p95_ms": {
+          "median": 1.165907,
+          "minimum": 1.121459,
+          "maximum": 1.29374
+        },
+        "p99_ms": {
+          "median": 1.451843,
+          "minimum": 1.367757,
+          "maximum": 1.800453
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0
+        }
+      },
+      "allocation_name": "aligned",
+      "allocation": {
+        "touch_ns": {
+          "median": 2565948.0,
+          "minimum": 2038684,
+          "maximum": 3290452
+        },
+        "touch_minor_faults": {
+          "median": 1551.0,
+          "minimum": 1551,
+          "maximum": 1552
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 6423.929256393411,
+          "minimum": 5287.035701611777,
+          "maximum": 6624.528482623928
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8918247366666667,
+          "minimum": 0.8604856083333333,
+          "maximum": 1.077698045
+        },
+        "p50_ms": {
+          "median": 0.658673,
+          "minimum": 0.645818,
+          "maximum": 0.784132
+        },
+        "p95_ms": {
+          "median": 1.149735,
+          "minimum": 1.056972,
+          "maximum": 1.416012
+        },
+        "p99_ms": {
+          "median": 1.434759,
+          "minimum": 1.229553,
+          "maximum": 1.767447
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0008333333333335
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 2320597.0,
+          "minimum": 1949457,
+          "maximum": 2768308
+        },
+        "touch_minor_faults": {
+          "median": 1544.0,
+          "minimum": 1544,
+          "maximum": 1545
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 6487.9351196539865,
+          "minimum": 6347.195060782063,
+          "maximum": 6874.77138162607
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.8448760083333333,
+          "minimum": 0.8315564683333334,
+          "maximum": 0.8844408841666667
+        },
+        "p50_ms": {
+          "median": 0.618554,
+          "minimum": 0.607853,
+          "maximum": 0.657691
+        },
+        "p95_ms": {
+          "median": 1.118423,
+          "minimum": 1.073915,
+          "maximum": 1.147951
+        },
+        "p99_ms": {
+          "median": 1.479437,
+          "minimum": 1.381433,
+          "maximum": 1.485951
+        },
+        "reads_per_frame": {
+          "median": 2.0,
+          "minimum": 2.0,
+          "maximum": 2.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 6337896.0,
+          "minimum": 725054,
+          "maximum": 68183594
+        },
+        "touch_minor_faults": {
+          "median": 11.0,
+          "minimum": 11,
+          "maximum": 12
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 6144.0,
+          "minimum": 6144,
+          "maximum": 6144
+        },
+        "advice_accepted": {
+          "median": 1.0,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 4,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 218212.2885522924,
+          "minimum": 169386.06585052697,
+          "maximum": 225141.26207062043
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.022314725833333333,
+          "minimum": 0.022072181666666666,
+          "maximum": 0.023365546666666664
+        },
+        "p50_ms": {
+          "median": 0.020541,
+          "minimum": 0.02021,
+          "maximum": 0.021583
+        },
+        "p95_ms": {
+          "median": 0.023186,
+          "minimum": 0.021994,
+          "maximum": 0.023616
+        },
+        "p99_ms": {
+          "median": 0.026312,
+          "minimum": 0.025912,
+          "maximum": 0.027735
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 3457737.5,
+          "minimum": 2655645,
+          "maximum": 4195953
+        },
+        "touch_minor_faults": {
+          "median": 1545.0,
+          "minimum": 1545,
+          "maximum": 1547
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 1536000,
+      "sessions": 4,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 211613.3027881287,
+          "minimum": 203794.93338622944,
+          "maximum": 217392.76150945216
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.022310335,
+          "minimum": 0.022204291666666667,
+          "maximum": 0.02335673666666667
+        },
+        "p50_ms": {
+          "median": 0.020541,
+          "minimum": 0.02022,
+          "maximum": 0.021543
+        },
+        "p95_ms": {
+          "median": 0.024369,
+          "minimum": 0.022435,
+          "maximum": 0.02536
+        },
+        "p99_ms": {
+          "median": 0.027945,
+          "minimum": 0.027635,
+          "maximum": 0.032124
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 3247491.5,
+          "minimum": 2587820,
+          "maximum": 4895718
+        },
+        "touch_minor_faults": {
+          "median": 1545.0,
+          "minimum": 1545,
+          "maximum": 1547
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 1.0,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 226.18656652874677,
+          "minimum": 201.6158498251923,
+          "maximum": 236.09207553171004
+        },
+        "cpu_ms_per_frame": {
+          "median": 5.017838136666667,
+          "minimum": 4.792052546666667,
+          "maximum": 5.6438272099999995
+        },
+        "p50_ms": {
+          "median": 4.669688,
+          "minimum": 4.340324,
+          "maximum": 5.280657
+        },
+        "p95_ms": {
+          "median": 6.519488,
+          "minimum": 6.073453,
+          "maximum": 7.186367
+        },
+        "p99_ms": {
+          "median": 7.25774,
+          "minimum": 6.726283,
+          "maximum": 8.499335
+        },
+        "reads_per_frame": {
+          "median": 12.0,
+          "minimum": 12.0,
+          "maximum": 12.0
+        }
+      },
+      "allocation_name": "aligned",
+      "allocation": {
+        "touch_ns": {
+          "median": 14736627,
+          "minimum": 13990470,
+          "maximum": 15504667
+        },
+        "touch_minor_faults": {
+          "median": 9231,
+          "minimum": 9231,
+          "maximum": 9232
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 216.94184125423513,
+          "minimum": 206.00784934815727,
+          "maximum": 246.00541612412292
+        },
+        "cpu_ms_per_frame": {
+          "median": 5.246953876666667,
+          "minimum": 4.61471993,
+          "maximum": 5.5147308200000005
+        },
+        "p50_ms": {
+          "median": 4.993656,
+          "minimum": 4.228143,
+          "maximum": 5.134684
+        },
+        "p95_ms": {
+          "median": 6.518295,
+          "minimum": 5.850121,
+          "maximum": 7.638985
+        },
+        "p99_ms": {
+          "median": 7.761293,
+          "minimum": 6.43617,
+          "maximum": 11.636153
+        },
+        "reads_per_frame": {
+          "median": 12.0,
+          "minimum": 12.0,
+          "maximum": 12.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 14208178,
+          "minimum": 12960786,
+          "maximum": 15608535
+        },
+        "touch_minor_faults": {
+          "median": 9224,
+          "minimum": 9224,
+          "maximum": 9224
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 1,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 224.7343291890775,
+          "minimum": 211.97320861572115,
+          "maximum": 258.6738736725836
+        },
+        "cpu_ms_per_frame": {
+          "median": 5.079560186666667,
+          "minimum": 4.428370719999999,
+          "maximum": 5.369883213333333
+        },
+        "p50_ms": {
+          "median": 4.693746,
+          "minimum": 4.019832,
+          "maximum": 5.100847
+        },
+        "p95_ms": {
+          "median": 6.481614,
+          "minimum": 5.588425,
+          "maximum": 6.797563
+        },
+        "p99_ms": {
+          "median": 7.156068,
+          "minimum": 6.418617,
+          "maximum": 8.567003
+        },
+        "reads_per_frame": {
+          "median": 12.0,
+          "minimum": 12.0,
+          "maximum": 12.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 2222736,
+          "minimum": 1821694,
+          "maximum": 2743125
+        },
+        "touch_minor_faults": {
+          "median": 26,
+          "minimum": 26,
+          "maximum": 27
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 36864,
+          "minimum": 36864,
+          "maximum": 36864
+        },
+        "advice_accepted": {
+          "median": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 1,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 1966.1742011991303,
+          "minimum": 1936.4612216862743,
+          "maximum": 2115.12161357044
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.7943018566666666,
+          "minimum": 0.7037395633333333,
+          "maximum": 0.8646894566666666
+        },
+        "p50_ms": {
+          "median": 0.79898,
+          "minimum": 0.673793,
+          "maximum": 0.861755
+        },
+        "p95_ms": {
+          "median": 0.893397,
+          "minimum": 0.835954,
+          "maximum": 1.014155
+        },
+        "p99_ms": {
+          "median": 0.968005,
+          "minimum": 0.920391,
+          "maximum": 1.121749
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 19164160,
+          "minimum": 18490897,
+          "maximum": 21289653
+        },
+        "touch_minor_faults": {
+          "median": 9225,
+          "minimum": 9225,
+          "maximum": 9225
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 1,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 1971.7310552531096,
+          "minimum": 1938.3860976674703,
+          "maximum": 2138.289374914936
+        },
+        "cpu_ms_per_frame": {
+          "median": 0.77134107,
+          "minimum": 0.7001997533333333,
+          "maximum": 0.78160215
+        },
+        "p50_ms": {
+          "median": 0.769762,
+          "minimum": 0.66219,
+          "maximum": 0.790533
+        },
+        "p95_ms": {
+          "median": 0.906603,
+          "minimum": 0.810573,
+          "maximum": 0.963656
+        },
+        "p99_ms": {
+          "median": 0.958406,
+          "minimum": 0.833588,
+          "maximum": 1.030007
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 20222843,
+          "minimum": 18844225,
+          "maximum": 20716999
+        },
+        "touch_minor_faults": {
+          "median": 9225,
+          "minimum": 9225,
+          "maximum": 9225
+        },
+        "touch_major_faults": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 416.99077636730976,
+          "minimum": 375.0398956893037,
+          "maximum": 470.57073818230924
+        },
+        "cpu_ms_per_frame": {
+          "median": 10.836755949999999,
+          "minimum": 9.516911001666667,
+          "maximum": 11.927441305833334
+        },
+        "p50_ms": {
+          "median": 10.309071,
+          "minimum": 9.110793,
+          "maximum": 11.463133
+        },
+        "p95_ms": {
+          "median": 13.54524,
+          "minimum": 11.551943,
+          "maximum": 14.577808
+        },
+        "p99_ms": {
+          "median": 14.527594,
+          "minimum": 12.925185,
+          "maximum": 15.950071
+        },
+        "reads_per_frame": {
+          "median": 12.0,
+          "minimum": 12.0,
+          "maximum": 12.001666666666667
+        }
+      },
+      "allocation_name": "aligned",
+      "allocation": {
+        "touch_ns": {
+          "median": 16916679.5,
+          "minimum": 14075715,
+          "maximum": 19608244
+        },
+        "touch_minor_faults": {
+          "median": 9231.0,
+          "minimum": 9231,
+          "maximum": 9232
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 414.95045062145863,
+          "minimum": 386.2374321634662,
+          "maximum": 441.00680408339946
+        },
+        "cpu_ms_per_frame": {
+          "median": 10.745326026666667,
+          "minimum": 10.201219105,
+          "maximum": 11.520510762499999
+        },
+        "p50_ms": {
+          "median": 10.182751,
+          "minimum": 9.645267,
+          "maximum": 11.05438
+        },
+        "p95_ms": {
+          "median": 13.935064,
+          "minimum": 12.866887,
+          "maximum": 15.937005
+        },
+        "p99_ms": {
+          "median": 15.825728,
+          "minimum": 14.163089,
+          "maximum": 20.667194
+        },
+        "reads_per_frame": {
+          "median": 12.000833333333333,
+          "minimum": 12.0,
+          "maximum": 12.01
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 17326570.0,
+          "minimum": 13825402,
+          "maximum": 19712377
+        },
+        "touch_minor_faults": {
+          "median": 9224.0,
+          "minimum": 9224,
+          "maximum": 9226
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 4,
+      "transport": "fifo",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 417.0355187994088,
+          "minimum": 409.104835251947,
+          "maximum": 468.9193247532807
+        },
+        "cpu_ms_per_frame": {
+          "median": 10.726213736666667,
+          "minimum": 9.5675167225,
+          "maximum": 10.941887815
+        },
+        "p50_ms": {
+          "median": 10.290617,
+          "minimum": 9.02952,
+          "maximum": 10.512309
+        },
+        "p95_ms": {
+          "median": 13.150957,
+          "minimum": 12.115982,
+          "maximum": 13.825559
+        },
+        "p99_ms": {
+          "median": 14.368844,
+          "minimum": 14.013144,
+          "maximum": 15.384688
+        },
+        "reads_per_frame": {
+          "median": 12.001666666666667,
+          "minimum": 12.0,
+          "maximum": 12.0025
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 21075184.0,
+          "minimum": 4296032,
+          "maximum": 84585144
+        },
+        "touch_minor_faults": {
+          "median": 26.0,
+          "minimum": 26,
+          "maximum": 26
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 36864.0,
+          "minimum": 36864,
+          "maximum": 36864
+        },
+        "advice_accepted": {
+          "median": 1.0,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 4,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2500.908965784068,
+          "minimum": 2305.236238073918,
+          "maximum": 2865.177510711717
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.9030507024999999,
+          "minimum": 1.615102535,
+          "maximum": 2.0260010725
+        },
+        "p50_ms": {
+          "median": 1.795876,
+          "minimum": 1.601043,
+          "maximum": 2.045674
+        },
+        "p95_ms": {
+          "median": 2.553114,
+          "minimum": 2.477247,
+          "maximum": 3.072386
+        },
+        "p99_ms": {
+          "median": 3.10313,
+          "minimum": 2.779544,
+          "maximum": 4.010358
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "anon",
+      "allocation": {
+        "touch_ns": {
+          "median": 20465083.5,
+          "minimum": 18346005,
+          "maximum": 26624349
+        },
+        "touch_minor_faults": {
+          "median": 9225.0,
+          "minimum": 9225,
+          "maximum": 9225
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        }
+      }
+    },
+    {
+      "size": 12441600,
+      "sessions": 4,
+      "transport": "ring",
+      "trials": 5,
+      "metrics": {
+        "fps": {
+          "median": 2507.7822805867772,
+          "minimum": 2166.2176807452497,
+          "maximum": 2855.3505196294177
+        },
+        "cpu_ms_per_frame": {
+          "median": 1.851245435,
+          "minimum": 1.5913119658333332,
+          "maximum": 2.1796582083333336
+        },
+        "p50_ms": {
+          "median": 1.899715,
+          "minimum": 1.559701,
+          "maximum": 2.199622
+        },
+        "p95_ms": {
+          "median": 2.923765,
+          "minimum": 2.530572,
+          "maximum": 3.455091
+        },
+        "p99_ms": {
+          "median": 3.48054,
+          "minimum": 3.069468,
+          "maximum": 4.045627
+        },
+        "reads_per_frame": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0
+        }
+      },
+      "allocation_name": "thp",
+      "allocation": {
+        "touch_ns": {
+          "median": 21144504.5,
+          "minimum": 17861727,
+          "maximum": 27807695
+        },
+        "touch_minor_faults": {
+          "median": 9225.0,
+          "minimum": 9225,
+          "maximum": 9227
+        },
+        "touch_major_faults": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "huge_kb": {
+          "median": 0.0,
+          "minimum": 0,
+          "maximum": 0
+        },
+        "advice_accepted": {
+          "median": 1.0,
+          "minimum": 1,
+          "maximum": 1
+        }
+      }
+    }
+  ]
+}

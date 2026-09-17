@@ -30,19 +30,44 @@ fn read_step(source: &mut impl std::io::Read, bytes: &mut [u8]) -> std::io::Resu
     }
 }
 
-/// Fill one frame using readiness and latched cancellation. An observed EOF
-/// discards a partial frame; T226 also replaces the inode on interrupted writes.
+/// A logical packed frame whose storage can occupy separate planes.
+pub(crate) trait FrameTarget {
+    fn len(&self) -> usize;
+    /// Nonempty writable suffix within one contiguous region at packed offset.
+    fn chunk(&mut self, offset: usize) -> &mut [u8];
+}
+impl FrameTarget for [u8] {
+    fn len(&self) -> usize {
+        <[u8]>::len(self)
+    }
+    fn chunk(&mut self, offset: usize) -> &mut [u8] {
+        &mut self[offset..]
+    }
+}
+
 pub(crate) fn read_frame(
     fifo: &mut impl FrameSource,
     buf: &mut [u8],
     stop: &StopSignal,
 ) -> std::io::Result<bool> {
+    read_frame_into(fifo, buf, stop)
+}
+
+/// Fill one complete logical frame, possibly across disjoint writable planes.
+/// EOF resets the whole packed offset, including already filled planes. T226
+/// also replaces the inode on interrupted writes; cancellation never submits
+/// partial input. The target borrow holds its storage until the read ends.
+pub(crate) fn read_frame_into<T: FrameTarget + ?Sized>(
+    fifo: &mut impl FrameSource,
+    target: &mut T,
+    stop: &StopSignal,
+) -> std::io::Result<bool> {
     let mut filled = 0;
-    while filled < buf.len() {
+    while filled < target.len() {
         if stop.requested() {
             return Ok(false);
         }
-        match read_step(fifo, &mut buf[filled..])? {
+        match read_step(fifo, target.chunk(filled))? {
             ReadStep::Data(count) => filled += count,
             ReadStep::Wait(waiting) => {
                 if waiting == Waiting::Writer {

@@ -47,6 +47,7 @@ void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us);
  * -1 stopped, 0 no frame, 1 immutable lease, always followed by release(). */
 int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
                          const atomic_int *running, const struct timespec *deadline, frame_lease_t *lease);
+/* Owns locking; call without holding mutex. Notifies retirement waiters. */
 void frame_exchange_release(frame_exchange_t *frames);
 /* Only after writer join and conversion completion. */
 void frame_exchange_free(frame_exchange_t *frames);
