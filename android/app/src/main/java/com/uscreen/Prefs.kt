@@ -89,8 +89,9 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString("host_token", v).apply()
 
     /**
-     * Whether to ask GitHub for a newer release when the app comes to the
-     * front. The host has `check_updates` for the daemon and GUI; this is the
+     * Whether to ask GitHub for a newer release on an Activity instance
+     * starting (at most once per instance). The host has `check_updates`
+     * for the daemon and GUI; this is the
      * tablet's own switch, so the app can be kept fully offline too.
      */
     var checkUpdates: Boolean

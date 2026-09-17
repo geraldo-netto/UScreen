@@ -360,8 +360,8 @@ class MainActivity : ComponentActivity() {
         // are streaming, i.e. between onStart and onStop: a backgrounded app
         // must not keep the CPU and the radio awake for nothing.
         startForegroundService(Intent(this, StreamingService::class.java))
-        // One check per process, when the app comes to the front. It is a
-        // single small request and the answer changes about once a month.
+        // At most one enabled update check per Activity instance, from onStart.
+        // Activity recreation permits another check in the same process.
         if (!updateChecked && prefs.checkUpdates) {
             updateChecked = true
             val cur = try { packageManager.getPackageInfo(packageName, 0).versionName ?: "0" } catch (_: Exception) { "0" }
