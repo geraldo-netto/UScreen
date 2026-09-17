@@ -16,12 +16,14 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # container, a Debian container and a Fedora container, each asked what it
 # actually has. Three of the four families had at least one name wrong.
 install_fedora_deps() {
+    # GUI libraries are loaded at runtime, so ELF dependency scans miss them.
+    local gui_deps=(libX11 libX11-xcb libXcursor libXi libxkbcommon-x11)
     if command -v rpm-ostree &>/dev/null && [ -e /run/ostree-booted ]; then
         info "Immutable Fedora detected — layering packages (reboot needed afterwards)"
         # Bazzite and Nobara ship evdi in the base image; plain
         # Silverblue does not, and it is not layerable either.
         sudo rpm-ostree install --idempotent --allow-inactive \
-            ffmpeg android-tools || \
+            ffmpeg android-tools "${gui_deps[@]}" || \
             warn "Layering failed — check the names against your image"
     else
         # ffmpeg on Fedora needs RPM Fusion; the stock repositories
@@ -35,8 +37,8 @@ install_fedora_deps() {
         # --allowerasing because Fedora preinstalls ffmpeg-free,
         # which the RPM Fusion build replaces; without it dnf refuses
         # the whole transaction rather than swapping the two.
-        sudo dnf install -y --allowerasing ffmpeg android-tools || \
-            warn "Install ffmpeg and android-tools manually"
+        sudo dnf install -y --allowerasing ffmpeg android-tools "${gui_deps[@]}" || \
+            warn "Install ffmpeg, android-tools and the GUI libraries (${gui_deps[*]}) manually"
     fi
     # evdi is not packaged for Fedora at all — not in the stock
     # repositories and not in RPM Fusion. Checked, rather than
@@ -51,6 +53,7 @@ install_fedora_deps() {
 }
 
 install_debian_deps() {
+    local gui_deps=(libx11-6 libx11-xcb1 libxcursor1 libxi6 libxkbcommon-x11-0)
     sudo apt-get update
     # libevdi0 does not exist: the runtime library is libevdi1, and
     # libevdi0-dev is only a transitional package. Asking for the
@@ -59,15 +62,15 @@ install_debian_deps() {
     # Userspace first, kernel module second: a dkms build that fails
     # (no headers, unsupported kernel) must not stop ffmpeg and adb
     # from being installed.
-    sudo apt-get install -y ffmpeg adb libevdi1 libevdi-dev || \
-    sudo apt-get install -y ffmpeg android-tools-adb libevdi1 || \
+    sudo apt-get install -y ffmpeg adb libevdi1 libevdi-dev "${gui_deps[@]}" || \
+    sudo apt-get install -y ffmpeg android-tools-adb libevdi1 "${gui_deps[@]}" || \
         warn "Check the package names for your release"
     sudo apt-get install -y evdi-dkms || \
         warn "evdi-dkms did not install — you may need linux-headers-$(uname -r)"
 }
 
 install_arch_deps() {
-    sudo pacman -S --needed --noconfirm ffmpeg android-tools
+    sudo pacman -S --needed --noconfirm ffmpeg android-tools libx11 libxcursor libxi libxkbcommon-x11
     # evdi is not in the official repositories on Arch — it only
     # exists in the AUR, so asking pacman for it can never succeed.
     if pacman -Qq evdi-dkms >/dev/null 2>&1 || pacman -Qq evdi >/dev/null 2>&1; then
@@ -84,13 +87,14 @@ install_arch_deps() {
 }
 
 install_suse_deps() {
+    local gui_deps=(libX11-6 libX11-xcb1 libXcursor1 libXi6 libxkbcommon-x11-0)
     # The one distribution that has all of it in the default repos.
     # Split in two: the evdi kernel module package is tied to the
     # running kernel's ABI, and when that does not resolve it should
     # not take ffmpeg and adb down with it.
     sudo zypper --non-interactive install --no-recommends \
-        ffmpeg android-tools || \
-        warn "Install ffmpeg and android-tools manually"
+        ffmpeg android-tools "${gui_deps[@]}" || \
+        warn "Install ffmpeg, android-tools and the GUI libraries (${gui_deps[*]}) manually"
     # libevdi1 requires evdi-kmp, so the library and the kernel module
     # stand or fall together here — nothing to be gained by splitting
     # them further.
@@ -104,7 +108,7 @@ install_distro_deps() {
         *debian*|*ubuntu*) install_debian_deps ;;
         *arch*|*manjaro*|*endeavouros*|*cachyos*) install_arch_deps ;;
         *suse*) install_suse_deps ;;
-        *) warn "Unknown distro. Install manually: ffmpeg, adb (android-tools), evdi + libevdi" ;;
+        *) warn "Unknown distro. Install manually: ffmpeg, adb (android-tools), evdi + libevdi, and GUI libraries: X11, X11-xcb, Xcursor, Xi, xkbcommon-x11" ;;
     esac
 }
 

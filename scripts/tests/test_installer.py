@@ -83,6 +83,43 @@ class InstallerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout
 
+    def test_t316_tarball_installs_gui_x11_runtime_libraries(self):
+        # These libraries are loaded by winit/xkbcommon at runtime; ldd misses
+        # them. T314's isolated GUI launch demonstrates the resulting failure.
+        debian = ['libx11-6', 'libx11-xcb1', 'libxcursor1', 'libxi6', 'libxkbcommon-x11-0']
+        fedora = ['libX11', 'libX11-xcb', 'libXcursor', 'libXi', 'libxkbcommon-x11']
+        cases = [
+            ('debian', '', debian),
+            ('debian', 'FAIL_DEBIAN=1\n', debian),
+            ('fedora', '', fedora),
+            ('fedora', 'IMMUTABLE=1\n', fedora),
+            ('arch', '', ['libx11', 'libxcursor', 'libxi', 'libxkbcommon-x11']),
+            ('opensuse', '', ['libX11-6', 'libX11-xcb1', 'libXcursor1', 'libXi6', 'libxkbcommon-x11-0']),
+        ]
+        stubs = r'''
+sudo() {
+    if [[ ${FAIL_DEBIAN:-0} == 1 && $* == *libevdi-dev* ]]; then return 1; fi
+    printf 'packages: %s\n' "$*"
+}
+pacman() { return 1; }
+yay() { :; }
+dnf() { return 0; }
+rpm-ostree() { :; }
+[() {
+    if [[ $* == '-e /run/ostree-booted ]' ]]; then [[ ${IMMUTABLE:-0} == 1 ]];
+    else builtin [ "$@"; fi
+}
+'''
+        for distro, scenario, packages in cases:
+            with self.subTest(distro=distro, scenario=scenario):
+                output = self.run_installer(stubs + scenario + f'install_distro_deps "{distro}"\n')
+                if scenario == 'IMMUTABLE=1\n':
+                    self.assertIn('packages: rpm-ostree install', output)
+                installed = [line.split() for line in output.splitlines() if line.startswith('packages:')]
+                for package in packages:
+                    self.assertTrue(any(package in command for command in installed),
+                                    f'T316: {package} missing from successful installation commands: {output}')
+
     def test_t214_distro_dependencies_keep_commands_and_fallbacks(self):
         stubs = '''
 sudo() { printf 'sudo %s\\n' "$*"; }
