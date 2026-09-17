@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T257: retain explicit token-store exclusion in addition to allowBackup=false. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="uscreen.xml" />
+</full-backup-content>

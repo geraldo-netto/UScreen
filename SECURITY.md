@@ -43,6 +43,13 @@ created directory and mode 0600 for the token and capture FIFO.
 and directory-creation errors are ignored** (T252). Those modes are intended
 protections, not an unconditional guarantee for every existing setup.
 
+Android disables application backup and explicitly excludes the token-bearing
+`uscreen.xml` preferences from legacy backup, cloud backup and device transfer.
+Both rule files are referenced by the packaged manifest and covered by the
+Android regression suite. Device-transfer exclusions matter because some OEMs
+ignore `allowBackup=false` for that transport; see
+[Android's backup rules](https://developer.android.com/identity/data/autobackup).
+
 Optional HTTPS checks read the fork's latest release metadata from GitHub.
 The daemon first checks after 30 seconds and then approximately daily while
 running; the GUI checks at startup; Android checks at most once per Activity

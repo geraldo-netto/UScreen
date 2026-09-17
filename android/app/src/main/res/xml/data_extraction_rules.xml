@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T257: some Android 12+ OEM transfers ignore allowBackup=false. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="uscreen.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="uscreen.xml" />
+    </device-transfer>
+</data-extraction-rules>
