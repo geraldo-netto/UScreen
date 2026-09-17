@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-REPO = Path(__file__).resolve().parents[2]
+import test_notices
 
 
 class DistributionTest(unittest.TestCase):
@@ -14,12 +14,7 @@ class DistributionTest(unittest.TestCase):
         for mode in ['failed-apk', 'missing-apk', 'success']:
             with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-dist-') as tmp:
                 root = Path(tmp)
-                for name in ['Makefile', 'scripts', 'packaging', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
-                    source = REPO / name
-                    if source.is_dir():
-                        shutil.copytree(source, root / name)
-                    else:
-                        shutil.copy(source, root / name)
+                version = test_notices.NoticeTest().copy_sources(root)
                 def write(name, body, executable=False):
                     path = root / name
                     path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,17 +43,16 @@ class DistributionTest(unittest.TestCase):
                     # Extract and remove build-time library search paths entirely.
                     artifact = root / 'extracted'
                     artifact.mkdir()
-                    subprocess.run(['tar', '-xf', 'dist/uscreen-1.2.3-linux-x86_64.tar.gz', '-C', str(artifact)], cwd=root, check=True)
+                    subprocess.run(['tar', '-xf', f'dist/uscreen-{version}-linux-x86_64.tar.gz', '-C', str(artifact)], cwd=root, check=True)
                     shutil.rmtree(library.parent)
                     env.pop('LIBRARY_PATH')
                     env.pop('LD_LIBRARY_PATH', None)
-                    helper = artifact / 'uscreen-1.2.3/bin/evdi_helper'
+                    helper = artifact / f'uscreen-{version}/bin/evdi_helper'
                     loaded = subprocess.run([str(helper)], env=env, capture_output=True, text=True)
                     self.assertEqual(loaded.returncode, 0, loaded.stderr)
-                    self.assertTrue((artifact / 'uscreen-1.2.3/uscreen.apk').is_file())
+                    self.assertTrue((artifact / f'uscreen-{version}/uscreen.apk').is_file())
                     # T129: the local tarball carries the same notices and working links.
-                    from test_notices import NoticeTest
-                    NoticeTest().verify_docs(artifact / 'uscreen-1.2.3')
+                    test_notices.NoticeTest().verify_docs(artifact / f'uscreen-{version}')
 
 
 if __name__ == '__main__':

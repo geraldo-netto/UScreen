@@ -470,6 +470,19 @@ fn t102_local_distribution_requires_apk_and_bundled_library() {
 }
 
 #[test]
+fn t302_distribution_regressions_survive_release_version_bumps() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_version_fixtures.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn t129_distributed_notices_and_readme_links_exist() {
     let output = Command::new("python3")
         .arg(repo().join("scripts/tests/test_notices.py"))

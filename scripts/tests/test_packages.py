@@ -48,27 +48,27 @@ class PackageTest(unittest.TestCase):
             with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='uscreen-build-path-') as tmp:
                 root = Path(tmp) / name
                 root.mkdir()
-                NoticeTest().copy_sources(root)
+                version = NoticeTest().copy_sources(root)
                 self.portable_fixture(root)
                 env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'))
                 result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
                                         env=env, capture_output=True, text=True, timeout=20)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertTrue((root / 'dist/uscreen-1.2.3-linux-x86_64.tar.gz').is_file())
+                self.assertTrue((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').is_file())
                 self.assertFalse((root / 'INJECTED').exists())
 
     def test_t236_release_rejects_new_glibc_in_bundled_evdi(self):
         from test_notices import NoticeTest
         with tempfile.TemporaryDirectory(prefix='uscreen-abi-') as tmp:
             root = Path(tmp)
-            NoticeTest().copy_sources(root)
+            version = NoticeTest().copy_sources(root)
             self.portable_fixture(root)
             (root / 'bin/objdump').write_text('#!/bin/sh\ncase "$2" in *libevdi*) echo GLIBC_2.37;; *) echo GLIBC_2.36;; esac\n')
             env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'))
             result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
                                     env=env, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0, 'T236: shipped library exceeds the documented ABI floor')
-            self.assertFalse((root / 'dist/uscreen-1.2.3-linux-x86_64.tar.gz').exists())
+            self.assertFalse((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').exists())
 
     def portable_fixture(self, root):
         files = {

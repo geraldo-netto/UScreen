@@ -15,7 +15,7 @@ class NoticeTest(unittest.TestCase):
     def test_t129_tar_deb_rpm_and_arch_include_notices(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-notices-') as tmp:
             root = Path(tmp)
-            self.copy_sources(root)
+            version = self.copy_sources(root)
             def write(name, body, executable=False):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -38,15 +38,15 @@ class NoticeTest(unittest.TestCase):
             run('bash', 'scripts/build-release.sh')
             extracted = root / 'unpacked'
             extracted.mkdir()
-            run('tar', '-xf', 'dist/uscreen-1.2.3-linux-x86_64.tar.gz', '-C', str(extracted))
-            docs = extracted / 'uscreen-1.2.3'
+            run('tar', '-xf', f'dist/uscreen-{version}-linux-x86_64.tar.gz', '-C', str(extracted))
+            docs = extracted / f'uscreen-{version}'
             self.verify_docs(docs)
             env['USCREEN_TEST_BUILD'] = 'packages'
             run('bash', 'packaging/build-packages.sh')
             deb = root / 'deb'
-            run('dpkg-deb', '-x', 'dist/uscreen_1.2.3_amd64.deb', str(deb))
+            run('dpkg-deb', '-x', f'dist/uscreen_{version}_amd64.deb', str(deb))
             self.verify_docs(deb / 'usr/share/doc/uscreen')
-            rpm_files = run('rpm', '-qpl', 'dist/uscreen-1.2.3-1.x86_64.rpm').splitlines()
+            rpm_files = run('rpm', '-qpl', f'dist/uscreen-{version}-1.x86_64.rpm').splitlines()
             for name in NOTICES:
                 self.assertIn('/usr/share/doc/uscreen/' + name, rpm_files)
             for link in re.findall(r'\]\(([^)]+)\)', (docs / 'README.md').read_text()):
@@ -57,7 +57,7 @@ class NoticeTest(unittest.TestCase):
             # RPM normally cleans BUILDROOT; the archive inventory remains authoritative.
             for folder in rpm_roots:
                 self.verify_docs(folder)
-            source = root / 'UScreen-1.2.3'
+            source = root / f'UScreen-{version}'
             shutil.copytree(docs, source)
             (source / 'target/release').mkdir(parents=True)
             (source / 'host/evdi').mkdir(parents=True)
@@ -79,6 +79,9 @@ class NoticeTest(unittest.TestCase):
                 shutil.copytree(source, root / name)
             else:
                 shutil.copy(source, root / name)
+
+        # T302: expectations follow the copied source version, not this release.
+        return re.search(r'^VERSION = (\S+)$', (root / 'Makefile').read_text(), re.M)[1]
 
     def verify_docs(self, folder):
         for name in NOTICES:
