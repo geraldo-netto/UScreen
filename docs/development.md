@@ -179,7 +179,7 @@ it is not a universal compositor enumeration API.
 
 ## Settings defaults and scope
 
-These defaults come from `common/src/lib.rs`, unless a saved config overrides
+These defaults come from `common/src/model.rs`, unless a saved config overrides
 them. See the README for config paths and the app gear-menu controls.
 
 | Host setting | Default | Scope or limit |

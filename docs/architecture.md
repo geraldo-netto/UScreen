@@ -52,6 +52,13 @@ Android and Rust/C measurements and improvements; these are not benchmark result
 
 ## Processes and settings
 
+`uscreen-config::model` owns the portable settings schema, sanitization and edit
+merging. Its `storage` adapter owns transactional files; `commands` owns bounded
+process execution; `linux` owns Linux process/runtime state. Default features
+retain the existing Linux API, while `--no-default-features` builds policy and
+version comparison without filesystem/process adapters. CI checks that boundary
+on WebAssembly; this does not make the daemon or GUI Windows-compatible.
+
 - `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
 - `evdi_helper`: one per active display slot, owns one EVDI card. The daemon's
   card assignment can pin an occupied card despite free capacity (T330).

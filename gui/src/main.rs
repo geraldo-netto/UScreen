@@ -5,8 +5,13 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use uscreen_config::commands::spawn_reaped;
 use uscreen_config::commands::SyncCommandExt;
-use uscreen_config::*;
+use uscreen_config::linux::daemon_is_running;
+use uscreen_config::model::{
+    FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
+};
+use uscreen_config::storage::config_path;
 
 /// Whether the systemd user service is enabled, i.e. whether plugging the
 /// cable in is enough on its own.

@@ -3,6 +3,15 @@ use std::io::{self, Read, Seek};
 use std::process::{Command, ExitStatus, Output, Stdio};
 use std::time::Duration;
 
+pub fn spawn_reaped(command: &mut std::process::Command) -> std::io::Result<u32> {
+    let mut child = command.spawn()?;
+    let pid = child.id();
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    Ok(pid)
+}
+
 pub const COMMAND_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub trait SyncCommandExt {
