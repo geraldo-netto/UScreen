@@ -82,8 +82,10 @@ both names/IDs with the appropriate providers from that output. Do not assume
 the source is provider 0. Display-server/driver support is required; this
 command changes the live display configuration.
 
-KScreen placement is still attempted on some non-KDE paths (T224), so a
-missing-output warning alone does not prove EVDI failed to render.
+Automatic KScreen placement runs only when `XDG_SESSION_TYPE=wayland` and
+`XDG_CURRENT_DESKTOP` identifies KDE (including colon-separated desktop names).
+X11, other Wayland desktops and unidentified sessions skip those commands and
+their retry delay; configure placement through the desktop's display settings.
 
 ## Cinnamon or Xorg restarts when connecting
 

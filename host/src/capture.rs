@@ -402,6 +402,24 @@ impl CaptureManager {
             .filter(|c| card.is_none_or(|want| c.card == want))
             .map(|c| c.name)
             .collect();
+        Self::enable_named_evdi_display(
+            &evdi_names,
+            position,
+            crate::desktop::Desktop::current(),
+            std::ffi::OsStr::new("kscreen-doctor"),
+        )
+        .await;
+    }
+
+    async fn enable_named_evdi_display(
+        evdi_names: &[String],
+        position: crate::config::Position,
+        desktop: crate::desktop::Desktop,
+        program: &std::ffi::OsStr,
+    ) {
+        if desktop != crate::desktop::Desktop::KdeWayland {
+            return;
+        }
         if evdi_names.is_empty() {
             warn!("No EVDI connector found in sysfs — cannot enable the virtual display");
             return;
@@ -417,16 +435,16 @@ impl CaptureManager {
             if attempt > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(200)).await;
             }
-            let Some(outputs) = crate::kscreen::outputs().await else {
+            let Some(outputs) = crate::kscreen::outputs_using(program).await else {
                 continue;
             };
-            let Some(plan) = crate::kscreen::placement(&outputs, &evdi_names, position) else {
+            let Some(plan) = crate::kscreen::placement(&outputs, evdi_names, position) else {
                 continue;
             };
             if plan.already_applied {
                 return;
             }
-            Self::apply_display_placement(&plan, position).await;
+            Self::apply_display_placement(&plan, position, program).await;
             return;
         }
 
@@ -436,6 +454,7 @@ impl CaptureManager {
     async fn apply_display_placement(
         plan: &crate::kscreen::Placement,
         position: crate::config::Position,
+        program: &std::ffi::OsStr,
     ) {
         info!(
             "Enabling EVDI output.{} at ({}, {}) — {:?} of the other screens",
@@ -448,7 +467,7 @@ impl CaptureManager {
             );
         }
         // Apply the whole layout in one compositor transaction.
-        match Command::new("kscreen-doctor")
+        match Command::new(program)
             .args(plan.arguments())
             .output_bounded()
             .await
@@ -471,18 +490,31 @@ impl CaptureManager {
             .filter(|c| card.is_none_or(|want| c.card == want))
             .map(|c| c.name)
             .collect();
-        if evdi_names.is_empty() {
+        Self::disable_named_evdi_display(
+            &evdi_names,
+            crate::desktop::Desktop::current(),
+            std::ffi::OsStr::new("kscreen-doctor"),
+        )
+        .await;
+    }
+
+    async fn disable_named_evdi_display(
+        evdi_names: &[String],
+        desktop: crate::desktop::Desktop,
+        program: &std::ffi::OsStr,
+    ) {
+        if desktop != crate::desktop::Desktop::KdeWayland || evdi_names.is_empty() {
             return;
         }
-        let Some(outputs) = crate::kscreen::outputs().await else {
+        let Some(outputs) = crate::kscreen::outputs_using(program).await else {
             return;
         };
         for out in &outputs {
-            let Some((id, name)) = crate::kscreen::enabled_matching_output(out, &evdi_names) else {
+            let Some((id, name)) = crate::kscreen::enabled_matching_output(out, evdi_names) else {
                 continue;
             };
             info!("Disabling EVDI output.{} ({})", id, name);
-            let _ = tokio::process::Command::new("kscreen-doctor")
+            let _ = tokio::process::Command::new(program)
                 .arg(format!("output.{}.disable", id))
                 .output_bounded()
                 .await;
@@ -2145,6 +2177,78 @@ mod inproc_tests {
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 mod tests {
     use super::*;
+
+    fn t224_placement_fixture(
+        inventory: &str,
+    ) -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf) {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let program = dir.path().join("kscreen-fixture");
+        let trace = dir.path().join("trace");
+        std::fs::write(dir.path().join("inventory"), inventory).unwrap();
+        std::fs::write(
+            &program,
+            r#"#!/bin/sh
+printf '%s\n' "$*" >> "${0%/*}/trace"
+if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
+"#,
+        )
+        .unwrap();
+        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+        (dir, program, trace)
+    }
+
+    #[tokio::test]
+    async fn t224_non_kde_sessions_skip_placement_commands_and_retries() {
+        for (desktop, session) in [
+            ("X-Cinnamon", "x11"),
+            ("GNOME", "wayland"),
+            ("sway", "wayland"),
+            ("KDE", "x11"),
+            ("", ""),
+        ] {
+            let (_dir, program, trace) = t224_placement_fixture(r#"{"outputs":[]}"#);
+            let kind = crate::desktop::Desktop::detect(desktop, session);
+            let names = ["DVI-I-1".into()];
+            let started = std::time::Instant::now();
+            CaptureManager::enable_named_evdi_display(
+                &names,
+                crate::config::Position::Right,
+                kind,
+                program.as_os_str(),
+            )
+            .await;
+            CaptureManager::disable_named_evdi_display(&names, kind, program.as_os_str()).await;
+            assert!(
+                started.elapsed() < std::time::Duration::from_millis(200),
+                "T224: {desktop}/{session} incurred retry delay"
+            );
+            assert!(!trace.exists(), "T224: {desktop}/{session} invoked KScreen");
+        }
+    }
+
+    #[tokio::test]
+    async fn t224_kde_wayland_still_enables_positions_and_disables_output() {
+        let (_dir, program, trace) = t224_placement_fixture(
+            r#"{"outputs":[
+            {"id":1,"name":"eDP-1","enabled":true,"pos":{"x":0,"y":0},"size":{"width":1000,"height":500}},
+            {"id":2,"name":"DVI-I-1","enabled":true,"pos":{"x":0,"y":0},"size":{"width":1280,"height":800}}]}"#,
+        );
+        let kind = crate::desktop::Desktop::detect("Plasma:KDE", "wayland");
+        let names = ["DVI-I-1".into()];
+        CaptureManager::enable_named_evdi_display(
+            &names,
+            crate::config::Position::Right,
+            kind,
+            program.as_os_str(),
+        )
+        .await;
+        CaptureManager::disable_named_evdi_display(&names, kind, program.as_os_str()).await;
+        assert_eq!(
+            std::fs::read_to_string(trace).unwrap(),
+            "-j\noutput.2.enable output.2.position.1000,0\n-j\noutput.2.disable\n"
+        );
+    }
 
     #[test]
     fn t307_encoder_throughput_uses_displayed_decimal_units() {

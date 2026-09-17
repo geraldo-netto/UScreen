@@ -82,7 +82,17 @@ pub(crate) async fn fetch() -> std::io::Result<std::process::Output> {
 /// Preserve the existing contract: parseable output remains usable even when
 /// the command exits nonzero. Consumers decide mapping/diagnostic policy.
 pub(crate) async fn outputs() -> Option<Vec<Output>> {
-    parse(&fetch().await.ok()?.stdout).ok()
+    outputs_using(std::ffi::OsStr::new("kscreen-doctor")).await
+}
+
+pub(crate) async fn outputs_using(program: &std::ffi::OsStr) -> Option<Vec<Output>> {
+    parse(
+        &fetch_with(tokio::process::Command::new(program))
+            .await
+            .ok()?
+            .stdout,
+    )
+    .ok()
 }
 
 pub(crate) fn enabled_matching_output<'a>(

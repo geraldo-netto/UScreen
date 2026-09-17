@@ -14,8 +14,8 @@ Android and Rust/C measurements and improvements; these are not benchmark result
 
 1. **Virtual display.** A C helper opens an EVDI device and presents a generated
    EDID for the selected resolution and physical size. The desktop compositor
-   supplies frames. Automatic placement uses `kscreen-doctor`; calls are not
-   fully restricted to supported desktops yet (T224).
+   supplies frames. Automatic placement uses `kscreen-doctor` only in a KDE
+   Wayland session; other desktops manage placement through their own settings.
 2. **Capture.** The helper requests updates, grabs BGRA pixels, converts damaged
    rows to NV12 (BT.709, limited range) and sends raw frames through a FIFO in
    the runtime directory. FIFO writes can be partial; correct recovery from an

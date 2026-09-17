@@ -24,7 +24,7 @@ Container installation/build checks are described in [development.md](developmen
   mapping and keyboard suppression use KWin D-Bus. These tools/interfaces
   must be available; the historical matrix above is not a guarantee for all versions.
 - **X11:** input mapping uses `xinput`/`xrandr`; manage output placement through
-  desktop settings. KScreen calls still occur on some non-KDE paths (T224).
+  desktop settings. Automatic KScreen placement is skipped.
   Cinnamon has an unresolved attachment-related Xorg crash (T222).
 - **Other Wayland desktops:** support depends on that compositor's EVDI and
   input-mapping facilities. No blanket GNOME/Sway compatibility is established;
@@ -58,8 +58,8 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
 - **T269:** full installer/native package hooks may unload a live EVDI module.
-- **T224/T234:** KScreen placement is attempted outside KDE, and diagnostics
-  can report missing KWin as a failure on other Wayland desktops.
+- **T234:** diagnostics can report missing KWin as a failure on other Wayland
+  desktops.
 - **T284:** the optional in-process encoder lacks working VAAPI initialization;
   use the default FFmpeg path for VAAPI.
 - **T287/T318:** tilt-axis scaling and hover/button transitions need correction.
