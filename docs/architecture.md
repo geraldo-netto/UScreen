@@ -9,6 +9,11 @@ The [2026-09-17 architecture review](reviews/2026-09-17-architecture.md) records
 merge/split opportunities, ownership boundaries and required regression coverage.
 Its [performance research](reviews/2026-09-17-performance-scalability.md) proposes
 Android and Rust/C measurements and improvements; these are not benchmark results.
+The [staged ownership decision](decisions/2026-09-17-session-media-ownership.md)
+defines the contracts, implementation order and evidence gates for raw-frame,
+packet, decoder, resource-budget and power-policy changes. The current CLI
+fallback remains supported; proposed interfaces there are labelled separately
+from the existing implementation.
 
 ## Pipeline
 

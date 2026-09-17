@@ -105,6 +105,38 @@ impl EncoderSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t401_delayed_packet_lease_keeps_storage_after_producer_retirement() {
+        use std::sync::atomic::Ordering;
+        let owner = EncoderGeneration::new();
+        let packet = VideoPacket {
+            data: Bytes::from(vec![0, 0, 1, 0x65, 0x80]),
+            is_idr: true,
+            seq: u32::MAX,
+            codec_config: Some(Bytes::from(vec![0, 0, 1, 0x67, 0x42])),
+            generation: owner.active.clone(),
+        };
+        let delayed = packet.clone();
+        let storage = packet.data.as_ptr();
+        let configuration = packet.codec_config.as_ref().unwrap().as_ptr();
+        drop(packet);
+        drop(owner);
+        let replacement = EncoderGeneration::new();
+
+        // Retirement forbids sending; it must not invalidate memory held by
+        // slow consumers, or substitute a replacement encoder's CSD/epoch.
+        assert!(!delayed.generation.load(Ordering::Acquire));
+        assert!(replacement.active.load(Ordering::Acquire));
+        assert!(!Arc::ptr_eq(&delayed.generation, &replacement.active));
+        assert_eq!(delayed.data.as_ptr(), storage);
+        assert_eq!(delayed.data.as_ref(), &[0, 0, 1, 0x65, 0x80]);
+        let config = delayed.codec_config.as_ref().unwrap();
+        assert_eq!(config.as_ptr(), configuration);
+        assert_eq!(config.as_ref(), &[0, 0, 1, 0x67, 0x42]);
+        assert_eq!(delayed.seq, u32::MAX);
+    }
+
     #[test]
     fn codec_is_picked_from_the_encoder_name() {
         assert_eq!(Codec::from_encoder("h264_nvenc"), Codec::H264);
