@@ -220,6 +220,7 @@ pub fn run(
     );
 
     let mut buf = vec![0u8; frame_size];
+    let generation = crate::capture::EncoderGeneration::new();
 
     while !stop.load(Ordering::Relaxed) {
         match read_frame(&mut fifo, &mut buf, &stop) {
@@ -236,7 +237,10 @@ pub fn run(
             let seq = latency.next_sequence();
             if tx.receiver_count() > 0 {
                 latency.on_encoded(seq);
-                let _ = tx.send(crate::capture::VideoPacket { data, is_idr, seq });
+                let _ = tx.send(crate::capture::VideoPacket { data, is_idr, seq,
+                    codec_config: codec_config.lock().ok().and_then(|g| g.clone()),
+                    generation: generation.active.clone(),
+                });
             }
         }
         latency.maybe_report();

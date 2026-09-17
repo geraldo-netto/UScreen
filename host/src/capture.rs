@@ -107,6 +107,26 @@ pub struct VideoPacket {
     /// Allocated across encoder restarts in this daemon instance. Echoed back by the tablet once
     /// the frame is on screen, measuring packet-send-to-render-ack latency.
     pub seq: u32,
+    /// Immutable headers for this access unit, never the latest global cache.
+    pub codec_config: Option<Bytes>,
+    pub generation: Arc<std::sync::atomic::AtomicBool>,
+}
+
+/// Retires queued frames when their encoder exits or is cancelled.
+pub struct EncoderGeneration {
+    pub active: Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl EncoderGeneration {
+    pub fn new() -> Self {
+        Self { active: Arc::new(std::sync::atomic::AtomicBool::new(true)) }
+    }
+}
+
+impl Drop for EncoderGeneration {
+    fn drop(&mut self) {
+        self.active.store(false, std::sync::atomic::Ordering::Release);
+    }
 }
 
 /// Settings that can change at runtime (from the GUI or the tablet app).
@@ -1636,6 +1656,7 @@ struct H264AnnexBPacketizer {
     config: Vec<u8>,
     parameter_sets: std::collections::BTreeMap<u8, Vec<u8>>,
     sequences: crate::latency::LatencyTracker,
+    generation: EncoderGeneration,
     codec: Codec,
 }
 
@@ -1650,6 +1671,7 @@ impl H264AnnexBPacketizer {
             config: Vec::new(),
             parameter_sets: std::collections::BTreeMap::new(),
             sequences,
+            generation: EncoderGeneration::new(),
             codec,
         }
     }
@@ -1876,6 +1898,8 @@ impl H264AnnexBPacketizer {
             data,
             is_idr: was_idr,
             seq,
+            codec_config: self.codec_config(),
+            generation: self.generation.active.clone(),
         })
     }
 

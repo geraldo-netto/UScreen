@@ -182,6 +182,7 @@ impl StreamServer {
         let mut client = ClientPlayback {
             socket,
             last_sent_config: None,
+            last_generation: None,
             wait_for_idr: true,
             dropped: 0,
         };
@@ -197,7 +198,6 @@ impl StreamServer {
                 Err(broadcast::error::RecvError::Closed) => break,
             };
             let batch = client.drain_batch(&mut rx, first);
-            client.refresh_config(&codec_config).await?;
             client.send_batch(batch).await?;
         }
         Ok(())
@@ -278,6 +278,7 @@ impl StreamServer {
 struct ClientPlayback {
     socket: tokio::net::tcp::OwnedWriteHalf,
     last_sent_config: Option<Bytes>,
+    last_generation: Option<Arc<AtomicBool>>,
     wait_for_idr: bool,
     dropped: u64,
 }
@@ -339,25 +340,33 @@ impl ClientPlayback {
         batch
     }
 
-    async fn refresh_config(&mut self, codec_config: &Mutex<Option<Bytes>>) -> Result<()> {
-        let current_config = cached_codec_config(codec_config);
-        if let Some(config) = current_config {
-            if self.last_sent_config.as_ref() != Some(&config) {
-                info!(
-                    "Sending refreshed codec config to client ({} bytes)",
-                    config.len()
-                );
-                StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
-                self.last_sent_config = Some(config);
-                self.wait_for_idr = true;
-            }
+    async fn prepare_packet(&mut self, packet: &VideoPacket) -> Result<bool> {
+        if !packet.generation.load(Ordering::Acquire) {
+            self.wait_for_idr = true;
+            return Ok(false);
         }
-
-        Ok(())
+        let Some(config) = packet.codec_config.as_ref() else { return Ok(false) };
+        let same_generation = self.last_generation.as_ref()
+            .is_some_and(|previous| Arc::ptr_eq(previous, &packet.generation));
+        if !same_generation {
+            self.wait_for_idr = true;
+            self.last_generation = Some(packet.generation.clone());
+        }
+        if self.last_sent_config.as_ref() != Some(config) {
+            StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, config).await?;
+            self.last_sent_config = Some(config.clone());
+            self.wait_for_idr = true;
+        }
+        // Configuration writes may block while the encoder is retired.
+        Ok(packet.generation.load(Ordering::Acquire))
     }
 
     async fn send_batch(&mut self, batch: Vec<VideoPacket>) -> Result<()> {
         for packet in batch {
+            if !self.prepare_packet(&packet).await? {
+                self.dropped += 1;
+                continue;
+            }
             if self.wait_for_idr {
                 if !packet.is_idr {
                     self.dropped += 1;
@@ -387,6 +396,76 @@ mod tests {
         pin::Pin,
         task::{Context, Poll},
     };
+
+    async fn t227_read_packet(socket: &mut TcpStream) -> (u8, Vec<u8>) {
+        use tokio::io::AsyncReadExt;
+        let len = socket.read_u32().await.unwrap();
+        let kind = socket.read_u8().await.unwrap();
+        let mut data = vec![0; len as usize - 1];
+        socket.read_exact(&mut data).await.unwrap();
+        (kind, data)
+    }
+
+    #[tokio::test]
+    async fn t227_queued_frame_keeps_its_codec_configuration() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let mut viewer = TcpStream::connect(listener.local_addr().unwrap()).await.unwrap();
+        let (server, _) = listener.accept().await.unwrap();
+        let (_, writer) = server.into_split();
+        let old = Bytes::from_static(b"h264-1280x800");
+        let new = Bytes::from_static(b"hevc-1920x1080");
+        let (tx, rx) = broadcast::channel(8);
+        tx.send(VideoPacket { seq: 0, is_idr: true, data: old.clone(), codec_config: Some(old.clone()),
+            generation: Arc::new(AtomicBool::new(true)) }).ok().unwrap();
+        // The cache changes after encoding/queueing, before this client runs.
+        let playback = tokio::spawn(StreamServer::stream_packets(writer, rx,
+            Arc::new(Mutex::new(Some(new.clone())))));
+        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, new.to_vec()));
+        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, old.to_vec()),
+            "T227: each frame must follow its own encoder's configuration");
+        let (kind, frame) = t227_read_packet(&mut viewer).await;
+        assert_eq!(kind, PACKET_TYPE_FRAME);
+        assert_eq!(&frame[4..], old.as_ref());
+        drop(tx);
+        playback.await.unwrap().unwrap();
+    }
+
+    async fn t227_retirement_case(new: &'static [u8]) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let mut viewer = TcpStream::connect(listener.local_addr().unwrap()).await.unwrap();
+        let (server, _) = listener.accept().await.unwrap();
+        let (_, socket) = server.into_split();
+        let mut playback = ClientPlayback { socket, last_sent_config: None,
+            last_generation: None, wait_for_idr: true, dropped: 0 };
+        let old = crate::capture::EncoderGeneration::new();
+        let fresh = crate::capture::EncoderGeneration::new();
+        let packet = |seq, is_idr, data: &'static [u8], generation: &crate::capture::EncoderGeneration| VideoPacket {
+            seq, is_idr, data: Bytes::from_static(data), codec_config: Some(Bytes::from_static(data)),
+            generation: generation.active.clone(),
+        };
+        let (tx, mut rx) = broadcast::channel(8);
+        tx.send(packet(0, true, b"h264-1280x800", &old)).ok().unwrap();
+        let first = rx.recv().await.unwrap();
+        let mut delayed = playback.drain_batch(&mut rx, first);
+        drop(old); // restart after drain, while this client was delayed
+        delayed.push(packet(1, false, new, &fresh));
+        delayed.push(packet(2, true, new, &fresh));
+        playback.send_batch(delayed).await.unwrap();
+        drop(playback);
+        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, new.to_vec()));
+        let (kind, frame) = t227_read_packet(&mut viewer).await;
+        assert_eq!(kind, PACKET_TYPE_FRAME);
+        assert_eq!(&frame[..4], &2u32.to_be_bytes());
+        assert_eq!(&frame[4..], new);
+        use tokio::io::AsyncReadExt;
+        assert_eq!(viewer.read(&mut [0]).await.unwrap(), 0, "T227: retired frames escaped");
+    }
+
+    #[tokio::test]
+    async fn t227_retired_batches_are_discarded_across_codec_and_resolution_changes() {
+        t227_retirement_case(b"h264-1920x1080").await;
+        t227_retirement_case(b"hevc-1920x1080").await;
+    }
 
     async fn authenticated_test_server() -> (
         Arc<StreamServer>,
