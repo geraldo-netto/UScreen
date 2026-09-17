@@ -1300,6 +1300,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         effective.max_tablets,
     )?;
 
+    runtime::runtime_dir().context("validate private runtime directory")?;
     let helper_path = find_helper(cli.helper.as_deref())?;
     let pid_path = get_pid_path();
     if let Some(parent) = pid_path.parent() {
@@ -2262,7 +2263,9 @@ async fn adb_monitor(
 }
 
 fn session_ledger() -> Option<runtime::SessionLedger> {
-    match runtime::SessionLedger::new(runtime::runtime_dir().join("sessions.json")) {
+    match runtime::runtime_dir()
+        .and_then(|dir| runtime::SessionLedger::new(dir.join("sessions.json")))
+    {
         Ok(ledger) => Some(ledger),
         Err(error) => {
             warn!("Could not publish tablet sessions: {error}");

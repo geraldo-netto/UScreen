@@ -256,7 +256,16 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     let pid_file = crate::get_pid_path();
     let daemons = uscreen_config::linux::daemon::from_processes(&inventory, Some(&pid_file));
     let tracked = report_daemon(r, &daemons, &pid_file);
-    let fifos = (0..cfg.max_tablets).map(fifo_path_for).collect::<Vec<_>>();
+    let fifos = match (0..cfg.max_tablets)
+        .map(fifo_path_for)
+        .collect::<Result<Vec<_>, _>>()
+    {
+        Ok(fifos) => fifos,
+        Err(error) => {
+            r.line(Level::Fail, "runtime directory", &format!("{error:#}"));
+            return;
+        }
+    };
     let helpers = fifos
         .iter()
         .flat_map(|fifo| capture_pids(&inventory, CaptureRole::Helper, fifo))
@@ -353,7 +362,9 @@ async fn check_tablet(r: &mut Report, cfg: &FileConfig) -> Vec<String> {
         r,
         cfg,
         "adb",
-        crate::runtime::load_sessions(&crate::runtime::runtime_dir().join("sessions.json")),
+        crate::runtime::runtime_dir()
+            .ok()
+            .and_then(|dir| crate::runtime::load_sessions(&dir.join("sessions.json"))),
     )
     .await
 }

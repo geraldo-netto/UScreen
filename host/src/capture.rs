@@ -19,7 +19,7 @@ const RECONNECT_DELAY_MS: u64 = 2000;
 /// Capture FIFO, in the per-user runtime directory. It used to be
 /// /tmp/uscreen_capture.fifo with mode 0666, which let any local account read
 /// the raw frames off it.
-pub fn fifo_path_for(instance: u32) -> PathBuf {
+pub fn fifo_path_for(instance: u32) -> Result<PathBuf> {
     crate::runtime::fifo_path_for(instance)
 }
 
@@ -523,7 +523,7 @@ impl CaptureManager {
 
     async fn start_helper(&mut self) -> Result<()> {
         crate::config::validate_encoder_for_build(&self.config.encoder)?;
-        let fifo = fifo_path_for(self.config.instance);
+        let fifo = fifo_path_for(self.config.instance)?;
         Self::ensure_fifo(&fifo)?;
         Self::retire_orphan_capture(&fifo).await?;
         let mut child = self
@@ -816,7 +816,7 @@ impl CaptureManager {
             "-use_wallclock_as_timestamps".into(),
             "1".into(),
             "-i".into(),
-            fifo_path_for(self.config.instance).into_os_string(),
+            fifo_path_for(self.config.instance)?.into_os_string(),
         ]);
 
         if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
@@ -1226,7 +1226,7 @@ impl CaptureManager {
                 }
                 // Everything the blocking task needs is copied out first:
                 // the closure is 'static and must not borrow self.
-                let fifo = fifo_path_for(self.config.instance);
+                let fifo = fifo_path_for(self.config.instance)?;
                 let (tx2, cc, idr, stopc, lat) = (
                     tx.clone(),
                     self.codec_config.clone(),
@@ -1552,7 +1552,9 @@ impl CaptureManager {
         if let Some(mut child) = self.helper_child.take() {
             Self::terminate(&mut child, "evdi_helper").await;
         }
-        let _ = std::fs::remove_file(fifo_path_for(self.config.instance));
+        if let Ok(fifo) = fifo_path_for(self.config.instance) {
+            let _ = std::fs::remove_file(fifo);
+        }
     }
 
     /// SIGTERM first, then reap. The helper installs a SIGTERM handler and uses
@@ -1657,7 +1659,9 @@ impl SessionChanges {
 impl Drop for CaptureManager {
     fn drop(&mut self) {
         self.stop();
-        let _ = std::fs::remove_file(fifo_path_for(self.config.instance));
+        if let Ok(fifo) = fifo_path_for(self.config.instance) {
+            let _ = std::fs::remove_file(fifo);
+        }
     }
 }
 
@@ -2013,7 +2017,7 @@ mod inproc_tests {
                 "T284: {error:#}"
             );
             assert!(
-                !fifo_path_for(0).exists(),
+                !fifo_path_for(0).unwrap().exists(),
                 "T284: invalid encoder claimed a FIFO"
             );
             assert!(manager.helper_child.is_none());
@@ -2044,7 +2048,7 @@ mod inproc_tests {
             height: 64,
             ..Default::default()
         });
-        let fifo = fifo_path_for(manager.config.instance);
+        let fifo = fifo_path_for(manager.config.instance).unwrap();
         let path = std::path::Path::new(&fifo);
         let cpath = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
         assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
@@ -3500,14 +3504,17 @@ mod native_path_tests {
     }
 
     async fn native_capture_resources() {
-        let expected = crate::runtime::fifo_path_for(0);
-        let path = fifo_path_for(0);
+        let expected = crate::runtime::fifo_path_for(0).unwrap();
+        let path = fifo_path_for(0).unwrap();
         assert_eq!(
             std::path::Path::new(&path),
             expected,
             "T348: lossy runtime FIFO"
         );
-        assert_eq!(crate::runtime::runtime_dir(), expected.parent().unwrap());
+        assert_eq!(
+            crate::runtime::runtime_dir().unwrap(),
+            expected.parent().unwrap()
+        );
         crate::runtime::new_session_token().unwrap();
         assert!(expected.parent().unwrap().join("token").is_file());
         let missing = expected.parent().unwrap().join("missing").join("frames");

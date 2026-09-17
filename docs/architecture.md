@@ -229,7 +229,10 @@ within 0.03° of the clamped wire value; Android's degree protocol is unchanged.
 
 Default authentication, local token storage and loopback binding restrict
 access but do not protect against processes with the same-user/adb privileges.
-Existing runtime-directory validation is incomplete (T252). USB carries the
+Runtime directories are checked for ownership, permissions and a non-symlink
+private final component before returning token/FIFO paths. Errors stop startup
+or capture and are reported by doctor; unsafe existing directories are not
+silently changed or replaced with another runtime location. USB carries the
 stream over the cable; Wi-Fi setup opens the tablet's adb TCP listener and
 carries the stream over that connection. See [SECURITY.md](../SECURITY.md) for
 trust boundaries, update checks and uninstall behavior.

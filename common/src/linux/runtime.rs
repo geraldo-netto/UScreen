@@ -3,52 +3,93 @@
 //! Both used to live in /tmp, world-readable. On a multi-user machine that
 //! meant any local account could open the FIFO and read the raw frames — a
 //! live copy of the screen — or write into it and corrupt the stream. The
-//! directory is intended to be private. Creation requests mode 0700, but
-//! existing paths and creation errors are not validated yet (T252).
+//! directory must be owned by this user and private. Unsafe existing paths
+//! and creation errors are rejected before a token or FIFO path is returned.
 
 use anyhow::{Context, Result};
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::PathBuf;
 
-/// Use an existing XDG_RUNTIME_DIR, then /run/user/<uid>, then HOME/.cache
-/// (/tmp/.cache if HOME is absent), with a uscreen subdirectory. Creation
-/// requests 0700; existing-directory validation remains unresolved (T252).
-pub fn runtime_dir() -> PathBuf {
-    // /run/user/<uid> next: the daemon under systemd and a `doctor` run from
-    // an environment-scrubbed shell (sudo, cron) must agree on the path, or
-    // the orphan check looks for a FIFO that is somewhere else.
-    let base = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .filter(|p| p.is_dir())
-        .or_else(|| {
-            let p = PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() }));
-            p.is_dir().then_some(p)
-        })
-        .unwrap_or_else(|| {
-            let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-            PathBuf::from(home).join(".cache")
-        });
+/// Select the documented base, then require owned, usable directories. A
+/// selected unsafe base/path is an error, never a silent switch to another path.
+pub fn runtime_dir() -> Result<PathBuf> {
+    let uid = unsafe { libc::getuid() };
+    let base = select_runtime_base(
+        std::env::var_os("XDG_RUNTIME_DIR"),
+        PathBuf::from(format!("/run/user/{uid}")),
+        std::env::var_os("HOME"),
+    );
+    create_runtime_directory(&base)?;
+    // HOME/.cache may intentionally be a symlink. Resolve the base once and
+    // validate its actual directory; the final uscreen component must not be a link.
+    let base = std::fs::canonicalize(&base).context("resolve runtime base")?;
+    validate_runtime_directory(&base, uid, false)?;
     let dir = base.join("uscreen");
-    if !dir.is_dir() {
-        let _ = std::fs::DirBuilder::new()
-            .recursive(true)
-            .mode(0o700)
-            .create(&dir);
-    }
-    dir
+    create_runtime_directory(&dir)?;
+    validate_runtime_directory(&dir, uid, true)?;
+    Ok(dir)
+}
+
+fn select_runtime_base(
+    xdg: Option<std::ffi::OsString>,
+    user_runtime: PathBuf,
+    home: Option<std::ffi::OsString>,
+) -> PathBuf {
+    xdg.map(PathBuf::from)
+        .filter(|path| path.is_dir())
+        .or_else(|| user_runtime.is_dir().then_some(user_runtime))
+        .unwrap_or_else(|| PathBuf::from(home.unwrap_or_else(|| "/tmp".into())).join(".cache"))
+}
+
+fn create_runtime_directory(path: &std::path::Path) -> Result<()> {
+    std::fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(path)
+        .with_context(|| format!("create runtime directory {}", path.display()))
+}
+
+fn validate_runtime_directory(path: &std::path::Path, uid: u32, private: bool) -> Result<()> {
+    use std::os::unix::fs::MetadataExt;
+    let directory = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW)
+        .open(path)
+        .with_context(|| {
+            format!(
+                "open runtime directory without following links: {}",
+                path.display()
+            )
+        })?;
+    let metadata = directory.metadata()?;
+    anyhow::ensure!(
+        metadata.uid() == uid,
+        "runtime directory {} belongs to UID {}, expected {uid}",
+        path.display(),
+        metadata.uid()
+    );
+    let forbidden = if private { 0o077 } else { 0o022 };
+    anyhow::ensure!(
+        metadata.mode() & forbidden == 0 && metadata.mode() & 0o700 == 0o700,
+        "unsafe runtime directory permissions {:o}: {}",
+        metadata.mode() & 0o777,
+        path.display()
+    );
+    Ok(())
 }
 
 /// One FIFO per virtual display; the first keeps the old name.
-pub fn fifo_path_for(instance: u32) -> PathBuf {
-    if instance == 0 {
-        runtime_dir().join("capture.fifo")
+pub fn fifo_path_for(instance: u32) -> Result<PathBuf> {
+    let name = if instance == 0 {
+        "capture.fifo".into()
     } else {
-        runtime_dir().join(format!("capture-{}.fifo", instance))
-    }
+        format!("capture-{instance}.fifo")
+    };
+    Ok(runtime_dir()?.join(name))
 }
 
-fn token_path() -> PathBuf {
-    runtime_dir().join("token")
+fn token_path() -> Result<PathBuf> {
+    Ok(runtime_dir()?.join("token"))
 }
 
 /// 64 hex characters from the kernel's RNG. Generated once per daemon run and
@@ -63,7 +104,7 @@ pub fn new_session_token() -> Result<String> {
         .context("read /dev/urandom")?;
     let token: String = raw.iter().map(|b| format!("{:02x}", b)).collect();
 
-    let path = token_path();
+    let path = token_path()?;
     let _ = std::fs::remove_file(&path);
     let mut f = std::fs::OpenOptions::new()
         .write(true)
@@ -95,6 +136,207 @@ pub fn token_matches(expected: &str, presented: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // T252: child processes isolate runtime environment and use only disposable
+    // directories. Existing private files must never be created through unsafe paths.
+    #[test]
+    fn t252_runtime_paths_reject_unsafe_state() {
+        for scenario in [
+            "new",
+            "safe",
+            "0755",
+            "0777",
+            "symlink",
+            "file",
+            "unwritable",
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "linux::runtime::tests::t252_runtime_child",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T252_CASE", scenario)
+                .env("XDG_RUNTIME_DIR", root.path())
+                .env("HOME", root.path())
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "T252 {scenario}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
+
+    #[test]
+    fn t252_runtime_child() {
+        use std::os::unix::fs::PermissionsExt;
+        let Ok(scenario) = std::env::var("USCREEN_T252_CASE") else {
+            return;
+        };
+        let base = PathBuf::from(std::env::var_os("XDG_RUNTIME_DIR").unwrap());
+        let dir = base.join("uscreen");
+        match scenario.as_str() {
+            "safe" | "0755" | "0777" => {
+                std::fs::create_dir(&dir).unwrap();
+                let mode = match scenario.as_str() {
+                    "0755" => 0o755,
+                    "0777" => 0o777,
+                    _ => 0o700,
+                };
+                std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(mode)).unwrap();
+            }
+            "symlink" => {
+                let target = base.join("target");
+                std::fs::create_dir(&target).unwrap();
+                std::os::unix::fs::symlink(target, &dir).unwrap();
+            }
+            "file" => std::fs::write(&dir, "not a directory").unwrap(),
+            "unwritable" => {
+                std::fs::set_permissions(&base, std::fs::Permissions::from_mode(0o500)).unwrap()
+            }
+            _ => {}
+        }
+        let result = new_session_token();
+        let accepted = matches!(scenario.as_str(), "new" | "safe");
+        assert_eq!(
+            result.is_ok(),
+            accepted,
+            "T252 {scenario}: {:?}",
+            result.as_ref().err()
+        );
+        assert_eq!(
+            fifo_path_for(0).is_ok(),
+            accepted,
+            "T252 FIFO path authorization"
+        );
+        if accepted {
+            assert_eq!(
+                std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777,
+                0o700
+            );
+            assert_eq!(
+                std::fs::metadata(dir.join("token"))
+                    .unwrap()
+                    .permissions()
+                    .mode()
+                    & 0o777,
+                0o600
+            );
+        } else {
+            assert!(!dir.join("token").exists());
+            assert!(!base.join("target/token").exists());
+        }
+    }
+
+    #[test]
+    fn t252_directory_owner_must_match_the_calling_user() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let uid = unsafe { libc::getuid() };
+        let error = validate_runtime_directory(root.path(), uid.wrapping_add(1), true).unwrap_err();
+        assert!(error.to_string().contains("belongs to UID"), "{error:#}");
+        validate_runtime_directory(root.path(), uid, true).unwrap();
+    }
+
+    #[test]
+    fn t252_foreign_owner_child() {
+        let Some(root) = std::env::var_os("USCREEN_T252_OWNER_ROOT") else {
+            return;
+        };
+        use std::os::unix::ffi::OsStrExt;
+        let dir = PathBuf::from(root).join("uscreen");
+        create_runtime_directory(&dir).unwrap();
+        let uid = unsafe { libc::getuid() };
+        if uid == 0 {
+            // The isolated CI container can create a genuinely foreign-owned
+            // fixture. No real user/runtime directory is touched.
+            let path = std::ffi::CString::new(dir.as_os_str().as_bytes()).unwrap();
+            assert_eq!(unsafe { libc::chown(path.as_ptr(), 1, 1) }, 0);
+            let error = new_session_token().unwrap_err();
+            assert!(error.to_string().contains("belongs to UID"), "{error:#}");
+            assert!(fifo_path_for(0).is_err());
+        } else {
+            // Unprivileged local runs exercise the same owner validator with
+            // a different caller UID; actual chown is covered in the container.
+            assert!(validate_runtime_directory(&dir, uid.wrapping_add(1), true).is_err());
+        }
+        assert!(!dir.join("token").exists());
+    }
+
+    #[test]
+    fn t252_foreign_owner_cannot_receive_runtime_files() {
+        let root = tempfile::tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "linux::runtime::tests::t252_foreign_owner_child",
+                "--nocapture",
+            ])
+            .env("USCREEN_T252_OWNER_ROOT", root.path())
+            .env("XDG_RUNTIME_DIR", root.path())
+            .env("HOME", root.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T252 foreign owner: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    #[test]
+    fn t252_fallback_selection_preserves_native_home_and_order() {
+        use std::os::unix::ffi::OsStringExt;
+        let root = tempfile::tempdir().unwrap();
+        let xdg = root.path().join("xdg");
+        let user = root.path().join("user");
+        let home = root
+            .path()
+            .join(std::ffi::OsString::from_vec(b"home-\xff".to_vec()));
+        let choose = |xdg: Option<&std::path::Path>| {
+            select_runtime_base(
+                xdg.map(|path| path.as_os_str().to_owned()),
+                user.clone(),
+                Some(home.clone().into_os_string()),
+            )
+        };
+        assert_eq!(choose(None), home.join(".cache"));
+        assert_eq!(choose(Some(&xdg)), home.join(".cache"));
+        std::fs::create_dir(&user).unwrap();
+        assert_eq!(choose(Some(&xdg)), user);
+        std::fs::create_dir(&xdg).unwrap();
+        assert_eq!(choose(Some(&xdg)), xdg);
+        assert_eq!(
+            select_runtime_base(None, root.path().join("absent"), None),
+            PathBuf::from("/tmp/.cache")
+        );
+    }
+
+    #[test]
+    fn t252_base_permissions_and_symlink_policy_are_explicit() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let uid = unsafe { libc::getuid() };
+        for mode in [0o700, 0o755, 0o775, 0o777, 0o500] {
+            std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(mode)).unwrap();
+            assert_eq!(
+                validate_runtime_directory(root.path(), uid, false).is_ok(),
+                matches!(mode, 0o700 | 0o755),
+                "T252 base mode {mode:o}"
+            );
+        }
+        std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let link = root.path().join("link");
+        std::os::unix::fs::symlink(root.path(), &link).unwrap();
+        assert!(validate_runtime_directory(&link, uid, true).is_err());
+        validate_runtime_directory(&std::fs::canonicalize(&link).unwrap(), uid, false).unwrap();
+    }
 
     #[tokio::test]
     async fn t099_session_snapshot_is_private_current_and_removed_on_exit() {
@@ -156,7 +398,7 @@ mod tests {
     #[test]
     fn runtime_dir_is_private() {
         use std::os::unix::fs::PermissionsExt;
-        let dir = runtime_dir();
+        let dir = runtime_dir().unwrap();
         let mode = std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
         // Either we created it 0700, or it is the user's own cache dir.
         assert_eq!(

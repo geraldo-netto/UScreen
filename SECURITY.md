@@ -37,11 +37,17 @@ loads fonts from Google and a social preview from GitHub.
 
 The runtime base is an existing `$XDG_RUNTIME_DIR`, otherwise an existing
 `/run/user/<uid>`, otherwise `$HOME/.cache` (`/tmp/.cache` if HOME is absent).
-UScreen uses a `uscreen` subdirectory. It requests mode 0700 for a newly
-created directory and mode 0600 for the token and capture FIFO.
-**Existing-directory ownership, permissions and symlinks are not validated,
-and directory-creation errors are ignored** (T252). Those modes are intended
-protections, not an unconditional guarantee for every existing setup.
+UScreen uses a `uscreen` subdirectory. Runtime-path selection returns an error
+unless the resolved base belongs to the current UID, has owner read/write/search
+permissions and cannot be written by group/other users. Base symlinks (such as a
+relocated HOME cache) are resolved before validation. The final `uscreen`
+directory is opened with `O_DIRECTORY | O_NOFOLLOW` and must belong to the same
+UID with permission bits 0700. Existing unsafe paths are refused without changing
+their ownership or permissions; a selected unsafe path does not trigger fallback.
+Creation/open/validation errors propagate to startup and capture; doctor reports
+them, and cleanup skips paths it cannot validate. Token and FIFO creation request
+mode 0600 and use only accepted runtime paths. These checks do not protect
+against the same user or root replacing their own directories after validation.
 
 Android disables application backup and explicitly excludes the token-bearing
 `uscreen.xml` preferences from legacy backup, cloud backup and device transfer.

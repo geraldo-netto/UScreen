@@ -117,14 +117,19 @@ fn poll_status() -> Status {
         apply_tablet_status(
             &mut s,
             &String::from_utf8_lossy(&out.stdout),
-            &uscreen_config::runtime::runtime_dir().join("sessions.json"),
+            uscreen_config::runtime::runtime_dir()
+                .ok()
+                .map(|dir| dir.join("sessions.json"))
+                .as_deref(),
         );
     }
     s
 }
 
-fn apply_tablet_status(s: &mut Status, text: &str, sessions_path: &std::path::Path) {
-    let mut sessions = uscreen_config::runtime::load_sessions(sessions_path).unwrap_or_default();
+fn apply_tablet_status(s: &mut Status, text: &str, sessions_path: Option<&std::path::Path>) {
+    let mut sessions = sessions_path
+        .and_then(uscreen_config::runtime::load_sessions)
+        .unwrap_or_default();
     sessions.sort_by_key(|session| session.instance);
     let models: Vec<_> = sessions
         .iter()
@@ -1754,14 +1759,14 @@ esac"#
         );
         std::fs::write(&sessions, snapshot).unwrap();
         let mut status = Status::default();
-        apply_tablet_status(&mut status, devices, &sessions);
+        apply_tablet_status(&mut status, devices, Some(&sessions));
         // Reap before assertions so a failing regression leaves no test process.
         daemon.kill().unwrap();
         daemon.wait().unwrap();
         assert!(status.tablet_connected);
         assert_eq!(status.tablet_model, "WiFi Tablet, Second Tablet");
         let mut stale = Status::default();
-        apply_tablet_status(&mut stale, devices, &sessions);
+        apply_tablet_status(&mut stale, devices, Some(&sessions));
         assert!(
             !stale.tablet_connected,
             "dead daemon ledger cannot claim active tablets"
@@ -1775,7 +1780,7 @@ esac"#
         apply_tablet_status(
             &mut status,
             "List of devices attached\nPHONE device model:Phone\n",
-            &sandbox.0.join("missing.json"),
+            Some(&sandbox.0.join("missing.json")),
         );
         assert!(!status.tablet_connected);
         assert!(status.tablet_model.is_empty());
