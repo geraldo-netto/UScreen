@@ -70,7 +70,7 @@
     {"@type": "Question", "name": "What Android versions are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Android 8.1 and newer, on any tablet with a hardware H.264 decoder."}},
     {"@type": "Question", "name": "Is screen or input data sent to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release on GitHub, which can be turned off."}},
     {"@type": "Question", "name": "How is UScreen different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse."}},
-    {"@type": "Question", "name": "How do I uninstall UScreen completely?", "acceptedAnswer": {"@type": "Answer", "text": "Remove the package or the files in ~/.local/bin, the systemd user unit, and the three system files the installer creates (modprobe.d, modules-load.d, udev rule). The exact commands are in SECURITY.md in the repository."}}
+    {"@type": "Question", "name": "How do I uninstall UScreen completely?", "acceptedAnswer": {"@type": "Answer", "text": "Follow SECURITY.md for your installation method, custom paths and residual system state. Package removal does not necessarily remove dependencies or settings."}}
   ]
 }
 </script>
@@ -331,7 +331,7 @@
     <article><h3>Graphics-tablet mode</h3><p>One tap and nothing is streamed: the pen drives the screen you are already looking at, like a Wacom Intuos, with zero display latency in the loop.</p></article>
     <article><h3>Plug in, that's it</h3><p>The daemon starts with your desktop, watches adb, launches the app on the tablet and sizes the display to its panel. <code>uscreen doctor</code> explains anything that is off.</p></article>
     <article><h3>Hardware all the way</h3><p>NVENC or VAAPI encoding on the host, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. The encoder is under a millisecond; the tablet's decoder is most of the budget.</p></article>
-    <article><h3>Private by construction</h3><p>Loopback-only ports guarded by a per-session token, a private runtime directory, no telemetry, no account. Screen and input use USB or optional local-network ADB transport. The only automatic internet request is an optional version check.</p></article>
+    <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener; existing runtime-directory validation remains a known limitation. See the security guide for trust boundaries.</p></article>
   </div>
 </section>
 
@@ -416,7 +416,7 @@
   <details><summary>Which Android versions?</summary><p>8.1 and newer, on any device with a hardware H.264 decoder.</p></details>
   <details><summary>Is anything sent to the cloud?</summary><p>No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release tag on GitHub, with <code>check_updates = false</code> disabling host checks and the app’s separate switch disabling tablet checks.</p></details>
   <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
-  <details><summary>How do I uninstall it completely?</summary><p>Remove the package or the files in <code>~/.local/bin</code>, the systemd user unit, and the three system files the installer creates. The exact commands are in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
+  <details><summary>How do I uninstall it completely?</summary><p>Follow the instructions for your installation method, custom paths and residual system state in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
 </section>
 
 <section class="provenance" aria-label="Provenance">

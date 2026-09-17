@@ -3,14 +3,16 @@
 //! Both used to live in /tmp, world-readable. On a multi-user machine that
 //! meant any local account could open the FIFO and read the raw frames — a
 //! live copy of the screen — or write into it and corrupt the stream. The
-//! runtime directory is per-user and mode 0700, so neither is possible now.
+//! directory is intended to be private. Creation requests mode 0700, but
+//! existing paths and creation errors are not validated yet (T252).
 
 use anyhow::{Context, Result};
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::PathBuf;
 
-/// `$XDG_RUNTIME_DIR/uscreen`, created 0700. Falls back to `~/.cache/uscreen`
-/// when the session has no runtime dir (a plain SSH login, for instance).
+/// Use an existing XDG_RUNTIME_DIR, then /run/user/<uid>, then HOME/.cache
+/// (/tmp/.cache if HOME is absent), with a uscreen subdirectory. Creation
+/// requests 0700; existing-directory validation remains unresolved (T252).
 pub fn runtime_dir() -> PathBuf {
     // /run/user/<uid> next: the daemon under systemd and a `doctor` run from
     // an environment-scrubbed shell (sudo, cron) must agree on the path, or

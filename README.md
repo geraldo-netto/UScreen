@@ -43,8 +43,9 @@ Ubuntu/Debian, Arch Linux and openSUSE.
   [numbers and the method](docs/benchmarks.md) are published.
 - **Plug in and it works.** The daemon starts with your desktop, finds the
   tablet over adb, launches the app on it and sizes the display to its panel.
-- **Private by construction.** Loopback-only ports guarded by a per-session
-  token, no telemetry, no account. See [SECURITY.md](SECURITY.md).
+- **Local transport.** Loopback-only host ports, session authentication on by
+  default, no application telemetry or account. See the trust boundaries and
+  known limitations in [SECURITY.md](SECURITY.md).
 - **Honest about its edges.** Wi-Fi is a fallback and the stutter is
   [quantified](docs/benchmarks.md#usb-vs-wi-fi-h264-quiet-link); KDE gets the
   full automation. X11 input maps automatically with `xinput` and `xrandr`;
@@ -158,7 +159,9 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   touchscreen device can hide the mouse cursor).
 - **Wi-Fi** — `uscreen wifi` once, with the cable in: it switches the tablet
   over, remembers the address and reconnects to it by itself whenever the
-  cable is out. `uscreen wifi --off` undoes it. The daemon prefers the cable
+  cable is out. `uscreen wifi --off` forgets the address and disconnects; it
+  does not disable the tablet's network adb listener. See [SECURITY.md](SECURITY.md).
+  The daemon prefers the cable
   when both are there, and the stutter is [quantified](docs/benchmarks.md).
 - **Updates** — the app, the GUI and the tray tell you when a newer release
   exists; nothing installs itself. `check_updates = false` disables host checks;
@@ -191,7 +194,7 @@ internet request is an optional version check against GitHub
 (`check_updates = false` turns it off; the app has a switch of its own).
 
 **How do I uninstall it completely?** [SECURITY.md](SECURITY.md#how-to-uninstall-completely)
-lists every file.
+describes application files, custom paths and remaining system state.
 
 More in [docs/faq.md](docs/faq.md).
 

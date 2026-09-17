@@ -36,9 +36,11 @@ Yes, as a fallback. Run `uscreen wifi` once with the cable plugged in: it puts
 the tablet's adb on the network, remembers the address, and from then on the
 daemon reconnects on its own whenever the cable is out. The tablet goes back
 to USB-only when it reboots, so that one command has to be repeated after a
-tablet restart. `uscreen wifi --off` forgets it. Nothing new is exposed on
-your network by UScreen itself: the video and input ports stay on loopback,
-reached through the tunnel adb builds.
+tablet restart. `uscreen wifi --off` forgets the address and disconnects; it
+does not close the tablet's adb TCP listener. Host video/input ports stay on
+loopback, but `uscreen wifi` opens tablet port 5555. Use a trusted network;
+see [SECURITY.md](../SECURITY.md#connections-and-trust-boundaries) for returning
+adbd to USB mode.
 
 **Does UScreen support Samsung S Pen pressure and tilt?**
 Yes: pressure, tilt, the eraser end and the stylus button are all forwarded
@@ -92,5 +94,6 @@ Yes, `max_tablets` up to 4; each becomes its own screen. Verified with one
 real tablet plus a loopback stand-in — reports with two real ones welcome.
 
 **How do I uninstall UScreen completely?**
-The exact commands, including the system files the installer creates, are in
+Instructions for package and source installs, custom paths and residual
+system state are in
 [SECURITY.md](../SECURITY.md#how-to-uninstall-completely).

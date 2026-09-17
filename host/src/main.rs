@@ -2544,9 +2544,9 @@ impl WifiReconnect {
 /// can pick it up over Wi-Fi on its own from then on.
 ///
 /// This is deliberately the adb route rather than a port of our own. The
-/// video and input ports stay on loopback, reachable only through the tunnel
-/// adb builds, so nothing new is exposed to the network and the tablet still
-/// has to be a device this computer is authorised to talk to.
+/// host video and input ports stay on loopback. adb tcpip opens the tablet
+/// listener on port 5555; an authorized adb connection carries the tunnel.
+/// --off forgets/disconnects that address but does not disable the listener.
 async fn setup_wifi(off: bool) -> Result<()> {
     let cfg = config::FileConfig::load();
 
