@@ -220,7 +220,6 @@ pub fn run(
     );
 
     let mut buf = vec![0u8; frame_size];
-    let mut seq: u32 = 0;
 
     while !stop.load(Ordering::Relaxed) {
         match read_frame(&mut fifo, &mut buf, &stop) {
@@ -234,11 +233,11 @@ pub fn run(
             if is_idr {
                 refresh_codec_config(&data, encoder_name, &codec_config);
             }
+            let seq = latency.next_sequence();
             if tx.receiver_count() > 0 {
                 latency.on_encoded(seq);
                 let _ = tx.send(crate::capture::VideoPacket { data, is_idr, seq });
             }
-            seq = seq.wrapping_add(1);
         }
         latency.maybe_report();
     }
@@ -264,6 +263,37 @@ fn refresh_codec_config(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+
+    fn t228_encode_one(latency: crate::latency::LatencyTracker) -> u32 {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let fifo = dir.path().join("frames");
+        let path = std::ffi::CString::new(fifo.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
+        let (tx, mut rx) = tokio::sync::broadcast::channel(8);
+        let stop = Arc::new(AtomicBool::new(false));
+        let stopped = stop.clone();
+        let writer_path = fifo.clone();
+        let task = std::thread::spawn(move || run(fifo.to_str().unwrap(), "libx264", 64, 64, 60, 500, 20,
+            tx, Arc::new(Mutex::new(None)), Arc::new(AtomicBool::new(false)), stopped, latency));
+        let mut writer = std::fs::OpenOptions::new().write(true).open(writer_path).unwrap();
+        writer.write_all(&vec![128; 64 * 64 * 3 / 2]).unwrap();
+        let packet = rx.blocking_recv().unwrap();
+        stop.store(true, Ordering::SeqCst);
+        task.join().unwrap().unwrap();
+        packet.seq
+    }
+
+    #[test]
+    fn t228_inproc_sequences_survive_restart() {
+        let latency = crate::latency::LatencyTracker::new();
+        let old = t228_encode_one(latency.clone());
+        let fresh = t228_encode_one(latency.clone());
+        assert_ne!(old, fresh, "T228: old and fresh frames cannot share an ACK identifier");
+        latency.on_rendered(fresh, 0);
+        latency.on_rendered(old, 0);
+    }
 
     #[test]
     fn t119_libx264_respects_vbv_ceiling_on_complex_frames() {

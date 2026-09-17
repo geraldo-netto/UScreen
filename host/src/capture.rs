@@ -104,7 +104,7 @@ const NAL_TYPE_PPS: u8 = 8;
 pub struct VideoPacket {
     pub data: Bytes,
     pub is_idr: bool,
-    /// Monotonically increasing per encoder run. Echoed back by the tablet once
+    /// Allocated across encoder restarts in this daemon instance. Echoed back by the tablet once
     /// the frame is on screen, measuring packet-send-to-render-ack latency.
     pub seq: u32,
 }
@@ -1417,7 +1417,7 @@ impl CaptureManager {
         let mut total: u64 = 0;
         let mut frames: u64 = 0;
         let mut last_log = Instant::now();
-        let mut packetizer = H264AnnexBPacketizer::new(codec);
+        let mut packetizer = H264AnnexBPacketizer::new(codec, latency.clone());
         let mut config_extracted = codec_config.lock().ok().and_then(|g| g.clone()).is_some();
 
         loop {
@@ -1429,6 +1429,7 @@ impl CaptureManager {
             if n == 0 {
                 for data in packetizer.finish() {
                     if tx.receiver_count() > 0 {
+                        latency.on_encoded(data.seq);
                         let _ = tx.send(data);
                     }
                 }
@@ -1634,13 +1635,13 @@ struct H264AnnexBPacketizer {
     pending_has_idr: bool,
     config: Vec<u8>,
     parameter_sets: std::collections::BTreeMap<u8, Vec<u8>>,
-    next_seq: u32,
+    sequences: crate::latency::LatencyTracker,
     codec: Codec,
 }
 
 #[cfg(not(feature = "inproc-encoder"))]
 impl H264AnnexBPacketizer {
-    fn new(codec: Codec) -> Self {
+    fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
         Self {
             buffer: Vec::new(),
             pending_access_unit: Vec::new(),
@@ -1648,7 +1649,7 @@ impl H264AnnexBPacketizer {
             pending_has_idr: false,
             config: Vec::new(),
             parameter_sets: std::collections::BTreeMap::new(),
-            next_seq: 0,
+            sequences,
             codec,
         }
     }
@@ -1870,8 +1871,7 @@ impl H264AnnexBPacketizer {
         } else {
             Bytes::from(au_data)
         };
-        let seq = self.next_seq;
-        self.next_seq = self.next_seq.wrapping_add(1);
+        let seq = self.sequences.next_sequence();
         Some(VideoPacket {
             data,
             is_idr: was_idr,
@@ -1934,6 +1934,25 @@ impl<'a> ExpGolombReader<'a> {
 mod tests {
     use super::*;
 
+    #[tokio::test]
+    async fn t228_sequences_survive_encoder_restarts_before_ack() {
+        let latency = crate::latency::LatencyTracker::new();
+        let (tx, mut rx) = broadcast::channel(8);
+        let input = [nal(NAL_TYPE_IDR, &[0x80, 0x11]),
+            nal(NAL_TYPE_NON_IDR, &[0x80, 0x22])].concat();
+        let mut sequences = Vec::new();
+        for _ in 0..2 {
+            CaptureManager::read_loop(input.as_slice(), tx.clone(),
+                Arc::new(Mutex::new(None)), latency.clone(), Codec::H264).await.unwrap();
+            sequences.push(rx.recv().await.unwrap().seq);
+            sequences.push(rx.recv().await.unwrap().seq);
+        }
+        assert_eq!(sequences, vec![0, 1, 2, 3], "T228: restarted encoders must not reuse pending ACK identifiers");
+        latency.on_rendered(sequences[2], 0);
+        latency.on_rendered(sequences[0], 0); // delayed ACK from retired encoder
+        latency.on_rendered(sequences[3], 0);
+    }
+
     #[test]
     fn t080_next_picture_header_releases_complete_previous_picture() {
         for (codec, first, continuation, next, header_len) in [
@@ -1952,7 +1971,7 @@ mod tests {
                 6,
             ),
         ] {
-            let mut p = H264AnnexBPacketizer::new(codec);
+            let mut p = H264AnnexBPacketizer::new(codec, Default::default());
             for byte in first.iter().chain(&continuation) {
                 assert!(
                     p.push(&[*byte]).is_empty(),
@@ -2000,7 +2019,7 @@ mod tests {
                 ],
             ),
         ] {
-            let mut packetizer = H264AnnexBPacketizer::new(codec);
+            let mut packetizer = H264AnnexBPacketizer::new(codec, Default::default());
             let mut packets = Vec::new();
             for set in &sets {
                 packetizer.process_nal(set, &mut packets);
@@ -2229,7 +2248,7 @@ mod tests {
         started: Instant,
     ) -> Vec<(std::time::Duration, Bytes)> {
         use tokio::io::AsyncReadExt;
-        let mut parser = H264AnnexBPacketizer::new(Codec::H264);
+        let mut parser = H264AnnexBPacketizer::new(Codec::H264, Default::default());
         let mut keyframes = Vec::new();
         let mut buffer = [0; 16384];
         loop {
@@ -2489,7 +2508,7 @@ mod tests {
     fn hevc_parameter_sets_and_keyframes_are_recognised() {
         // A NAL is only parsed once the next start code proves it complete,
         // so anything pushed last stays buffered until finish().
-        let mut incomplete = H264AnnexBPacketizer::new(Codec::Hevc);
+        let mut incomplete = H264AnnexBPacketizer::new(Codec::Hevc, Default::default());
         incomplete.push(&hevc_nal(HEVC_NAL_VPS, &[1, 2]));
         incomplete.push(&hevc_nal(HEVC_NAL_SPS, &[3, 4]));
         incomplete.finish();
@@ -2498,7 +2517,7 @@ mod tests {
             "config is not complete without a PPS"
         );
 
-        let mut p = H264AnnexBPacketizer::new(Codec::Hevc);
+        let mut p = H264AnnexBPacketizer::new(Codec::Hevc, Default::default());
         let mut data = Vec::new();
         // VPS, SPS and PPS all belong to the decoder configuration.
         data.extend_from_slice(&hevc_nal(HEVC_NAL_VPS, &[1, 2]));
@@ -2517,7 +2536,7 @@ mod tests {
         // A decoder may start at any IRAP picture, not only an IDR. Treating
         // CRA as an ordinary frame would leave a joining client waiting for a
         // keyframe the encoder never sends.
-        let mut p = H264AnnexBPacketizer::new(Codec::Hevc);
+        let mut p = H264AnnexBPacketizer::new(Codec::Hevc, Default::default());
         p.push(&hevc_slice(21, true)); // CRA_NUT
         let out = p.finish();
         assert_eq!(out.len(), 1);
@@ -2526,7 +2545,7 @@ mod tests {
 
     #[test]
     fn hevc_splits_pictures_on_the_first_slice_flag() {
-        let mut p = H264AnnexBPacketizer::new(Codec::Hevc);
+        let mut p = H264AnnexBPacketizer::new(Codec::Hevc, Default::default());
         let mut data = Vec::new();
         data.extend_from_slice(&hevc_slice(1, true)); // picture 1 starts
         data.extend_from_slice(&hevc_slice(1, false)); // ...continues
@@ -2582,7 +2601,7 @@ mod tests {
 
     #[test]
     fn packetizer_handles_start_code_split_across_reads() {
-        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264);
+        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264, Default::default());
         assert!(packetizer.push(&[0, 0]).is_empty());
         assert!(packetizer.push(&[0, 1, NAL_TYPE_IDR, 0x80]).is_empty());
 
@@ -2594,7 +2613,7 @@ mod tests {
 
     #[test]
     fn packetizer_splits_multiple_access_units_in_one_buffer() {
-        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264);
+        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264, Default::default());
         let mut data = nal(NAL_TYPE_AUD, &[0x10]);
         data.extend_from_slice(&nal(NAL_TYPE_IDR, &[0x80]));
         data.extend_from_slice(&nal(NAL_TYPE_AUD, &[0x10]));
@@ -2644,7 +2663,7 @@ mod tests {
 
     #[test]
     fn packetizer_prepends_sps_pps_to_idr() {
-        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264);
+        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264, Default::default());
         let mut data = nal(NAL_TYPE_SPS, &[0x64, 0x00]);
         data.extend_from_slice(&nal(NAL_TYPE_PPS, &[0xac]));
         data.extend_from_slice(&nal(NAL_TYPE_IDR, &[0x80]));
@@ -2704,7 +2723,7 @@ mod tests {
 
     #[test]
     fn packetizer_does_not_emit_partial_nals() {
-        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264);
+        let mut packetizer = H264AnnexBPacketizer::new(Codec::H264, Default::default());
         let first = nal(NAL_TYPE_IDR, &[0x80, 0x11, 0x22]);
 
         assert!(packetizer.push(&first[..4]).is_empty());

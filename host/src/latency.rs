@@ -10,7 +10,7 @@
 //! their percentiles cannot be summed into total display latency.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, atomic::{AtomicU32, Ordering}};
 use std::time::Instant;
 use tracing::info;
 
@@ -41,11 +41,17 @@ struct Inner {
 #[derive(Clone, Default)]
 pub struct LatencyTracker {
     inner: Arc<Mutex<Inner>>,
+    next_sequence: Arc<AtomicU32>,
 }
 
 impl LatencyTracker {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Shared by every encoder generation in this daemon instance.
+    pub fn next_sequence(&self) -> u32 {
+        self.next_sequence.fetch_add(1, Ordering::Relaxed)
     }
 
     /// A complete encoded access unit is ready for broadcast.
@@ -137,5 +143,30 @@ impl LatencyTracker {
                 (total_p50 - decode_p50).max(0.0)
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t228_retired_ack_cannot_consume_new_generation() {
+        let tracker = LatencyTracker::new();
+        let old = tracker.next_sequence();
+        tracker.on_encoded(old);
+        tracker.inner.lock().unwrap().sent[0].1 -= std::time::Duration::from_secs(2);
+        let restarted = tracker.clone();
+        let fresh = restarted.next_sequence();
+        restarted.on_encoded(fresh);
+        tracker.on_rendered(old, 0);
+        assert_eq!(tracker.inner.lock().unwrap().sent[0].0, fresh);
+        tracker.on_rendered(fresh, 0);
+        tracker.on_rendered(old, 0);
+        let state = tracker.inner.lock().unwrap();
+        assert!(state.sent.is_empty());
+        assert_eq!(state.samples.len(), 2);
+        assert!(state.samples[0] >= 2_000_000);
+        assert!(state.samples[1] < 1_000_000);
     }
 }
