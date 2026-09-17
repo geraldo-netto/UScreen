@@ -1,7 +1,7 @@
 # Changelog
 
 Full notes for each version are on the
-[releases page](https://github.com/majmichu1/UScreen/releases).
+[releases page](https://github.com/geraldo-netto/UScreen/releases).
 
 ## Unreleased
 

@@ -14,8 +14,8 @@ use tokio::sync::watch;
 use tracing::{debug, info};
 use uscreen_config::commands::AsyncCommandExt;
 
-const RELEASES_API: &str = "https://api.github.com/repos/majmichu1/UScreen/releases/latest";
-pub const RELEASES_PAGE: &str = "https://github.com/majmichu1/UScreen/releases/latest";
+const RELEASES_API: &str = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest";
+pub const RELEASES_PAGE: &str = "https://github.com/geraldo-netto/UScreen/releases/latest";
 
 /// Delay before the first check, so startup is not spent waiting on the
 /// network, and the interval between checks after that.

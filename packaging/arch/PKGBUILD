@@ -4,13 +4,13 @@ pkgver=1.2.3
 pkgrel=1
 pkgdesc="Use an Android tablet as a USB second display and graphics tablet (KDE Wayland)"
 arch=('x86_64')
-url="https://github.com/majmichu1/UScreen"
+url="https://github.com/geraldo-netto/UScreen"
 license=('MIT' 'LGPL-2.1-or-later')
 depends=('evdi-dkms' 'ffmpeg' 'android-tools')
 makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
 install=uscreen.install
 _evdi=v1.15.0
-source=("$pkgname-$pkgver.tar.gz::https://github.com/majmichu1/UScreen/archive/refs/tags/v$pkgver.tar.gz"
+source=("$pkgname-$pkgver.tar.gz::https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz"
         "evdi-$_evdi.tar.gz::https://github.com/DisplayLink/evdi/archive/refs/tags/$_evdi.tar.gz")
 sha256sums=('SKIP' 'SKIP')
 

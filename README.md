@@ -5,6 +5,10 @@ Android 8.1+ tablet into a real extended USB display and a pressure-sensitive
 graphics tablet, with touch, S Pen pressure, tilt, eraser and stylus-button
 support.
 
+This fork is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
+based on the [upstream project](https://github.com/majmichu1/UScreen) by majmichu1.
+Historical benchmarks and linked compatibility reports describe upstream releases.
+
 UScreen uses a direct ADB-over-USB connection — no Wi-Fi, USB tethering,
 dummy HDMI plug or cloud account required. Screen and input data travel
 between your computer and tablet over USB, or over your local network when
@@ -14,12 +18,12 @@ Tested on Bazzite (KDE Plasma, Wayland, NVIDIA) with a Samsung Galaxy Tab S9
 Ultra. Packages and installation instructions cover Bazzite, Fedora,
 Ubuntu/Debian, Arch Linux and openSUSE.
 
-[**Download the latest release**](https://github.com/majmichu1/UScreen/releases/latest)
+[**Download the latest release**](https://github.com/geraldo-netto/UScreen/releases/latest)
 · [Install](#quick-install)
 · [Compatibility](docs/compatibility.md)
 · [Benchmarks](docs/benchmarks.md)
 · [FAQ](#faq)
-· [Website](https://majmichu1.github.io/UScreen/)
+· [Website source](docs/index.html)
 
 ## Why UScreen?
 
@@ -46,7 +50,7 @@ Ubuntu/Debian, Arch Linux and openSUSE.
 ## Quick install
 
 **1. Linux side** — pick the file for your distribution from the
-[latest release](https://github.com/majmichu1/UScreen/releases/latest):
+[latest release](https://github.com/geraldo-netto/UScreen/releases/latest):
 
 | file | distribution |
 | --- | --- |
@@ -69,7 +73,7 @@ tablet shows up as a monitor. `uscreen doctor` diagnoses anything that is off.
 Update both halves together: since 1.1.0 they share a session token.
 
 If UScreen replaced a second monitor for you, a star on the repo and a
-[compatibility report](https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml)
+[compatibility report](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml)
 help the next Linux user find it.
 
 ## Verified compatibility
@@ -231,7 +235,7 @@ the list; it is not next.
 Compatibility reports are the most useful thing right now; see
 [CONTRIBUTING.md](CONTRIBUTING.md). Issues tagged `good first issue` are
 self-contained. Questions go to
-[Discussions](https://github.com/majmichu1/UScreen/discussions).
+[Discussions](https://github.com/geraldo-netto/UScreen/discussions).
 
 ## License
 

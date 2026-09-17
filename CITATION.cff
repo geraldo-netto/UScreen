@@ -4,8 +4,8 @@ title: "UScreen for Linux"
 abstract: "Open-source SuperDisplay alternative for Linux: an Android tablet as a USB second monitor and graphics tablet with S Pen pressure and tilt."
 authors:
   - name: "majmichu1"
-repository-code: "https://github.com/majmichu1/UScreen"
-url: "https://majmichu1.github.io/UScreen/"
+repository-code: "https://github.com/geraldo-netto/UScreen"
+url: "https://github.com/geraldo-netto/UScreen"
 license: MIT
 version: "1.2.3"
 date-released: "2026-09-15"

@@ -90,4 +90,4 @@ number is not meaningful.
 ## Getting more help
 
 Open an issue with the output of `uscreen doctor` and the daemon log, or ask in
-[Discussions](https://github.com/majmichu1/UScreen/discussions).
+[Discussions](https://github.com/geraldo-netto/UScreen/discussions).

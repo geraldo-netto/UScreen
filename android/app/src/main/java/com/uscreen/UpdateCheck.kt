@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
  */
 object UpdateCheck {
     private const val TAG = "UScreenUpdate"
-    const val RELEASES_PAGE = "https://github.com/majmichu1/UScreen/releases/latest"
-    private const val API = "https://api.github.com/repos/majmichu1/UScreen/releases/latest"
+    const val RELEASES_PAGE = "https://github.com/geraldo-netto/UScreen/releases/latest"
+    private const val API = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)

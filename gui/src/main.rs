@@ -319,8 +319,8 @@ enum Tab {
     General,
 }
 
-const RELEASES_API: &str = "https://api.github.com/repos/majmichu1/UScreen/releases/latest";
-const RELEASES_PAGE: &str = "https://github.com/majmichu1/UScreen/releases/latest";
+const RELEASES_API: &str = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest";
+const RELEASES_PAGE: &str = "https://github.com/geraldo-netto/UScreen/releases/latest";
 
 fn os_release_name() -> String {
     std::fs::read_to_string("/etc/os-release")
@@ -575,12 +575,12 @@ impl App {
                     "Result: \n\nDistribution and desktop: {}\nGPU and encoder: {}\nTablet, Android, stylus: {}\nUScreen version: {}\n\nLatency line from the log (optional):\n\nNotes:\n",
                     os_release_name(), self.cfg.encoder, status.tablet_model, env!("CARGO_PKG_VERSION"));
                 let url = format!(
-                    "https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
+                    "https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
                     urlencode("Compatibility: "), urlencode(&body));
                 let _ = spawn_reaped(Command::new("xdg-open").arg(url));
             }
             if ui.small_button("Star on GitHub").clicked() {
-                let _ = spawn_reaped(Command::new("xdg-open").arg("https://github.com/majmichu1/UScreen"));
+                let _ = spawn_reaped(Command::new("xdg-open").arg("https://github.com/geraldo-netto/UScreen"));
             }
         });
         if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {

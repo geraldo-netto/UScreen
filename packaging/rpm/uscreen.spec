@@ -3,7 +3,7 @@ Version:        1.1.0
 Release:        1%{?dist}
 Summary:        Android tablet as a USB second display and graphics tablet
 License:        MIT AND LGPL-2.1-or-later
-URL:            https://github.com/majmichu1/UScreen
+URL:            https://github.com/geraldo-netto/UScreen
 Source0:        uscreen-%{version}-linux-x86_64.tar.gz
 BuildArch:      x86_64
 Requires:       ffmpeg android-tools

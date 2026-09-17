@@ -1,6 +1,7 @@
 """Offline release regressions; never contact a remote service."""
 from pathlib import Path
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -133,6 +134,44 @@ class ReleaseTest(unittest.TestCase):
         import json
         self.assertGreaterEqual(len(requests), 7)
         self.assertTrue(all(json.loads(line)['authorized'] for line in requests))
+
+    def test_t225_publisher_routes_every_request_to_fork(self):
+        import json
+        from urllib.parse import urlsplit
+        self.enable_uploads()
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        requests = (self.base / 'requests').read_text().splitlines()
+        self.assertGreaterEqual(len(requests), 9)
+        for line in requests:
+            url = urlsplit(json.loads(line)['url'])
+            self.assertIn(url.netloc, ['api.github.com', 'uploads.github.com'])
+            self.assertTrue(url.path.startswith('/repos/geraldo-netto/UScreen/releases'), url.geturl())
+        self.assertIn('https://github.com/geraldo-netto/UScreen/releases/tag/v1.2.3', result.stdout)
+
+    def test_t225_active_project_links_target_fork(self):
+        files = [
+            'README.md', 'CHANGELOG.md', 'CITATION.cff', 'host/src/update.rs',
+            'gui/src/main.rs', 'scripts/uscreen.service', 'scripts/publish-release.sh',
+            'packaging/arch/PKGBUILD', 'packaging/deb/control', 'packaging/rpm/uscreen.spec',
+            'android/app/src/main/java/com/uscreen/UpdateCheck.kt',
+            'android/app/src/main/java/com/uscreen/MainActivity.kt',
+        ]
+        files.extend(str(path.relative_to(REPO)) for path in (REPO / 'docs').iterdir() if path.is_file())
+        # Numbered upstream reports and explicit provenance remain valid citations.
+        historical = r'https://github\.com/majmichu1/UScreen/(?:issues|discussions)/\d+[^\s)"<>]*'
+        for name in files:
+            with self.subTest(file=name):
+                text = re.sub(historical, '', (REPO / name).read_text())
+                text = text.replace('[upstream project](https://github.com/majmichu1/UScreen)', '')
+                self.assertNotIn('majmichu1/UScreen', text)
+                self.assertNotIn('majmichu1.github.io/UScreen', text)
+        for name in ['host/src/update.rs', 'gui/src/main.rs',
+                     'android/app/src/main/java/com/uscreen/UpdateCheck.kt']:
+            self.assertIn('https://api.github.com/repos/geraldo-netto/UScreen/releases/latest',
+                          (REPO / name).read_text())
+        self.assertIn('https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz',
+                      (REPO / 'packaging/arch/PKGBUILD').read_text())
 
     def test_t100_newer_head_rejected(self):
         self.write('new-source', 'new')

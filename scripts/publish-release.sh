@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
-REPO="majmichu1/UScreen"
+REPO="geraldo-netto/UScreen"
 # The date that goes on the website and in CITATION.cff. Today unless the
 # release was dated in advance.
 RELEASE_DATE="${RELEASE_DATE:-$(date +%F)}"

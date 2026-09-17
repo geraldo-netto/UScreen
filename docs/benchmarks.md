@@ -117,5 +117,5 @@ on the roadmap.
 - No measurement yet of AMD/Intel VAAPI encoders or of libx264.
 
 Reports with other hardware are welcome as
-[compatibility issues](https://github.com/majmichu1/UScreen/issues/new?template=compatibility.yml);
+[compatibility issues](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml);
 the daemon's `Latency encode→display` log line is all it takes.

@@ -6,7 +6,7 @@ Architecture: amd64
 Depends: ffmpeg, adb | android-tools-adb, libdrm2
 Recommends: evdi-dkms
 Maintainer: majmichu1 <157926347+majmichu1@users.noreply.github.com>
-Homepage: https://github.com/majmichu1/UScreen
+Homepage: https://github.com/geraldo-netto/UScreen
 Description: Android tablet as a USB second display and graphics tablet
  Turns an Android tablet into a low-latency second monitor for a KDE Wayland
  desktop over USB, with touch and stylus (pressure, tilt, eraser) forwarded

@@ -1,7 +1,7 @@
 # Installing UScreen for Linux
 
 Two halves: the Linux side (daemon, GUI, tray) and the Android app. They ship
-together in every [release](https://github.com/majmichu1/UScreen/releases/latest)
+together in every [release](https://github.com/geraldo-netto/UScreen/releases/latest)
 and must be updated together — the session token between them needs both.
 
 ## Linux side: pick your file

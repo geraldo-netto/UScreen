@@ -637,7 +637,7 @@ private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> U
                     Text("Open GitHub", fontSize = 13.sp, color = Accent,
                         modifier = Modifier.clickable {
                             context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse("https://github.com/majmichu1/UScreen")))
+                                android.net.Uri.parse("https://github.com/geraldo-netto/UScreen")))
                             onDismissThanks()
                         }.padding(end = 20.dp))
                     Text("Dismiss", fontSize = 13.sp, color = Color(0xFF9A9AB0),

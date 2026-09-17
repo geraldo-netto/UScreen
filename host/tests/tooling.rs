@@ -430,6 +430,11 @@ fn t117_release_stays_draft_until_all_assets_are_verified() {
 }
 
 #[test]
+fn t225_project_links_and_release_requests_target_fork() {
+    release_tests("t225");
+}
+
+#[test]
 fn t101_package_failures_cannot_reuse_old_assets() {
     let output = Command::new("python3")
         .arg(repo().join("scripts/tests/test_packages.py"))

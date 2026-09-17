@@ -1,7 +1,7 @@
 # Compatibility
 
 What UScreen has actually been run on. Rows come from the maintainer and from
-[compatibility reports](https://github.com/majmichu1/UScreen/issues?q=label%3Acompatibility);
+[compatibility reports](https://github.com/geraldo-netto/UScreen/issues?q=label%3Acompatibility);
 please add yours.
 
 ## Host
