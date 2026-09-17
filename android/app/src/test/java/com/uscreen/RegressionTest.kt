@@ -23,6 +23,36 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t303_platformPalmCannotBecomeAFingerContact() {
+        // AOSP's hidden MotionEvent.TOOL_TYPE_PALM is 5, not an SDK API.
+        val capture = TouchCapture()
+        val socket = Socket()
+        set(capture, "webSocket", socket)
+        set(capture, "isConnected", true)
+        try {
+            for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP)) {
+                val motion = event(5, action)
+                try { capture.handleMotionEvent(motion, 100, 100) }
+                finally { motion.recycle() }
+            }
+            assertTrue("T303: palm produced host input: ${socket.messages}", socket.messages.isEmpty())
+            for (tool in listOf(MotionEvent.TOOL_TYPE_FINGER, MotionEvent.TOOL_TYPE_STYLUS,
+                                MotionEvent.TOOL_TYPE_ERASER, MotionEvent.TOOL_TYPE_MOUSE)) {
+                socket.messages.clear()
+                for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+                    val motion = event(tool, action)
+                    try { capture.handleMotionEvent(motion, 100, 100) }
+                    finally { motion.recycle() }
+                }
+                val messages = socket.messages.map { org.json.JSONObject(it) }
+                assertEquals("T303: standard tool $tool lost contact events", listOf(0, 1),
+                    messages.map { it.getInt("action") })
+                val type = if (tool in listOf(MotionEvent.TOOL_TYPE_STYLUS, MotionEvent.TOOL_TYPE_ERASER)) "pen" else "touch"
+                assertEquals(listOf(type, type), messages.map { it.getString("type") })
+            }
+        } finally { capture.disconnect() }
+    }
+
     @Test fun t282_concurrentControlMessagesFollowAuthentication() {
         assertAuthFirst("config") { it.sendConfig(2000, 30) }
         assertAuthFirst("mode") { it.sendMode(true) }

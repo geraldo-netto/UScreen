@@ -17,7 +17,7 @@ class TouchCapture {
     companion object {
         const val TAG = "UScreenTouch"
         const val WS_URL = "ws://127.0.0.1:8891"
-        private const val TOOL_TYPE_PALM = 6
+        private const val TOOL_TYPE_PALM = 5
         const val RECONNECT_DELAY_MS = 2000L
     }
 
@@ -322,7 +322,7 @@ class TouchCapture {
     }
 
     private fun sendContact(event: MotionEvent, index: Int, action: Int, vw: Float, vh: Float) {
-        // Samsung marks unintended palm-rest contacts separately. Never forward them.
+        // Reject a platform palm marker if one reaches the app.
         if (isPalm(event, index)) return
         if (isPenLike(event, index)) {
             sendPenEvent(event, index, action, vw, vh)
@@ -590,10 +590,10 @@ class TouchCapture {
     }
 
     /**
-     * MotionEvent.TOOL_TYPE_PALM exists from API 29. The value is stable
-     * (6) and older devices simply never report it, so comparing against the
-     * number is correct everywhere; the annotation only tells lint that the
-     * comparison is deliberate.
+     * AOSP defines the hidden MotionEvent.TOOL_TYPE_PALM as 5. Keep the
+     * numeric value because it is outside the public SDK. Android normally
+     * filters palms before delivery; this also rejects any that reach us.
+     * T303: frameworks/base/core/java/android/view/MotionEvent.java.
      */
     @android.annotation.SuppressLint("WrongConstant")
     private fun isPalm(event: MotionEvent, index: Int): Boolean =
