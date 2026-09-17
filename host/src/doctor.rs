@@ -8,7 +8,7 @@
 //! restarting the daemon fixes it until they are killed.
 
 use crate::capture::fifo_path_for;
-use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS};
+use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS, MIN_BITRATE_KBPS, MIN_FPS};
 use crate::vdisplay;
 use anyhow::Result;
 use std::path::Path;
@@ -1111,14 +1111,14 @@ fn report_input_dependencies(r: &mut Report, cfg: &FileConfig) {
 
 fn report_configured_bitrate(r: &mut Report, cfg: &FileConfig, on_disk: Option<&FileConfig>) {
     let raw_bitrate = on_disk.map(|c| c.bitrate).unwrap_or(cfg.bitrate);
-    if raw_bitrate > MAX_BITRATE_KBPS {
+    if !(MIN_BITRATE_KBPS..=MAX_BITRATE_KBPS).contains(&raw_bitrate) {
         r.line(
             Level::Warn,
             "bitrate on disk",
             &format!(
                 "{} Mbps — clamped to {} Mbps at runtime",
-                raw_bitrate / 1000,
-                cfg.bitrate / 1000
+                raw_bitrate as f64 / 1000.0,
+                cfg.bitrate as f64 / 1000.0
             ),
         );
         r.hint("rewrite it via uscreen-gui (or the tablet settings) to make the file agree");
@@ -1133,13 +1133,19 @@ fn report_configured_bitrate(r: &mut Report, cfg: &FileConfig, on_disk: Option<&
 
 fn report_configured_fps(r: &mut Report, cfg: &FileConfig, on_disk: Option<&FileConfig>) {
     let raw_fps = on_disk.map(|c| c.fps).unwrap_or(cfg.fps);
-    if raw_fps > MAX_FPS {
+    if !(MIN_FPS..=MAX_FPS).contains(&raw_fps) {
         r.line(
             Level::Warn,
             "fps on disk",
             &format!("{} — clamped to {} at runtime", raw_fps, cfg.fps),
         );
-        r.hint("the generated EDID is capped at 90 Hz, so anything above is duplicate frames");
+        if raw_fps > MAX_FPS {
+            r.hint("the generated EDID is capped at 90 Hz, so anything above is duplicate frames");
+        } else {
+            r.hint(&format!(
+                "set fps to at least {MIN_FPS} in the settings panel or config.toml"
+            ));
+        }
     } else {
         r.line(Level::Ok, "fps", &format!("{}", cfg.fps));
     }
@@ -1215,6 +1221,64 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t301_saved_bitrate_warnings_cover_both_limits() {
+        use super::*;
+        for (bitrate, expected, warnings) in [
+            (0, "0 Mbps — clamped to 1 Mbps at runtime", 1),
+            (999, "0.999 Mbps — clamped to 1 Mbps at runtime", 1),
+            (1000, "1 Mbps", 0),
+            (60000, "60 Mbps", 0),
+            (60001, "60.001 Mbps — clamped to 60 Mbps at runtime", 1),
+        ] {
+            let raw = FileConfig {
+                bitrate,
+                ..Default::default()
+            };
+            let mut effective = raw.clone();
+            effective.sanitize();
+            let mut report = Report::new();
+            report_configured_bitrate(&mut report, &effective, Some(&raw));
+            assert_eq!(report.warnings, warnings, "T301: saved bitrate {bitrate}");
+            assert_eq!(report.failures, 0);
+            assert!(
+                report
+                    .messages
+                    .borrow()
+                    .iter()
+                    .any(|message| message.contains(expected)),
+                "T301: inaccurate bitrate diagnostic: {:?}",
+                report.messages.borrow()
+            );
+        }
+    }
+
+    #[test]
+    fn t301_saved_fps_warnings_cover_both_limits() {
+        use super::*;
+        for (fps, warnings) in [(0, 1), (9, 1), (10, 0), (90, 0), (91, 1)] {
+            let raw = FileConfig {
+                fps,
+                ..Default::default()
+            };
+            let mut effective = raw.clone();
+            effective.sanitize();
+            let mut report = Report::new();
+            report_configured_fps(&mut report, &effective, Some(&raw));
+            assert_eq!(report.warnings, warnings, "T301: saved fps {fps}");
+            assert_eq!(report.failures, 0);
+            if warnings > 0 {
+                let text = report.messages.borrow().join("\n");
+                assert!(text.contains(&format!("{fps} — clamped to {} at runtime", effective.fps)));
+                assert_eq!(
+                    text.contains("above is duplicate frames"),
+                    fps > 90,
+                    "T301: high-rate guidance must not be given for a low rate"
+                );
+            }
+        }
+    }
+
     #[test]
     fn t149_config_health_distinguishes_invalid_missing_and_valid_files() {
         let temp = tempfile::tempdir().unwrap();
