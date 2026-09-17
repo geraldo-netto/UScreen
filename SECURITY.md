@@ -59,13 +59,6 @@ rm -rf ~/.config/uscreen ~/.local/share/uscreen ~/.cache/uscreen
 
 On the tablet, uninstall the app like any other.
 
-## Reporting a vulnerability
-
-Please do not open a public issue for a security problem. Use GitHub's private
-reporting: **Security → Report a vulnerability** on the repository page, or
-email the address on the maintainer's GitHub profile. You will get an answer
-within a few days; fixes ship as a new release with a note in the changelog.
-
 ## Release integrity
 
 Every release includes `SHA256SUMS` for all files. The Android APK is signed

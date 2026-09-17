@@ -9,4 +9,3 @@ Be decent. Concretely:
 - Keep it on topic and keep it constructive.
 
 Maintainers may edit or remove content and block accounts that ignore this.
-Report problems privately through the maintainer's GitHub profile.
