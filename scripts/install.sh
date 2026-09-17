@@ -37,44 +37,63 @@ install_debian_evdi_library() {
         warn "$package did not install — supply libevdi separately (see docs/development.md)"
 }
 
-# Package names verified against real systems, not from memory: an Arch
-# container, a Debian container and a Fedora container, each asked what it
-# actually has. Three of the four families had at least one name wrong.
+# Shared runtime package names for RPM distributions. Repository selection
+# remains specific to each family; Enterprise Linux must never inherit Fedora's.
+RPM_RUNTIME_DEPS=(ffmpeg android-tools libX11 libX11-xcb libXcursor libXi libxkbcommon-x11)
+
+is_ostree_booted() {
+    command -v rpm-ostree &>/dev/null && [ -e /run/ostree-booted ]
+}
+
+install_rpm_layered_deps() {
+    info "Immutable RPM system detected — layering packages (reboot needed afterwards)"
+    sudo rpm-ostree install --idempotent --allow-inactive "${RPM_RUNTIME_DEPS[@]}" || \
+        warn "Layering failed — check repositories and package names against your image"
+}
+
+install_rpm_runtime_deps() {
+    sudo dnf install -y "$@" "${RPM_RUNTIME_DEPS[@]}" || \
+        warn "Install runtime packages for this distribution manually: ${RPM_RUNTIME_DEPS[*]}"
+}
+
+check_rpm_evdi_module() {
+    if ! modinfo evdi >/dev/null 2>&1; then
+        warn "No evdi module found for the running kernel. Check your image/vendor or build a compatible module; see docs/installation.md."
+    fi
+}
+
+enable_fedora_rpmfusion() {
+    local release
+    release=$(rpm -E %fedora)
+    case "$release" in
+        ''|*[!0-9]*) warn "Cannot identify the Fedora release. Configure repositories manually for your release; see docs/installation.md."; return ;;
+    esac
+    info "Enabling RPM Fusion for Fedora $release (ffmpeg is unavailable in configured repositories)"
+    sudo dnf install -y \
+        "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$release.noarch.rpm" || \
+        warn "Could not enable RPM Fusion"
+}
+
 install_fedora_deps() {
-    # GUI libraries are loaded at runtime, so ELF dependency scans miss them.
-    local gui_deps=(libX11 libX11-xcb libXcursor libXi libxkbcommon-x11)
-    if command -v rpm-ostree &>/dev/null && [ -e /run/ostree-booted ]; then
-        info "Immutable Fedora detected — layering packages (reboot needed afterwards)"
-        # Bazzite and Nobara ship evdi in the base image; plain
-        # Silverblue does not, and it is not layerable either.
-        sudo rpm-ostree install --idempotent --allow-inactive \
-            ffmpeg android-tools "${gui_deps[@]}" || \
-            warn "Layering failed — check the names against your image"
+    if is_ostree_booted; then
+        install_rpm_layered_deps
     else
-        # ffmpeg on Fedora needs RPM Fusion; the stock repositories
-        # only carry ffmpeg-free, which cannot do what we ask of it.
-        if ! dnf -q info ffmpeg >/dev/null 2>&1; then
-            info "Enabling RPM Fusion (ffmpeg is not in the stock repositories)"
-            sudo dnf install -y \
-                "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
-                || warn "Could not enable RPM Fusion"
-        fi
-        # --allowerasing because Fedora preinstalls ffmpeg-free,
-        # which the RPM Fusion build replaces; without it dnf refuses
-        # the whole transaction rather than swapping the two.
-        sudo dnf install -y --allowerasing ffmpeg android-tools "${gui_deps[@]}" || \
-            warn "Install ffmpeg, android-tools and the GUI libraries (${gui_deps[*]}) manually"
+        if ! dnf -q info ffmpeg >/dev/null 2>&1; then enable_fedora_rpmfusion; fi
+        # Permit replacing conflicting ffmpeg-free packages on Fedora.
+        install_rpm_runtime_deps --allowerasing
     fi
-    # evdi is not packaged for Fedora at all — not in the stock
-    # repositories and not in RPM Fusion. Checked, rather than
-    # assumed, because the old installer asked dnf for it and hid the
-    # failure behind `|| true`.
-    if [ ! -e /sys/devices/evdi ] && ! ls /usr/lib*/libevdi.so* >/dev/null 2>&1; then
-        warn "evdi is not packaged for Fedora. Build it from source:"
-        warn "    git clone https://github.com/DisplayLink/evdi"
-        warn "    cd evdi && make && sudo make install"
-        warn "(Bazzite and Nobara already ship it.)"
+    check_rpm_evdi_module
+}
+
+install_enterprise_deps() {
+    info "Enterprise Linux ${VERSION_ID:-unknown version}: using configured repositories"
+    warn "If packages are unavailable, configure repositories for your Enterprise Linux release (see docs/installation.md), then retry."
+    if is_ostree_booted; then
+        install_rpm_layered_deps
+    else
+        install_rpm_runtime_deps
     fi
+    check_rpm_evdi_module
 }
 
 install_debian_deps() {
@@ -124,11 +143,14 @@ install_suse_deps() {
 }
 
 install_distro_deps() {
-    case "$1" in
-        *fedora*|*rhel*|*centos*) install_fedora_deps ;;
-        *debian*|*ubuntu*) install_debian_deps ;;
-        *arch*|*manjaro*|*endeavouros*|*cachyos*) install_arch_deps ;;
-        *suse*) install_suse_deps ;;
+    # Match whole ID/ID_LIKE tokens. EL derivatives can also list Fedora;
+    # their more specific family takes precedence.
+    case " $1 " in
+        *' rhel '*|*' centos '*|*' rocky '*|*' almalinux '*) install_enterprise_deps ;;
+        *' fedora '*) install_fedora_deps ;;
+        *' debian '*|*' ubuntu '*) install_debian_deps ;;
+        *' arch '*|*' manjaro '*|*' endeavouros '*|*' cachyos '*) install_arch_deps ;;
+        *' suse '*|*' opensuse '*|*' opensuse-leap '*|*' opensuse-tumbleweed '*) install_suse_deps ;;
         *) warn "Unknown distro. Install manually: ffmpeg, adb (android-tools), evdi + libevdi, and GUI libraries: X11, X11-xcb, Xcursor, Xi, xkbcommon-x11" ;;
     esac
 }

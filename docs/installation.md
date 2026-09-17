@@ -52,7 +52,19 @@ selected distribution's package manager. Layering may require a reboot.
 | Debian/Ubuntu | `ffmpeg`, `adb` | `evdi-dkms` for the running kernel |
 | Arch | `ffmpeg`, `android-tools` | AUR `evdi-dkms` |
 | Fedora | `ffmpeg` (RPM Fusion in the workflow), `android-tools` | image/vendor packages or an upstream module build |
+| RHEL/CentOS/Rocky/AlmaLinux | `ffmpeg`, `android-tools` from repositories configured for the installed Enterprise Linux release | distribution/vendor guidance or an upstream module build |
 | openSUSE | `ffmpeg`, `android-tools` | `evdi` and its matching kernel-module package |
+
+The installer matches complete `ID`/`ID_LIKE` words and gives Enterprise Linux
+precedence when its metadata also mentions Fedora. It tries that system's
+configured repositories and prints the detected release; if packages are
+missing, configure repositories for that Enterprise Linux major release before
+retrying. RPM Fusion publishes separate [Enterprise Linux](https://download1.rpmfusion.org/free/el/)
+and [Fedora](https://download1.rpmfusion.org/free/fedora/) repository packages.
+The installer only attempts Fedora repository setup for a Fedora-family system
+with a numeric Fedora release macro. Booted ostree systems use package layering
+from configured repositories. Unknown families require manual installation of
+the runtime prerequisites listed above, using their own package manager.
 
 Use `modinfo evdi` and, for DKMS installations, `dkms status` to inspect the
 installed module. If a DKMS build fails, inspect its build log and check the

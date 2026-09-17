@@ -27,6 +27,55 @@ ls() { return 1; }
 
 
 class InstallerTest(unittest.TestCase):
+    def rpm_fixture(self, distro, version='9.4', fedora_macro='%fedora', immutable=False):
+        stubs = r'''
+sudo() { printf 'packages: %s\n' "$*"; }
+dnf() { return 1; }
+rpm() { printf '%s\n' "$MOCK_FEDORA"; }
+rpm-ostree() { :; }
+pacman() { return 1; }
+yay() { printf 'packages: yay %s\n' "$*"; }
+paru() { printf 'packages: paru %s\n' "$*"; }
+[() {
+    if [[ $* == '-e /run/ostree-booted ]' ]]; then [[ $MOCK_IMMUTABLE == 1 ]];
+    else builtin [ "$@"; fi
+}
+VERSION_ID=$2
+MOCK_FEDORA=$3
+MOCK_IMMUTABLE=$4
+install_distro_deps "$1"
+'''
+        result = subprocess.run(['bash', '-s', '--', distro, version, fedora_macro, str(int(immutable))],
+            input=SOURCE + stubs, cwd=REPO, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return result.stdout
+
+    def test_t230_enterprise_families_never_enable_fedora_repositories(self):
+        for distro in ['rhel', 'centos rhel fedora', 'rocky rhel centos fedora', 'almalinux rhel centos fedora']:
+            with self.subTest(distro=distro):
+                output = self.rpm_fixture(distro)
+                self.assertNotIn('/free/fedora/', output, 'T230: Fedora repository offered to Enterprise Linux')
+                self.assertNotIn('%fedora', output)
+                self.assertIn('9.4', output, 'T230: repository guidance omitted the actual release')
+                self.assertIn('packages: dnf install', output)
+                self.assertIn('ffmpeg android-tools', output)
+
+    def test_t230_only_a_numeric_fedora_release_selects_its_repository(self):
+        valid = self.rpm_fixture('fedora', '44', '44')
+        self.assertIn('/free/fedora/rpmfusion-free-release-44.noarch.rpm', valid)
+        invalid = self.rpm_fixture('fedora')
+        self.assertNotIn('/free/fedora/rpmfusion-free-release-%fedora', invalid)
+        immutable = self.rpm_fixture('fedora', '44', '44', True)
+        self.assertIn('packages: rpm-ostree install', immutable)
+        self.assertNotIn('/free/fedora/', immutable)
+
+    def test_t230_unknown_ids_do_not_match_substrings_of_supported_families(self):
+        for distro in ['unknown', 'notfedora', 'pinearch', 'notubuntu', 'notsuse']:
+            with self.subTest(distro=distro):
+                output = self.rpm_fixture(distro)
+                self.assertIn('Unknown distro. Install manually:', output)
+                self.assertNotIn('packages:', output)
+
     def dependency_fixture(self, root, prebuilt, library):
         project, system = root / 'project', root / 'system'
         project.mkdir()
