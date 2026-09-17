@@ -1,0 +1,91 @@
+{
+  "start_utc": 1789655940.005932,
+  "geometry": "1280x800+3840+0",
+  "monitors": "Monitors: 2\n 0: +*HDMI-A-1 3840/597x2160/336+0+0  HDMI-A-1\n 1: +DVI-I-2-1 1280/218x800/136+3840+0  DVI-I-2-1",
+  "host_ticks_per_second": 100,
+  "android_ticks_per_second": 100,
+  "android_page_size": 4096,
+  "android_pid": 19950,
+  "plan": [
+    {
+      "trial": 1,
+      "kind": "static",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 1,
+      "kind": "static",
+      "measured": true,
+      "seconds": 300.0
+    },
+    {
+      "trial": 1,
+      "kind": "motion",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 1,
+      "kind": "motion",
+      "measured": true,
+      "seconds": 300.0
+    },
+    {
+      "trial": 2,
+      "kind": "motion",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 2,
+      "kind": "motion",
+      "measured": true,
+      "seconds": 300.0
+    },
+    {
+      "trial": 2,
+      "kind": "static",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 2,
+      "kind": "static",
+      "measured": true,
+      "seconds": 300.0
+    },
+    {
+      "trial": 3,
+      "kind": "static",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 3,
+      "kind": "static",
+      "measured": true,
+      "seconds": 300.0
+    },
+    {
+      "trial": 3,
+      "kind": "motion",
+      "measured": false,
+      "seconds": 60.0
+    },
+    {
+      "trial": 3,
+      "kind": "motion",
+      "measured": true,
+      "seconds": 300.0
+    }
+  ],
+  "source_commit": "4490763f4bcaf79fabdff1aa78809281266131b8",
+  "scripts": {
+    "workload.py": "267f411bfab150d9acfe5c579429121fe943cb36ab6de4cb3f629ca710578798",
+    "observe.py": "04421938ae9ea35975d2c1b333ae4c825961d2642e37127210bac9de872b717d",
+    "run-baseline.py": "2ed0bca94c8d81f8c97b7f4a12db5c56f65741563d93858d7a56607006414fe5"
+  },
+  "host_kernel": "Linux 7.0.0-31-generic #31~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Mon Aug 10 09:38:02 UTC 2 x86_64",
+  "android_build": "Ulefone/GQ8002RH1_EEA/GQ8002RH1:16/BP2A.250605.031.A3/1782987754:user/release-keys"
+}

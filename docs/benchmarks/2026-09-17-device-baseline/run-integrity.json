@@ -1,0 +1,91 @@
+{
+  "start_utc": "2026-09-17T14:39:00.005932+00:00",
+  "end_utc": "2026-09-17T15:15:00.224652+00:00",
+  "workload_seconds": 2160.004068773007,
+  "sample_count": 432,
+  "battery_sample_count": 72,
+  "phase_event_count": 13,
+  "sample_gap_seconds": {
+    "minimum": 5.000029920018278,
+    "maximum": 5.000455667031929
+  },
+  "process_identities_pid_start_ticks": {
+    "uscreen": [
+      [
+        2765192,
+        45467518
+      ]
+    ],
+    "evdi_helper": [
+      [
+        2765273,
+        45467679
+      ]
+    ],
+    "ffmpeg": [
+      [
+        2765414,
+        45468791
+      ]
+    ],
+    "cinnamon": [
+      [
+        1897918,
+        40183419
+      ]
+    ],
+    "Xorg": [
+      [
+        1897166,
+        40182694
+      ]
+    ],
+    "android_app": [
+      [
+        19950,
+        1548689
+      ]
+    ]
+  },
+  "display_observations": [
+    [
+      "mActiveModeId=1",
+      "mBrightnessState=0.5"
+    ]
+  ],
+  "reported_thermal_status": [
+    "Thermal Status: 0"
+  ],
+  "charge_counter_step_uah": [
+    -9990,
+    0
+  ],
+  "android_pss_mib": {
+    "minimum": 93.1748046875,
+    "maximum": 115.837890625,
+    "samples": 36
+  },
+  "workload_motion_updates": 64792,
+  "recovered_journal_records": 2492,
+  "journal_recovery": "T410: original live collector omitted byte-array MESSAGE values. Recover original journal timestamps over the complete run, decode before filtering and include tablet timing split. Keep the original incomplete capture separately. Product and workload unchanged during collection.",
+  "analysis_source_sha256": {
+    "observe.py": "d50ffb50d58583912618ff31e86f911ef91f862492ba811b271f5ef2a2b34dba",
+    "recover-journal.py": "8ac5cc094769f5d4876c4f0de28618d1168d33baad64ae7b255c3a3aa336d165",
+    "summarize.py": "e2bdff2a987c32296c7d166faaaf96b92e742b50cc23cabe27010035eb2ac8c6",
+    "plot-baseline.py": "70385047a486da99512f32e54f7c603e6858c804fda1841dcd6d9d306db9f22a"
+  },
+  "validation": {
+    "android_tests": 159,
+    "android_failures": 0,
+    "android_errors": 0,
+    "android_lint": "passed",
+    "t410_red": "Expected two retained journal messages; got one. Same permanent regression passed after decoding before filtering.",
+    "t411_red": "Three invalid monitor geometries were accepted. Same permanent regressions reject all three after exact geometry matching.",
+    "benchmark_python_tests": 8,
+    "benchmark_failures": 0,
+    "normal_tooling_suite": "cargo test --locked --release -p uscreen --test tooling t382_benchmark_units_and_window_statistics: passed in uscreen-ci:inproc",
+    "complexity_functions": 1819,
+    "complexity_above_9": 0,
+    "cargo_fmt": "passed"
+  }
+}

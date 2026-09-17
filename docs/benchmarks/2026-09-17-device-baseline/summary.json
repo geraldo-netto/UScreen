@@ -1,0 +1,1723 @@
+{
+  "complete": true,
+  "source_commit": "4490763f4bcaf79fabdff1aa78809281266131b8",
+  "phases": [
+    {
+      "trial": 1,
+      "kind": "static",
+      "start_utc": 1789656000.2208853,
+      "end_utc": 1789656300.22121,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.19999623311094983,
+            "maximum": 0.3999971091443984,
+            "mean": 0.18982699835091776
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 0.19999540894586879,
+            "median": 2.1999541071992907,
+            "maximum": 6.599891596761832,
+            "mean": 2.467752248148534
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 0.3999904482298684,
+            "median": 0.9999834906707161,
+            "maximum": 2.5999572956940553,
+            "mean": 1.1152337179088234
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.1999910909157647,
+            "maximum": 0.3999938239365751,
+            "mean": 0.1118623230154093
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 1.7999600099273811,
+            "median": 2.7999567675560257,
+            "maximum": 4.79991981541579,
+            "mean": 2.85418306275256
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 1.3999762292493845,
+            "median": 2.999943252445764,
+            "maximum": 4.999906396732263,
+            "mean": 3.0236713229385046
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 0.5999893465876683,
+            "median": 3.5999220515808688,
+            "maximum": 9.599842322562665,
+            "mean": 3.7728129644082755
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 9.79956345487247,
+            "median": 21.399553588211283,
+            "maximum": 44.9992608870125,
+            "mean": 23.33516509041335
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 9.9453125,
+            "median": 10.1953125,
+            "maximum": 10.6953125,
+            "mean": 10.2203125
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 292.94921875,
+            "median": 293.80078125,
+            "maximum": 294.7109375,
+            "mean": 293.841796875
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 280.51171875,
+            "median": 311.5234375,
+            "maximum": 312.06640625,
+            "mean": 308.3248697916667
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 202.39453125,
+            "median": 206.958984375,
+            "maximum": 226.078125,
+            "mean": 211.049609375
+          },
+          "adb": {
+            "n": 3,
+            "minimum": 7.546875,
+            "median": 7.8046875,
+            "maximum": 8.125,
+            "mean": 7.825520833333333
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.1163552799844183,
+          "median": 0.16009797898004763,
+          "maximum": 0.5490131410188042,
+          "mean": 0.20728718651807868
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789656000.2219539,
+        "last_utc": 1789656270.2270906,
+        "seconds": 270.0051360540092,
+        "charge_delta_uah": -19980,
+        "net_battery_ma": -266.3949325231066,
+        "first_level": 86,
+        "last_level": 85,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 30.9,
+          "median": 30.95,
+          "maximum": 31.0,
+          "mean": 30.95
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 37.3,
+            "median": 53.95,
+            "maximum": 222.8,
+            "mean": 123.93620689655172
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 70.6,
+            "median": 223.75,
+            "maximum": 239.3,
+            "mean": 209.95862068965516
+          },
+          "max_ms": {
+            "n": 58,
+            "minimum": 192.6,
+            "median": 236.14999999999998,
+            "maximum": 251.7,
+            "mean": 234.3793103448276
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 25.0,
+            "median": 65.5,
+            "maximum": 201.0,
+            "mean": 75.17241379310344
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 32.2,
+            "median": 48.349999999999994,
+            "maximum": 216.9,
+            "mean": 117.84310344827587
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 65.0,
+            "median": 217.75,
+            "maximum": 233.4,
+            "mean": 203.8706896551724
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 58,
+            "minimum": 25.0,
+            "median": 66.0,
+            "maximum": 201.0,
+            "mean": 75.17241379310344
+          },
+          "seconds": {
+            "n": 58,
+            "minimum": 5.0,
+            "median": 5.0,
+            "maximum": 5.2,
+            "mean": 5.039655172413793
+          },
+          "kbps": {
+            "n": 58,
+            "minimum": 1352.0,
+            "median": 1707.0,
+            "maximum": 1953.0,
+            "mean": 1681.1896551724137
+          },
+          "fps": {
+            "n": 58,
+            "minimum": 5.0,
+            "median": 12.95,
+            "maximum": 39.411764705882355,
+            "mean": 14.912937535757008
+          }
+        },
+        "grabs_per_second": {
+          "fps": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 10.75,
+            "maximum": 40.3,
+            "mean": 11.701724137931034
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 28.8,
+            "maximum": 60.2,
+            "mean": 23.641379310344828
+          },
+          "grab_mean_ms": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 0.75,
+            "maximum": 0.9,
+            "mean": 0.5103448275862069
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 40,
+            "minimum": 0.5,
+            "median": 0.6,
+            "maximum": 5.8,
+            "mean": 0.9275
+          },
+          "p95_ms": {
+            "n": 40,
+            "minimum": 0.6,
+            "median": 5.3,
+            "maximum": 23.2,
+            "mean": 5.76
+          },
+          "samples": {
+            "n": 40,
+            "minimum": 3.0,
+            "median": 78.0,
+            "maximum": 206.0,
+            "mean": 85.95
+          }
+        }
+      }
+    },
+    {
+      "trial": 1,
+      "kind": "motion",
+      "start_utc": 1789656360.2216046,
+      "end_utc": 1789656660.221884,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.39999399593264723,
+            "median": 0.799986915895507,
+            "maximum": 0.9999886551296325,
+            "mean": 0.7491408865636259
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 11.19979530138631,
+            "median": 12.39981807740487,
+            "maximum": 13.3998619841145,
+            "mean": 12.396417280099461
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 3.5999226895000063,
+            "median": 3.9999438799875207,
+            "maximum": 4.599952621412441,
+            "mean": 4.091461855591712
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 1.7999708383016237,
+            "median": 1.999971680394911,
+            "maximum": 2.3999650209838586,
+            "mean": 2.0575950158327903
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 1.399969934805558,
+            "median": 2.59995745066105,
+            "maximum": 5.199946441596672,
+            "mean": 2.850803464079416
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 7.99988707677603,
+            "median": 9.199895627192621,
+            "maximum": 11.799850160817641,
+            "mean": 9.37273559723584
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 15.199771845440598,
+            "median": 17.39964822099692,
+            "maximum": 18.59980842571117,
+            "mean": 17.2370200222548
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 60.199024703198745,
+            "median": 72.9993847320258,
+            "maximum": 75.19885544369484,
+            "mean": 72.59886904709865
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 10.4453125,
+            "median": 10.8203125,
+            "maximum": 11.1953125,
+            "mean": 10.866145833333333
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 291.828125,
+            "median": 292.341796875,
+            "maximum": 294.03515625,
+            "mean": 292.52526041666664
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 311.828125,
+            "median": 312.11328125,
+            "maximum": 312.45703125,
+            "mean": 312.1079427083333
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 201.11328125,
+            "median": 211.87109375,
+            "maximum": 224.61328125,
+            "mean": 212.52454427083333
+          },
+          "adb": {
+            "n": 5,
+            "minimum": 7.85546875,
+            "median": 7.8984375,
+            "maximum": 8.08203125,
+            "mean": 7.9546875
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.1320125309866853,
+          "median": 0.15565056196646765,
+          "maximum": 0.5564831789815798,
+          "mean": 0.2066280247789109
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789656360.2285569,
+        "last_utc": 1789656630.2327955,
+        "seconds": 270.00423779699486,
+        "charge_delta_uah": -29970,
+        "net_battery_ma": -399.5937281588876,
+        "first_level": 85,
+        "last_level": 85,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 31.0,
+          "median": 31.1,
+          "maximum": 31.2,
+          "mean": 31.080000000000002
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 35.7,
+            "median": 37.0,
+            "maximum": 37.8,
+            "mean": 37.06896551724138
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 39.2,
+            "median": 45.1,
+            "maximum": 53.0,
+            "mean": 45.41896551724138
+          },
+          "max_ms": {
+            "n": 58,
+            "minimum": 57.3,
+            "median": 69.3,
+            "maximum": 95.4,
+            "mean": 70.12931034482759
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 291.0,
+            "median": 300.0,
+            "maximum": 303.0,
+            "mean": 299.7586206896552
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 29.4,
+            "median": 30.4,
+            "maximum": 30.9,
+            "mean": 30.329310344827586
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 32.0,
+            "median": 35.3,
+            "maximum": 45.7,
+            "mean": 36.65172413793103
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 58,
+            "minimum": 291.0,
+            "median": 300.0,
+            "maximum": 302.0,
+            "mean": 299.7413793103448
+          },
+          "seconds": {
+            "n": 58,
+            "minimum": 5.0,
+            "median": 5.0,
+            "maximum": 5.0,
+            "mean": 5.0
+          },
+          "kbps": {
+            "n": 58,
+            "minimum": 27804.0,
+            "median": 29066.5,
+            "maximum": 29451.0,
+            "mean": 28975.724137931036
+          },
+          "fps": {
+            "n": 58,
+            "minimum": 58.2,
+            "median": 60.0,
+            "maximum": 60.4,
+            "mean": 59.94827586206897
+          }
+        },
+        "grabs_per_second": {
+          "fps": {
+            "n": 58,
+            "minimum": 57.8,
+            "median": 60.0,
+            "maximum": 60.5,
+            "mean": 59.88620689655173
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 58,
+            "minimum": 15.4,
+            "median": 15.6,
+            "maximum": 16.2,
+            "mean": 15.581034482758621
+          },
+          "grab_mean_ms": {
+            "n": 58,
+            "minimum": 0.9,
+            "median": 1.0,
+            "maximum": 1.1,
+            "mean": 0.9862068965517241
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 0.6,
+            "median": 0.7,
+            "maximum": 30.8,
+            "mean": 9.029310344827586
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 0.7,
+            "median": 14.5,
+            "maximum": 31.8,
+            "mean": 13.251724137931035
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 256.0,
+            "median": 256.0,
+            "maximum": 256.0,
+            "mean": 256.0
+          }
+        }
+      }
+    },
+    {
+      "trial": 2,
+      "kind": "motion",
+      "start_utc": 1789656720.2222173,
+      "end_utc": 1789657020.2224438,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.3999914895411826,
+            "median": 0.7999860941614438,
+            "maximum": 1.1999814043654309,
+            "mean": 0.7525302487827668
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 10.599731105972845,
+            "median": 12.599775126771403,
+            "maximum": 15.599769426024832,
+            "mean": 12.59979759890247
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 3.5999453967523616,
+            "median": 3.999941661640626,
+            "maximum": 5.199923142008277,
+            "mean": 4.101628899139868
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 1.7999644233379828,
+            "median": 1.9999696320575813,
+            "maximum": 2.5999615710041386,
+            "mean": 2.02708606622173
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 1.3999805511884493,
+            "median": 2.7999567641987118,
+            "maximum": 6.399905405548649,
+            "mean": 3.060967793378746
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 7.99988192494144,
+            "median": 9.399847299466883,
+            "maximum": 11.999822635403715,
+            "mean": 9.416797940533101
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 15.199614416112004,
+            "median": 17.399697548011403,
+            "maximum": 21.799677787650086,
+            "mean": 17.453956746825106
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 68.39897367314963,
+            "median": 71.79882845820458,
+            "maximum": 73.59880438731517,
+            "mean": 71.81579347035095
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 11.4453125,
+            "median": 11.4453125,
+            "maximum": 11.6953125,
+            "mean": 11.541145833333333
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 292.30859375,
+            "median": 293.09375,
+            "maximum": 294.03515625,
+            "mean": 293.16673177083334
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 312.0625,
+            "median": 312.4453125,
+            "maximum": 312.65625,
+            "mean": 312.32506510416664
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 202.140625,
+            "median": 213.37890625,
+            "maximum": 225.80078125,
+            "mean": 213.7453125
+          },
+          "adb": {
+            "n": 2,
+            "minimum": 7.8984375,
+            "median": 7.9375,
+            "maximum": 7.9765625,
+            "mean": 7.9375
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.135250499995891,
+          "median": 0.15654811103013344,
+          "maximum": 0.5469700050307438,
+          "mean": 0.20689140279816154
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789656720.2341812,
+        "last_utc": 1789656990.2385197,
+        "seconds": 270.00433714699466,
+        "charge_delta_uah": -29970,
+        "net_battery_ma": -399.59358112555753,
+        "first_level": 85,
+        "last_level": 85,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 31.2,
+          "median": 31.3,
+          "maximum": 31.4,
+          "mean": 31.29
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 36.7,
+            "median": 37.1,
+            "maximum": 37.6,
+            "mean": 37.06896551724138
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 39.5,
+            "median": 45.75,
+            "maximum": 52.2,
+            "mean": 46.286206896551725
+          },
+          "max_ms": {
+            "n": 58,
+            "minimum": 58.9,
+            "median": 70.4,
+            "maximum": 83.4,
+            "mean": 71.21206896551725
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 289.0,
+            "median": 300.0,
+            "maximum": 302.0,
+            "mean": 299.05172413793105
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 29.8,
+            "median": 30.35,
+            "maximum": 30.7,
+            "mean": 30.360344827586207
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 32.1,
+            "median": 37.9,
+            "maximum": 45.4,
+            "mean": 37.83965517241379
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 58,
+            "minimum": 289.0,
+            "median": 300.0,
+            "maximum": 302.0,
+            "mean": 299.0344827586207
+          },
+          "seconds": {
+            "n": 58,
+            "minimum": 5.0,
+            "median": 5.0,
+            "maximum": 5.0,
+            "mean": 5.0
+          },
+          "kbps": {
+            "n": 58,
+            "minimum": 24076.0,
+            "median": 29223.0,
+            "maximum": 30118.0,
+            "mean": 28969.275862068964
+          },
+          "fps": {
+            "n": 58,
+            "minimum": 57.8,
+            "median": 60.0,
+            "maximum": 60.4,
+            "mean": 59.80689655172414
+          }
+        },
+        "grabs_per_second": {
+          "fps": {
+            "n": 58,
+            "minimum": 57.6,
+            "median": 60.0,
+            "maximum": 60.6,
+            "mean": 59.76034482758621
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 58,
+            "minimum": 15.3,
+            "median": 15.6,
+            "maximum": 16.3,
+            "mean": 15.601724137931035
+          },
+          "grab_mean_ms": {
+            "n": 58,
+            "minimum": 0.9,
+            "median": 1.0,
+            "maximum": 1.2,
+            "mean": 0.993103448275862
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 0.5,
+            "median": 0.7,
+            "maximum": 24.6,
+            "mean": 4.3534482758620685
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 0.7,
+            "median": 3.4,
+            "maximum": 32.1,
+            "mean": 8.24655172413793
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 256.0,
+            "median": 256.0,
+            "maximum": 256.0,
+            "mean": 256.0
+          }
+        }
+      }
+    },
+    {
+      "trial": 2,
+      "kind": "static",
+      "start_utc": 1789657080.2227628,
+      "end_utc": 1789657380.2231627,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.19999617427222333,
+            "maximum": 0.39999420200496966,
+            "mean": 0.19321618187305264
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 0.19999461374549174,
+            "median": 0.3999919863998767,
+            "maximum": 5.79991592907206,
+            "mean": 0.8576113976504208
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 0.1999961887537364,
+            "median": 0.5999889668033932,
+            "maximum": 2.1999681110273333,
+            "mean": 0.677952691302263
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.0,
+            "maximum": 0.39999371241882825,
+            "mean": 0.08813374617219742
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 0.5999872879466916,
+            "median": 1.999966521353224,
+            "maximum": 3.7999449190472117,
+            "mean": 1.8745410424780742
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 0.19999461374549174,
+            "median": 1.7999596985535684,
+            "maximum": 4.3999362220546665,
+            "mean": 1.6677657231097724
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 0.5999860728831228,
+            "median": 1.1999724087921835,
+            "maximum": 8.399878242104363,
+            "mean": 1.7287802708257365
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 10.399825621926674,
+            "median": 11.39968280837783,
+            "maximum": 39.39942889748951,
+            "mean": 13.83362660834537
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 10.6953125,
+            "median": 11.1953125,
+            "maximum": 11.6953125,
+            "mean": 11.1078125
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 293.6484375,
+            "median": 294.4296875,
+            "maximum": 295.6796875,
+            "mean": 294.415234375
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 280.87109375,
+            "median": 311.875,
+            "maximum": 312.109375,
+            "mean": 299.07233072916665
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 213.765625,
+            "median": 217.30078125,
+            "maximum": 220.2109375,
+            "mean": 217.13860677083332
+          },
+          "adb": {
+            "n": 6,
+            "minimum": 7.76953125,
+            "median": 7.89453125,
+            "maximum": 8.09765625,
+            "mean": 7.927083333333333
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.12375227798474953,
+          "median": 0.15886540402425453,
+          "maximum": 0.5582279469817877,
+          "mean": 0.20789406675224503
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789657080.2400382,
+        "last_utc": 1789657350.2454836,
+        "seconds": 270.00544576899847,
+        "charge_delta_uah": -19980,
+        "net_battery_ma": -266.3946269496267,
+        "first_level": 85,
+        "last_level": 84,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 31.3,
+          "median": 31.3,
+          "maximum": 31.3,
+          "mean": 31.3
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "grabs_per_second": {
+          "fps": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 0.0,
+            "maximum": 26.4,
+            "mean": 2.8189655172413794
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 0.0,
+            "maximum": 51.2,
+            "mean": 7.725862068965517
+          },
+          "grab_mean_ms": {
+            "n": 58,
+            "minimum": 0.0,
+            "median": 0.0,
+            "maximum": 0.9,
+            "mean": 0.15689655172413794
+          }
+        },
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 57,
+            "minimum": 36.5,
+            "median": 222.3,
+            "maximum": 223.9,
+            "mean": 192.25964912280702
+          },
+          "p95_ms": {
+            "n": 57,
+            "minimum": 73.6,
+            "median": 236.1,
+            "maximum": 240.3,
+            "mean": 229.73859649122807
+          },
+          "max_ms": {
+            "n": 57,
+            "minimum": 222.3,
+            "median": 237.8,
+            "maximum": 250.5,
+            "mean": 237.9736842105263
+          },
+          "samples": {
+            "n": 57,
+            "minimum": 25.0,
+            "median": 25.0,
+            "maximum": 148.0,
+            "mean": 37.49122807017544
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 57,
+            "minimum": 31.8,
+            "median": 216.4,
+            "maximum": 218.1,
+            "mean": 186.2438596491228
+          },
+          "p95_ms": {
+            "n": 57,
+            "minimum": 66.5,
+            "median": 230.6,
+            "maximum": 233.2,
+            "mean": 224.1157894736842
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 57,
+            "minimum": 25.0,
+            "median": 25.0,
+            "maximum": 148.0,
+            "mean": 37.49122807017544
+          },
+          "seconds": {
+            "n": 57,
+            "minimum": 5.0,
+            "median": 5.0,
+            "maximum": 5.2,
+            "mean": 5.050877192982456
+          },
+          "kbps": {
+            "n": 57,
+            "minimum": 1450.0,
+            "median": 1702.0,
+            "maximum": 1944.0,
+            "mean": 1695.1929824561403
+          },
+          "fps": {
+            "n": 57,
+            "minimum": 4.901960784313726,
+            "median": 5.0,
+            "maximum": 29.6,
+            "mean": 7.41667328199836
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 14,
+            "minimum": 0.5,
+            "median": 0.6,
+            "maximum": 2.0,
+            "mean": 0.7142857142857143
+          },
+          "p95_ms": {
+            "n": 14,
+            "minimum": 0.6,
+            "median": 2.95,
+            "maximum": 19.5,
+            "mean": 4.928571428571429
+          },
+          "samples": {
+            "n": 14,
+            "minimum": 7.0,
+            "median": 52.0,
+            "maximum": 138.0,
+            "mean": 59.92857142857143
+          }
+        }
+      }
+    },
+    {
+      "trial": 3,
+      "kind": "static",
+      "start_utc": 1789657440.2235672,
+      "end_utc": 1789657740.2240157,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.19999600827977604,
+            "maximum": 0.3999939034504569,
+            "mean": 0.20338439725179824
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 0.19998291246146987,
+            "median": 1.1999793956381066,
+            "maximum": 3.999934532261025,
+            "mean": 1.2067477956236072
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 0.39996582492293975,
+            "median": 0.5999898823683103,
+            "maximum": 1.7999705395174612,
+            "mean": 0.6745587339555748
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 0.0,
+            "median": 0.0,
+            "maximum": 0.39999293924665896,
+            "mean": 0.09491301633059213
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 0.599982317799743,
+            "median": 0.999980148403584,
+            "maximum": 2.1999639927435637,
+            "mean": 1.0779390791196837
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 0.19999410593324768,
+            "median": 0.5999902751173343,
+            "maximum": 1.799972451075664,
+            "mean": 0.8169287171988375
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 0.5999487373844097,
+            "median": 1.9999652554030667,
+            "maximum": 6.199898525004589,
+            "mean": 2.08469092683098
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 10.999675826328623,
+            "median": 13.798901883379816,
+            "maximum": 28.99952535889243,
+            "mean": 13.887786272045375
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 10.9453125,
+            "median": 11.1953125,
+            "maximum": 11.4453125,
+            "mean": 11.1953125
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "adb": {
+            "n": 4,
+            "minimum": 8.0859375,
+            "median": 8.119140625,
+            "maximum": 8.1328125,
+            "mean": 8.1142578125
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 293.8203125,
+            "median": 294.54296875,
+            "maximum": 296.27734375,
+            "mean": 294.63958333333335
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 280.91796875,
+            "median": 281.33203125,
+            "maximum": 281.4453125,
+            "mean": 281.21692708333336
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 202.1015625,
+            "median": 222.03515625,
+            "maximum": 225.84765625,
+            "mean": 217.13450520833334
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.13064216799102724,
+          "median": 0.15888355651986785,
+          "maximum": 0.5567000249866396,
+          "mean": 0.20810974163080875
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789657440.2475185,
+        "last_utc": 1789657710.25428,
+        "seconds": 270.0067614019499,
+        "charge_delta_uah": -19980,
+        "net_battery_ma": -266.39332891713485,
+        "first_level": 84,
+        "last_level": 84,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 31.2,
+          "median": 31.25,
+          "maximum": 31.3,
+          "mean": 31.25
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "grabs_per_second": {
+          "fps": {
+            "n": 57,
+            "minimum": 0.0,
+            "median": 5.2,
+            "maximum": 16.5,
+            "mean": 4.975438596491228
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 57,
+            "minimum": 0.0,
+            "median": 111.7,
+            "maximum": 180.8,
+            "mean": 103.79824561403508
+          },
+          "grab_mean_ms": {
+            "n": 57,
+            "minimum": 0.0,
+            "median": 0.7,
+            "maximum": 1.4,
+            "mean": 0.6894736842105263
+          }
+        },
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 57,
+            "minimum": 36.2,
+            "median": 185.8,
+            "maximum": 223.5,
+            "mean": 180.33684210526314
+          },
+          "p95_ms": {
+            "n": 57,
+            "minimum": 221.9,
+            "median": 229.0,
+            "maximum": 238.2,
+            "mean": 229.4701754385965
+          },
+          "max_ms": {
+            "n": 57,
+            "minimum": 226.6,
+            "median": 236.0,
+            "maximum": 248.4,
+            "mean": 236.63859649122807
+          },
+          "samples": {
+            "n": 57,
+            "minimum": 25.0,
+            "median": 37.0,
+            "maximum": 107.0,
+            "mean": 38.1578947368421
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 57,
+            "minimum": 31.6,
+            "median": 178.5,
+            "maximum": 217.0,
+            "mean": 174.14912280701753
+          },
+          "p95_ms": {
+            "n": 57,
+            "minimum": 216.0,
+            "median": 219.8,
+            "maximum": 232.6,
+            "mean": 223.42631578947368
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 57,
+            "minimum": 25.0,
+            "median": 37.0,
+            "maximum": 107.0,
+            "mean": 38.1578947368421
+          },
+          "seconds": {
+            "n": 57,
+            "minimum": 5.0,
+            "median": 5.1,
+            "maximum": 5.2,
+            "mean": 5.091228070175439
+          },
+          "kbps": {
+            "n": 57,
+            "minimum": 1344.0,
+            "median": 1682.0,
+            "maximum": 1719.0,
+            "mean": 1637.140350877193
+          },
+          "fps": {
+            "n": 57,
+            "minimum": 4.901960784313726,
+            "median": 7.254901960784315,
+            "maximum": 20.980392156862745,
+            "mean": 7.495956709269403
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 50,
+            "minimum": 0.6,
+            "median": 0.6,
+            "maximum": 0.8,
+            "mean": 0.65
+          },
+          "p95_ms": {
+            "n": 50,
+            "minimum": 0.6,
+            "median": 0.8500000000000001,
+            "maximum": 15.1,
+            "mean": 1.916
+          },
+          "samples": {
+            "n": 50,
+            "minimum": 4.0,
+            "median": 27.0,
+            "maximum": 84.0,
+            "mean": 28.96
+          }
+        }
+      }
+    },
+    {
+      "trial": 3,
+      "kind": "motion",
+      "start_utc": 1789657800.2243044,
+      "end_utc": 1789658100.2246518,
+      "sample_count": 60,
+      "processes": {
+        "cpu_percent_one_core": {
+          "uscreen": {
+            "n": 59,
+            "minimum": 0.5999887604136742,
+            "median": 0.599993598431663,
+            "maximum": 0.9999837124695543,
+            "mean": 0.7118533885598227
+          },
+          "evdi_helper": {
+            "n": 59,
+            "minimum": 10.59983246325123,
+            "median": 11.599782701331034,
+            "maximum": 12.599804745983704,
+            "mean": 11.50151672770704
+          },
+          "ffmpeg": {
+            "n": 59,
+            "minimum": 3.1999536633868253,
+            "median": 3.7999470340858323,
+            "maximum": 4.599934697512466,
+            "mean": 3.8779059363113597
+          },
+          "benchmark-workload-and-observer": {
+            "n": 59,
+            "minimum": 1.5999747114341478,
+            "median": 2.1999629772608102,
+            "maximum": 2.3999662228864005,
+            "mean": 2.118611210912946
+          },
+          "cinnamon": {
+            "n": 59,
+            "minimum": 2.599960852403112,
+            "median": 3.5999341413645927,
+            "maximum": 4.599935931186814,
+            "mean": 3.4745224664111265
+          },
+          "Xorg": {
+            "n": 59,
+            "minimum": 7.399888556140599,
+            "median": 8.799862044567439,
+            "maximum": 9.999845044410998,
+            "mean": 8.688001042365652
+          },
+          "pipeline_total": {
+            "n": 59,
+            "minimum": 14.799766080765869,
+            "median": 15.999817496384734,
+            "maximum": 17.399730363501305,
+            "mean": 16.091276052578223
+          },
+          "android_app": {
+            "n": 59,
+            "minimum": 64.99900415092242,
+            "median": 68.9990223527176,
+            "maximum": 70.19900502735727,
+            "mean": 68.82266320282098
+          }
+        },
+        "rss_mib": {
+          "uscreen": {
+            "n": 60,
+            "minimum": 11.1953125,
+            "median": 11.4453125,
+            "maximum": 11.9453125,
+            "mean": 11.5703125
+          },
+          "evdi_helper": {
+            "n": 60,
+            "minimum": 9.3515625,
+            "median": 9.3515625,
+            "maximum": 9.3515625,
+            "mean": 9.3515625
+          },
+          "ffmpeg": {
+            "n": 60,
+            "minimum": 120.07421875,
+            "median": 120.07421875,
+            "maximum": 120.07421875,
+            "mean": 120.07421875
+          },
+          "benchmark-workload-and-observer": {
+            "n": 60,
+            "minimum": 28.19921875,
+            "median": 28.19921875,
+            "maximum": 28.19921875,
+            "mean": 28.19921875
+          },
+          "cinnamon": {
+            "n": 60,
+            "minimum": 293.54296875,
+            "median": 294.55859375,
+            "maximum": 295.7421875,
+            "mean": 294.38548177083334
+          },
+          "Xorg": {
+            "n": 60,
+            "minimum": 280.3125,
+            "median": 280.42578125,
+            "maximum": 281.10546875,
+            "mean": 280.57916666666665
+          },
+          "android_app": {
+            "n": 60,
+            "minimum": 202.453125,
+            "median": 215.919921875,
+            "maximum": 226.36328125,
+            "mean": 215.34596354166666
+          },
+          "adb": {
+            "n": 3,
+            "minimum": 7.83984375,
+            "median": 7.88671875,
+            "maximum": 8.1015625,
+            "mean": 7.942708333333333
+          }
+        },
+        "observer_seconds": {
+          "n": 60,
+          "minimum": 0.14106010500108823,
+          "median": 0.15577413549181074,
+          "maximum": 0.5731247259536758,
+          "mean": 0.2077668029688842
+        }
+      },
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789657800.255797,
+        "last_utc": 1789658070.2599823,
+        "seconds": 270.0041844389634,
+        "charge_delta_uah": -29970,
+        "net_battery_ma": -399.5938071263108,
+        "first_level": 84,
+        "last_level": 84,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 31.1,
+          "median": 31.2,
+          "maximum": 31.2,
+          "mean": 31.18
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "log_windows": {
+        "grabs_per_second": {
+          "fps": {
+            "n": 58,
+            "minimum": 59.2,
+            "median": 60.0,
+            "maximum": 60.0,
+            "mean": 59.929310344827584
+          }
+        },
+        "capture_cycle_window": {
+          "request_ready_mean_ms": {
+            "n": 58,
+            "minimum": 15.5,
+            "median": 15.6,
+            "maximum": 15.8,
+            "mean": 15.63448275862069
+          },
+          "grab_mean_ms": {
+            "n": 58,
+            "minimum": 0.9,
+            "median": 0.9,
+            "maximum": 1.0,
+            "mean": 0.9189655172413793
+          }
+        },
+        "capture_to_fifo_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 0.5,
+            "median": 0.6,
+            "maximum": 7.0,
+            "mean": 1.436206896551724
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 0.6,
+            "median": 0.8,
+            "maximum": 7.5,
+            "mean": 2.0689655172413794
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 256.0,
+            "median": 256.0,
+            "maximum": 256.0,
+            "mean": 256.0
+          }
+        },
+        "packet_ready_to_ack_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 36.2,
+            "median": 36.6,
+            "maximum": 36.9,
+            "mean": 36.6
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 39.3,
+            "median": 43.2,
+            "maximum": 45.9,
+            "mean": 43.09655172413793
+          },
+          "max_ms": {
+            "n": 58,
+            "minimum": 60.0,
+            "median": 63.25,
+            "maximum": 80.9,
+            "mean": 65.64655172413794
+          },
+          "samples": {
+            "n": 58,
+            "minimum": 298.0,
+            "median": 300.0,
+            "maximum": 302.0,
+            "mean": 300.0689655172414
+          }
+        },
+        "tablet_arrival_to_callback_window": {
+          "p50_ms": {
+            "n": 58,
+            "minimum": 29.9,
+            "median": 30.3,
+            "maximum": 30.4,
+            "mean": 30.255172413793105
+          },
+          "p95_ms": {
+            "n": 58,
+            "minimum": 32.0,
+            "median": 34.3,
+            "maximum": 39.8,
+            "mean": 34.41206896551724
+          }
+        },
+        "encoder_window": {
+          "access_units": {
+            "n": 58,
+            "minimum": 298.0,
+            "median": 300.0,
+            "maximum": 301.0,
+            "mean": 300.0689655172414
+          },
+          "seconds": {
+            "n": 58,
+            "minimum": 5.0,
+            "median": 5.0,
+            "maximum": 5.0,
+            "mean": 5.0
+          },
+          "kbps": {
+            "n": 58,
+            "minimum": 23893.0,
+            "median": 28850.0,
+            "maximum": 29363.0,
+            "mean": 28761.98275862069
+          },
+          "fps": {
+            "n": 58,
+            "minimum": 59.6,
+            "median": 60.0,
+            "maximum": 60.2,
+            "mean": 60.01379310344828
+          }
+        }
+      }
+    }
+  ],
+  "whole_run_battery": {
+    "samples": 72,
+    "first_utc": 1789655940.2209098,
+    "last_utc": 1789658070.2599823,
+    "seconds": 2130.03907208296,
+    "charge_delta_uah": -189810,
+    "net_battery_ma": -320.79974914816324,
+    "first_level": 86,
+    "last_level": 84,
+    "temperature_c": {
+      "n": 72,
+      "minimum": 30.9,
+      "median": 31.2,
+      "maximum": 31.4,
+      "mean": 31.170833333333334
+    },
+    "usb_reported_values": [
+      [
+        "true",
+        "500000",
+        "5000000"
+      ]
+    ]
+  },
+  "semantics": "Latency distributions describe logged five-second window statistics, not pooled frame percentiles. CPU 100% is one core. Negative battery mA is net discharge while USB powered."
+}

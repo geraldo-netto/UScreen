@@ -1,5 +1,11 @@
 # Benchmarks
 
+The current fork's first physical-device run is the
+[2026-09-17 single-tablet baseline](benchmarks/2026-09-17-device-baseline.md),
+with [repeatable collection instructions](benchmarks/README.md) and raw samples.
+It covers AMD VAAPI, a Ulefone tablet and sustained USB battery observations;
+it is a separate hardware/workload series from the inherited results below.
+
 For the current fork's proposed measurement matrix and optimization work, see
 the [performance and scalability research](reviews/2026-09-17-performance-scalability.md).
 That report separates code-derived hypotheses from measurements still needed.

@@ -1,0 +1,13 @@
+{"utc": 1789655940.220583, "monotonic": 455000.998226989, "event": "phase", "phase": 0, "trial": 1, "kind": "static", "measured": false, "seconds": 60.0, "phase_started": 455000.998221117, "ticks": 0}
+{"utc": 1789656000.2208853, "monotonic": 455060.998529057, "event": "phase", "phase": 1, "trial": 1, "kind": "static", "measured": true, "seconds": 300.0, "phase_started": 455060.998518326, "ticks": 0}
+{"utc": 1789656300.22121, "monotonic": 455360.99885413, "event": "phase", "phase": 2, "trial": 1, "kind": "motion", "measured": false, "seconds": 60.0, "phase_started": 455360.998837367, "ticks": 0}
+{"utc": 1789656360.2216046, "monotonic": 455420.999248495, "event": "phase", "phase": 3, "trial": 1, "kind": "motion", "measured": true, "seconds": 300.0, "phase_started": 455420.999239838, "ticks": 3600}
+{"utc": 1789656660.221884, "monotonic": 455720.999527757, "event": "phase", "phase": 4, "trial": 2, "kind": "motion", "measured": false, "seconds": 60.0, "phase_started": 455720.99951883, "ticks": 21599}
+{"utc": 1789656720.2222173, "monotonic": 455780.999861111, "event": "phase", "phase": 5, "trial": 2, "kind": "motion", "measured": true, "seconds": 300.0, "phase_started": 455780.999853917, "ticks": 25199}
+{"utc": 1789657020.2224438, "monotonic": 456081.000087472, "event": "phase", "phase": 6, "trial": 2, "kind": "static", "measured": false, "seconds": 60.0, "phase_started": 456081.000079497, "ticks": 43192}
+{"utc": 1789657080.2227628, "monotonic": 456141.000406525, "event": "phase", "phase": 7, "trial": 2, "kind": "static", "measured": true, "seconds": 300.0, "phase_started": 456141.000395704, "ticks": 43192}
+{"utc": 1789657380.2231627, "monotonic": 456441.000806571, "event": "phase", "phase": 8, "trial": 3, "kind": "static", "measured": false, "seconds": 60.0, "phase_started": 456441.000792294, "ticks": 43192}
+{"utc": 1789657440.2235672, "monotonic": 456501.001211021, "event": "phase", "phase": 9, "trial": 3, "kind": "static", "measured": true, "seconds": 300.0, "phase_started": 456501.001198947, "ticks": 43192}
+{"utc": 1789657740.2240157, "monotonic": 456801.001659385, "event": "phase", "phase": 10, "trial": 3, "kind": "motion", "measured": false, "seconds": 60.0, "phase_started": 456801.001646981, "ticks": 43192}
+{"utc": 1789657800.2243044, "monotonic": 456861.001948217, "event": "phase", "phase": 11, "trial": 3, "kind": "motion", "measured": true, "seconds": 300.0, "phase_started": 456861.001938468, "ticks": 46792}
+{"utc": 1789658100.2246518, "monotonic": 457161.002295762, "event": "complete", "ticks": 64792}

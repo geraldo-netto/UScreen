@@ -1,0 +1,86 @@
+{
+  "source_commit": "4490763f4bcaf79fabdff1aa78809281266131b8",
+  "built_at_utc": "2026-09-17T14:33:27.531944+00:00",
+  "rust": "1.90.0",
+  "gcc": "Debian 12.2.0",
+  "android_variant": "debug",
+  "android_java": "21",
+  "linux_profile": "release",
+  "inproc_encoder": false,
+  "old_desktop_pids": {
+    "cinnamon": 1897918,
+    "Xorg": 1897166
+  },
+  "binaries": {
+    "uscreen-gui": "5ce462d7868c14b9c66672cd5c5e43078cdfdd84b5da1444cb0586c94c9e15b7",
+    "uscreen": "070112d65e188ed1dee52ede291ae789ec3eb42164c4dc2cb9753aa81e358280",
+    "libevdi.so.1.15.0": "5ec8b7614074dd10dce5ba4b668203c70e77bf698da6614d839324955aead96a",
+    "evdi_helper": "3a309e1c07f24a6f1c3d49cc107cb55a581fdc159dff7bce0b5cc35fd867b212",
+    "app-debug.apk": "de65961a489a4f394ae5709e933ea0e79cde4b671ca5226c53dd511e125f9aa2"
+  },
+  "host_cpu": "AMD Ryzen 9 7945HX with Radeon Graphics",
+  "host_os": {
+    "NAME": "\"Linux Mint\"",
+    "VERSION": "\"22.3 (Zena)\"",
+    "ID": "linuxmint",
+    "ID_LIKE": "\"ubuntu debian\"",
+    "PRETTY_NAME": "\"Linux Mint 22.3\"",
+    "VERSION_ID": "\"22.3\"",
+    "HOME_URL": "\"https://www.linuxmint.com/\"",
+    "SUPPORT_URL": "\"https://forums.linuxmint.com/\"",
+    "BUG_REPORT_URL": "\"http://linuxmint-troubleshooting-guide.readthedocs.io/en/latest/\"",
+    "PRIVACY_POLICY_URL": "\"https://www.linuxmint.com/\"",
+    "VERSION_CODENAME": "zena",
+    "UBUNTU_CODENAME": "noble"
+  },
+  "host_kernel": "7.0.0-31-generic",
+  "ffmpeg_version": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+  "usb": {
+    "speed_mbps": 480,
+    "bMaxPower": "500mA",
+    "parent_hub": "Generic 4-Port USB 2.0 Hub 0bda:5432",
+    "host_typec_class_present": false,
+    "interpretation": "The USB 2.0 branch identifies this data route, not the full charging capabilities of the physical hub. Android charging limits are reported values, not measured USB watts."
+  },
+  "drm_driver": "amdgpu",
+  "host_config": "encoder = \"h264_vaapi\"\nvaapi_device = \"/dev/dri/renderD128\"\nfps = 60\nbitrate = 20000\nwidth = 1280\nheight = 800\nquality = 18\nstream_scale = 1\npen_only = false\nposition = \"right\"\nten_bit = false\nrequire_token = true\ncheck_updates = true\nmax_tablets = 1\nwifi_address = \"\"\nauto_resolution = true\nvideo_port = 8890\ninput_port = 8891\nauto_launch_app = true\ninput_touch = false\ninput_pen = false\ninput_pointer = false\n",
+  "validation": {
+    "android": {
+      "tests": 159,
+      "failures": 0,
+      "errors": 0
+    },
+    "linux": "T384 workspace, native, tooling, optional encoder tests and both clippy configurations passed before deployment; no runtime source changes since."
+  },
+  "installed_linux_main_pid": 2765192,
+  "android_decoder": {
+    "name": "c2.unisoc.avc.decoder",
+    "resource_class": "hw-video-codec",
+    "current_pixels": 1024000,
+    "source": "adb shell dumpsys media.resource_manager, PID 19950"
+  },
+  "observations": {
+    "cinnamon_pid_after_reload": 1897918,
+    "xorg_pid_after_reload": 1897166,
+    "android_pid_after_reload": 19950,
+    "cold_start_timeout_observed": false,
+    "note": "Existing T395 remains open; this successful launch does not resolve it."
+  },
+  "desktop_packages": [
+    "cinnamon 6.6.9+zena",
+    "fonts-dejavu-core 2.37-8",
+    "libtk8.6 8.6.14-1build1",
+    "xserver-xorg-core 2:21.1.12-1ubuntu1.6"
+  ],
+  "vaapi_pci_identity": {
+    "vendor": "0x1002",
+    "device": "0x73ff",
+    "description": "03:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Navi 23 [Radeon RX 6600/6600 XT/6600M] [1002:73ff] (rev c1)"
+  },
+  "android_counter_units_verified_before_run": {
+    "CLK_TCK": 100,
+    "PAGESIZE": 4096,
+    "source": "adb shell getconf"
+  },
+  "build_image": "uscreen-ci:inproc sha256:2dcbaf9726de166bec69a139124bfebbc82385f3000637ae12a1a0a515643c92"
+}
