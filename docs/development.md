@@ -132,7 +132,7 @@ COMMANDS
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
   --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, hevc_vaapi, libx264
   --fps <N>             frame rate (10–90)
-  --bitrate <KBPS>      bitrate ceiling
+  --bitrate <KBPS>      rate-control limit (1000–60000; not enforced by VAAPI CQP)
   --width/--height <N>  capture size (auto_resolution off)
   --quality <Q>         constant-quality target, 12–32, lower is sharper
   --stream-scale <N>    downscale the stream only, 1 = native, 2 = half
@@ -141,6 +141,31 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
   --helper <PATH>, --edid <PATH>
 ```
 
+## Settings defaults and scope
+
+These defaults come from `common/src/lib.rs`, unless a saved config overrides
+them. See the README for config paths and the app gear-menu controls.
+
+| Host setting | Default | Scope or limit |
+| --- | --- | --- |
+| `encoder` | `h264_nvenc` | Explicit selection; no automatic GPU fallback |
+| `vaapi_device` | `/dev/dri/renderD128` | Used by VAAPI |
+| `fps` / `bitrate` / `quality` | 60 / 20000 kbps / 18 | Accepted ranges 10–90 / 1000–60000 / 12–32; encoder-specific rate control |
+| `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
+| `stream_scale` | 1 | Integer 1–4; divides stream dimensions, not capture dimensions |
+| `position` / `pen_only` | `right` / false | Placement / graphics-tablet mode |
+| `ten_bit` | false | HEVC FFmpeg path only; not HDR |
+| `max_tablets` | 1 | Up to four slots; EVDI capacity required |
+| `input_touch` / `input_pen` / `input_pointer` | true / true / true | Pointer creation also requires pen |
+| `video_port` / `input_port` | 8890 / 8891 | Incremented by two per additional slot |
+| `require_token` / `check_updates` / `auto_launch_app` | true / true / true | Keep authentication enabled; update checks are optional |
+| `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
+
+Independent width/height/FPS limits do not guarantee a valid EDID combination
+(T332). Some controls are config/CLI-only: the GUI omits HEVC VAAPI (T240).
+App brightness starts at 50%, refresh preference at 60 Hz; these persist only
+in the app and do not set the host stream rate or other apps' display settings.
+
 ## Encoder tuning
 
 - NVIDIA: `h264_nvenc` (default) or `hevc_nvenc` — see the codec section of
@@ -148,10 +173,13 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
 - AMD/Intel: `h264_vaapi` or `hevc_vaapi`, constant-quality via `quality`.
   Set `vaapi_device = "/dev/dri/renderD129"` in config.toml to select another GPU
   (default: `/dev/dri/renderD128`). HEVC supports `ten_bit = true`.
-- CPU: `libx264`, `ultrafast`/`zerolatency`; expect 30 fps at most on a laptop.
+- CPU: `libx264`, `ultrafast`/`zerolatency`; throughput depends on CPU,
+  resolution and content. No general laptop FPS limit has been measured here.
 
-`quality` is what governs picture quality; `bitrate` is only a ceiling for
-bursts. On a static desktop the stream sits far below it.
+`quality` selects NVENC CQ, VAAPI QP or x264 CRF. NVENC VBR and x264 VBV
+use the bitrate limit; **VAAPI CQP does not enforce it**. The desired bounded
+VAAPI policy/UI remains unresolved (T259). Do not interpret the configured
+bitrate as measured throughput. Static scenes may use much less bandwidth.
 
 ## Optional in-process encoder
 

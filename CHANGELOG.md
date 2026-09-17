@@ -8,6 +8,28 @@ the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
 
 ## Unreleased
 
+Selected fork changes (the commit history contains the individual fixes;
+[TODO.md](TODO.md) retains unresolved issues):
+
+- Android brightness defaults to 50% and the display-mode preference to 60 Hz.
+  Both are adjustable, persistent and scoped to UScreen's window; switching
+  apps preserves their normal system display settings. System-default refresh
+  and the closest supported mode are available; Android can override the request.
+- Startup waits for tablet geometry before the initial EVDI attachment (T223).
+  This removes a stale-settings hotplug race; it does not establish that the
+  separate Cinnamon/Xorg crash (T222) is fixed.
+- Capture/helper, decoder lifecycle, control connection and input-state fixes
+  include permanent regressions. These cover cancellation, stale callbacks,
+  FIFO/file validation, pen-button release and palm-contact handling.
+- Encoder fixes retain BT.709 metadata and bitrate precision. The FFmpeg path
+  schedules keyframes by elapsed capture time for recovery at low frame rates.
+- Portable build/package checks cover installed GUI runtime dependencies,
+  user-space execution and distribution notices in disposable containers.
+  They do not validate real EVDI/compositor attachment.
+- Fork URLs and update checks target geraldo-netto/UScreen. A Windows
+  integration plan is saved in [docs/windows-port.md](docs/windows-port.md);
+  Windows host support is not implemented.
+
 - The virtual input devices (touchscreen, pen tablet, parking pointer) now
   exist only while a tablet is attached. They used to be created for the
   daemon's whole lifetime, tablet or not, and merely having a touchscreen
@@ -16,7 +38,7 @@ the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
   while a touch device exists.
 - Each device can be switched off: `input_touch`, `input_pen`,
   `input_pointer` in config.toml, with checkboxes in the settings panel. All
-  on by default, so nothing changes on upgrade. The pointer follows the pen.
+  default to on; existing settings remain subject to normal config loading. The pointer follows the pen.
   Graphics-tablet mode is refused while the pen device is off, instead of
   leaving the tablet blank. `uscreen doctor` reports which devices are on.
 - The daemon automatically maps input devices onto the virtual output on X11

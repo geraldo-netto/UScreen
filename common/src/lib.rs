@@ -5,29 +5,21 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-/// Highest bitrate the USB transport actually sustains. Beyond this the encoder
-/// outruns the link, frames pile up in every queue along the way and latency
-/// grows without bound — the stream does not get sharper, only later.
-///
-/// This is a hard ceiling rather than a hint because the value is persisted:
-/// a bad number pushed once from the tablet stays in the config file and keeps
-/// poisoning every subsequent run.
+/// Maximum accepted configured bitrate, in kbps. This is a project policy
+/// limit, not a measured capacity for every USB link. VAAPI CQP does not
+/// enforce a bitrate ceiling (T259).
 pub const MAX_BITRATE_KBPS: u32 = 60_000;
 pub const MIN_BITRATE_KBPS: u32 = 1_000;
 
-/// The generated EDID caps the virtual mode at 90 Hz (EDID 1.4 stores the pixel
-/// clock in 16 bits, and 2960x1848@120 overflows it), so anything above 90
-/// would only ever produce duplicate frames.
+/// Maximum accepted frame-rate target. EDID pixel-clock validity also depends
+/// on resolution; not every combination up to this limit is valid (T332).
 pub const MAX_FPS: u32 = 90;
 pub const MIN_FPS: u32 = 10;
 
 /// Constant-quality target for the encoder (lower = sharper, more bits).
 ///
-/// 18 rather than a more conservative value because bandwidth stopped being the
-/// constraint: in constant-quality mode a desktop streams at a few Mbps against
-/// a ceiling tens of times higher, so spending bits on crisp text is close to
-/// free. Text sharpness is ultimately limited by 4:2:0 chroma subsampling, not
-/// by this number — below roughly 16 there is nothing left to gain.
+/// The default is 18. Visual quality and bandwidth depend on encoder, content
+/// and device; this value does not establish a universal quality threshold.
 pub const DEFAULT_QUALITY: u32 = 18;
 pub const MIN_QUALITY: u32 = 12;
 pub const MAX_QUALITY: u32 = 32;
@@ -90,9 +82,8 @@ pub struct FileConfig {
     pub height: u32,
     /// Encoder constant-quality target: lower is sharper and costs more bits.
     ///
-    /// This, not the bitrate, is what governs picture quality now that the
-    /// encoder runs in constant-quality mode — the bitrate is only a ceiling
-    /// for bursts, and on a desktop the stream sits far below it.
+    /// Maps to NVENC CQ, VAAPI QP or x264 CRF. NVENC/x264 also use bitrate
+    /// limits; VAAPI CQP does not enforce the configured ceiling (T259).
     pub quality: u32,
     /// Integer downscale for the stream only; the desktop keeps its native
     /// mode. 1 = native, 2 = half in each axis. Fewer streamed pixels can

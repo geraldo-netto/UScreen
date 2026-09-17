@@ -137,25 +137,35 @@ encoder, pen and licensing details.
 
 Host settings live in `~/.config/uscreen/config.toml`; edit them with
 `uscreen-gui` or override supported settings with CLI flags. The tablet’s ⚙
-sheet stores app preferences locally and sends shared streaming settings to
-the host. The tray controls the running daemon.
+sheet stores app preferences locally; **Apply** sends its shared streaming
+settings to the host. Brightness/refresh preferences take effect immediately.
+The tray controls the running daemon.
 When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 `$XDG_CONFIG_HOME/uscreen/config.toml`. Empty or relative values use the default.
 
 - **Graphics tablet mode** — flip *Graphics tablet* on the tablet: nothing is
   streamed and the pen drives your own screen. Input latency remains. Switch back
-  the same way; no restart.
+  the same way. A current greeting mismatch can leave its reconnect overlay
+  visible (T247); see [known limitations](docs/compatibility.md#current-fork-limitations).
+- **Tablet display** — brightness defaults to 50%, and the app requests 60 Hz.
+  Adjust either in the gear menu; preferences persist and affect UScreen only.
+  Other apps retain normal system settings. Refresh selection uses the closest
+  supported rate at the current display resolution; **System default** clears
+  the request, and Android may override it. Stream FPS is separate.
 - **Position** — `right` (default), `left`, `above`, `below` your real screens.
 - **Orientation** — in the tablet's ⚙ sheet: rotate automatically with the
   tilt sensor, or pin *camera up* / *camera down*.
-- **Codec** — `h264_nvenc` by default because every device decodes it;
-  `hevc_nvenc` is sharper at the same bitrate and was faster on the reference
-  tablet. `ten_bit` (HEVC Main10) smooths gradient banding — the desktop is
-  8-bit, so it adds precision, not colour; it is not HDR.
+- **Codec** — `h264_nvenc` is the configured default and requires working
+  NVIDIA NVENC. Select VAAPI for a supported AMD/Intel setup or `libx264` for
+  software encoding. HEVC is optional and needs a compatible tablet decoder.
+  `ten_bit` requests HEVC Main10 on the FFmpeg path; capture is still 8-bit,
+  and this does not enable HDR or guarantee less banding on every scene.
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a
   historical ~6 ms lower packet-to-ack median on the reference tablet, at the
   cost of softer text; other devices differ.
-- **Several tablets** — `max_tablets` up to 4, each its own screen.
+- **Several tablets** — `max_tablets` supports 1–4 slots. Historical testing
+  used one physical tablet plus a simulated client; card-allocation limitations
+  remain (T330).
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
   default; turn off what you do not use (on Cinnamon/GNOME under X11 a
@@ -184,8 +194,8 @@ proper tablet device.
 
 **Does it work on Bazzite / KDE Wayland?** That is the reference setup.
 X11 desktops get automatic input mapping with `xinput` and `xrandr`; place
-outputs through desktop display settings. Other Wayland desktops, including
-GNOME, require manual input mapping.
+outputs through desktop display settings. Other Wayland desktops depend on
+compositor support and manual mapping; see [compatibility](docs/compatibility.md).
 
 **Does it need a dummy HDMI plug?** No.
 

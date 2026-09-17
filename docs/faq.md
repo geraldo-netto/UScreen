@@ -49,19 +49,23 @@ rest see it as a tablet.
 
 **Does UScreen extend the desktop or only mirror the screen?**
 It extends. There is also a "graphics tablet" mode in which nothing is
-streamed and the pen simply drives your existing screen, like a Wacom Intuos.
+streamed and the pen drives your existing screen. The current fork has a
+status-message mismatch that can leave its reconnect overlay visible (T247).
 
 **Does UScreen work on Bazzite and KDE Wayland?**
 That is the reference setup. KDE on Wayland gets automatic output placement,
 input mapping and on-screen-keyboard suppression. X11 desktops get automatic
 input mapping when `xinput` and `xrandr` are installed; place outputs through
-desktop display settings. Other Wayland desktops require manual input mapping.
+desktop display settings. Other Wayland desktops depend on their compositor
+facilities and manual mapping. See [current limitations](compatibility.md#current-fork-limitations).
 
 **Does UScreen require a dummy HDMI plug?**
 No. The virtual display is created in software by EVDI.
 
 **What Android versions are supported?**
-Android 8.1 and newer, on any device with a hardware H.264 decoder.
+Android 8.1/API 27 and newer. The selected codec, profile, resolution and
+frame rate must be supported by the device decoder; the Android version
+alone does not guarantee compatibility.
 
 **Is screen or input data sent to the cloud?**
 No. Screen and input data never leave the cable (or your own network if you
