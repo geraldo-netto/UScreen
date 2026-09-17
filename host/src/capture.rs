@@ -76,13 +76,15 @@ const HEVC_NAL_SPS: u8 = 33;
 const HEVC_NAL_PPS: u8 = 34;
 #[cfg(not(feature = "inproc-encoder"))]
 const HEVC_NAL_AUD: u8 = 35;
+#[cfg(not(feature = "inproc-encoder"))]
+const HEVC_NAL_PREFIX_SEI: u8 = 39;
 
 #[cfg(not(feature = "inproc-encoder"))]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum NalKind {
     Sps,
     Pps,
-    Aud,
+    Prefix,
     Vcl,
     Other,
 }
@@ -91,6 +93,8 @@ enum NalKind {
 const NAL_TYPE_NON_IDR: u8 = 1;
 #[cfg(not(feature = "inproc-encoder"))]
 const NAL_TYPE_IDR: u8 = 5;
+#[cfg(not(feature = "inproc-encoder"))]
+const NAL_TYPE_SEI: u8 = 6;
 #[cfg(not(feature = "inproc-encoder"))]
 const NAL_TYPE_AUD: u8 = 9;
 #[cfg(not(feature = "inproc-encoder"))]
@@ -1821,7 +1825,7 @@ impl H264AnnexBPacketizer {
         };
         let (kind, _) = self.classify_nal(header);
         let vcl = kind == NalKind::Vcl;
-        let prefix = matches!(kind, NalKind::Sps | NalKind::Pps | NalKind::Aud);
+        let prefix = matches!(kind, NalKind::Sps | NalKind::Pps | NalKind::Prefix);
         prefix || (vcl && self.starts_new_picture(&self.buffer, offset))
     }
 
@@ -1836,7 +1840,7 @@ impl H264AnnexBPacketizer {
         let class = match kind {
             NAL_TYPE_SPS => NalKind::Sps,
             NAL_TYPE_PPS => NalKind::Pps,
-            NAL_TYPE_AUD => NalKind::Aud,
+            NAL_TYPE_AUD | NAL_TYPE_SEI => NalKind::Prefix,
             NAL_TYPE_NON_IDR..=NAL_TYPE_IDR => NalKind::Vcl,
             _ => NalKind::Other,
         };
@@ -1847,7 +1851,7 @@ impl H264AnnexBPacketizer {
         let class = match kind {
             HEVC_NAL_VPS | HEVC_NAL_SPS => NalKind::Sps,
             HEVC_NAL_PPS => NalKind::Pps,
-            HEVC_NAL_AUD => NalKind::Aud,
+            HEVC_NAL_AUD | HEVC_NAL_PREFIX_SEI => NalKind::Prefix,
             0..=HEVC_NAL_VCL_MAX => NalKind::Vcl,
             _ => NalKind::Other,
         };
@@ -1866,8 +1870,12 @@ impl H264AnnexBPacketizer {
             (NalKind::Sps | NalKind::Pps, _) => {
                 self.remember_parameter_set(nal, header_offset, out)
             }
-            (NalKind::Aud, _) => {
-                self.emit_pending_access_unit(out);
+            (NalKind::Prefix, _) => {
+                // Prefix metadata belongs to the following picture. Keep
+                // earlier AUD/SEI units when that picture has no slices yet.
+                if self.pending_has_vcl {
+                    self.emit_pending_access_unit(out);
+                }
                 self.pending_access_unit.extend_from_slice(nal);
             }
             (NalKind::Vcl, is_key) => self.append_picture_slice(nal, header_offset, is_key, out),
@@ -2948,5 +2956,85 @@ mod tests {
         let out = packetizer.finish();
         assert_eq!(out.len(), 1);
         assert_eq!(&out[0].data[..], &nal(NAL_TYPE_NON_IDR, &[0x80]));
+    }
+
+    fn t285_sei(codec: Codec, suffix: bool, marker: u8) -> Vec<u8> {
+        // user_data_unregistered: sixteen UUID bytes plus one data byte.
+        let mut payload = vec![5, 17];
+        payload.extend_from_slice(b"0123456789abcdef");
+        payload.extend_from_slice(&[marker, 0x80]);
+        match codec {
+            Codec::H264 => nal(6, &payload),
+            Codec::Hevc => hevc_nal(if suffix { 40 } else { 39 }, &payload),
+        }
+    }
+
+    fn t285_pictures(codec: Codec, with_aud: bool) -> (Vec<u8>, Vec<u8>) {
+        let first = match codec {
+            Codec::H264 => nal(NAL_TYPE_NON_IDR, &[0x80, 0x11]),
+            Codec::Hevc => hevc_nal(1, &[0x80, 0x11]),
+        };
+        let mut next = if with_aud {
+            match codec {
+                Codec::H264 => nal(NAL_TYPE_AUD, &[0x10]),
+                Codec::Hevc => hevc_nal(HEVC_NAL_AUD, &[0x10]),
+            }
+        } else {
+            Vec::new()
+        };
+        next.extend(t285_sei(codec, false, b'A'));
+        next.extend(t285_sei(codec, false, b'B'));
+        next.extend_from_slice(&first);
+        if codec == Codec::Hevc {
+            next.extend(t285_sei(codec, true, b'C'));
+        }
+        (first, next)
+    }
+
+    #[test]
+    fn t285_prefix_sei_belongs_to_next_picture_across_fragmentation() {
+        // Boundary rules also used by FFmpeg's h264_find_frame_end and
+        // hevc_find_frame_end; prefix SEI starts a new AU, suffix SEI does not.
+        for codec in [Codec::H264, Codec::Hevc] {
+            for with_aud in [false, true] {
+                let (first, next) = t285_pictures(codec, with_aud);
+                let stream = [first.as_slice(), next.as_slice()].concat();
+                for chunk_size in 1..=stream.len() {
+                    let mut packetizer = H264AnnexBPacketizer::new(codec, Default::default());
+                    let mut packets = Vec::new();
+                    for chunk in stream.chunks(chunk_size) {
+                        packets.extend(packetizer.push(chunk));
+                    }
+                    packets.extend(packetizer.finish());
+                    let actual: Vec<_> =
+                        packets.iter().map(|packet| packet.data.as_ref()).collect();
+                    assert_eq!(
+                        actual,
+                        [first.as_slice(), next.as_slice()],
+                        "T285 {codec:?}, AUD={with_aud}, chunks={chunk_size}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn t285_prefix_sei_header_releases_previous_picture_promptly() {
+        for codec in [Codec::H264, Codec::Hevc] {
+            let (first, _) = t285_pictures(codec, false);
+            let sei = t285_sei(codec, false, b'A');
+            let mut packetizer = H264AnnexBPacketizer::new(codec, Default::default());
+            assert!(packetizer.push(&first).is_empty());
+            let packets = packetizer.push(&sei[..5]);
+            assert_eq!(
+                packets.len(),
+                1,
+                "T285 {codec:?} prefix header must finish prior AU"
+            );
+            assert_eq!(packets[0].data.as_ref(), first.as_slice());
+            assert!(packetizer.push(&sei[5..]).is_empty());
+            assert!(packetizer.push(&first).is_empty());
+            assert_eq!(packetizer.finish()[0].data.as_ref(), [sei, first].concat());
+        }
     }
 }
