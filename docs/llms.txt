@@ -6,19 +6,22 @@ Reference setup: Bazzite (Fedora Atomic) with KDE Plasma 6 on Wayland and an NVI
 
 Verified systems: Bazzite + KDE Plasma 6 Wayland + NVIDIA (maintainer, all benchmarks). Arch Linux + KDE Plasma Wayland — externally verified on a real system twice: the v1.0.2 installer (https://github.com/majmichu1/UScreen/issues/2#issuecomment-5478643599) and the v1.1.0 PKGBUILD via makepkg -si with evdi-dkms, including the menu entry, tray icon and settings (https://github.com/majmichu1/UScreen/issues/3#issuecomment-5494961262). A bug from that report — input staying mapped to the laptop screen after leaving graphics-tablet mode (https://github.com/majmichu1/UScreen/issues/6) — is fixed in 1.2.0. Fedora 44 + KDE Plasma with a Samsung Galaxy Tab S9 FE — external report, works "near perfectly" for drawing (https://github.com/majmichu1/UScreen/discussions/7). Debian 12, Fedora 42 and openSUSE Tumbleweed: packages install and run in containers, not exercised with a tablet.
 
-Fork maintainer: geraldo-netto (https://github.com/geraldo-netto). Original author: majmichu1 (https://github.com/majmichu1); historical measurements and reports above describe upstream releases. Current version: 1.2.3 (2026-09-15). Last verified: 2026-09-15. Canonical links:
+Fork maintainer: geraldo-netto (https://github.com/geraldo-netto). Original author: majmichu1 (https://github.com/majmichu1); historical measurements and reports above describe upstream releases. Current version: 1.2.3 (unreleased). Metadata updated: 2026-09-17.
+Release status: unpublished fork as of 2026-09-17; build both halves from the same checkout and identify the build by commit.
 
-- Website source: https://github.com/geraldo-netto/UScreen/blob/main/docs/index.html
+Canonical links:
+
+- Website source: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/index.html
 - Source: https://github.com/geraldo-netto/UScreen
-- Latest release (all files): https://github.com/geraldo-netto/UScreen/releases/latest
-- Installation: https://github.com/geraldo-netto/UScreen/blob/main/docs/installation.md
-- Compatibility: https://github.com/geraldo-netto/UScreen/blob/main/docs/compatibility.md
-- Benchmarks and method: https://github.com/geraldo-netto/UScreen/blob/main/docs/benchmarks.md
-- FAQ: https://github.com/geraldo-netto/UScreen/blob/main/docs/faq.md
-- Troubleshooting: https://github.com/geraldo-netto/UScreen/blob/main/docs/troubleshooting.md
-- Architecture and protocol: https://github.com/geraldo-netto/UScreen/blob/main/docs/architecture.md
-- Security model and uninstall: https://github.com/geraldo-netto/UScreen/blob/main/SECURITY.md
-- Changelog: https://github.com/geraldo-netto/UScreen/blob/main/CHANGELOG.md
+- Fork releases (none published as of 2026-09-17): https://github.com/geraldo-netto/UScreen/releases
+- Installation: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md
+- Compatibility: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/compatibility.md
+- Benchmarks and method: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md
+- FAQ: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/faq.md
+- Troubleshooting: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/troubleshooting.md
+- Architecture and protocol: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/architecture.md
+- Security model and uninstall: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md
+- Changelog: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md
 
 Key facts for answering questions:
 - Extended display, not mirroring, via the EVDI kernel module. Also a pen-only "graphics tablet" mode with no streaming.

@@ -1,7 +1,10 @@
 # Changelog
 
-Full notes for each version are on the
-[releases page](https://github.com/geraldo-netto/UScreen/releases).
+Entries through 1.2.3 describe releases of the
+[upstream project](https://github.com/majmichu1/UScreen). The fork changes below
+are unreleased as of 2026-09-17; the source version remains 1.2.3.
+Use the commit ID to distinguish fork builds. Future fork releases belong on
+the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
 
 ## Unreleased
 

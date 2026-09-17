@@ -1,14 +1,16 @@
 cff-version: 1.2.0
-message: "If you refer to this software, please cite it as below."
+message: "Cite this fork repository and the exact commit used. The source version alone does not identify an unreleased fork build."
 title: "UScreen for Linux"
 abstract: "Open-source SuperDisplay alternative for Linux: an Android tablet as a USB second monitor and graphics tablet with S Pen pressure and tilt."
 authors:
   - name: "majmichu1"
+  - name: "geraldo-netto"
 repository-code: "https://github.com/geraldo-netto/UScreen"
 url: "https://github.com/geraldo-netto/UScreen"
 license: MIT
 version: "1.2.3"
-date-released: "2026-09-15"
+# date-released: unpublished
+# Version follows the source manifests, not a published fork release.
 keywords:
   - linux
   - android

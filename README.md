@@ -8,6 +8,9 @@ support.
 This fork is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
 based on the [upstream project](https://github.com/majmichu1/UScreen) by majmichu1.
 Historical benchmarks and linked compatibility reports describe upstream releases.
+As of 2026-09-17 this fork has no published release. The source still reports
+version 1.2.3; identify fork builds by their commit as well as that version.
+The current development work is on `configurable-input-devices`.
 
 UScreen uses a direct ADB-over-USB connection — no Wi-Fi, USB tethering,
 dummy HDMI plug or cloud account required. Screen and input data travel
@@ -18,7 +21,7 @@ Tested on Bazzite (KDE Plasma, Wayland, NVIDIA) with a Samsung Galaxy Tab S9
 Ultra. Packages and installation instructions cover Bazzite, Fedora,
 Ubuntu/Debian, Arch Linux and openSUSE.
 
-[**Download the latest release**](https://github.com/geraldo-netto/UScreen/releases/latest)
+[**Build from source**](docs/development.md#building-from-source)
 · [Install](#quick-install)
 · [Compatibility](docs/compatibility.md)
 · [Benchmarks](docs/benchmarks.md)
@@ -49,8 +52,11 @@ Ubuntu/Debian, Arch Linux and openSUSE.
 
 ## Quick install
 
-**1. Linux side** — pick the file for your distribution from the
-[latest release](https://github.com/geraldo-netto/UScreen/releases/latest):
+**1. Linux side** — for the current fork, follow the
+[source-build instructions](docs/development.md#building-from-source). The
+packaging tools can produce the files below; use them only when present on
+the [fork releases page](https://github.com/geraldo-netto/UScreen/releases)
+or produced from the checkout you intend to install:
 
 | file | distribution |
 | --- | --- |
@@ -226,8 +232,8 @@ the list; it is not next.
 
 Compatibility reports are the most useful thing right now; see
 [CONTRIBUTING.md](CONTRIBUTING.md). Issues tagged `good first issue` are
-self-contained. Questions go to
-[Discussions](https://github.com/geraldo-netto/UScreen/discussions).
+self-contained. Questions and reports go to
+[Issues](https://github.com/geraldo-netto/UScreen/issues).
 
 ## License
 

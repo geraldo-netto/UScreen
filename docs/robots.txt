@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
+# Deployment template; verify the Pages URL before enabling hosting.
 Sitemap: https://geraldo-netto.github.io/UScreen/sitemap.xml

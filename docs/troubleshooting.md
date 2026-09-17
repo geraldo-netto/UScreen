@@ -89,5 +89,5 @@ number is not meaningful.
 
 ## Getting more help
 
-Open an issue with the output of `uscreen doctor` and the daemon log, or ask in
-[Discussions](https://github.com/geraldo-netto/UScreen/discussions).
+Open an issue with the output of `uscreen doctor` and the daemon log, in the
+[fork issue tracker](https://github.com/geraldo-netto/UScreen/issues).

@@ -1,8 +1,11 @@
 # Installing UScreen for Linux
 
-Two halves: the Linux side (daemon, GUI, tray) and the Android app. They ship
-together in every [release](https://github.com/geraldo-netto/UScreen/releases/latest)
-and must be updated together — the session token between them needs both.
+Two halves: the Linux side (daemon, GUI, tray) and the Android app. Build
+both from the same checkout to keep their protocol compatible. As of
+2026-09-17 the [fork releases page](https://github.com/geraldo-netto/UScreen/releases)
+has no published releases. Start with [building from source](development.md#building-from-source).
+The package instructions below apply to locally built artifacts or future
+fork releases; an upstream release does not contain unreleased fork changes.
 
 ## Linux side: pick your file
 

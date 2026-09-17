@@ -241,6 +241,51 @@ class MetadataTest(unittest.TestCase):
         result = self.update(check=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_t350_prepare_release_from_unpublished_fork(self):
+        """An unpublished checkout must not need fake publication metadata."""
+        (self.root / 'docs/index.html').write_text('''
+"softwareVersion": "1.2.3",
+"datePublished": null,
+"dateModified": "2026-09-17",
+"downloadUrl": null,
+<a id="release-download" class="btn primary" href="development.md">Build from source</a>
+<p id="release-status">No published fork release.</p>
+<span id="source-version">1.2.3</span>
+<time datetime="2026-09-17">2026-09-17</time>
+uscreen_1.2.3_amd64.deb
+uscreen-1.2.3-1.x86_64.rpm
+uscreen-1.2.3-PKGBUILD.tar.gz
+uscreen-1.2.3-linux-x86_64.tar.gz
+''')
+        (self.root / 'docs/llms.txt').write_text(
+            'Current version: 1.2.3 (unreleased). Metadata updated: 2026-09-17.\n'
+            'Release status: unpublished fork; build from source.\n')
+        (self.root / 'CITATION.cff').write_text(
+            'version: "1.2.3"\n# date-released: unpublished\n')
+        before = {name: (self.root / name).read_bytes() for name in self.FILES}
+        self.assertNotEqual(self.update(check=True).returncode, 0)
+        for name, contents in before.items():
+            self.assertEqual((self.root / name).read_bytes(), contents)
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        page = (self.root / 'docs/index.html').read_text()
+        self.assertIn('Download 9.9.9</a>', page)
+        self.assertIn('releases/tag/v9.9.9', page)
+        self.assertIn('Release candidate 9.9.9', page)
+        self.assertIn('"datePublished": null', page)
+        self.assertIn('"downloadUrl": null', page)
+        citation = (self.root / 'CITATION.cff').read_text()
+        self.assertNotRegex(citation, r'(?m)^date-released:')
+        self.assertIn('# date-released: unpublished', citation)
+        facts = (self.root / 'docs/llms.txt').read_text()
+        self.assertIn('Current version: 9.9.9 (unreleased)', facts)
+        self.assertIn('Release status: candidate 9.9.9', facts)
+        prepared = {name: (self.root / name).read_bytes() for name in self.FILES}
+        result = self.update(check=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for name, contents in prepared.items():
+            self.assertEqual((self.root / name).read_bytes(), contents)
+
 
 if __name__ == '__main__':
     unittest.main()

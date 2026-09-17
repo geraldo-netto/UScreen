@@ -466,6 +466,11 @@ fn t277_release_metadata_validates_before_writing() {
 }
 
 #[test]
+fn t350_release_metadata_prepares_unpublished_fork() {
+    release_tests("t350");
+}
+
+#[test]
 fn t100_release_requires_matching_head_local_and_remote_tags() {
     release_tests("t100");
 }

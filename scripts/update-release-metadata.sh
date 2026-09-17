@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Set — or, with --check, verify — the release version and date everywhere the
-# website and the citation file repeat them:
+# Set — or, with --check, verify — release-candidate metadata. Preparing files
+# does not establish that a GitHub release has been published:
 #
-#   docs/index.html   JSON-LD softwareVersion / datePublished / dateModified,
-#                     the download button, the package names in the install
-#                     table, the release and "last updated" dates
-#   docs/llms.txt     "Current version: X (date)" and "Last verified: date"
+#   docs/index.html   source version, candidate link/status, package filenames,
+#                     modification date; publication/download metadata stays null
+#   docs/llms.txt     source version, candidate status and metadata update date
 #   docs/sitemap.xml  every <lastmod>
-#   CITATION.cff      version and date-released
+#   CITATION.cff      source version; no unverified release date
 #
 # Every pattern must match at least once, so a rewrite of one of those files
 # that drops a marker makes this script fail instead of silently leaving an
@@ -39,10 +38,14 @@ DAY = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
 RULES = {
     "docs/index.html": [
         (rf'"softwareVersion": "{NUM}"', f'"softwareVersion": "{version}"'),
-        (rf'"datePublished": "{DAY}"', f'"datePublished": "{date}"'),
+        (r'"datePublished": null', '"datePublished": null'),
+        (r'"downloadUrl": null', '"downloadUrl": null'),
         (rf'"dateModified": "{DAY}"', f'"dateModified": "{date}"'),
-        (rf"Download {NUM}</a>", f"Download {version}</a>"),
-        (rf'releases/latest">{NUM}</a>', f'releases/latest">{version}</a>'),
+        (r'<a id="release-download"[^>]*>[^<]*</a>',
+         f'<a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/releases/tag/v{version}">Download {version}</a>'),
+        (r'<p id="release-status">.*?</p>',
+         f'<p id="release-status">Release candidate {version}; check the release page for publication and available files. Build from source if it is not published.</p>'),
+        (rf'<span id="source-version">{NUM}</span>', f'<span id="source-version">{version}</span>'),
         (rf'<time datetime="{DAY}">{DAY}</time>', f'<time datetime="{date}">{date}</time>'),
         (rf"uscreen_{NUM}_amd64\.deb", f"uscreen_{version}_amd64.deb"),
         (rf"uscreen-{NUM}-1\.x86_64\.rpm", f"uscreen-{version}-1.x86_64.rpm"),
@@ -50,15 +53,16 @@ RULES = {
         (rf"uscreen-{NUM}-linux-x86_64\.tar\.gz", f"uscreen-{version}-linux-x86_64.tar.gz"),
     ],
     "docs/llms.txt": [
-        (rf"Current version: {NUM} \({DAY}\)", f"Current version: {version} ({date})"),
-        (rf"Last verified: {DAY}", f"Last verified: {date}"),
+        (rf"Current version: {NUM} \(unreleased\)", f"Current version: {version} (unreleased)"),
+        (rf"Metadata updated: {DAY}", f"Metadata updated: {date}"),
+        (r"^Release status: .*", f"Release status: candidate {version}; check the releases page for publication and available files."),
     ],
     "docs/sitemap.xml": [
         (rf"<lastmod>{DAY}</lastmod>", f"<lastmod>{date}</lastmod>"),
     ],
     "CITATION.cff": [
         (rf'^version: "{NUM}"', f'version: "{version}"'),
-        (rf'^date-released: "{DAY}"', f'date-released: "{date}"'),
+        (r'^# date-released: unpublished', '# date-released: unpublished'),
     ],
 }
 

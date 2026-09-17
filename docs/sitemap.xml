@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Deployment template for the proposed Pages URL; not evidence of a live site. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://geraldo-netto.github.io/UScreen/</loc><lastmod>2026-09-15</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://geraldo-netto.github.io/UScreen/llms.txt</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://geraldo-netto.github.io/UScreen/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://geraldo-netto.github.io/UScreen/llms.txt</loc><lastmod>2026-09-17</lastmod></url>
 </urlset>

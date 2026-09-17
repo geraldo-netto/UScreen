@@ -233,14 +233,21 @@ Before that, for a new version:
 2. Add a `## X.Y.Z — YYYY-MM-DD` entry to `CHANGELOG.md`.
 3. `make release-metadata DATE=YYYY-MM-DD` (or
    `scripts/update-release-metadata.sh X.Y.Z YYYY-MM-DD`): rewrites the
-   version, dates and package names in `docs/index.html` (including the
-   JSON-LD), `docs/llms.txt`, `docs/sitemap.xml` and `CITATION.cff`.
+   source version, preparation date, candidate status and package names in
+   `docs/index.html`, `docs/llms.txt`, `docs/sitemap.xml` and `CITATION.cff`.
+   This does not verify publication: JSON-LD publication/download fields stay
+   null and the citation has no release date. The candidate link names the
+   proposed tag and may not resolve until publication.
 4. Commit, tag `vX.Y.Z`, push both.
 
 `make publish` re-checks all of it (`update-release-metadata.sh --check`,
 the Cargo/Gradle versions, the changelog entry) and stops with a message
 naming the stale file rather than publishing a page that still says the
 previous version. The date defaults to today; `RELEASE_DATE=YYYY-MM-DD` overrides it.
+After successful publication, review the release links and dated availability
+notes in README/installation docs. Enable/deploy Pages separately if wanted;
+its sitemap and robots file are deployment templates, not proof of hosting.
+Update documentation branch links when the development work is merged.
 
 ## Portable build and package checks
 

@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UScreen for Linux: Android Tablet as a USB Second Monitor</title>
 <meta name="description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
-<link rel="canonical" href="https://geraldo-netto.github.io/UScreen/">
+<!-- GitHub Pages deployment is not verified; use the fork repository as canonical. -->
+<link rel="canonical" href="https://github.com/geraldo-netto/UScreen">
 <meta name="theme-color" content="#141311">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="UScreen for Linux">
 <meta property="og:title" content="UScreen for Linux: Android Tablet as a USB Second Monitor">
 <meta property="og:description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
-<meta property="og:url" content="https://geraldo-netto.github.io/UScreen/">
+<meta property="og:url" content="https://github.com/geraldo-netto/UScreen">
 <!-- og:image / twitter:image: replace with docs/assets/uscreen-social.png (1280×640) once a real photo of the tablet running UScreen exists. -->
 <meta property="og:image" content="https://opengraph.githubassets.com/1/geraldo-netto/UScreen">
 <meta name="twitter:card" content="summary_large_image">
@@ -30,15 +31,15 @@
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Linux, Android 8.1+",
   "softwareVersion": "1.2.3",
-  "datePublished": "2026-09-15",
-  "dateModified": "2026-09-15",
-  "releaseNotes": "https://github.com/geraldo-netto/UScreen/blob/main/CHANGELOG.md",
+  "datePublished": null,
+  "dateModified": "2026-09-17",
+  "releaseNotes": "https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-  "url": "https://geraldo-netto.github.io/UScreen/",
+  "url": "https://github.com/geraldo-netto/UScreen",
   "sameAs": ["https://github.com/geraldo-netto/UScreen"],
-  "downloadUrl": "https://github.com/geraldo-netto/UScreen/releases/latest",
+  "downloadUrl": null,
   "codeRepository": "https://github.com/geraldo-netto/UScreen",
   "author": {"@type": "Person", "name": "majmichu1", "url": "https://github.com/majmichu1", "sameAs": ["https://github.com/majmichu1"]},
   "maintainer": {"@type": "Person", "name": "geraldo-netto", "url": "https://github.com/geraldo-netto"},
@@ -254,9 +255,9 @@
     <h1>Your Android tablet, as a <em>real</em> second monitor. Over one USB cable.</h1>
     <p class="lead">UScreen creates an extended display on the Linux side, streams it to the tablet with hardware encoding, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/geraldo-netto/UScreen/releases/latest">Download 1.2.3</a>
+      <a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/development.md#building-from-source">Build from source</a>
       <a class="btn" href="#install">Install in three steps</a>
-      <span class="meta">MIT · Linux + Android 8.1+ · released <time datetime="2026-09-15">2026-09-15</time></span>
+      <span class="meta">MIT · Linux + Android 8.1+ · docs updated <time datetime="2026-09-17">2026-09-17</time></span>
     </div>
   </div>
 
@@ -337,7 +338,7 @@
 <section id="install">
   <div class="sec-head">
     <h2>Install</h2>
-    <p>Pick the file for your distribution, install the app on the tablet, plug in. Every release ships the same set plus <code>SHA256SUMS</code>.</p>
+    <p id="release-status">As of 2026-09-17 this fork has no published release. Build both halves from the same checkout; the table lists expected packaging outputs, not available downloads.</p>
   </div>
   <div class="table-wrap" tabindex="0" aria-label="Release files by distribution; scrolls sideways on narrow screens" data-hint="Swipe to see the commands →">
   <table>
@@ -356,7 +357,7 @@
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
     <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Touch and the pen work on it immediately. Flip <em>Graphics tablet</em> in the app when you want to draw on the laptop screen instead.</p></div>
   </div>
-  <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/UScreen/blob/main/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
+  <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
 </section>
 
 <section id="numbers">
@@ -379,7 +380,7 @@
     <b>uscreen::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
     <b>uscreen::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
   </div>
-  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt retains historical log labels: “encode→display” includes the return acknowledgement; “wire” also includes host queueing. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/main/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
+  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt retains historical log labels: “encode→display” includes the return acknowledgement; “wire” also includes host queueing. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
 </section>
 
 <section id="compare">
@@ -405,7 +406,7 @@
 <section id="faq">
   <div class="sec-head">
     <h2>Questions people ask</h2>
-    <p>Short answers. Longer ones in <a href="https://github.com/geraldo-netto/UScreen/blob/main/docs/faq.md">docs/faq.md</a>.</p>
+    <p>Short answers. Longer ones in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/faq.md">docs/faq.md</a>.</p>
   </div>
   <details open><summary>Does it need Wi-Fi or USB tethering?</summary><p>No. It uses the adb connection that USB debugging provides, over a normal data-capable USB cable — USB debugging has to be on, USB tethering does not. Wi-Fi is an optional fallback with more stutter.</p></details>
   <details><summary>Is it a mirror or an extension?</summary><p>An extension — a real monitor in your display settings. Graphics-tablet mode is a separate, non-display mode.</p></details>
@@ -415,14 +416,14 @@
   <details><summary>Which Android versions?</summary><p>8.1 and newer, on any device with a hardware H.264 decoder.</p></details>
   <details><summary>Is anything sent to the cloud?</summary><p>No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release tag on GitHub, with <code>check_updates = false</code> disabling host checks and the app’s separate switch disabling tablet checks.</p></details>
   <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
-  <details><summary>How do I uninstall it completely?</summary><p>Remove the package or the files in <code>~/.local/bin</code>, the systemd user unit, and the three system files the installer creates. The exact commands are in <a href="https://github.com/geraldo-netto/UScreen/blob/main/SECURITY.md">SECURITY.md</a>.</p></details>
+  <details><summary>How do I uninstall it completely?</summary><p>Remove the package or the files in <code>~/.local/bin</code>, the systemd user unit, and the three system files the installer creates. The exact commands are in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
 </section>
 
 <section class="provenance" aria-label="Provenance">
   <dl>
     <div><dt>Fork maintained by</dt><dd><a href="https://github.com/geraldo-netto">geraldo-netto</a> · original author <a href="https://github.com/majmichu1">majmichu1</a></dd></div>
-    <div><dt>Current release</dt><dd><a href="https://github.com/geraldo-netto/UScreen/releases/latest">1.2.3</a> · <a href="https://github.com/geraldo-netto/UScreen/blob/main/CHANGELOG.md">changelog</a></dd></div>
-    <div><dt>Last updated</dt><dd><time datetime="2026-09-15">2026-09-15</time></dd></div>
+    <div><dt>Source version</dt><dd><span id="source-version">1.2.3</span> (unreleased fork; identify builds by commit) · <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md">changelog</a></dd></div>
+    <div><dt>Last updated</dt><dd><time datetime="2026-09-17">2026-09-17</time></dd></div>
     <div><dt>Upstream verified on</dt><dd>Bazzite KDE Wayland (upstream maintainer) · Arch Linux KDE Wayland, installer and PKGBUILD (<a href="https://github.com/majmichu1/UScreen/issues/2#issuecomment-5478643599">report 1</a>, <a href="https://github.com/majmichu1/UScreen/issues/3#issuecomment-5494961262">report 2</a>) · Fedora 44 KDE with a Tab S9 FE (<a href="https://github.com/majmichu1/UScreen/discussions/7">report 3</a>)</dd></div>
   </dl>
 </section>
@@ -432,9 +433,9 @@
   <span>UScreen for Linux · MIT · not affiliated with Uscreen.tv, SuperDisplay or DisplayLink</span>
   <span>
     <a href="https://github.com/geraldo-netto/UScreen">source</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/discussions">discussions</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/blob/main/SECURITY.md">security</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/blob/main/CHANGELOG.md">changelog</a> ·
+    <a href="https://github.com/geraldo-netto/UScreen/issues">issues</a> ·
+    <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">security</a> ·
+    <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md">changelog</a> ·
     <a href="llms.txt">llms.txt</a>
   </span>
 </footer>
