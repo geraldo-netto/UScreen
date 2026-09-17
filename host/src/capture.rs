@@ -146,6 +146,14 @@ pub struct EncoderSettings {
     pub height_mm: u32,
     /// Integer downscale for the stream; see `config::FileConfig::stream_scale`.
     pub stream_scale: u32,
+    /// Authenticated tablet metadata has supplied pixel and physical geometry.
+    pub geometry_ready: bool,
+}
+
+impl EncoderSettings {
+    fn helper_geometry(&self) -> (u32, u32, u32, u32, u32, u32) {
+        (self.width, self.height, self.width_mm, self.height_mm, self.fps, self.stream_scale)
+    }
 }
 
 /// Why the helper cannot get an EVDI device, in the words of someone who can
@@ -969,6 +977,37 @@ impl CaptureManager {
         }
     }
 
+    async fn while_settings_current<T>(
+        settings: &mut watch::Receiver<EncoderSettings>,
+        display: &mut watch::Receiver<bool>,
+        shutdown: &mut watch::Receiver<bool>,
+        operation: impl std::future::Future<Output = T>,
+        helper_only: bool,
+    ) -> Option<T> {
+        let initial = settings.borrow().clone();
+        let mut updated = false;
+        tokio::pin!(operation);
+        loop {
+            tokio::select! {
+                biased;
+                changed = settings.changed() => {
+                    if changed.is_err() { return None; }
+                    updated = true;
+                    let current = settings.borrow();
+                    let different = if helper_only {
+                        current.helper_geometry() != initial.helper_geometry()
+                            || !current.geometry_ready
+                    } else { *current != initial };
+                    if different { return None; }
+                }
+                result = Self::while_active(display, shutdown, &mut operation) => {
+                    if updated { settings.mark_changed(); }
+                    return result;
+                },
+            }
+        }
+    }
+
     pub async fn stream_frames(
         &mut self,
         tx: broadcast::Sender<VideoPacket>,
@@ -993,7 +1032,7 @@ impl CaptureManager {
                 return Ok(());
             }
             self.apply_stream_settings(&mut run).await;
-            if !*run.display_rx.borrow() {
+            if !*run.display_rx.borrow() || !run.settings_rx.borrow().geometry_ready {
                 if self.idle_until_screen_change(&mut run).await {
                     return Ok(());
                 }
@@ -1078,10 +1117,12 @@ impl CaptureManager {
         if self.helper_child.is_some() {
             return true;
         }
-        let Some(result) = Self::while_active(
+        let Some(result) = Self::while_settings_current(
+            &mut run.settings_rx,
             &mut run.display_rx,
             &mut run.shutdown_rx,
             self.start_helper(),
+            true,
         )
         .await
         else {
@@ -1106,7 +1147,7 @@ impl CaptureManager {
     }
 
     async fn prepare_capture_pipeline(&mut self, run: &mut CaptureRun) -> bool {
-        if !self.ensure_capture_helper(run).await {
+        if !self.ensure_capture_helper(run).await || run.settings_rx.has_changed().unwrap_or(true) {
             return false;
         }
         // Enable the display via kscreen-doctor so KWin actively renders
@@ -1116,10 +1157,12 @@ impl CaptureManager {
         // enabling it unconditionally puts a monitor on the desktop that
         // nobody can see, and KDE happily moves windows onto it. The
         // run.display_rx branch below enables it the moment that changes.
-        if Self::while_active(
+        if Self::while_settings_current(
+            &mut run.settings_rx,
             &mut run.display_rx,
             &mut run.shutdown_rx,
             Self::enable_evdi_display(self.helper_card, self.config.position),
+            false,
         )
         .await
         .is_none()
@@ -1135,10 +1178,12 @@ impl CaptureManager {
         // Skipped when nothing is using the virtual output: it is
         // disabled then, so no mode is ever reported and the wait would
         // just add three seconds and a warning to every daemon start.
-        if Self::while_active(
+        if Self::while_settings_current(
+            &mut run.settings_rx,
             &mut run.display_rx,
             &mut run.shutdown_rx,
             self.wait_stream_size(),
+            false,
         )
         .await
         .is_none()
@@ -1155,10 +1200,12 @@ impl CaptureManager {
         if self.encoder_child.is_some() {
             return true;
         }
-        let Some(result) = Self::while_active(
+        let Some(result) = Self::while_settings_current(
+            &mut run.settings_rx,
             &mut run.display_rx,
             &mut run.shutdown_rx,
             self.start_session_encoder(),
+            false,
         )
         .await
         else {
@@ -2078,7 +2125,69 @@ mod tests {
             width_mm: c.width_mm,
             height_mm: c.height_mm,
             stream_scale: c.stream_scale,
+            geometry_ready: true,
         }
+    }
+
+    #[tokio::test]
+    async fn t223_initial_attach_waits_for_geometry_on_each_daemon_start() {
+        for _ in 0..2 { t223_initial_attach().await; }
+    }
+
+    async fn t223_initial_attach() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let helper = root.path().join("helper");
+        std::fs::write(&helper, "#!/bin/sh\necho attach >> \"$0.log\"\nsleep 0.1\necho 'EVDI_CONNECTED card4294967295'\nexec sleep 60\n").unwrap();
+        std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let mut manager = test_manager();
+        manager.config.helper_path = helper.to_str().unwrap().into();
+        manager.config.edid_path = Some(root.path().join("test.edid"));
+        let mut initial = manager_settings(&manager);
+        initial.geometry_ready = false;
+        let (settings, settings_rx) = watch::channel(initial);
+        let (_display, display) = watch::channel(true);
+        let (shutdown, stop) = watch::channel(false);
+        let (video, _) = broadcast::channel(8);
+        let task = tokio::spawn(async move {
+            manager.stream_frames(video, settings_rx, display, stop).await.unwrap();
+            manager.config.clone()
+        });
+        tokio::time::sleep(std::time::Duration::from_millis(80)).await;
+        let premature = helper.with_extension("log").exists();
+        settings.send_modify(|s| { s.width = 1280; s.height = 800; s.width_mm = 220; s.height_mm = 138; s.geometry_ready = true; });
+        tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        shutdown.send(true).unwrap();
+        let config = task.await.unwrap();
+        assert!(!premature, "T223: attached default mode before tablet metadata");
+        assert_eq!((config.width, config.height, config.width_mm, config.height_mm), (1280, 800, 220, 138));
+        assert_eq!(std::fs::read_to_string(helper.with_extension("log")).unwrap(), "attach\n");
+    }
+
+    #[tokio::test]
+    async fn t223_setup_observes_settings_without_hotplug_for_encoder_only_changes() {
+        let manager = test_manager();
+        let (tx, mut settings) = watch::channel(manager_settings(&manager));
+        let (_display, mut display) = watch::channel(true);
+        let (_shutdown, mut shutdown) = watch::channel(false);
+        let update = async {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            tx.send_modify(|s| s.bitrate += 1000);
+        };
+        let (result, _) = tokio::join!(CaptureManager::while_settings_current(
+            &mut settings, &mut display, &mut shutdown,
+            tokio::time::sleep(std::time::Duration::from_millis(40)), true), update);
+        assert!(result.is_some(), "T223: encoder settings must not cancel the attaching helper");
+        assert!(settings.has_changed().unwrap(), "T223: apply new encoder settings before encoding");
+        settings.borrow_and_update();
+        let update = async {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            tx.send_modify(|s| s.width = 1280);
+        };
+        let (result, _) = tokio::join!(CaptureManager::while_settings_current(
+            &mut settings, &mut display, &mut shutdown,
+            std::future::pending::<()>(), true), update);
+        assert!(result.is_none(), "T223: geometry change must interrupt stale helper setup");
     }
 
     #[tokio::test]
@@ -2340,6 +2449,7 @@ mod tests {
             width_mm: c.width_mm,
             height_mm: c.height_mm,
             stream_scale: c.stream_scale,
+            geometry_ready: true,
         };
         let (_settings_tx, settings_rx) = watch::channel(settings);
         let (_display_tx, display_rx) = watch::channel(display);

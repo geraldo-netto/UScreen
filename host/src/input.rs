@@ -2026,29 +2026,31 @@ fn apply_tablet_resolution(
         width, height, width_mm, height_mm
     );
     let Some(tx) = settings_tx else { return };
-    if !crate::config::FileConfig::load().auto_resolution {
-        info!("auto_resolution is off — keeping configured resolution");
-        return;
+    let Some(new) = negotiated_geometry(&tx.borrow(), (width, height), (width_mm, height_mm),
+        crate::config::FileConfig::load().auto_resolution) else { return };
+    tx.send_if_modified(|current| {
+        if *current == new { return false; }
+        *current = new;
+        true
+    });
+}
+
+fn negotiated_geometry(
+    current: &EncoderSettings,
+    pixels: (u32, u32),
+    millimetres: (u32, u32),
+    auto_resolution: bool,
+) -> Option<EncoderSettings> {
+    if !(640..=crate::config::MAX_DIMENSION).contains(&pixels.0)
+        || !(480..=crate::config::MAX_DIMENSION).contains(&pixels.1) {
+        warn!("Ignoring implausible resolution {}x{}", pixels.0, pixels.1);
+        return None;
     }
-    if !(640..=crate::config::MAX_DIMENSION).contains(&width)
-        || !(480..=crate::config::MAX_DIMENSION).contains(&height)
-    {
-        warn!("Ignoring implausible resolution {}x{}", width, height);
-        return;
-    }
-    let mut new = tx.borrow().clone();
-    let (mm_w, mm_h) = physical_dimensions(width_mm, height_mm);
-    if new.width != width || new.height != height || new.width_mm != mm_w || new.height_mm != mm_h {
-        new.width = width;
-        new.height = height;
-        new.width_mm = mm_w;
-        new.height_mm = mm_h;
-        info!(
-            "Auto-resolution: switching virtual display to {}x{} ({}x{} mm)",
-            width, height, mm_w, mm_h
-        );
-        let _ = tx.send(new);
-    }
+    let mut settings = current.clone();
+    if auto_resolution { (settings.width, settings.height) = pixels; }
+    (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
+    settings.geometry_ready = true;
+    Some(settings)
 }
 
 fn apply_tablet_config(
@@ -2571,6 +2573,7 @@ fi
             width_mm: 310,
             height_mm: 194,
             stream_scale: 1,
+            geometry_ready: true,
         }
     }
 
@@ -2618,6 +2621,19 @@ fi
             .unwrap()
             .unwrap();
         serde_json::from_str(msg.to_text().unwrap()).unwrap()
+    }
+
+    #[test]
+    fn t223_fixed_resolution_keeps_pixels_but_negotiates_physical_size() {
+        let mut initial = settings("libx264");
+        initial.geometry_ready = false;
+        for auto in [false, true] {
+            let next = negotiated_geometry(&initial, (1280, 800), (220, 138), auto).unwrap();
+            assert!(next.geometry_ready);
+            assert_eq!((next.width_mm, next.height_mm), (220, 138));
+            assert_eq!((next.width, next.height), if auto { (1280, 800) } else { (1920, 1080) });
+        }
+        assert!(negotiated_geometry(&initial, (0, 0), (220, 138), false).is_none());
     }
 
     #[tokio::test]

@@ -163,6 +163,7 @@ mod cli_tests {
             width_mm: 310,
             height_mm: 194,
             stream_scale: 1,
+            geometry_ready: true,
         };
         let changed = capture::EncoderSettings {
             encoder: "h264_nvenc".into(),
@@ -688,6 +689,7 @@ printf '%s\n' "$2" >> "$0.log"
                 width_mm: 310,
                 height_mm: 194,
                 stream_scale: 1,
+                geometry_ready: true,
             });
             let (mode_tx, _mode_rx) = watch::channel(false);
             let (_card_tx, card_rx) = watch::channel(None);
@@ -922,6 +924,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         width_mm: edid::DEFAULT_WIDTH_MM,
         height_mm: edid::DEFAULT_HEIGHT_MM,
         stream_scale,
+        geometry_ready: false,
     });
 
     // Tablet presence, published by the ADB monitor.
@@ -969,7 +972,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // signal, and cannot tell the difference between an unplugged tablet and
     // one that is currently a drawing surface.
     let (gate_tx, gate_rx) = watch::channel(false);
-    spawn_display_gate(gate_tx, tablet_rx, mode_tx.subscribe());
+    spawn_display_gate(gate_tx, tablet_rx, mode_tx.subscribe(), settings_tx.clone());
 
     // Cooperative shutdown: the capture task must get a chance to kill and reap
     // ffmpeg/evdi_helper before the process exits, or they linger holding the
@@ -1234,11 +1237,20 @@ fn spawn_display_gate(
     gate_tx: watch::Sender<bool>,
     mut tablet_rx: watch::Receiver<bool>,
     mut mode_rx: watch::Receiver<bool>,
+    settings: watch::Sender<capture::EncoderSettings>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut last = false;
         loop {
-            let active = *tablet_rx.borrow() && !*mode_rx.borrow();
+            let attached = *tablet_rx.borrow();
+            if !attached {
+                settings.send_if_modified(|s| {
+                    let was_ready = s.geometry_ready;
+                    s.geometry_ready = false;
+                    was_ready
+                });
+            }
+            let active = attached && !*mode_rx.borrow();
             if active != last {
                 last = active;
                 let _ = gate_tx.send(active);
@@ -1556,6 +1568,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
         width_mm: cfg.width_mm,
         height_mm: cfg.height_mm,
         stream_scale: cfg.stream_scale,
+        geometry_ready: false,
     });
     let (tablet_tx, tablet_rx) = watch::channel(false);
     let mut cap = capture::CaptureManager::new(cfg.clone());
@@ -1583,7 +1596,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
             pen: t.input_pen,
             pointer: t.input_pointer,
         },
-        Some(settings_tx),
+        Some(settings_tx.clone()),
         t.mode_tx.clone(),
         latency,
         relaunch.clone(),
@@ -1601,6 +1614,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
         gate_tx,
         tablet_rx,
         t.mode_tx.subscribe(),
+        settings_tx,
     ));
     // Either the whole daemon stopping or this session being torn down
     // must wind the capture pipeline down cleanly.
