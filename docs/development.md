@@ -124,7 +124,10 @@ selection: an existing XDG_RUNTIME_DIR, then an existing /run/user/<uid>, then
 HOME/.cache (/tmp/.cache when HOME is absent). Both resolve base aliases before
 using the uscreen/token path. Run with the daemon's environment; the script
 reads the token and does not create runtime directories. Rust and Python test
-this order against the shared runtime-bases.json fixture.
+this order against the shared runtime-bases.json fixture. The client drains video
+through bounded reusable storage; its ACKs mean complete receipt with synthetic
+decode time, never real rendering. The [T408 replay](benchmarks/2026-09-17-fake-tablet.md)
+records one/two/four-client copying and allocation measurements.
 
 ## Project layout
 

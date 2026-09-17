@@ -3,13 +3,17 @@
 
 Connects to the daemon's input WebSocket and video stream for one slot,
 authenticates with the session token, reports a resolution, and acks every
-frame it receives - enough to drive a whole pipeline without a device.
+complete frame it receives - enough to drive a pipeline without a device.
+ACKs represent receipt with synthetic decode_us, not actual decoding/rendering.
 Used together with USCREEN_FAKE_TABLET=<serial> and max_tablets > 1 to test
 a second slot with a single physical tablet.
 
     scripts/fake-tablet.py --slot 1 --seconds 20
 """
-import argparse, base64, json, os, socket, struct, sys, time, threading
+import argparse, base64, json, os, socket, struct, sys, time
+
+MAX_VIDEO_PACKET = 8 * 1024 * 1024 + 1  # Same bound as Android.
+DRAIN_BYTES = 64 * 1024
 
 def runtime_dir():
     # T242: same selection order as common/src/linux/runtime.rs. This client
@@ -24,13 +28,21 @@ def runtime_dir():
 class BufferedSocket:
     """Keep bytes received after the HTTP upgrade for the first WS frame."""
     def __init__(self, sock, pending):
-        self.sock, self.pending = sock, pending
+        self.sock, self.pending = sock, memoryview(pending)
 
     def recv(self, size):
         if self.pending:
             result, self.pending = self.pending[:size], self.pending[size:]
-            return result
+            return result.tobytes()
         return self.sock.recv(size)
+
+    def recv_into(self, buffer):
+        if self.pending:
+            count = min(len(buffer), len(self.pending))
+            buffer[:count] = self.pending[:count]
+            self.pending = self.pending[count:]
+            return count
+        return self.sock.recv_into(buffer)
 
     def __getattr__(self, name):
         return getattr(self.sock, name)
@@ -75,35 +87,75 @@ def ws_recv_text(s):
     except EOFError:
         return None
 
-def read_exact(s, n):
-    buf = b""
-    while len(buf) < n:
-        part = s.recv(n - len(buf))
-        if not part:
+def read_exact_into(sock, buffer):
+    """Fill caller-owned storage; every short read preserves the exact bytes."""
+    view = memoryview(buffer)
+    offset = 0
+    while offset < len(view):
+        count = sock.recv_into(view[offset:])
+        if not count:
             raise EOFError
-        buf += part
-    return buf
+        offset += count
+
+
+def read_exact(sock, size):
+    buffer = bytearray(size)
+    read_exact_into(sock, buffer)
+    return buffer
+
+
+def drain_exact(sock, size, scratch):
+    view = memoryview(scratch)
+    while size:
+        count = min(size, len(view))
+        read_exact_into(sock, view[:count])
+        size -= count
+
+
+def read_video_packet(video, header, scratch):
+    view = memoryview(header)
+    read_exact_into(video, view[:4])
+    length = struct.unpack_from(">I", header)[0]
+    if length <= 1 or length > MAX_VIDEO_PACKET:
+        raise ValueError(f"invalid video length: {length}")
+    read_exact_into(video, view[4:5])
+    kind = header[4]
+    remaining, sequence = length - 1, None
+    if kind == 1:
+        if length <= 5:
+            raise ValueError("frame has no payload")
+        read_exact_into(video, view[:4])
+        sequence = struct.unpack_from(">I", header)[0]
+        remaining -= 4
+    elif kind != 0:
+        raise ValueError(f"unknown video type: {kind}")
+    drain_exact(video, remaining, scratch)
+    return kind, length, sequence
+
 
 def receive_video(video, control, seconds):
     frames = 0
     got_config = False
     t_end = time.monotonic() + seconds
     seq_last = None
+    header, scratch = bytearray(5), bytearray(DRAIN_BYTES)
     while time.monotonic() < t_end:
         try:
-            ln = struct.unpack(">I", read_exact(video, 4))[0]
-            body = read_exact(video, ln)
+            kind, length, sequence = read_video_packet(video, header, scratch)
         except (socket.timeout, EOFError):
             break
-        ptype = body[0]
-        if ptype == 0:
+        except ValueError as error:
+            print(f"invalid video packet: {error}", file=sys.stderr)
+            break
+        if kind == 0:
             got_config = True
-            print(f"codec config: {ln-1} bytes")
-        elif ptype == 1:
-            seq = struct.unpack(">I", body[1:5])[0]
+            print(f"codec config: {length-1} bytes")
+        else:
             frames += 1
-            seq_last = seq
-            ws_send(control, {"type": "rendered", "seq": seq, "decode_us": 1000})
+            seq_last = sequence
+            # This compatibility message acknowledges receipt only. The fake
+            # decode_us is explicitly synthetic; it is not tablet latency.
+            ws_send(control, {"type": "rendered", "seq": sequence, "decode_us": 1000})
     return got_config, frames, seq_last
 
 
@@ -141,6 +193,7 @@ def main():
         v.sendall(token.encode())
     got_config, frames, seq_last = receive_video(v, ws, a.seconds)
     print(f"frames: {frames}, config: {got_config}, last seq: {seq_last}")
+    print("ACKs: received frames; decode_us=1000 is synthetic, no decode/render measurement")
     ok = got_config and frames > 0
     print("RESULT:", "OK" if ok else "FAIL")
     return 0 if ok else 1

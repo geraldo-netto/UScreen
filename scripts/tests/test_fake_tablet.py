@@ -23,6 +23,11 @@ class FragmentedSocket:
             self.chunks.insert(0, chunk[size:])
         return chunk[:size]
 
+    def recv_into(self, buffer):
+        data = self.recv(len(buffer))
+        buffer[:len(data)] = data
+        return len(data)
+
     def send(self, data):
         self.sent.extend(data[:1])
         return min(1, len(data))
@@ -33,6 +38,71 @@ class FragmentedSocket:
 
 
 class PartialIoTest(unittest.TestCase):
+    def test_t408_exact_binary_reads_preserve_every_byte_and_eof(self):
+        payload = bytes(range(256)) * 5
+        chunks = [payload[i:i + 3] for i in range(0, len(payload), 3)]
+        socket = FragmentedSocket(chunks)
+        self.assertEqual(tablet.read_exact(socket, len(payload)), payload)
+        self.assertEqual(tablet.read_exact(socket, 0), b'')
+        with self.assertRaises(EOFError):
+            tablet.read_exact(socket, 1)
+
+    def test_t408_upgrade_leftovers_precede_recv_into_socket_data(self):
+        socket = tablet.BufferedSocket(FragmentedSocket([b'ef']), b'abcd')
+        received = bytearray(6)
+        offset = 0
+        while offset < len(received):
+            count = socket.recv_into(memoryview(received)[offset:])
+            if not count:
+                break
+            offset += count
+        self.assertEqual(received, b'abcdef')
+
+    def test_t408_large_video_uses_bounded_reads_and_exact_ack(self):
+        class RecordingSocket(FragmentedSocket):
+            largest = 0
+            def recv(self, size):
+                self.largest = max(self.largest, size)
+                return super().recv(size)
+        payload = b'x' * (2 * 1024 * 1024)
+        packet = struct.pack('>I', len(payload) + 5) + b'\x01' + struct.pack('>I', 73) + payload
+        socket = RecordingSocket([packet])
+        with patch.object(tablet, 'ws_send') as send:
+            self.assertEqual(tablet.receive_video(socket, object(), 5), (False, 1, 73))
+            send.assert_called_once()
+        self.assertLessEqual(socket.largest, 64 * 1024)
+
+    def test_t408_rejects_invalid_video_before_ack_or_large_read(self):
+        packets = [struct.pack('>I', 0), struct.pack('>I', 1),
+                   struct.pack('>I', 8 * 1024 * 1024 + 2),
+                   struct.pack('>I', 5) + b'\x01' + b'\x00' * 4,
+                   struct.pack('>I', 3) + b'\x07ab']
+        for packet in packets:
+            with self.subTest(packet=packet), patch.object(tablet, 'ws_send') as send:
+                result = tablet.receive_video(FragmentedSocket([packet]), object(), 5)
+                self.assertEqual(result, (False, 0, None))
+                send.assert_not_called()
+
+    def test_t408_every_video_fragment_boundary_and_sequence_wrap(self):
+        packets = [b'\x00csd'] + [b'\x01' + struct.pack('>I', seq) + b'payload'
+                                   for seq in [0xffffffff, 0, 1]]
+        wire = b''.join(struct.pack('>I', len(packet)) + packet for packet in packets)
+        for fragment in [1, 2, 3, 5, 7, 31]:
+            chunks = [wire[i:i + fragment] for i in range(0, len(wire), fragment)]
+            with self.subTest(fragment=fragment), patch.object(tablet, 'ws_send') as send:
+                result = tablet.receive_video(FragmentedSocket(chunks), object(), 5)
+                self.assertEqual(result, (True, 3, 1))
+                self.assertEqual([call.args[1]['seq'] for call in send.call_args_list],
+                                 [0xffffffff, 0, 1])
+
+    def test_t408_partial_frame_is_never_acknowledged(self):
+        packet = struct.pack('>I', 12) + b'\x01' + struct.pack('>I', 42) + b'payload'
+        for cut in range(len(packet)):
+            with self.subTest(cut=cut), patch.object(tablet, 'ws_send') as send:
+                self.assertEqual(tablet.receive_video(FragmentedSocket([packet[:cut]]), object(), 5),
+                                 (False, 0, None))
+                send.assert_not_called()
+
     def test_t327_video_duration_ignores_wall_clock_corrections(self):
         packets = [b'\x01' + struct.pack('>I', seq) + b'frame' for seq in range(1, 4)]
         chunks = [struct.pack('>I', len(packet)) + packet for packet in packets]
