@@ -170,6 +170,63 @@ mod cli_tests {
     }
 
     #[tokio::test]
+    async fn t297_failed_settings_save_is_retried_on_next_update() {
+        if isolated_config_test("cli_tests::t297_failed_settings_save_is_retried_on_next_update") {
+            return;
+        }
+        let saved = config::FileConfig::default();
+        saved.save().unwrap();
+        let initial = capture::EncoderSettings {
+            encoder: saved.encoder.clone(),
+            fps: saved.fps,
+            bitrate: saved.bitrate,
+            width: saved.width,
+            height: saved.height,
+            quality: saved.quality,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: saved.stream_scale,
+            geometry_ready: false,
+        };
+        let (sender, receiver) = watch::channel(initial.clone());
+        let cli = Cli::try_parse_from(["uscreen"]).unwrap();
+        let writer = persist_settings(receiver, CliOverrides::new(&cli));
+        tokio::pin!(writer);
+        std::fs::write(config::config_path(), "invalid = [").unwrap();
+        let unsaved = capture::EncoderSettings {
+            bitrate: 12000,
+            ..initial
+        };
+        sender.send(unsaved.clone()).unwrap();
+        assert!(futures_util::poll!(&mut writer).is_pending());
+        assert_eq!(
+            std::fs::read_to_string(config::config_path()).unwrap(),
+            "invalid = ["
+        );
+        config::FileConfig {
+            position: "left".into(),
+            ..saved.clone()
+        }
+        .save()
+        .unwrap();
+        sender
+            .send(capture::EncoderSettings { fps: 30, ..unsaved })
+            .unwrap();
+        drop(sender);
+        writer.await;
+        assert_eq!(
+            config::FileConfig::load(),
+            config::FileConfig {
+                bitrate: 12000,
+                fps: 30,
+                position: "left".into(),
+                ..saved
+            },
+            "T297: later saves must include earlier unsaved changes"
+        );
+    }
+
+    #[tokio::test]
     async fn t296_mode_changes_before_writer_start_are_persisted() {
         if isolated_config_test("cli_tests::t296_mode_changes_before_writer_start_are_persisted") {
             return;
@@ -1530,10 +1587,11 @@ fn persist_settings(
                 cli_overrides.apply_geometry(cfg, &s, &previous);
                 Ok(())
             });
-            previous = s;
             if let Err(e) = result {
                 warn!("Failed to persist settings: {}", e);
             } else {
+                // Failed edits remain pending for the next update/retry.
+                previous = s;
                 info!("Settings saved to {:?}", config::config_path());
             }
         }
