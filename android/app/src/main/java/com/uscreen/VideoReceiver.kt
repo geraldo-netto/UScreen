@@ -19,14 +19,19 @@ import java.util.concurrent.atomic.AtomicReference
 internal class ReceiverStatistics {
     private val frames = AtomicInteger(0)
     private val bytes = AtomicLong(0)
+    private var sampledAtNanos = System.nanoTime()
     @Volatile var fps = 0f; private set
     @Volatile var mbps = 0f; private set
 
     fun frameRendered() { frames.incrementAndGet() }
     fun bytesReceived(count: Int) { bytes.addAndGet(count.toLong()) }
-    fun sample() {
-        fps = frames.getAndSet(0).toFloat()
-        mbps = bytes.getAndSet(0) * 8f / 1_000_000f
+    fun sample(nowNanos: Long = System.nanoTime()) {
+        val elapsed = nowNanos - sampledAtNanos
+        if (elapsed <= 0) return
+        sampledAtNanos = nowNanos
+        val seconds = elapsed / 1_000_000_000.0
+        fps = (frames.getAndSet(0) / seconds).toFloat()
+        mbps = (bytes.getAndSet(0) * 8.0 / seconds / 1_000_000.0).toFloat()
     }
 }
 

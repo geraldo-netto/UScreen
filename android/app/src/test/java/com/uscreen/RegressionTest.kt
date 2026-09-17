@@ -23,14 +23,50 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t312_trafficRatesUseMonotonicElapsedTime() {
+        val statistics = ReceiverStatistics()
+        var now = System.nanoTime()
+        statistics.sample(now)
+        for (duration in listOf(2_000_000_000L, 500_000_000L, 1_250_000_000L)) {
+            repeat(30) { statistics.frameRendered() }
+            statistics.bytesReceived(1_000_000)
+            now += duration
+            statistics.sample(now)
+            val seconds = duration / 1_000_000_000.0
+            assertEquals("T312 delayed FPS", (30 / seconds).toFloat(), statistics.fps, 0.0001f)
+            assertEquals("T312 delayed Mbps", (8 / seconds).toFloat(), statistics.mbps, 0.0001f)
+        }
+        statistics.sample(now + 1_000_000_000L)
+        assertEquals(0f, statistics.fps, 0f)
+        assertEquals(0f, statistics.mbps, 0f)
+    }
+
+    @Test fun t312_nonpositiveIntervalsKeepPendingCounts() {
+        val statistics = ReceiverStatistics()
+        val now = System.nanoTime()
+        statistics.sample(now)
+        statistics.frameRendered()
+        statistics.bytesReceived(125_000)
+        for (invalid in listOf(now, now - 1)) {
+            statistics.sample(invalid)
+            assertEquals(0f, statistics.fps, 0f)
+            assertEquals(0f, statistics.mbps, 0f)
+        }
+        statistics.sample(now + 1_000_000_000L)
+        assertEquals(1f, statistics.fps, 0f)
+        assertEquals(1f, statistics.mbps, 0f)
+    }
+
     @Test fun t309_receiverRestartsRetireTrafficStatistics() {
         val receiver = VideoReceiver { error("T309 must not open a real socket") }
         receiver.start() // No surface: network and decoder workers remain idle.
         val retired = get(receiver, "statistics") as ReceiverStatistics
+        val retiredAt = System.nanoTime()
+        retired.sample(retiredAt)
         try {
             repeat(30) { retired.frameRendered() }
             retired.bytesReceived(1_000_000)
-            retired.sample()
+            retired.sample(retiredAt + 1_000_000_000L)
             assertEquals(30f, receiver.getFps(), 0f)
             assertEquals(8f, receiver.getMbps(), 0f)
             repeat(7) { retired.frameRendered() }
@@ -42,14 +78,16 @@ class RegressionTest {
             assertEquals(0f, receiver.getFps(), 0f)
             assertEquals(0f, receiver.getMbps(), 0f)
             val current = get(receiver, "statistics") as ReceiverStatistics
+            val currentAt = System.nanoTime()
+            current.sample(currentAt)
             current.frameRendered()
             current.bytesReceived(125_000)
-            current.sample()
+            current.sample(currentAt + 1_000_000_000L)
             assertEquals("T309 previous run contaminated new FPS", 1f, receiver.getFps(), 0f)
             assertEquals("T309 previous run contaminated new bitrate", 1f, receiver.getMbps(), 0f)
             retired.frameRendered()
             retired.bytesReceived(1_000_000)
-            retired.sample() // A delayed worker from the retired generation.
+            retired.sample(retiredAt + 2_000_000_000L) // A delayed worker from the retired generation.
             assertEquals(1f, receiver.getFps(), 0f)
             assertEquals(1f, receiver.getMbps(), 0f)
         } finally { receiver.stop() }
