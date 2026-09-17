@@ -783,6 +783,43 @@ printf '%s\n' "$2" >> "$0.log"
 
     use super::*;
 
+    #[tokio::test]
+    async fn t305_shutdown_already_requested_is_not_lost() {
+        for requested_before_subscribe in [true, false] {
+            let (sender, _) = watch::channel(requested_before_subscribe);
+            let receiver = sender.subscribe();
+            sender.send_replace(true);
+            // Subscribe after the request as run_daemon can do during startup.
+            let receiver = if requested_before_subscribe {
+                sender.subscribe()
+            } else {
+                receiver
+            };
+            tokio::time::timeout(
+                std::time::Duration::from_millis(100),
+                wait_for_shutdown(receiver),
+            )
+            .await
+            .expect("T305: an existing quit request must not need another notification");
+        }
+    }
+
+    #[tokio::test]
+    async fn t305_shutdown_waits_for_true_or_channel_closure() {
+        let (sender, receiver) = watch::channel(false);
+        let wait = wait_for_shutdown(receiver);
+        tokio::pin!(wait);
+        assert!(futures_util::poll!(&mut wait).is_pending());
+        sender.send_replace(false);
+        assert!(futures_util::poll!(&mut wait).is_pending());
+        sender.send_replace(true);
+        assert!(futures_util::poll!(&mut wait).is_ready());
+
+        let (sender, receiver) = watch::channel(false);
+        drop(sender);
+        assert!(futures_util::poll!(Box::pin(wait_for_shutdown(receiver))).is_ready());
+    }
+
     fn t237_process_fixture(root: &std::path::Path) -> std::path::PathBuf {
         let source = root.join("child.c");
         let executable = root.join("uscreen");
@@ -1414,11 +1451,11 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Quit from the tray raises the same flag the signal handlers do, so it
     // has to be waited on here too — otherwise the pipeline winds down while
     // the process itself stays alive with nothing left to run.
-    let mut quit_rx = shutdown_tx.subscribe();
+    let quit_rx = shutdown_tx.subscribe();
     tokio::select! {
         _ = signal::ctrl_c() => {}
         _ = sigterm.recv() => {}
-        _ = async { while quit_rx.changed().await.is_ok() && !*quit_rx.borrow() {} } => {}
+        _ = wait_for_shutdown(quit_rx) => {}
     }
     info!("Shutting down...");
 
@@ -1459,6 +1496,15 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     info!("uscreen daemon stopped");
     Ok(())
+}
+
+async fn wait_for_shutdown(mut quit_rx: watch::Receiver<bool>) {
+    // A tray request can precede subscription; the current flag is authoritative.
+    while !*quit_rx.borrow_and_update() {
+        if quit_rx.changed().await.is_err() {
+            break;
+        }
+    }
 }
 
 fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
