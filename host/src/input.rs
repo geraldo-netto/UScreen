@@ -541,10 +541,17 @@ impl UInputDevice {
                 self.syn()?;
             }
             1 => {
-                // UP
+                // UP carries the final sample. Publish it while the tool is
+                // still in proximity: libinput ignores axes on proximity-out.
+                self.emit(EV_ABS, ABS_X, x)?;
+                self.emit(EV_ABS, ABS_Y, y)?;
+                self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
+                self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
                 self.emit(EV_KEY, BTN_TOUCH, 0)?;
-                self.emit(EV_KEY, tool, 0)?;
                 self.emit(EV_ABS, ABS_PRESSURE, 0)?;
+                self.syn()?;
+
+                self.emit(EV_KEY, tool, 0)?;
                 self.syn()?;
             }
             2 => {
@@ -1965,7 +1972,7 @@ impl InjectDevices {
     }
 
     fn record_pen_state(&mut self, contact: &AbsoluteContact, action: u8) {
-        if matches!(action, 0 | 2 | 3) {
+        if matches!(action, 0..=3) {
             self.last_pen_pos = (contact.x, contact.y);
         }
         // Keep an ordinary cursor at the last pen position when proximity ends.
@@ -2181,6 +2188,109 @@ mod tests {
             .map(|event| i32::from_ne_bytes(event[20..24].try_into().unwrap()))
             .next_back()
             .unwrap()
+    }
+
+    fn input_frames(path: &std::path::Path) -> Vec<Vec<(u16, u16, i32)>> {
+        let bytes = std::fs::read(path).unwrap();
+        let mut frames = Vec::new();
+        let mut frame = Vec::new();
+        for event in bytes
+            .as_chunks::<{ std::mem::size_of::<LinuxInputEvent>() }>()
+            .0
+        {
+            let kind = u16::from_ne_bytes(event[16..18].try_into().unwrap());
+            let code = u16::from_ne_bytes(event[18..20].try_into().unwrap());
+            let value = i32::from_ne_bytes(event[20..24].try_into().unwrap());
+            if kind == EV_SYN && code == SYN_REPORT {
+                frames.push(std::mem::take(&mut frame));
+            } else {
+                frame.push((kind, code, value));
+            }
+        }
+        assert!(frame.is_empty(), "input frame was not synchronized");
+        frames
+    }
+
+    #[test]
+    fn t286_release_updates_pen_axes_before_leaving_proximity() {
+        for eraser in [false, true] {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            let mut pen = UInputDevice {
+                file: file.reopen().unwrap(),
+            };
+            pen.inject_pen(100, 200, 1000, 10, 20, 0, eraser).unwrap();
+            pen.inject_pen(300, 400, 123, 30, -40, 1, eraser).unwrap();
+            let frames = input_frames(file.path());
+            let release = frames
+                .iter()
+                .position(|frame| frame.contains(&(EV_KEY, BTN_TOUCH, 0)))
+                .unwrap();
+            for (code, value) in [
+                (ABS_X, 300),
+                (ABS_Y, 400),
+                (ABS_TILT_X, 30),
+                (ABS_TILT_Y, -40),
+                (ABS_PRESSURE, 0),
+            ] {
+                assert!(
+                    frames[release].contains(&(EV_ABS, code, value)),
+                    "T286 release lost final axis {code}: {:?}",
+                    frames[release]
+                );
+            }
+            let tool = if eraser {
+                BTN_TOOL_RUBBER
+            } else {
+                BTN_TOOL_PEN
+            };
+            assert!(
+                !frames[release].contains(&(EV_KEY, tool, 0)),
+                "libinput discards updated axes in a proximity-out frame"
+            );
+            assert_eq!(frames[release + 1], [(EV_KEY, tool, 0)]);
+        }
+    }
+
+    #[test]
+    fn t286_hover_exit_parks_pointer_at_final_release_position() {
+        for eraser in [false, true] {
+            let pen = tempfile::NamedTempFile::new().unwrap();
+            let pointer = tempfile::NamedTempFile::new().unwrap();
+            let mut devices = InjectDevices {
+                pen: Some(UInputDevice {
+                    file: pen.reopen().unwrap(),
+                }),
+                pointer: Some(UInputDevice {
+                    file: pointer.reopen().unwrap(),
+                }),
+                ..InjectDevices::empty()
+            };
+            for (action, x, y) in [(0, 100, 200), (1, 300, 400), (4, 0, 0)] {
+                devices.apply_pen(
+                    AbsoluteContact {
+                        x,
+                        y,
+                        pressure: 123,
+                    },
+                    (0.0, 0.0),
+                    eraser,
+                    action,
+                );
+            }
+            assert_eq!(
+                last_input_value(pointer.path(), ABS_X),
+                300,
+                "T286 stale cursor X"
+            );
+            assert_eq!(
+                last_input_value(pointer.path(), ABS_Y),
+                400,
+                "T286 stale cursor Y"
+            );
+            assert!(!devices.pen_proximity);
+            assert_eq!(last_input_value(pen.path(), BTN_TOUCH), 0);
+            assert_eq!(last_input_value(pen.path(), ABS_PRESSURE), 0);
+        }
     }
 
     #[test]
