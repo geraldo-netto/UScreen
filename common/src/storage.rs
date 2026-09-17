@@ -123,6 +123,33 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t264_position_aliases_round_trip_as_one_canonical_choice() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        for (input, expected) in [
+            (" LEFT ", "left"),
+            ("Above", "above"),
+            (" top ", "above"),
+            (" BELOW ", "below"),
+            ("Bottom", "below"),
+            (" right ", "right"),
+            ("typo", "right"),
+        ] {
+            std::fs::write(&path, format!("position = {input:?}\n")).unwrap();
+            let config = FileConfig::load_at(&path);
+            // GUI and doctor consume this canonical value; runtime parsing
+            // must select the same direction before and after persistence.
+            assert_eq!(config.position, expected, "T264: {input:?}");
+            assert_eq!(
+                crate::Position::parse_or_default(&config.position),
+                crate::Position::parse_or_default(input)
+            );
+            config.save_at(&path).unwrap();
+            assert_eq!(FileConfig::load_at(&path).position, expected);
+        }
+    }
     #[test]
     fn t140_xdg_config_isolation() {
         if let Ok(mode) = std::env::var("USCREEN_T140_CHILD") {

@@ -181,6 +181,15 @@ pub enum Position {
 }
 
 impl Position {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Right => "right",
+            Self::Left => "left",
+            Self::Above => "above",
+            Self::Below => "below",
+        }
+    }
+
     pub fn parse(s: &str) -> Option<Self> {
         match s.trim().to_ascii_lowercase().as_str() {
             "right" => Some(Position::Right),
@@ -256,6 +265,7 @@ impl FileConfig {
             );
             self.position = "right".into();
         }
+        self.position = Position::parse_or_default(&self.position).as_str().into();
     }
 }
 
