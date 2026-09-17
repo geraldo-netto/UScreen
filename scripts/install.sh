@@ -167,7 +167,8 @@ stage_install_binaries() {
         helper="$PROJECT_DIR/host/evdi/evdi_helper"
     fi
     cp "$helper" "$staged/evdi_helper" || return
-    chmod +x "$staged/uscreen" "$staged/evdi_helper" || return
+    # Only program files are staged so far, including the optional GUI.
+    chmod +x "$staged/"* || return
     if [ -f "$src_bin/libevdi.so.1.15.0" ]; then
         cp -P "$src_bin"/libevdi.so.1* "$staged/" || return
     fi

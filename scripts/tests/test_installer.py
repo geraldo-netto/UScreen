@@ -10,6 +10,18 @@ SOURCE = (REPO / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
 
 
 class InstallerTest(unittest.TestCase):
+    def test_t345_installed_binaries_are_executable(self):
+        with tempfile.TemporaryDirectory(prefix='uscreen-executable-install-') as tmp:
+            source, installed = self.upgrade_fixture(Path(tmp))
+            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                (source / name).chmod(0o644)
+            result = self.install_fixture(source, installed)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            for name in ['uscreen', 'evdi_helper', 'uscreen-gui']:
+                with self.subTest(binary=name):
+                    launched = subprocess.run([str(installed / name)], capture_output=True, text=True)
+                    self.assertEqual(launched.returncode, 0, launched.stdout + launched.stderr)
+
     def test_t249_upgrade_preserves_a_running_library_mapping(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
             root = Path(tmp)
