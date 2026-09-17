@@ -417,13 +417,23 @@ mod cli_tests {
     }
 
     #[test]
-    fn t108_extra_slot_requires_its_own_assigned_card() {
-        let mut config = capture::CaptureConfig::default();
-        assert!(assign_slot_card(&mut config, &[0], 1).is_err());
-        assign_slot_card(&mut config, &[0, 3], 1).unwrap();
-        assert_eq!(config.card, Some(3));
-        assign_slot_card(&mut config, &[0, 3], 0).unwrap();
-        assert_eq!(config.card, Some(0));
+    fn t108_t330_extra_slots_do_not_inherit_card_pins() {
+        let template = capture::CaptureConfig {
+            card: Some(0),
+            width: 1280,
+            ..capture::CaptureConfig::default()
+        };
+        for instance in 0..4 {
+            let config = slot_capture_config(template.clone(), instance);
+            assert_eq!(config.instance, instance);
+            assert_eq!(
+                config.card, None,
+                "automatic allocation uses exclusive helper leases"
+            );
+            assert_eq!(config.width, template.width);
+        }
+        // T108's distinct-card and strict-pin guarantees remain exercised by
+        // the C lease tests and the integrated T330 concurrent-helper fixture.
     }
 
     #[test]
@@ -1325,31 +1335,29 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let stream_scale = effective.stream_scale;
     let pen_only = initial_pen_only(cli.pen_only, &file_cfg);
 
-    let cap_config = capture::CaptureConfig {
-        helper_path: helper_path.clone(),
-        edid_path: cli.edid.clone(),
-        encoder: encoder.clone(),
-        vaapi_device: file_cfg.vaapi_device.clone(),
-        fps,
-        bitrate,
-        width,
-        height,
-        quality,
-        // Replaced as soon as the tablet reports its real panel size.
-        width_mm: edid::DEFAULT_WIDTH_MM,
-        height_mm: edid::DEFAULT_HEIGHT_MM,
-        stream_scale,
-        position: config::Position::parse_or_default(&file_cfg.position),
-        ten_bit: file_cfg.ten_bit,
-        instance: 0,
-        // With several tablets every helper is pinned to its own card; the
-        // helper's own search would give each of them the same one.
-        card: if file_cfg.max_tablets > 1 {
-            vdisplay::evdi_cards().into_iter().min()
-        } else {
-            None
+    let cap_config = slot_capture_config(
+        capture::CaptureConfig {
+            helper_path: helper_path.clone(),
+            edid_path: cli.edid.clone(),
+            encoder: encoder.clone(),
+            vaapi_device: file_cfg.vaapi_device.clone(),
+            fps,
+            bitrate,
+            width,
+            height,
+            quality,
+            // Replaced as soon as the tablet reports its real panel size.
+            width_mm: edid::DEFAULT_WIDTH_MM,
+            height_mm: edid::DEFAULT_HEIGHT_MM,
+            stream_scale,
+            position: config::Position::parse_or_default(&file_cfg.position),
+            ten_bit: file_cfg.ten_bit,
+            instance: 0,
+            // The helper atomically leases a free card; card order is not ownership.
+            card: None,
         },
-    };
+        0,
+    );
 
     let token = create_session_token(file_cfg.require_token)?;
     let relaunch = std::sync::Arc::new(tokio::sync::Notify::new());
@@ -2022,20 +2030,15 @@ impl ExtraSession {
     }
 }
 
-/// A multi-tablet slot must have an assigned card before any task starts.
-fn assign_slot_card(
-    config: &mut capture::CaptureConfig,
-    cards: &[u32],
+/// Each automatic session has its own FIFO and acquires an exclusive helper
+/// lease when capture starts. A template's explicit pin cannot be shared by slots.
+fn slot_capture_config(
+    mut config: capture::CaptureConfig,
     instance: u32,
-) -> Result<()> {
-    config.card = Some(*cards.get(instance as usize).with_context(|| {
-        format!(
-            "tablet slot {} needs its own EVDI card; only {} available",
-            instance + 1,
-            cards.len()
-        )
-    })?);
-    Ok(())
+) -> capture::CaptureConfig {
+    config.instance = instance;
+    config.card = None;
+    config
 }
 
 /// Bring up capture, stream and input for tablet number `instance`.
@@ -2045,10 +2048,7 @@ async fn spawn_extra_session(t: &ExtraSessionTemplate, instance: u32) -> Result<
     let (video_port, input_port) = *config::slot_ports(t.video_port, t.input_port, t.max_tablets)?
         .get(instance as usize)
         .context("tablet slot outside configured range")?;
-    let cards = vdisplay::evdi_cards();
-    let mut cfg = t.cap_template.clone();
-    cfg.instance = instance;
-    assign_slot_card(&mut cfg, &cards, instance)?;
+    let cfg = slot_capture_config(t.cap_template.clone(), instance);
 
     let (settings_tx, settings_rx) = watch::channel(capture::EncoderSettings {
         encoder: cfg.encoder.clone(),

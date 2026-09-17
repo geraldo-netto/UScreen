@@ -306,6 +306,10 @@ static void test_helper_options(void) {
     assert(g_scale == 1);
     assert(g_fps == 60);
     assert(g_pin_card == -1);
+    char *preferred[] = {"helper", "--preferred-card", "7"};
+    parse_helper_options((int)(sizeof(preferred) / sizeof(preferred[0])), preferred);
+    assert(g_preferred_card == 7);
+    assert(g_pin_card == -1);
 }
 
 static void assert_external_card_preserved(const char *root) {
@@ -320,6 +324,10 @@ static void assert_external_card_preserved(const char *root) {
     assert(external && index == 2 && "T108: do not steal another EVDI application's output");
     evdi_close(external);
     assert(!open_available_device_in(root, 0, &index));
+    assert(!open_session_device_in(root, 0, 2, &index) && "T330: preference cannot override a strict pin");
+    external = open_session_device_in(root, -1, 0, &index);
+    assert(external && index == 2 && "T330: busy preference must use a free lease");
+    evdi_close(external);
     unlink(path);
     snprintf(path, sizeof(path), "%s/evdi.0/drm/card0/card0-DVI-I-1", root); rmdir(path);
 }
@@ -918,7 +926,23 @@ static void test_t343(void) {
     alarm(0);
 }
 
+/* T330: production option parsing/allocation, fake DRM inodes, real flock.
+   The Rust daemon fixture starts concurrent helpers and owns their lifetime. */
+static int t330_command_lease(int argc, char **argv, const char *root) {
+    snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
+    parse_helper_options(argc, argv);
+    int card = -1;
+    evdi_handle handle = acquire_capture_device_in(root, &card);
+    if (handle == EVDI_INVALID_HANDLE) return 1;
+    printf("EVDI_CONNECTED card%d\n", card);
+    fflush(stdout);
+    alarm(20);
+    for (;;) pause(); /* SIGTERM/SIGKILL closes the leased fake inode. */
+}
+
 int main(int argc, char **argv) {
+    const char *root = getenv("USCREEN_T330_DRM");
+    if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
         {"T343", test_t343},

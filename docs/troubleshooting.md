@@ -120,10 +120,12 @@ Do not replace the system glibc to satisfy an application binary.
 
 ## A busy EVDI card is selected despite another free card
 
-The helper can lease a free card when unpinned, but the daemon can explicitly
-assign cards by enumeration order. A slot may therefore fail on an occupied
-card despite free capacity (T330). Do not remove another application's display
-to make a retry succeed; include the card/connector state in the report.
+Automatic sessions lease free cards rather than assigning them by enumeration
+order. Restarting capture prefers its previous card if still free, otherwise
+it searches the current card set. Explicit helper `--card` pins remain strict.
+If every card is connected or leased, the helper tries to add a device; check
+the resulting error and EVDI permissions if capture keeps retrying. Include
+card/connector state in reports without removing another application's display.
 
 ## Getting more help
 

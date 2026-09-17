@@ -66,8 +66,14 @@ version comparison without filesystem/process adapters. CI checks that boundary
 on WebAssembly; this does not make the daemon or GUI Windows-compatible.
 
 - `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
-- `evdi_helper`: one per active display slot, owns one EVDI card. The daemon's
-  card assignment can pin an occupied card despite free capacity (T330).
+- `evdi_helper`: one per active display slot, leases one free EVDI card.
+  Automatic sessions skip connected cards and contend through nonblocking
+  exclusive DRM-inode locks. A restarting session prefers its previous card
+  when free, then searches other cards; it does not reserve an inactive card.
+  Card removal or another application's use can change the assignment.
+  The helper publishes the actual card for placement/input mapping. If no card
+  is available it tries to add one; failure leaves capture waiting/retrying.
+  An explicit helper `--card` pin remains strict and never falls back.
 - `ffmpeg`: one per active encoding slot, unless built with the optional
   in-process encoder.
 - `uscreen-gui`: host configuration and start/stop controls. Apply & Restart

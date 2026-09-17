@@ -236,10 +236,10 @@ pub struct CaptureConfig {
     pub position: crate::config::Position,
     pub ten_bit: bool,
     /// Which tablet this pipeline serves (0 = the first): picks the FIFO
-    /// name and, together with `card`, keeps two pipelines apart.
+    /// name. Exclusive helper leases keep active pipelines on different cards.
     pub instance: u32,
-    /// EVDI card to pin the helper to. None lets the helper pick a free one,
-    /// which is only safe with a single tablet.
+    /// An explicit strict card pin. Automatic sessions leave this unset and
+    /// acquire a free-card lease, preferring their previous card on restart.
     pub card: Option<u32>,
 }
 
@@ -601,6 +601,8 @@ impl CaptureManager {
         cmd.arg("--capture-fifo").arg(fifo);
         if let Some(card) = self.config.card {
             cmd.args(["--card", &card.to_string()]);
+        } else if let Some(previous) = self.helper_card {
+            cmd.args(["--preferred-card", &previous.to_string()]);
         }
 
         cmd.stdout(Stdio::piped())
@@ -3723,3 +3725,7 @@ mod encoder_policy_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "capture_card_tests.rs"]
+mod card_allocation_tests;

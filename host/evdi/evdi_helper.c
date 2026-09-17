@@ -44,6 +44,7 @@ static int g_mode_bpp = 4;
 static int g_mode_stride = 0;
 static volatile int g_have_mode = 0;
 static int g_pin_card = -1;
+static int g_preferred_card = -1;
 static int g_dpms_on = 0;
 
 /* Triple buffer for FIFO writes: grabber packs into g_fill, swaps with
@@ -1190,6 +1191,17 @@ static evdi_handle open_available_device_in(const char *root, int pinned, int *i
     return EVDI_INVALID_HANDLE;
 }
 
+/* Automatic sessions keep their previous card when it is still free. A
+   strict --card pin never falls back; all paths use the same exclusive lease. */
+static evdi_handle open_session_device_in(const char *root, int pinned, int preferred, int *index) {
+    if (pinned >= 0) return open_available_device_in(root, pinned, index);
+    if (preferred >= 0 && find_evdi_device_after(root, preferred - 1) == preferred) {
+        evdi_handle handle = open_available_device_in(root, preferred, index);
+        if (handle != EVDI_INVALID_HANDLE) return handle;
+    }
+    return open_available_device_in(root, -1, index);
+}
+
 static int request_evdi_device(void) {
     int written = evdi_add_device();
     if (written <= 0) {
@@ -1221,6 +1233,8 @@ static int set_numeric_option(const char *name, const char *value) {
     } else if (strcmp(name, "--card") == 0) {
         /* Pin the assigned card; never borrow another tablet's slot. */
         g_pin_card = atoi(value);
+    } else if (strcmp(name, "--preferred-card") == 0) {
+        g_preferred_card = atoi(value);
     } else if (strcmp(name, "--fps") == 0) {
         g_fps = atoi(value);
         if (g_fps < 1 || g_fps > 240) g_fps = 60;
@@ -1263,11 +1277,11 @@ static void initialize_helper_runtime(void) {
 
 }
 
-static evdi_handle acquire_capture_device(int *index) {
+static evdi_handle acquire_capture_device_in(const char *root, int *index) {
     /* Reuse an existing EVDI device if one is free (e.g. from a previous
        run) — adding a new DRM card on every restart floods the compositor
        with display hotplug events. */
-    evdi_handle handle = open_available_device_in("/sys/devices/platform", g_pin_card, index);
+    evdi_handle handle = open_session_device_in(root, g_pin_card, g_preferred_card, index);
     if (handle != EVDI_INVALID_HANDLE) {
         fprintf(stderr, "[evdi-helper] Reusing EVDI device /dev/dri/card%d\n", (*index));
     }
@@ -1281,7 +1295,7 @@ static evdi_handle acquire_capture_device(int *index) {
         if (!request_evdi_device()) return EVDI_INVALID_HANDLE;
 
         fprintf(stderr, "[evdi-helper] Waiting for EVDI device...\n");
-        handle = wait_for_available_device("/sys/devices/platform", 5000, index);
+        handle = wait_for_available_device(root, 5000, index);
         if (handle == EVDI_INVALID_HANDLE) {
             fprintf(stderr, "[evdi-helper] No free EVDI device appeared within timeout.\n"
                             "[evdi-helper] Either the evdi kernel module is not loaded, or no device exists\n"
@@ -1294,6 +1308,10 @@ static evdi_handle acquire_capture_device(int *index) {
         fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", (*index));
     }
     return handle;
+}
+
+static evdi_handle acquire_capture_device(int *index) {
+    return acquire_capture_device_in("/sys/devices/platform", index);
 }
 
 static FILE *open_edid_file(const char *path) {
