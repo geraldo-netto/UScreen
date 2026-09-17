@@ -686,6 +686,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
     fun getMbps(): Float = currentMbps
 
     @Synchronized fun stop() {
+        val wasRunning = isRunning
         sessionGeneration.incrementAndGet()
         isRunning = false
         codecAlive = false
@@ -703,6 +704,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         scope = null
 
         releaseCodec()
+        if (wasRunning) onDisconnected?.invoke()
 
         // The surface is deliberately left alone. It belongs to the
         // SurfaceView, which outlives any single streaming session — it stays

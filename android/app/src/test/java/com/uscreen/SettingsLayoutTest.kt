@@ -40,6 +40,21 @@ class SettingsLayoutTest {
 
     private val draw = "Draw here — it goes to the screen on your computer."
 
+    @Test fun t248_stoppingVideoRestoresTheWaitingScreen() {
+        val receiver = VideoReceiver()
+        compose.setContent { UScreenTheme { UScreenMain({}, videoReceiver = receiver) } }
+        try {
+            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.runOnIdle {
+                VideoReceiver::class.java.getDeclaredField("isRunning").apply { isAccessible = true }.set(receiver, true)
+                receiver.onConnected!!.invoke()
+            }
+            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.runOnIdle { receiver.stop() }
+            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+        } finally { receiver.stop() }
+    }
+
     private class Socket : WebSocket {
         override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()
         override fun queueSize() = 0L
