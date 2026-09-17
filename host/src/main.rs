@@ -148,26 +148,65 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 
 #[cfg(test)]
 mod cli_tests {
+    // Configuration writers are exercised only in child processes with a private XDG tree.
+    fn isolated_config_test(name: &str) -> bool {
+        if std::env::var_os("USCREEN_CONFIG_TEST_CHILD").is_some() {
+            return false;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .env("USCREEN_CONFIG_TEST_CHILD", "1")
+            .env("XDG_CONFIG_HOME", dir.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        true
+    }
+
+    #[tokio::test]
+    async fn t296_mode_changes_before_writer_start_are_persisted() {
+        if isolated_config_test("cli_tests::t296_mode_changes_before_writer_start_are_persisted") {
+            return;
+        }
+        for (saved, initial, changes, expected) in [
+            (false, false, &[true][..], true),
+            (true, true, &[false][..], false),
+            (false, true, &[][..], false), // unchanged temporary --pen-only
+            (false, true, &[false, true][..], true), // deliberate round trip
+        ] {
+            config::FileConfig {
+                pen_only: saved,
+                ..Default::default()
+            }
+            .save()
+            .unwrap();
+            let (sender, persistence) = mode_channel(initial);
+            let input_observer = sender.subscribe();
+            // Model messages arriving after the control handlers start, before
+            // the persistence task is launched. No daemon or devices are opened.
+            for &value in changes {
+                sender.send(value).unwrap();
+            }
+            drop(input_observer);
+            drop(sender);
+            persistence.run().await;
+            assert_eq!(
+                config::FileConfig::load().pen_only,
+                expected,
+                "T296: mode changes {changes:?} from {initial} with saved {saved}"
+            );
+        }
+    }
+
     #[tokio::test]
     async fn t292_queued_first_settings_update_is_persisted() {
-        if std::env::var_os("USCREEN_T292_CHILD").is_none() {
-            let dir = tempfile::tempdir().unwrap();
-            let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args([
-                    "--exact",
-                    "cli_tests::t292_queued_first_settings_update_is_persisted",
-                    "--nocapture",
-                ])
-                .env("USCREEN_T292_CHILD", "1")
-                .env("XDG_CONFIG_HOME", dir.path())
-                .output()
-                .unwrap();
-            assert!(
-                output.status.success(),
-                "{}{}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            );
+        if isolated_config_test("cli_tests::t292_queued_first_settings_update_is_persisted") {
             return;
         }
         let saved = config::FileConfig {
@@ -1122,7 +1161,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Which of the two jobs the tablet is doing. Switchable at runtime from
     // the tablet's own settings, so it lives in a channel the input server,
     // the capture manager and the config writer all follow.
-    let (mode_tx, _) = watch::channel(pen_only);
+    let (mode_tx, mode_persistence) = mode_channel(pen_only);
 
     // Tablet control messages update these settings and restart the encoder.
     // config.toml is read at daemon startup; file edits require a daemon restart
@@ -1223,7 +1262,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Remember which mode the tablet was left in. Unlike the --pen-only flag,
     // which is a one-off for this run and never written back, a switch made
     // from the tablet is a deliberate choice and should survive a restart.
-    let mode_save_handle = tokio::spawn(persist_mode(mode_tx.subscribe()));
+    let mode_save_handle = tokio::spawn(mode_persistence.run());
 
     // The daemon's only face on the desktop. It follows the same channels the
     // rest of the daemon does, so it cannot drift out of step with what is
@@ -1557,6 +1596,21 @@ impl CliOverrides {
         if !self.stream_scale && s.stream_scale != previous.stream_scale {
             cfg.stream_scale = s.stream_scale;
         }
+    }
+}
+
+// Subscribe at channel creation so server startup cannot hide an early switch.
+// Hold the receiver until startup succeeds and the writer task can be launched.
+struct ModePersistence(watch::Receiver<bool>);
+
+fn mode_channel(initial: bool) -> (watch::Sender<bool>, ModePersistence) {
+    let (sender, receiver) = watch::channel(initial);
+    (sender, ModePersistence(receiver))
+}
+
+impl ModePersistence {
+    fn run(self) -> impl std::future::Future<Output = ()> + Send {
+        persist_mode(self.0)
     }
 }
 
