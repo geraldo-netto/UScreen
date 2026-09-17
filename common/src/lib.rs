@@ -95,15 +95,14 @@ pub struct FileConfig {
     /// for bursts, and on a desktop the stream sits far below it.
     pub quality: u32,
     /// Integer downscale for the stream only; the desktop keeps its native
-    /// mode. 1 = native, 2 = half. Trades sharpness for latency: the tablet's
-    /// decoder costs roughly 7-8ms fixed plus 1.2ms per megapixel, so fewer
-    /// pixels arrive on screen sooner.
+    /// mode. 1 = native, 2 = half in each axis. Fewer streamed pixels can
+    /// reduce decoder work at the cost of sharpness; the effect depends on
+    /// the tablet. Scaling happens after capture, so it does not shrink the grab.
     pub stream_scale: u32,
     /// Use the tablet as a graphics tablet for the laptop's own screen rather
     /// than as a second display: no capture, no encoding, nothing streamed —
     /// the pen and touch simply drive the screen you are already looking at.
-    /// For drawing that removes display latency from the loop entirely, which
-    /// is worth more than any amount of tuning the video path.
+    /// This removes the streamed-video path; input and host-display latency remain.
     pub pen_only: bool,
     /// Where the virtual screen sits relative to the physical ones:
     /// "right" (default), "left", "above" or "below". Anything else is

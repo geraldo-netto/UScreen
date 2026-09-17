@@ -1,15 +1,19 @@
 # Benchmarks
 
-Numbers measured by the project, with the method, so they can be reproduced
-or argued with. They are from one machine and one tablet; other hardware will
-differ.
+Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
+retained with their original numbers. They describe one host and one tablet,
+not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;
+the CPU/capture sections also contain explicitly labeled 1.2.0 follow-ups.
+Their separate measurement dates were not recorded here. No raw sample set
+is included, so the statistical results cannot be independently reconstructed
+from this document alone.
 
 ## Test configuration
 
 | | |
 | --- | --- |
-| Date | 2026-08-26 to 2026-08-31 |
-| UScreen | 1.0.0 – 1.1.0 |
+| Initial series dates, as reported | 2026-08-26 to 2026-08-31 |
+| Initial series versions | upstream 1.0.0–1.1.0; later comparisons labeled below |
 | Host | Laptop, NVIDIA GeForce RTX 5060 Laptop GPU, Bazzite (Fedora Atomic) with KDE Plasma 6 on Wayland, kernel 7.2 |
 | Tablet | Samsung Galaxy Tab S9 Ultra (Snapdragon 8 Gen 2), 2960×1848 @ 90 Hz |
 | Link | USB-C cable, adb over USB; Wi-Fi tests on a 5 GHz (tablet) / 6 GHz (host) link to the same router, RSSI −37 / −44 dBm |
@@ -45,8 +49,8 @@ do not add up to a measured total display latency.
 | codec | p50 | p95 | notes |
 | --- | --- | --- | --- |
 | H.264 (NVENC) | 18–22 ms | 23–31 ms | default |
-| HEVC (NVENC) | 15–18 ms | 20–23 ms | tablet has a dedicated low-latency HEVC decoder |
-| HEVC Main10 (10-bit) | 16–17 ms | 19–22 ms | no measurable cost over 8-bit |
+| HEVC (NVENC) | 15–18 ms | 20–23 ms | lower reported latency on this tablet; not a universal codec advantage |
+| HEVC Main10 (10-bit) | 16–17 ms | 19–22 ms | similar reported range to 8-bit HEVC |
 
 Of the ~22 ms H.264 figure, the tablet reported about 15 ms from frame
 arrival to render callback; the remaining 5–7 ms includes both transport
@@ -63,10 +67,11 @@ reported p50 from 22 ms to 16 ms at the cost of softer text.
 | windows with p95 < 60 ms | 7/7 | 14/73 | 10/31 |
 | worst single frame | 32 ms | 5775 ms | 2546 ms |
 
-The app's low-latency Wi-Fi lock fixed the median (Android was dozing the
-radio between frames). The tail is the wireless medium and the router, and no
-signal strength fixes it — these figures are from a link with none of the
-usual excuses. Wi-Fi stays a fallback.
+With the radio lock, this test's median approached USB, while long delays
+remained. These observations are consistent with a benefit from reducing
+radio power saving; they do not isolate the cause of every delay or establish
+that signal strength/router changes cannot help. Other networks and tablets
+can behave differently.
 
 ### Host CPU
 
@@ -78,21 +83,24 @@ usual excuses. Wi-Fi stays a fallback.
 The reported packet-to-acknowledgement latency was similar; this metric does
 not establish encoder latency, because its timer begins after encoding.
 
-Capture helper while the output is disabled (tablet unplugged, or graphics-
-tablet mode): 96 % of a core before 0.4.0 (a poll loop with a deadline in the
-past), 1.6 % after.
+Historical helper measurement: 96 % of a core before 0.4.0 while the output
+was disabled (a poll-loop deadline bug), 1.6 % afterward. Current daemon
+lifecycle stops the helper when no display session is needed; the historical
+number is not a measurement of current unplugged-daemon CPU usage.
 
-With ffmpeg 8 the encoder process was found at ~280 % of a core: the BT.709
-tags passed as output options made ffmpeg convert every frame through RGB on
-the CPU. Tagging the input instead (1.2.0) brings it to ~12 % at 90 fps.
+The upstream 1.2.0 follow-up reports FFmpeg 8 encoder-process CPU changing
+from ~280 % to ~12 % of a core at a 90 fps target after moving BT.709 tags to
+the input to avoid a CPU colour conversion. This is a different version and
+measurement from the helper-plus-encoder table; do not compare their totals
+as if they were the same workload.
 
 ### Frame rate ceiling of the EVDI capture cycle
 
-The cycle is serial by the driver's design: the compositor renders the
-virtual output and copies it out of the GPU into the EVDI framebuffer, the
-helper copies that into its own buffer, and only then does the compositor
-start the next frame. Measured on the reference laptop at 2960×1848 under
-continuous motion (the helper prints both halves every 5 s):
+The helper requests an update, waits for the driver's event, then grabs the
+frame into its own buffer. The recorded request wait includes compositor and
+driver work; these timers do not prove that every compositor serializes its
+next render behind the helper's copy. Upstream measurements at 2960×1848
+under continuous motion (the helper reports these stages every 5 seconds):
 
 | half of the cycle | 1.1.0 | 1.2.0 |
 | --- | --- | --- |
@@ -100,17 +108,19 @@ continuous motion (the helper prints both halves every 5 s):
 | helper copies the frame (`evdi_grab_pixels`) | 6.3–6.7 ms | 4.0–5.0 ms (huge pages) |
 | frames delivered at a 90 fps target | 52–57 /s | 58–63 /s |
 
-So native resolution tops out around 60 frames/s on this hardware whatever
-the target is, and the compositor's copy is the part nothing on our side can
-shorten. `stream_scale` does not help here (it scales after the grab); a
-smaller virtual mode does. A capture path that takes the frame from the
-compositor as a GPU buffer (PipeWire/dmabuf) would remove both copies and is
-on the roadmap.
+At the reported 90 fps target, this setup delivered roughly 60 frames/s.
+That does not establish an invariant ceiling for other workloads, drivers or
+future changes. `stream_scale` scales after the grab, so it does not reduce
+the framebuffer being copied; lowering the virtual resolution does. A
+PipeWire/dmabuf path is a proposal whose copy count and performance would
+need implementation and measurement.
 
 ## Limitations
 
-- One host, one tablet model. The tablet's decoder dominates the budget, so
-  other tablets will land elsewhere; a Snapdragon 8 Gen 2 is a fast one.
+- One host, one tablet model. Decode/render is a substantial part of the
+  measured packet-to-ack interval; total display latency was not measured.
+- The historical 90 fps/quality-12 setup is not the fork default: host FPS is
+  60, quality is 18, and the app now requests a 60 Hz display mode by default.
 - The wire estimate includes both directions of adb/USB and host queueing;
   subtracting independent percentiles cannot isolate individual stages.
 - "Windows with p95 < 60 ms" is a coarse stutter indicator, not a standard.
@@ -118,4 +128,6 @@ on the roadmap.
 
 Reports with other hardware are welcome as
 [compatibility issues](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml);
-the daemon's `Latency encode→display` log line is all it takes.
+include the exact commit, hardware, encoder/settings, workload and several
+`Latency encode→display` log lines. The log label alone does not describe a
+reproducible benchmark.

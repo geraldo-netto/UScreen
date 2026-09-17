@@ -48,7 +48,7 @@
     "Real extended display via the EVDI kernel module",
     "S Pen pressure, tilt, eraser and stylus button as a Linux graphics tablet",
     "Direct USB connection over adb, Wi-Fi as a fallback",
-    "Graphics-tablet mode with zero display latency",
+    "Graphics-tablet mode without a streamed-video path",
     "Hardware encoding (NVENC, VAAPI) and decoding, H.264 and HEVC",
     "Measured 22 ms median encoded-packet-to-render-acknowledgement latency over USB",
     "Packages for Debian, Ubuntu, Fedora, openSUSE, Arch, Bazzite",
@@ -285,7 +285,7 @@
       <!-- cable: the one moving thing on the page -->
       <path d="M288 215 C 320 215, 300 258, 332 258 L 420 258 C 448 258, 430 224, 425 224" fill="none" stroke="#2e2c27" stroke-width="3"/>
       <path class="flow" d="M288 215 C 320 215, 300 258, 332 258 L 420 258 C 448 258, 430 224, 425 224" fill="none" stroke="#f0a742" stroke-width="1.5"/>
-      <text x="336" y="278" font-family="IBM Plex Mono, monospace" font-size="11" fill="#f0a742">USB · adb reverse · 5–7 ms</text>
+      <text x="336" y="278" font-family="IBM Plex Mono, monospace" font-size="11" fill="#f0a742">USB · adb reverse</text>
 
       <!-- tablet, drawn as an extension: same wallpaper tone, a window dragged across, a pen stroke -->
       <rect x="322" y="86" width="206" height="146" rx="8" fill="#1c1b18" stroke="#4a4740"/>
@@ -309,7 +309,7 @@
         <text x="330" y="318" fill="#ece8df" font-size="14">≈ <tspan fill="#f0a742">15 ms</tspan> of that</text>
       </g>
     </svg>
-    <figcaption>Measured on the reference setup: Bazzite KDE + RTX 5060, Galaxy Tab S9 Ultra, H.264 over USB.</figcaption>
+    <figcaption>Historical upstream measurement on the reference setup: Bazzite KDE + RTX 5060, Galaxy Tab S9 Ultra, H.264 over USB.</figcaption>
   </figure>
 </section>
 
@@ -330,9 +330,9 @@
   <div class="facts">
     <article><h3>Extended display through EVDI</h3><p>A virtual output with the tablet's own resolution and physical size. It appears in Display settings; you drag windows onto it; KDE places it next to your real screens for you.</p></article>
     <article><h3>S Pen as a tablet device</h3><p>Pressure, tilt, eraser end and the stylus button arrive in Linux as a real graphics-tablet device, mapped to the right screen. Krita, GIMP and Blender see a tablet, not a mouse.</p></article>
-    <article><h3>Graphics-tablet mode</h3><p>One tap and nothing is streamed: the pen drives the screen you are already looking at, like a Wacom Intuos, with zero display latency in the loop.</p></article>
+    <article><h3>Graphics-tablet mode</h3><p>One tap and nothing is streamed: the pen drives the screen you are already looking at, like a Wacom Intuos, without a streamed-video path; input latency remains.</p></article>
     <article><h3>Connection automation</h3><p>A configured user service can start with the desktop. The daemon watches adb, launches the app by default and negotiates geometry. Autostart, mapping and EVDI support depend on the desktop; diagnostics do not replace compatibility testing.</p></article>
-    <article><h3>Hardware all the way</h3><p>NVENC or VAAPI encoding on the host, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. The encoder is under a millisecond; the tablet's decoder is most of the budget.</p></article>
+    <article><h3>Encoder choices</h3><p>NVENC or VAAPI encoding on the host, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. libx264 is a software fallback. The reported packet-to-ack timings exclude encoding and capture.</p></article>
     <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener; existing runtime-directory validation remains a known limitation. See the security guide for trust boundaries.</p></article>
   </div>
 </section>
@@ -365,16 +365,16 @@
 <section id="numbers">
   <div class="sec-head">
     <h2>Numbers, with the method</h2>
-    <p>The host times complete encoded-packet readiness through receipt of the tablet’s render-callback acknowledgement. These historical results include the return message and exclude capture, encoding and packetizer assembly; they are not total display latency.</p>
+    <p>The host times complete encoded-packet readiness through receipt of the tablet’s render-callback acknowledgement. These historical upstream results include the return message and exclude capture, encoding and packetizer assembly; they are not total display latency.</p>
   </div>
   <div class="table-wrap" tabindex="0" aria-label="Measured latency by transport and codec; scrolls sideways on narrow screens" data-hint="Swipe for notes →">
   <table>
     <thead><tr><th>Path</th><th>Median</th><th>p95</th><th>Notes</th></tr></thead>
     <tbody>
       <tr><td>USB, H.264 (NVENC)</td><td class="mono">18–22 ms</td><td class="mono">23–31 ms</td><td>default</td></tr>
-      <tr><td>USB, HEVC (NVENC)</td><td class="mono">15–18 ms</td><td class="mono">20–23 ms</td><td>the tablet has a dedicated low-latency HEVC decoder</td></tr>
-      <tr><td>USB, HEVC Main10</td><td class="mono">16–17 ms</td><td class="mono">19–22 ms</td><td>10-bit costs nothing measurable; smooths gradient banding</td></tr>
-      <tr><td>Wi-Fi, H.264</td><td class="mono">22.8 ms</td><td class="mono">78.6 ms</td><td>single frames seen past two seconds — a fallback, not a mode</td></tr>
+      <tr><td>USB, HEVC (NVENC)</td><td class="mono">15–18 ms</td><td class="mono">20–23 ms</td><td>lower reported latency on this reference tablet</td></tr>
+      <tr><td>USB, HEVC Main10</td><td class="mono">16–17 ms</td><td class="mono">19–22 ms</td><td>similar reported range to 8-bit HEVC</td></tr>
+      <tr><td>Wi-Fi, H.264</td><td class="mono">22.8 ms</td><td class="mono">78.6 ms</td><td>single frames exceeded two seconds in this test</td></tr>
     </tbody>
   </table>
   </div>

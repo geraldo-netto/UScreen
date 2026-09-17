@@ -36,8 +36,7 @@ before setup. Packaging recipes target several Linux distribution families.
   and you move windows onto it.
 - **Pen that works like a tablet.** Pressure, tilt, eraser and button arrive
   in Linux as a graphics-tablet device — Krita, GIMP and Blender see a tablet.
-  A one-tap *graphics tablet* mode uses the pen on your own screen with zero
-  display latency.
+  A one-tap *graphics tablet* mode uses the pen on your own screen with no streamed-video decode/display path. Input latency remains.
 - **Low latency, measured.** About 22 ms median from encoded packet
   readiness to render acknowledgement over USB with
   H.264, 15–18 ms with HEVC, on the reference hardware — the
@@ -100,7 +99,8 @@ also matter. These reports describe upstream builds, not current fork validation
 
 ## Performance
 
-Measured on the reference hardware over USB (2960×1848, 90 fps target,
+Historical upstream measurements on the reference hardware over USB
+(2960×1848, 90 fps target,
 constant-quality encoding). Times run from encoded packet readiness to receipt
 of the tablet's render acknowledgement; capture and encoding are excluded:
 
@@ -143,7 +143,7 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 `$XDG_CONFIG_HOME/uscreen/config.toml`. Empty or relative values use the default.
 
 - **Graphics tablet mode** — flip *Graphics tablet* on the tablet: nothing is
-  streamed, the pen drives your own screen, zero display latency. Switch back
+  streamed and the pen drives your own screen. Input latency remains. Switch back
   the same way; no restart.
 - **Position** — `right` (default), `left`, `above`, `below` your real screens.
 - **Orientation** — in the tablet's ⚙ sheet: rotate automatically with the
@@ -153,7 +153,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   tablet. `ten_bit` (HEVC Main10) smooths gradient banding — the desktop is
   8-bit, so it adds precision, not colour; it is not HDR.
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a
-  ~6 ms lower decode time at the cost of softer text.
+  historical ~6 ms lower packet-to-ack median on the reference tablet, at the
+  cost of softer text; other devices differ.
 - **Several tablets** — `max_tablets` up to 4, each its own screen.
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
