@@ -68,7 +68,7 @@
     {"@type": "Question", "name": "Does UScreen require a dummy HDMI plug?", "acceptedAnswer": {"@type": "Answer", "text": "No. The virtual display is created in software by the EVDI kernel module."}},
     {"@type": "Question", "name": "What Android versions are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Android 8.1 and newer, on any tablet with a hardware H.264 decoder."}},
     {"@type": "Question", "name": "Is screen or input data sent to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release on GitHub, which can be turned off."}},
-    {"@type": "Question", "name": "How is UScreen different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. UScreen creates the virtual display itself, streams it with hardware encoding to a native app with hardware decoding, and maps the input devices onto that display automatically on KDE."}},
+    {"@type": "Question", "name": "How is UScreen different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse."}},
     {"@type": "Question", "name": "How do I uninstall UScreen completely?", "acceptedAnswer": {"@type": "Answer", "text": "Remove the package or the files in ~/.local/bin, the systemd user unit, and the three system files the installer creates (modprobe.d, modules-load.d, udev rule). The exact commands are in SECURITY.md in the repository."}}
   ]
 }
@@ -384,30 +384,22 @@
 
 <section id="compare">
   <div class="sec-head">
-    <h2>Against the alternatives</h2>
-    <p>Checked against official project documentation in August 2026. Where a project does something partially, it says so; where its documentation does not answer, the cell says <em>unknown</em>. Corrections are welcome as issues.</p>
+    <h2>Setup choices</h2>
+    <p>Documented setup choices, checked against the linked primary sources on 2026-09-17. This is not a performance ranking or a complete stylus-capability matrix.</p>
   </div>
-  <div class="table-wrap" tabindex="0" aria-label="Feature comparison with SuperDisplay, Weylus, Sunshine plus Moonlight and spacedesk; scrolls sideways on narrow screens" data-hint="Swipe to compare →">
+  <div class="table-wrap" tabindex="0" aria-label="Project setup comparison; scrolls sideways on narrow screens" data-hint="Swipe to compare →">
   <table>
-    <thead><tr><th></th><th>UScreen</th><th><a href="https://superdisplay.app/help/">SuperDisplay</a></th><th><a href="https://github.com/H-M-H/Weylus">Weylus</a></th><th><a href="https://github.com/LizardByte/Sunshine">Sunshine</a> + <a href="https://github.com/moonlight-stream/moonlight-android">Moonlight</a></th><th><a href="https://www.spacedesk.net/">spacedesk</a></th></tr></thead>
+    <thead><tr><th>Project</th><th>Linux host</th><th>Display setup</th><th>Android connection</th></tr></thead>
     <tbody>
-      <tr><td>Linux host</td><td class="yes">yes</td><td>no — Windows</td><td>yes</td><td>yes</td><td>no — Windows</td></tr>
-      <tr><td>Real extended display</td><td class="yes">yes, EVDI</td><td>yes</td><td>separate virtual-display setup</td><td>needs an existing or dummy display</td><td>yes</td></tr>
-      <tr><td>Direct USB, no tethering</td><td class="yes">yes, adb</td><td>yes</td><td>via adb port forward</td><td>no, network</td><td>no, network</td></tr>
-      <tr><td>Pen pressure / tilt / eraser</td><td class="yes">yes / yes / yes</td><td>yes / yes / yes</td><td>yes / yes / no</td><td>partial / no / no</td><td>partial / no / no</td></tr>
-      <tr><td>Hardware encoding</td><td class="yes">NVENC, VAAPI, x264</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
-      <tr><td>Open source</td><td class="yes">MIT</td><td>no</td><td>AGPL</td><td>GPL</td><td>no</td></tr>
-      <tr><td>Dummy HDMI plug</td><td class="yes">never</td><td>no</td><td>sometimes</td><td>often</td><td>no</td></tr>
+      <tr><td>UScreen</td><td>yes</td><td>EVDI virtual output; see known limitations</td><td>native app, adb over USB; optional Wi-Fi</td></tr>
+      <tr><td><a href="https://superdisplay.app/help/">SuperDisplay</a></td><td>no; Windows host</td><td>virtual extended display</td><td>native app, USB or Wi-Fi</td></tr>
+      <tr><td><a href="https://github.com/H-M-H/Weylus#readme">Weylus</a></td><td>yes</td><td>capture a screen/window; configure a separate output for extension</td><td>browser, network or adb reverse</td></tr>
+      <tr><td><a href="https://docs.lizardbyte.dev/projects/sunshine/latest/">Sunshine</a> + <a href="https://github.com/moonlight-stream/moonlight-android">Moonlight</a></td><td>yes</td><td>stream a host display; provisioning depends on host setup</td><td>native client, network</td></tr>
+      <tr><td><a href="https://manual.spacedesk.net/AndroidUSBCableConnection.html">spacedesk</a></td><td>no; Windows primary machine</td><td>virtual extended display</td><td>native app; direct Android USB supported</td></tr>
     </tbody>
   </table>
   </div>
-  <div class="others">
-    <h3>Other current projects</h3>
-    <p><a href="https://morespaceapp.com/">MoreSpace</a> (Linux host daemon + Android app) is the closest in scope: a virtual output extended by default, USB or Wi-Fi, GNOME, KDE, wlroots, niri and X11 sessions, pressure-sensitive stylus input. Its documentation does not state tilt or eraser support, the USB protocol it uses, or a license — the site links "Open Source" but no repository — so those cells would read <em>unknown</em>; it also has user accounts, which UScreen does not.</p>
-    <p><a href="https://github.com/princesavsaviya/TethrLink">TethrLink</a> (GPL-3.0) makes a genuine second monitor through GNOME's ScreenCast API, so it is GNOME-on-Wayland only, with X11 falling back to JPEG at the PC's own resolution. Transport is Android <strong>USB tethering</strong> rather than adb, and its README does not mention stylus pressure, tilt or eraser.</p>
-    <p><a href="https://github.com/TarikTopalovic/subdisplay">subdisplay</a> (MIT, one Python file) is glue around Sunshine on the host and Moonlight on the tablet, tested on KDE Wayland. It also needs <strong>USB tethering</strong> — Moonlight's streams are UDP, which adb cannot forward — and a real extended display needs an HDMI dummy plug; otherwise it mirrors. Moonlight carries S Pen pressure but, per the README, not tilt.</p>
-    <p class="source-note">Checked against official project documentation in August 2026.</p>
-  </div>
+  <p>UScreen supports NVENC and VAAPI hardware encoding and a software libx264 fallback. Consult each project's documentation for current encoder, stylus and licensing details.</p>
 </section>
 
 <section id="faq">
@@ -422,7 +414,7 @@
   <details><summary>Does it need a dummy HDMI plug?</summary><p>No. The virtual display is created in software by EVDI.</p></details>
   <details><summary>Which Android versions?</summary><p>8.1 and newer, on any device with a hardware H.264 decoder.</p></details>
   <details><summary>Is anything sent to the cloud?</summary><p>No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release tag on GitHub, with <code>check_updates = false</code> disabling host checks and the app’s separate switch disabling tablet checks.</p></details>
-  <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. UScreen creates the display itself, streams it with hardware encoding to a native app, and maps the input onto that display automatically on KDE.</p></details>
+  <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
   <details><summary>How do I uninstall it completely?</summary><p>Remove the package or the files in <code>~/.local/bin</code>, the systemd user unit, and the three system files the installer creates. The exact commands are in <a href="https://github.com/geraldo-netto/UScreen/blob/main/SECURITY.md">SECURITY.md</a>.</p></details>
 </section>
 

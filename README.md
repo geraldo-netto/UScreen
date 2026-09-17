@@ -108,29 +108,21 @@ and measurement limits in
 
 ## Compared with the alternatives
 
-The SuperDisplay host-platform entry follows its [official FAQ](https://superdisplay.app/help/)
-(checked 2026-09-17). Other comparison entries below await revalidation.
+The table compares documented setup choices, checked against the linked
+primary sources on 2026-09-17. It is not a performance ranking or a complete
+stylus-capability matrix; support depends on the host, client and versions.
 
-| | UScreen | [SuperDisplay](https://superdisplay.app/) | [Weylus](https://github.com/H-M-H/Weylus) | [Sunshine](https://github.com/LizardByte/Sunshine) + Moonlight | [spacedesk](https://www.spacedesk.net/) |
-| --- | --- | --- | --- | --- | --- |
-| Linux host | **yes** | no (Windows) | yes | yes | no (Windows) |
-| Real extended display | **yes** (EVDI) | yes | needs a separate virtual-display setup | needs an existing or dummy display | yes |
-| Direct USB, no tethering | **yes** (adb) | yes | via adb port forward | no (network) | no (network) |
-| S Pen pressure | **yes** | yes | yes | partial | partial |
-| Tilt, eraser, button | **yes** | yes | pressure/tilt via browser API, no eraser | no | no |
-| Hardware video encoding | NVENC / VAAPI / x264 | yes | yes (VAAPI/NVENC) | yes | yes |
-| Open source | **MIT** | no | AGPL | GPL | no |
-| Dummy HDMI plug | **no** | no | sometimes | often | no |
+| Project | Linux host | Display setup | Android connection |
+| --- | --- | --- | --- |
+| UScreen | yes | EVDI virtual output; see [known limitations](docs/compatibility.md#current-fork-limitations) | native app, adb over USB; optional ADB over Wi-Fi |
+| [SuperDisplay](https://superdisplay.app/help/) | no; Windows host | virtual extended display | native app, USB or Wi-Fi |
+| [Weylus](https://github.com/H-M-H/Weylus#readme) | yes | capture a screen/window; configure a separate output for extension | browser over a network or `adb reverse` |
+| [Sunshine](https://docs.lizardbyte.dev/projects/sunshine/latest/) + [Moonlight](https://github.com/moonlight-stream/moonlight-android) | yes | stream a host display; output provisioning depends on the host setup | native client over a network |
+| [spacedesk](https://manual.spacedesk.net/AndroidUSBCableConnection.html) | no; Windows primary machine | virtual extended display | native app; direct Android USB is supported |
 
-Also current: [MoreSpace](https://morespaceapp.com/) — a Linux host daemon
-with an Android app, extended display by default, USB or Wi-Fi, pressure-
-sensitive stylus; its documentation does not state tilt or eraser support, the
-USB protocol, or a license. [TethrLink](https://github.com/princesavsaviya/TethrLink)
-(GPL-3.0) — a real second monitor via GNOME's ScreenCast API, GNOME Wayland
-only, over USB tethering, stylus not documented.
-[subdisplay](https://github.com/TarikTopalovic/subdisplay) (MIT) — a wrapper
-around Sunshine + Moonlight over USB tethering; a dummy plug for a true
-extended display, pressure but no tilt.
+UScreen supports NVENC and VAAPI hardware encoding and a **software** libx264
+fallback. Consult each alternative's own documentation for its current
+encoder, pen and licensing details.
 
 ## Settings
 

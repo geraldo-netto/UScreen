@@ -69,16 +69,17 @@ switch in the app's settings sheet. See
 [SECURITY.md](../SECURITY.md).
 
 **How is UScreen different from Weylus?**
-Weylus turns the tablet's browser into an input device and can show your
-screen in it; a separate virtual display has to be set up by hand if you want
-extension. UScreen creates the virtual display itself, streams it with
-hardware encoding to a native app with hardware decoding, and maps the input
-devices onto that display automatically on KDE.
+[Weylus](https://github.com/H-M-H/Weylus#readme) uses the tablet's browser and
+captures a host screen or window; extension requires a separately configured
+output. Its documented Android USB setup uses `adb reverse`. UScreen creates
+an EVDI output and uses a native Android app. Both offer Linux pen input.
 
 **How is it different from Sunshine/Moonlight?**
-Those are game-streaming tools: they mirror or stream a display that has to
-exist already (often a dummy plug), over the network. UScreen creates the
-display and works over USB with pen input as a tablet device.
+[Sunshine](https://docs.lizardbyte.dev/projects/sunshine/latest/) streams a host
+display to a Moonlight client over a network. How an extra output is provided
+depends on the host setup. UScreen provisions its output through EVDI and
+uses adb to carry video and input over USB. This comparison does not imply
+that Sunshine/Moonlight lacks stylus support.
 
 **What latency should I expect?**
 On the reference hardware: about 19–22 ms median with H.264, 15–18 ms with
