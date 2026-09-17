@@ -43,6 +43,20 @@ fn repo() -> &'static Path {
 }
 
 #[test]
+fn t382_benchmark_units_and_window_statistics() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_benchmark.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn t342_build_outputs_are_ignored_but_sources_are_visible() {
     let sandbox = Sandbox::new("build-ignores");
     sandbox.write(
