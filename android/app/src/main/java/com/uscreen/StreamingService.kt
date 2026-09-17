@@ -76,16 +76,15 @@ class StreamingService : Service() {
 
         // Keep the Wi-Fi radio out of power save.
         //
-        // Over USB this changes nothing, but over Wi-Fi it is the difference
-        // between a usable fallback and an unusable one. Left alone, Android
-        // dozes the radio between frames and the cost of waking it lands on
-        // whatever frame arrives next: measured p50 stayed near 33ms while
-        // individual frames reached three quarters of a second. A stream of
-        // small packets sixty times a second is exactly the traffic pattern
-        // power save handles worst.
+        // Upstream Wi-Fi measurements found large latency spikes from radio
+        // power saving. This lock can help that transport, but its effect is
+        // device-dependent. An active Wi-Fi connection can still be affected
+        // while our ADB stream uses USB; T388 tracks power/transport measurements.
         //
         // LOW_LATENCY over HIGH_PERF: it also asks the driver for a
-        // low-latency mode, and HIGH_PERF is deprecated from API 29. It only
+        // low-latency mode. LOW_LATENCY was added in API 29; HIGH_PERF was
+        // deprecated in API 34. LOW_LATENCY only takes effect while connected
+        // to an access point, and it only
         // applies while the screen is on and this app is foreground, which is
         // precisely when frames are arriving.
         if (wifiLock?.isHeld != true) {
