@@ -50,8 +50,8 @@ limitations (T287/T318); consult the linked [compatibility guide](compatibility.
 
 **Does UScreen extend the desktop or only mirror the screen?**
 It extends. There is also a "graphics tablet" mode in which nothing is
-streamed and the pen drives your existing screen. The current fork has a
-status-message mismatch that can leave its reconnect overlay visible (T247).
+streamed and the pen drives your existing screen. Its connection overlay waits
+for the host's authenticated control greeting; opening a socket alone is insufficient.
 
 **Does UScreen work on Bazzite and KDE Wayland?**
 That is the historical upstream reference setup. KDE on Wayland gets automatic output placement,

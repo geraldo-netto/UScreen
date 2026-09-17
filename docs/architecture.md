@@ -114,9 +114,10 @@ The server sends `status: "mode"` for subsequent mode/settings notifications.
 `codec` is `h264` or `hevc`; FPS is omitted if no shared settings source exists.
 Width/height currently come from startup input configuration and can be stale
 after geometry negotiation (T276); they are not reliable current-stream dimensions.
-The Android client reads the settings fields, but checks `type: "connected"`
-instead of `status` to mark its pen-only control connection authenticated.
-That disagreement can leave the reconnect overlay visible (T247).
+The Android client marks its control connection authenticated only after
+`status: "connected"` from the current socket. Disconnects clear that state;
+callbacks from replaced sockets cannot restore it. Rust serialization and
+Android's pen-mode UI use the same `control-connected.json` regression fixture.
 
 Examples of individual client messages (one JSON object per WebSocket message):
 

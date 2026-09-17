@@ -57,9 +57,6 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 - **T269:** full installer/native package hooks may unload a live EVDI module.
 - **T224/T234:** KScreen placement is attempted outside KDE, and diagnostics
   can report missing KWin as a failure on other Wayland desktops.
-- **T247:** host status greetings and Android message dispatch disagree,
-  affecting connection/graphics-tablet state. Pen-only mode is not validated
-  as fully working by the feature description alone.
 - **T284:** the optional in-process encoder lacks working VAAPI initialization;
   use the default FFmpeg path for VAAPI.
 - **T287/T318:** tilt-axis scaling and hover/button transitions need correction.

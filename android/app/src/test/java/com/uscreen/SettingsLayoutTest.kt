@@ -190,7 +190,9 @@ class SettingsLayoutTest {
         TouchCapture::class.java.getDeclaredField("webSocket").apply { isAccessible = true }.set(capture, socket)
     }
 
-    @Test fun t241_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo() {
+    @Test fun t241_t247_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo() {
+        // T247: the Rust suite verifies this resource against InputResponse serialization.
+        val greeting = javaClass.getResource("/control-connected.json")!!.readText()
         val capture = TouchCapture()
         val receiver = VideoReceiver()
         val listener = TouchCapture::class.java.getDeclaredField("wsListener")
@@ -204,7 +206,7 @@ class SettingsLayoutTest {
             compose.onNodeWithText(draw).assertDoesNotExist()
             compose.runOnIdle { install(capture, old); listener.onOpen(old, response) }
             compose.onNodeWithText(draw).assertDoesNotExist() // WebSocket open is not authentication.
-            compose.runOnIdle { listener.onMessage(old, """{"type":"connected","pen_only":true}""") }
+            compose.runOnIdle { listener.onMessage(old, greeting) }
             compose.onNodeWithText(draw).assertIsDisplayed()
             compose.runOnIdle { listener.onFailure(old, java.io.IOException("USB detached"), null) }
             compose.onNodeWithText(draw).assertDoesNotExist()
@@ -212,11 +214,11 @@ class SettingsLayoutTest {
             compose.runOnIdle {
                 install(capture, fresh)
                 listener.onOpen(fresh, response)
-                listener.onMessage(old, """{"type":"connected","pen_only":true}""")
+                listener.onMessage(old, greeting)
             }
             compose.onNodeWithText(draw).assertDoesNotExist()
             compose.runOnIdle {
-                listener.onMessage(fresh, """{"type":"connected","pen_only":true}""")
+                listener.onMessage(fresh, greeting)
                 listener.onClosed(old, 1000, "late old close")
             }
             compose.onNodeWithText(draw).assertIsDisplayed()

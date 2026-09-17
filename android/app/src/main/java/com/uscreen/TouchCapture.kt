@@ -123,7 +123,7 @@ class TouchCapture {
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
                     applyModeGreeting(o)
-                    if (o.optString("type") == "connected") authenticatedControl.value = true
+                    if (o.optString("status") == "connected") authenticatedControl.value = true
                 } catch (_: Exception) {}
             }
         }

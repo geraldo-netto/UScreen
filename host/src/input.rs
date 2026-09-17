@@ -2203,6 +2203,19 @@ fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled:
 #[cfg(test)]
 mod tests {
     #[test]
+    fn t247_connected_fixture_matches_production_response() {
+        let config = super::InputConfig {
+            virtual_width: 2960,
+            virtual_height: 1848,
+            ..Default::default()
+        };
+        let response = config.response("connected", true, &None);
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/control-connected.json")).unwrap();
+        assert_eq!(serde_json::to_value(response).unwrap(), fixture, "T247");
+    }
+
+    #[test]
     fn t145_fallback_preserves_card_ownership() {
         let first = crate::vdisplay::EvdiConnector {
             card: 2,
