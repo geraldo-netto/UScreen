@@ -275,7 +275,7 @@ impl InputConfig {
     }
 
     pub fn any_device(&self) -> bool {
-        self.touch || self.pen || (self.pen && self.pointer)
+        self.touch || self.pen
     }
 }
 
