@@ -318,8 +318,7 @@ enum Tab {
     General,
 }
 
-const RELEASES_API: &str = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest";
-const RELEASES_PAGE: &str = "https://github.com/geraldo-netto/UScreen/releases/latest";
+use uscreen_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
 
 fn os_release_name() -> String {
     std::fs::read_to_string("/etc/os-release")
@@ -368,6 +367,8 @@ fn compatibility_url(distro: &str, encoder: &str, tablet: &str, version: &str) -
     format!("https://github.com/geraldo-netto/UScreen/issues/new?{query}")
 }
 
+use uscreen_config::release::newer_from_json as release_from_response;
+#[cfg(test)]
 use uscreen_config::version::is_newer as is_newer_version;
 
 /// One request when the window opens. Reports; never installs.
@@ -388,14 +389,10 @@ fn check_for_update() -> Option<String> {
     if !out.status.success() {
         return None;
     }
-    let body = String::from_utf8_lossy(&out.stdout);
-    let tag = body.split("\"tag_name\"").nth(1)?.split('"').nth(1)?;
-    is_newer_version(tag, env!("CARGO_PKG_VERSION")).then(|| {
-        tag.trim()
-            .strip_prefix('v')
-            .unwrap_or(tag.trim())
-            .to_owned()
-    })
+    release_from_response(
+        &String::from_utf8_lossy(&out.stdout),
+        env!("CARGO_PKG_VERSION"),
+    )
 }
 
 impl App {
@@ -1138,6 +1135,19 @@ fn main() -> eframe::Result {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t374_release_json_contract() {
+        for line in include_str!("../../testdata/release-responses.tsv").lines() {
+            let parts: Vec<_> = line.split('\t').collect();
+            let expected = (parts[2] != "-").then_some(parts[2]);
+            assert_eq!(
+                release_from_response(parts[0], "1.2.3").as_deref(),
+                expected,
+                "T374: {line}"
+            );
+        }
+    }
 
     mod lookup_fixture {
         include!("../../testdata/executable_lookup.rs");

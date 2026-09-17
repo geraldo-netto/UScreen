@@ -1,5 +1,6 @@
 //! Shared policy with independently selectable storage and platform adapters.
 pub mod model;
+pub mod release;
 pub mod version;
 pub use model::*;
 

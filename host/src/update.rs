@@ -14,8 +14,8 @@ use tokio::sync::watch;
 use tracing::{debug, info};
 use uscreen_config::commands::AsyncCommandExt;
 
-const RELEASES_API: &str = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest";
-pub const RELEASES_PAGE: &str = "https://github.com/geraldo-netto/UScreen/releases/latest";
+pub use uscreen_config::release::PAGE as RELEASES_PAGE;
+use uscreen_config::release::{newer_tag, tag_from_json, API as RELEASES_API};
 
 /// Delay before the first check, so startup is not spent waiting on the
 /// network, and the interval between checks after that.
@@ -30,13 +30,6 @@ pub fn current_version() -> &'static str {
 }
 
 pub use uscreen_config::version::is_newer;
-
-/// Extract `tag_name` from the release JSON without pulling in a full parse
-/// of everything else GitHub sends back.
-fn tag_from_json(body: &str) -> Option<String> {
-    let v: serde_json::Value = serde_json::from_str(body).ok()?;
-    v.get("tag_name")?.as_str().map(|s| s.to_string())
-}
 
 pub async fn latest_release_tag() -> Option<String> {
     let out = tokio::process::Command::new("curl")
@@ -67,12 +60,7 @@ pub async fn run(tx: watch::Sender<Available>) {
     tokio::time::sleep(FIRST_CHECK).await;
     loop {
         if let Some(tag) = latest_release_tag().await {
-            if is_newer(&tag, current_version()) {
-                let latest = tag
-                    .trim()
-                    .strip_prefix('v')
-                    .unwrap_or(tag.trim())
-                    .to_owned();
+            if let Some(latest) = newer_tag(&tag, current_version()) {
                 info!(
                     "A newer release is available: {} (running {}). {}",
                     latest,
@@ -92,6 +80,15 @@ pub async fn run(tx: watch::Sender<Available>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t374_release_json_contract() {
+        for line in include_str!("../../testdata/release-responses.tsv").lines() {
+            let parts: Vec<_> = line.split('\t').collect();
+            let expected = (parts[1] != "-").then_some(parts[1]);
+            assert_eq!(tag_from_json(parts[0]).as_deref(), expected, "T374: {line}");
+        }
+    }
 
     #[test]
     fn t123_update_versions_follow_shared_validation_and_precedence() {
