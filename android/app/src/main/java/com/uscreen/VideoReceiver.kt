@@ -120,7 +120,7 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
 
     /**
      * seq → nanoTime the frame finished arriving, so the render callback can
-     * report the arrival-to-render portion of the host’s send-to-ack interval
+     * report the arrival-to-callback portion of the host’s send-to-ack interval
      * rather than on the wire. Bounded and cheap: a plain ring, since frames
      * are rendered in the order they arrive.
      */
@@ -129,10 +129,10 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
     @Volatile private var arrivalWrite = 0
 
     /**
-     * Splits the on-device time into "decoder produced the frame" and "the
-     * compositor put it on screen". Without this the two are indistinguishable,
-     * and they call for completely different fixes — decoder settings versus
-     * refresh rate and composition path.
+     * Splits arrival-to-output-release from output-release-to-render-callback.
+     * The latter includes callback scheduling; it does not isolate composition
+     * or measure when pixels became visible. Both boundaries use this process's
+     * nanoTime samples, not the render timestamp supplied by MediaCodec.
      */
     private val releaseNanos = LongArray(ARRIVAL_RING)
     private var decodeSumUs = 0L
@@ -158,7 +158,7 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
         arrivalWrite = (i + 1) % ARRIVAL_RING
     }
 
-    /** Microseconds between the frame arriving and it being on screen, or -1. */
+    /** Microseconds from frame arrival to render-callback execution, or -1. */
     private fun decodeMicrosFor(seq: Int): Int {
         for (n in 0 until ARRIVAL_RING) {
             val i = (arrivalWrite - 1 - n + ARRIVAL_RING * 2) % ARRIVAL_RING
@@ -168,7 +168,7 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
                     .coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
 
                 // Attribute the time: decode = arrival → buffer released,
-                // present = released → actually on screen (composition+vsync).
+                // present = released → callback execution, including dispatch delay.
                 val rel = releaseNanos[i]
                 if (rel > arrivalNanos[i]) {
                     decodeSumUs += (rel - arrivalNanos[i]) / 1000L
@@ -272,10 +272,10 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
             codec.configure(format, surface, null, 0)
             codec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT)
 
-            // Fires when a frame has actually reached the output surface —
-            // the true "it is on screen" moment, rather than the earlier
-            // moment we handed the buffer back. The host's sequence number
-            // rides along as the presentation timestamp.
+            // Acknowledge MediaCodec's render notification. Callback delivery can
+            // be delayed or batched, so its execution is not a physical-screen
+            // timestamp. The host sequence travels as the presentation timestamp;
+            // the separate MediaCodec render-time argument is currently unused.
             val cbThread = callbackThreadFactory()
             pendingThread = cbThread
             cbThread.start()
@@ -354,8 +354,8 @@ class VideoReceiver(private val createSocket: () -> Socket = { Socket() }) {
 
     /**
      * Dedicated render thread: drains decoded frames and releases them to the
-     * surface as soon as they're ready, independent of network reads. This is
-     * what keeps the display latency at "one frame", not "one network stall".
+     * surface as soon as they're ready, independent of network reads. This
+     * reduces coupling to network stalls; it does not impose a latency bound.
      */
     private fun startOutputThread(codec: MediaCodec) {
         val outputStatistics = statistics
