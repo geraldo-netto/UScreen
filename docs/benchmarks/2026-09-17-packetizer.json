@@ -1,0 +1,756 @@
+{
+  "schema_version": 1,
+  "finding": "T384",
+  "date": "2026-09-17",
+  "kind": "instrumented synthetic packetizer microbenchmark",
+  "source_parent_commit": "5bbeb5b1d9e79019c321db94d328cb4c37b42f8d",
+  "baseline_patch": "docs/benchmarks/2026-09-17-packetizer-baseline.patch",
+  "baseline_patch_sha256": "00ef03deacc720ae54346143ac01f0bab378e0e6f7f2de3907b2f9448d238b65",
+  "source_sha256_before": {
+    "host/src/annex_b.rs": "d1c63b5a05599dce39be456747bf7f5e3aed97f88307c7f8bba04fa6025b7526",
+    "host/src/encoder_io.rs": "5bed2384f163475f9ca80465c777f9350669f48dc63e4c1668c7d003603ef949",
+    "host/src/latency.rs": "5703cc650c56df50dd5e06ae7467b38e7f808c106d045ec8e2fc5d9d356f687d",
+    "host/src/media.rs": "6bfcdfcce8ae4e0a3314d9cb9c30006e36cfd3e21277f480ef9d8076642ac733",
+    "host/src/main.rs": "9524fe65302f5e8339a4f35dbbddff7c773c957a0f44e6c286913805f5e7c4b8",
+    "host/src/allocation_probe.rs": "5da745552ae10f5f85c42a4ce2c6edfa575cdf6ce91bfc9413530eee3d11a7d6",
+    "host/src/packetizer_profile.rs": "430c7889e16bf0e0172f9fbdb14596d57947b56b486633226012e4fb88fdd44f"
+  },
+  "source_sha256_after": {
+    "host/src/annex_b.rs": "c651fac997d77939da6be857fd5eb37279176c698e6d015c5fa7b5968e61372a",
+    "host/src/encoder_io.rs": "399494d040203af0788869d16bb953605eba594b8ca272b482895224c01a917b",
+    "host/src/latency.rs": "5703cc650c56df50dd5e06ae7467b38e7f808c106d045ec8e2fc5d9d356f687d",
+    "host/src/media.rs": "6bfcdfcce8ae4e0a3314d9cb9c30006e36cfd3e21277f480ef9d8076642ac733",
+    "host/src/main.rs": "9524fe65302f5e8339a4f35dbbddff7c773c957a0f44e6c286913805f5e7c4b8",
+    "host/src/allocation_probe.rs": "5da745552ae10f5f85c42a4ce2c6edfa575cdf6ce91bfc9413530eee3d11a7d6",
+    "host/src/packetizer_profile.rs": "430c7889e16bf0e0172f9fbdb14596d57947b56b486633226012e4fb88fdd44f"
+  },
+  "environment": {
+    "cpu_model": "AMD Ryzen 9 7945HX with Radeon Graphics",
+    "kernel": "7.0.0-31-generic",
+    "architecture": "x86_64",
+    "logical_cpus": 32,
+    "allowed_cpu_count": 32,
+    "cpu_pinning": "none; shared workstation, not an isolated device-performance run",
+    "container": "Debian 12 uscreen-ci:inproc",
+    "image_id": "sha256:2dcbaf9726de166bec69a139124bfebbc82385f3000637ae12a1a0a515643c92",
+    "rustc": "1.90.0 (1159e78c4 2025-09-14)",
+    "llvm": "20.1.8",
+    "profile": "release",
+    "features": "default; packetizer does not invoke FFmpeg, GPU, network or EVDI"
+  },
+  "measurement": {
+    "command": "cargo test --locked --release -p uscreen --bin uscreen t384_ -- --nocapture",
+    "samples": 3,
+    "warmup": "one replay per codec/workload before measured samples",
+    "timer": "std::time::Instant; calling test thread",
+    "workload": "Synthetic Annex B syntax with parameter sets, first and continuation slices; periodic IDR/IRAP. Payloads are deterministic markers, not decodable video.",
+    "allocations": "Calling-thread alloc and alloc_zeroed calls during replay; excludes source-fixture setup and reporting.",
+    "reallocations": "Calling-thread realloc calls during replay, counted separately from allocations.",
+    "requested_bytes": "Sum of requested alloc/alloc_zeroed/realloc sizes, not peak retained memory.",
+    "explicit_copy_bytes": "Instrumented packetizer slice copies, parameter-set/header assembly and front-drain shifts. Excludes allocator-internal relocation and metadata copies.",
+    "scanner_input_bytes": "Total byte-span lengths supplied to NAL scanning, including overlapping scans; not CPU instructions or memory-bus traffic.",
+    "limitations": "Instrumentation has overhead. Timing includes parser/output construction and destruction, not decoding or end-to-end tablet latency. No elapsed-time assertions or hardware-speedup claims."
+  },
+  "before_samples": [
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 19191,
+        "explicit_copy_bytes": 209868,
+        "reallocations": 150,
+        "requested_bytes": 1494432,
+        "scanner_input_bytes": 4799292
+      },
+      "elapsed_ns": 2712593,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 0,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 19191,
+        "explicit_copy_bytes": 209868,
+        "reallocations": 150,
+        "requested_bytes": 1494432,
+        "scanner_input_bytes": 4799292
+      },
+      "elapsed_ns": 3054894,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 1,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 19191,
+        "explicit_copy_bytes": 209868,
+        "reallocations": 150,
+        "requested_bytes": 1494432,
+        "scanner_input_bytes": 4799292
+      },
+      "elapsed_ns": 2762008,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 2,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 8224,
+        "explicit_copy_bytes": 2841716,
+        "reallocations": 2196,
+        "requested_bytes": 4229920,
+        "scanner_input_bytes": 1737580
+      },
+      "elapsed_ns": 1201322,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 0,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 8224,
+        "explicit_copy_bytes": 2841716,
+        "reallocations": 2196,
+        "requested_bytes": 4229920,
+        "scanner_input_bytes": 1737580
+      },
+      "elapsed_ns": 1181974,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 1,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 8224,
+        "explicit_copy_bytes": 2841716,
+        "reallocations": 2196,
+        "requested_bytes": 4229920,
+        "scanner_input_bytes": 1737580
+      },
+      "elapsed_ns": 1177095,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 2,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 2102,
+        "explicit_copy_bytes": 14705604,
+        "reallocations": 28,
+        "requested_bytes": 27389696,
+        "scanner_input_bytes": 1086167554
+      },
+      "elapsed_ns": 519758839,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 0,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 2102,
+        "explicit_copy_bytes": 14705604,
+        "reallocations": 28,
+        "requested_bytes": 27389696,
+        "scanner_input_bytes": 1086167554
+      },
+      "elapsed_ns": 519008610,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 1,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 2102,
+        "explicit_copy_bytes": 14705604,
+        "reallocations": 28,
+        "requested_bytes": 27389696,
+        "scanner_input_bytes": 1086167554
+      },
+      "elapsed_ns": 519052035,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 2,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 19296,
+        "explicit_copy_bytes": 215610,
+        "reallocations": 159,
+        "requested_bytes": 1506429,
+        "scanner_input_bytes": 4821978
+      },
+      "elapsed_ns": 2710399,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 0,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 19296,
+        "explicit_copy_bytes": 215610,
+        "reallocations": 159,
+        "requested_bytes": 1506429,
+        "scanner_input_bytes": 4821978
+      },
+      "elapsed_ns": 2703575,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 1,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 19296,
+        "explicit_copy_bytes": 215610,
+        "reallocations": 159,
+        "requested_bytes": 1506429,
+        "scanner_input_bytes": 4821978
+      },
+      "elapsed_ns": 2728593,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 2,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 8236,
+        "explicit_copy_bytes": 2912412,
+        "reallocations": 2216,
+        "requested_bytes": 4299532,
+        "scanner_input_bytes": 1748076
+      },
+      "elapsed_ns": 1186012,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 0,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 8236,
+        "explicit_copy_bytes": 2912412,
+        "reallocations": 2216,
+        "requested_bytes": 4299532,
+        "scanner_input_bytes": 1748076
+      },
+      "elapsed_ns": 1172296,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 1,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 8236,
+        "explicit_copy_bytes": 2912412,
+        "reallocations": 2216,
+        "requested_bytes": 4299532,
+        "scanner_input_bytes": 1748076
+      },
+      "elapsed_ns": 1163098,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 2,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 2108,
+        "explicit_copy_bytes": 14706086,
+        "reallocations": 34,
+        "requested_bytes": 27390500,
+        "scanner_input_bytes": 1086098074
+      },
+      "elapsed_ns": 518340701,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 0,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 2108,
+        "explicit_copy_bytes": 14706086,
+        "reallocations": 34,
+        "requested_bytes": 27390500,
+        "scanner_input_bytes": 1086098074
+      },
+      "elapsed_ns": 517910700,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 1,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 2108,
+        "explicit_copy_bytes": 14706086,
+        "reallocations": 34,
+        "requested_bytes": 27390500,
+        "scanner_input_bytes": 1086098074
+      },
+      "elapsed_ns": 518475915,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 2,
+      "workload": "large_nal"
+    }
+  ],
+  "after_samples": [
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 390,
+        "explicit_copy_bytes": 138168,
+        "reallocations": 150,
+        "requested_bytes": 242772,
+        "scanner_input_bytes": 91962
+      },
+      "elapsed_ns": 128859,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 0,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 390,
+        "explicit_copy_bytes": 138168,
+        "reallocations": 150,
+        "requested_bytes": 242772,
+        "scanner_input_bytes": 91962
+      },
+      "elapsed_ns": 125112,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 1,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "h264",
+      "counts": {
+        "allocations": 390,
+        "explicit_copy_bytes": 138168,
+        "reallocations": 150,
+        "requested_bytes": 242772,
+        "scanner_input_bytes": 91962
+      },
+      "elapsed_ns": 120543,
+      "input_bytes": 64515,
+      "packets": 120,
+      "sample": 2,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 3300,
+        "explicit_copy_bytes": 1822360,
+        "reallocations": 1772,
+        "requested_bytes": 3067792,
+        "scanner_input_bytes": 858028
+      },
+      "elapsed_ns": 761401,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 0,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 3300,
+        "explicit_copy_bytes": 1822360,
+        "reallocations": 1772,
+        "requested_bytes": 3067792,
+        "scanner_input_bytes": 858028
+      },
+      "elapsed_ns": 761101,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 1,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "h264",
+      "counts": {
+        "allocations": 3300,
+        "explicit_copy_bytes": 1822360,
+        "reallocations": 1772,
+        "requested_bytes": 3067792,
+        "scanner_input_bytes": 858028
+      },
+      "elapsed_ns": 750290,
+      "input_bytes": 857860,
+      "packets": 1600,
+      "sample": 2,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 32,
+        "explicit_copy_bytes": 10502662,
+        "reallocations": 28,
+        "requested_bytes": 23063400,
+        "scanner_input_bytes": 4197608
+      },
+      "elapsed_ns": 4733388,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 0,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 32,
+        "explicit_copy_bytes": 10502662,
+        "reallocations": 28,
+        "requested_bytes": 23063400,
+        "scanner_input_bytes": 4197608
+      },
+      "elapsed_ns": 5003029,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 1,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "h264",
+      "counts": {
+        "allocations": 32,
+        "explicit_copy_bytes": 10502662,
+        "reallocations": 28,
+        "requested_bytes": 23063400,
+        "scanner_input_bytes": 4197608
+      },
+      "elapsed_ns": 4787432,
+      "input_bytes": 4194530,
+      "packets": 4,
+      "sample": 2,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 396,
+        "explicit_copy_bytes": 139611,
+        "reallocations": 159,
+        "requested_bytes": 244326,
+        "scanner_input_bytes": 92460
+      },
+      "elapsed_ns": 125863,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 0,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 396,
+        "explicit_copy_bytes": 139611,
+        "reallocations": 159,
+        "requested_bytes": 244326,
+        "scanner_input_bytes": 92460
+      },
+      "elapsed_ns": 121274,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 1,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 7,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 396,
+        "explicit_copy_bytes": 139611,
+        "reallocations": 159,
+        "requested_bytes": 244326,
+        "scanner_input_bytes": 92460
+      },
+      "elapsed_ns": 121465,
+      "input_bytes": 64854,
+      "packets": 120,
+      "sample": 2,
+      "workload": "fragmented"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 3308,
+        "explicit_copy_bytes": 1836924,
+        "reallocations": 1784,
+        "requested_bytes": 3079224,
+        "scanner_input_bytes": 861360
+      },
+      "elapsed_ns": 796158,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 0,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 3308,
+        "explicit_copy_bytes": 1836924,
+        "reallocations": 1784,
+        "requested_bytes": 3079224,
+        "scanner_input_bytes": 861360
+      },
+      "elapsed_ns": 798363,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 1,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 16384,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 3308,
+        "explicit_copy_bytes": 1836924,
+        "reallocations": 1784,
+        "requested_bytes": 3079224,
+        "scanner_input_bytes": 861360
+      },
+      "elapsed_ns": 829864,
+      "input_bytes": 861192,
+      "packets": 1600,
+      "sample": 2,
+      "workload": "dense"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 36,
+        "explicit_copy_bytes": 10502938,
+        "reallocations": 34,
+        "requested_bytes": 23063998,
+        "scanner_input_bytes": 4197682
+      },
+      "elapsed_ns": 5178167,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 0,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 36,
+        "explicit_copy_bytes": 10502938,
+        "reallocations": 34,
+        "requested_bytes": 23063998,
+        "scanner_input_bytes": 4197682
+      },
+      "elapsed_ns": 5160262,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 1,
+      "workload": "large_nal"
+    },
+    {
+      "chunk_bytes": 4096,
+      "codec": "hevc",
+      "counts": {
+        "allocations": 36,
+        "explicit_copy_bytes": 10502938,
+        "reallocations": 34,
+        "requested_bytes": 23063998,
+        "scanner_input_bytes": 4197682
+      },
+      "elapsed_ns": 4748848,
+      "input_bytes": 4194604,
+      "packets": 4,
+      "sample": 2,
+      "workload": "large_nal"
+    }
+  ],
+  "summary": [
+    {
+      "codec": "h264",
+      "workload": "fragmented",
+      "before_median_ns": 2762008,
+      "after_median_ns": 125112,
+      "before_counts": {
+        "allocations": 19191,
+        "explicit_copy_bytes": 209868,
+        "reallocations": 150,
+        "requested_bytes": 1494432,
+        "scanner_input_bytes": 4799292
+      },
+      "after_counts": {
+        "allocations": 390,
+        "explicit_copy_bytes": 138168,
+        "reallocations": 150,
+        "requested_bytes": 242772,
+        "scanner_input_bytes": 91962
+      }
+    },
+    {
+      "codec": "hevc",
+      "workload": "fragmented",
+      "before_median_ns": 2710399,
+      "after_median_ns": 121465,
+      "before_counts": {
+        "allocations": 19296,
+        "explicit_copy_bytes": 215610,
+        "reallocations": 159,
+        "requested_bytes": 1506429,
+        "scanner_input_bytes": 4821978
+      },
+      "after_counts": {
+        "allocations": 396,
+        "explicit_copy_bytes": 139611,
+        "reallocations": 159,
+        "requested_bytes": 244326,
+        "scanner_input_bytes": 92460
+      }
+    },
+    {
+      "codec": "h264",
+      "workload": "dense",
+      "before_median_ns": 1181974,
+      "after_median_ns": 761101,
+      "before_counts": {
+        "allocations": 8224,
+        "explicit_copy_bytes": 2841716,
+        "reallocations": 2196,
+        "requested_bytes": 4229920,
+        "scanner_input_bytes": 1737580
+      },
+      "after_counts": {
+        "allocations": 3300,
+        "explicit_copy_bytes": 1822360,
+        "reallocations": 1772,
+        "requested_bytes": 3067792,
+        "scanner_input_bytes": 858028
+      }
+    },
+    {
+      "codec": "hevc",
+      "workload": "dense",
+      "before_median_ns": 1172296,
+      "after_median_ns": 798363,
+      "before_counts": {
+        "allocations": 8236,
+        "explicit_copy_bytes": 2912412,
+        "reallocations": 2216,
+        "requested_bytes": 4299532,
+        "scanner_input_bytes": 1748076
+      },
+      "after_counts": {
+        "allocations": 3308,
+        "explicit_copy_bytes": 1836924,
+        "reallocations": 1784,
+        "requested_bytes": 3079224,
+        "scanner_input_bytes": 861360
+      }
+    },
+    {
+      "codec": "h264",
+      "workload": "large_nal",
+      "before_median_ns": 519052035,
+      "after_median_ns": 4787432,
+      "before_counts": {
+        "allocations": 2102,
+        "explicit_copy_bytes": 14705604,
+        "reallocations": 28,
+        "requested_bytes": 27389696,
+        "scanner_input_bytes": 1086167554
+      },
+      "after_counts": {
+        "allocations": 32,
+        "explicit_copy_bytes": 10502662,
+        "reallocations": 28,
+        "requested_bytes": 23063400,
+        "scanner_input_bytes": 4197608
+      }
+    },
+    {
+      "codec": "hevc",
+      "workload": "large_nal",
+      "before_median_ns": 518340701,
+      "after_median_ns": 5160262,
+      "before_counts": {
+        "allocations": 2108,
+        "explicit_copy_bytes": 14706086,
+        "reallocations": 34,
+        "requested_bytes": 27390500,
+        "scanner_input_bytes": 1086098074
+      },
+      "after_counts": {
+        "allocations": 36,
+        "explicit_copy_bytes": 10502938,
+        "reallocations": 34,
+        "requested_bytes": 23063998,
+        "scanner_input_bytes": 4197682
+      }
+    }
+  ]
+}

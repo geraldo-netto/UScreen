@@ -175,3 +175,79 @@ The counters use scalar storage and exclude tokens and input coordinates.
 Measure ART allocation/GC with Perfetto or the Android profiler alongside these
 counters when collecting a device baseline. Queue size cannot show delivery or
 remote application of a message; use the host response for authoritative mode.
+
+## Annex B packetizer replay
+
+T384 profiles the default Rust packetizer independently of FFmpeg, EVDI,
+networking and Android. The [raw results](benchmarks/2026-09-17-packetizer.json)
+record the source hashes, parent commit, Rust 1.90 toolchain, CPU, container
+image and all three samples per workload. These are instrumented synthetic
+microbenchmarks, not measured changes in tablet FPS or end-to-end latency.
+
+The workloads use deterministic H.264/HEVC syntax with parameter sets,
+first/continuation slices and periodic IDR/IRAP markers. Payloads are markers,
+not decodable pictures. `fragmented` feeds 40 pictures in seven-byte chunks
+three times; `dense` feeds 400 pictures in 16 KiB chunks four times;
+`large_nal` feeds two pictures with 1 MiB primary-slice payloads in 4 KiB chunks
+twice. Each workload has an unmeasured warmup. Setup and result formatting are
+outside the measured region; parser/packet allocation and destruction are inside.
+
+| Codec / workload | Allocations, before → after | Median replay time (ms), before → after |
+|---|---:|---:|
+| h264 / fragmented | 19,191 → 390 | 2.762 → 0.125 |
+| hevc / fragmented | 19,296 → 396 | 2.710 → 0.121 |
+| h264 / dense | 8,224 → 3,300 | 1.182 → 0.761 |
+| hevc / dense | 8,236 → 3,308 | 1.172 → 0.798 |
+| h264 / large_nal | 2,102 → 32 | 519.052 → 4.787 |
+| hevc / large_nal | 2,108 → 36 | 518.341 → 5.160 |
+
+Allocations exclude reallocations, which are reported separately in the JSON.
+Requested bytes sum allocation sizes; they are not peak retained memory.
+Explicit-copy counters cover packetizer payload/header copies and buffer-front
+shifts, excluding allocator-internal relocation and metadata copies. Scan
+counters sum the spans passed to the scanner, not memory-bus traffic. For
+H.264 `large_nal`, about 4.19 MB of input previously supplied about 1.09 GB to
+repeated scans; the cursor reduces that to about 4.20 MB. Its explicit copies
+fall from about 14.71 MB to 10.50 MB. Input buffering and access-unit assembly
+still copy payload bytes; this is not a zero-copy pipeline.
+
+The optimized packetizer retains an incremental scan cursor, rechecks only
+possible split-prefix bytes, and borrows each complete NAL from the owned
+input buffer while assembling packets. It retains input capacity and shares
+immutable codec configuration through `Bytes`. Updating parameter sets creates
+a new configuration, so queued packets retain their original headers. Start-code
+lengths, partial NALs, multi-slice pictures, prefix SEI ownership, IDR/IRAP join
+points, sequence allocation and encoder-generation retirement remain unchanged.
+
+The normal test suite compares chunk sizes 1–129, mixed three/four-byte prefixes,
+incomplete tails and large payloads. The same new characterizations pass on the
+baseline and optimized implementations; the pre-existing packetization and
+software encode/decode regressions remain. Timing has no pass/fail threshold.
+The allocator and copy/scan counters are compiled only into the default host's
+test binary, and measurement is enabled only on the calling test thread.
+
+Run the current replay safely without opening a display or input device:
+
+```sh
+cargo test --locked --release -p uscreen --bin uscreen t384_ -- --nocapture
+```
+
+To reproduce the instrumented baseline, apply the committed
+[baseline patch](benchmarks/2026-09-17-packetizer-baseline.patch) to parent
+`5bbeb5b`. The patch adds the same measurement harness without the optimization:
+
+```sh
+baseline_dir=$(mktemp -d)
+baseline_patch="$PWD/docs/benchmarks/2026-09-17-packetizer-baseline.patch"
+git archive 5bbeb5b | tar -x -C "$baseline_dir"
+(
+  cd "$baseline_dir"
+  git apply "$baseline_patch"
+  cargo test --locked --release -p uscreen --bin uscreen t384_ -- --nocapture
+)
+```
+
+Use the recorded toolchain and compare source hashes before comparing results.
+`T384_PROFILE` lines contain the raw JSON. Three samples on a shared workstation
+support this local comparison; broader hardware, power and multi-tablet claims
+still require the T382 measurements.

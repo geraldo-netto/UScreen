@@ -1,0 +1,365 @@
+diff --git a/host/src/annex_b.rs b/host/src/annex_b.rs
+index 35c561c..6186764 100644
+--- a/host/src/annex_b.rs
++++ b/host/src/annex_b.rs
+@@ -2,6 +2,14 @@
+ use crate::media::{Codec, EncoderGeneration, VideoPacket};
+ use bytes::Bytes;
+ 
++// Instrument explicit copies without changing the production hot path.
++macro_rules! copied {
++    ($bytes:expr) => {
++        #[cfg(test)]
++        crate::allocation_probe::copied($bytes);
++    };
++}
++
+ // NAL unit types. Only the CLI path parses the bitstream itself; with the
+ // in-process encoder libavcodec hands back one complete access unit per frame.
+ //
+@@ -59,6 +67,7 @@ impl AnnexBPacketizer {
+     }
+ 
+     pub(crate) fn push(&mut self, data: &[u8]) -> Vec<VideoPacket> {
++        copied!(data.len());
+         self.buffer.extend_from_slice(data);
+         self.process_complete_nals(false)
+     }
+@@ -87,6 +96,7 @@ impl AnnexBPacketizer {
+ 
+     pub(crate) fn codec_config(&self) -> Option<Bytes> {
+         if self.config_ready() {
++            copied!(self.config.len());
+             Some(Bytes::copy_from_slice(&self.config))
+         } else {
+             None
+@@ -100,12 +110,14 @@ impl AnnexBPacketizer {
+         if starts.is_empty() {
+             if self.buffer.len() > 3 {
+                 let keep_from = self.buffer.len() - 3;
++                copied!(self.buffer.len() - keep_from);
+                 self.buffer.drain(..keep_from);
+             }
+             return out;
+         }
+ 
+         if starts[0] > 0 {
++            copied!(self.buffer.len() - starts[0]);
+             self.buffer.drain(..starts[0]);
+         }
+ 
+@@ -118,6 +130,7 @@ impl AnnexBPacketizer {
+         for idx in 0..nal_count {
+             let start = starts[idx];
+             let end = starts.get(idx + 1).copied().unwrap_or(self.buffer.len());
++            copied!(end - start);
+             let nal = self.buffer[start..end].to_vec();
+             self.process_nal(&nal, &mut out);
+         }
+@@ -127,6 +140,11 @@ impl AnnexBPacketizer {
+         } else {
+             starts[starts.len() - 1]
+         };
++        copied!(if drain_to > 0 {
++            self.buffer.len() - drain_to
++        } else {
++            0
++        });
+         self.buffer.drain(..drain_to);
+         // The trailing NAL is incomplete, but its header can already prove
+         // that the preceding access unit is complete. Keep all trailing bytes
+@@ -197,10 +215,14 @@ impl AnnexBPacketizer {
+                 if self.pending_has_vcl {
+                     self.emit_pending_access_unit(out);
+                 }
++                copied!(nal.len());
+                 self.pending_access_unit.extend_from_slice(nal);
+             }
+             (NalKind::Vcl, is_key) => self.append_picture_slice(nal, header_offset, is_key, out),
+-            (NalKind::Other, _) => self.pending_access_unit.extend_from_slice(nal),
++            (NalKind::Other, _) => {
++                copied!(nal.len());
++                self.pending_access_unit.extend_from_slice(nal);
++            }
+         }
+     }
+ 
+@@ -220,11 +242,13 @@ impl AnnexBPacketizer {
+         };
+         // Single-layer encoders emit one current set per type. Normalize the
+         // prefix so equivalent headers retain the same configuration bytes.
++        copied!(nal.len() - header_offset + 4);
+         let mut set = vec![0, 0, 0, 1];
+         set.extend_from_slice(&nal[header_offset..]);
+         if self.parameter_sets.get(&nal_type) != Some(&set) {
+             self.parameter_sets.insert(nal_type, set);
+             self.config = self.parameter_sets.values().flatten().copied().collect();
++            copied!(self.config.len());
+         }
+     }
+ 
+@@ -239,6 +263,7 @@ impl AnnexBPacketizer {
+             self.emit_pending_access_unit(out);
+         }
+         self.pending_has_idr |= is_key;
++        copied!(nal.len());
+         self.pending_access_unit.extend_from_slice(nal);
+         self.pending_has_vcl = true;
+     }
+@@ -272,6 +297,7 @@ impl AnnexBPacketizer {
+         // Prepend SPS/PPS to IDR frames so the decoder can always decode them,
+         // even if it missed the initial config packet or reconnected mid-stream.
+         let data = if was_idr && self.config_ready() {
++            copied!(self.config.len() + au_data.len());
+             let mut full = Vec::with_capacity(self.config.len() + au_data.len());
+             full.extend_from_slice(&self.config);
+             full.extend_from_slice(&au_data);
+@@ -340,6 +366,8 @@ impl<'a> ExpGolombReader<'a> {
+ 
+ /// Find all NAL start codes in a buffer and return their positions.
+ fn find_start_codes(data: &[u8]) -> Vec<usize> {
++    #[cfg(test)]
++    crate::allocation_probe::scanned(data.len());
+     crate::encoder_io::annex_b_starts(data)
+         .into_iter()
+         // Streaming packetization waits for at least one byte after a
+@@ -724,3 +752,7 @@ mod tests {
+         }
+     }
+ }
++
++#[cfg(test)]
++#[path = "packetizer_profile.rs"]
++mod profile;
+diff --git a/host/src/main.rs b/host/src/main.rs
+index 0105929..1be07d5 100644
+--- a/host/src/main.rs
++++ b/host/src/main.rs
+@@ -1,3 +1,5 @@
++#[cfg(all(test, not(feature = "inproc-encoder")))]
++mod allocation_probe;
+ #[cfg(not(feature = "inproc-encoder"))]
+ mod annex_b;
+ mod capture;
+diff --git a/host/src/allocation_probe.rs b/host/src/allocation_probe.rs
+new file mode 100644
+index 0000000..81964c4
+--- /dev/null
++++ b/host/src/allocation_probe.rs
+@@ -0,0 +1,72 @@
++//! T384: opt-in counters on the calling test thread; absent from production builds.
++use std::alloc::{GlobalAlloc, Layout, System};
++use std::cell::Cell;
++
++#[derive(Clone, Copy, Default, serde::Serialize)]
++pub(crate) struct Counts {
++    pub allocations: u64,
++    pub reallocations: u64,
++    pub requested_bytes: u64,
++    pub explicit_copy_bytes: u64,
++    pub scanner_input_bytes: u64,
++}
++thread_local! {
++    static COUNTS: Cell<Option<Counts>> = const { Cell::new(None) };
++}
++
++fn update(change: impl FnOnce(&mut Counts)) {
++    let _ = COUNTS.try_with(|cell| {
++        if let Some(mut counts) = cell.get() {
++            change(&mut counts);
++            cell.set(Some(counts));
++        }
++    });
++}
++
++struct CountingAllocator;
++#[global_allocator]
++static ALLOCATOR: CountingAllocator = CountingAllocator;
++
++unsafe impl GlobalAlloc for CountingAllocator {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        update(|c| {
++            c.allocations += 1;
++            c.requested_bytes += layout.size() as u64;
++        });
++        System.alloc(layout)
++    }
++    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
++        update(|c| {
++            c.allocations += 1;
++            c.requested_bytes += layout.size() as u64;
++        });
++        System.alloc_zeroed(layout)
++    }
++    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, size: usize) -> *mut u8 {
++        update(|c| {
++            c.reallocations += 1;
++            c.requested_bytes += size as u64;
++        });
++        System.realloc(ptr, layout, size)
++    }
++    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
++        System.dealloc(ptr, layout);
++    }
++}
++
++pub(crate) fn copied(bytes: usize) {
++    update(|c| c.explicit_copy_bytes += bytes as u64);
++}
++pub(crate) fn scanned(bytes: usize) {
++    update(|c| c.scanner_input_bytes += bytes as u64);
++}
++
++pub(crate) fn measure<T>(operation: impl FnOnce() -> T) -> (T, Counts) {
++    COUNTS.with(|c| {
++        assert!(c.get().is_none());
++        c.set(Some(Counts::default()));
++    });
++    let result = operation();
++    let counts = COUNTS.with(|c| c.replace(None).unwrap());
++    (result, counts)
++}
+diff --git a/host/src/packetizer_profile.rs b/host/src/packetizer_profile.rs
+new file mode 100644
+index 0000000..f9aa21d
+--- /dev/null
++++ b/host/src/packetizer_profile.rs
+@@ -0,0 +1,138 @@
++//! T384: deterministic, synthetic Annex B replay; no display/encoder/network access.
++use super::*;
++
++fn nal(codec: Codec, kind: u8, payload: usize, first: bool) -> Vec<u8> {
++    let mut nal = vec![0, 0, 0, 1];
++    match codec {
++        Codec::H264 => nal.push(kind),
++        Codec::Hevc => nal.extend_from_slice(&[kind << 1, 1]),
++    }
++    nal.push(if first { 0x80 } else { 0x40 });
++    nal.extend(std::iter::repeat_n(0x55, payload));
++    nal
++}
++
++fn fixture(codec: Codec, frames: usize, payload: usize) -> Vec<u8> {
++    let (sets, idr, p): (&[u8], u8, u8) = match codec {
++        Codec::H264 => (&[7, 8], 5, 1),
++        Codec::Hevc => (&[32, 33, 34], 19, 1),
++    };
++    let mut data = vec![0x55; 5]; // Ignore preamble bytes.
++    for &kind in sets {
++        data.extend(nal(codec, kind, 24, true));
++    }
++    for i in 0..frames {
++        data.extend(nal(codec, if i % 10 == 0 { idr } else { p }, payload, true));
++        data.extend(nal(codec, if i % 10 == 0 { idr } else { p }, 12, false));
++    }
++    data
++}
++
++fn collect(codec: Codec, data: &[u8], chunk: usize) -> Vec<VideoPacket> {
++    let mut parser = AnnexBPacketizer::new(codec, Default::default());
++    let mut packets = Vec::new();
++    for part in data.chunks(chunk) {
++        packets.extend(parser.push(part));
++    }
++    packets.extend(parser.finish());
++    packets
++}
++
++fn assert_same(expected: &[VideoPacket], actual: &[VideoPacket]) {
++    assert_eq!(actual.len(), expected.len());
++    for (a, b) in actual.iter().zip(expected) {
++        assert_eq!(a.data, b.data);
++        assert_eq!((a.seq, a.is_idr), (b.seq, b.is_idr));
++        assert_eq!(a.codec_config, b.codec_config);
++    }
++}
++
++#[test]
++fn t384_fragmentation_keeps_access_units_and_immutable_headers() {
++    for codec in [Codec::H264, Codec::Hevc] {
++        let data = fixture(codec, 24, 257);
++        let expected = collect(codec, &data, data.len());
++        assert_eq!(expected.len(), 24);
++        for chunk in 1..=129 {
++            assert_same(&expected, &collect(codec, &data, chunk));
++        }
++    }
++}
++
++fn replay(codec: Codec, data: &[u8], chunk: usize, repeats: usize) -> usize {
++    let mut count = 0;
++    for _ in 0..repeats {
++        let mut parser = AnnexBPacketizer::new(codec, Default::default());
++        for part in data.chunks(chunk) {
++            count += std::hint::black_box(parser.push(part)).len();
++        }
++        count += std::hint::black_box(parser.finish()).len();
++    }
++    count
++}
++
++fn profile(codec: Codec, name: &str, frames: usize, payload: usize, chunk: usize, repeats: usize) {
++    let data = fixture(codec, frames, payload);
++    assert_eq!(replay(codec, &data, chunk, 1), frames);
++    for sample in 0..3 {
++        let start = std::time::Instant::now();
++        let (packets, counts) =
++            crate::allocation_probe::measure(|| replay(codec, &data, chunk, repeats));
++        let elapsed = start.elapsed().as_nanos();
++        assert_eq!(packets, frames * repeats);
++        println!(
++            "T384_PROFILE {}",
++            serde_json::json!({
++                "codec": codec.muxer(), "workload": name, "sample": sample,
++                "input_bytes": data.len() * repeats, "chunk_bytes": chunk, "packets": packets,
++                "elapsed_ns": elapsed, "counts": counts
++            })
++        );
++    }
++}
++
++#[test]
++fn t384_packetizer_profile() {
++    for codec in [Codec::H264, Codec::Hevc] {
++        profile(codec, "fragmented", 40, 512, 7, 3);
++        profile(codec, "dense", 400, 512, 16384, 4);
++        profile(codec, "large_nal", 2, 1024 * 1024, 4096, 2);
++    }
++}
++
++fn mixed_prefixes(codec: Codec) -> Vec<u8> {
++    let data = fixture(codec, 12, 129);
++    let starts = crate::encoder_io::annex_b_starts(&data);
++    let mut mixed = vec![0x55; 5];
++    for (index, &(start, _)) in starts.iter().enumerate() {
++        let end = starts.get(index + 1).map_or(data.len(), |&(next, _)| next);
++        mixed.extend_from_slice(&data[start + index % 2..end]);
++    }
++    mixed
++}
++
++#[test]
++fn t384_three_and_four_byte_prefixes_survive_every_tail_boundary() {
++    for codec in [Codec::H264, Codec::Hevc] {
++        for tail in [vec![], vec![0], vec![0, 0], vec![0, 0, 1], vec![0, 0, 0, 1]] {
++            let mut data = mixed_prefixes(codec);
++            data.extend(tail);
++            let expected = collect(codec, &data, data.len());
++            assert_eq!(expected.len(), 12);
++            for chunk in 1..=33 {
++                assert_same(&expected, &collect(codec, &data, chunk));
++            }
++        }
++    }
++}
++
++#[test]
++fn t384_large_fragmented_nals_preserve_every_payload_byte() {
++    for codec in [Codec::H264, Codec::Hevc] {
++        let data = fixture(codec, 2, 1024 * 1024);
++        let expected = collect(codec, &data, data.len());
++        for chunk in [4093, 16384] {
++            assert_same(&expected, &collect(codec, &data, chunk));
++        }
++    }
++}

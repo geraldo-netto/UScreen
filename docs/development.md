@@ -296,6 +296,16 @@ limited-range input; CLI color tags stay before `-i` to avoid conversion.
 T373 boundary tests preserve these adapter differences, while the existing
 software encode/decode regressions verify color and rate behavior.
 
+### Packetizer ownership and profiling
+
+`host/src/annex_b.rs` owns access-unit assembly; `encoder_io.rs` supplies the
+shared start-code scanner. The packetizer's scan cursor and retained buffer are
+separate from pending picture data. Do not discard the last possible prefix
+bytes or mutate codec headers already held by a queued packet. Both three- and
+four-byte prefixes, fragmented headers and multi-slice pictures are covered by
+normal tests. Test-only allocation/copy/scan probes and the reproducible baseline
+are documented in [the packetizer replay](benchmarks.md#annex-b-packetizer-replay).
+
 ## Release APK
 
 ```bash

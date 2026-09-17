@@ -2,6 +2,14 @@
 use crate::media::{Codec, EncoderGeneration, VideoPacket};
 use bytes::Bytes;
 
+// Instrument explicit copies without changing the production hot path.
+macro_rules! copied {
+    ($bytes:expr) => {
+        #[cfg(test)]
+        crate::allocation_probe::copied($bytes);
+    };
+}
+
 // NAL unit types. Only the CLI path parses the bitstream itself; with the
 // in-process encoder libavcodec hands back one complete access unit per frame.
 //
@@ -33,10 +41,14 @@ const NAL_TYPE_SPS: u8 = 7;
 const NAL_TYPE_PPS: u8 = 8;
 pub(crate) struct AnnexBPacketizer {
     buffer: Vec<u8>,
+    /// First unchecked prefix position; retain three bytes across chunk boundaries.
+    scan_from: usize,
+    /// Start of the retained, incomplete NAL (relative to buffer).
+    nal_start: Option<usize>,
     pending_access_unit: Vec<u8>,
     pending_has_vcl: bool,
     pending_has_idr: bool,
-    config: Vec<u8>,
+    config: Bytes,
     parameter_sets: std::collections::BTreeMap<u8, Vec<u8>>,
     sequences: crate::latency::LatencyTracker,
     generation: EncoderGeneration,
@@ -47,10 +59,12 @@ impl AnnexBPacketizer {
     pub(crate) fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
         Self {
             buffer: Vec::new(),
+            scan_from: 0,
+            nal_start: None,
             pending_access_unit: Vec::new(),
             pending_has_vcl: false,
             pending_has_idr: false,
-            config: Vec::new(),
+            config: Bytes::new(),
             parameter_sets: std::collections::BTreeMap::new(),
             sequences,
             generation: EncoderGeneration::new(),
@@ -59,6 +73,7 @@ impl AnnexBPacketizer {
     }
 
     pub(crate) fn push(&mut self, data: &[u8]) -> Vec<VideoPacket> {
+        copied!(data.len());
         self.buffer.extend_from_slice(data);
         self.process_complete_nals(false)
     }
@@ -87,54 +102,65 @@ impl AnnexBPacketizer {
 
     pub(crate) fn codec_config(&self) -> Option<Bytes> {
         if self.config_ready() {
-            Some(Bytes::copy_from_slice(&self.config))
+            Some(self.config.clone())
         } else {
             None
         }
     }
 
     fn process_complete_nals(&mut self, flush: bool) -> Vec<VideoPacket> {
+        // Move ownership temporarily so processing a borrowed NAL can update
+        // packet/config state without cloning its bytes. Keep input capacity.
+        let mut input = std::mem::take(&mut self.buffer);
         let mut out = Vec::new();
-        let starts = find_start_codes(&self.buffer);
-
-        if starts.is_empty() {
-            if self.buffer.len() > 3 {
-                let keep_from = self.buffer.len() - 3;
-                self.buffer.drain(..keep_from);
+        self.scan_nals(&input, &mut out);
+        let drain_to = match (flush, self.nal_start) {
+            (true, Some(start)) => {
+                self.process_nal(&input[start..], &mut out);
+                self.nal_start = None;
+                self.scan_from = input.len();
+                input.len()
             }
-            return out;
-        }
-
-        if starts[0] > 0 {
-            self.buffer.drain(..starts[0]);
-        }
-
-        let starts = find_start_codes(&self.buffer);
-        let nal_count = if flush {
-            starts.len()
-        } else {
-            starts.len() - 1
+            (_, Some(start)) => start,
+            (_, None) => input.len().saturating_sub(3),
         };
-        for idx in 0..nal_count {
-            let start = starts[idx];
-            let end = starts.get(idx + 1).copied().unwrap_or(self.buffer.len());
-            let nal = self.buffer[start..end].to_vec();
-            self.process_nal(&nal, &mut out);
-        }
-
-        let drain_to = if flush {
-            self.buffer.len()
+        self.scan_from -= drain_to;
+        self.nal_start = self.nal_start.map(|start| start - drain_to);
+        copied!(if drain_to > 0 {
+            input.len() - drain_to
         } else {
-            starts[starts.len() - 1]
-        };
-        self.buffer.drain(..drain_to);
-        // The trailing NAL is incomplete, but its header can already prove
-        // that the preceding access unit is complete. Keep all trailing bytes
-        // buffered; publish only the previous picture.
+            0
+        });
+        input.drain(..drain_to);
+        self.buffer = input;
+        // A partial trailing header can complete the preceding picture, but
+        // all trailing bytes still belong to the next access unit.
         if self.pending_has_vcl && self.trailing_nal_starts_picture() {
             self.emit_pending_access_unit(&mut out);
         }
         out
+    }
+
+    fn scan_nals(&mut self, input: &[u8], out: &mut Vec<VideoPacket>) {
+        let offset = self.scan_from;
+        #[cfg(test)]
+        crate::allocation_probe::scanned(input.len() - offset);
+        let mut checked_until = offset;
+        for (start, header) in crate::encoder_io::annex_b_offsets(&input[offset..]) {
+            let start = offset + start;
+            // Preserve the streaming contract: a trailing three-byte prefix
+            // waits for a header byte, while four bytes already identify it.
+            if start >= input.len().saturating_sub(3) {
+                break;
+            }
+            if let Some(previous) = self.nal_start {
+                self.process_nal(&input[previous..start], out);
+            }
+            self.nal_start = Some(start);
+            checked_until = offset + header;
+        }
+        // Never rescan inside a prefix already accepted at the very end.
+        self.scan_from = checked_until.max(input.len().saturating_sub(3));
     }
 
     fn trailing_nal_starts_picture(&self) -> bool {
@@ -197,10 +223,14 @@ impl AnnexBPacketizer {
                 if self.pending_has_vcl {
                     self.emit_pending_access_unit(out);
                 }
+                copied!(nal.len());
                 self.pending_access_unit.extend_from_slice(nal);
             }
             (NalKind::Vcl, is_key) => self.append_picture_slice(nal, header_offset, is_key, out),
-            (NalKind::Other, _) => self.pending_access_unit.extend_from_slice(nal),
+            (NalKind::Other, _) => {
+                copied!(nal.len());
+                self.pending_access_unit.extend_from_slice(nal);
+            }
         }
     }
 
@@ -220,11 +250,19 @@ impl AnnexBPacketizer {
         };
         // Single-layer encoders emit one current set per type. Normalize the
         // prefix so equivalent headers retain the same configuration bytes.
+        copied!(nal.len() - header_offset + 4);
         let mut set = vec![0, 0, 0, 1];
         set.extend_from_slice(&nal[header_offset..]);
         if self.parameter_sets.get(&nal_type) != Some(&set) {
             self.parameter_sets.insert(nal_type, set);
-            self.config = self.parameter_sets.values().flatten().copied().collect();
+            self.config = self
+                .parameter_sets
+                .values()
+                .flatten()
+                .copied()
+                .collect::<Vec<_>>()
+                .into();
+            copied!(self.config.len());
         }
     }
 
@@ -239,6 +277,7 @@ impl AnnexBPacketizer {
             self.emit_pending_access_unit(out);
         }
         self.pending_has_idr |= is_key;
+        copied!(nal.len());
         self.pending_access_unit.extend_from_slice(nal);
         self.pending_has_vcl = true;
     }
@@ -272,6 +311,7 @@ impl AnnexBPacketizer {
         // Prepend SPS/PPS to IDR frames so the decoder can always decode them,
         // even if it missed the initial config packet or reconnected mid-stream.
         let data = if was_idr && self.config_ready() {
+            copied!(self.config.len() + au_data.len());
             let mut full = Vec::with_capacity(self.config.len() + au_data.len());
             full.extend_from_slice(&self.config);
             full.extend_from_slice(&au_data);
@@ -302,7 +342,7 @@ struct ExpGolombReader<'a> {
 }
 
 impl<'a> ExpGolombReader<'a> {
-    pub(crate) fn new(data: &'a [u8]) -> Self {
+    fn new(data: &'a [u8]) -> Self {
         Self {
             data,
             byte: 0,
@@ -336,16 +376,6 @@ impl<'a> ExpGolombReader<'a> {
         }
         Some(value)
     }
-}
-
-/// Find all NAL start codes in a buffer and return their positions.
-fn find_start_codes(data: &[u8]) -> Vec<usize> {
-    crate::encoder_io::annex_b_starts(data)
-        .into_iter()
-        // Streaming packetization waits for at least one byte after a
-        // three-byte prefix, preserving incomplete-tail buffering.
-        .filter_map(|(start, _)| (start < data.len().saturating_sub(3)).then_some(start))
-        .collect()
 }
 
 fn nal_header_offset(data: &[u8], start: usize) -> Option<usize> {
@@ -724,3 +754,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "packetizer_profile.rs"]
+mod profile;

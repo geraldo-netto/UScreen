@@ -1,3 +1,5 @@
+#[cfg(all(test, not(feature = "inproc-encoder")))]
+mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
 mod capture;

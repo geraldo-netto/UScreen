@@ -48,17 +48,23 @@ pub(crate) fn annex_b_prefix_len(data: &[u8]) -> Option<usize> {
 
 /// Start-code and NAL-header offsets, including an incomplete trailing prefix.
 pub(crate) fn annex_b_starts(data: &[u8]) -> Vec<(usize, usize)> {
-    let mut starts = Vec::new();
+    annex_b_offsets(data).collect()
+}
+
+/// Allocation-free scanner; offsets include a prefix whose header is incomplete.
+pub(crate) fn annex_b_offsets(data: &[u8]) -> impl Iterator<Item = (usize, usize)> + '_ {
     let mut offset = 0;
-    while offset + 3 <= data.len() {
-        if let Some(length) = annex_b_prefix_len(&data[offset..]) {
-            starts.push((offset, offset + length));
-            offset += length;
-        } else {
+    std::iter::from_fn(move || {
+        while offset + 3 <= data.len() {
+            if let Some(length) = annex_b_prefix_len(&data[offset..]) {
+                let start = offset;
+                offset += length;
+                return Some((start, offset));
+            }
             offset += 1;
         }
-    }
-    starts
+        None
+    })
 }
 
 fn parameter_set_slot(header: u8, codec: Codec) -> Option<usize> {
