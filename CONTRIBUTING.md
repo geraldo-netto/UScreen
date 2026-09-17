@@ -21,6 +21,9 @@ involved, the log (`RUST_LOG=uscreen=debug uscreen start`, or
   Behavioral fixes need permanent regressions linked to the issue/TODO ID;
   show each test failing before the fix and passing afterward. The host
   suite needs a C compiler and make; Android tests run with Robolectric.
+- For optional encoder changes, also run `cargo test --release -p uscreen
+  --features inproc-encoder --bin uscreen` with the FFmpeg development libraries
+  installed. CI runs this suite alongside the default workspace tests.
 - Keep commits focused and write the message for someone reading `git log`
   in a year: what broke, why, what changed.
 - Measure before claiming a performance change. The daemon logs packet-send-to-render-ack
