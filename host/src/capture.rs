@@ -573,7 +573,7 @@ impl CaptureManager {
         };
 
         let mut cmd = Command::new(&self.config.helper_path);
-        cmd.args(["--edid", &edid_path.to_string_lossy()]);
+        cmd.arg("--edid").arg(edid_path);
         cmd.args(["--fps", &self.config.fps.to_string()]);
         if self.config.stream_scale > 1 {
             cmd.args(["--scale", &self.config.stream_scale.to_string()]);
@@ -2326,6 +2326,41 @@ mod tests {
             height_mm: c.height_mm,
             stream_scale: c.stream_scale,
             geometry_ready: true,
+        }
+    }
+
+    #[tokio::test]
+    async fn t347_helper_receives_the_original_edid_filename() {
+        use std::os::unix::{ffi::OsStringExt, fs::PermissionsExt};
+        let root = tempfile::tempdir().unwrap();
+        let helper = root.path().join("read-edid");
+        std::fs::write(&helper, "#!/bin/sh\nexec cat -- \"$2\"\n").unwrap();
+        std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let expected = crate::edid::make_edid(1280, 800, 60);
+        for name in [
+            b"custom edid.bin".as_slice(),
+            b"custom \xff edid.bin".as_slice(),
+        ] {
+            let path = root
+                .path()
+                .join(std::ffi::OsString::from_vec(name.to_vec()));
+            std::fs::write(&path, &expected).unwrap();
+            let mut manager = test_manager();
+            manager.config.helper_path = helper.clone();
+            manager.config.edid_path = Some(path);
+            let output = manager
+                .helper_command("unused-test-fifo")
+                .unwrap()
+                .stderr(Stdio::piped())
+                .output()
+                .await
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "T347: helper could not read the original EDID: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert_eq!(output.stdout, expected);
         }
     }
 
