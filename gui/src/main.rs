@@ -352,6 +352,23 @@ fn urlencode(s: &str) -> String {
     out
 }
 
+fn compatibility_url(distro: &str, encoder: &str, tablet: &str, version: &str) -> String {
+    // YAML issue forms prefill by field ID, as declared in compatibility.yml.
+    let query = [
+        ("template", "compatibility.yml"),
+        ("title", "Compatibility: "),
+        ("distro", distro),
+        ("gpu", encoder),
+        ("tablet", tablet),
+        ("version", version),
+    ]
+    .into_iter()
+    .map(|(key, value)| format!("{key}={}", urlencode(value)))
+    .collect::<Vec<_>>()
+    .join("&");
+    format!("https://github.com/geraldo-netto/UScreen/issues/new?{query}")
+}
+
 use uscreen_config::version::is_newer as is_newer_version;
 
 /// One request when the window opens. Reports; never installs.
@@ -571,12 +588,8 @@ impl App {
             if ui.small_button("Report compatibility").on_hover_text(
                 "Opens a GitHub issue pre-filled with your setup. Nothing is sent until you submit it.").clicked()
             {
-                let body = format!(
-                    "Result: \n\nDistribution and desktop: {}\nGPU and encoder: {}\nTablet, Android, stylus: {}\nUScreen version: {}\n\nLatency line from the log (optional):\n\nNotes:\n",
-                    os_release_name(), self.cfg.encoder, status.tablet_model, env!("CARGO_PKG_VERSION"));
-                let url = format!(
-                    "https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml&title={}&body={}",
-                    urlencode("Compatibility: "), urlencode(&body));
+                let url = compatibility_url(&os_release_name(), &self.cfg.encoder,
+                    &status.tablet_model, env!("CARGO_PKG_VERSION"));
                 let _ = spawn_reaped(Command::new("xdg-open").arg(url));
             }
             if ui.small_button("Star on GitHub").clicked() {
@@ -1126,6 +1139,48 @@ fn main() -> eframe::Result {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t295_compatibility_url_prefills_the_actual_issue_form() {
+        let url = compatibility_url("Debian & KDE / Caffè", "h264_vaapi", "Tab+Pen #2", "1.2.3");
+        let (destination, query) = url.split_once('?').unwrap();
+        assert_eq!(
+            destination,
+            "https://github.com/geraldo-netto/UScreen/issues/new"
+        );
+        let fields: std::collections::BTreeMap<_, _> = query
+            .split('&')
+            .map(|pair| pair.split_once('=').unwrap())
+            .collect();
+        assert_eq!(fields.get("template"), Some(&"compatibility.yml"));
+        assert_eq!(fields.get("title"), Some(&"Compatibility%3A%20"));
+        let form = include_str!("../../.github/ISSUE_TEMPLATE/compatibility.yml");
+        let ids: Vec<_> = form
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("id: "))
+            .collect();
+        for (id, value) in [
+            ("distro", "Debian%20%26%20KDE%20%2F%20Caff%C3%A8"),
+            ("gpu", "h264_vaapi"),
+            ("tablet", "Tab%2BPen%20%232"),
+            ("version", "1.2.3"),
+        ] {
+            assert!(
+                ids.contains(&id),
+                "T295: prefill field is absent from the actual form: {id}"
+            );
+            assert_eq!(
+                fields.get(id),
+                Some(&value),
+                "T295: missing or corrupt prefill for {id}"
+            );
+        }
+        assert_eq!(
+            fields.len(),
+            6,
+            "T295: unknown report results must stay unset"
+        );
+    }
 
     fn settings_test_app(tab: Tab) -> App {
         let saved_cfg = FileConfig::default();
