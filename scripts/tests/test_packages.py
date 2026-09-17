@@ -57,11 +57,24 @@ class PackageTest(unittest.TestCase):
                 self.assertTrue((root / 'dist/uscreen-1.2.3-linux-x86_64.tar.gz').is_file())
                 self.assertFalse((root / 'INJECTED').exists())
 
+    def test_t236_release_rejects_new_glibc_in_bundled_evdi(self):
+        from test_notices import NoticeTest
+        with tempfile.TemporaryDirectory(prefix='uscreen-abi-') as tmp:
+            root = Path(tmp)
+            NoticeTest().copy_sources(root)
+            self.portable_fixture(root)
+            (root / 'bin/objdump').write_text('#!/bin/sh\ncase "$2" in *libevdi*) echo GLIBC_2.37;; *) echo GLIBC_2.36;; esac\n')
+            env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'))
+            result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
+                                    env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0, 'T236: shipped library exceeds the documented ABI floor')
+            self.assertFalse((root / 'dist/uscreen-1.2.3-linux-x86_64.tar.gz').exists())
+
     def portable_fixture(self, root):
         files = {
             'bin/distrobox': '#!/bin/bash\nshift 3; shift 2; exec bash -c "$@"\n',
             'bin/objdump': '#!/bin/sh\necho GLIBC_2.36\n',
-            'bin/readelf': '#!/bin/sh\necho "RUNPATH [$ORIGIN]"\n',
+            'bin/readelf': '#!/bin/sh\ncat << EOF\n(RUNPATH) Library runpath: [\\$ORIGIN]\n(NEEDED) Shared library: [libevdi.so.1]\nEOF\n',
             'android/gradlew': '#!/bin/sh\nexit 0\n',
             'android/app/build/outputs/apk/release/app-release.apk': 'apk',
         }

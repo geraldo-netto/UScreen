@@ -8,6 +8,7 @@
 # Needs a distrobox container named "uscreen-build" made from debian:12 with
 # build-essential, pkg-config, libdrm-dev, the X11/Wayland dev packages for
 # the GUI, git, dpkg-dev, fakeroot, rpm and rustup.
+# The host also needs Python 3 and binutils for the bundle ABI check.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 CONTAINER="${USCREEN_BUILD_CONTAINER:-uscreen-build}"
@@ -33,22 +34,11 @@ distrobox enter "$CONTAINER" -- bash -lc '
 ' uscreen-release "$PWD" "$EVDI_TAG"
 [ -f target-deb12/.build-ok ] || { echo "!! build inside $CONTAINER failed"; exit 1; }
 
-for b in target-deb12/release/uscreen target-deb12/release/uscreen-gui target-deb12/evdi_helper; do
-  need="$(objdump -T "$b" | grep -oE 'GLIBC_[0-9.]+' | sort -Vu | tail -1)"
-  echo "  $(basename "$b"): needs $need"
-  case "$need" in GLIBC_2.3[0-6]|GLIBC_2.[0-2]*|GLIBC_2.[0-9]) ;; *) echo "  !! $b needs $need — not portable"; exit 1;; esac
-done
-
 # Same layout as `make dist-local`, from the portable binaries.
 D="dist/uscreen-$VERSION"
-rm -rf "$D"; mkdir -p "$D/bin" "$D/scripts" "$D/packaging"
-cp target-deb12/release/uscreen target-deb12/release/uscreen-gui target-deb12/evdi_helper "$D/bin/"
-cp target-deb12/evdi-src/library/libevdi.so.1.15.0 "$D/bin/"
-ln -sf libevdi.so.1.15.0 "$D/bin/libevdi.so.1"
-cp scripts/install.sh scripts/write-desktop-entry.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh "$D/scripts/"
-cp packaging/distribution-docs.txt packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules "$D/packaging/"
-mkdir -p "$D/packaging/icons" && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg "$D/packaging/icons/"
-./scripts/copy-distribution-docs.sh "$D/"
+rm -rf "$D"
+./scripts/stage-linux-bundle.sh target-deb12/release target-deb12/evdi_helper target-deb12/evdi-src/library "$D"
+python3 scripts/ci/verify-portability.py "$D/bin"
 ( cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk "../$D/uscreen.apk" )
 tar -C dist -czf "dist/uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION"
 

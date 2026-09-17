@@ -1,0 +1,66 @@
+name: Linux package portability
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build reproducible test and release environment
+        run: docker build -t uscreen-ci packaging/ci
+      - name: Run every workspace regression in Debian 12
+        # TSan's existing setarch fallback needs personality(2) inside Docker.
+        run: >-
+          docker run --rm --security-opt seccomp=unconfined
+          -v "$PWD:/work" -v uscreen-cargo:/usr/local/cargo/registry
+          -v uscreen-target:/build -e CARGO_TARGET_DIR=/build
+          uscreen-ci cargo test --locked --release --workspace
+      - name: Build portable Linux package fixtures
+        run: >-
+          docker run --rm -v "$PWD:/work"
+          -v uscreen-cargo:/usr/local/cargo/registry -v uscreen-target:/build
+          -e CARGO_TARGET_DIR=/build uscreen-ci scripts/ci/build-artifacts.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portability-packages
+          path: |
+            dist/*.deb
+            dist/*.rpm
+            dist/*linux-x86_64.tar.gz
+
+  smoke:
+    needs: packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: debian
+            image: debian:12@sha256:6ebd97fa83deb272194a2cf015b3d26a4d538e9ad3a7a79d544c8af5b0a01443
+          - family: fedora
+            image: fedora:44@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80
+          - family: arch
+            image: archlinux:base@sha256:204e91950fd364961088a01773eee9012243b7e965fed42b1d82d12416190782
+          - family: opensuse
+            image: opensuse/leap:16.0@sha256:f239b4819f4dd322d99509f1b5b14f2107bf23857f9ccd3c14333f0928a2bcc6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: portability-packages
+          path: artifacts
+      - name: Package Arch binaries with the production recipe
+        if: matrix.family == 'arch'
+        run: >-
+          docker run --rm -v "$PWD:/source:ro" -v "$PWD/artifacts:/artifacts"
+          '${{ matrix.image }}' /source/scripts/ci/build-arch-package.sh
+      - name: Install and exercise package without systemd
+        run: >-
+          docker run --rm -v "$PWD:/source:ro" -v "$PWD/artifacts:/artifacts:ro"
+          '${{ matrix.image }}' /source/scripts/ci/package-smoke.sh '${{ matrix.family }}'

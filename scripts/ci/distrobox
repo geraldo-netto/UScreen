@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Adapter for scripts already running inside the pinned CI build container.
+set -euo pipefail
+[[ $1 == enter && $3 == -- ]]
+shift 3
+exec "$@"

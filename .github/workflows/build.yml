@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libxkbcommon-dev libwayland-dev libxcb-render0-dev \
+            libxkbcommon-dev libxkbcommon-x11-0 libegl1 libwayland-dev libxcb-render0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
             libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
           sudo apt-get install -y libevdi-dev

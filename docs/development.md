@@ -72,7 +72,7 @@ clients/tasks. On Debian/Ubuntu, add:
 
 ```bash
 sudo apt-get install -y python3 ffmpeg rpm fakeroot dpkg-dev \
-  xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
+  xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin libxkbcommon-x11-0 libegl1
 ```
 
 GCC's ASan/UBSan/TSan runtimes must be installed with the compiler. The GUI
@@ -226,3 +226,55 @@ Before that, for a new version:
 the Cargo/Gradle versions, the changelog entry) and stops with a message
 naming the stale file rather than publishing a page that still says the
 previous version. The date defaults to today; `RELEASE_DATE=YYYY-MM-DD` overrides it.
+
+## Portable build and package checks
+
+`packaging/ci/Dockerfile` supplies Rust 1.90 on Debian 12, the pinned EVDI
+userspace library, GUI libraries, sanitizers and every workspace test tool.
+The Docker base image is pinned by digest; Cargo uses `Cargo.lock`. Debian
+security package updates remain enabled. Build/test tools include **both
+`rpm` and the `rpmbuild` executable**, plus `dpkg-deb` and `fakeroot`.
+Installing only `librpmbuild9t64` does not supply those commands. These tools
+are not dependencies for running an installed UScreen package.
+
+From the checkout, reproduce the CI environment and suite with:
+
+```bash
+docker build -t uscreen-ci packaging/ci
+docker run --rm --security-opt seccomp=unconfined \
+  -v "$PWD:/work" -v uscreen-cargo:/usr/local/cargo/registry \
+  -v uscreen-target:/build -e CARGO_TARGET_DIR=/build \
+  uscreen-ci cargo test --locked --release --workspace
+```
+
+The seccomp exception allows the existing ThreadSanitizer test's `setarch`
+fallback to disable ASLR for its own child process. It needs no host sysctl
+change, display socket, device mount or privileged container.
+
+`.github/workflows/portability.yml` then builds real Linux packages and
+installs them in clean Debian 12, Fedora 44, Arch and openSUSE Leap 16
+containers. Arch runs the production `package()` recipe over the portable
+binaries before installing its package in a second clean container. Only
+its external `evdi-dkms` kernel prerequisite is assumed installed; ordinary
+userspace dependencies are resolved by the package manager. Fedora uses
+RPM Fusion for the declared FFmpeg dependency.
+
+These jobs check the glibc 2.36 ceiling for the daemon, GUI, helper **and
+bundled libevdi**, verify the helper's `$ORIGIN` lookup and ELF dependency resolution,
+check notices, and exercise an idle daemon's direct start/status/stop with
+no systemd user manager or display devices. They do not validate EVDI kernel
+attachment or desktop/compositor compatibility. Service-manager/autostart
+limitations remain tracked separately in `TODO.md`.
+
+To generate the same Linux package fixtures locally:
+
+```bash
+docker run --rm -v "$PWD:/work" \
+  -v uscreen-cargo:/usr/local/cargo/registry -v uscreen-target:/build \
+  -e CARGO_TARGET_DIR=/build uscreen-ci scripts/ci/build-artifacts.sh
+```
+
+This writes package test artifacts under `dist/`, without an Android APK;
+use `scripts/build-release.sh` for the complete release bundle. Both paths
+share the Linux layout and ABI validator. Native install smoke scripts under
+`scripts/ci/` are intended only for disposable Docker containers.
