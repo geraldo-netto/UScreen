@@ -146,7 +146,7 @@ async fn assert_geometry_gate(
     prepare(&settings);
     let (_display, display) = watch::channel(true);
     let (shutdown, stop) = watch::channel(false);
-    let (video, _) = broadcast::channel(8);
+    let (video, _) = crate::video_queue::channel(8, Default::default());
     let task = tokio::spawn(async move {
         manager
             .stream_frames(video, settings_rx, display, stop)
@@ -234,7 +234,7 @@ async fn t091_shutdown_interrupts_real_capture_retry() {
     let (_settings, settings) = watch::channel(manager_settings(&manager));
     let (_display, display) = watch::channel(true);
     let (shutdown, stop) = watch::channel(false);
-    let (video, _) = broadcast::channel(8);
+    let (video, _) = crate::video_queue::channel(8, Default::default());
     let mut task =
         tokio::spawn(async move { manager.stream_frames(video, settings, display, stop).await });
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -480,7 +480,7 @@ async fn drive_session(manager: &mut CaptureManager, display: bool, change_mode:
     let (_settings_tx, settings_rx) = watch::channel(settings);
     let (_display_tx, display_rx) = watch::channel(display);
     let (_shutdown_tx, shutdown_rx) = watch::channel(false);
-    let (tx, _rx) = broadcast::channel(8);
+    let (tx, _rx) = crate::video_queue::channel(8, Default::default());
     let _ = tokio::time::timeout(
         std::time::Duration::from_millis(200),
         manager.stream_frames(tx, settings_rx, display_rx, shutdown_rx),

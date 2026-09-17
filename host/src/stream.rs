@@ -1,6 +1,10 @@
+#[cfg(test)]
+mod resources;
+
 use crate::media::VideoPacket;
+use crate::media_storage::MediaBytes as Bytes;
 use anyhow::Result;
-use bytes::Bytes;
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::io::AsyncWriteExt;
@@ -38,6 +42,7 @@ impl Default for StreamConfig {
 /// How long a client gets to present the token before the socket is closed.
 const AUTH_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(3);
 const MAX_CLIENTS: usize = 16;
+const WRITE_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(1);
 
 pub struct StreamServer {
     config: StreamConfig,
@@ -72,7 +77,7 @@ impl StreamServer {
 
     pub async fn run_with_listener(
         &self,
-        video_tx: broadcast::Sender<VideoPacket>,
+        video_tx: crate::video_queue::VideoSender,
         listener: TcpListener,
     ) -> Result<()> {
         self.running.store(true, Ordering::SeqCst);
@@ -124,7 +129,7 @@ impl StreamServer {
 
     async fn handle_client(
         mut socket: TcpStream,
-        video_tx: broadcast::Sender<VideoPacket>,
+        video_tx: crate::video_queue::VideoSender,
         codec_config: Arc<Mutex<Option<Bytes>>>,
         token: Option<String>,
         idr_wanted: Arc<AtomicBool>,
@@ -165,7 +170,7 @@ impl StreamServer {
         idr_wanted.store(true, Ordering::SeqCst);
         let (mut reader, writer) = socket.into_split();
         tokio::select! {
-            result = Self::stream_packets(writer, rx, codec_config) => result,
+            result = Self::stream_packets(writer, rx, codec_config, video_tx.budget()) => result,
             // Disabled authentication accepts the Android client's saved token
             // as an optional prelude, without delaying tokenless legacy clients.
             // EOF, malformed/extra input and incomplete preludes end the viewer.
@@ -177,6 +182,7 @@ impl StreamServer {
         socket: tokio::net::tcp::OwnedWriteHalf,
         mut rx: broadcast::Receiver<VideoPacket>,
         codec_config: Arc<Mutex<Option<Bytes>>>,
+        budget: Arc<crate::media_storage::Budget>,
     ) -> Result<()> {
         let mut client = ClientPlayback {
             socket,
@@ -184,8 +190,9 @@ impl StreamServer {
             last_generation: None,
             wait_for_idr: true,
             dropped: 0,
+            scratch: VecDeque::with_capacity(crate::video_queue::QUEUE_PACKETS),
         };
-        client.send_initial_config(&codec_config).await?;
+        client.send_initial_config(&codec_config, &budget).await?;
         loop {
             let first = match rx.recv().await {
                 Ok(d) => d,
@@ -197,7 +204,9 @@ impl StreamServer {
                 Err(broadcast::error::RecvError::Closed) => break,
             };
             let batch = client.drain_batch(&mut rx, first);
-            client.send_batch(batch).await?;
+            // Retained batch lifetime is bounded too, including a client
+            // that makes tiny progress before each individual write deadline.
+            tokio::time::timeout(WRITE_TIMEOUT, client.send_batch(batch)).await??;
         }
         Ok(())
     }
@@ -229,6 +238,18 @@ impl StreamServer {
         packet_type: u8,
         payload: &[u8],
     ) -> Result<()> {
+        tokio::time::timeout(
+            WRITE_TIMEOUT,
+            Self::write_packet_bytes(socket, packet_type, payload),
+        )
+        .await?
+    }
+
+    async fn write_packet_bytes(
+        socket: &mut (impl tokio::io::AsyncWrite + Unpin),
+        packet_type: u8,
+        payload: &[u8],
+    ) -> Result<()> {
         let packet_len = payload.len() + 1;
         let len_buf = (packet_len as u32).to_be_bytes();
         socket.write_all(&len_buf).await?;
@@ -242,6 +263,14 @@ impl StreamServer {
     /// and echoes it back once the frame is on screen. This measures send-to-ack
     /// latency on one clock; capture and encoding occur before that interval.
     async fn write_frame(
+        socket: &mut (impl tokio::io::AsyncWrite + Unpin),
+        seq: u32,
+        payload: &[u8],
+    ) -> Result<()> {
+        tokio::time::timeout(WRITE_TIMEOUT, Self::write_frame_bytes(socket, seq, payload)).await?
+    }
+
+    async fn write_frame_bytes(
         socket: &mut (impl tokio::io::AsyncWrite + Unpin),
         seq: u32,
         payload: &[u8],
@@ -302,16 +331,25 @@ struct ClientPlayback {
     last_generation: Option<Arc<AtomicBool>>,
     wait_for_idr: bool,
     dropped: u64,
+    scratch: VecDeque<VideoPacket>,
 }
 
 impl ClientPlayback {
-    async fn send_initial_config(&mut self, codec_config: &Mutex<Option<Bytes>>) -> Result<()> {
+    async fn send_initial_config(
+        &mut self,
+        codec_config: &Mutex<Option<Bytes>>,
+        budget: &Arc<crate::media_storage::Budget>,
+    ) -> Result<()> {
         // Send cached codec config (SPS/PPS) so MediaCodec can configure.
         // If not yet available, wait briefly for it.
         let mut retries = 0;
         loop {
             let codec_data: Option<Bytes> = cached_codec_config(codec_config);
             if let Some(config) = codec_data {
+                anyhow::ensure!(
+                    config.len() <= crate::video_queue::MAX_CONFIG_BYTES && config.charge(budget),
+                    "Initial codec configuration exceeds encoded storage or packet limit"
+                );
                 info!("Sending codec config to client ({} bytes)", config.len());
                 StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
                 self.last_sent_config = Some(config);
@@ -333,13 +371,15 @@ impl ClientPlayback {
         &mut self,
         rx: &mut broadcast::Receiver<VideoPacket>,
         first: VideoPacket,
-    ) -> Vec<VideoPacket> {
+    ) -> VecDeque<VideoPacket> {
         // Drain whatever else is already queued so we can see how far
         // behind this client is.
-        let mut batch = vec![first];
-        loop {
+        let mut batch = std::mem::take(&mut self.scratch);
+        batch.push_back(first);
+        // A continuously producing encoder must not extend one drain forever.
+        for _ in 1..crate::video_queue::QUEUE_PACKETS {
             match rx.try_recv() {
-                Ok(p) => batch.push(p),
+                Ok(p) => batch.push_back(p),
                 Err(broadcast::error::TryRecvError::Lagged(n)) => {
                     warn!("Client lagged {} frames, resuming at next IDR", n);
                     self.wait_for_idr = true;
@@ -354,7 +394,9 @@ impl ClientPlayback {
         if batch.len() > MAX_BACKLOG {
             if let Some(pos) = batch.iter().rposition(|p| p.is_idr) {
                 self.dropped += pos as u64;
-                batch.drain(..pos);
+                for _ in 0..pos {
+                    batch.pop_front();
+                }
             }
         }
 
@@ -386,8 +428,8 @@ impl ClientPlayback {
         Ok(packet.generation.load(Ordering::Acquire))
     }
 
-    async fn send_batch(&mut self, batch: Vec<VideoPacket>) -> Result<()> {
-        for packet in batch {
+    async fn send_batch(&mut self, mut batch: VecDeque<VideoPacket>) -> Result<()> {
+        while let Some(packet) = batch.pop_front() {
             if !self.prepare_packet(&packet).await? {
                 self.dropped += 1;
                 continue;
@@ -405,6 +447,7 @@ impl ClientPlayback {
             }
             StreamServer::write_frame(&mut self.socket, packet.seq, &packet.data).await?;
         }
+        self.scratch = batch;
         Ok(())
     }
 }
@@ -421,6 +464,110 @@ mod tests {
         pin::Pin,
         task::{Context, Poll},
     };
+
+    #[tokio::test]
+    async fn t391_initial_config_counts_backing_before_first_frame() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let mut viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (socket, _) = listener.accept().await.unwrap();
+        let mut storage = Vec::with_capacity(8192);
+        storage.push(1);
+        let cache = Arc::new(Mutex::new(Some(Bytes::from(storage))));
+        let (tx, _) = crate::video_queue::channel(8, Default::default());
+        let task = tokio::spawn(StreamServer::handle_client(
+            socket,
+            tx.clone(),
+            cache.clone(),
+            None,
+            Default::default(),
+        ));
+        assert_eq!(
+            t227_read_packet(&mut viewer).await,
+            (PACKET_TYPE_CONFIG, vec![1])
+        );
+        let retained = tx.usage().0;
+        task.abort();
+        let _ = task.await;
+        drop(cache);
+        assert_eq!(
+            retained, 8192,
+            "T391: initial codec cache escaped the storage budget"
+        );
+        assert_eq!(tx.usage().0, 0);
+    }
+
+    #[tokio::test]
+    async fn t391_stalled_frame_and_config_writes_have_a_deadline() {
+        for frame in [false, true] {
+            let (mut writer, _unread) = tokio::io::duplex(1);
+            let result = tokio::time::timeout(std::time::Duration::from_millis(1250), async {
+                if frame {
+                    StreamServer::write_frame(&mut writer, 1, b"frame").await
+                } else {
+                    StreamServer::write_packet(&mut writer, PACKET_TYPE_CONFIG, b"config").await
+                }
+            })
+            .await;
+            assert!(
+                result.is_ok(),
+                "T391: stalled write retained its packet indefinitely"
+            );
+            assert!(
+                result.unwrap().is_err(),
+                "T391: incomplete frame reported success"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn t391_replay_batch_allocations() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let _viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (server, _) = listener.accept().await.unwrap();
+        let (_, socket) = server.into_split();
+        let mut playback = ClientPlayback {
+            socket,
+            last_sent_config: None,
+            last_generation: None,
+            wait_for_idr: true,
+            dropped: 0,
+            scratch: VecDeque::with_capacity(crate::video_queue::QUEUE_PACKETS),
+        };
+        let generation = crate::media::EncoderGeneration::new();
+        let packet = VideoPacket {
+            data: Bytes::from(vec![1; 64 * 1024]),
+            is_idr: false,
+            seq: 0,
+            codec_config: Some(Bytes::from_static(b"config")),
+            generation: generation.active.clone(),
+        };
+        let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
+        let (_, counts) = crate::allocation_probe::measure(|| {
+            for _ in 0..10000 {
+                for _ in 0..8 {
+                    tx.send(packet.clone()).ok().unwrap();
+                }
+                let first = rx.try_recv().unwrap();
+                let batch = playback.drain_batch(&mut rx, first);
+                assert_eq!(batch.len(), 8);
+                let mut batch = batch;
+                batch.clear();
+                playback.scratch = batch;
+            }
+        });
+        assert!(
+            counts.allocations <= 1 && counts.reallocations == 0,
+            "T391: batch allocation returned"
+        );
+        println!(
+            "T391 batches=10000 allocations={} reallocations={} requested_bytes={}",
+            counts.allocations, counts.reallocations, counts.requested_bytes
+        );
+    }
 
     async fn t227_read_packet(socket: &mut TcpStream) -> (u8, Vec<u8>) {
         use tokio::io::AsyncReadExt;
@@ -441,7 +588,7 @@ mod tests {
         let (_, writer) = server.into_split();
         let old = Bytes::from_static(b"h264-1280x800");
         let new = Bytes::from_static(b"hevc-1920x1080");
-        let (tx, rx) = broadcast::channel(8);
+        let (tx, rx) = crate::video_queue::channel(8, Default::default());
         tx.send(VideoPacket {
             seq: 0,
             is_idr: true,
@@ -456,6 +603,7 @@ mod tests {
             writer,
             rx,
             Arc::new(Mutex::new(Some(new.clone()))),
+            tx.budget(),
         ));
         assert_eq!(
             t227_read_packet(&mut viewer).await,
@@ -486,6 +634,7 @@ mod tests {
             last_generation: None,
             wait_for_idr: true,
             dropped: 0,
+            scratch: VecDeque::with_capacity(crate::video_queue::QUEUE_PACKETS),
         };
         let old = crate::media::EncoderGeneration::new();
         let fresh = crate::media::EncoderGeneration::new();
@@ -499,15 +648,15 @@ mod tests {
                     generation: generation.active.clone(),
                 }
             };
-        let (tx, mut rx) = broadcast::channel(8);
+        let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
         tx.send(packet(0, true, b"h264-1280x800", &old))
             .ok()
             .unwrap();
         let first = rx.recv().await.unwrap();
         let mut delayed = playback.drain_batch(&mut rx, first);
         drop(old); // restart after drain, while this client was delayed
-        delayed.push(packet(1, false, new, &fresh));
-        delayed.push(packet(2, true, new, &fresh));
+        delayed.push_back(packet(1, false, new, &fresh));
+        delayed.push_back(packet(2, true, new, &fresh));
         playback.send_batch(delayed).await.unwrap();
         drop(playback);
         assert_eq!(
@@ -536,7 +685,7 @@ mod tests {
         expected: Option<String>,
     ) -> (
         TcpStream,
-        broadcast::Sender<VideoPacket>,
+        crate::video_queue::VideoSender,
         tokio::task::JoinHandle<Result<()>>,
     ) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -544,7 +693,7 @@ mod tests {
             .await
             .unwrap();
         let (socket, _) = listener.accept().await.unwrap();
-        let (tx, _) = broadcast::channel(8);
+        let (tx, _) = crate::video_queue::channel(8, Default::default());
         let task = tokio::spawn(StreamServer::handle_client(
             socket,
             tx.clone(),
@@ -668,7 +817,7 @@ mod tests {
 
     async fn authenticated_test_server() -> (
         Arc<StreamServer>,
-        broadcast::Sender<VideoPacket>,
+        crate::video_queue::VideoSender,
         std::net::SocketAddr,
         tokio::task::JoinHandle<Result<()>>,
     ) {
@@ -682,7 +831,7 @@ mod tests {
         ));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
-        let (tx, _) = broadcast::channel(8);
+        let (tx, _) = crate::video_queue::channel(8, Default::default());
         let task = tokio::spawn({
             let server = server.clone();
             let tx = tx.clone();
@@ -802,7 +951,7 @@ mod tests {
             ));
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
             let address = listener.local_addr().unwrap();
-            let (tx, _) = broadcast::channel(8);
+            let (tx, _) = crate::video_queue::channel(8, Default::default());
             let task = tokio::spawn({
                 let server = server.clone();
                 let tx = tx.clone();
@@ -846,7 +995,7 @@ mod tests {
             Default::default(),
         );
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let (tx, _) = broadcast::channel(8);
+        let (tx, _) = crate::video_queue::channel(8, Default::default());
         let mut running = Box::pin(server.run_with_listener(tx.clone(), listener));
         assert!(
             tokio::time::timeout(std::time::Duration::from_millis(20), &mut running)

@@ -1,6 +1,6 @@
 //! Incremental Annex B access-unit assembly, shared NAL scanning in encoder_io.
 use crate::media::{Codec, EncoderGeneration, VideoPacket};
-use bytes::Bytes;
+use crate::media_storage::MediaBytes as Bytes;
 
 // Instrument explicit copies without changing the production hot path.
 macro_rules! copied {

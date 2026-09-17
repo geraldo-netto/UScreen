@@ -1,11 +1,9 @@
 //! Encoder process/task ownership. The supervisor decides when to start and stop.
 use super::{process, CaptureConfig};
-use crate::media::VideoPacket;
+use crate::media_storage::MediaBytes as Bytes;
 use anyhow::Result;
-use bytes::Bytes;
 use std::sync::{Arc, Mutex};
 use tokio::process::Child;
-use tokio::sync::broadcast;
 
 #[derive(Default)]
 pub(super) struct EncoderProcess {
@@ -13,7 +11,7 @@ pub(super) struct EncoderProcess {
 }
 
 pub(super) struct EncoderOutput {
-    pub(super) tx: broadcast::Sender<VideoPacket>,
+    pub(super) tx: crate::video_queue::VideoSender,
     pub(super) codec_config: Arc<Mutex<Option<Bytes>>>,
     pub(super) latency: crate::latency::LatencyTracker,
     #[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]

@@ -1,15 +1,14 @@
 //! Distribution FFmpeg CLI adapter and encoded stdout drain.
 use super::{fifo_path_for, CaptureConfig};
 use crate::annex_b::AnnexBPacketizer;
-use crate::media::{Codec, VideoPacket};
+use crate::media::Codec;
+use crate::media_storage::MediaBytes as Bytes;
 use anyhow::{Context, Result};
-use bytes::Bytes;
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
-use tokio::sync::broadcast;
 use tracing::{info, warn};
 
 pub(super) struct CliEncoder<'a> {
@@ -177,7 +176,7 @@ impl CliEncoder<'_> {
 }
 pub(super) async fn read_loop(
     mut stdout: impl tokio::io::AsyncRead + Unpin,
-    tx: broadcast::Sender<VideoPacket>,
+    tx: crate::video_queue::VideoSender,
     codec_config: Arc<Mutex<Option<Bytes>>>,
     latency: crate::latency::LatencyTracker,
     codec: Codec,
@@ -318,7 +317,7 @@ mod tests {
     #[tokio::test]
     async fn t228_sequences_survive_encoder_restarts_before_ack() {
         let latency = crate::latency::LatencyTracker::new();
-        let (tx, mut rx) = broadcast::channel(8);
+        let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
         let input = [
             vec![0, 0, 0, 1, 5, 0x80, 0x11],
             vec![0, 0, 0, 1, 1, 0x80, 0x22],

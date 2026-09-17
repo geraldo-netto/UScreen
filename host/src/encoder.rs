@@ -14,8 +14,8 @@
 //! Built only with the `inproc-encoder` feature; see host/Cargo.toml for why.
 
 use crate::encoder_io::{extract_parameter_sets, read_frame};
+use crate::media_storage::MediaBytes as Bytes;
 use anyhow::{Context, Result};
-use bytes::Bytes;
 
 pub struct Encoder {
     inner: ffmpeg_next::encoder::Video,
@@ -151,6 +151,8 @@ impl Encoder {
             }
             if let Some(data) = packet.data() {
                 let is_idr = packet.is_key();
+                #[cfg(test)]
+                crate::allocation_probe::copied(data.len());
                 out.push((Bytes::copy_from_slice(data), is_idr));
             }
         }
@@ -184,7 +186,7 @@ pub fn run(
     fps: u32,
     bitrate_kbps: u32,
     quality: u32,
-    tx: tokio::sync::broadcast::Sender<crate::media::VideoPacket>,
+    tx: crate::video_queue::VideoSender,
     codec_config: std::sync::Arc<std::sync::Mutex<Option<Bytes>>>,
     idr_wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
     stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -429,7 +431,7 @@ mod tests {
         let fifo = dir.path().join(name);
         let path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
         assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
-        let (tx, mut rx) = tokio::sync::broadcast::channel(8);
+        let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
         let stop = Arc::new(AtomicBool::new(false));
         let stopped = stop.clone();
         let writer_path = fifo.clone();

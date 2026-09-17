@@ -8,16 +8,20 @@ mod helper;
 mod placement;
 mod process;
 
-use crate::media::{EncoderSettings, VideoPacket};
+use crate::media::EncoderSettings;
+#[cfg(test)]
+use crate::media::VideoPacket;
+use crate::media_storage::MediaBytes as Bytes;
 use crate::runtime::fifo_path_for;
 use anyhow::Result;
-use bytes::Bytes;
 pub use config::CaptureConfig;
 use encoding::{EncoderOutput, EncoderProcess};
 use helper::{DetectedMode, HelperProcess};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tokio::sync::{broadcast, watch};
+#[cfg(test)]
+use tokio::sync::broadcast;
+use tokio::sync::watch;
 use tracing::{error, info, warn};
 const RECONNECT_DELAY_MS: u64 = 2000;
 
@@ -128,7 +132,7 @@ impl CaptureManager {
 
     pub async fn stream_frames(
         &mut self,
-        tx: broadcast::Sender<VideoPacket>,
+        tx: crate::video_queue::VideoSender,
         settings_rx: watch::Receiver<EncoderSettings>,
         display_rx: watch::Receiver<bool>,
         shutdown_rx: watch::Receiver<bool>,
@@ -342,7 +346,7 @@ impl CaptureManager {
 
     async fn run_encoder_session(
         &mut self,
-        tx: &broadcast::Sender<VideoPacket>,
+        tx: &crate::video_queue::VideoSender,
         run: &mut CaptureRun,
     ) -> Result<Option<SessionChanges>> {
         let output = EncoderOutput {

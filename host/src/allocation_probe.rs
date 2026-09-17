@@ -57,6 +57,7 @@ unsafe impl GlobalAlloc for CountingAllocator {
 pub(crate) fn copied(bytes: usize) {
     update(|c| c.explicit_copy_bytes += bytes as u64);
 }
+#[cfg(not(feature = "inproc-encoder"))]
 pub(crate) fn scanned(bytes: usize) {
     update(|c| c.scanner_input_bytes += bytes as u64);
 }
@@ -67,6 +68,20 @@ pub(crate) fn measure<T>(operation: impl FnOnce() -> T) -> (T, Counts) {
         c.set(Some(Counts::default()));
     });
     let result = operation();
+    let counts = COUNTS.with(|c| c.replace(None).unwrap());
+    (result, counts)
+}
+
+// The caller uses a current-thread runtime; these include its harness tasks.
+#[cfg(test)]
+pub(crate) async fn measure_async<T>(
+    operation: impl std::future::Future<Output = T>,
+) -> (T, Counts) {
+    COUNTS.with(|c| {
+        assert!(c.get().is_none());
+        c.set(Some(Counts::default()));
+    });
+    let result = operation.await;
     let counts = COUNTS.with(|c| c.replace(None).unwrap());
     (result, counts)
 }

@@ -102,8 +102,8 @@ so streaming, input and encoding do not depend on capture management.
 `annex_b` assembles access units using `encoder_io`'s shared NAL scanner. An
 incremental cursor avoids rescanning retained NAL payloads; complete NALs are
 borrowed from the retained input buffer while assembling access units. Codec
-headers use immutable shared `Bytes`, preserving each queued packet's original
-configuration. Payload buffering/assembly still copies bytes. Partial NAL
+headers use immutable shared `MediaBytes`, preserving each queued packet's original
+configuration and backing-allocation identity. Payload buffering/assembly still copies bytes. Partial NAL
 buffering and generation retirement remain part of that boundary; the
 [packetizer replay](benchmarks.md#annex-b-packetizer-replay) records its measured
 allocation, copy and scanning changes. `capture::fifo` coordinates replacement of a damaged
@@ -258,6 +258,33 @@ The server sends:
 
 The codec is announced on the input/control connection; there is no separate
 codec-name field in the video packet header.
+
+Each session retains at most eight broadcast packets and admits at most sixteen
+video connections, including pending authentication. `video_queue` also limits
+admitted encoded backing storage to 32 MiB per session: frame and CSD clones,
+queued batches, initial/last-sent headers and slices share one charge until their
+last owner drops. A slice retains the original allocation's full capacity.
+Encoded storage cannot move into another session without new ownership/accounting.
+Four sessions therefore admit at most 128 MiB of this storage; this is not a
+process RSS cap. Unpublished encoder/parser buffers, allocator metadata, raw
+frames and kernel socket buffers are outside that bound.
+
+Frame payloads must fit Android's existing 8 MiB + 1 wire-length limit (including
+type and four-byte sequence); CSD has the same wire limit without a sequence.
+A refused frame starts an IDR recovery interval: dependent frames are refused
+until an IDR is admitted. The optional encoder receives a keyframe request;
+CLI FFmpeg keeps its existing periodic IDR schedule. Sequence allocation and ACK
+meaning remain unchanged. Initial cached CSD is charged and validated before
+it is sent, even when no frame has arrived.
+
+A whole framed write and a whole retained batch each have a one-second deadline.
+Expiration closes that viewer and releases its subscription; a partially sent
+packet is never resumed on a new connection. Batches reuse bounded deque storage,
+consume at most eight packets per drain, and retain the existing latest-IDR
+backlog rule. Control admission remains independently capped at sixteen sockets
+with its three-second upgrade/auth deadline. See the
+[resource replay](benchmarks/2026-09-17-stream-resources.md) for measured scope,
+policy rationale and exclusions.
 
 ### Input/control WebSocket
 

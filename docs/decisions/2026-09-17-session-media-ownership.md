@@ -109,13 +109,15 @@ user policy; this record does not choose a fallback on the user's behalf.
 
 ## Resource accounting and observability
 
-Keep the four-tablet limit. Current eight-packet broadcasts and sixteen video
-connections bound counts, not retained payload memory or blocked send duration.
-T391 must measure and enforce per-session byte/time limits before increasing
-capacity. Charge unique backing allocations once at the owner and track their
-per-consumer retention separately; otherwise shared packet clones overcount
-memory while small shared slices undercount it. Raw rings have a fixed slot and
-byte budget; setup/authentication/control work needs its own admission bound.
+Keep the four-tablet limit. T391 now supplements eight-packet broadcasts and
+sixteen video connections with a 32 MiB admitted backing-storage budget per
+session and one-second packet/batch write deadlines. Unique frame/CSD backing
+allocations are charged once across clones and slices; release follows the last
+owner, including cached headers. See the
+[resource replay](../benchmarks/2026-09-17-stream-resources.md). This does not cap
+unpublished parser/encoder staging, raw frames, socket buffers or process RSS;
+T407 also tracks assembly bounds. Raw transport experiments need a separate fixed
+slot/byte budget. Authentication/control admission stays independently bounded.
 One slow client must time out or recover at CSD/IDR without delaying other slots.
 
 Expose bounded per-session counters for capture, conversion, encoding, send,

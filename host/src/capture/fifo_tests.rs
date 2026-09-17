@@ -164,7 +164,7 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
         .open(fifo_path_for(0).unwrap())
         .unwrap();
     wait_for_marker(&root, "partial").await;
-    let (tx, mut rx) = broadcast::channel(16);
+    let (tx, mut rx) = crate::video_queue::channel(16, Default::default());
     let (_settings, settings_rx) = watch::channel(settings());
     let (_display, display_rx) = watch::channel(true);
     let (stop, stop_rx) = watch::channel(false);

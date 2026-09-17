@@ -1,5 +1,5 @@
 use crate::media::Codec;
-use bytes::Bytes;
+use crate::media_storage::MediaBytes as Bytes;
 
 /// Fill `buf` completely, tolerating a FIFO that has no data yet and a writer
 /// that has not opened it. Returns false if asked to stop before a whole frame

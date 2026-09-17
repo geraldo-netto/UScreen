@@ -1,4 +1,4 @@
-#[cfg(all(test, not(feature = "inproc-encoder")))]
+#[cfg(test)]
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
@@ -19,6 +19,7 @@ mod kscreen;
 mod kwin;
 mod latency;
 mod media;
+mod media_storage;
 mod monitor;
 mod osk;
 mod persistence;
@@ -28,6 +29,7 @@ mod stream;
 mod tray;
 mod update;
 mod vdisplay;
+mod video_queue;
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -39,8 +41,6 @@ use session::start_servers;
 use session::Runtime as ExtraSession;
 use std::path::PathBuf;
 use tokio::signal;
-#[cfg(test)]
-use tokio::sync::broadcast;
 use tokio::sync::watch;
 use tracing::{error, info, warn};
 use uscreen_config::adb::{transport_of, Transport};
@@ -1224,7 +1224,7 @@ printf '%s\n' "$2" >> "$0.log"
                 card_rx,
                 tablet_rx,
             );
-            let (video_tx, _) = broadcast::channel(8);
+            let (video_tx, _) = crate::video_queue::channel(8, Default::default());
             let result = start_servers(stream, input, video_tx).await;
             let failed = result.is_err();
             if let Ok((stream, input)) = result {

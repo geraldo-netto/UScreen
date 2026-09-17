@@ -1,5 +1,5 @@
 //! Shared media and live encoding settings; no capture or process dependencies.
-use bytes::Bytes;
+use crate::media_storage::MediaBytes as Bytes;
 use std::sync::Arc;
 
 /// Which bitstream syntax is in play. H.264 and HEVC agree on Annex B start

@@ -99,7 +99,7 @@ async fn cancel_waiting_encoder() -> (bool, bool) {
         pipeline_started_at: Instant::now(),
         encoder_mode: Some((64, 64)),
     };
-    let (video, _receiver) = broadcast::channel(8);
+    let (video, _receiver) = crate::video_queue::channel(8, Default::default());
     // Enter the production session directly: no helper, display attachment,
     // compositor commands or uinput devices are involved.
     let mut session = Box::pin(manager.run_encoder_session(&video, &mut run));

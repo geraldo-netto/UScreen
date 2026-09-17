@@ -4,7 +4,7 @@ use crate::{capture, input, media, stream};
 use anyhow::Result;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{broadcast, watch, Notify};
+use tokio::sync::{watch, Notify};
 use tokio::task::JoinHandle;
 use tracing::{error, warn};
 
@@ -106,7 +106,10 @@ impl Prepared {
     pub async fn start(self, daemon_stop: watch::Receiver<bool>) -> Result<Runtime> {
         // Keep queues shallow; slow clients recover at an IDR instead of
         // accumulating seconds of queued frames.
-        let (video, _) = broadcast::channel(8);
+        let (video, _) = crate::video_queue::channel(
+            crate::video_queue::QUEUE_PACKETS,
+            self.capture.idr_request_flag(),
+        );
         let (stream, input) = start_servers(self.stream, self.input, video.clone()).await?;
         let (gate_tx, gate_rx) = watch::channel(false);
         let (stop_tx, stop_rx) = watch::channel(false);
@@ -198,7 +201,7 @@ fn forward_shutdown(
 pub(crate) async fn start_servers(
     stream: stream::StreamServer,
     input: input::InputServer,
-    video: broadcast::Sender<media::VideoPacket>,
+    video: crate::video_queue::VideoSender,
 ) -> Result<(JoinHandle<()>, JoinHandle<()>)> {
     let video_listener = stream.bind().await?;
     let input_listener = input.bind().await?;
