@@ -7,6 +7,11 @@ URL:            https://github.com/geraldo-netto/UScreen
 Source0:        uscreen-%{version}-linux-x86_64.tar.gz
 BuildArch:      x86_64
 Requires:       ffmpeg android-tools
+# Loaded by the GUI at runtime; automatic ELF dependency scans cannot see it.
+# SONAME works with both Fedora and openSUSE package names.
+Requires:       libxkbcommon-x11.so.0()(64bit)
+Requires:       libX11.so.6()(64bit) libX11-xcb.so.1()(64bit)
+Requires:       libXcursor.so.1()(64bit) libXi.so.6()(64bit)
 # The helper ships with its own libevdi next to it (LGPL, $ORIGIN rpath), so
 # only the kernel module is needed from the system. That is packaged on
 # openSUSE (evdi) and not on Fedora at all, hence Recommends rather than

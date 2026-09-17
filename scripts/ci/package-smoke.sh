@@ -53,3 +53,13 @@ for file in LICENSE THIRD_PARTY_LICENSES.md licenses/libevdi-LGPL-2.1.txt README
 done
 
 /source/scripts/ci/direct-control-smoke.sh
+
+# Install only the test display server/tools here. GUI libraries must come
+# from the package's runtime dependencies, not from the smoke environment.
+case "$1" in
+    debian) apt-get install -y --no-install-recommends xvfb x11-utils ;;
+    fedora) dnf install -y --setopt=install_weak_deps=False xorg-x11-server-Xvfb xwininfo ;;
+    opensuse) zypper --non-interactive install --no-recommends xorg-x11-server-Xvfb xwininfo ;;
+    arch) pacman -S --noconfirm --needed xorg-server-xvfb xorg-xwininfo ;;
+esac
+timeout 20 /source/scripts/ci/gui-smoke.sh

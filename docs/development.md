@@ -265,7 +265,11 @@ RPM Fusion for the declared FFmpeg dependency.
 These jobs check the glibc 2.36 ceiling for the daemon, GUI, helper **and
 bundled libevdi**, verify the helper's `$ORIGIN` lookup and ELF dependency resolution,
 check notices, and exercise an idle daemon's direct start/status/stop with
-no systemd user manager or display devices. They do not validate EVDI kernel
+no systemd user manager or display devices. T314 also launches the installed
+GUI under an isolated Xvfb and requires its window to open without a panic;
+this catches runtime-loaded libraries that `ldd` cannot inspect. The test
+installs only the display server and inspection tools in addition to the
+package's own dependencies. These checks do not validate EVDI kernel
 attachment or desktop/compositor compatibility. Service-manager/autostart
 limitations remain tracked separately in `TODO.md`.
 
