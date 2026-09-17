@@ -156,8 +156,10 @@ Examples of individual client messages (one JSON object per WebSocket message):
 Coordinates are normalized to 0–1; wire tilt values are degrees. Touch actions
 are 0 down, 1 up, 2 move; pen adds 3 hover, 4 hover exit, 5/6 stylus-button
 down/up. Physical dimensions, eraser and decode timing have defaults when
-omitted; config messages may omit settings they do not change. Pen tilt's
-uinput axis metadata has a separate unresolved libinput scaling issue (T287).
+omitted; config messages may omit settings they do not change. The Linux
+input adapter clamps tilt to ±90° and emits milliradians with an axis resolution
+of 1000 units/radian. This matches [libinput's angular conversion](https://gitlab.freedesktop.org/libinput/libinput/-/blob/1.26.2/src/evdev-tablet.c#L371)
+within 0.03° of the clamped wire value; Android's degree protocol is unchanged.
 
 ## Security model
 

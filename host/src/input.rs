@@ -121,6 +121,23 @@ struct InputAbsInfo {
     resolution: i32,
 }
 
+// Linux/libinput angular resolution is units per radian. Milliradians keep
+// wire degrees within 0.03 degrees after integer quantization (T287).
+const TILT_UNITS_PER_RADIAN: i32 = 1000;
+
+fn tilt_axis_units(degrees: f64) -> i32 {
+    (degrees.clamp(-90.0, 90.0).to_radians() * f64::from(TILT_UNITS_PER_RADIAN)).round() as i32
+}
+
+fn pen_tilt_info() -> InputAbsInfo {
+    InputAbsInfo {
+        minimum: tilt_axis_units(-90.0),
+        maximum: tilt_axis_units(90.0),
+        resolution: TILT_UNITS_PER_RADIAN,
+        ..Default::default()
+    }
+}
+
 #[repr(C)]
 struct UinputAbsSetup {
     code: u16,
@@ -381,9 +398,8 @@ impl UInputDevice {
             Self::abs_setup(fd, ABS_X, 0, w - 1, RESOLUTION_UNITS_PER_MM)?;
             Self::abs_setup(fd, ABS_Y, 0, h - 1, RESOLUTION_UNITS_PER_MM)?;
             Self::abs_setup(fd, ABS_PRESSURE, 0, 4096, 0)?;
-            // Tilt in whole degrees
-            Self::abs_setup(fd, ABS_TILT_X, -90, 90, 0)?;
-            Self::abs_setup(fd, ABS_TILT_Y, -90, 90, 0)?;
+            Self::abs_setup_info(fd, ABS_TILT_X, pen_tilt_info())?;
+            Self::abs_setup_info(fd, ABS_TILT_Y, pen_tilt_info())?;
 
             Self::dev_setup_and_create(fd, name, product)?;
         }
@@ -424,17 +440,23 @@ impl UInputDevice {
     }
 
     unsafe fn abs_setup(fd: i32, code: u16, min: i32, max: i32, resolution: i32) -> Result<()> {
+        Self::abs_setup_info(
+            fd,
+            code,
+            InputAbsInfo {
+                minimum: min,
+                maximum: max,
+                resolution,
+                ..Default::default()
+            },
+        )
+    }
+
+    unsafe fn abs_setup_info(fd: i32, code: u16, absinfo: InputAbsInfo) -> Result<()> {
         let setup = UinputAbsSetup {
             code,
             _pad: 0,
-            absinfo: InputAbsInfo {
-                value: 0,
-                minimum: min,
-                maximum: max,
-                fuzz: 0,
-                flat: 0,
-                resolution,
-            },
+            absinfo,
         };
         Self::ioctl_val(fd, UI_SET_ABSBIT, code as i32)?;
         if libc::ioctl(fd, UI_ABS_SETUP, &setup as *const UinputAbsSetup) < 0 {
@@ -1993,9 +2015,9 @@ fn inject_pen_event(
 
 impl InjectDevices {
     fn apply_pen(&mut self, contact: AbsoluteContact, tilt: (f64, f64), eraser: bool, action: u8) {
-        // Tablet tilt is already in degrees. Convert to integer axis values only.
-        let tilt_x = (tilt.0.round() as i32).clamp(-90, 90);
-        let tilt_y = (tilt.1.round() as i32).clamp(-90, 90);
+        // Preserve wire degrees; advertise and emit Linux milliradians.
+        let tilt_x = tilt_axis_units(tilt.0);
+        let tilt_y = tilt_axis_units(tilt.1);
         let ok = if let Some(dev) = self.pen.as_mut() {
             match dev.inject_pen(
                 contact.x,
@@ -2439,6 +2461,71 @@ esac
         }
         assert!(frame.is_empty(), "input frame was not synchronized");
         frames
+    }
+
+    // libinput 1.26.2 evdev-tablet.c:adjust_tilt interprets resolved axes as
+    // radians; unresolved axes are normalized to its historical +/-64 degrees.
+    // https://gitlab.freedesktop.org/libinput/libinput/-/blob/1.26.2/src/evdev-tablet.c#L371
+    // Both the Xorg libinput driver and Wayland consumers use this conversion.
+    fn libinput_tilt_degrees(info: InputAbsInfo, value: i32) -> f64 {
+        if info.resolution != 0 && info.minimum < 0 && info.maximum > 0 {
+            (f64::from(value) / f64::from(info.resolution)).to_degrees()
+        } else {
+            let position = f64::from(value - info.minimum) / f64::from(info.maximum - info.minimum);
+            (position.clamp(0.0, 1.0) * 2.0 - 1.0) * 64.0
+        }
+    }
+
+    #[test]
+    fn t287_wire_tilt_reconstructs_physical_degrees_from_declared_axes() {
+        for eraser in [false, true] {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
+                pen: Some(UInputDevice {
+                    file: file.reopen().unwrap(),
+                }),
+                ..InjectDevices::empty()
+            }));
+            let (mode, _rx) = watch::channel(false);
+            let tracker = crate::latency::LatencyTracker::new();
+            for degrees in [
+                45.0_f64, -45.0, 0.0, 0.25, -0.25, 89.9, -89.9, 90.0, -90.0, 100.0, -100.0,
+            ] {
+                let wire = serde_json::json!({
+                    "type": "pen", "x": 0.5, "y": 0.5, "pressure": 0.0,
+                    "tilt_x": degrees, "tilt_y": -degrees, "eraser": eraser, "action": 3,
+                });
+                handle_event(
+                    serde_json::from_value(wire).unwrap(),
+                    &devices,
+                    &None,
+                    &mode,
+                    &tracker,
+                    true,
+                );
+                assert_t287_tilt(file.path(), degrees);
+            }
+            assert!(
+                pen_tilt_info().resolution > 0,
+                "T287: avoid fallback assumptions"
+            );
+        }
+    }
+
+    fn assert_t287_tilt(path: &std::path::Path, degrees: f64) {
+        let info = pen_tilt_info();
+        for (axis, expected) in [(ABS_TILT_X, degrees), (ABS_TILT_Y, -degrees)] {
+            let value = last_input_value(path, axis);
+            assert!(
+                (info.minimum..=info.maximum).contains(&value),
+                "T287: axis bounds"
+            );
+            let physical = libinput_tilt_degrees(info, value);
+            assert!(
+                (physical - expected.clamp(-90.0, 90.0)).abs() <= 0.03,
+                "T287: {expected} degrees became {physical} degrees (raw={value})"
+            );
+        }
     }
 
     #[test]
