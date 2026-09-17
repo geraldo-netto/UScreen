@@ -4,7 +4,7 @@ labels: [compatibility]
 body:
   - type: markdown
     attributes:
-      value: "Thanks — every report becomes a row in docs/compatibility.md. Most of this is in the output of `uscreen doctor`."
+      value: "Describe the tested build and its limitations so this report can inform docs/compatibility.md. `uscreen doctor` supplies many details; redact tokens, serials and personal data."
   - type: dropdown
     id: result
     attributes:
@@ -39,14 +39,14 @@ body:
   - type: input
     id: version
     attributes:
-      label: UScreen version and how you installed it
-      placeholder: "1.1.0, .deb"
+      label: UScreen version, fork commit and installation method
+      placeholder: "1.2.3, commit ..., source build or package provenance"
     validations:
       required: true
   - type: textarea
     id: latency
     attributes:
-      label: Latency line from the daemon log (optional)
+      label: Latency lines, stream settings and workload (optional)
       placeholder: "Latency encode→display: p50 19.3ms p95 22.9ms"
   - type: textarea
     id: notes

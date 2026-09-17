@@ -1,42 +1,80 @@
 # Contributing
 
-The most useful contribution right now is a **compatibility report**: which
-distribution, desktop, GPU, tablet and Android version you ran this on, and
-whether it worked. There is an issue template for it, and `uscreen doctor`
-prints most of the details you need. Every report becomes a row in
-[docs/compatibility.md](docs/compatibility.md).
+Compatibility reports should identify the distribution, desktop/session type,
+GPU/encoder, tablet, Android version, installation method and **fork commit**.
+Use the [compatibility template](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml).
+Reports can be added to [docs/compatibility.md](docs/compatibility.md) with their
+version, source and limitations; a successful build is not hardware validation.
 
-## Bugs
+## Bugs and questions
 
-Open an issue with the output of `uscreen doctor` and, if the daemon is
-involved, the log (`RUST_LOG=uscreen=debug uscreen start`, or
-`journalctl --user -u uscreen`). Say what you expected to happen.
+Use the [fork issue tracker](https://github.com/geraldo-netto/UScreen/issues).
+Explain the expected result, actual result and reproducible steps. Include
+`uscreen doctor` output and relevant logs: `journalctl --user -u uscreen -n 200`
+for a service launch, or `~/.local/share/uscreen/daemon.log` for a direct GUI
+launch. Remove tokens, device serials and personal details before posting.
+For a foreground debug run, stop the existing daemon first and follow
+[troubleshooting](docs/troubleshooting.md#black-screen-on-the-tablet); starting
+the daemon can change the live display configuration.
 
-## Code
+## Findings, tests and commits
 
-- Build with `make build` (Rust host + C helper) and `cd android && ./gradlew
-  assembleDebug` for the app. See [docs/development.md](docs/development.md).
-- Run `cargo test --release --workspace`, `cargo clippy --workspace --all-targets`,
-  and `cd android && ./gradlew lintDebug testDebugUnitTest` before opening a pull request.
-  Behavioral fixes need permanent regressions linked to the issue/TODO ID;
-  show each test failing before the fix and passing afterward. The host
-  suite needs a C compiler and make; Android tests run with Robolectric.
-- For optional encoder changes, also run `cargo test --release -p uscreen
-  --features inproc-encoder --bin uscreen` with the FFmpeg development libraries
-  installed. CI runs this suite alongside the default workspace tests.
-- Keep commits focused and write the message for someone reading `git log`
-  in a year: what broke, why, what changed.
-- Measure before claiming a performance change. The daemon logs packet-send-to-render-ack
-  latency percentiles; quote them and distinguish them from capture/encoding
-  latency, which this metric excludes.
+- Record every finding as a uniquely identified row in `TODO.md` **before**
+  fixing it, preserving the existing table format.
+- Record contradictions as **blocked** rows: identify both conflicting
+  statements/behaviors, their sources and the exact resolution condition.
+  Keep them blocked until resolved; do independent work while awaiting a decision.
+- For each confirmed behavioral bug, add a permanent automated regression to
+  the normal suite **before** the fix. Show it failing, then passing after the
+  fix, and link it to the issue/TODO ID. Retain it after completion; do not
+  delete, skip or weaken it because the bug is fixed.
+- If automation is unavailable, record the exact obstacle and missing coverage
+  in TODO.md and leave the bug unresolved. During a review-only task, record
+  reproductions and required coverage; implement tests with the fixes unless
+  tests were explicitly requested during review. Documentation/policy-only
+  corrections need no artificial behavioral tests.
+- Fix findings in dependency order. Make **one commit per resolved finding**
+  and remove only its resolved TODO row. Preserve other open/blocked entries.
+- Keep functions/methods at cyclomatic complexity **9 or less**, using
+  SonarQube's cyclomatic metric rather than cognitive complexity. For shell,
+  use the approved count: 1 plus branches, loops, case alternatives and
+  short-circuit operators. This applies to existing project code as well as
+  changes; exclude generated code, dependencies, caches and build outputs.
+- Share compatible implementations and separate distinct responsibilities.
+  Ask when requirements or preferences are unclear before dependent work.
+
+## Building and validation
+
+[Development](docs/development.md) lists the build and test prerequisites,
+including native artifact tools and optional FFmpeg headers. For code changes,
+run the relevant permanent regressions and normal suites:
+
+```bash
+make build
+cargo test --release --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+./android/gradlew -p android lintDebug testDebugUnitTest assembleDebug
+```
+
+For optional encoder changes, also run:
+
+```bash
+cargo test --release -p uscreen --features inproc-encoder --bin uscreen
+```
+
+Select checks appropriate to the affected components; document exact results
+and obstacles. Documentation edits need link/metadata/format checks and any
+automated tests that consume the edited files. Do not publish, install on the
+working desktop or attach EVDI merely to validate documentation.
+
+Measure performance claims. Host `Latency encode→display` figures cover
+encoded-packet readiness to render-acknowledgement receipt; they exclude
+capture, encoding and packetizer assembly. Include workload, settings and
+hardware; see [benchmarks](docs/benchmarks.md#how-latency-is-measured).
 
 ## Pull requests
 
-One change per PR. Describe how you tested it and on what hardware. If it
-touches the protocol between app and daemon, update both and say so — they
-ship together.
-
-## Good first issues
-
-Issues tagged `good first issue` are self-contained and come with pointers to
-the relevant code. Ask in the issue if anything is unclear.
+Keep the PR scope coherent and each finding's commit separate. Explain the
+problem, resulting behavior and validation. Update both ends and their tests
+when the Android/host protocol changes. Distinguish isolated automated coverage
+from real-device testing and list remaining limitations.

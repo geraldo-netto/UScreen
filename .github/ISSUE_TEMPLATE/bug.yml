@@ -19,13 +19,13 @@ body:
     id: log
     attributes:
       label: Daemon log
-      description: "`journalctl --user -u uscreen -n 200`, or run `RUST_LOG=uscreen=debug uscreen start` in a terminal"
+      description: "Service: `journalctl --user -u uscreen -n 200`; direct GUI: `~/.local/share/uscreen/daemon.log`. Redact tokens, serials and personal data. Stop an existing daemon before a foreground debug run; see docs/troubleshooting.md."
       render: text
   - type: input
     id: versions
     attributes:
-      label: UScreen version (host and app)
-      placeholder: "1.1.0 / 1.1.0"
+      label: UScreen version and fork commit (host and app)
+      placeholder: "Host/app 1.2.3, built from commit ..."
     validations:
       required: true
   - type: input
