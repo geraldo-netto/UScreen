@@ -150,8 +150,10 @@ class ReleaseTest(unittest.TestCase):
         self.assertIn('https://github.com/geraldo-netto/UScreen/releases/tag/v1.2.3', result.stdout)
 
     def test_t225_active_project_links_target_fork(self):
+        # T393: Rust consumers share the endpoint through common::release.
         files = [
             'README.md', 'CHANGELOG.md', 'CITATION.cff', 'host/src/update.rs',
+            'common/src/release.rs',
             'gui/src/main.rs', 'scripts/uscreen.service', 'scripts/publish-release.sh',
             'packaging/arch/PKGBUILD', 'packaging/deb/control', 'packaging/rpm/uscreen.spec',
             'android/app/src/main/java/com/uscreen/UpdateCheck.kt',
@@ -166,7 +168,7 @@ class ReleaseTest(unittest.TestCase):
                 text = text.replace('[upstream project](https://github.com/majmichu1/UScreen)', '')
                 self.assertNotIn('majmichu1/UScreen', text)
                 self.assertNotIn('majmichu1.github.io/UScreen', text)
-        for name in ['host/src/update.rs', 'gui/src/main.rs',
+        for name in ['common/src/release.rs',
                      'android/app/src/main/java/com/uscreen/UpdateCheck.kt']:
             self.assertIn('https://api.github.com/repos/geraldo-netto/UScreen/releases/latest',
                           (REPO / name).read_text())
