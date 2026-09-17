@@ -93,6 +93,7 @@ async fn cancel_waiting_encoder() -> (bool, bool) {
         shutdown_rx,
         mode_rx: manager.helper.mode_rx.clone(),
         stream_rx: manager.helper.stream_rx.clone(),
+        fifo_reset_rx: manager.helper.fifo_reset_rx.clone(),
         backoff_ms: 0,
         explained_evdi: false,
         pipeline_started_at: Instant::now(),

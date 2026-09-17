@@ -3,6 +3,7 @@
 mod cli_encoder;
 mod config;
 mod encoding;
+mod fifo;
 mod helper;
 mod placement;
 mod process;
@@ -46,6 +47,7 @@ impl CaptureManager {
         self.helper.active_mode(&self.config)
     }
     async fn start_session_encoder(&mut self) -> Result<(u32, u32)> {
+        self.helper.recover_fifo(self.config.instance)?;
         self.encoder.start(&self.config, self.active_mode()).await
     }
     /// Which EVDI card the helper opened; None until it has.
@@ -137,6 +139,7 @@ impl CaptureManager {
             shutdown_rx,
             mode_rx: self.helper.mode_rx.clone(),
             stream_rx: self.helper.stream_rx.clone(),
+            fifo_reset_rx: self.helper.fifo_reset_rx.clone(),
             backoff_ms: RECONNECT_DELAY_MS,
             explained_evdi: false,
             pipeline_started_at: Instant::now(),
@@ -353,6 +356,7 @@ impl CaptureManager {
             .spawn_session(&self.config, run.encoder_mode, output)?;
 
         let mut settings_changed = false;
+        let mut fifo_reset = false;
         // Distinct from `settings_changed`: the mode moved under us, so the
         // encoder must be rebuilt but the helper and the virtual display
         // are fine and must not be torn down.
@@ -368,19 +372,25 @@ impl CaptureManager {
         #[allow(unused_labels)]
         'session: loop {
             let mut resume_same_encoder = false;
-            #[cfg(feature = "inproc-encoder")]
             let mut encode_finished = false;
             tokio::select! {
                 status = self.helper.wait() => {
                     warn!("Capture helper exited: {:?}. Restarting...", status);
                 }
                 joined = &mut encode_task.handle => {
-                    #[cfg(feature = "inproc-encoder")]
-                    { encode_finished = true; }
+                    encode_finished = true;
                     match joined {
                         Ok(Ok(_)) => info!("Encoder finished"),
                         Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
                         Err(e) => warn!("Encoder task failed: {}. Restarting...", e),
+                    }
+                }
+                _ = run.fifo_reset_rx.changed() => {
+                    if self.helper.fifo_reset_pending(self.config.instance)? {
+                        warn!("Partial capture frame — restarting reader on a fresh FIFO");
+                        fifo_reset = true;
+                    } else {
+                        resume_same_encoder = true;
                     }
                 }
                 _ = run.settings_rx.changed() => {
@@ -464,10 +474,7 @@ impl CaptureManager {
             }
 
             // Retire the reader before the supervisor rebuilds the pipeline.
-            #[cfg(feature = "inproc-encoder")]
             encode_task.finish(encode_finished).await;
-            #[cfg(not(feature = "inproc-encoder"))]
-            encode_task.abort();
 
             break;
         }
@@ -476,6 +483,7 @@ impl CaptureManager {
             settings_changed,
             mode_changed,
             display_dropped,
+            fifo_reset,
         }))
     }
 
@@ -486,7 +494,11 @@ impl CaptureManager {
         if !changes.keep_helper() {
             self.helper.terminate().await;
         }
-        self.encoder.stop();
+        if changes.fifo_reset {
+            self.encoder.shutdown().await;
+        } else {
+            self.encoder.stop();
+        }
         run.encoder_mode = None;
         // Reset codec config so it gets re-extracted on restart
         if let Ok(mut config) = self.codec_config.lock() {
@@ -525,6 +537,7 @@ struct CaptureRun {
     shutdown_rx: watch::Receiver<bool>,
     mode_rx: watch::Receiver<Option<DetectedMode>>,
     stream_rx: watch::Receiver<Option<(u32, u32)>>,
+    fifo_reset_rx: watch::Receiver<Option<fifo::Identity>>,
     backoff_ms: u64,
     explained_evdi: bool,
     pipeline_started_at: Instant,
@@ -575,13 +588,14 @@ struct SessionChanges {
     settings_changed: bool,
     mode_changed: bool,
     display_dropped: bool,
+    fifo_reset: bool,
 }
 impl SessionChanges {
     fn keep_helper(self) -> bool {
-        self.settings_changed || self.mode_changed
+        self.settings_changed || self.mode_changed || self.fifo_reset
     }
     fn crashed(self) -> bool {
-        !self.settings_changed && !self.mode_changed && !self.display_dropped
+        !self.keep_helper() && !self.display_dropped
     }
 }
 
@@ -609,3 +623,7 @@ mod orphan_tests;
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 #[path = "capture/tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "capture/fifo_tests.rs"]
+mod fifo_tests;

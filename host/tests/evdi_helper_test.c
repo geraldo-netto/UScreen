@@ -940,7 +940,111 @@ static int t330_command_lease(int argc, char **argv, const char *root) {
     for (;;) pause(); /* SIGTERM/SIGKILL closes the leased fake inode. */
 }
 
+/* T226: no encoder may see new bytes appended to a retired partial frame. */
+static void test_t226(void) {
+    char root[] = "/tmp/uscreen-t226-XXXXXX", path[4096], fresh[4096];
+    assert(mkdtemp(root));
+    snprintf(path, sizeof(path), "%s/frames", root);
+    snprintf(fresh, sizeof(fresh), "%s/new", root);
+    assert(mkfifo(path, 0600) == 0);
+    int old_reader = open(path, O_RDONLY | O_NONBLOCK);
+    assert(old_reader >= 0);
+    g_fifo_path = path;
+    assert(ensure_writer_fifo());
+    size_t capacity = (size_t)fcntl(g_capture_fifo_fd, F_GETPIPE_SZ);
+    size_t size = capacity + 64;
+    unsigned char *frame = malloc(size);
+    assert(frame);
+    memset(frame, 48, size);
+    assert(write_fifo_frame(frame, size, g_mode_generation) == 64);
+    assert(!ensure_writer_fifo() && "T226: immediate reopen can join two frame generations");
+    unsigned char *old = malloc(size);
+    assert(old);
+    assert(read(old_reader, old, size) == (ssize_t)capacity);
+    assert(read(old_reader, old, size) == -1 && errno == EAGAIN &&
+           "T226: premature EOF lets encoder exit race the reset announcement");
+    assert(!ensure_writer_fifo() && "T226: draining the pipe does not authorize reuse");
+    /* Allocate the replacement while the old inode still exists. */
+    assert(mkfifo(fresh, 0600) == 0);
+    assert(rename(fresh, path) == 0);
+    int new_reader = open(path, O_RDONLY | O_NONBLOCK);
+    assert(new_reader >= 0 && ensure_writer_fifo());
+    memset(frame, 160, 64);
+    assert(write_fifo_frame(frame, 64, g_mode_generation) == 0);
+    assert(read(new_reader, old, size) == 64);
+    assert(memcmp(frame, old, 64) == 0);
+    assert(read(old_reader, old, size) == 0 && "T226: old reader received replacement bytes");
+    close(old_reader); close(new_reader); close(g_capture_fifo_fd);
+    g_capture_fifo_fd = -1;
+    free(frame); free(old); unlink(path); rmdir(root);
+}
+
+static void t226_mark(const char *root, const char *name) {
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/%s", root, name);
+    FILE *marker = fopen(path, "a");
+    assert(marker);
+    fputs("ready\n", marker);
+    fclose(marker);
+}
+
+static void t226_requests(const char *root, int *live, int *stale) {
+    char path[4096];
+    snprintf(path, sizeof(path), "%s/request-live", root);
+    if (!*live && access(path, F_OK) == 0) {
+        *live = 1;
+        /* Exercise the same recovery announcement after encoding is active. */
+        retire_partial_fifo();
+        t226_mark(root, "live");
+    }
+    snprintf(path, sizeof(path), "%s/request-stale", root);
+    if (!*stale && access(path, F_OK) == 0) {
+        *stale = 1;
+        printf("FIFO_RESET %ju %ju\n", (uintmax_t)g_retired_fifo_device,
+               (uintmax_t)g_retired_fifo_inode);
+        fflush(stdout);
+        t226_mark(root, "stale");
+    }
+}
+
+/* Real FIFO writer and stock encoder; no DRM, EVDI or input-device access. */
+static int t226_command(int argc, char **argv, const char *root) {
+    helper_options_t options = parse_helper_options(argc, argv);
+    assert(options.fifo_path);
+    g_fifo_path = options.fifo_path;
+    signal(SIGTERM, handle_signal);
+    signal(SIGPIPE, SIG_IGN);
+    alarm(20);
+    t226_mark(root, "starts");
+    printf("EVDI_CONNECTED card4294967295\nSTREAM_SIZE 1024 1024\n");
+    fflush(stdout);
+    while (g_running && !ensure_writer_fifo()) {}
+    size_t size = 1024 * 1024 * 3 / 2;
+    unsigned char *frame = malloc(size);
+    assert(frame);
+    memset(frame, 48, 1024 * 1024);
+    memset(frame + 1024 * 1024, 128, size - 1024 * 1024);
+    size_t remaining = write_fifo_frame(frame, size, g_mode_generation);
+    assert(remaining > 0 && remaining < size);
+    /* Reopen before the old reader drains, the original corruption trigger. */
+    ensure_writer_fifo();
+    t226_mark(root, "partial");
+    memset(frame, 160, 1024 * 1024);
+    int live = 0, stale = 0;
+    while (g_running) {
+        t226_requests(root, &live, &stale);
+        if (!ensure_writer_fifo()) continue;
+        write_fifo_frame(frame, size, g_mode_generation);
+        usleep(50000);
+    }
+    free(frame);
+    if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
+    return 0;
+}
+
 int main(int argc, char **argv) {
+    const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
+    if (fifo_fixture) return t226_command(argc, argv, fifo_fixture);
     const char *root = getenv("USCREEN_T330_DRM");
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
@@ -967,6 +1071,7 @@ int main(int argc, char **argv) {
         {"T108", test_t108},
         {"T082", test_t082},
         {"T113", test_t113},
+        {"T226", test_t226},
         {"T083", test_t083},
         {"T081", test_t081},
         {"T012", test_t012},

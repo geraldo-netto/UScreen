@@ -1,5 +1,5 @@
 //! EVDI helper process, FIFO creation, negotiated geometry and card announcements.
-use super::{fifo_path_for, process, CaptureConfig};
+use super::{fifo, fifo_path_for, process, CaptureConfig};
 use anyhow::{Context, Result};
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
@@ -72,11 +72,14 @@ pub(super) struct HelperProcess {
     /// Actual emitted size, which may differ from the display mode when scaled.
     pub(super) stream_tx: watch::Sender<Option<(u32, u32)>>,
     pub(super) stream_rx: watch::Receiver<Option<(u32, u32)>>,
+    fifo_reset_tx: watch::Sender<Option<fifo::Identity>>,
+    pub(super) fifo_reset_rx: watch::Receiver<Option<fifo::Identity>>,
     pub(super) card_tx: watch::Sender<Option<u32>>,
 }
 impl HelperProcess {
     pub(super) fn new() -> Self {
         let (mode_tx, mode_rx) = watch::channel(None);
+        let (fifo_reset_tx, fifo_reset_rx) = watch::channel(None);
         let (stream_tx, stream_rx) = watch::channel(None);
         Self {
             child: None,
@@ -87,7 +90,21 @@ impl HelperProcess {
             stream_tx,
             stream_rx,
             card_tx: watch::channel(None).0,
+            fifo_reset_tx,
+            fifo_reset_rx,
         }
+    }
+    pub(super) fn fifo_reset_pending(&self, instance: u32) -> Result<bool> {
+        match *self.fifo_reset_rx.borrow() {
+            Some(retired) => retired.matches(&fifo_path_for(instance)?),
+            None => Ok(false),
+        }
+    }
+    pub(super) fn recover_fifo(&self, instance: u32) -> Result<()> {
+        if let Some(retired) = *self.fifo_reset_rx.borrow() {
+            fifo::replace_retired(&fifo_path_for(instance)?, retired)?;
+        }
+        Ok(())
     }
     pub(super) fn is_running(&self) -> bool {
         self.child.is_some()
@@ -170,12 +187,14 @@ impl HelperProcess {
         let _ = self.card_tx.send(Some(card));
         // A fresh helper has not negotiated a mode yet.
         let _ = self.mode_tx.send(None);
+        let _ = self.fifo_reset_tx.send(None);
         let _ = self.stream_tx.send(None);
         self.abort_stdout();
         self.stdout_task = Some(tokio::spawn(Self::drain_helper_stdout(
             lines,
             self.mode_tx.clone(),
             self.stream_tx.clone(),
+            self.fifo_reset_tx.clone(),
         )));
         self.child = Some(child);
         Ok(())
@@ -246,9 +265,14 @@ impl HelperProcess {
         mut lines: HelperLines,
         mode_tx: watch::Sender<Option<DetectedMode>>,
         stream_tx: watch::Sender<Option<(u32, u32)>>,
+        fifo_reset_tx: watch::Sender<Option<fifo::Identity>>,
     ) {
         while let Ok(Some(line)) = lines.next_line().await {
-            Self::publish_helper_line(&line, &mode_tx, &stream_tx);
+            if let Some(retired) = fifo::Identity::from_reset_line(&line) {
+                let _ = fifo_reset_tx.send(Some(retired));
+            } else {
+                Self::publish_helper_line(&line, &mode_tx, &stream_tx);
+            }
         }
     }
 

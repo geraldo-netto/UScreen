@@ -32,6 +32,14 @@ static atomic_int g_running = 1;
 static int g_capture_failed = 0;
 
 static int g_capture_fifo_fd = -1;
+/* Writer-owned identity of a pipe containing an incomplete frame. Only a
+   different inode authorizes writes again; closing alone cannot establish EOF. */
+static int g_fifo_retired = 0;
+/* Keep EOF from racing the supervisor's reset report. No further bytes are
+   written through this fd; release it when the replacement is opened. */
+static int g_retired_fifo_fd = -1;
+static dev_t g_retired_fifo_device;
+static ino_t g_retired_fifo_inode;
 static const char *g_fifo_path = NULL;
 static int g_fps = 60;
 
@@ -674,6 +682,11 @@ static void on_cursor_move(struct evdi_cursor_move cursor_move, void *user_data)
     (void)cursor_move;
 }
 
+static void release_retired_fifo(void) {
+    if (g_retired_fifo_fd >= 0) close(g_retired_fifo_fd);
+    g_retired_fifo_fd = -1;
+}
+
 /* (Re)open the capture FIFO without blocking forever: O_NONBLOCK open fails
    with ENXIO while no reader (ffmpeg) has the other end open. */
 static int try_open_fifo(void) {
@@ -689,6 +702,13 @@ static int try_open_fifo(void) {
         close(fd);
         return -1;
     }
+    if (g_fifo_retired && info.st_dev == g_retired_fifo_device &&
+            info.st_ino == g_retired_fifo_inode) {
+        close(fd);
+        return -1;
+    }
+    release_retired_fifo();
+    g_fifo_retired = 0;
     /* Keep writes nonblocking: POLLOUT promises some space, not enough for
        an entire frame. The writer owns this fd until it closes/reopens it. */
     /* Enlarge the pipe so a full-frame write doesn't take hundreds of
@@ -747,15 +767,36 @@ static size_t write_fifo_bytes(const unsigned char *ptr, size_t remaining, unsig
     return remaining;
 }
 
+/* Tell the supervisor which reader must be retired. It replaces the FIFO
+   while preserving this helper and the attached virtual display. */
+static void retire_partial_fifo(void) {
+    struct stat info;
+    if (fstat(g_capture_fifo_fd, &info) != 0) {
+        fprintf(stderr, "[evdi-helper] Cannot identify damaged FIFO; stopping capture\n");
+        g_running = 0;
+        return;
+    }
+    release_retired_fifo();
+    g_retired_fifo_fd = g_capture_fifo_fd;
+    g_capture_fifo_fd = -1;
+    g_fifo_retired = 1;
+    g_retired_fifo_device = info.st_dev;
+    g_retired_fifo_inode = info.st_ino;
+    printf("FIFO_RESET %ju %ju\n", (uintmax_t)info.st_dev, (uintmax_t)info.st_ino);
+    fflush(stdout);
+}
+
 static size_t write_fifo_frame(const unsigned char *ptr, size_t remaining, unsigned generation) {
     /* Keep the generation from claim_writer_frame, including across pacing.
        An obsolete frame that has not started needs no FIFO resynchronization;
        completed earlier frames remain intact. Shutdown still closes the pipe. */
     if (generation != g_mode_generation && g_running) return remaining;
+    size_t size = remaining;
     remaining = write_fifo_bytes(ptr, remaining, generation);
     if (remaining > 0) {
-        fprintf(stderr, "[evdi-helper] Incomplete frame — closing FIFO to resync\n");
-        close(g_capture_fifo_fd);
+        if (remaining < size) retire_partial_fifo();
+        fprintf(stderr, "[evdi-helper] Incomplete frame — retiring FIFO writer\n");
+        if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
         g_capture_fifo_fd = -1;
     }
     return remaining;
@@ -1383,6 +1424,7 @@ static void shutdown_capture(evdi_handle handle, pthread_t writer) {
     pthread_mutex_unlock(&g_swap_mutex);
     if (writer) pthread_join(writer, NULL);
     if (g_capture_fifo_fd >= 0) close(g_capture_fifo_fd);
+    release_retired_fifo();
     free(g_framebuffer);
     free(g_fill);
     free(g_latest);

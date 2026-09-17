@@ -155,9 +155,13 @@ impl EncoderTask {
         self.handle.abort();
     }
 
-    #[cfg(feature = "inproc-encoder")]
     pub(super) async fn finish(&mut self, already_finished: bool) {
+        #[cfg(feature = "inproc-encoder")]
         self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        #[cfg(not(feature = "inproc-encoder"))]
+        self.handle.abort();
+        // Observe task destruction before rebuilding: the packetizer's
+        // generation guard must retire every queued old access unit first.
         if !already_finished {
             let _ = (&mut self.handle).await;
         }

@@ -2,7 +2,7 @@
 use super::*;
 use std::path::{Path, PathBuf};
 
-fn compile_helper(root: &Path) -> PathBuf {
+pub(super) fn compile_helper(root: &Path) -> PathBuf {
     let binary = root.join("evdi_helper");
     let output = std::process::Command::new("cc")
         .args([

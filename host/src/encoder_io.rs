@@ -18,8 +18,9 @@ pub(crate) fn read_frame(
         }
         match fifo.read(&mut buf[filled..]) {
             Ok(0) => {
-                // A reopened FIFO starts a new frame. Never prepend bytes
-                // retained from a writer that closed partway through a frame.
+                // Discard an observed partial frame. Production recovery also
+                // retires this reader and replaces the FIFO inode: EOF alone
+                // cannot prevent an immediate writer reopen from mixing frames.
                 filled = 0;
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }

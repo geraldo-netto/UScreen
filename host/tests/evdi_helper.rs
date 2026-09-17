@@ -235,3 +235,8 @@ fn t340_unreadable_edid_never_acquires_a_display_device() {
 fn t341_fifo_edid_fails_without_waiting_for_a_writer() {
     Harness::build("T341").run("T341");
 }
+
+#[test]
+fn t226_partial_fifo_requires_a_replacement_inode() {
+    Harness::build("T226").run("T226");
+}

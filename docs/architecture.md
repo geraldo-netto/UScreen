@@ -18,9 +18,13 @@ Android and Rust/C measurements and improvements; these are not benchmark result
    Wayland session; other desktops manage placement through their own settings.
 2. **Capture.** The helper requests updates, grabs BGRA pixels, converts damaged
    rows to NV12 (BT.709, limited range) and sends raw frames through a FIFO in
-   the runtime directory. FIFO writes can be partial; correct recovery from an
-   interrupted partial frame remains unresolved (T226). The target FPS is not
-   a guarantee of capture throughput.
+   the runtime directory. After a partial write the helper quarantines that
+   FIFO inode and reports `FIFO_RESET <device> <inode>`. The host retires the
+   encoder reader and replaces the FIFO before encoding resumes. A retained,
+   idle writer descriptor prevents EOF from racing ahead of the reset report;
+   it closes when the helper opens the replacement FIFO or shuts down. The helper
+   and virtual display stay attached; delayed reports for old inodes are
+   ignored. The target FPS is not a guarantee of capture throughput.
 3. **Encode.** The default FFmpeg child uses NVENC, VAAPI or software libx264.
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
    CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
@@ -69,8 +73,11 @@ The `media` module owns codec, packet, generation and live-settings contracts,
 so streaming, input and encoding do not depend on capture management.
 `annex_b` assembles access units using `encoder_io`'s shared NAL scanner; partial
 NAL buffering, per-frame codec configuration and generation retirement remain
-part of that boundary. This split preserves the raw FIFO transport and does not
-resolve its interrupted-frame recovery problem (T226).
+part of that boundary. `capture::fifo` coordinates replacement of a damaged
+raw-frame FIFO; it creates the replacement before unlinking the old inode,
+preventing inode reuse during recovery. Raw frames still have no in-band
+sequence, size or generation header; both processes must use this reset
+protocol rather than assuming a close/reopen establishes a frame boundary.
 
 `uscreen-config::model` owns the portable settings schema, sanitization and edit
 merging. Its `storage` adapter owns transactional files; `commands` owns bounded
