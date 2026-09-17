@@ -125,6 +125,13 @@ impl Encoder {
             anyhow::bail!("short NV12 frame: {} bytes for {}x{}", nv12.len(), w, h);
         }
 
+        // libavcodec can retain the previous input. Detach shared buffers
+        // before writing the next frame, and read strides after detachment.
+        let writable = unsafe { ffmpeg_next::ffi::av_frame_make_writable(self.frame.as_mut_ptr()) };
+        if writable < 0 {
+            return Err(ffmpeg_next::Error::from(writable)).context("make encoder frame writable");
+        }
+
         // libavcodec frames are stride-padded; the helper packs tightly, so
         // copy row by row rather than assuming the two agree. Strides are read
         // first: taking them while a mutable borrow of the plane is live would
@@ -274,6 +281,28 @@ fn refresh_codec_config(
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+
+    #[test]
+    fn t266_reused_input_preserves_retained_frame_planes() {
+        let mut encoder = Encoder::new("libx264", 64, 64, 60, 500, 20).unwrap();
+        encoder.encode(&vec![64; 64 * 64 * 3 / 2], true).unwrap();
+        let mut retained = ffmpeg_next::frame::Video::empty();
+        // Model libavcodec retaining input using its real reference-counted buffers.
+        unsafe {
+            assert_eq!(ffmpeg_next::ffi::av_frame_ref(retained.as_mut_ptr(), encoder.frame.as_ptr()), 0);
+            assert_eq!(ffmpeg_next::ffi::av_frame_is_writable(encoder.frame.as_mut_ptr()), 0);
+        }
+        encoder.encode(&vec![192; 64 * 64 * 3 / 2], false).unwrap();
+        for plane in 0..2 {
+            for row in 0..(64 >> plane) {
+                let old = row * retained.stride(plane);
+                let new = row * encoder.frame.stride(plane);
+                assert_eq!(&retained.data(plane)[old..old + 64], &[64; 64],
+                    "T266: a retained frame changed after the next submission");
+                assert_eq!(&encoder.frame.data(plane)[new..new + 64], &[192; 64]);
+            }
+        }
+    }
 
     #[test]
     fn t265_drain_reports_codec_errors() {
