@@ -251,17 +251,20 @@ impl InputConfig {
         pen_only: bool,
         settings: &Option<watch::Sender<EncoderSettings>>,
     ) -> InputResponse {
+        // Keep one read guard: codec and frame rate must describe the same
+        // settings revision even while another controller applies a change.
+        let settings = settings.as_ref().map(|tx| tx.borrow());
         let codec = settings
             .as_ref()
-            .map(|tx| {
-                crate::capture::Codec::from_encoder(&tx.borrow().encoder)
+            .map(|current| {
+                crate::capture::Codec::from_encoder(&current.encoder)
                     .muxer()
                     .to_string()
             })
             .unwrap_or_else(|| self.codec.clone());
         InputResponse {
             status: status.into(),
-            fps: settings.as_ref().map(|tx| tx.borrow().fps),
+            fps: settings.as_ref().map(|current| current.fps),
             width: self.virtual_width,
             height: self.virtual_height,
             codec,
@@ -2895,6 +2898,46 @@ fi
             stream_scale: 1,
             geometry_ready: true,
         }
+    }
+
+    #[test]
+    fn t346_greeting_uses_one_encoder_settings_snapshot() {
+        let cfg = InputConfig::default();
+        let fallback = cfg.response("connected", false, &None);
+        assert_eq!(fallback.codec, cfg.codec);
+        assert_eq!(fallback.fps, None);
+        let (tx, _rx) = watch::channel(settings("h264_nvenc"));
+        let source = Some(tx.clone());
+        let start = std::sync::Barrier::new(2);
+        let mixed = std::thread::scope(|scope| {
+            scope.spawn(|| {
+                start.wait();
+                for i in 0..50_000 {
+                    tx.send_modify(|s| {
+                        let (encoder, fps) = if i % 2 == 0 {
+                            ("hevc_nvenc", 30)
+                        } else {
+                            ("h264_nvenc", 60)
+                        };
+                        s.encoder = encoder.into();
+                        s.fps = fps;
+                    });
+                }
+            });
+            start.wait();
+            let mut mixed = 0;
+            for _ in 0..50_000 {
+                let response = cfg.response("connected", false, &source);
+                if !matches!(
+                    (response.codec.as_str(), response.fps),
+                    ("h264", Some(60)) | ("hevc", Some(30))
+                ) {
+                    mixed += 1;
+                }
+            }
+            mixed
+        });
+        assert_eq!(mixed, 0, "T346: greeting mixed codec and FPS revisions");
     }
 
     async fn connection(
