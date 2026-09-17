@@ -43,6 +43,9 @@ Container installation/build checks are described in [development.md](developmen
 | Samsung Galaxy Tab S9 FE | — | S Pen | works for drawing on a Fedora 44 KDE host | [discussion #7](https://github.com/majmichu1/UScreen/discussions/7) |
 | Lenovo Tab K11 | 15 | Lenovo Tab Pen Plus | works on KDE Neon; 60–70 frames/s | [issue #11](https://github.com/majmichu1/UScreen/issues/11) |
 
+Automatic rotation supports naturally portrait and naturally landscape panels;
+landscape and reverse-landscape can also be pinned in Settings.
+
 Android 8.1/API 27 is the minimum. The device must decode the requested codec,
 profile, resolution and frame rate; version support alone does not guarantee
 that. MediaCodec may choose software decoding. `uscreen doctor` reports codec
