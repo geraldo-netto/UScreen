@@ -28,77 +28,98 @@ internal class ReceiverStatistics {
 
 /** Timing state; independent of transport and MediaCodec ownership. */
 internal class FrameTiming(private val clock: () -> Long = System::nanoTime) {
-    /**
-     * seq → nanoTime the frame finished arriving, so the render callback can
-     * report the arrival-to-callback portion of the host’s send-to-ack interval
-     * rather than on the wire. Bounded and cheap: a plain ring, since frames
-     * are rendered in the order they arrive.
-     */
+    internal class Epoch
+    @Volatile private var epoch = Epoch()
     private val arrivalSeq = IntArray(ARRIVAL_RING)
     private val arrivalNanos = LongArray(ARRIVAL_RING)
-    @Volatile private var arrivalWrite = 0
-
-    /**
-     * Splits arrival-to-output-release from output-release-to-render-callback.
-     * The latter includes callback scheduling; it does not isolate composition
-     * or measure when pixels became visible. Both boundaries use this process's
-     * nanoTime samples, not the render timestamp supplied by MediaCodec.
-     */
     private val releaseNanos = LongArray(ARRIVAL_RING)
+    private val valid = BooleanArray(ARRIVAL_RING)
+    private val splitRecorded = BooleanArray(ARRIVAL_RING)
+    // Fast tag cache; collisions fall back to the original newest-first history.
+    // Keep history by arrival count, including sparse and duplicate sequences.
+    private val lookup = IntArray(ARRIVAL_RING) { -1 }
+    private var arrivalWrite = 0
     private var decodeSumUs = 0L
     private var presentSumUs = 0L
     private var splitCount = 0
     private var lastSplitLogNanos = 0L
 
-    fun noteReleased(seq: Int) {
-        for (n in 0 until ARRIVAL_RING) {
-            val i = (arrivalWrite - 1 - n + ARRIVAL_RING * 2) % ARRIVAL_RING
-            if (arrivalSeq[i] == seq) {
-                releaseNanos[i] = clock()
-                return
-            }
+    fun currentEpoch(): Epoch = epoch
+    @Synchronized fun beginEpoch(): Epoch {
+        valid.fill(false)
+        lookup.fill(-1)
+        arrivalWrite = 0
+        decodeSumUs = 0; presentSumUs = 0; splitCount = 0
+        lastSplitLogNanos = 0
+        return Epoch().also { epoch = it }
+    }
+    @Synchronized fun retire(expectedEpoch: Epoch) {
+        if (epoch === expectedEpoch) beginEpoch()
+    }
+
+    fun noteArrival(seq: Int, expectedEpoch: Epoch = epoch, atNanos: Long = clock()) {
+        synchronized(this) {
+            if (epoch !== expectedEpoch) return
+            val i = arrivalWrite and (ARRIVAL_RING - 1)
+            arrivalSeq[i] = seq
+            arrivalNanos[i] = atNanos
+            releaseNanos[i] = 0
+            splitRecorded[i] = false
+            valid[i] = true
+            lookup[seq and (ARRIVAL_RING - 1)] = i
+            arrivalWrite = (i + 1) and (ARRIVAL_RING - 1)
         }
     }
 
-    fun noteArrival(seq: Int) {
-        val i = arrivalWrite % ARRIVAL_RING
-        arrivalSeq[i] = seq
-        arrivalNanos[i] = clock()
-        // Keep a ring index: an unbounded Int eventually overflows in lookups.
-        arrivalWrite = (i + 1) % ARRIVAL_RING
+    fun noteReleased(seq: Int, expectedEpoch: Epoch = epoch) {
+        // Sample before locking, then validate identity while publishing. A
+        // delayed callback must not stamp a slot overwritten while it waited.
+        val now = clock()
+        synchronized(this) {
+            if (epoch !== expectedEpoch) return
+            val i = find(seq)
+            if (i >= 0) releaseNanos[i] = now
+        }
     }
 
-    /** Microseconds from frame arrival to render-callback execution, or -1. */
-    fun decodeMicrosFor(seq: Int): Int {
-        for (n in 0 until ARRIVAL_RING) {
-            val i = (arrivalWrite - 1 - n + ARRIVAL_RING * 2) % ARRIVAL_RING
-            if (arrivalSeq[i] == seq && arrivalNanos[i] != 0L) {
-                val now = clock()
-                val total = ((now - arrivalNanos[i]) / 1000L)
-                    .coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+    /** Microseconds from complete arrival to callback execution, or -1. */
+    fun decodeMicrosFor(seq: Int, expectedEpoch: Epoch = epoch): Int {
+        val now = clock()
+        var report: String? = null
+        val total = synchronized(this) {
+            if (epoch !== expectedEpoch) return -1
+            val i = find(seq)
+            if (i < 0) return -1
+            report = recordSplit(i, now)
+            ((now - arrivalNanos[i]) / 1000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        }
+        // Android logging does not hold the timing-state monitor.
+        report?.let { Log.i(TAG, it) }
+        return total
+    }
 
-                // Attribute the time: decode = arrival → buffer released,
-                // present = released → callback execution, including dispatch delay.
-                val rel = releaseNanos[i]
-                if (rel > arrivalNanos[i]) {
-                    decodeSumUs += (rel - arrivalNanos[i]) / 1000L
-                    presentSumUs += (now - rel) / 1000L
-                    splitCount++
-                    if (now - lastSplitLogNanos > 5_000_000_000L && splitCount > 0) {
-                        Log.i(
-                            TAG,
-                            "on-device split: decode ${decodeSumUs / splitCount / 1000.0}ms " +
-                                "present ${presentSumUs / splitCount / 1000.0}ms " +
-                                "($splitCount frames)"
-                        )
-                        lastSplitLogNanos = now
-                        decodeSumUs = 0; presentSumUs = 0; splitCount = 0
-                    }
-                }
-                return total
-            }
+    private fun find(seq: Int): Int {
+        val cached = lookup[seq and (ARRIVAL_RING - 1)]
+        if (cached >= 0 && valid[cached] && arrivalSeq[cached] == seq) return cached
+        for (n in 0 until ARRIVAL_RING) {
+            val i = (arrivalWrite - 1 - n) and (ARRIVAL_RING - 1)
+            if (valid[i] && arrivalSeq[i] == seq) return i
         }
         return -1
     }
 
+    private fun recordSplit(i: Int, now: Long): String? {
+        val release = releaseNanos[i]
+        if (splitRecorded[i] || release <= arrivalNanos[i] || now < release) return null
+        splitRecorded[i] = true
+        decodeSumUs += (release - arrivalNanos[i]) / 1000L
+        presentSumUs += (now - release) / 1000L
+        splitCount++
+        if (now - lastSplitLogNanos <= 5_000_000_000L) return null
+        val report = "on-device split: decode ${decodeSumUs / splitCount / 1000.0}ms " +
+            "present ${presentSumUs / splitCount / 1000.0}ms ($splitCount frames)"
+        lastSplitLogNanos = now
+        decodeSumUs = 0; presentSumUs = 0; splitCount = 0
+        return report
+    }
 }

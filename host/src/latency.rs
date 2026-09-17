@@ -29,12 +29,15 @@ const MAX_SAMPLES: usize = 1024;
 struct Inner {
     /// (seq, time the complete access unit became ready for broadcast), oldest first.
     sent: VecDeque<(u32, Instant)>,
+    discontinuous: bool,
     /// Round-trip latencies in microseconds, for the current report window.
     samples: Vec<u32>,
     /// Of that round trip, the part the tablet spent decoding and rendering.
     /// The remainder also includes host queueing and the return message path;
     /// subtracting independent medians is only a rough transport estimate.
     decode_samples: Vec<u32>,
+    spare_samples: Vec<u32>,
+    spare_decode_samples: Vec<u32>,
     /// Frames that were sent but whose acknowledgement never arrived before
     /// they aged out — a direct sign of frames being dropped downstream.
     lost: u64,
@@ -63,6 +66,12 @@ impl LatencyTracker {
         if g.last_report.is_none() {
             g.last_report = Some(Instant::now());
         }
+        if g.sent
+            .back()
+            .is_some_and(|(previous, _)| previous.wrapping_add(1) != seq)
+        {
+            g.discontinuous = true;
+        }
         g.sent.push_back((seq, Instant::now()));
         while g.sent.len() > MAX_TRACKED {
             g.sent.pop_front();
@@ -75,12 +84,15 @@ impl LatencyTracker {
         let Ok(mut g) = self.inner.lock() else { return };
         // Everything queued before this frame is now known to be behind it;
         // drop it so the deque tracks only genuinely in-flight frames.
-        let Some(pos) = g.sent.iter().position(|(s, _)| *s == seq) else {
+        let Some(pos) = g.position(seq) else {
             return;
         };
         let (_, at) = g.sent[pos];
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
         g.sent.drain(..=pos);
+        if g.sent.is_empty() {
+            g.discontinuous = false;
+        }
         if g.samples.len() < MAX_SAMPLES {
             g.samples.push(micros);
             if decode_us > 0 {
@@ -99,54 +111,101 @@ impl LatencyTracker {
         }
         g.last_report = Some(Instant::now());
 
-        if g.samples.is_empty() {
-            // Silence here means the tablet never acknowledged anything, which
-            // is itself worth saying out loud.
-            if g.lost > 0 {
+        let mut report = g.take_report();
+        drop(g);
+        report.log();
+        self.recycle(report);
+    }
+
+    fn recycle(&self, mut report: Report) {
+        report.samples.clear();
+        report.decode_samples.clear();
+        let Ok(mut state) = self.inner.lock() else {
+            return;
+        };
+        keep_capacity(&mut state.spare_samples, report.samples);
+        keep_capacity(&mut state.spare_decode_samples, report.decode_samples);
+    }
+}
+
+impl Inner {
+    fn position(&self, sequence: u32) -> Option<usize> {
+        if self.discontinuous {
+            return self
+                .sent
+                .iter()
+                .position(|(candidate, _)| *candidate == sequence);
+        }
+        // Contiguous sequences map directly from the deque's front, including
+        // u32 wrap. Sparse/duplicate/out-of-order arrivals use the old search.
+        let offset = sequence.wrapping_sub(self.sent.front()?.0) as usize;
+        (offset < self.sent.len()).then_some(offset)
+    }
+
+    fn take_report(&mut self) -> Report {
+        let samples = std::mem::replace(&mut self.samples, std::mem::take(&mut self.spare_samples));
+        let decode_samples = std::mem::replace(
+            &mut self.decode_samples,
+            std::mem::take(&mut self.spare_decode_samples),
+        );
+        Report {
+            samples,
+            decode_samples,
+            lost: std::mem::take(&mut self.lost),
+            inflight: self.sent.len(),
+        }
+    }
+}
+
+fn keep_capacity(spare: &mut Vec<u32>, mut returned: Vec<u32>) {
+    if returned.capacity() > spare.capacity() {
+        std::mem::swap(spare, &mut returned);
+    }
+}
+
+struct Report {
+    samples: Vec<u32>,
+    decode_samples: Vec<u32>,
+    lost: u64,
+    inflight: usize,
+}
+impl Report {
+    fn log(&mut self) {
+        if self.samples.is_empty() {
+            if self.lost > 0 {
                 info!(
                     "Latency: no frames acknowledged by the tablet ({} aged out)",
-                    g.lost
+                    self.lost
                 );
-                g.lost = 0;
             }
             return;
         }
-
-        let mut s = std::mem::take(&mut g.samples);
-        let mut d = std::mem::take(&mut g.decode_samples);
-        let lost = std::mem::take(&mut g.lost);
-        let inflight = g.sent.len();
-        drop(g);
-
-        s.sort_unstable();
-        let pct = |v: &[u32], p: f64| -> f64 {
-            let idx = ((v.len() as f64 - 1.0) * p).round() as usize;
-            v[idx] as f64 / 1000.0
-        };
-        let total_p50 = pct(&s, 0.50);
+        self.samples.sort_unstable();
+        let total_p50 = percentile(&self.samples, 0.50);
         info!(
             "Latency encode→display: p50 {:.1}ms  p95 {:.1}ms  max {:.1}ms  ({} samples, {} in flight, {} aged out)",
-            total_p50,
-            pct(&s, 0.95),
-            pct(&s, 1.0),
-            s.len(),
-            inflight,
-            lost
+            total_p50, percentile(&self.samples, 0.95), percentile(&self.samples, 1.0),
+            self.samples.len(), self.inflight, self.lost
         );
-
-        // The split is what tells us where to spend effort: a large decode
-        // share means a different transport would buy nothing.
-        if !d.is_empty() {
-            d.sort_unstable();
-            let decode_p50 = pct(&d, 0.50);
-            info!(
-                "  of which tablet decode+render p50 {:.1}ms  p95 {:.1}ms  → wire ~{:.1}ms",
-                decode_p50,
-                pct(&d, 0.95),
-                (total_p50 - decode_p50).max(0.0)
-            );
-        }
+        self.log_decode(total_p50);
     }
+    fn log_decode(&mut self, total_p50: f64) {
+        if self.decode_samples.is_empty() {
+            return;
+        }
+        self.decode_samples.sort_unstable();
+        let decode_p50 = percentile(&self.decode_samples, 0.50);
+        info!(
+            "  of which tablet decode+render p50 {:.1}ms  p95 {:.1}ms  → wire ~{:.1}ms",
+            decode_p50,
+            percentile(&self.decode_samples, 0.95),
+            (total_p50 - decode_p50).max(0.0)
+        );
+    }
+}
+fn percentile(values: &[u32], p: f64) -> f64 {
+    let index = ((values.len() as f64 - 1.0) * p).round() as usize;
+    values[index] as f64 / 1000.0
 }
 
 #[cfg(test)]
@@ -171,5 +230,96 @@ mod tests {
         assert_eq!(state.samples.len(), 2);
         assert!(state.samples[0] >= 2_000_000);
         assert!(state.samples[1] < 1_000_000);
+    }
+
+    #[test]
+    fn t404_report_keeps_sample_storage_for_reuse() {
+        let tracker = LatencyTracker::new();
+        for sequence in 0..32 {
+            tracker.on_encoded(sequence);
+            tracker.on_rendered(sequence, 10);
+        }
+        let capacity = {
+            let mut state = tracker.inner.lock().unwrap();
+            state.last_report = Some(Instant::now() - std::time::Duration::from_secs(6));
+            state.samples.capacity() + state.decode_samples.capacity()
+        };
+        tracker.maybe_report();
+        let state = tracker.inner.lock().unwrap();
+        assert!(state.samples.is_empty() && state.decode_samples.is_empty());
+        assert!(
+            state.spare_samples.capacity() + state.spare_decode_samples.capacity() >= capacity,
+            "T404: report discarded reusable sample backing"
+        );
+    }
+
+    #[test]
+    fn t404_sparse_duplicate_and_wrapped_sequences_keep_ack_eviction_order() {
+        for sequences in [vec![5, 7, 7, 8], vec![8, 7, 9, 7], vec![u32::MAX, 0, 1, 2]] {
+            let tracker = LatencyTracker::new();
+            for &sequence in &sequences {
+                tracker.on_encoded(sequence);
+            }
+            tracker.on_rendered(sequences[1], 10);
+            let state = tracker.inner.lock().unwrap();
+            assert_eq!(
+                state
+                    .sent
+                    .iter()
+                    .map(|&(sequence, _)| sequence)
+                    .collect::<Vec<_>>(),
+                sequences[2..]
+            );
+            assert_eq!(state.samples.len(), 1);
+            drop(state);
+            tracker.on_rendered(1_234_567, 10);
+            let state = tracker.inner.lock().unwrap();
+            assert_eq!(state.samples.len(), 1);
+            assert_eq!(state.lost, 0);
+        }
+    }
+
+    fn t404_acknowledge_range(tracker: &LatencyTracker, first: u32, count: u32) {
+        for sequence in first..first + count {
+            tracker.on_encoded(sequence);
+            tracker.on_rendered(sequence, i64::from(sequence + 1));
+        }
+    }
+    #[test]
+    fn t404_report_recycling_preserves_new_and_overlapping_samples() {
+        let tracker = LatencyTracker::new();
+        t404_acknowledge_range(&tracker, 0, 16);
+        let first = tracker.inner.lock().unwrap().take_report();
+        t404_acknowledge_range(&tracker, 16, 16);
+        let second = tracker.inner.lock().unwrap().take_report();
+        t404_acknowledge_range(&tracker, 32, 16);
+        assert_eq!(first.decode_samples, (1..=16).collect::<Vec<_>>());
+        assert_eq!(second.decode_samples, (17..=32).collect::<Vec<_>>());
+        tracker.recycle(first);
+        tracker.recycle(second);
+        let state = tracker.inner.lock().unwrap();
+        assert_eq!(state.decode_samples, (33..=48).collect::<Vec<_>>());
+        assert_eq!(state.samples.len(), 16);
+        assert!(state.spare_samples.is_empty());
+        assert!(state.spare_samples.capacity() >= 16);
+        assert!(state.spare_decode_samples.capacity() >= 16);
+    }
+    #[test]
+    fn t404_capacity_loss_and_duplicate_acknowledgements_keep_prior_meaning() {
+        let tracker = LatencyTracker::new();
+        for index in 0..260 {
+            tracker.on_encoded(u32::MAX.wrapping_sub(100).wrapping_add(index));
+        }
+        let last = tracker.inner.lock().unwrap().sent.back().unwrap().0;
+        tracker.on_rendered(last, i64::MAX);
+        tracker.on_rendered(last, 10);
+        let state = tracker.inner.lock().unwrap();
+        assert_eq!(state.lost, 4);
+        assert!(state.sent.is_empty());
+        assert_eq!(state.samples.len(), 1);
+        assert_eq!(state.decode_samples, [u32::MAX]);
+        assert!(!state.discontinuous);
+        assert_eq!(percentile(&[1, 7, 9, 17], 0.5), 0.009);
+        assert_eq!(percentile(&[1, 7, 9, 17], 0.95), 0.017);
     }
 }

@@ -35,9 +35,11 @@ internal class DecoderSession(
     var outputClock: () -> Long = System::nanoTime
     private val renderedCount = AtomicLong(0)
     private val outputWatchdog = DecoderOutputWatchdog()
+    private var timingEpoch = timing.currentEpoch()
 
     fun setupCodec(surface: Surface, parameters: DecoderFormat): Boolean {
         synchronized(monitor) {
+            val codecTiming = timing.beginEpoch()
             var pendingCodec: MediaCodec? = null
             var pendingThread: HandlerThread? = null
             try {
@@ -57,20 +59,19 @@ internal class DecoderSession(
                 pendingThread = cbThread
                 cbThread.start()
                 codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->
-                    if (mediaCodec === codec && codecAlive && running() && renderedCount.incrementAndGet() % ACK_EVERY == 0L) {
-                        val seq = presentationTimeUs.toInt()
-                        events.rendered(seq, timing.decodeMicrosFor(seq))
-                    }
+                    notifyRendered(codec, codecTiming, presentationTimeUs.toInt())
                 }, Handler(cbThread.looper))
 
                 codec.start()
+                timingEpoch = codecTiming
                 mediaCodec = codec
                 frameCallbackThread = cbThread
                 codecAlive = true
-                startOutputThread(codec)
+                startOutputThread(codec, codecTiming)
                 Log.i(TAG, "Codec configured and started with surface")
                 return true
             } catch (e: Exception) {
+                timing.retire(codecTiming)
                 Log.e(TAG, "Failed to setup codec", e)
                 // Ownership transfers only after successful startup. A failure at
                 // configure/listener/start must retire these locals before retry.
@@ -89,6 +90,16 @@ internal class DecoderSession(
                 }
                 return false
             }
+        }
+    }
+
+    private fun notifyRendered(codec: MediaCodec, codecTiming: FrameTiming.Epoch, sequence: Int) {
+        // Timing/log work can yield. Validate again at acknowledgement so a
+        // callback that overlapped replacement cannot target the new session.
+        val decodeMicros = timing.decodeMicrosFor(sequence, codecTiming)
+        synchronized(monitor) {
+            if (mediaCodec !== codec || !codecAlive || !running()) return
+            if (renderedCount.incrementAndGet() % ACK_EVERY == 0L) events.rendered(sequence, decodeMicros)
         }
     }
 
@@ -136,7 +147,7 @@ internal class DecoderSession(
      * surface as soon as they're ready, independent of network reads. This
      * reduces coupling to network stalls; it does not impose a latency bound.
      */
-    fun startOutputThread(codec: MediaCodec) {
+    fun startOutputThread(codec: MediaCodec, codecTiming: FrameTiming.Epoch = timingEpoch) {
         val outputStatistics = statistics()
         outputThread = Thread({
             val info = MediaCodec.BufferInfo()
@@ -149,7 +160,7 @@ internal class DecoderSession(
                         val seq = info.presentationTimeUs.toInt()
                         codec.releaseOutputBuffer(index, true)
                         outputWatchdog.output(outputClock())
-                        timing.noteReleased(seq)
+                        timing.noteReleased(seq, codecTiming)
                         outputStatistics.frameRendered()
                         rendered++
                         if (rendered <= 2) Log.i(TAG, "Rendered output frame #$rendered")
@@ -183,10 +194,11 @@ internal class DecoderSession(
      */
     fun feedDecoder(
         codec: MediaCodec, data: ByteArray, offset: Int, size: Int,
-        isConfig: Boolean, presentationTimeUs: Long
+        isConfig: Boolean, presentationTimeUs: Long, arrivalNanos: Long = System.nanoTime()
     ) {
         synchronized(monitor) {
             if (mediaCodec !== codec) return
+            if (!isConfig) timing.noteArrival(presentationTimeUs.toInt(), timingEpoch, arrivalNanos)
             try {
                 var attempts = 0
                 while (true) {
@@ -248,6 +260,7 @@ internal class DecoderSession(
     fun releaseCodec() {
         synchronized(monitor) {
             codecAlive = false
+            timing.retire(timingEpoch)
             outputThread?.let { if (it !== Thread.currentThread()) it.join(500) }
             outputThread = null
             mediaCodec?.let {

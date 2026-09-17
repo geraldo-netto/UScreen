@@ -65,6 +65,18 @@ from the existing implementation.
    acknowledgement receipt, including the return path and excluding capture,
    encoding and packetizer assembly. See [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
+Timing history belongs to a decoder epoch. Arrival, output release and render
+notification records use one guarded 64-arrival history; codec replacement
+retires that epoch. A validated sequence-tag cache accelerates lookups while
+collisions retain the newest-first history search. Render callbacks recheck
+codec ownership at acknowledgement, including callbacks paused across replacement.
+Duplicate callbacks retain their ACK behavior but contribute at most one split
+diagnostic per arrival. Host ACK lookup uses an offset for contiguous sequences,
+including wrap, and the original search for discontinuous sequences. Reports
+sort outside the tracker lock and recycle their sample storage afterward.
+The [T404 replay](benchmarks/2026-09-17-timing.md) records correctness coverage,
+lookup tradeoffs and allocation counts; these are not display-latency gains.
+
 ## Processes and settings
 
 The C helper is assembled from independently linked modules. `capture.c` owns

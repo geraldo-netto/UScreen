@@ -57,8 +57,8 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
     }
 
     /**
-     * Invoked with the host's frame sequence number once that frame is
-     * actually on screen. The host times the round trip on its own clock, so
+     * Invoked with the host's sequence when its render notification is delivered,
+     * not a physical-screen timestamp. The host times the round trip on its clock, so
      * no clock synchronisation between the two devices is needed.
      */
     var onFrameRendered: ((seq: Int, decodeUs: Int) -> Unit)? = null
@@ -294,7 +294,6 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
                     }
                 }
             }
-            timing.noteArrival(seq)
             feedDecoder(
                 generation, codec, data, offset, size, false,
                 seq.toLong() and 0xFFFFFFFFL
@@ -307,10 +306,10 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
 
     @Synchronized internal fun feedDecoder(
         generation: Long, codec: MediaCodec, data: ByteArray, offset: Int, size: Int,
-        isConfig: Boolean, presentationTimeUs: Long,
+        isConfig: Boolean, presentationTimeUs: Long, arrivalNanos: Long = System.nanoTime(),
     ) {
         if (!isCurrent(generation) || decoder.mediaCodec !== codec) return
-        decoder.feedDecoder(codec, data, offset, size, isConfig, presentationTimeUs)
+        decoder.feedDecoder(codec, data, offset, size, isConfig, presentationTimeUs, arrivalNanos)
     }
 
     fun getFps(): Float = currentFps

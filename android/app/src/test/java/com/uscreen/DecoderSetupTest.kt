@@ -66,6 +66,25 @@ class DecoderSetupTest {
         return owner.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(owner)
     }
 
+
+    @Test fun t404_stalePacketCannotRecordArrivalInCurrentTimingEpoch() {
+        val receiver = VideoReceiver()
+        val codec = MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE)
+        val packetType = Class.forName("com.uscreen.VideoReceiver\$VideoPackets")
+        val constructor = packetType.getDeclaredConstructor(VideoReceiver::class.java, Long::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+        val packets = constructor.newInstance(receiver, 0L)
+        packetType.getDeclaredField("codec").apply { isAccessible = true }.set(packets, codec)
+        val frame = packetType.getDeclaredMethod("frame", Int::class.javaPrimitiveType, ByteArray::class.java,
+            Int::class.javaPrimitiveType, Int::class.javaPrimitiveType).apply { isAccessible = true }
+        try {
+            // Dispatch models retirement between read validation and the packet
+            // callback. The stopped receiver must not accept timing publication.
+            frame.invoke(packets, 71, byteArrayOf(1), 0, 1)
+            assertEquals("T404: stale packet wrote into current history", -1, receiver.timing.decodeMicrosFor(71))
+        } finally { receiver.stop(); codec.release() }
+    }
+
     @Test fun t243_invalidPacketReportsDisconnectionBeforeRetry() = checkDisconnected("invalid-packet")
     @Test fun t243_decoderResetReportsDisconnectionBeforeRetry() = checkDisconnected("input-timeout")
 

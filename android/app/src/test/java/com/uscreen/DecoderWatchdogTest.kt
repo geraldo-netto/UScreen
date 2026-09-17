@@ -88,6 +88,70 @@ class DecoderWatchdogTest {
         } finally { decoder.releaseCodec(); surface.release() }
     }
 
+
+    @Test fun t404_codecReplacementRetiresTimingHistory() {
+        WatchdogCodecShadow.outputs.clear()
+        WatchdogCodecShadow.callbacks.clear()
+        val timing = FrameTiming { 100_000L }
+        val decoder = DecoderSession(Any(), { true }, timing, object : DecoderEvents {
+            override fun rendered(sequence: Int, decodeMicros: Int) {}
+            override fun invalidated() {}
+        }, { ReceiverStatistics() })
+        val surface = Surface(SurfaceTexture(1))
+        val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
+        try {
+            assertTrue(decoder.setupCodec(surface, format))
+            timing.noteArrival(7)
+            decoder.resetCodec()
+            assertEquals("T404: retirement retained old timing", -1, timing.decodeMicrosFor(7))
+            assertTrue(decoder.setupCodec(surface, format))
+            assertEquals(-1, timing.decodeMicrosFor(7))
+        } finally { decoder.releaseCodec(); surface.release() }
+    }
+
+    @Test fun t404_inflightCallbackCannotAcknowledgeReplacement() {
+        WatchdogCodecShadow.outputs.clear()
+        WatchdogCodecShadow.callbacks.clear()
+        val entered = CountDownLatch(1)
+        val resume = CountDownLatch(1)
+        val failure = java.util.concurrent.atomic.AtomicReference<Throwable?>()
+        val timing = FrameTiming {
+            if (Thread.currentThread().name == "t404-held-callback") {
+                entered.countDown()
+                check(resume.await(3, TimeUnit.SECONDS))
+            }
+            100_000L
+        }
+        val acknowledgements = java.util.concurrent.CopyOnWriteArrayList<Int>()
+        val decoder = DecoderSession(Any(), { true }, timing, object : DecoderEvents {
+            override fun rendered(sequence: Int, decodeMicros: Int) { acknowledgements.add(sequence) }
+            override fun invalidated() {}
+        }, { ReceiverStatistics() })
+        val surface = Surface(SurfaceTexture(1))
+        val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
+        var worker: Thread? = null
+        try {
+            assertTrue(decoder.setupCodec(surface, format))
+            val old = decoder.mediaCodec!!
+            val callback = WatchdogCodecShadow.callbacks.last()
+            timing.noteArrival(7)
+            worker = Thread({
+                try { callback.onFrameRendered(old, 7, 0) } catch (error: Throwable) { failure.set(error) }
+            }, "t404-held-callback").apply { start() }
+            assertTrue(entered.await(3, TimeUnit.SECONDS))
+            decoder.resetCodec()
+            assertTrue(decoder.setupCodec(surface, format))
+        } finally {
+            resume.countDown()
+            worker?.join(3_000)
+            decoder.releaseCodec()
+            surface.release()
+        }
+        assertFalse(worker!!.isAlive)
+        failure.get()?.let { throw AssertionError("T404 callback worker", it) }
+        assertTrue("T404: old callback acknowledged after replacement: $acknowledgements", acknowledgements.isEmpty())
+    }
+
     private class Fixture : AutoCloseable {
         val receiver = VideoReceiver()
         val now = AtomicLong(1_000_000_000)

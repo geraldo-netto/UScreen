@@ -24,6 +24,11 @@ The [CLI assembly replay](benchmarks/2026-09-17-cli-assembly.md) records T407's
 owned reads, bounded assembly and 1/2/4-session comparison with committed T384.
 It retains both the original push replay and the actual read-boundary measurements.
 
+The [timing bookkeeping replay](benchmarks/2026-09-17-timing.md) compares T404's
+guarded Android lookup cache and Rust ACK lookup/sample-buffer reuse. It records
+nanosecond-scale lookup tradeoffs and allocator calls, with no device display
+latency or power claim.
+
 The [input batching replay](benchmarks/2026-09-17-input-batching.md) verifies
 native bytes and synchronization boundaries while reducing complete writes
 from 256 to 38 per recorded pen/touch/pointer sequence. It uses counting writers,

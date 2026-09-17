@@ -1,0 +1,1203 @@
+{
+  "kotlin": [
+    {
+      "sessions": 1,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        22.89773,
+        22.79764,
+        23.34638,
+        22.112135,
+        21.83361
+      ],
+      "median": 22.79764,
+      "minimum": 21.83361,
+      "maximum": 23.34638
+    },
+    {
+      "sessions": 1,
+      "mode": "latest",
+      "variant": "scan",
+      "values": [
+        21.5148,
+        21.03674,
+        34.666355,
+        21.227555,
+        21.530485
+      ],
+      "median": 21.5148,
+      "minimum": 21.03674,
+      "maximum": 34.666355
+    },
+    {
+      "sessions": 1,
+      "mode": "latest",
+      "variant": "original",
+      "values": [
+        13.81281,
+        12.29988,
+        12.29858,
+        12.464645,
+        24.83301
+      ],
+      "median": 12.464645,
+      "minimum": 12.29858,
+      "maximum": 24.83301
+    },
+    {
+      "sessions": 1,
+      "mode": "delay8",
+      "variant": "original",
+      "values": [
+        25.775205,
+        25.61134,
+        28.01907,
+        27.01065,
+        25.40951
+      ],
+      "median": 25.775205,
+      "minimum": 25.40951,
+      "maximum": 28.01907
+    },
+    {
+      "sessions": 1,
+      "mode": "delay8",
+      "variant": "scan",
+      "values": [
+        30.23223,
+        31.05434,
+        56.425175,
+        31.339635,
+        30.986815
+      ],
+      "median": 31.05434,
+      "minimum": 30.23223,
+      "maximum": 56.425175
+    },
+    {
+      "sessions": 1,
+      "mode": "delay8",
+      "variant": "candidate",
+      "values": [
+        21.57522,
+        24.50233,
+        28.543065,
+        22.304155,
+        24.74339
+      ],
+      "median": 24.50233,
+      "minimum": 21.57522,
+      "maximum": 28.543065
+    },
+    {
+      "sessions": 1,
+      "mode": "delay32",
+      "variant": "candidate",
+      "values": [
+        27.43521,
+        23.523375,
+        27.661245,
+        21.44392,
+        22.03179
+      ],
+      "median": 23.523375,
+      "minimum": 21.44392,
+      "maximum": 27.661245
+    },
+    {
+      "sessions": 1,
+      "mode": "delay32",
+      "variant": "scan",
+      "values": [
+        59.69735,
+        57.274745,
+        58.942315,
+        56.136235,
+        58.322545
+      ],
+      "median": 58.322545,
+      "minimum": 56.136235,
+      "maximum": 59.69735
+    },
+    {
+      "sessions": 1,
+      "mode": "delay32",
+      "variant": "original",
+      "values": [
+        68.073575,
+        65.753465,
+        67.81008,
+        66.94724,
+        77.06358
+      ],
+      "median": 67.81008,
+      "minimum": 65.753465,
+      "maximum": 77.06358
+    },
+    {
+      "sessions": 1,
+      "mode": "missing",
+      "variant": "original",
+      "values": [
+        116.154005,
+        140.2887,
+        123.36182,
+        133.24211,
+        207.73385
+      ],
+      "median": 133.24211,
+      "minimum": 116.154005,
+      "maximum": 207.73385
+    },
+    {
+      "sessions": 1,
+      "mode": "missing",
+      "variant": "scan",
+      "values": [
+        83.738975,
+        121.712875,
+        83.20371,
+        83.49882,
+        87.67261
+      ],
+      "median": 83.738975,
+      "minimum": 83.20371,
+      "maximum": 121.712875
+    },
+    {
+      "sessions": 1,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        86.91291,
+        86.457745,
+        84.94262,
+        86.96992,
+        89.16134
+      ],
+      "median": 86.91291,
+      "minimum": 84.94262,
+      "maximum": 89.16134
+    },
+    {
+      "sessions": 1,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        33.38413,
+        51.177965,
+        38.823475,
+        37.341105,
+        34.379525
+      ],
+      "median": 37.341105,
+      "minimum": 33.38413,
+      "maximum": 51.177965
+    },
+    {
+      "sessions": 1,
+      "mode": "sparse",
+      "variant": "scan",
+      "values": [
+        30.6862,
+        47.8044,
+        30.628245,
+        30.486575,
+        57.93352
+      ],
+      "median": 30.6862,
+      "minimum": 30.486575,
+      "maximum": 57.93352
+    },
+    {
+      "sessions": 1,
+      "mode": "sparse",
+      "variant": "original",
+      "values": [
+        25.44078,
+        27.18434,
+        26.20874,
+        25.58851,
+        25.08886
+      ],
+      "median": 25.58851,
+      "minimum": 25.08886,
+      "maximum": 27.18434
+    },
+    {
+      "sessions": 2,
+      "mode": "latest",
+      "variant": "original",
+      "values": [
+        8.289315,
+        21.69952,
+        9.34437,
+        9.465705,
+        11.13152
+      ],
+      "median": 9.465705,
+      "minimum": 8.289315,
+      "maximum": 21.69952
+    },
+    {
+      "sessions": 2,
+      "mode": "latest",
+      "variant": "scan",
+      "values": [
+        17.493415,
+        28.939885,
+        17.409255,
+        16.00769,
+        74.636945
+      ],
+      "median": 17.493415,
+      "minimum": 16.00769,
+      "maximum": 74.636945
+    },
+    {
+      "sessions": 2,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        21.96803,
+        17.576225,
+        17.102025,
+        31.653895,
+        20.29685
+      ],
+      "median": 20.29685,
+      "minimum": 17.102025,
+      "maximum": 31.653895
+    },
+    {
+      "sessions": 2,
+      "mode": "delay8",
+      "variant": "candidate",
+      "values": [
+        16.5873,
+        75.4789,
+        16.70412,
+        90.729805,
+        16.82435
+      ],
+      "median": 16.82435,
+      "minimum": 16.5873,
+      "maximum": 90.729805
+    },
+    {
+      "sessions": 2,
+      "mode": "delay8",
+      "variant": "scan",
+      "values": [
+        26.199375,
+        65.91942,
+        25.20263,
+        30.32793,
+        26.584865
+      ],
+      "median": 26.584865,
+      "minimum": 25.20263,
+      "maximum": 65.91942
+    },
+    {
+      "sessions": 2,
+      "mode": "delay8",
+      "variant": "original",
+      "values": [
+        27.77813,
+        32.319315,
+        25.768505,
+        30.239815,
+        27.079155
+      ],
+      "median": 27.77813,
+      "minimum": 25.768505,
+      "maximum": 32.319315
+    },
+    {
+      "sessions": 2,
+      "mode": "delay32",
+      "variant": "original",
+      "values": [
+        69.48896,
+        68.41322,
+        94.59316,
+        69.25753,
+        68.74545
+      ],
+      "median": 69.25753,
+      "minimum": 68.41322,
+      "maximum": 94.59316
+    },
+    {
+      "sessions": 2,
+      "mode": "delay32",
+      "variant": "scan",
+      "values": [
+        50.636505,
+        56.044545,
+        55.779995,
+        81.80394,
+        53.903825
+      ],
+      "median": 55.779995,
+      "minimum": 50.636505,
+      "maximum": 81.80394
+    },
+    {
+      "sessions": 2,
+      "mode": "delay32",
+      "variant": "candidate",
+      "values": [
+        17.885915,
+        114.728805,
+        16.888775,
+        17.55329,
+        16.43962
+      ],
+      "median": 17.55329,
+      "minimum": 16.43962,
+      "maximum": 114.728805
+    },
+    {
+      "sessions": 2,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        89.95605,
+        89.50139,
+        83.721645,
+        84.93561,
+        83.748805
+      ],
+      "median": 84.93561,
+      "minimum": 83.721645,
+      "maximum": 89.95605
+    },
+    {
+      "sessions": 2,
+      "mode": "missing",
+      "variant": "scan",
+      "values": [
+        101.093635,
+        131.859955,
+        98.24492,
+        94.777885,
+        118.6575
+      ],
+      "median": 101.093635,
+      "minimum": 94.777885,
+      "maximum": 131.859955
+    },
+    {
+      "sessions": 2,
+      "mode": "missing",
+      "variant": "original",
+      "values": [
+        211.030845,
+        124.910235,
+        182.801565,
+        123.0195,
+        225.73944
+      ],
+      "median": 182.801565,
+      "minimum": 123.0195,
+      "maximum": 225.73944
+    },
+    {
+      "sessions": 2,
+      "mode": "sparse",
+      "variant": "original",
+      "values": [
+        25.961685,
+        27.35028,
+        36.73633,
+        33.00679,
+        26.381335
+      ],
+      "median": 27.35028,
+      "minimum": 25.961685,
+      "maximum": 36.73633
+    },
+    {
+      "sessions": 2,
+      "mode": "sparse",
+      "variant": "scan",
+      "values": [
+        28.55637,
+        25.326525,
+        32.37814,
+        25.170435,
+        26.448115
+      ],
+      "median": 26.448115,
+      "minimum": 25.170435,
+      "maximum": 32.37814
+    },
+    {
+      "sessions": 2,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        27.707805,
+        27.79382,
+        28.548105,
+        32.583385,
+        69.106565
+      ],
+      "median": 28.548105,
+      "minimum": 27.707805,
+      "maximum": 69.106565
+    },
+    {
+      "sessions": 4,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        42.851065,
+        67.182705,
+        68.284655,
+        27.208115,
+        63.947005
+      ],
+      "median": 63.947005,
+      "minimum": 27.208115,
+      "maximum": 68.284655
+    },
+    {
+      "sessions": 4,
+      "mode": "latest",
+      "variant": "scan",
+      "values": [
+        46.17384,
+        67.64273,
+        21.13601,
+        35.36638,
+        51.01856
+      ],
+      "median": 46.17384,
+      "minimum": 21.13601,
+      "maximum": 67.64273
+    },
+    {
+      "sessions": 4,
+      "mode": "latest",
+      "variant": "original",
+      "values": [
+        26.797525,
+        16.17918,
+        16.503795,
+        53.44818,
+        31.709575
+      ],
+      "median": 26.797525,
+      "minimum": 16.17918,
+      "maximum": 53.44818
+    },
+    {
+      "sessions": 4,
+      "mode": "delay8",
+      "variant": "original",
+      "values": [
+        33.522525,
+        34.282575,
+        134.356315,
+        75.863385,
+        42.666325
+      ],
+      "median": 42.666325,
+      "minimum": 33.522525,
+      "maximum": 134.356315
+    },
+    {
+      "sessions": 4,
+      "mode": "delay8",
+      "variant": "scan",
+      "values": [
+        118.16942,
+        67.9625,
+        108.53815,
+        88.06415,
+        135.748675
+      ],
+      "median": 108.53815,
+      "minimum": 67.9625,
+      "maximum": 135.748675
+    },
+    {
+      "sessions": 4,
+      "mode": "delay8",
+      "variant": "candidate",
+      "values": [
+        62.546045,
+        67.90925,
+        38.591025,
+        70.680425,
+        54.198525
+      ],
+      "median": 62.546045,
+      "minimum": 38.591025,
+      "maximum": 70.680425
+    },
+    {
+      "sessions": 4,
+      "mode": "delay32",
+      "variant": "candidate",
+      "values": [
+        51.91793,
+        49.585645,
+        78.165425,
+        37.531665,
+        34.27662
+      ],
+      "median": 49.585645,
+      "minimum": 34.27662,
+      "maximum": 78.165425
+    },
+    {
+      "sessions": 4,
+      "mode": "delay32",
+      "variant": "scan",
+      "values": [
+        167.049035,
+        121.89799,
+        95.92432,
+        128.07936,
+        135.782015
+      ],
+      "median": 128.07936,
+      "minimum": 95.92432,
+      "maximum": 167.049035
+    },
+    {
+      "sessions": 4,
+      "mode": "delay32",
+      "variant": "original",
+      "values": [
+        104.30145,
+        142.40735,
+        80.74068,
+        98.38961,
+        103.56852
+      ],
+      "median": 103.56852,
+      "minimum": 80.74068,
+      "maximum": 142.40735
+    },
+    {
+      "sessions": 4,
+      "mode": "missing",
+      "variant": "original",
+      "values": [
+        202.256505,
+        174.09548,
+        183.38953,
+        233.88562,
+        136.10366
+      ],
+      "median": 183.38953,
+      "minimum": 136.10366,
+      "maximum": 233.88562
+    },
+    {
+      "sessions": 4,
+      "mode": "missing",
+      "variant": "scan",
+      "values": [
+        186.79244,
+        184.92594,
+        248.6937,
+        173.885545,
+        241.62802
+      ],
+      "median": 186.79244,
+      "minimum": 173.885545,
+      "maximum": 248.6937
+    },
+    {
+      "sessions": 4,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        180.256105,
+        145.20761,
+        175.65852,
+        165.27215,
+        292.705925
+      ],
+      "median": 175.65852,
+      "minimum": 145.20761,
+      "maximum": 292.705925
+    },
+    {
+      "sessions": 4,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        89.03834,
+        133.333895,
+        92.95615,
+        167.29664,
+        75.54788
+      ],
+      "median": 92.95615,
+      "minimum": 75.54788,
+      "maximum": 167.29664
+    },
+    {
+      "sessions": 4,
+      "mode": "sparse",
+      "variant": "scan",
+      "values": [
+        130.034355,
+        107.785075,
+        74.4836,
+        40.100115,
+        45.86614
+      ],
+      "median": 74.4836,
+      "minimum": 40.100115,
+      "maximum": 130.034355
+    },
+    {
+      "sessions": 4,
+      "mode": "sparse",
+      "variant": "original",
+      "values": [
+        85.597945,
+        144.936475,
+        69.5703,
+        72.178915,
+        29.490575
+      ],
+      "median": 72.178915,
+      "minimum": 29.490575,
+      "maximum": 144.936475
+    }
+  ],
+  "rust": [
+    {
+      "sessions": 1,
+      "mode": "first",
+      "variant": "candidate",
+      "values": [
+        5.555865,
+        4.254081,
+        3.6125045,
+        3.4115465,
+        3.3653185
+      ],
+      "median": 3.6125045,
+      "minimum": 3.3653185,
+      "maximum": 5.555865
+    },
+    {
+      "sessions": 1,
+      "mode": "first",
+      "variant": "baseline",
+      "values": [
+        6.3876185,
+        4.474811,
+        4.773089,
+        3.5214505,
+        4.585522
+      ],
+      "median": 4.585522,
+      "minimum": 3.5214505,
+      "maximum": 6.3876185
+    },
+    {
+      "sessions": 1,
+      "mode": "latest",
+      "variant": "baseline",
+      "values": [
+        79.2422795,
+        78.463426,
+        75.985047,
+        75.684039,
+        76.524746
+      ],
+      "median": 76.524746,
+      "minimum": 75.684039,
+      "maximum": 79.2422795
+    },
+    {
+      "sessions": 1,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        5.71888,
+        5.448871,
+        4.3005945,
+        3.447054,
+        3.520259
+      ],
+      "median": 4.3005945,
+      "minimum": 3.447054,
+      "maximum": 5.71888
+    },
+    {
+      "sessions": 1,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        3.324526,
+        3.4712405,
+        3.206782,
+        3.590167,
+        3.2874255
+      ],
+      "median": 3.324526,
+      "minimum": 3.206782,
+      "maximum": 3.590167
+    },
+    {
+      "sessions": 1,
+      "mode": "missing",
+      "variant": "baseline",
+      "values": [
+        79.3472145,
+        75.954634,
+        75.893222,
+        76.7171615,
+        84.0719875
+      ],
+      "median": 76.7171615,
+      "minimum": 75.893222,
+      "maximum": 84.0719875
+    },
+    {
+      "sessions": 1,
+      "mode": "sparse",
+      "variant": "baseline",
+      "values": [
+        75.0446075,
+        77.352496,
+        78.041328,
+        75.4874295,
+        75.717438
+      ],
+      "median": 75.717438,
+      "minimum": 75.0446075,
+      "maximum": 78.041328
+    },
+    {
+      "sessions": 1,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        102.1538585,
+        97.753694,
+        98.718311,
+        112.133135,
+        98.853405
+      ],
+      "median": 98.853405,
+      "minimum": 97.753694,
+      "maximum": 112.133135
+    },
+    {
+      "sessions": 2,
+      "mode": "first",
+      "variant": "candidate",
+      "values": [
+        3.5440445,
+        5.2331565,
+        6.061579,
+        4.4409575,
+        4.417939
+      ],
+      "median": 4.4409575,
+      "minimum": 3.5440445,
+      "maximum": 6.061579
+    },
+    {
+      "sessions": 2,
+      "mode": "first",
+      "variant": "baseline",
+      "values": [
+        3.923868,
+        4.0551075,
+        6.513951,
+        4.5661915,
+        3.5423665
+      ],
+      "median": 4.0551075,
+      "minimum": 3.5423665,
+      "maximum": 6.513951
+    },
+    {
+      "sessions": 2,
+      "mode": "latest",
+      "variant": "baseline",
+      "values": [
+        77.854758,
+        80.8918725,
+        80.4932185,
+        76.2808105,
+        81.0985415
+      ],
+      "median": 80.4932185,
+      "minimum": 76.2808105,
+      "maximum": 81.0985415
+    },
+    {
+      "sessions": 2,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        4.427592,
+        3.6520755,
+        4.2082895,
+        4.2804775,
+        5.7704505
+      ],
+      "median": 4.2804775,
+      "minimum": 3.6520755,
+      "maximum": 5.7704505
+    },
+    {
+      "sessions": 2,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        4.054066,
+        3.4908685,
+        4.202324,
+        3.6355545,
+        11.4171855
+      ],
+      "median": 4.054066,
+      "minimum": 3.4908685,
+      "maximum": 11.4171855
+    },
+    {
+      "sessions": 2,
+      "mode": "missing",
+      "variant": "baseline",
+      "values": [
+        80.0327265,
+        78.2828295,
+        76.9069185,
+        78.959804,
+        82.016686
+      ],
+      "median": 78.959804,
+      "minimum": 76.9069185,
+      "maximum": 82.016686
+    },
+    {
+      "sessions": 2,
+      "mode": "sparse",
+      "variant": "baseline",
+      "values": [
+        76.806978,
+        77.5284925,
+        84.026805,
+        79.3431795,
+        75.68147
+      ],
+      "median": 77.5284925,
+      "minimum": 75.68147,
+      "maximum": 84.026805
+    },
+    {
+      "sessions": 2,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        99.239253,
+        96.968677,
+        100.9810975,
+        106.8007625,
+        96.679957
+      ],
+      "median": 99.239253,
+      "minimum": 96.679957,
+      "maximum": 106.8007625
+    },
+    {
+      "sessions": 4,
+      "mode": "first",
+      "variant": "candidate",
+      "values": [
+        3.35998,
+        13.324926,
+        4.4675045,
+        3.391505,
+        3.494516
+      ],
+      "median": 3.494516,
+      "minimum": 3.35998,
+      "maximum": 13.324926
+    },
+    {
+      "sessions": 4,
+      "mode": "first",
+      "variant": "baseline",
+      "values": [
+        3.3176195,
+        4.4816115,
+        5.1642315,
+        4.6065245,
+        4.8371085
+      ],
+      "median": 4.6065245,
+      "minimum": 3.3176195,
+      "maximum": 5.1642315
+    },
+    {
+      "sessions": 4,
+      "mode": "latest",
+      "variant": "baseline",
+      "values": [
+        78.705199,
+        80.111884,
+        80.260207,
+        79.7786995,
+        78.9007375
+      ],
+      "median": 79.7786995,
+      "minimum": 78.705199,
+      "maximum": 80.260207
+    },
+    {
+      "sessions": 4,
+      "mode": "latest",
+      "variant": "candidate",
+      "values": [
+        3.786312,
+        15.246556,
+        4.6283515,
+        3.6251955,
+        3.515171
+      ],
+      "median": 3.786312,
+      "minimum": 3.515171,
+      "maximum": 15.246556
+    },
+    {
+      "sessions": 4,
+      "mode": "missing",
+      "variant": "candidate",
+      "values": [
+        3.555663,
+        4.2679145,
+        3.7653175,
+        15.5533475,
+        4.373576
+      ],
+      "median": 4.2679145,
+      "minimum": 3.555663,
+      "maximum": 15.5533475
+    },
+    {
+      "sessions": 4,
+      "mode": "missing",
+      "variant": "baseline",
+      "values": [
+        80.8018185,
+        89.3947365,
+        79.2690435,
+        79.36847,
+        82.383527
+      ],
+      "median": 80.8018185,
+      "minimum": 79.2690435,
+      "maximum": 89.3947365
+    },
+    {
+      "sessions": 4,
+      "mode": "sparse",
+      "variant": "baseline",
+      "values": [
+        78.4448745,
+        79.557139,
+        80.357448,
+        78.596373,
+        77.018402
+      ],
+      "median": 78.596373,
+      "minimum": 77.018402,
+      "maximum": 80.357448
+    },
+    {
+      "sessions": 4,
+      "mode": "sparse",
+      "variant": "candidate",
+      "values": [
+        112.044974,
+        109.833461,
+        99.866517,
+        113.628523,
+        112.806363
+      ],
+      "median": 112.044974,
+      "minimum": 99.866517,
+      "maximum": 113.628523
+    },
+    {
+      "sessions": 1,
+      "mode": "reports",
+      "variant": "candidate",
+      "values": [
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        }
+      ]
+    },
+    {
+      "sessions": 1,
+      "mode": "reports",
+      "variant": "baseline",
+      "values": [
+        {
+          "allocations": 200,
+          "reallocations": 800
+        },
+        {
+          "allocations": 200,
+          "reallocations": 800
+        },
+        {
+          "allocations": 200,
+          "reallocations": 800
+        },
+        {
+          "allocations": 200,
+          "reallocations": 800
+        },
+        {
+          "allocations": 200,
+          "reallocations": 800
+        }
+      ]
+    },
+    {
+      "sessions": 2,
+      "mode": "reports",
+      "variant": "baseline",
+      "values": [
+        {
+          "allocations": 400,
+          "reallocations": 1600
+        },
+        {
+          "allocations": 400,
+          "reallocations": 1600
+        },
+        {
+          "allocations": 400,
+          "reallocations": 1600
+        },
+        {
+          "allocations": 400,
+          "reallocations": 1600
+        },
+        {
+          "allocations": 400,
+          "reallocations": 1600
+        }
+      ]
+    },
+    {
+      "sessions": 2,
+      "mode": "reports",
+      "variant": "candidate",
+      "values": [
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        }
+      ]
+    },
+    {
+      "sessions": 4,
+      "mode": "reports",
+      "variant": "candidate",
+      "values": [
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        },
+        {
+          "allocations": 0,
+          "reallocations": 0
+        }
+      ]
+    },
+    {
+      "sessions": 4,
+      "mode": "reports",
+      "variant": "baseline",
+      "values": [
+        {
+          "allocations": 800,
+          "reallocations": 3200
+        },
+        {
+          "allocations": 800,
+          "reallocations": 3200
+        },
+        {
+          "allocations": 800,
+          "reallocations": 3200
+        },
+        {
+          "allocations": 800,
+          "reallocations": 3200
+        },
+        {
+          "allocations": 800,
+          "reallocations": 3200
+        }
+      ]
+    }
+  ]
+}
