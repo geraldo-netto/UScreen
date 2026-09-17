@@ -1,8 +1,10 @@
 # Compatibility
 
-What UScreen has actually been run on. Rows come from the maintainer and from
-[compatibility reports](https://github.com/geraldo-netto/UScreen/issues?q=label%3Acompatibility);
-please add yours.
+The tables preserve **upstream** hardware reports, not a certification of
+the current fork. “Maintainer” in those rows means the upstream maintainer.
+Report your fork commit, installation method and hardware through the
+[compatibility template](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml).
+Container installation/build checks are described in [development.md](development.md).
 
 ## Host
 
@@ -16,23 +18,22 @@ please add yours.
 | Fedora 42 | — | — | rpm installs; evdi must be built from source | maintainer, container |
 | openSUSE Tumbleweed | — | — | dependencies resolve; not exercised with a tablet | maintainer, container |
 
-Requirements that follow from the design:
+## Desktop and encoder requirements
 
-- **Wayland with KDE Plasma** gets the full experience: the daemon places the
-  virtual output and maps the pen and touch onto it through KWin's D-Bus
-  interfaces, and suppresses the on-screen keyboard.
-- **X11** (Cinnamon, XFCE, MATE, GNOME on Xorg): the daemon maps each
-  tablet's input to its output with `xinput` and `xrandr`; output placement
-  remains in the desktop's display settings.
-- **Other Wayland desktops** (GNOME, Sway): the display and stream work wherever
-  EVDI does; assign input and output placement in the desktop's settings.
-  See [troubleshooting](troubleshooting.md#touch-or-pen-land-on-the-wrong-screen).
-  Reports welcome.
-- **NVIDIA** uses NVENC; **AMD/Intel** use VAAPI (`h264_vaapi`); anything can
-  fall back to `libx264` on the CPU.
-- The evdi kernel module must be available: in the image (Bazzite, Nobara),
-  from the repositories (Debian, Ubuntu, openSUSE), from the AUR (Arch) or
-  built from source (Fedora).
+- **KDE Plasma on Wayland:** output placement uses `kscreen-doctor`, input
+  mapping and keyboard suppression use KWin D-Bus. These tools/interfaces
+  must be available; the historical matrix above is not a guarantee for all versions.
+- **X11:** input mapping uses `xinput`/`xrandr`; manage output placement through
+  desktop settings. KScreen calls still occur on some non-KDE paths (T224).
+  Cinnamon has an unresolved attachment-related Xorg crash (T222).
+- **Other Wayland desktops:** support depends on that compositor's EVDI and
+  input-mapping facilities. No blanket GNOME/Sway compatibility is established;
+  manual configuration may be required or unavailable.
+- **Encoding:** select NVENC for supported NVIDIA setups, VAAPI for supported
+  AMD/Intel setups, or `libx264` for CPU encoding. The default is
+  `h264_nvenc`; there is no automatic fallback to the correct GPU encoder.
+- **Kernel:** a compatible EVDI module is needed for an extended output.
+  Package/image availability varies; see [installation.md](installation.md).
 
 ## Tablet
 
@@ -42,10 +43,29 @@ Requirements that follow from the design:
 | Samsung Galaxy Tab S9 FE | — | S Pen | works for drawing on a Fedora 44 KDE host | [discussion #7](https://github.com/majmichu1/UScreen/discussions/7) |
 | Lenovo Tab K11 | 15 | Lenovo Tab Pen Plus | works on KDE Neon; 60–70 frames/s | [issue #11](https://github.com/majmichu1/UScreen/issues/11) |
 
-Any Android 8.1+ device with a hardware H.264 decoder should work — the app
-reports its own panel size and the virtual display is generated to match.
-HEVC is optional and only worth enabling where `uscreen doctor` reports a
-hardware HEVC decoder.
+Android 8.1/API 27 is the minimum. The device must decode the requested codec,
+profile, resolution and frame rate; version support alone does not guarantee
+that. MediaCodec may choose software decoding. `uscreen doctor` reports codec
+capabilities, but only a real stream validates the selected configuration.
+
+## Current fork limitations
+
+The full actionable list is [TODO.md](../TODO.md). In particular:
+
+- **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
+  mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
+- **T269:** full installer/native package hooks may unload a live EVDI module.
+- **T224/T234:** KScreen placement is attempted outside KDE, and diagnostics
+  can report missing KWin as a failure on other Wayland desktops.
+- **T247:** host status greetings and Android message dispatch disagree,
+  affecting connection/graphics-tablet state. Pen-only mode is not validated
+  as fully working by the feature description alone.
+- **T330:** a busy enumerated EVDI card can block a slot despite another free card.
+- **T332:** accepted dimensions/FPS can exceed the EDID pixel-clock limit;
+  3840×2160 at 90 fps is one example. Lowering FPS can produce a valid mode.
+
+Up to four slots can be configured. Historical multi-tablet validation used
+one physical tablet plus a simulated client, not four physical displays.
 
 ## Not supported
 

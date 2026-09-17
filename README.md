@@ -17,9 +17,10 @@ dummy HDMI plug or cloud account required. Screen and input data travel
 between your computer and tablet over USB, or over your local network when
 you enable the optional Wi-Fi fallback. They are not sent to a cloud service.
 
-Tested on Bazzite (KDE Plasma, Wayland, NVIDIA) with a Samsung Galaxy Tab S9
-Ultra. Packages and installation instructions cover Bazzite, Fedora,
-Ubuntu/Debian, Arch Linux and openSUSE.
+Upstream tests used Bazzite (KDE Plasma, Wayland, NVIDIA) with a Samsung
+Galaxy Tab S9 Ultra. The fork has known limitations, including an unresolved
+Cinnamon/Xorg restart during attachment; read [current limitations](docs/compatibility.md#current-fork-limitations)
+before setup. Packaging recipes target several Linux distribution families.
 
 [**Build from source**](docs/development.md#building-from-source)
 · [Install](#quick-install)
@@ -41,7 +42,7 @@ Ubuntu/Debian, Arch Linux and openSUSE.
   readiness to render acknowledgement over USB with
   H.264, 15–18 ms with HEVC, on the reference hardware — the
   [numbers and the method](docs/benchmarks.md) are published.
-- **Plug in and it works.** The daemon starts with your desktop, finds the
+- **Plug in and it works.** With a configured user service and supported desktop, the daemon finds the
   tablet over adb, launches the app on it and sizes the display to its panel.
 - **Local transport.** Loopback-only host ports, session authentication on by
   default, no application telemetry or account. See the trust boundaries and
@@ -64,7 +65,7 @@ or produced from the checkout you intend to install:
 | `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+ — `sudo apt install ./uscreen_*.deb` |
 | `uscreen-<ver>-1.x86_64.rpm` | openSUSE (`zypper install`), Fedora (RPM Fusion first, then `dnf install --allowerasing`) |
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
-| `uscreen-<ver>-linux-x86_64.tar.gz` | Bazzite, Nobara, anything else — extract, `./scripts/install.sh` |
+| `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
 
 Then `systemctl --user enable --now uscreen` (the tarball installer enables
 it for you; start it once with `systemctl --user start uscreen`). Full
@@ -74,8 +75,9 @@ details, including what the installer changes on the system, in
 **2. Tablet** — install `uscreen.apk` and enable USB debugging (Settings →
 Developer options).
 
-**3. Plug in.** The daemon forwards the ports, launches the app and the
-tablet shows up as a monitor. `uscreen doctor` diagnoses anything that is off.
+**3. Plug in.** The daemon sets up forwarding and launches the app by default. Check
+desktop display settings and input mapping; `uscreen doctor` helps diagnose
+setup problems. It cannot establish that every configuration is safe or supported.
 
 Update both halves together: since 1.1.0 they share a session token.
 
@@ -83,7 +85,7 @@ If UScreen replaced a second monitor for you, a star on the repo and a
 [compatibility report](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml)
 help the next Linux user find it.
 
-## Verified compatibility
+## Historical upstream compatibility
 
 | host | tablet | result |
 | --- | --- | --- |
@@ -92,8 +94,8 @@ help the next Linux user find it.
 | Fedora 44, KDE Plasma | Galaxy Tab S9 FE | works — "near perfectly", external report ([discussion #7](https://github.com/majmichu1/UScreen/discussions/7)) |
 | Debian 12 · Fedora 42 · openSUSE Tumbleweed | — | packages install and run (container-tested, no tablet) |
 
-Any Android 8.1+ tablet with a hardware H.264 decoder should work — the
-display is generated to match the tablet. More in
+Android 8.1+ is the minimum; codec, profile, resolution and frame-rate support
+also matter. These reports describe upstream builds, not current fork validation. More in
 [docs/compatibility.md](docs/compatibility.md); reports are welcome.
 
 ## Performance

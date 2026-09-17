@@ -1,93 +1,129 @@
 # Troubleshooting
 
-Run `uscreen doctor` first. It checks the kernel modules, `/dev/uinput`
-permissions, tools, orphaned processes, the tablet over adb, the negotiated
-display mode, the tablet's codec support, colour settings and the config
-file, and prints the fix for each problem it finds.
+Start with `uscreen doctor`. It checks configuration, tools, devices, adb and
+selected desktop/decoder state; its suggestions are diagnostics, not proof
+that every desktop or encoding combination is supported. Include the exact
+fork commit as well as host/app version numbers in a report.
 
 ## "Failed to start helper" / "evdi-helper exited prematurely"
 
-No EVDI device exists and creating one needs root. Check
-`cat /sys/devices/evdi/count`; if it says 0:
+Read the preceding error. Possible causes include a missing/incompatible
+EVDI module or userspace library, permissions, a busy card, invalid EDID or a
+missing helper executable. Check `modinfo evdi`, `cat /sys/devices/evdi/count`
+and `ldd` on the installed `evdi_helper`. A missing sysfs path differs from
+a loaded module reporting zero devices.
+
+If the module is loaded and the count is zero, these commands request one
+device now and configure two at the next module load:
 
 ```bash
-# for this boot
 echo 1 | sudo tee /sys/devices/evdi/add
-# for every boot
 echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf
-sudo modprobe -r evdi && sudo modprobe evdi
 ```
 
-The `modprobe -r` matters: `initial_device_count` is only read when the
-module loads. If `modprobe -r` says the module is in use, reboot instead.
+Use GUI system setup to add missing capacity for a larger tablet count.
+Reboot if a changed boot setting needs to take effect. **Do not unload EVDI
+from a running display session**: it can disrupt the display server. Installer
+reload behavior remains tracked as T269 in [TODO.md](../TODO.md).
 
 ## "Failed to open /dev/uinput"
 
-`/dev/uinput` is root-only on a stock system. The installer and the packages
-put a udev rule in place; if you installed another way:
+Check whether the module is loaded and the current desktop seat has access.
+From a source checkout, when the UScreen udev rule is missing:
 
 ```bash
 sudo modprobe uinput
 sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
-sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput
+sudo udevadm control --reload
+sudo udevadm trigger --name-match=uinput
 ```
+
+Run UScreen as the logged-in desktop user; do not use a root daemon as a
+permission workaround.
 
 ## The app keeps opening and closing / "did not authenticate"
 
-The app is older than the daemon. Since 1.1.0 a session token is required;
-install the APK from the same release as the Linux side. The daemon retries
-delivering the token with an increasing interval, so after updating the app
-the next retry can take up to ten minutes without re-plugging. Reconnect
-the cable to trigger immediate delivery.
+Check that the app and host came from the same checkout and that adb still
+shows the tablet as authorized. A stale token, failed token delivery or
+mismatched builds can cause this; an older app is not the only explanation.
+Keep `require_token = true` (the disabled setting has a known client mismatch,
+T267). Delivery retries back off, potentially to ten minutes; reconnecting the
+cable triggers a fresh attempt. Do not include session tokens in public logs.
 
 ## Black screen on the tablet
 
-1. `uscreen status` — is the daemon running?
-2. `adb reverse --list` — are ports 8890/8891 forwarded?
-3. `RUST_LOG=uscreen=debug uscreen start` in a terminal and watch for
-   "Enabling EVDI output" and "Encoder started".
-4. Check the display settings: the virtual output may be disabled there.
+1. Check `uscreen status` and `adb devices`.
+2. Check `adb -s TABLET_ID reverse --list` for that tablet's assigned ports
+   (8890/8891 by default for the first slot).
+3. For a service launch, inspect `journalctl --user -u uscreen -n 200`.
+   Direct GUI launches log to `~/.local/share/uscreen/daemon.log`.
+4. Check the selected encoder and desktop Display settings. The virtual
+   output may be disabled, or FFmpeg may lack the selected encoder.
+
+For a foreground debug run, first stop the service with
+`systemctl --user stop uscreen` (or stop an unmanaged daemon with
+`uscreen stop`), then run `RUST_LOG=uscreen=debug uscreen start`. This can
+attach an EVDI display; it is not a read-only diagnostic. Do not deliberately
+repeat a session-crashing attachment on your working desktop; see below.
 
 ## Touch or pen land on the wrong screen
 
-The daemon maps each tablet's input devices onto its own output: through
-KWin D-Bus on KDE Wayland, or `xinput map-to-output` on X11. Mapping runs again
-on attachment and mode changes. In graphics-tablet mode it targets the primary
-physical screen. Install `xinput` and `xrandr` for X11 sessions.
+KDE Wayland mapping uses KWin D-Bus. X11 mapping uses `xinput` and `xrandr`;
+install both. Mapping runs on attachment and mode changes, and graphics-tablet
+mode targets the primary physical screen. Check the resulting mapping after mode changes. Other Wayland desktops need
+manual mapping where the compositor supports it. `doctor` can misdiagnose a
+non-KDE Wayland session as missing KWin (T234).
 
-On other Wayland desktops, use the desktop's tablet settings to assign
-"UScreen Pen" to the UScreen output.
+For an X11 session, inspect `xrandr --listproviders` and `xrandr --query`.
+If the EVDI provider is not linked, the general command is
+`xrandr --setprovideroutputsource EVDI_PROVIDER SOURCE_PROVIDER`, replacing
+both names/IDs with the appropriate providers from that output. Do not assume
+the source is provider 0. Display-server/driver support is required; this
+command changes the live display configuration.
 
-If `xrandr` shows no `DVI-I-*` output at all while the tablet is streaming,
-Xorg has not linked the evdi GPU provider yet:
+KScreen placement is still attempted on some non-KDE paths (T224), so a
+missing-output warning alone does not prove EVDI failed to render.
 
-```sh
-xrandr --listproviders
-xrandr --setprovideroutputsource <evdi provider index> 0
-```
+## Cinnamon or Xorg restarts when connecting
 
-## The on-screen keyboard pops up
+The [2026-09-17 incident report](reviews/2026-09-17-cinnamon-restart.md)
+records an Xorg crash during an EVDI attachment. The root cause and mitigation
+remain unverified (T222). A later startup-geometry fix does not establish that
+the crash is fixed. Preserve the journal and Xorg/coredump evidence; further
+reproduction needs an isolated session.
 
-The daemon suppresses KDE's virtual keyboard while UScreen touch devices
-exist, then restores the setting when the last device is removed or on exit.
-If it stays off after a crash, run the daemon once more and stop it normally, or set it back in System Settings → Virtual Keyboard.
+## The on-screen keyboard pops up or remains disabled
+
+UScreen suppresses KDE's virtual keyboard while its touch devices exist and
+attempts to restore the saved setting afterward. An invalid/missing recovery
+value can prevent restoration (T334). If it remains disabled, restore the
+desired setting in System Settings → Virtual Keyboard; simply restarting the
+daemon is not a guaranteed recovery.
 
 ## Wi-Fi is stuttery
 
-It is a fallback. Median latency matches USB, but the tail does not — see
-[benchmarks.md](benchmarks.md). Use the cable when you can.
+The historical locked-radio test had a median close to USB, but much longer
+tail delays. Your network may differ. See [benchmarks.md](benchmarks.md).
+Use USB when those delays are disruptive. `uscreen wifi --off` does not close
+the tablet's adb network listener; see [SECURITY.md](../SECURITY.md).
 
-## `GLIBC_2.43' not found`
+## A required GLIBC version is not found
 
-You have binaries from a release before 1.1.0. Current releases are built
-against Debian 12's glibc and run on anything since; update.
+The binary or one of its libraries was built against a newer glibc than the
+runtime provides. The portable workflow targets glibc 2.36; local builds may
+need newer versions regardless of the displayed UScreen version. Use a build
+matching your distribution, or rebuild with the documented portable toolchain.
+Do not replace the system glibc to satisfy an application binary.
 
-## Two EVDI devices, wrong one used
+## A busy EVDI card is selected despite another free card
 
-With `max_tablets = 1` the helper picks any free EVDI card. That is fine; the
-number is not meaningful.
+The helper can lease a free card when unpinned, but the daemon can explicitly
+assign cards by enumeration order. A slot may therefore fail on an occupied
+card despite free capacity (T330). Do not remove another application's display
+to make a retry succeed; include the card/connector state in the report.
 
 ## Getting more help
 
-Open an issue with the output of `uscreen doctor` and the daemon log, in the
-[fork issue tracker](https://github.com/geraldo-netto/UScreen/issues).
+Open a [fork issue](https://github.com/geraldo-netto/UScreen/issues) with the
+build commit, `uscreen doctor` output and relevant log excerpt. Remove tokens,
+device serials and other personal information before posting.

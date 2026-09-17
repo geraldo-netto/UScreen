@@ -320,6 +320,8 @@
   <div><div class="v">5<small>families</small></div><div class="k">of Linux packages</div></div>
 </div>
 
+<p style="margin:28px var(--gutter)">Current fork limitations include an unresolved Cinnamon/Xorg crash during EVDI attachment and a graphics-tablet status-message mismatch. Read <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/compatibility.md#current-fork-limitations">compatibility and known limitations</a> before setup.</p>
+
 <section id="why">
   <div class="sec-head">
     <h2>Not a mirror.<br>A monitor.</h2>
@@ -329,7 +331,7 @@
     <article><h3>Extended display through EVDI</h3><p>A virtual output with the tablet's own resolution and physical size. It appears in Display settings; you drag windows onto it; KDE places it next to your real screens for you.</p></article>
     <article><h3>S Pen as a tablet device</h3><p>Pressure, tilt, eraser end and the stylus button arrive in Linux as a real graphics-tablet device, mapped to the right screen. Krita, GIMP and Blender see a tablet, not a mouse.</p></article>
     <article><h3>Graphics-tablet mode</h3><p>One tap and nothing is streamed: the pen drives the screen you are already looking at, like a Wacom Intuos, with zero display latency in the loop.</p></article>
-    <article><h3>Plug in, that's it</h3><p>The daemon starts with your desktop, watches adb, launches the app on the tablet and sizes the display to its panel. <code>uscreen doctor</code> explains anything that is off.</p></article>
+    <article><h3>Connection automation</h3><p>A configured user service can start with the desktop. The daemon watches adb, launches the app by default and negotiates geometry. Autostart, mapping and EVDI support depend on the desktop; diagnostics do not replace compatibility testing.</p></article>
     <article><h3>Hardware all the way</h3><p>NVENC or VAAPI encoding on the host, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. The encoder is under a millisecond; the tablet's decoder is most of the budget.</p></article>
     <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener; existing runtime-directory validation remains a known limitation. See the security guide for trust boundaries.</p></article>
   </div>
@@ -347,7 +349,7 @@
       <tr><td><code>uscreen_1.2.3_amd64.deb</code></td><td>Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+</td><td><code>sudo apt install ./uscreen_*.deb</code></td></tr>
       <tr><td><code>uscreen-1.2.3-1.x86_64.rpm</code></td><td>openSUSE · Fedora (RPM Fusion first)</td><td><code>zypper install ./uscreen-*.rpm</code> · <code>dnf install --allowerasing ./uscreen-*.rpm</code></td></tr>
       <tr><td><code>uscreen-1.2.3-PKGBUILD.tar.gz</code></td><td>Arch, Manjaro, EndeavourOS, CachyOS</td><td>install AUR <code>evdi-dkms</code> first, then <code>makepkg -si</code></td></tr>
-      <tr><td><code>uscreen-1.2.3-linux-x86_64.tar.gz</code></td><td>Bazzite, Nobara, anything else</td><td><code>./scripts/install.sh</code></td></tr>
+      <tr><td><code>uscreen-1.2.3-linux-x86_64.tar.gz</code></td><td>compatible Linux x86-64/glibc systems</td><td><code>./scripts/install.sh</code></td></tr>
       <tr><td><code>uscreen.apk</code></td><td>the tablet</td><td>install, enable USB debugging</td></tr>
     </tbody>
   </table>
@@ -355,7 +357,7 @@
   <div class="steps" style="margin-top:40px">
     <div><h3>Start the daemon</h3><p>After a package install: <code>systemctl --user enable --now uscreen</code>. The tarball installer adds a menu entry and enables startup at the next login; to start immediately, run <code>systemctl --user start uscreen</code>.</p></div>
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
-    <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Touch and the pen work on it immediately. Flip <em>Graphics tablet</em> in the app when you want to draw on the laptop screen instead.</p></div>
+    <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Input mapping depends on the desktop and tools; check the compatibility guide. Flip <em>Graphics tablet</em> in the app when you want to draw on the laptop screen instead.</p></div>
   </div>
   <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
 </section>

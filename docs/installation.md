@@ -1,101 +1,109 @@
 # Installing UScreen for Linux
 
-Two halves: the Linux side (daemon, GUI, tray) and the Android app. Build
-both from the same checkout to keep their protocol compatible. As of
-2026-09-17 the [fork releases page](https://github.com/geraldo-netto/UScreen/releases)
-has no published releases. Start with [building from source](development.md#building-from-source).
-The package instructions below apply to locally built artifacts or future
-fork releases; an upstream release does not contain unreleased fork changes.
+Build the Linux daemon/GUI/helper and Android app from the same checkout.
+As of 2026-09-17 this fork has no published releases; start with
+[building from source](development.md#building-from-source). Upstream releases
+do not contain the unreleased fork changes. The instructions below also cover
+artifacts produced locally or available in a future [fork release](https://github.com/geraldo-netto/UScreen/releases).
 
-## Linux side: pick your file
+Before attaching a display, check [current limitations](compatibility.md#current-fork-limitations).
+A Cinnamon/Xorg session crash during EVDI attachment remains unresolved (T222).
+The full installer and native package hooks also attempt an EVDI module reload
+(T269); installing/upgrading them during a live display session can disrupt it.
+Schedule that setup outside an active EVDI session. This is separate from the
+add-only setup in the GUI and `make setup-system`.
 
-| file | for | command |
+## Linux artifacts and prerequisites
+
+The portable packaging workflow targets **Linux x86-64, glibc 2.36 or newer**.
+This is an ABI baseline, not a guarantee that every distribution, GPU or
+compositor works. Local builds can require a newer glibc. Runtime needs adb,
+FFmpeg with the chosen encoder, compatible EVDI kernel support, libdrm, GUI
+libraries and access to `/dev/uinput`. Container tests cannot validate kernel
+attachment or tablet operation.
+
+| Artifact | Installation |
+| --- | --- |
+| `uscreen_<ver>_amd64.deb` | Debian/Ubuntu family: `sudo apt install ./uscreen_*.deb` |
+| `uscreen-<ver>-1.x86_64.rpm` | openSUSE: `sudo zypper install ./uscreen-*.rpm`; Fedora: supply the required FFmpeg package (the build workflow uses RPM Fusion), then `sudo dnf install --allowerasing ./uscreen-*.rpm` |
+| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch family: install AUR `evdi-dkms` first, extract the recipe and run `makepkg -si` |
+| `uscreen-<ver>-linux-x86_64.tar.gz` | Other compatible Linux setups: extract and inspect/run `./scripts/install.sh`; unsupported package managers need manual dependency installation |
+
+Review the package transaction, especially `dnf --allowerasing`, which permits
+removing conflicting packages. The Debian package **recommends** `evdi-dkms`;
+it is not a hard dependency and may not be installed when recommendations are
+disabled. A working EVDI kernel module is still required for an extended display.
+
+`makepkg -s` installs repository dependencies through pacman; it does not build
+AUR packages. Install [evdi-dkms](https://aur.archlinux.org/packages/evdi-dkms)
+separately first; see [makepkg(8)](https://man.archlinux.org/man/makepkg.8.en).
+The recipe downloads its declared source tag, so it needs that tag to exist;
+use the source workflow for an unreleased checkout.
+
+Module and package availability depend on the distribution release and kernel.
+Do not assume a Bazzite/Nobara image includes every prerequisite. The full
+installer uses rpm-ostree on a detected booted ostree system and otherwise the
+selected distribution's package manager. Layering may require a reboot.
+
+| Distribution family | FFmpeg/adb names used by the project | EVDI source to check |
 | --- | --- | --- |
-| `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+ | `sudo apt install ./uscreen_*.deb` — pulls `evdi-dkms`, `ffmpeg` and `adb` |
-| `uscreen-<ver>-1.x86_64.rpm` | openSUSE | `sudo zypper install ./uscreen-*.rpm` |
-| `uscreen-<ver>-1.x86_64.rpm` | Fedora | enable [RPM Fusion](https://rpmfusion.org/Configuration) first (stock Fedora has no `ffmpeg`), then `sudo dnf install --allowerasing ./uscreen-*.rpm`, then build the evdi module from [DisplayLink/evdi](https://github.com/DisplayLink/evdi) — it is not packaged for Fedora |
-| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch, Manjaro, EndeavourOS, CachyOS | install `evdi-dkms` from the AUR first, then extract and run `makepkg -si` |
-| `uscreen-<ver>-linux-x86_64.tar.gz` | anything else, or Bazzite/Nobara | extract, `./scripts/install.sh` |
+| Debian/Ubuntu | `ffmpeg`, `adb` | `evdi-dkms` for the running kernel |
+| Arch | `ffmpeg`, `android-tools` | AUR `evdi-dkms` |
+| Fedora | `ffmpeg` (RPM Fusion in the workflow), `android-tools` | image/vendor packages or an upstream module build |
+| openSUSE | `ffmpeg`, `android-tools` | `evdi` and its matching kernel-module package |
 
-`makepkg -s` installs dependencies through pacman; it does not build AUR
-packages. Install the [AUR evdi-dkms package](https://aur.archlinux.org/packages/evdi-dkms)
-separately before building UScreen. See [makepkg(8)](https://man.archlinux.org/man/makepkg.8.en).
+Use `modinfo evdi` and, for DKMS installations, `dkms status` to inspect the
+installed module. If a DKMS build fails, inspect its build log and check the
+module's compatibility with the running kernel and available headers. Follow
+your distribution or [EVDI upstream](https://github.com/DisplayLink/evdi)
+instructions for a compatible module; one pinned version is not a universal
+kernel fix. A packaged userspace library is not the kernel module.
 
-Bazzite and Nobara ship the evdi module in the image; the tarball's installer
-is the right choice there (it layers `ffmpeg`/`android-tools` with rpm-ostree
-if they are missing).
+Portable tarballs/native packages bundle libevdi v1.15.0 next to the helper
+and use an `$ORIGIN` lookup. A normal source installation may instead use the
+system library installed during the build; see [development.md](development.md).
 
-**Debian or Ubuntu on a kernel newer than the distribution's own** (a mainline
-6.14+ kernel on Debian 13, say): the packaged `evdi-dkms` 1.14.8 predates
-those kernels and fails to build (`'struct drm_driver' has no member named
-'date'`), which used to leave the `uscreen` package unconfigured as well. Build
-the current module from upstream instead, then let dpkg finish:
+## Start the host
 
-```bash
-sudo apt install dkms git "linux-headers-$(uname -r)"
-git clone --depth 1 --branch v1.15.1 https://github.com/DisplayLink/evdi.git
-cd evdi/module && sudo make install_dkms && sudo modprobe evdi
-sudo dpkg --configure -a          # finishes uscreen's post-install (udev rule, modprobe.d)
-```
-
-After a package install, enable the daemon for your login session:
+After a native package installation, on a desktop with a systemd user manager:
 
 ```bash
 systemctl --user enable --now uscreen
 ```
 
-The tarball installer enables the unit for you (start it once by hand with
-`systemctl --user start uscreen`, or log in again) and also adds a menu entry.
+The full tarball/source installer attempts to enable the service, but does
+not start it. Start it with `systemctl --user start uscreen`. `make install`
+only installs/reloads the user unit; enable/start it explicitly. Autostart
+also depends on the desktop activating `graphical-session.target`; service-manager support remains limited
+(T231), and custom XDG installation paths are inconsistent (T233).
+Without a user service manager, `uscreen start` runs a foreground session;
+arrange autostart through your desktop separately if needed.
 
-Verify the checksums if you like: `sha256sum -c SHA256SUMS` next to the
-downloaded files.
+If `~/.local/bin` is not on PATH yet, use `~/.local/bin/uscreen` or add the
+directory to your shell's PATH. Run `uscreen doctor` to inspect the setup.
+Select an encoder supported by your GPU/FFmpeg; the default is NVIDIA NVENC,
+not automatic GPU detection.
 
-## Android side
+For published artifacts, run `sha256sum -c SHA256SUMS` alongside all files
+listed in the manifest. An absent file is reported as a verification failure.
+See [release integrity](../SECURITY.md#release-integrity) for signing limitations.
 
-Install `uscreen.apk` on the tablet (sideloading has to be allowed for your
-browser or file manager). Then enable **USB debugging**: Settings → About →
-tap *Build number* seven times → Developer options → USB debugging. Accept the
-"Allow USB debugging" prompt from your computer the first time you plug in.
+## Android and first connection
 
-Minimum Android version is **8.1**.
+1. Install the APK built from the same checkout (debug builds produce
+   `android/app/build/outputs/apk/debug/app-debug.apk`). Android **8.1/API 27**
+   is the minimum; decoding capabilities must also support the chosen stream.
+2. Enable USB debugging in Developer options. On many tablets, tap *Build
+   number* seven times under About to reveal that menu. Accept the computer's
+   authorization prompt when connecting a data-capable USB cable.
+3. With the host running, the daemon sets up adb forwarding and, by default,
+   launches the app. Check desktop Display settings to enable/place the EVDI
+   output if the desktop does not do so automatically. KDE Wayland has the
+   most automation; see [compatibility](compatibility.md) for mapping limits.
 
-## Plug in and use
+UScreen defaults to 50% brightness and a 60 Hz display-mode preference only
+while its window is in use. Change these in the app's gear menu; they do not
+change other apps' system display settings. Stream FPS is a separate control.
 
-1. Start the daemon (`systemctl --user enable --now uscreen`, or `uscreen
-   start` for one session, or the *Start* button in `uscreen-gui`).
-2. Plug the USB cable in. The daemon forwards the ports over adb and launches
-   the app on the tablet by itself.
-3. The tablet appears as a new monitor in your display settings, sized to the
-   tablet's own panel. Touch and the pen work on it immediately.
-
-That's the whole procedure. `uscreen doctor` tells you what is missing if
-something is.
-
-## What gets changed on the system
-
-- `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package), with `options evdi initial_device_count=2` by default. After changing the tablet count, GUI system setup creates missing devices without unloading active displays and saves the chosen count for boot
-- `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package), loading `evdi` and `uinput`
-- a udev rule opening `/dev/uinput` to the logged-in user
-- a systemd *user* unit (never a system service, never root)
-
-See [SECURITY.md](../SECURITY.md) for the reasoning and for a complete
-uninstall.
-
-## Dependencies by distribution (for the curious)
-
-Checked on each of them, not from memory:
-
-| | ffmpeg | adb | evdi module |
-| --- | --- | --- | --- |
-| Arch | `ffmpeg` | `android-tools` | AUR: `evdi-dkms` |
-| Debian / Ubuntu | `ffmpeg` | `adb` | `evdi-dkms` |
-| Fedora | RPM Fusion, `--allowerasing` to replace `ffmpeg-free` | `android-tools` | not packaged — build from source |
-| openSUSE | `ffmpeg` | `android-tools` | `evdi` |
-| Bazzite / Nobara | in the image | `android-tools` | in the image |
-
-The helper ships with its own copy of libevdi (LGPL-2.1, unmodified, found
-through an `$ORIGIN` rpath), so no distribution needs a libevdi package.
-
-## Building from source instead
-
-See [development.md](development.md).
+System changes and removal instructions are in [SECURITY.md](../SECURITY.md).
+For failures, use [troubleshooting.md](troubleshooting.md) before repeating setup.
