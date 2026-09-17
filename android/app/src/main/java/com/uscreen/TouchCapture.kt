@@ -309,6 +309,7 @@ class TouchCapture {
         if (!isConnected || (!touchEnabled && !penEnabled)) return false
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()
+        releasePalmContacts(event)
         if (event.actionMasked == MotionEvent.ACTION_DOWN) releaseTouches()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN,
@@ -319,6 +320,14 @@ class TouchCapture {
             MotionEvent.ACTION_CANCEL -> cancelContacts(event, vw, vh)
         }
         return true
+    }
+
+    private fun releasePalmContacts(event: MotionEvent) {
+        for (index in 0 until event.pointerCount) {
+            if (!isPalm(event, index)) continue
+            val slot = touchSlots.remove(event.getPointerId(index)) ?: continue
+            sendTouch(0f, 0f, 0.0, 1, slot)
+        }
     }
 
     private fun sendContact(event: MotionEvent, index: Int, action: Int, vw: Float, vh: Float) {

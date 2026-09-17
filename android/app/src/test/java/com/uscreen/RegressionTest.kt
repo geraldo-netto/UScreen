@@ -93,6 +93,49 @@ class RegressionTest {
         } finally { receiver.stop() }
     }
 
+    @Test fun t319_latePalmClassificationReleasesOnlyItsExistingTouch() {
+        for (palmAction in listOf(MotionEvent.ACTION_MOVE, MotionEvent.ACTION_POINTER_UP)) {
+            val capture = TouchCapture()
+            val socket = Socket()
+            set(capture, "webSocket", socket)
+            set(capture, "isConnected", true)
+            fun send(action: Int, vararg pointers: Pair<Int, Int>): List<org.json.JSONObject> {
+                socket.messages.clear()
+                val motion = MotionEvent.obtain(0, 10, action, pointers.size,
+                    pointers.map { (pointerId, tool) -> MotionEvent.PointerProperties().apply {
+                        id = pointerId; toolType = tool
+                    } }.toTypedArray(),
+                    pointers.map { MotionEvent.PointerCoords().apply {
+                        x = 30f; y = 40f; pressure = 0.5f
+                    } }.toTypedArray(), 0, 0, 1f, 1f, 0, 0, 0, 0)
+                try { capture.handleMotionEvent(motion, 100, 100) }
+                finally { motion.recycle() }
+                return socket.messages.map { org.json.JSONObject(it) }
+            }
+            val finger = MotionEvent.TOOL_TYPE_FINGER
+            try {
+                val first = send(MotionEvent.ACTION_DOWN, 10 to finger).single().getInt("slot")
+                val second = send(MotionEvent.ACTION_POINTER_DOWN or (1 shl 8),
+                    10 to finger, 11 to finger).single().getInt("slot")
+                val rejected = send(palmAction, 10 to 5, 11 to finger)
+                val releases = rejected.filter { it.getInt("action") == 1 }
+                assertEquals("T319 palm action $palmAction left the old contact down",
+                    listOf(first), releases.map { it.getInt("slot") })
+                assertEquals(0.0, releases.single().getDouble("pressure"), 0.0)
+                assertEquals(mapOf(11 to second), get(capture, "touchSlots"))
+                val continued = send(MotionEvent.ACTION_MOVE, 11 to finger).single()
+                assertEquals(2, continued.getInt("action"))
+                assertEquals(second, continued.getInt("slot"))
+                val replacement = send(MotionEvent.ACTION_POINTER_DOWN or (1 shl 8),
+                    11 to finger, 31 to finger).single()
+                assertEquals(first, replacement.getInt("slot"))
+                assertEquals(setOf(first, second),
+                    send(MotionEvent.ACTION_CANCEL, 11 to finger, 31 to finger)
+                        .map { it.getInt("slot") }.toSet())
+            } finally { capture.disconnect() }
+        }
+    }
+
     @Test fun t303_platformPalmCannotBecomeAFingerContact() {
         // AOSP's hidden MotionEvent.TOOL_TYPE_PALM is 5, not an SDK API.
         val capture = TouchCapture()
