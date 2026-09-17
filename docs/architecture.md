@@ -88,6 +88,14 @@ failed edits remain pending for the next update. Shutdown cancels lock waits
 and joins the worker, including any already-started filesystem commit. Neither
 aborting an async caller nor dropping a handle rolls back an in-progress write.
 
+`host/src/kscreen.rs` owns the KScreen command boundary and typed output
+inventory. Placement derives logical bounds from pixels and scale; input
+mapping chooses a connector; diagnostics report raw mode dimensions and color
+profiles. They share parsing without conflating these policies. Missing fields
+retain the established defaults, and a missing connector name remains distinct
+from an empty name. Modern primary-output selection is tracked separately in
+T299.
+
 ## Protocol
 
 Slot indices start at zero. Default video port is `8890 + 2*slot`; default

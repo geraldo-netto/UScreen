@@ -610,48 +610,39 @@ async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
     report_connectors(r, &connectors);
 
     let names: Vec<&str> = connectors.iter().map(|c| c.name.as_str()).collect();
-    let Some(json) = output_of("kscreen-doctor", &["-j"]).await else {
+    let Ok(response) = crate::kscreen::fetch().await else {
         return;
     };
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) else {
+    // Preserve doctor's text-output decoding; mapping consumes strict bytes.
+    let text = String::from_utf8_lossy(&response.stdout);
+    let parsed = crate::kscreen::parse(text.as_bytes());
+    if matches!(parsed, Err(crate::kscreen::ParseError::InvalidJson)) {
         r.line(Level::Warn, "kscreen-doctor", "unparseable JSON output");
-        return;
-    };
-    let Some(outputs) = value.get("outputs").and_then(|o| o.as_array()) else {
+    }
+    let Ok(outputs) = parsed else {
         return;
     };
 
-    report_display_outputs(r, cfg, &names, outputs);
+    report_display_outputs(r, cfg, &names, &outputs);
 }
 
 fn report_display_outputs(
     r: &mut Report,
     cfg: &FileConfig,
     names: &[&str],
-    outputs: &[serde_json::Value],
+    outputs: &[crate::kscreen::Output],
 ) {
     for out in outputs {
-        let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let name = out.label();
         if !names.contains(&name) {
             continue;
         }
-        let enabled = out
-            .get("enabled")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        if !enabled {
+        if !out.enabled {
             r.line(Level::Warn, "KDE output", &format!("{} is disabled", name));
             r.hint("the daemon enables it while an attached tablet uses it as a screen; nothing is rendered while it is off");
             continue;
         }
-        let w = out
-            .pointer("/size/width")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0);
-        let h = out
-            .pointer("/size/height")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0);
+        let (w, h) = out.pixel_size;
         report_output_mode(r, cfg, name, w, h);
     }
 }
@@ -888,14 +879,11 @@ async fn check_desktop_colour_profiles(r: &mut Report) {
         return;
     };
     for out in outputs {
-        let name = out.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let name = out.label();
         if !names.iter().any(|n| n == name) {
             continue;
         }
-        let icc = out
-            .get("iccProfilePath")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let icc = &out.icc_profile;
         if icc.is_empty() {
             r.line(
                 Level::Warn,
@@ -1220,6 +1208,24 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t372_diagnostics_read_raw_dimensions_from_the_shared_inventory() {
+        let outputs =
+            crate::kscreen::parse(include_bytes!("../../testdata/kscreen-inventory.json")).unwrap();
+        let mut report = super::Report::new();
+        super::report_display_outputs(
+            &mut report,
+            &super::FileConfig::default(),
+            &["DVI-I-1", "HDMI-1"],
+            &outputs,
+        );
+        let messages = report.messages.borrow().join("\n");
+        assert!(messages.contains("1280"), "{messages}");
+        assert!(messages.contains("800"), "{messages}");
+        assert!(messages.contains("HDMI-1 is disabled"), "{messages}");
+        assert_eq!(report.failures, 0);
+    }
+
     mod lookup_fixture {
         include!("../../testdata/executable_lookup.rs");
     }

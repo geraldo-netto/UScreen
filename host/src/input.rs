@@ -893,20 +893,17 @@ async fn primary_non_evdi_output() -> Option<String> {
         .into_iter()
         .map(|c| c.name)
         .collect();
-    let out = tokio::process::Command::new("kscreen-doctor")
-        .arg("-j")
-        .output_bounded()
-        .await
-        .ok()?;
-    let v: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
-    let outputs = v.get("outputs")?.as_array()?;
+    primary_physical_output(&crate::kscreen::outputs().await?, &evdi)
+}
+
+fn primary_physical_output(outputs: &[crate::kscreen::Output], evdi: &[String]) -> Option<String> {
     let mut fallback = None;
     for o in outputs {
-        let name = o.get("name").and_then(|v| v.as_str())?.to_string();
-        if evdi.contains(&name) || !o.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false) {
+        let name = o.name.clone()?;
+        if evdi.contains(&name) || !o.enabled {
             continue;
         }
-        if o.get("primary").and_then(|v| v.as_bool()).unwrap_or(false) {
+        if o.primary {
             return Some(name);
         }
         fallback.get_or_insert(name);
@@ -1309,7 +1306,7 @@ async fn target_output(
             };
             let enabled = enabled_named_output(&outputs, fallback.as_deref());
             if let Some(o) = enabled {
-                return o.get("name").and_then(|v| v.as_str()).map(str::to_string);
+                return o.name.clone();
             }
             if tokio::time::Instant::now() >= deadline {
                 if fallback.is_some() {
@@ -1329,16 +1326,12 @@ async fn target_output(
 }
 
 fn enabled_named_output<'a>(
-    outputs: &'a [serde_json::Value],
+    outputs: &'a [crate::kscreen::Output],
     name: Option<&str>,
-) -> Option<&'a serde_json::Value> {
-    outputs.iter().find(|output| {
-        output.get("name").and_then(|value| value.as_str()) == name
-            && output
-                .get("enabled")
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false)
-    })
+) -> Option<&'a crate::kscreen::Output> {
+    outputs
+        .iter()
+        .find(|output| output.name.as_deref() == name && output.enabled)
 }
 
 fn fallback_output(
@@ -2202,6 +2195,29 @@ fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled:
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t372_mapping_selects_from_the_shared_inventory() {
+        let outputs =
+            crate::kscreen::parse(include_bytes!("../../testdata/kscreen-inventory.json")).unwrap();
+        assert_eq!(
+            super::primary_physical_output(&outputs, &["DVI-I-1".into()]),
+            Some("DP-1".into())
+        );
+        assert_eq!(
+            super::enabled_named_output(&outputs, Some("DVI-I-1"))
+                .unwrap()
+                .id,
+            3
+        );
+        assert!(super::enabled_named_output(&outputs, Some("HDMI-1")).is_none());
+        let malformed =
+            crate::kscreen::parse(br#"{"outputs":[{}, {"name":"DP-1","enabled":true}]}"#).unwrap();
+        assert!(
+            super::primary_physical_output(&malformed, &[]).is_none(),
+            "T372: preserve rejection of an absent connector name"
+        );
+    }
+
     #[test]
     fn t247_connected_fixture_matches_production_response() {
         let config = super::InputConfig {

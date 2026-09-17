@@ -2,30 +2,98 @@
 use serde_json::Value;
 use uscreen_config::commands::AsyncCommandExt;
 
-/// Outputs currently known to KWin; absent when the tool or JSON is unavailable.
-pub(crate) async fn outputs() -> Option<Vec<Value>> {
-    let out = tokio::process::Command::new("kscreen-doctor")
-        .arg("-j")
-        .output_bounded()
-        .await
-        .ok()?;
-    let value: Value = serde_json::from_slice(&out.stdout).ok()?;
-    Some(value.get("outputs")?.as_array()?.clone())
+/// Preserve absent names distinctly: input mapping cannot invent a connector.
+#[derive(Clone, Debug)]
+pub(crate) struct Output {
+    pub id: u32,
+    pub name: Option<String>,
+    pub enabled: bool,
+    pub primary: bool,
+    pub position: (i64, i64),
+    pub pixel_size: (i64, i64),
+    pub scale: f64,
+    pub icc_profile: String,
+}
+
+impl Output {
+    fn from_json(value: &Value) -> Self {
+        Self {
+            id: value.get("id").and_then(Value::as_u64).unwrap_or(0) as u32,
+            name: value.get("name").and_then(Value::as_str).map(str::to_owned),
+            enabled: value
+                .get("enabled")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            primary: value
+                .get("primary")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            position: (integer(value, "/pos/x"), integer(value, "/pos/y")),
+            pixel_size: (
+                integer(value, "/size/width"),
+                integer(value, "/size/height"),
+            ),
+            scale: value.get("scale").and_then(Value::as_f64).unwrap_or(1.0),
+            icc_profile: value
+                .get("iccProfilePath")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .into(),
+        }
+    }
+
+    pub fn label(&self) -> &str {
+        self.name.as_deref().unwrap_or("")
+    }
+}
+
+fn integer(value: &Value, path: &str) -> i64 {
+    value.pointer(path).and_then(Value::as_i64).unwrap_or(0)
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum ParseError {
+    InvalidJson,
+    MissingOutputs,
+}
+
+pub(crate) fn parse(bytes: &[u8]) -> Result<Vec<Output>, ParseError> {
+    let value: Value = serde_json::from_slice(bytes).map_err(|_| ParseError::InvalidJson)?;
+    let outputs = value
+        .get("outputs")
+        .and_then(Value::as_array)
+        .ok_or(ParseError::MissingOutputs)?;
+    Ok(outputs.iter().map(Output::from_json).collect())
+}
+
+pub(crate) async fn fetch_with(
+    mut command: tokio::process::Command,
+) -> std::io::Result<std::process::Output> {
+    command.arg("-j").output_bounded().await
+}
+
+pub(crate) async fn fetch() -> std::io::Result<std::process::Output> {
+    fetch_with(tokio::process::Command::new("kscreen-doctor")).await
+}
+
+/// Preserve the existing contract: parseable output remains usable even when
+/// the command exits nonzero. Consumers decide mapping/diagnostic policy.
+pub(crate) async fn outputs() -> Option<Vec<Output>> {
+    parse(&fetch().await.ok()?.stdout).ok()
 }
 
 pub(crate) fn enabled_matching_output<'a>(
-    out: &'a Value,
+    out: &'a Output,
     names: &[String],
 ) -> Option<(u32, &'a str)> {
-    let name = out.get("name").and_then(Value::as_str).unwrap_or("");
+    let name = out.label();
     if !names.iter().any(|candidate| candidate == name) {
         return None;
     }
-    if !out.get("enabled").and_then(Value::as_bool).unwrap_or(false) {
+    if !out.enabled {
         return None;
     }
-    let id = out.get("id").and_then(Value::as_u64).unwrap_or(0) as u32;
-    Some((id, name))
+    Some((out.id, name))
 }
 
 #[derive(Clone, Copy)]
@@ -39,20 +107,18 @@ struct Geometry {
 }
 
 impl Geometry {
-    fn from_json(out: &Value) -> Self {
-        let scale = out.get("scale").and_then(Value::as_f64).unwrap_or(1.0);
+    fn from_output(out: &Output) -> Self {
         Self {
-            id: out.get("id").and_then(Value::as_u64).unwrap_or(0) as u32,
-            enabled: out.get("enabled").and_then(Value::as_bool).unwrap_or(false),
-            x: out.pointer("/pos/x").and_then(Value::as_i64).unwrap_or(0),
-            y: out.pointer("/pos/y").and_then(Value::as_i64).unwrap_or(0),
-            width: Self::logical_size(out, "/size/width", scale),
-            height: Self::logical_size(out, "/size/height", scale),
+            id: out.id,
+            enabled: out.enabled,
+            x: out.position.0,
+            y: out.position.1,
+            width: Self::logical_size(out.pixel_size.0, out.scale),
+            height: Self::logical_size(out.pixel_size.1, out.scale),
         }
     }
 
-    fn logical_size(out: &Value, path: &str, scale: f64) -> i64 {
-        let raw = out.pointer(path).and_then(Value::as_i64).unwrap_or(0);
+    fn logical_size(raw: i64, scale: f64) -> i64 {
         if scale > 0.0 {
             // Match KScreen's occupied logical bounds at fractional scales.
             (raw as f64 / scale).ceil() as i64
@@ -110,11 +176,11 @@ struct Scene {
 }
 
 impl Scene {
-    fn from_outputs(outputs: &[Value], evdi_names: &[String]) -> Self {
+    fn from_outputs(outputs: &[Output], evdi_names: &[String]) -> Self {
         let mut scene = Self::default();
         for output in outputs {
-            let name = output.get("name").and_then(Value::as_str).unwrap_or("");
-            let geometry = Geometry::from_json(output);
+            let name = output.label();
+            let geometry = Geometry::from_output(output);
             if evdi_names.iter().any(|candidate| candidate == name) {
                 scene.tablet = Some(geometry);
             } else if geometry.enabled {
@@ -191,7 +257,7 @@ impl Placement {
 }
 
 pub(crate) fn placement(
-    outputs: &[Value],
+    outputs: &[Output],
     evdi_names: &[String],
     position: crate::config::Position,
 ) -> Option<Placement> {
@@ -203,6 +269,55 @@ mod tests {
     use super::*;
     use crate::config::Position;
     use serde_json::json;
+
+    #[test]
+    fn t372_shared_inventory_preserves_placement_and_connector_identity() {
+        let outputs = parse(include_bytes!("../../testdata/kscreen-inventory.json")).unwrap();
+        let names = ["DVI-I-1".into()];
+        let plan = placement(&outputs, &names, Position::Right).unwrap();
+        assert!(plan.already_applied);
+        assert_eq!((plan.x, plan.y), (3968, 0));
+        assert_eq!(
+            enabled_matching_output(&outputs[2], &names),
+            Some((3, "DVI-I-1"))
+        );
+        assert_eq!(outputs[2].icc_profile, "/fixture/sRGB.icc");
+        assert!(enabled_matching_output(&outputs[3], &["HDMI-1".into()]).is_none());
+    }
+
+    #[test]
+    fn t372_parser_preserves_missing_and_wrong_type_defaults() {
+        for source in [b"{}".as_slice(), b"{\"outputs\":false}"] {
+            assert_eq!(parse(source).err(), Some(ParseError::MissingOutputs));
+        }
+        assert_eq!(parse(b"not json").err(), Some(ParseError::InvalidJson));
+        let outputs = parse(br#"{"outputs":[{},null,{"name":7,"enabled":"true","id":-1,"scale":0,"size":{"width":120,"height":80}}]}"#).unwrap();
+        for output in &outputs {
+            assert_eq!(output.name, None);
+            assert!(!output.enabled);
+            assert_eq!(output.id, 0);
+        }
+        let geometry = Geometry::from_output(&outputs[2]);
+        assert_eq!((geometry.width, geometry.height), (120, 80));
+        assert_eq!(outputs[0].scale, 1.0);
+    }
+
+    #[tokio::test]
+    async fn t372_inventory_command_is_injectable_and_preserves_json_on_failed_exit() {
+        let mut command = tokio::process::Command::new("sh");
+        command.args([
+            "-c",
+            "test \"$1\" = -j || exit 31; printf '%s' '{\"outputs\":[]}'; exit 7",
+            "inventory-fixture",
+        ]);
+        let response = fetch_with(command).await.unwrap();
+        assert_eq!(response.status.code(), Some(7));
+        assert!(parse(&response.stdout).unwrap().is_empty());
+    }
+
+    fn inventory(outputs: &[Value]) -> Vec<Output> {
+        parse(&serde_json::to_vec(&json!({"outputs": outputs})).unwrap()).unwrap()
+    }
 
     fn screen(id: u32, name: &str, enabled: bool, x: i64, y: i64) -> Value {
         json!({"id": id, "name": name, "enabled": enabled, "pos": {"x": x, "y": y},
@@ -227,7 +342,7 @@ mod tests {
         ] {
             let mut outputs = [desktop.clone(), tablet.clone()];
             let names = ["DVI-I-1".into()];
-            let plan = placement(&outputs, &names, direction).unwrap();
+            let plan = placement(&inventory(&outputs), &names, direction).unwrap();
             assert_eq!(
                 (plan.x, plan.y, plan.shift_x, plan.shift_y),
                 (x, y, shift_x, shift_y),
@@ -237,7 +352,7 @@ mod tests {
             outputs[1]["pos"] = json!({"x": x, "y": y});
             outputs[1]["enabled"] = json!(true);
             assert!(
-                placement(&outputs, &names, direction)
+                placement(&inventory(&outputs), &names, direction)
                     .unwrap()
                     .already_applied
             );
@@ -256,7 +371,7 @@ mod tests {
             (Position::Above, 0, 0, 0, 500),
             (Position::Below, 0, 720, 0, 0),
         ] {
-            let plan = placement(&outputs, &["DVI-I-1".into()], position).unwrap();
+            let plan = placement(&inventory(&outputs), &["DVI-I-1".into()], position).unwrap();
             assert_eq!(
                 (plan.x, plan.y, plan.shift_x, plan.shift_y),
                 (x, y, shift_x, shift_y)
@@ -278,9 +393,9 @@ mod tests {
             screen(1, "DVI-I-99", true, 0, 500),
             screen(2, "DVI-I-1", true, 0, 0),
         ];
-        let above = placement(&outputs, &["DVI-I-1".into()], Position::Above).unwrap();
+        let above = placement(&inventory(&outputs), &["DVI-I-1".into()], Position::Above).unwrap();
         assert!(above.already_applied);
-        let right = placement(&outputs, &["DVI-I-1".into()], Position::Right).unwrap();
+        let right = placement(&inventory(&outputs), &["DVI-I-1".into()], Position::Right).unwrap();
         assert_eq!(
             right.arguments(),
             [
@@ -289,8 +404,13 @@ mod tests {
                 "output.1.position.0,0"
             ]
         );
-        assert!(placement(&outputs, &["absent".into()], Position::Right).is_none());
-        let alone = placement(&outputs[1..], &["DVI-I-1".into()], Position::Right).unwrap();
+        assert!(placement(&inventory(&outputs), &["absent".into()], Position::Right).is_none());
+        let alone = placement(
+            &inventory(&outputs[1..]),
+            &["DVI-I-1".into()],
+            Position::Right,
+        )
+        .unwrap();
         assert!(alone.already_applied);
     }
 }
