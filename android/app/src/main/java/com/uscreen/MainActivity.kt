@@ -436,7 +436,6 @@ fun UScreenMain(
     var isConnected by remember { mutableStateOf(false) }
     var fps by remember { mutableStateOf(0f) }
     var mbps by remember { mutableStateOf(0f) }
-    var showOverlay by remember { mutableStateOf(true) }
     var showSettings by remember { mutableStateOf(false) }
     var showStats by remember { mutableStateOf(prefs?.showStats ?: false) }
     var checkUpdates by remember { mutableStateOf(prefs?.checkUpdates ?: true) }
@@ -452,16 +451,6 @@ fun UScreenMain(
             connected = { connectionUi.post { isConnected = true } },
             disconnected = { connectionUi.post { isConnected = false } }
         )
-    }
-
-    // Auto-hide overlay shortly after connection
-    LaunchedEffect(isConnected) {
-        if (isConnected) {
-            delay(3000)
-            showOverlay = false
-        } else {
-            showOverlay = true
-        }
     }
 
     LaunchedEffect(isConnected, showStats) {
