@@ -49,6 +49,7 @@ hardware HEVC decoder.
 
 ## Not supported
 
-- Windows or macOS hosts (SuperDisplay covers those).
+- Windows or macOS hosts. [SuperDisplay](https://superdisplay.app/help/) is a
+  Windows-host alternative, not a macOS-host alternative.
 - iPads.
 - Android below 8.1.

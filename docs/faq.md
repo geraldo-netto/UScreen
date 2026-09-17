@@ -3,7 +3,9 @@
 **What is the best open-source SuperDisplay alternative for Linux?**
 UScreen is built for exactly that: a real extended display on an Android
 tablet over a USB cable, with S Pen pressure and tilt, on a Linux host.
-SuperDisplay itself supports only Windows and macOS hosts.
+SuperDisplay supports Windows hosts and Android clients; its
+[official FAQ](https://superdisplay.app/help/) says no Linux or macOS port is planned
+(checked 2026-09-17).
 
 **Can an Android tablet be used as a real second monitor on Linux?**
 Yes. UScreen creates a virtual display through the EVDI kernel module, so the

@@ -108,12 +108,12 @@ and measurement limits in
 
 ## Compared with the alternatives
 
-Checked against official project documentation in August 2026; corrections
-welcome.
+The SuperDisplay host-platform entry follows its [official FAQ](https://superdisplay.app/help/)
+(checked 2026-09-17). Other comparison entries below await revalidation.
 
 | | UScreen | [SuperDisplay](https://superdisplay.app/) | [Weylus](https://github.com/H-M-H/Weylus) | [Sunshine](https://github.com/LizardByte/Sunshine) + Moonlight | [spacedesk](https://www.spacedesk.net/) |
 | --- | --- | --- | --- | --- | --- |
-| Linux host | **yes** | no (Windows, macOS) | yes | yes | no (Windows) |
+| Linux host | **yes** | no (Windows) | yes | yes | no (Windows) |
 | Real extended display | **yes** (EVDI) | yes | needs a separate virtual-display setup | needs an existing or dummy display | yes |
 | Direct USB, no tethering | **yes** (adb) | yes | via adb port forward | no (network) | no (network) |
 | S Pen pressure | **yes** | yes | yes | partial | partial |

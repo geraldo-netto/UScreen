@@ -60,7 +60,7 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "What is the best open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "UScreen for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay itself only supports Windows and macOS hosts."}},
+    {"@type": "Question", "name": "What is the best open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "UScreen for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay supports Windows hosts and Android clients; its official FAQ says no Linux or macOS port is planned."}},
     {"@type": "Question", "name": "Can an Android tablet be used as a real second monitor on Linux?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. UScreen creates a virtual display through the EVDI kernel module, so the tablet appears in the display settings like any monitor. It extends the desktop rather than mirroring it."}},
     {"@type": "Question", "name": "Does UScreen require USB tethering or Wi-Fi?", "acceptedAnswer": {"@type": "Answer", "text": "No. It uses the adb connection provided by USB debugging over a normal data-capable USB cable; USB debugging must be enabled on the tablet, USB tethering is not needed. Wi-Fi works as a fallback with more stutter."}},
     {"@type": "Question", "name": "Does UScreen support Samsung S Pen pressure and tilt?", "acceptedAnswer": {"@type": "Answer", "text": "Yes: pressure, tilt, the eraser end and the stylus button are forwarded to Linux as a graphics-tablet device, so Krita, GIMP and Blender see a real tablet."}},
@@ -389,9 +389,9 @@
   </div>
   <div class="table-wrap" tabindex="0" aria-label="Feature comparison with SuperDisplay, Weylus, Sunshine plus Moonlight and spacedesk; scrolls sideways on narrow screens" data-hint="Swipe to compare →">
   <table>
-    <thead><tr><th></th><th>UScreen</th><th><a href="https://superdisplay.app/">SuperDisplay</a></th><th><a href="https://github.com/H-M-H/Weylus">Weylus</a></th><th><a href="https://github.com/LizardByte/Sunshine">Sunshine</a> + <a href="https://github.com/moonlight-stream/moonlight-android">Moonlight</a></th><th><a href="https://www.spacedesk.net/">spacedesk</a></th></tr></thead>
+    <thead><tr><th></th><th>UScreen</th><th><a href="https://superdisplay.app/help/">SuperDisplay</a></th><th><a href="https://github.com/H-M-H/Weylus">Weylus</a></th><th><a href="https://github.com/LizardByte/Sunshine">Sunshine</a> + <a href="https://github.com/moonlight-stream/moonlight-android">Moonlight</a></th><th><a href="https://www.spacedesk.net/">spacedesk</a></th></tr></thead>
     <tbody>
-      <tr><td>Linux host</td><td class="yes">yes</td><td>no — Windows, macOS</td><td>yes</td><td>yes</td><td>no — Windows</td></tr>
+      <tr><td>Linux host</td><td class="yes">yes</td><td>no — Windows</td><td>yes</td><td>yes</td><td>no — Windows</td></tr>
       <tr><td>Real extended display</td><td class="yes">yes, EVDI</td><td>yes</td><td>separate virtual-display setup</td><td>needs an existing or dummy display</td><td>yes</td></tr>
       <tr><td>Direct USB, no tethering</td><td class="yes">yes, adb</td><td>yes</td><td>via adb port forward</td><td>no, network</td><td>no, network</td></tr>
       <tr><td>Pen pressure / tilt / eraser</td><td class="yes">yes / yes / yes</td><td>yes / yes / yes</td><td>yes / yes / no</td><td>partial / no / no</td><td>partial / no / no</td></tr>
