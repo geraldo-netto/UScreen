@@ -1,0 +1,24 @@
+{
+  "parent_commit": "7427d93",
+  "cpu": "AMD Ryzen 9 7945HX; 32 allowed logical CPUs",
+  "container_image": "uscreen-ci:perf",
+  "container_image_id": "sha256:ecf159e5bc432d559bb1afcf3203b31c76b1f741322dd2702ee89096a42f9ead",
+  "container_capability_added": "SYS_RESOURCE (isolated pipe resize only)",
+  "host_sysctls_changed": false,
+  "main_matrix": {
+    "trials": 432,
+    "frames_per_session": 120
+  },
+  "validation": {
+    "main_sequence_and_all_payload_checks": "all 432 trials passed",
+    "sanitizer": "GCC -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer; 1 MiB, 4 sessions, 1536000 bytes, 12 frames, paced, 20 ms reader delay, sampling disabled; exit 0",
+    "control_sequence_and_all_payload_checks": "all 192 trials passed"
+  },
+  "measurement_note": "Shared desktop; randomized capacity order within workload/repeat; no concurrent agent benchmarks or compilation during timed trials.",
+  "control_trials": 192,
+  "sysctls_after": {
+    "pipe-max-size": "1048576",
+    "pipe-user-pages-soft": "16384",
+    "pipe-user-pages-hard": "0"
+  }
+}

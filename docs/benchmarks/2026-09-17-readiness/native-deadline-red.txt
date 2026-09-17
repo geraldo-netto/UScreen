@@ -1,0 +1,28 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.33s
+     Running tests/evdi_helper.rs (/build/debug/deps/evdi_helper-288b27718f0ee465)
+
+running 2 tests
+test t405_capture_waits_for_exact_deadline ...
+thread 't405_capture_waits_for_exact_deadline' panicked at host/tests/evdi_helper.rs:75:9:
+helper regression T405-capture: signal: 6 (SIGABRT) (core dumped)
+helper-test: /work/host/tests/evdi_helper_test.c:835: test_t405_capture_deadline: Assertion `capture_poll_timeout(&g_capture, 16) == 16 && "T405: capture must wait for its deadline; events wake poll immediately"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test t405_idle_writer_waits_for_keepalive_deadline ...
+thread 't405_idle_writer_waits_for_keepalive_deadline' panicked at host/tests/evdi_helper.rs:75:9:
+helper regression T405-writer: signal: 6 (SIGABRT) (core dumped)
+helper-test: /work/host/tests/evdi_helper_test.c:82: mock_pthread_cond_timedwait: Assertion `deadline->tv_sec == 1 && deadline->tv_nsec == 200000000L && "T405: idle writer must wait until the 200ms keepalive, not one frame period"' failed.
+
+FAILED
+
+failures:
+
+failures:
+    t405_capture_waits_for_exact_deadline
+    t405_idle_writer_waits_for_keepalive_deadline
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.98s
+
+error: test failed, to rerun pass `-p uscreen --test evdi_helper`

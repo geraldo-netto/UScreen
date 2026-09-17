@@ -66,12 +66,13 @@ static void leased_frame_history(void) {
     assert(frame_exchange_allocated(&frames));
     frames.buffers_ready = 1;
     atomic_int running = 1;
+    const struct timespec deadline = {0};
     frame_cursor_t cursor = {.generation = UINT_MAX};
     frame_lease_t lease;
     memset(frames.fill, 0x71, frames.size);
     unsigned char *published = frames.fill, *history = frames.dirty_fill;
     frame_exchange_publish(&frames, 123);
-    assert(frame_exchange_claim(&frames, &cursor, &running, 1000, &lease) == 1);
+    assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == 1);
     assert(lease.data == published && frames.dirty_write == history);
     assert(lease.size == 96 && lease.fresh && lease.grabbed_us == 123);
     assert(frames.writer_busy && history[0] == 0);
@@ -81,7 +82,7 @@ static void leased_frame_history(void) {
     frame_exchange_publish(&frames, 456);
     assert(lease.data[0] == 0x71 && "T380: publication overwrote writer lease");
     frame_exchange_release(&frames);
-    assert(frame_exchange_claim(&frames, &cursor, &running, 1000, &lease) == 1);
+    assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == 1);
     assert(lease.data[0] == 0x22 && lease.grabbed_us == 456);
     /* Retirement fails closed while an outstanding lease may read old data. */
     const unsigned char *held = lease.data;
@@ -91,9 +92,9 @@ static void leased_frame_history(void) {
     assert(frame_exchange_retire(&frames));
     frame_exchange_resize(&frames, 4, 4);
     frames.buffers_ready = 1;
-    assert(frame_exchange_claim(&frames, &cursor, &running, 1000, &lease) == 0);
+    assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == 0);
     running = 0;
-    assert(frame_exchange_claim(&frames, &cursor, &running, 1000, &lease) == -1);
+    assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == -1);
     destroy_exchange(&frames);
 }
 

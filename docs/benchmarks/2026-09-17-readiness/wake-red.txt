@@ -1,0 +1,50 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.64s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-6c41124dac39021e)
+
+running 6 tests
+test input::wake_tests::t405_idle_input_listener_has_no_periodic_wakeups ...
+thread 'input::wake_tests::t405_idle_input_listener_has_no_periodic_wakeups' panicked at host/src/input/wake_tests.rs:33:5:
+assertion `left == right` failed: T405: idle input listener woke on a timer
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test stream::wake_tests::t405_codec_config_publication_wakes_waiters_immediately ...
+thread 'stream::wake_tests::t405_codec_config_publication_wakes_waiters_immediately' panicked at host/src/stream/wake_tests.rs:62:5:
+T405: CSD publication waited for a poll tick
+FAILED
+test stream::wake_tests::t405_codec_config_wait_has_only_its_final_deadline ...
+thread 'stream::wake_tests::t405_codec_config_wait_has_only_its_final_deadline' panicked at host/src/stream/wake_tests.rs:83:5:
+assertion `left == right` failed: T405: missing CSD caused periodic wakeups
+  left: 1
+ right: 0
+FAILED
+test stream::wake_tests::t405_idle_listener_has_no_periodic_wakeups ...
+thread 'stream::wake_tests::t405_idle_listener_has_no_periodic_wakeups' panicked at host/src/stream/wake_tests.rs:15:5:
+assertion `left == right` failed: T405: idle video listener woke on a timer
+  left: 1
+ right: 0
+FAILED
+test stream::wake_tests::t405_stop_before_first_poll_remains_latched ...
+thread 'stream::wake_tests::t405_stop_before_first_poll_remains_latched' panicked at host/src/stream/wake_tests.rs:99:5:
+T405: startup erased the stop request
+FAILED
+test stream::wake_tests::t405_stop_wakes_listener_without_waiting_for_a_tick ...
+thread 'stream::wake_tests::t405_stop_wakes_listener_without_waiting_for_a_tick' panicked at host/src/stream/wake_tests.rs:28:5:
+T405: stop left the listener asleep
+FAILED
+
+failures:
+
+failures:
+    input::wake_tests::t405_idle_input_listener_has_no_periodic_wakeups
+    stream::wake_tests::t405_codec_config_publication_wakes_waiters_immediately
+    stream::wake_tests::t405_codec_config_wait_has_only_its_final_deadline
+    stream::wake_tests::t405_idle_listener_has_no_periodic_wakeups
+    stream::wake_tests::t405_stop_before_first_poll_remains_latched
+    stream::wake_tests::t405_stop_wakes_listener_without_waiting_for_a_tick
+
+test result: FAILED. 0 passed; 6 failed; 0 ignored; 0 measured; 220 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

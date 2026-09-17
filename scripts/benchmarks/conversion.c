@@ -59,7 +59,7 @@ static void rotate(struct lane *lane) {
     frame_exchange_publish(&lane->frames, 0);
     atomic_int running = 1;
     frame_lease_t lease;
-    assert(frame_exchange_claim(&lane->frames, &lane->cursor, &running, 1, &lease) == 1);
+    assert(frame_exchange_claim(&lane->frames, &lane->cursor, &running, &(struct timespec){0}, &lease) == 1);
     frame_exchange_release(&lane->frames);
 }
 

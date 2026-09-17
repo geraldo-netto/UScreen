@@ -61,7 +61,7 @@ impl Spec {
                 video_port: self.ports.0,
                 token: self.token,
             },
-            capture.codec_config_arc(),
+            capture.codec_config(),
             capture.idr_request_flag(),
         );
         let input = input::InputServer::new(

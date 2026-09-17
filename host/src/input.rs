@@ -1,4 +1,7 @@
 //! Control transport and controller ownership; platform work lives in adapters.
+#[cfg(test)]
+mod wake_tests;
+
 mod backend;
 mod config;
 #[cfg(test)]
@@ -22,7 +25,6 @@ pub(crate) use settings::negotiated_geometry;
 use settings::*;
 #[cfg(test)]
 use std::os::fd::AsRawFd;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::watch;
@@ -74,7 +76,6 @@ pub struct InputServer {
     attachment: Option<crate::attachment::Attachment>,
     backend: Arc<dyn InputBackend>,
     config: InputConfig,
-    running: Arc<AtomicBool>,
     settings_tx: Option<watch::Sender<EncoderSettings>>,
     /// Which mode the daemon is in, and how the tablet changes it. Owned as a
     /// channel rather than a field because the mode is switchable at runtime
@@ -129,7 +130,6 @@ impl InputServer {
             attachment: None,
             backend,
             config,
-            running: Arc::new(AtomicBool::new(false)),
             settings_tx,
             mode_tx,
             latency,
@@ -154,7 +154,6 @@ impl InputServer {
     }
 
     pub async fn run_with_listener(&self, listener: TcpListener) -> Result<()> {
-        self.running.store(true, Ordering::SeqCst);
         // The devices exist only while a tablet is attached. Created for the
         // daemon's whole lifetime they left a touchscreen and a pen tablet on
         // the desktop with nothing behind them, and merely having those
@@ -186,17 +185,11 @@ impl InputServer {
         ));
 
         let config = self.config.clone();
-        let running = self.running.clone();
 
         loop {
             let accept = tokio::select! {
                 res = listener.accept() => res,
                 _ = tasks.join_next(), if !tasks.is_empty() => continue,
-                _ = async {
-                    while running.load(Ordering::SeqCst) {
-                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    }
-                } => break,
             };
 
             let (socket, peer) = match accept {
@@ -232,9 +225,6 @@ impl InputServer {
                 }
             });
         }
-
-        tasks.shutdown().await;
-        Ok(())
     }
 }
 

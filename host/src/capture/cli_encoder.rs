@@ -2,10 +2,9 @@
 use super::{fifo_path_for, CaptureConfig};
 use crate::annex_b::AnnexBPacketizer;
 use crate::media::Codec;
-use crate::media_storage::MediaBytes as Bytes;
+use crate::media::CodecConfig;
 use anyhow::{Context, Result};
 use std::process::Stdio;
-use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tokio::process::Command;
 use tracing::{info, warn};
@@ -176,7 +175,7 @@ impl CliEncoder<'_> {
 pub(super) async fn read_loop(
     mut stdout: impl tokio::io::AsyncRead + Unpin,
     tx: crate::video_queue::VideoSender,
-    codec_config: Arc<Mutex<Option<Bytes>>>,
+    codec_config: CodecConfig,
     latency: crate::latency::LatencyTracker,
     codec: Codec,
 ) -> Result<()> {
@@ -184,7 +183,7 @@ pub(super) async fn read_loop(
     let mut frames: u64 = 0;
     let mut last_log = Instant::now();
     let mut packetizer = AnnexBPacketizer::new(codec, latency.clone());
-    let mut config_extracted = codec_config.lock().ok().and_then(|g| g.clone()).is_some();
+    let mut config_extracted = codec_config.current().is_some();
 
     loop {
         let (n, access_units) = packetizer
@@ -215,16 +214,14 @@ pub(super) async fn read_loop(
 
 fn publish_initial_codec_config(
     packetizer: &AnnexBPacketizer,
-    codec_config: &Arc<Mutex<Option<Bytes>>>,
+    codec_config: &CodecConfig,
     config_extracted: &mut bool,
     total: u64,
 ) {
     if !*config_extracted {
         if let Some(config) = packetizer.codec_config() {
             info!("Extracted codec config (SPS+PPS): {} bytes", config.len());
-            if let Ok(mut cc) = codec_config.lock() {
-                *cc = Some(config);
-            }
+            codec_config.publish(Some(config));
             *config_extracted = true;
         } else if total > 1024 * 1024 {
             warn!("Could not find SPS/PPS in first 1MB of stream");
@@ -317,7 +314,7 @@ mod tests {
             read_loop(
                 input.as_slice(),
                 tx.clone(),
-                Arc::new(Mutex::new(None)),
+                CodecConfig::default(),
                 latency.clone(),
                 Codec::H264,
             )

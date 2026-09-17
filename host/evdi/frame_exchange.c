@@ -96,43 +96,33 @@ void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
     pthread_mutex_unlock(&frames->mutex);
 }
 
-static void add_period(struct timespec *time, long period_ns) {
-    time->tv_nsec += period_ns;
-    while (time->tv_nsec >= 1000000000L) {
-        time->tv_nsec -= 1000000000L;
-        time->tv_sec += 1;
-    }
-}
-
-static void wait_for_frame(frame_exchange_t *frames, const atomic_int *running, long period_ns) {
-    /* Wait for a frame, but no longer than one period so shutdown and
-       mode changes are still noticed promptly. */
+static void wait_for_frame(frame_exchange_t *frames, const atomic_int *running,
+                           const struct timespec *deadline) {
     while (atomic_load(running) && (!frames->buffers_ready || !frames->latest_valid)) {
-        struct timespec wait_until;
-        clock_gettime(CLOCK_MONOTONIC, &wait_until);
-        add_period(&wait_until, period_ns);
-        if (pthread_cond_timedwait(&frames->ready, &frames->mutex,
-                                   &wait_until) == ETIMEDOUT)
-            break;
+        /* Spurious wakes keep the same absolute deadline. With no cached frame
+           only publication or shutdown can make progress: wait on the event. */
+        int result = deadline ? pthread_cond_timedwait(&frames->ready, &frames->mutex, deadline)
+                              : pthread_cond_wait(&frames->ready, &frames->mutex);
+        if (result == ETIMEDOUT) break;
     }
 }
 
 int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
-                         const atomic_int *running, long period_ns, frame_lease_t *lease) {
+                         const atomic_int *running, const struct timespec *deadline, frame_lease_t *lease) {
     pthread_mutex_lock(&frames->mutex);
-    wait_for_frame(frames, running, period_ns);
+    wait_for_frame(frames, running, deadline);
     if (!atomic_load(running)) {
         pthread_mutex_unlock(&frames->mutex);
         return -1;
-    }
-    if (!frames->buffers_ready) {
-        pthread_mutex_unlock(&frames->mutex);
-        return 0;
     }
     if (cursor->generation != frames->generation) {
         /* Buffers were reallocated; previous frames->write content is gone */
         cursor->generation = frames->generation;
         cursor->have_frame = 0;
+    }
+    if (!frames->buffers_ready) {
+        pthread_mutex_unlock(&frames->mutex);
+        return 0;
     }
     lease->fresh = 0;
     if (frames->latest_valid) {

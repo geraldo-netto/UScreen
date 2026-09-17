@@ -323,7 +323,7 @@ static int capture_poll_timeout(capture_context_t *capture, long request_period_
            the request time to zero, even after weeks of system uptime. */
         timeout_ms = due - capture_now_ms();
         if (timeout_ms < 0) timeout_ms = 0;
-        if (timeout_ms > 4) timeout_ms = 4;   /* stay responsive to events */
+        if (timeout_ms > INT_MAX) timeout_ms = INT_MAX;
     }
 
     return (int)timeout_ms;

@@ -1,0 +1,19 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-6c41124dac39021e)
+
+running 1 test
+test encoder_io::fifo_tests::t405_writer_notifications_follow_opened_inode_after_path_replacement ...
+thread 'encoder_io::fifo_tests::t405_writer_notifications_follow_opened_inode_after_path_replacement' panicked at host/src/encoder_fifo_tests.rs:127:16:
+called `Result::unwrap()` on an `Err` value: Timeout
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    encoder_io::fifo_tests::t405_writer_notifications_follow_opened_inode_after_path_replacement
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 229 filtered out; finished in 1.00s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

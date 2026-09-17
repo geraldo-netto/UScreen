@@ -1,12 +1,16 @@
 #[cfg(test)]
+mod wake_tests;
+
+#[cfg(test)]
 mod resources;
 
+use crate::media::CodecConfig;
 use crate::media::VideoPacket;
 use crate::media_storage::MediaBytes as Bytes;
 use anyhow::Result;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast;
@@ -46,8 +50,8 @@ const WRITE_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(1)
 
 pub struct StreamServer {
     config: StreamConfig,
-    running: Arc<AtomicBool>,
-    codec_config: Arc<Mutex<Option<Bytes>>>,
+    stop: tokio::sync::watch::Sender<bool>,
+    codec_config: CodecConfig,
     /// Raised on attachment for the optional in-process encoder's next-frame
     /// keyframe request. The CLI uses its one-second wall-clock IDR schedule.
     idr_wanted: Arc<AtomicBool>,
@@ -56,12 +60,12 @@ pub struct StreamServer {
 impl StreamServer {
     pub fn new(
         config: StreamConfig,
-        codec_config: Arc<Mutex<Option<Bytes>>>,
+        codec_config: CodecConfig,
         idr_wanted: Arc<AtomicBool>,
     ) -> Self {
         Self {
             config,
-            running: Arc::new(AtomicBool::new(false)),
+            stop: tokio::sync::watch::channel(false).0,
             codec_config,
             idr_wanted,
         }
@@ -80,8 +84,7 @@ impl StreamServer {
         video_tx: crate::video_queue::VideoSender,
         listener: TcpListener,
     ) -> Result<()> {
-        self.running.store(true, Ordering::SeqCst);
-        let running = self.running.clone();
+        let mut stop = self.stop.subscribe();
         // Dropping this server future also cancels every accepted connection.
         let mut clients = tokio::task::JoinSet::new();
         let slots = Arc::new(tokio::sync::Semaphore::new(MAX_CLIENTS));
@@ -90,11 +93,7 @@ impl StreamServer {
             let accept = tokio::select! {
                 res = listener.accept() => res,
                 _ = clients.join_next(), if !clients.is_empty() => continue,
-                _ = async {
-                    while running.load(Ordering::SeqCst) {
-                        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    }
-                } => break,
+                _ = stop.wait_for(|stopped| *stopped) => break,
             };
 
             let (socket, peer) = match accept {
@@ -130,7 +129,7 @@ impl StreamServer {
     async fn handle_client(
         mut socket: TcpStream,
         video_tx: crate::video_queue::VideoSender,
-        codec_config: Arc<Mutex<Option<Bytes>>>,
+        codec_config: CodecConfig,
         token: Option<String>,
         idr_wanted: Arc<AtomicBool>,
     ) -> Result<()> {
@@ -181,7 +180,7 @@ impl StreamServer {
     async fn stream_packets(
         socket: tokio::net::tcp::OwnedWriteHalf,
         mut rx: broadcast::Receiver<VideoPacket>,
-        codec_config: Arc<Mutex<Option<Bytes>>>,
+        codec_config: CodecConfig,
         budget: Arc<crate::media_storage::Budget>,
     ) -> Result<()> {
         let mut client = ClientPlayback {
@@ -298,7 +297,7 @@ impl StreamServer {
     /// cancellation instead, but leaving this makes the lifecycle explicit.
     #[allow(dead_code)]
     pub fn stop(&self) {
-        self.running.store(false, Ordering::SeqCst);
+        self.stop.send_replace(true);
     }
 }
 
@@ -337,33 +336,23 @@ struct ClientPlayback {
 impl ClientPlayback {
     async fn send_initial_config(
         &mut self,
-        codec_config: &Mutex<Option<Bytes>>,
+        codec_config: &CodecConfig,
         budget: &Arc<crate::media_storage::Budget>,
     ) -> Result<()> {
-        // Send cached codec config (SPS/PPS) so MediaCodec can configure.
-        // If not yet available, wait briefly for it.
-        let mut retries = 0;
-        loop {
-            let codec_data: Option<Bytes> = cached_codec_config(codec_config);
-            if let Some(config) = codec_data {
-                anyhow::ensure!(
-                    config.len() <= crate::video_queue::MAX_CONFIG_BYTES && config.charge(budget),
-                    "Initial codec configuration exceeds encoded storage or packet limit"
-                );
-                info!("Sending codec config to client ({} bytes)", config.len());
-                StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
-                self.last_sent_config = Some(config);
-                break;
-            }
-            retries += 1;
-            if retries > 50 {
-                // 5 seconds
-                warn!("Codec config not available after 5s, starting stream without it");
-                break;
-            }
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        }
-
+        let ready =
+            tokio::time::timeout(std::time::Duration::from_secs(5), codec_config.wait_ready())
+                .await;
+        let Ok(Some(config)) = ready else {
+            warn!("Codec config not available after 5s, starting stream without it");
+            return Ok(());
+        };
+        anyhow::ensure!(
+            config.len() <= crate::video_queue::MAX_CONFIG_BYTES && config.charge(budget),
+            "Initial codec configuration exceeds encoded storage or packet limit"
+        );
+        info!("Sending codec config to client ({} bytes)", config.len());
+        StreamServer::write_packet(&mut self.socket, PACKET_TYPE_CONFIG, &config).await?;
+        self.last_sent_config = Some(config);
         Ok(())
     }
 
@@ -452,10 +441,6 @@ impl ClientPlayback {
     }
 }
 
-fn cached_codec_config(codec_config: &Mutex<Option<Bytes>>) -> Option<Bytes> {
-    codec_config.lock().ok().and_then(|g| g.clone())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -474,7 +459,7 @@ mod tests {
         let (socket, _) = listener.accept().await.unwrap();
         let mut storage = Vec::with_capacity(8192);
         storage.push(1);
-        let cache = Arc::new(Mutex::new(Some(Bytes::from(storage))));
+        let cache = CodecConfig::new(Some(Bytes::from(storage)));
         let (tx, _) = crate::video_queue::channel(8, Default::default());
         let task = tokio::spawn(StreamServer::handle_client(
             socket,
@@ -602,7 +587,7 @@ mod tests {
         let playback = tokio::spawn(StreamServer::stream_packets(
             writer,
             rx,
-            Arc::new(Mutex::new(Some(new.clone()))),
+            CodecConfig::new(Some(new.clone())),
             tx.budget(),
         ));
         assert_eq!(
@@ -697,7 +682,7 @@ mod tests {
         let task = tokio::spawn(StreamServer::handle_client(
             socket,
             tx.clone(),
-            Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+            CodecConfig::new(Some(Bytes::from_static(b"headers"))),
             expected,
             Default::default(),
         ));
@@ -826,7 +811,7 @@ mod tests {
                 token: Some("a".repeat(64)),
                 ..Default::default()
             },
-            Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+            CodecConfig::new(Some(Bytes::from_static(b"headers"))),
             Default::default(),
         ));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -946,7 +931,7 @@ mod tests {
                     token: Some(token.clone()),
                     ..Default::default()
                 },
-                Arc::new(Mutex::new(Some(Bytes::from_static(b"headers")))),
+                CodecConfig::new(Some(Bytes::from_static(b"headers"))),
                 Default::default(),
             ));
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

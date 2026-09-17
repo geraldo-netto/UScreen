@@ -1,0 +1,15 @@
+{
+  "image": "uscreen-ci:perf",
+  "image_id": "sha256:ecf159e5bc432d559bb1afcf3203b31c76b1f741322dd2702ee89096a42f9ead",
+  "test_features": [
+    "default",
+    "inproc-encoder"
+  ],
+  "rust": "1.90.0",
+  "gcc": "12.2.0",
+  "ffmpeg_test": "5.1.9",
+  "baseline": "48e9427",
+  "host_sysctls_changed": false,
+  "service_capabilities_changed": false,
+  "production_coalescing_enabled": false
+}

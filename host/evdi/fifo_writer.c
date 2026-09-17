@@ -75,8 +75,11 @@ static enum fifo_wait_result wait_fifo_writable(fifo_writer_t *fifo, long long d
     return FIFO_READY;
 }
 
-static int fifo_write_retryable(ssize_t written) {
-    return written < 0 && (errno == EINTR || errno == EAGAIN);
+static enum fifo_wait_result retry_fifo_write(fifo_writer_t *fifo, ssize_t written, long long deadline) {
+    if (written >= 0) return FIFO_STOP;
+    if (errno == EINTR) return FIFO_RETRY;
+    if (errno == EAGAIN) return wait_fifo_writable(fifo, deadline);
+    return FIFO_STOP;
 }
 
 /* A live reader may stall briefly under load. Keep the same frame across
@@ -84,13 +87,10 @@ static int fifo_write_retryable(ssize_t written) {
 static size_t write_fifo_bytes(fifo_writer_t *fifo, const unsigned char *ptr, size_t remaining, unsigned generation) {
     long long deadline = fifo_now_ms() + 1000;
     while (remaining > 0 && (*fifo->running) && generation == (*fifo->generation)) {
-        enum fifo_wait_result ready = wait_fifo_writable(fifo, deadline);
-        if (ready == FIFO_RETRY) continue;
-        if (ready == FIFO_STOP) break;
         ssize_t written = write(fifo->fd, ptr, remaining);
         if (written <= 0) {
-            if (fifo_write_retryable(written)) continue;
-            break;
+            if (retry_fifo_write(fifo, written, deadline) == FIFO_STOP) break;
+            continue;
         }
         ptr += written;
         remaining -= (size_t)written;

@@ -1,0 +1,24 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.65s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-6c41124dac39021e)
+
+running 2 tests
+test encoder_io::fifo_tests::t405_empty_fifo_waits_for_readiness_instead_of_repeated_eagain_reads ...
+thread 'encoder_io::fifo_tests::t405_empty_fifo_waits_for_readiness_instead_of_repeated_eagain_reads' panicked at host/src/encoder_fifo_tests.rs:70:5:
+T405: idle FIFO repeatedly read 59 times
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test encoder_io::fifo_tests::t405_no_writer_fifo_waits_for_an_event_instead_of_repeated_eof_reads ...
+thread 'encoder_io::fifo_tests::t405_no_writer_fifo_waits_for_an_event_instead_of_repeated_eof_reads' panicked at host/src/encoder_fifo_tests.rs:70:5:
+T405: idle FIFO repeatedly read 24 times
+FAILED
+
+failures:
+
+failures:
+    encoder_io::fifo_tests::t405_empty_fifo_waits_for_readiness_instead_of_repeated_eagain_reads
+    encoder_io::fifo_tests::t405_no_writer_fifo_waits_for_an_event_instead_of_repeated_eof_reads
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 227 filtered out; finished in 0.24s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

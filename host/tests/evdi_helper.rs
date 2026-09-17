@@ -245,3 +245,18 @@ fn t226_partial_fifo_requires_a_replacement_inode() {
 fn t383_conversion_workers_respect_affinity_and_fallback() {
     Harness::build("T383-affinity").run("T383-affinity");
 }
+
+#[test]
+fn t405_capture_waits_for_exact_deadline() {
+    Harness::build("T405-capture").run("T405-capture");
+}
+
+#[test]
+fn t405_idle_writer_waits_for_keepalive_deadline() {
+    Harness::build("T405-writer").run("T405-writer");
+}
+
+#[test]
+fn t405_writable_fifo_avoids_redundant_poll() {
+    Harness::build("T405-fifo").run("T405-fifo");
+}

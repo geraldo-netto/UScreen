@@ -1,0 +1,5 @@
+Linux 7.0.0-31-generic; liburing 2.5-1build1
+/proc/sys/kernel/io_uring_disabled=0
+Default ring setup: success
+Probed opcodes: READ WRITE SEND RECV ASYNC_CANCEL SEND_ZC supported
+This is an availability probe, not proof of runtime/transport support for every opcode.

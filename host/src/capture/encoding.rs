@@ -1,8 +1,8 @@
 //! Encoder process/task ownership. The supervisor decides when to start and stop.
 use super::{process, CaptureConfig};
-use crate::media_storage::MediaBytes as Bytes;
+use crate::media::CodecConfig;
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::process::Child;
 
 #[derive(Default)]
@@ -12,7 +12,7 @@ pub(super) struct EncoderProcess {
 
 pub(super) struct EncoderOutput {
     pub(super) tx: crate::video_queue::VideoSender,
-    pub(super) codec_config: Arc<Mutex<Option<Bytes>>>,
+    pub(super) codec_config: CodecConfig,
     pub(super) latency: crate::latency::LatencyTracker,
     #[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]
     pub(super) idr_wanted: Arc<std::sync::atomic::AtomicBool>,
@@ -106,7 +106,7 @@ impl EncoderProcess {
             );
         }
         let fifo = super::fifo_path_for(config.instance)?;
-        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let stop = crate::encoder_io::StopSignal::new()?;
         let stopc = stop.clone();
         let handle = tokio::task::spawn_blocking(move || {
             crate::encoder::run(
@@ -143,19 +143,19 @@ impl EncoderProcess {
 pub(super) struct EncoderTask {
     pub(super) handle: tokio::task::JoinHandle<Result<()>>,
     #[cfg(feature = "inproc-encoder")]
-    stop: Arc<std::sync::atomic::AtomicBool>,
+    stop: Arc<crate::encoder_io::StopSignal>,
 }
 
 impl EncoderTask {
     pub(super) fn abort(&mut self) {
         #[cfg(feature = "inproc-encoder")]
-        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.stop.request();
         self.handle.abort();
     }
 
     pub(super) async fn finish(&mut self, already_finished: bool) {
         #[cfg(feature = "inproc-encoder")]
-        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.stop.request();
         #[cfg(not(feature = "inproc-encoder"))]
         self.handle.abort();
         // Observe task destruction before rebuilding: the packetizer's
@@ -171,6 +171,6 @@ impl EncoderTask {
 #[cfg(feature = "inproc-encoder")]
 impl Drop for EncoderTask {
     fn drop(&mut self) {
-        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.stop.request();
     }
 }

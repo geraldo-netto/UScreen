@@ -24,6 +24,16 @@ The [CLI assembly replay](benchmarks/2026-09-17-cli-assembly.md) records T407's
 owned reads, bounded assembly and 1/2/4-session comparison with committed T384.
 It retains both the original push replay and the actual read-boundary measurements.
 
+The [readiness replay](benchmarks/2026-09-17-readiness.md) compares T405's
+actual native writer and optional Rust reader with their preceding revision,
+including idle cancellation and paced 1/2/4-session CPU, reads and frame age.
+
+The [raw-pipe capacity ramp](benchmarks/2026-09-17-pipe-capacity.md) compares
+1–32 MiB requests, including slow-reader queue age. The separate
+[io_uring replay](benchmarks/2026-09-17-io-uring.md) compares readiness and
+ordinary ring I/O. Both use isolated host transports and preserve their
+measurement limits; neither changes the installed applications.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

@@ -97,11 +97,32 @@ device acquisition, signals and ordered teardown. The module test links the C
 files separately, while the existing injected-syscall harness retains the full
 helper regressions, including sanitizer checks and FIFO recovery integration.
 
+T405 replaces avoidable periodic checks with event or deadline waits. Capture
+polls until its next work deadline (or the existing 250 ms pending-update
+watchdog); EVDI events can wake it earlier. A writer with a cached frame waits
+until the 200 ms keepalive deadline, while one without a cached frame waits for
+publication or shutdown. Native FIFO writes try nonblocking output first and
+wait on `POLLOUT` only after `EAGAIN`; the one-second continuous-stall limit and
+partial-frame quarantine remain. Startup without a reader still retries every
+50 ms, and capture without a mode still uses its 100 ms fallback.
+
+The optional Rust encoder polls data readiness with a latched `eventfd` stop
+signal. A writerless FIFO can report persistent `POLLHUP`, so that state waits
+for inode/open notifications instead of polling the FIFO repeatedly. The watch
+follows `/proc/self/fd/<reader>` to bind the owned inode even if its path changes.
+If notifications are unavailable or the inode moves, EOF retries fall back to
+a cancellable 5 ms wait. Codec configuration uses a retained `watch` value:
+publication wakes initial-config waiters without a check/subscribe race, while
+the five-second startup deadline remains. Video-server stop is also latched;
+input-server cancellation follows its owning task and no longer checks an
+unused running flag. See the [readiness replay](benchmarks/2026-09-17-readiness.md)
+for measured scope and lifecycle coverage.
+
 The Rust `capture` module supervises settings changes, startup cancellation,
 encoder sessions and retry ordering. `capture::helper` owns the helper child,
 FIFO creation, preferred-card identity and geometry announcements;
 `capture::encoding` owns encoder children/tasks and the in-process cancellation
-flag. `capture::cli_encoder` translates policy to FFmpeg arguments and drains its
+event. `capture::cli_encoder` translates policy to FFmpeg arguments and drains its
 encoded output. `capture::placement` handles desktop placement, while
 `capture::process` provides bounded termination and validated orphan retirement.
 The `media` module owns codec, packet, generation and live-settings contracts,

@@ -17,6 +17,7 @@ static int mock_nanosleep(const struct timespec *, struct timespec *);
 static void *mock_malloc(size_t);
 static int mock_posix_memalign(void **, size_t, size_t);
 static int mock_clock_gettime(clockid_t, struct timespec *);
+static int mock_pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, const struct timespec *);
 #define pthread_create mock_pthread_create
 #define sysconf mock_sysconf
 #define sched_getaffinity mock_sched_getaffinity
@@ -25,6 +26,7 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #define malloc mock_malloc
 #define posix_memalign mock_posix_memalign
 #define clock_gettime mock_clock_gettime
+#define pthread_cond_timedwait mock_pthread_cond_timedwait
 #define opendir mock_opendir
 #define main evdi_helper_main
 #include "../evdi/conversion.c"
@@ -44,6 +46,7 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #undef malloc
 #undef posix_memalign
 #undef clock_gettime
+#undef pthread_cond_timedwait
 #undef opendir
 #include <assert.h>
 #include <sys/wait.h>
@@ -56,6 +59,7 @@ static long long now_ms(void) {
 
 static int fail_worker = 0;
 static int stall_once = 0;
+static int mock_poll_calls;
 static int add_result = 0;
 static int mock_add_calls;
 static int mock_discovery_calls;
@@ -70,6 +74,18 @@ static int mock_clock_gettime(clockid_t clock, struct timespec *value) {
     }
     return clock_gettime(clock, value);
 }
+static int t405_idle_wait_seen;
+static int t405_check_idle_wait;
+static int mock_pthread_cond_timedwait(pthread_cond_t *condition, pthread_mutex_t *mutex,
+                                      const struct timespec *deadline) {
+    if (!t405_check_idle_wait) return pthread_cond_timedwait(condition, mutex, deadline);
+    t405_idle_wait_seen++;
+    assert(deadline->tv_sec == 1 && deadline->tv_nsec == 200000000L &&
+           "T405: idle writer must wait until the 200ms keepalive, not one frame period");
+    g_running = 0;
+    return ETIMEDOUT;
+}
+
 static void *mock_malloc(size_t size) {
     if (allocation_countdown > 0 && --allocation_countdown == 0) return NULL;
     return malloc(size);
@@ -113,6 +129,7 @@ static long mock_sysconf(int name) {
     return name == _SC_NPROCESSORS_ONLN ? 8 : sysconf(name);
 }
 static int mock_poll(struct pollfd *fds, nfds_t n, int timeout) {
+    mock_poll_calls++;
     if (stall_once) { stall_once = 0; return 0; }
     return poll(fds, n, timeout);
 }
@@ -812,6 +829,55 @@ static void test_t294(void) {
     mock_grab_calls = -1;
 }
 
+static void test_t405_writable_fifo(void) {
+    int ends[2];
+    assert(pipe2(ends, O_NONBLOCK) == 0);
+    g_fifo.fd = ends[1];
+    const unsigned char source[] = {1, 2, 3, 4};
+    mock_poll_calls = 0;
+    assert(fifo_writer_write(&g_fifo, source, sizeof(source), g_frames.generation) == 0);
+    assert(mock_poll_calls == 0 && "T405: an immediately writable FIFO needs no readiness poll");
+    unsigned char received[sizeof(source)];
+    assert(read(ends[0], received, sizeof(received)) == sizeof(received));
+    assert(memcmp(received, source, sizeof(source)) == 0);
+    close(ends[0]); close(ends[1]);
+    g_fifo.fd = -1;
+}
+
+static void test_t405_capture_deadline(void) {
+    mock_monotonic_ms = 1000;
+    g_capture.have_mode = 1;
+    g_capture.update_pending = 0;
+    g_capture.last_request_ms = 1000;
+    assert(capture_poll_timeout(&g_capture, 16) == 16 &&
+           "T405: capture must wait for its deadline; events wake poll immediately");
+    mock_monotonic_ms = -1;
+}
+
+static void test_t405_idle_writer(void) {
+    frame_exchange_init(&g_frames);
+    frame_exchange_resize(&g_frames, 4, 4);
+    assert(frame_exchange_allocated(&g_frames));
+    memset(g_frames.fill, 42, (size_t)g_frames.size);
+    g_frames.buffers_ready = 1;
+    frame_exchange_publish(&g_frames, 0);
+    int ends[2];
+    assert(pipe(ends) == 0);
+    g_fifo.fd = ends[1];
+    g_running = 1;
+    mock_monotonic_ms = 1000;
+    t405_check_idle_wait = 1;
+    writer_run(&g_writer);
+    assert(t405_idle_wait_seen == 1);
+    unsigned char data[24];
+    assert(read(ends[0], data, sizeof(data)) == sizeof(data));
+    assert(data[0] == 42 && data[23] == 42);
+    close(ends[0]); close(ends[1]);
+    g_fifo.fd = -1;
+    frame_exchange_free(&g_frames);
+    mock_monotonic_ms = -1;
+}
+
 static void test_t290(void) {
     const long long uptimes[] = {
         1234, (long long)INT_MAX - 1, (long long)INT_MAX + 17,
@@ -825,7 +891,7 @@ static void test_t290(void) {
         g_capture.last_request_ms = 0; /* on_update_ready requests an immediate capture */
         assert(capture_poll_timeout(&g_capture, 16) == 0 && "T290: overdue pipeline capture gained a poll delay");
         g_capture.last_request_ms = mock_monotonic_ms;
-        assert(capture_poll_timeout(&g_capture, 16) == 4);
+        assert(capture_poll_timeout(&g_capture, 16) == 16); /* T405: exact deadline, still wide before clamping. */
         g_capture.last_request_ms = mock_monotonic_ms - 15;
         assert(capture_poll_timeout(&g_capture, 16) == 1);
         g_capture.last_request_ms = mock_monotonic_ms - 16;
@@ -1099,6 +1165,9 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T405-fifo", test_t405_writable_fifo},
+        {"T405-capture", test_t405_capture_deadline},
+        {"T405-writer", test_t405_idle_writer},
         {"T343", test_t343},
         {"T341", test_t341},
         {"T340-missing", test_t340_missing},

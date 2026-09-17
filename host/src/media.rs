@@ -34,6 +34,41 @@ impl Codec {
         }
     }
 }
+/// Immutable current codec headers with race-free publication notifications.
+/// T405: publishers may run on native encoder threads without a Tokio runtime.
+#[derive(Clone)]
+pub(crate) struct CodecConfig(tokio::sync::watch::Sender<Option<Bytes>>);
+
+impl Default for CodecConfig {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+impl CodecConfig {
+    pub fn new(value: Option<Bytes>) -> Self {
+        Self(tokio::sync::watch::channel(value).0)
+    }
+    pub fn current(&self) -> Option<Bytes> {
+        self.0.borrow().clone()
+    }
+    pub fn publish(&self, value: Option<Bytes>) {
+        self.0.send_if_modified(|current| {
+            if *current == value {
+                return false;
+            }
+            *current = value;
+            true
+        });
+    }
+    pub async fn wait_ready(&self) -> Option<Bytes> {
+        // Subscribe before examining the value. A publish between a check and
+        // suspension stays observable in the watch version; no lost wakeup.
+        let mut receiver = self.0.subscribe();
+        let ready = receiver.wait_for(|value| value.is_some()).await.ok()?;
+        ready.clone()
+    }
+}
+
 /// One encoded access unit, tagged so the stream server can drop frames
 /// safely (resume only at an IDR).
 #[derive(Clone)]
@@ -143,5 +178,24 @@ mod tests {
         assert_eq!(Codec::from_encoder("libx264"), Codec::H264);
         assert_eq!(Codec::from_encoder("hevc_nvenc"), Codec::Hevc);
         assert_eq!(Codec::from_encoder("hevc_vaapi"), Codec::Hevc);
+    }
+}
+
+#[cfg(test)]
+mod codec_config_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn t405_headers_published_without_waiters_survive_clone_and_reset() {
+        let headers = CodecConfig::default();
+        headers.publish(Some(Bytes::from(vec![1, 2, 3])));
+        let next = headers.clone();
+        drop(headers);
+        let previous = next.wait_ready().await.unwrap();
+        next.publish(None);
+        assert!(next.current().is_none());
+        next.publish(Some(Bytes::from(vec![4, 5])));
+        assert_eq!(next.wait_ready().await.unwrap().as_ref(), &[4, 5]);
+        assert_eq!(previous.as_ref(), &[1, 2, 3]);
     }
 }

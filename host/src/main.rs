@@ -23,6 +23,8 @@ mod media_storage;
 mod monitor;
 mod osk;
 mod persistence;
+#[cfg(test)]
+mod poll_probe;
 mod runtime;
 mod session;
 mod stream;

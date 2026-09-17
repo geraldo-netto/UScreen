@@ -1,9 +1,11 @@
 //! T391: real loopback socket resource replay; no media decoding or desktop.
 use super::*;
 use crate::input::{InputConfig, InputServer};
+use crate::media::CodecConfig;
 use crate::media::EncoderGeneration;
 use futures_util::{SinkExt, StreamExt};
 use serde::Serialize;
+use std::sync::Mutex;
 use tokio::io::AsyncReadExt;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
@@ -112,7 +114,7 @@ struct Session {
     peers: Vec<TcpStream>,
     reader: JoinHandle<Readings>,
     starts: Arc<Mutex<Vec<Instant>>>,
-    cache: Arc<Mutex<Option<Bytes>>>,
+    cache: CodecConfig,
     config: Bytes,
     generation: EncoderGeneration,
 }
@@ -129,7 +131,7 @@ async fn authenticated(address: std::net::SocketAddr, slow: bool) -> TcpStream {
 
 async fn session() -> Session {
     let config = Bytes::from(vec![1]);
-    let cache = Arc::new(Mutex::new(Some(config.clone())));
+    let cache = CodecConfig::new(Some(config.clone()));
     let server = Arc::new(StreamServer::new(
         StreamConfig {
             video_port: 0,
@@ -206,7 +208,7 @@ impl Session {
         if index == 60 {
             self.generation = EncoderGeneration::new();
             self.config = Bytes::from(vec![2]);
-            *self.cache.lock().unwrap() = Some(self.config.clone());
+            self.cache.publish(Some(self.config.clone()));
         }
         self.starts.lock().unwrap()[index] = Instant::now();
         self.video

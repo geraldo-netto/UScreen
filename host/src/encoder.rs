@@ -13,7 +13,8 @@
 //!
 //! Built only with the `inproc-encoder` feature; see host/Cargo.toml for why.
 
-use crate::encoder_io::{extract_parameter_sets, read_frame};
+use crate::encoder_io::{extract_parameter_sets, read_frame, FifoReader, StopSignal};
+use crate::media::CodecConfig;
 use crate::media_storage::MediaBytes as Bytes;
 use anyhow::{Context, Result};
 
@@ -196,9 +197,9 @@ pub fn run(
     bitrate_kbps: u32,
     quality: u32,
     tx: crate::video_queue::VideoSender,
-    codec_config: std::sync::Arc<std::sync::Mutex<Option<Bytes>>>,
+    codec_config: CodecConfig,
     idr_wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
-    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    stop: std::sync::Arc<StopSignal>,
     latency: crate::latency::LatencyTracker,
 ) -> Result<()> {
     use std::sync::atomic::Ordering;
@@ -212,11 +213,12 @@ pub fn run(
     // flag until the process exited. O_NONBLOCK returns immediately for a
     // reader, and reads below poll for data while staying responsive to stop.
     use std::os::unix::fs::OpenOptionsExt;
-    let mut fifo = std::fs::OpenOptions::new()
+    let fifo = std::fs::OpenOptions::new()
         .read(true)
         .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
         .open(fifo_path)
         .with_context(|| format!("open {} for reading", fifo_path.display()))?;
+    let mut fifo = FifoReader::new(fifo);
     tracing::info!(
         "In-process encoder running: {} at {}x{}",
         encoder_name,
@@ -227,7 +229,7 @@ pub fn run(
     let mut buf = vec![0u8; frame_size];
     let generation = crate::media::EncoderGeneration::new();
 
-    while !stop.load(Ordering::Relaxed) {
+    while !stop.requested() {
         match read_frame(&mut fifo, &mut buf, &stop) {
             Ok(true) => {}
             Ok(false) => break, // asked to stop mid-frame
@@ -246,7 +248,7 @@ pub fn run(
                     data,
                     is_idr,
                     seq,
-                    codec_config: codec_config.lock().ok().and_then(|g| g.clone()),
+                    codec_config: codec_config.current(),
                     generation: generation.active.clone(),
                 });
             }
@@ -256,19 +258,11 @@ pub fn run(
     Ok(())
 }
 
-fn refresh_codec_config(
-    data: &[u8],
-    encoder_name: &str,
-    codec_config: &std::sync::Mutex<Option<Bytes>>,
-) {
+fn refresh_codec_config(data: &[u8], encoder_name: &str, codec_config: &CodecConfig) {
     if let Some(config) =
         extract_parameter_sets(data, crate::media::Codec::from_encoder(encoder_name))
     {
-        if let Ok(mut slot) = codec_config.lock() {
-            if slot.as_ref() != Some(&config) {
-                *slot = Some(config);
-            }
-        }
+        codec_config.publish(Some(config));
     }
 }
 
@@ -283,10 +277,7 @@ mod storage_replay;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    };
+    use std::sync::{atomic::AtomicBool, Arc};
 
     #[test]
     fn t373_inproc_dictionary_preserves_boundary_policy_and_adapter_differences() {
@@ -450,7 +441,7 @@ mod tests {
         let path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
         assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
         let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
-        let stop = Arc::new(AtomicBool::new(false));
+        let stop = StopSignal::new().unwrap();
         let stopped = stop.clone();
         let writer_path = fifo.clone();
         let task = std::thread::spawn(move || {
@@ -463,7 +454,7 @@ mod tests {
                 500,
                 20,
                 tx,
-                Arc::new(Mutex::new(None)),
+                CodecConfig::default(),
                 Arc::new(AtomicBool::new(false)),
                 stopped,
                 latency,
@@ -475,7 +466,7 @@ mod tests {
             .unwrap();
         writer.write_all(&vec![128; 64 * 64 * 3 / 2]).unwrap();
         let packet = rx.blocking_recv().unwrap();
-        stop.store(true, Ordering::SeqCst);
+        stop.request();
         task.join().unwrap().unwrap();
         packet.seq
     }

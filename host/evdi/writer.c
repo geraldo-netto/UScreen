@@ -52,8 +52,11 @@ static int ensure_writer_fifo(writer_context_t *writer) {
 
 /* The exchange owns locking and publishes a generation-tagged lease. */
 static int claim_writer_frame(writer_context_t *writer, writer_state_t *state, int *size, int *fresh) {
+    long long due = state->last_write_ms + IDLE_KEEPALIVE_MS;
+    struct timespec keepalive = {.tv_sec = due / 1000, .tv_nsec = (due % 1000) * 1000000L};
+    const struct timespec *deadline = state->frame.have_frame ? &keepalive : NULL;
     int result = frame_exchange_claim(writer->frames, &state->frame, writer->running,
-                                      state->period_ns, &state->lease);
+                                      deadline, &state->lease);
     if (result > 0) {
         *size = (int)state->lease.size;
         *fresh = state->lease.fresh;

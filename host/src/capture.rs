@@ -8,16 +8,18 @@ mod helper;
 mod placement;
 mod process;
 
+use crate::media::CodecConfig;
 use crate::media::EncoderSettings;
 #[cfg(test)]
 use crate::media::VideoPacket;
+#[cfg(all(test, not(feature = "inproc-encoder")))]
 use crate::media_storage::MediaBytes as Bytes;
 use crate::runtime::fifo_path_for;
 use anyhow::Result;
 pub use config::CaptureConfig;
 use encoding::{EncoderOutput, EncoderProcess};
 use helper::{DetectedMode, HelperProcess};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Instant;
 #[cfg(test)]
 use tokio::sync::broadcast;
@@ -29,7 +31,7 @@ pub struct CaptureManager {
     config: CaptureConfig,
     helper: HelperProcess,
     encoder: EncoderProcess,
-    codec_config: Arc<Mutex<Option<Bytes>>>,
+    codec_config: CodecConfig,
     latency: crate::latency::LatencyTracker,
     idr_wanted: Arc<std::sync::atomic::AtomicBool>,
 }
@@ -39,7 +41,7 @@ impl CaptureManager {
             config,
             helper: HelperProcess::new(),
             encoder: EncoderProcess::default(),
-            codec_config: Arc::new(Mutex::new(None)),
+            codec_config: CodecConfig::default(),
             latency: crate::latency::LatencyTracker::new(),
             idr_wanted: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
@@ -72,7 +74,7 @@ impl CaptureManager {
         self.idr_wanted.clone()
     }
 
-    pub fn codec_config_arc(&self) -> Arc<Mutex<Option<Bytes>>> {
+    pub fn codec_config(&self) -> CodecConfig {
         self.codec_config.clone()
     }
 
@@ -505,9 +507,7 @@ impl CaptureManager {
         }
         run.encoder_mode = None;
         // Reset codec config so it gets re-extracted on restart
-        if let Ok(mut config) = self.codec_config.lock() {
-            *config = None;
-        }
+        self.codec_config.publish(None);
         if changes.crashed() {
             run.pause(run.backoff_ms).await;
         }

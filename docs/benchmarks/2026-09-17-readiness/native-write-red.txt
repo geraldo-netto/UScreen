@@ -1,0 +1,21 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.81s
+     Running tests/evdi_helper.rs (/build/debug/deps/evdi_helper-288b27718f0ee465)
+
+running 1 test
+test t405_writable_fifo_avoids_redundant_poll ...
+thread 't405_writable_fifo_avoids_redundant_poll' panicked at host/tests/evdi_helper.rs:75:9:
+helper regression T405-fifo: signal: 6 (SIGABRT) (core dumped)
+helper-test: /work/host/tests/evdi_helper_test.c:839: test_t405_writable_fifo: Assertion `mock_poll_calls == 0 && "T405: an immediately writable FIFO needs no readiness poll"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    t405_writable_fifo_avoids_redundant_poll
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 30 filtered out; finished in 0.58s
+
+error: test failed, to rerun pass `-p uscreen --test evdi_helper`

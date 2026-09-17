@@ -1,0 +1,31 @@
+   Compiling uscreen v1.2.3 (/work/host)
+warning: unused import: `fifo::FifoReader`
+ --> host/src/encoder_io.rs:7:16
+  |
+7 | pub(crate) use fifo::FifoReader;
+  |                ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `uscreen` (bin "uscreen" test) generated 1 warning (run `cargo fix --bin "uscreen" --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.87s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-6c41124dac39021e)
+
+running 15 tests
+test encoder_io::fifo::tests::t405_cancellation_latches_before_wait_and_descriptors_are_owned ... ok
+test encoder_io::fifo::tests::t405_empty_fifo_waits_for_readiness_instead_of_repeated_eagain_reads ... ok
+test encoder_io::fifo::tests::t405_inode_move_falls_back_without_losing_live_writer_data ... ok
+test encoder_io::fifo::tests::t405_no_inotify_fallback_reconnects_and_still_cancels ... ok
+test encoder_io::fifo::tests::t405_no_writer_fifo_waits_for_an_event_instead_of_repeated_eof_reads ... ok
+test encoder_io::fifo::tests::t405_partial_eof_discards_old_bytes_before_writer_reconnect ... ok
+test encoder_io::fifo::tests::t405_partial_frame_cancellation_needs_no_more_input ... ok
+test encoder_io::fifo::tests::t405_writer_notifications_follow_opened_inode_after_path_replacement ... ok
+test input::wake_tests::t405_idle_input_listener_has_no_periodic_wakeups ... ok
+test media::codec_config_tests::t405_headers_published_without_waiters_survive_clone_and_reset ... ok
+test stream::wake_tests::t405_codec_config_publication_wakes_waiters_immediately ... ok
+test stream::wake_tests::t405_codec_config_wait_has_only_its_final_deadline ... ok
+test stream::wake_tests::t405_idle_listener_has_no_periodic_wakeups ... ok
+test stream::wake_tests::t405_stop_before_first_poll_remains_latched ... ok
+test stream::wake_tests::t405_stop_wakes_listener_without_waiting_for_a_tick ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 220 filtered out; finished in 0.25s

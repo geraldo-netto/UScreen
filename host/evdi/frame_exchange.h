@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>
+#include <time.h>
 
 #define LAT_SAMPLES 256
 /* Buffer and dirty-history pointers always travel together. The capture owner
@@ -42,9 +43,10 @@ int frame_exchange_allocated(const frame_exchange_t *frames);
 void frame_exchange_mark_all(frame_exchange_t *frames);
 void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale);
 void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us);
-/* -1 stopped, 0 no frame, 1 immutable lease, always followed by release(). */
+/* Absolute CLOCK_MONOTONIC keepalive deadline, or NULL to wait for an event.
+ * -1 stopped, 0 no frame, 1 immutable lease, always followed by release(). */
 int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
-                         const atomic_int *running, long period_ns, frame_lease_t *lease);
+                         const atomic_int *running, const struct timespec *deadline, frame_lease_t *lease);
 void frame_exchange_release(frame_exchange_t *frames);
 /* Only after writer join and conversion completion. */
 void frame_exchange_free(frame_exchange_t *frames);

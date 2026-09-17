@@ -1,35 +1,57 @@
 use crate::media::Codec;
 use crate::media_storage::MediaBytes as Bytes;
 
-/// Fill `buf` completely, tolerating a FIFO that has no data yet and a writer
-/// that has not opened it. Returns false if asked to stop before a whole frame
-/// arrived — a partial frame must never reach the encoder, it would be encoded
-/// as garbage.
+#[path = "encoder_fifo.rs"]
+mod fifo;
+#[cfg(feature = "inproc-encoder")]
+pub(crate) use fifo::FifoReader;
+pub(crate) use fifo::StopSignal;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Waiting {
+    Data,
+    Writer,
+}
+pub(crate) trait FrameSource: std::io::Read {
+    fn wait(&mut self, waiting: Waiting, stop: &StopSignal) -> std::io::Result<bool>;
+}
+enum ReadStep {
+    Data(usize),
+    Wait(Waiting),
+}
+fn read_step(source: &mut impl std::io::Read, bytes: &mut [u8]) -> std::io::Result<ReadStep> {
+    use std::io::ErrorKind;
+    match source.read(bytes) {
+        Ok(0) => Ok(ReadStep::Wait(Waiting::Writer)),
+        Ok(count) => Ok(ReadStep::Data(count)),
+        Err(error) if error.kind() == ErrorKind::Interrupted => Ok(ReadStep::Data(0)),
+        Err(error) if error.kind() == ErrorKind::WouldBlock => Ok(ReadStep::Wait(Waiting::Data)),
+        Err(error) => Err(error),
+    }
+}
+
+/// Fill one frame using readiness and latched cancellation. An observed EOF
+/// discards a partial frame; T226 also replaces the inode on interrupted writes.
 pub(crate) fn read_frame(
-    fifo: &mut impl std::io::Read,
+    fifo: &mut impl FrameSource,
     buf: &mut [u8],
-    stop: &std::sync::Arc<std::sync::atomic::AtomicBool>,
+    stop: &StopSignal,
 ) -> std::io::Result<bool> {
-    use std::sync::atomic::Ordering;
     let mut filled = 0;
     while filled < buf.len() {
-        if stop.load(Ordering::Relaxed) {
+        if stop.requested() {
             return Ok(false);
         }
-        match fifo.read(&mut buf[filled..]) {
-            Ok(0) => {
-                // Discard an observed partial frame. Production recovery also
-                // retires this reader and replaces the FIFO inode: EOF alone
-                // cannot prevent an immediate writer reopen from mixing frames.
-                filled = 0;
-                std::thread::sleep(std::time::Duration::from_millis(5));
+        match read_step(fifo, &mut buf[filled..])? {
+            ReadStep::Data(count) => filled += count,
+            ReadStep::Wait(waiting) => {
+                if waiting == Waiting::Writer {
+                    filled = 0;
+                }
+                if !fifo.wait(waiting, stop)? {
+                    return Ok(false);
+                }
             }
-            Ok(n) => filled += n,
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(std::time::Duration::from_millis(2));
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
-            Err(e) => return Err(e),
         }
     }
     Ok(true)
@@ -104,7 +126,6 @@ mod tests {
     use std::{
         collections::VecDeque,
         io::{self, Read},
-        sync::{atomic::AtomicBool, Arc},
     };
 
     struct ReconnectingWriter(VecDeque<Option<Vec<u8>>>);
@@ -128,6 +149,12 @@ mod tests {
         }
     }
 
+    impl FrameSource for ReconnectingWriter {
+        fn wait(&mut self, _: Waiting, stop: &StopSignal) -> io::Result<bool> {
+            Ok(!stop.requested())
+        }
+    }
+
     #[test]
     fn t027_discards_partial_frame_when_fifo_writer_disconnects() {
         let mut reader = ReconnectingWriter(VecDeque::from([
@@ -136,7 +163,7 @@ mod tests {
             Some(vec![3, 4, 5, 6]),
             Some(vec![7, 8, 9, 10]),
         ]));
-        let stop = Arc::new(AtomicBool::new(false));
+        let stop = StopSignal::new().unwrap();
         let mut frame = [0; 4];
         assert!(read_frame(&mut reader, &mut frame, &stop).unwrap());
         assert_eq!(frame, [3, 4, 5, 6]);
