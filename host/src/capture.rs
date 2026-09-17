@@ -2476,12 +2476,49 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
     }
 
     async fn t223_initial_attach() {
+        assert_initial_geometry_gate(
+            test_manager(),
+            |s| {
+                s.width = 1280;
+                s.height = 800;
+                s.width_mm = 220;
+                s.height_mm = 138;
+                s.geometry_ready = true;
+            },
+            (1280, 800, 220, 138),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn t275_manual_geometry_opens_capture_gate_for_a_larger_native_panel() {
+        let mut manager = test_manager();
+        manager.config.width = 1920;
+        manager.config.height = 1080;
+        assert_initial_geometry_gate(
+            manager,
+            |current| {
+                if let Some(next) =
+                    crate::input::negotiated_geometry(current, (5120, 3200), (220, 138), false)
+                {
+                    *current = next;
+                }
+            },
+            (1920, 1080, 220, 138),
+        )
+        .await;
+    }
+
+    async fn assert_initial_geometry_gate(
+        mut manager: CaptureManager,
+        negotiate: impl FnOnce(&mut EncoderSettings),
+        expected: (u32, u32, u32, u32),
+    ) {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
         let helper = root.path().join("helper");
         std::fs::write(&helper, "#!/bin/sh\necho attach >> \"$0.log\"\nsleep 0.1\necho 'EVDI_CONNECTED card4294967295'\nexec sleep 60\n").unwrap();
         std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700)).unwrap();
-        let mut manager = test_manager();
         manager.config.helper_path = helper.to_str().unwrap().into();
         manager.config.edid_path = Some(root.path().join("test.edid"));
         let mut initial = manager_settings(&manager);
@@ -2499,13 +2536,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
         });
         tokio::time::sleep(std::time::Duration::from_millis(80)).await;
         let premature = helper.with_extension("log").exists();
-        settings.send_modify(|s| {
-            s.width = 1280;
-            s.height = 800;
-            s.width_mm = 220;
-            s.height_mm = 138;
-            s.geometry_ready = true;
-        });
+        settings.send_modify(negotiate);
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         shutdown.send(true).unwrap();
         let config = task.await.unwrap();
@@ -2520,7 +2551,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
                 config.width_mm,
                 config.height_mm
             ),
-            (1280, 800, 220, 138)
+            expected
         );
         assert_eq!(
             std::fs::read_to_string(helper.with_extension("log")).unwrap(),

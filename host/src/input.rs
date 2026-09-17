@@ -2104,22 +2104,32 @@ fn apply_tablet_resolution(
     });
 }
 
-fn negotiated_geometry(
+pub(crate) fn negotiated_geometry(
     current: &EncoderSettings,
     pixels: (u32, u32),
     millimetres: (u32, u32),
     auto_resolution: bool,
 ) -> Option<EncoderSettings> {
-    if !(640..=crate::config::MAX_DIMENSION).contains(&pixels.0)
-        || !(480..=crate::config::MAX_DIMENSION).contains(&pixels.1)
+    if pixels.0 == 0 || pixels.1 == 0 {
+        warn!("Ignoring empty native resolution {}x{}", pixels.0, pixels.1);
+        return None;
+    }
+    let selected = if auto_resolution {
+        pixels
+    } else {
+        (current.width, current.height)
+    };
+    if !(640..=crate::config::MAX_DIMENSION).contains(&selected.0)
+        || !(480..=crate::config::MAX_DIMENSION).contains(&selected.1)
     {
-        warn!("Ignoring implausible resolution {}x{}", pixels.0, pixels.1);
+        warn!(
+            "Ignoring unsupported capture resolution {}x{}",
+            selected.0, selected.1
+        );
         return None;
     }
     let mut settings = current.clone();
-    if auto_resolution {
-        (settings.width, settings.height) = pixels;
-    }
+    (settings.width, settings.height) = selected;
     (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
     settings.geometry_ready = true;
     Some(settings)
@@ -3159,6 +3169,52 @@ fi
             );
         }
         assert!(negotiated_geometry(&initial, (0, 0), (220, 138), false).is_none());
+    }
+
+    #[test]
+    fn t275_manual_geometry_is_independent_of_native_edid_limits() {
+        let initial = settings("libx264");
+        for native in [(4096, 2160), (5120, 3200), (320, 240)] {
+            let selected =
+                negotiated_geometry(&initial, native, (300, 190), false).unwrap_or_else(|| {
+                    panic!("T275: rejected valid manual mode for native {native:?}")
+                });
+            assert!(selected.geometry_ready);
+            assert_eq!((selected.width, selected.height), (1920, 1080));
+            assert_eq!((selected.width_mm, selected.height_mm), (300, 190));
+        }
+        let fallback = negotiated_geometry(&initial, (5120, 3200), (0, 10), false).unwrap();
+        assert_eq!(
+            (fallback.width_mm, fallback.height_mm),
+            (
+                crate::edid::DEFAULT_WIDTH_MM,
+                crate::edid::DEFAULT_HEIGHT_MM
+            )
+        );
+        for native in [(0, 0), (0, 2160), (4096, 0)] {
+            assert!(negotiated_geometry(&initial, native, (300, 190), false).is_none());
+        }
+    }
+
+    #[test]
+    fn t275_selected_manual_and_automatic_modes_keep_edid_bounds() {
+        let initial = settings("libx264");
+        for pixels in [(1920, 1080), (640, 480)] {
+            let next = negotiated_geometry(&initial, pixels, (300, 190), true).unwrap();
+            assert_eq!((next.width, next.height), pixels);
+        }
+        for pixels in [(4096, 2160), (5120, 3200), (320, 240)] {
+            assert!(negotiated_geometry(&initial, pixels, (300, 190), true).is_none());
+            let invalid = EncoderSettings {
+                width: pixels.0,
+                height: pixels.1,
+                ..initial.clone()
+            };
+            assert!(
+                negotiated_geometry(&invalid, (1920, 1080), (300, 190), false).is_none(),
+                "T275: invalid manual mode accepted"
+            );
+        }
     }
 
     #[tokio::test]
