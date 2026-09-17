@@ -184,3 +184,8 @@ fn t272_failed_event_channel_exits_without_spinning() {
 fn t274_delayed_writer_cannot_read_replaced_mode_buffers() {
     Harness::build("T274").run("T274");
 }
+
+#[test]
+fn t279_failed_mode_allocations_retire_capture() {
+    Harness::build("T279").run("T279");
+}

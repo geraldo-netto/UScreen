@@ -5,14 +5,19 @@
 #include <poll.h>
 #include <unistd.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 static int mock_pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 static long mock_sysconf(int);
 static int mock_poll(struct pollfd *, nfds_t, int);
 static int mock_nanosleep(const struct timespec *, struct timespec *);
+static void *mock_malloc(size_t);
+static int mock_posix_memalign(void **, size_t, size_t);
 #define pthread_create mock_pthread_create
 #define sysconf mock_sysconf
 #define poll mock_poll
 #define nanosleep mock_nanosleep
+#define malloc mock_malloc
+#define posix_memalign mock_posix_memalign
 #define main evdi_helper_main
 #include "../evdi/evdi_helper.c"
 #undef main
@@ -20,12 +25,24 @@ static int mock_nanosleep(const struct timespec *, struct timespec *);
 #undef sysconf
 #undef poll
 #undef nanosleep
+#undef malloc
+#undef posix_memalign
 #include <assert.h>
 #include <sys/wait.h>
 
 static int fail_worker = 0;
 static int stall_once = 0;
 static int add_result = 0;
+static int allocation_countdown = 0;
+static void *mock_malloc(size_t size) {
+    if (allocation_countdown > 0 && --allocation_countdown == 0) return NULL;
+    return malloc(size);
+}
+static int mock_posix_memalign(void **pointer, size_t alignment, size_t size) {
+    /* Exercise the ordinary-allocation fallback, including its failure. */
+    if (allocation_countdown > 0) return ENOMEM;
+    return posix_memalign(pointer, alignment, size);
+}
 static atomic_int pause_writer = 0;
 static atomic_int writer_paused = 0;
 static int mock_nanosleep(const struct timespec *request, struct timespec *remainder) {
@@ -463,6 +480,41 @@ static void test_t274(void) {
     alarm(0);
 }
 
+static void check_allocation_failure(int allocation, int changed_mode) {
+    pthread_cond_init(&g_frame_ready, NULL);
+    struct evdi_mode mode = {8, 8, 60, 32, 0x34325258};
+    if (changed_mode) {
+        on_mode_changed(mode, NULL);
+        assert(g_have_mode && g_buffers_ready && g_buffer_registered);
+        mode.width = 10;
+    }
+    allocation_countdown = allocation;
+    on_mode_changed(mode, NULL);
+    assert(!g_running && "T279: failed allocation must allow helper-exit recovery");
+    assert(!g_have_mode && !g_buffers_ready && !g_buffer_registered);
+    free(g_framebuffer);
+    free(g_fill); free(g_latest); free(g_write);
+    free(g_dirty_fill); free(g_dirty_latest); free(g_dirty_write);
+    pthread_cond_destroy(&g_frame_ready);
+}
+
+static void test_t279(void) {
+    for (int changed_mode = 0; changed_mode <= 1; changed_mode++) {
+        for (int allocation = 1; allocation <= 7; allocation++) {
+            pid_t child = fork();
+            assert(child >= 0);
+            if (child == 0) {
+                check_allocation_failure(allocation, changed_mode);
+                _exit(0);
+            }
+            int status;
+            assert(waitpid(child, &status, 0) == child);
+            assert(WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
+                   "T279: capture continued after mode allocation failure");
+        }
+    }
+}
+
 static void test_t254(void) {
     alarm(5); /* A missed dispatch must fail instead of hanging the suite. */
     unsigned char source[8 * 8 * 4] = {0};
@@ -554,6 +606,7 @@ static void test_t052(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T279", test_t279},
         {"T274", test_t274},
         {"T272", test_t272},
         {"T254", test_t254},

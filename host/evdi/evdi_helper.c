@@ -573,7 +573,7 @@ static void on_mode_changed(struct evdi_mode mode, void *user_data) {
 
     if (!mode_buffers_allocated()) {
         fprintf(stderr, "[evdi-helper] Failed to allocate framebuffers\n");
-        g_have_mode = 0;
+        reject_mode();
         return;
     }
 
