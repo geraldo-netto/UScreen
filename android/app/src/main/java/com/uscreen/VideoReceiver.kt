@@ -15,6 +15,21 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
+/** Counters and published rates for one receiver run. */
+internal class ReceiverStatistics {
+    private val frames = AtomicInteger(0)
+    private val bytes = AtomicLong(0)
+    @Volatile var fps = 0f; private set
+    @Volatile var mbps = 0f; private set
+
+    fun frameRendered() { frames.incrementAndGet() }
+    fun bytesReceived(count: Int) { bytes.addAndGet(count.toLong()) }
+    fun sample() {
+        fps = frames.getAndSet(0).toFloat()
+        mbps = bytes.getAndSet(0) * 8f / 1_000_000f
+    }
+}
+
 class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) }) {
     companion object {
         const val HOST = "127.0.0.1"
@@ -183,11 +198,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             }
         }
 
-    // Stats
-    private val frameCounter = AtomicInteger(0)
-    private val byteCounter = AtomicLong(0)
-    @Volatile var currentFps = 0f; private set
-    @Volatile var currentMbps = 0f; private set
+    @Volatile private var statistics = ReceiverStatistics()
+    val currentFps get() = statistics.fps
+    val currentMbps get() = statistics.mbps
 
     private val surfaceReady = AtomicBoolean(false)
     private val pendingSurface = AtomicReference<Surface?>(null)
@@ -336,6 +349,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
      * what keeps the display latency at "one frame", not "one network stall".
      */
     private fun startOutputThread(codec: MediaCodec) {
+        val outputStatistics = statistics
         outputThread = Thread({
             val info = MediaCodec.BufferInfo()
             var rendered = 0L
@@ -350,7 +364,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                         queuedSinceOutput.set(0)
                         outputStalls = 0
                         noteReleased(seq)
-                        frameCounter.incrementAndGet()
+                        outputStatistics.frameRendered()
                         rendered++
                         if (rendered <= 2) Log.i(TAG, "Rendered output frame #$rendered")
                     }
@@ -381,6 +395,8 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             isRunning = true
             val generation = sessionGeneration.incrementAndGet()
             val sessionToken = token
+            val sessionStatistics = ReceiverStatistics()
+            statistics = sessionStatistics
             // Fresh job/scope per start — see the field docs.
             val newJob = SupervisorJob()
             val newScope = CoroutineScope(Dispatchers.IO + newJob)
@@ -388,21 +404,22 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             scope = newScope
 
             newScope.launch {
-                connectAndReceive(generation, sessionToken)
+                connectAndReceive(generation, sessionToken, sessionStatistics)
             }
 
             newScope.launch {
                 while (isCurrent(generation)) {
                     delay(1000)
                     if (!isCurrent(generation)) break
-                    currentFps = frameCounter.getAndSet(0).toFloat()
-                    currentMbps = byteCounter.getAndSet(0) * 8f / 1_000_000f
+                    sessionStatistics.sample()
                 }
             }
         }
     }
 
-    private suspend fun connectAndReceive(generation: Long, sessionToken: String?) {
+    private suspend fun connectAndReceive(
+        generation: Long, sessionToken: String?, sessionStatistics: ReceiverStatistics
+    ) {
         while (isCurrent(generation)) {
             var sessionSocket: Socket? = null
             try {
@@ -444,7 +461,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
                 }
                 Log.i(TAG, "Connected to video stream")
 
-                receivePackets(generation, connection, input)
+                receivePackets(generation, connection, input, sessionStatistics)
                 // Protocol rejection and decoder retirement return normally.
                 // They still end the visible connection, just like EOF does.
                 disconnectAndPause(generation, 500) { Log.i(TAG, "Stream retired, reconnecting") }
@@ -494,7 +511,9 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         }
     }
 
-    private fun receivePackets(generation: Long, connection: Socket, input: InputStream) {
+    private fun receivePackets(
+        generation: Long, connection: Socket, input: InputStream, sessionStatistics: ReceiverStatistics
+    ) {
         val sizeHeader = ByteArray(4)
         // Reuse storage across frames to avoid multi-megabyte allocations at 60 Hz.
         var packetBuf = ByteArray(512 * 1024)
@@ -521,7 +540,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             }
             readExact(input, packetBuf, frameSize)
             if (!isCurrent(generation)) break
-            byteCounter.addAndGet(frameSize.toLong())
+            sessionStatistics.bytesReceived(frameSize)
             if (!packets.handle(codec, packetBuf, frameSize)) break
         }
     }
@@ -705,6 +724,8 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         scope = null
 
         releaseCodec()
+        // Retired network/render/timer workers keep only their old accumulator.
+        statistics = ReceiverStatistics()
         if (wasRunning) onDisconnected?.invoke()
 
         // The surface is deliberately left alone. It belongs to the

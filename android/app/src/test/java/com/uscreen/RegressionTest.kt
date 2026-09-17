@@ -23,6 +23,38 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t309_receiverRestartsRetireTrafficStatistics() {
+        val receiver = VideoReceiver { error("T309 must not open a real socket") }
+        receiver.start() // No surface: network and decoder workers remain idle.
+        val retired = get(receiver, "statistics") as ReceiverStatistics
+        try {
+            repeat(30) { retired.frameRendered() }
+            retired.bytesReceived(1_000_000)
+            retired.sample()
+            assertEquals(30f, receiver.getFps(), 0f)
+            assertEquals(8f, receiver.getMbps(), 0f)
+            repeat(7) { retired.frameRendered() }
+            retired.bytesReceived(500_000) // Pending sample at the moment of stop.
+            receiver.stop()
+            assertEquals("T309 stopped receiver retained FPS", 0f, receiver.getFps(), 0f)
+            assertEquals("T309 stopped receiver retained bitrate", 0f, receiver.getMbps(), 0f)
+            receiver.start()
+            assertEquals(0f, receiver.getFps(), 0f)
+            assertEquals(0f, receiver.getMbps(), 0f)
+            val current = get(receiver, "statistics") as ReceiverStatistics
+            current.frameRendered()
+            current.bytesReceived(125_000)
+            current.sample()
+            assertEquals("T309 previous run contaminated new FPS", 1f, receiver.getFps(), 0f)
+            assertEquals("T309 previous run contaminated new bitrate", 1f, receiver.getMbps(), 0f)
+            retired.frameRendered()
+            retired.bytesReceived(1_000_000)
+            retired.sample() // A delayed worker from the retired generation.
+            assertEquals(1f, receiver.getFps(), 0f)
+            assertEquals(1f, receiver.getMbps(), 0f)
+        } finally { receiver.stop() }
+    }
+
     @Test fun t303_platformPalmCannotBecomeAFingerContact() {
         // AOSP's hidden MotionEvent.TOOL_TYPE_PALM is 5, not an SDK API.
         val capture = TouchCapture()
