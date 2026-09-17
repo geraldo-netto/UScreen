@@ -39,7 +39,7 @@ continue to prove partial-write quarantine and fresh-inode/encoder recovery.
 | --- | --- | --- |
 | EVDI capture and conversion | `evdi_helper.c:allocate_framebuffer,grab_now,publish_frame` uses a CPU framebuffer, conversion kernels and three packed output buffers. | T389: record actual page backing, faults and copy/conversion costs before comparing aligned allocation, anonymous mappings or a new hardware capture backend. |
 | Raw helper → encoder | `write_fifo_bytes` sends the whole packed frame; optional `encoder.rs:run,encode` reads a Vec and copies into writable AVFrame planes. | T389: compare a contiguous-stride fast path, direct plane filling and leased shared mappings. |
-| Encoded in-process output | `Encoder::drain` uses `Bytes::copy_from_slice` for each AVPacket. | T402: retain immutable packet ownership through the last broadcast/client reference. |
+| Encoded in-process output | `encoder_storage.rs` retains known large DR1 allocations through an immutable packet owner; small/unknown buffer views copy. | T402 implemented: [ownership, whole-backing accounting and measured stage costs](../benchmarks/2026-09-17-packet-storage.md). |
 | CLI NAL assembly | `cli_encoder.rs:read_loop` fills scratch storage; packetizer `push` copies it and assembly copies complete NALs. | T407: compare owned read capacity, deferred compaction and shared segments against the committed T384 baseline. |
 | Android compressed input | `receivePackets` fills a ByteArray; `feedDecoder` copies its payload into a codec input ByteBuffer. | T403: compare direct reads into owned input slots and a separately gated LinearBlock experiment. |
 
@@ -66,14 +66,17 @@ buffers do not by themselves eliminate GPU uploads. PipeWire/DMA-BUF remains a
 separate T389 backend experiment with format/modifier, synchronization and
 extended-display availability requirements from the earlier research.
 
-For T402, stock [`av_packet_ref`/`av_packet_move_ref`](https://ffmpeg.org/doxygen/5.1/group__lavc__packet.html)
-provide a possible ownership boundary; referencing an uncounted packet can
-still copy its payload. The locked bytes 1.11.1 dependency provides
-[`Bytes::from_owner`](https://docs.rs/bytes/1.11.1/bytes/struct.Bytes.html#method.from_owner),
-which keeps an owner until the final clone drops. A wrapper must prove stable
-immutable data, valid length, thread safety and correct release. Do not expose
-a slice into a packet reused by the encoder. Measure retained codec allocations
-as well as avoided copies; a slow client can hold the backing storage longer.
+T402 now records whole allocations made by the public DR1 encode-buffer
+callback and retains only known large buffers. Unknown storage and small
+reference views copy into independent storage; an arbitrary AVBufferRef size
+cannot prove the size of its underlying allocation. The owner releases unrelated
+packet side data immediately, then keeps the immutable data buffer alive through
+[`Bytes::from_owner`](https://docs.rs/bytes/1.11.1/bytes/struct.Bytes.html#method.from_owner).
+T391 charges the complete known allocation, including padding, until the last
+consumer releases it. The [packet-storage replay](../benchmarks/2026-09-17-packet-storage.md)
+records delayed-consumer/decode tests and allocation/fill/publication costs,
+including the stock allocator pool's reuse advantage. These isolated stage
+measurements do not establish an overall application or battery gain.
 
 For T403, a socket-channel prototype should validate framing before reserving a
 codec slot, and it must release/retire that slot on EOF, cancellation and codec

@@ -119,6 +119,15 @@ preventing inode reuse during recovery. Raw frames still have no in-band
 sequence, size or generation header; both processes must use this reset
 protocol rather than assuming a close/reopen establishes a frame boundary.
 
+For the optional in-process encoder, `encoder_storage` owns the public stock
+libavcodec DR1 allocation callback and its synchronized allocation registry.
+Large known buffers publish an immutable packet owner; small or unknown buffer
+views copy. Publication releases unrelated packet side data and charges the
+complete retained allocation, including padding, to the session's encoded-data
+budget. A stable callback context outlives the codec, while delayed consumers
+can outlive both. The [packet-storage report](benchmarks/2026-09-17-packet-storage.md)
+describes the ownership tests, fallback and measured stage costs.
+
 `uscreen-config::model` owns the portable settings schema, sanitization and edit
 merging. Its `storage` adapter owns transactional files; `commands` owns bounded
 process execution; `linux` owns Linux process/runtime state. Default features

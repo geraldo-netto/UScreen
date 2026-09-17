@@ -1,0 +1,21 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.48s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-7361864397bb37b6)
+
+running 1 test
+test encoder::storage::tests::t402_tiny_buffer_views_detach_without_retaining_large_allocations ...
+thread 'encoder::storage::tests::t402_tiny_buffer_views_detach_without_retaining_large_allocations' panicked at host/src/encoder_storage.rs:277:9:
+assertion `left == right` failed: T402: a tiny view should detach
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    encoder::storage::tests::t402_tiny_buffer_views_detach_without_retaining_large_allocations
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 199 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

@@ -105,6 +105,18 @@ impl MediaBytes {
         Self::owned(Bytes::copy_from_slice(data), data.len())
     }
 
+    /// T402: callers must establish the complete retained data allocation,
+    /// including padding; an arbitrary AVBufferRef view is not sufficient.
+    #[cfg(feature = "inproc-encoder")]
+    pub fn from_owner(owner: impl AsRef<[u8]> + Send + 'static, bytes: usize) -> Self {
+        Self::owned(Bytes::from_owner(owner), bytes)
+    }
+
+    #[cfg(all(test, feature = "inproc-encoder"))]
+    pub fn from_benchmark_owner(owner: impl AsRef<[u8]> + Send + 'static, bytes: usize) -> Self {
+        Self::from_owner(owner, bytes)
+    }
+
     #[cfg(test)]
     pub fn slice(&self, range: impl RangeBounds<usize>) -> Self {
         Self {

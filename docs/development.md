@@ -259,6 +259,11 @@ bitrate as measured throughput. Static scenes may use much less bandwidth.
 cargo build --release --manifest-path host/Cargo.toml --features inproc-encoder
 ```
 
+Encoded output retains known large packet allocations through stock public
+libavcodec APIs, with copying for small or unknown storage. This requires no
+FFmpeg patches. See [packet ownership and measurements](benchmarks/2026-09-17-packet-storage.md)
+for retained-memory accounting, regression coverage and measurement limits.
+
 Encodes through libavcodec in-process instead of an `ffmpeg` child. Measured
 encoded-packet-to-acknowledgement latency was similar, with about one CPU
 core less and keyframes on demand; that metric excludes encoding time. Needs

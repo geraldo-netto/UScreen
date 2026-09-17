@@ -17,10 +17,16 @@ use crate::encoder_io::{extract_parameter_sets, read_frame};
 use crate::media_storage::MediaBytes as Bytes;
 use anyhow::{Context, Result};
 
+#[path = "encoder_storage.rs"]
+mod storage;
+
 pub struct Encoder {
     inner: ffmpeg_next::encoder::Video,
     frame: ffmpeg_next::frame::Video,
     pts: i64,
+    // Fields drop in declaration order: the codec must close/join callbacks
+    // before their shared callback context is retired.
+    packet_storage: std::sync::Arc<storage::PacketStorage>,
 }
 
 impl Encoder {
@@ -40,10 +46,13 @@ impl Encoder {
         let codec = ffmpeg_next::encoder::find_by_name(name)
             .with_context(|| format!("encoder {} not available in this libavcodec", name))?;
 
+        // Declare storage first so error paths also close the context first.
+        let packet_storage = std::sync::Arc::new(storage::PacketStorage::default());
         let mut ctx = ffmpeg_next::codec::context::Context::new_with_codec(codec)
             .encoder()
             .video()
             .context("open video encoder")?;
+        packet_storage.install(&mut ctx);
 
         ctx.set_width(width);
         ctx.set_height(height);
@@ -79,6 +88,7 @@ impl Encoder {
             inner,
             frame,
             pts: 0,
+            packet_storage,
         })
     }
 
@@ -149,11 +159,10 @@ impl Encoder {
                 }) => break,
                 Err(error) => return Err(error).context("receive encoded packet"),
             }
-            if let Some(data) = packet.data() {
-                let is_idr = packet.is_key();
-                #[cfg(test)]
-                crate::allocation_probe::copied(data.len());
-                out.push((Bytes::copy_from_slice(data), is_idr));
+            let is_idr = packet.is_key();
+            let received = std::mem::replace(&mut packet, ffmpeg_next::Packet::empty());
+            if let Some(data) = self.packet_storage.payload(received) {
+                out.push((data, is_idr));
             }
         }
         Ok(out)
@@ -262,6 +271,14 @@ fn refresh_codec_config(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "encoder_packet_tests.rs"]
+mod packet_tests;
+
+#[cfg(test)]
+#[path = "encoder_storage_replay.rs"]
+mod storage_replay;
 
 #[cfg(test)]
 mod tests {
@@ -395,6 +412,7 @@ mod tests {
             inner: ffmpeg_next::codec::encoder::video::Encoder(context),
             frame: ffmpeg_next::frame::Video::empty(),
             pts: 0,
+            packet_storage: Default::default(),
         };
         let error = encoder
             .drain()

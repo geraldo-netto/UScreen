@@ -1,0 +1,27 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.10s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-7361864397bb37b6)
+
+running 1 test
+test encoder::packet_tests::t402_large_encoded_packets_avoid_the_drain_payload_copy ... [libx264 @ 0x72b5e8000d00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[libx264 @ 0x72b5e8000d00] profile Constrained Baseline, level 5.0, 4:2:0, 8-bit
+
+thread 'encoder::packet_tests::t402_large_encoded_packets_avoid_the_drain_payload_copy' panicked at host/src/encoder_packet_tests.rs:36:5:
+T402: known large packet storage was copied: 169962 bytes
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[libx264 @ 0x72b5e8000d00] frame I:1     Avg QP:50.98  size:169962
+[libx264 @ 0x72b5e8000d00] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0x72b5e8000d00] coded y,uvDC,uvAC intra: 100.0% 100.0% 100.0%
+[libx264 @ 0x72b5e8000d00] i16 v,h,dc,p:  7%  3% 88%  1%
+[libx264 @ 0x72b5e8000d00] i8c dc,h,v,p: 96%  3%  1%  1%
+[libx264 @ 0x72b5e8000d00] kb/s:81581.76
+FAILED
+
+failures:
+
+failures:
+    encoder::packet_tests::t402_large_encoded_packets_avoid_the_drain_payload_copy
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 191 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

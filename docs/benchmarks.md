@@ -15,6 +15,11 @@ records T383's dirty-work scheduling, scaled kernels, scalar/vector comparisons
 and support for 128 participants. Its isolated CPU measurements do not establish
 an end-to-end display or Android battery gain.
 
+The [encoded packet-storage replay](benchmarks/2026-09-17-packet-storage.md)
+compares copying with owned stock-libavcodec buffers in the optional encoder.
+It includes native allocation/pool reuse and slow-consumer retention; its
+stage-level savings are not total encoding or battery gains.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;
