@@ -151,6 +151,19 @@ build_if_needed() {
     make -C "$PROJECT_DIR" build
 }
 
+install_bundled_libraries() {
+    local source_dir="$1" staged
+    staged=$(mktemp -d "$BIN_DIR/.uscreen-library.XXXXXXXX")
+    # A running helper may still map the installed library. Replacing its
+    # pathname preserves that inode; copying over it would corrupt the mapping.
+    if cp -P "$source_dir"/libevdi.so.1* "$staged/" && mv -f "$staged/"* "$BIN_DIR/"; then
+        rmdir "$staged"
+    else
+        rm -rf "$staged"
+        return 1
+    fi
+}
+
 install_binaries() {
     local src_bin
     if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
@@ -165,7 +178,9 @@ install_binaries() {
     if [ -f "$src_bin/evdi_helper" ]; then
         cp "$src_bin/evdi_helper" "$BIN_DIR/evdi_helper"
         # The release helper finds libevdi next to itself ($ORIGIN rpath).
-        [ -f "$src_bin/libevdi.so.1.15.0" ] && cp -P "$src_bin"/libevdi.so.1* "$BIN_DIR/"
+        if [ -f "$src_bin/libevdi.so.1.15.0" ]; then
+            install_bundled_libraries "$src_bin"
+        fi
     else
         cp "$PROJECT_DIR/host/evdi/evdi_helper" "$BIN_DIR/evdi_helper"
     fi

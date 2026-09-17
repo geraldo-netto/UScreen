@@ -1,6 +1,8 @@
 """Installer refactors retain distro commands without changing the machine."""
 from pathlib import Path
+import mmap
 import subprocess
+import tempfile
 import unittest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -8,6 +10,33 @@ SOURCE = (REPO / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
 
 
 class InstallerTest(unittest.TestCase):
+    def test_t249_upgrade_preserves_a_running_library_mapping(self):
+        with tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+            root = Path(tmp)
+            project = root / 'release'
+            source = project / 'bin'
+            installed = root / 'installed bin'
+            source.mkdir(parents=True)
+            installed.mkdir()
+            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                (source / name).write_text('#!/bin/sh\nexit 0\n')
+            library = 'libevdi.so.1.15.0'
+            (source / library).write_bytes(b'N' * 4096)
+            (installed / library).write_bytes(b'O' * 4096)
+            (source / 'libevdi.so.1').symlink_to(library)
+            (installed / 'libevdi.so.1').symlink_to(library)
+            with (installed / library).open('rb') as old:
+                with mmap.mmap(old.fileno(), 0, access=mmap.ACCESS_READ) as active:
+                    result = subprocess.run(['bash', '-s', '--', str(project), str(installed)],
+                        input=SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\ninstall_binaries\n',
+                        cwd=REPO, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertTrue(active[:] == b'O' * 4096,
+                                    'T249: upgrade modified a running helper library mapping')
+            self.assertEqual((installed / library).read_bytes(), b'N' * 4096)
+            self.assertTrue((installed / 'libevdi.so.1').is_symlink())
+            self.assertEqual((installed / 'libevdi.so.1').resolve(), installed / library)
+
     def run_installer(self, commands):
         result = subprocess.run(['bash', '-s'], input=SOURCE + commands,
                                 capture_output=True, text=True, cwd=REPO)
