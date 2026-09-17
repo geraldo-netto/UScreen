@@ -2613,8 +2613,8 @@ async fn setup_wifi(off: bool) -> Result<()> {
         "The daemon reconnects to this address by itself whenever the cable is not in, \
          so this is a one-off — until the tablet reboots, which puts its adb back on USB \
          and means running this once more.\n\
-         Wi-Fi is a fallback: the median latency matches the cable but single frames \
-         arrive much later. `uscreen wifi --off` forgets the address."
+         Wi-Fi is a fallback: a historical test with the radio lock had a median \
+         close to USB but multi-second outliers. Your network may differ. `uscreen wifi --off` forgets the address."
     );
     Ok(())
 }
@@ -2683,10 +2683,9 @@ async fn app_running_with(serial: &str, adb: &str) -> Option<bool> {
     Some(!String::from_utf8_lossy(&out.stdout).trim().is_empty())
 }
 
-/// Measured on a quiet network: the median roughly doubles, but the 95th
-/// percentile goes from about 28ms to over 150ms and individual frames have
-/// been seen at three quarters of a second. Worth saying out loud, because
-/// "it works" and "it is pleasant to draw on" are not the same claim.
+/// Historical upstream test (docs/benchmarks.md): median 32.0 ms without
+/// the radio lock, 22.8 ms with it, versus 22.0 ms over USB. Locked Wi-Fi
+/// still had a 78.6 ms p95 and multi-second outliers. Other networks differ.
 fn announce_transport(serial: &str) {
     if transport_of(serial) == Transport::Network {
         warn!("Running over Wi-Fi. Expect occasional stutter — the cable is much steadier.");
