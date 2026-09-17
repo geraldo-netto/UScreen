@@ -203,7 +203,7 @@ static inline unsigned char clamp_byte(int value) {
 /* BT.709 limited-range chroma from the sum of four luma samples. */
 static inline void write_chroma(unsigned char *uv, int sb, int sg, int sr) {
     int ab = sb >> 2, ag = sg >> 2, ar = sr >> 2;
-    uv[0] = clamp_byte(((-26 * ar - 87 * ag + 112 * ab + 128) >> 8) + 128);
+    uv[0] = clamp_byte(((-26 * ar - 86 * ag + 112 * ab + 128) >> 8) + 128);
     uv[1] = clamp_byte(((112 * ar - 102 * ag - 10 * ab + 128) >> 8) + 128);
 }
 

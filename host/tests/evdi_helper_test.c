@@ -615,6 +615,43 @@ static void test_t052(void) {
     assert(request_evdi_device());
 }
 
+static void t293_uniform_color(int red, int green, int blue, int scale) {
+    g_mode_w = g_mode_h = 16;
+    g_mode_stride = 80; /* exercise padded source rows */
+    g_scale = scale;
+    g_out_w = g_out_h = (16 / scale) & ~1;
+    unsigned char source[16 * 80] = {0}, dest[16 * 16 * 3 / 2];
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            unsigned char *pixel = source + y * 80 + x * 4;
+            pixel[0] = blue; pixel[1] = green; pixel[2] = red; pixel[3] = 255;
+        }
+    }
+    bgra_to_nv12(source, dest, NULL);
+    /* Independent equations from ITU-R BT.709-6, section 3.2–3.4.
+       Input RGB is full-range 8-bit; output Y/Cb/Cr is limited-range. */
+    const double luma = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0;
+    const int expected_y = (int)(16 + 219 * luma + 0.5);
+    const int expected_u = (int)(128 + 224 * (blue / 255.0 - luma) / 1.8556 + 0.5);
+    const int expected_v = (int)(128 + 224 * (red / 255.0 - luma) / 1.5748 + 0.5);
+    const int pixels = g_out_w * g_out_h;
+    for (int i = 0; i < pixels; i++) assert(abs(dest[i] - expected_y) <= 1);
+    const int tolerance = (red == green && green == blue) ? 0 : 1;
+    for (int i = pixels; i < pixels * 3 / 2; i += 2) {
+        assert(abs(dest[i] - expected_u) <= tolerance && "T293: neutral pixels gained blue-difference chroma");
+        assert(abs(dest[i + 1] - expected_v) <= tolerance);
+    }
+}
+
+static void test_t293(void) {
+    for (int scale = 1; scale <= 4; scale++) {
+        for (int gray = 0; gray <= 255; gray++) t293_uniform_color(gray, gray, gray, scale);
+        for (int color = 0; color < 8; color++)
+            t293_uniform_color((color & 1) * 255, ((color >> 1) & 1) * 255,
+                               ((color >> 2) & 1) * 255, scale);
+    }
+}
+
 static void test_t290(void) {
     const long long uptimes[] = {
         1234, (long long)INT_MAX - 1, (long long)INT_MAX + 17,
@@ -647,6 +684,7 @@ static void test_t290(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T293", test_t293},
         {"T290", test_t290},
         {"T279", test_t279},
         {"T274", test_t274},

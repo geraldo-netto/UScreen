@@ -194,3 +194,8 @@ fn t279_failed_mode_allocations_retire_capture() {
 fn t290_capture_poll_deadlines_survive_long_uptimes() {
     Harness::build("T290").run("T290");
 }
+
+#[test]
+fn t293_nv12_preserves_neutral_gray_and_bt709_colors() {
+    Harness::build("T293").run("T293");
+}
