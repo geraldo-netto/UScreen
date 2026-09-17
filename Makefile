@@ -52,11 +52,8 @@ setup-system:
 	sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
 	sudo udevadm control --reload
 	sudo udevadm trigger --name-match=uinput
-	sudo modprobe evdi || true
 	sudo modprobe uinput || true
-	@if [ "$$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)" = "0" ]; then \
-		echo 1 | sudo tee /sys/devices/evdi/add; \
-	fi
+	sudo sh scripts/setup-evdi.sh 2
 	@echo "✓ System setup done (EVDI device available now and at every boot)"
 
 run: build
@@ -123,7 +120,7 @@ dist-local: build
 	cp target/release/uscreen target/release/uscreen-gui host/evdi/evdi_helper dist/uscreen-$(VERSION)/bin/
 	cp -L "$(LIBEVDI)" dist/uscreen-$(VERSION)/bin/libevdi.so.1.15.0
 	ln -sf libevdi.so.1.15.0 dist/uscreen-$(VERSION)/bin/libevdi.so.1
-	cp scripts/install.sh scripts/write-desktop-entry.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/scripts/
+	cp scripts/install.sh scripts/setup-evdi.sh scripts/write-desktop-entry.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/scripts/
 	cp packaging/distribution-docs.txt packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules dist/uscreen-$(VERSION)/packaging/
 	mkdir -p dist/uscreen-$(VERSION)/packaging/icons && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg dist/uscreen-$(VERSION)/packaging/icons/
 	./scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/

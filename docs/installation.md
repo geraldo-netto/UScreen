@@ -8,10 +8,12 @@ artifacts produced locally or available in a future [fork release](https://githu
 
 Before attaching a display, check [current limitations](compatibility.md#current-fork-limitations).
 A Cinnamon/Xorg session crash during EVDI attachment remains unresolved (T222).
-The full installer and native package hooks also attempt an EVDI module reload
-(T269); installing/upgrading them during a live display session can disrupt it.
-Schedule that setup outside an active EVDI session. This is separate from the
-add-only setup in the GUI and `make setup-system`.
+The full installer and native package hooks preserve loaded EVDI devices.
+They load the module if needed and add missing capacity up to two devices;
+failed provisioning reports that setup must be checked and deferred to reboot.
+Boot configuration changes take effect on the next module load.
+`make setup-system` uses the same provisioning script. GUI setup also adds
+only missing devices, using its configured tablet count.
 
 ## Linux artifacts and prerequisites
 

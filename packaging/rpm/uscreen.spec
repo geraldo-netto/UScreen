@@ -28,6 +28,7 @@ plain graphics tablet for the host's own screen.
 %setup -q -n uscreen-%{version}
 
 %install
+install -Dm755 scripts/setup-evdi.sh %{buildroot}%{_datadir}/uscreen/setup-evdi.sh
 install -Dm755 bin/uscreen          %{buildroot}%{_bindir}/uscreen
 install -Dm755 bin/uscreen-gui      %{buildroot}%{_bindir}/uscreen-gui
 install -Dm755 bin/evdi_helper      %{buildroot}%{_libdir}/uscreen/evdi_helper
@@ -44,14 +45,7 @@ install -Dm644 packaging/60-uscreen-uinput.rules %{buildroot}%{_udevrulesdir}/60
 ./scripts/copy-distribution-docs.sh %{buildroot}%{_docdir}/uscreen
 
 %post
-# initial_device_count is only read when evdi loads. Reload it so a device
-# exists now, not only after the next reboot.
-if lsmod | grep -q '^evdi'; then
-    modprobe -r evdi 2>/dev/null && modprobe evdi 2>/dev/null || \
-        echo "uscreen: evdi is in use; reboot for the virtual display device to appear."
-else
-    modprobe evdi 2>/dev/null || true
-fi
+sh %{_datadir}/uscreen/setup-evdi.sh 2 || true
 # Icon caches go by directory mtime; touch the theme so menus pick the
 # icon up without a logout.
 touch /usr/share/icons/hicolor 2>/dev/null || true
@@ -61,6 +55,7 @@ udevadm control --reload 2>/dev/null || true
 udevadm trigger --name-match=uinput 2>/dev/null || true
 
 %files
+%{_datadir}/uscreen/setup-evdi.sh
 %{_bindir}/uscreen
 %{_bindir}/uscreen-gui
 %{_libdir}/uscreen/evdi_helper

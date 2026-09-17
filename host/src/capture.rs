@@ -207,7 +207,8 @@ fn evdi_setup_problem_in(dir: &std::path::Path) -> Option<String> {
         "No EVDI device exists and /sys/devices/evdi/add is root-only, so one cannot be \
          created. Fix it for this boot with:\n    echo 1 | sudo tee /sys/devices/evdi/add\n\
          and for every boot with:\n    echo 'options evdi initial_device_count=2' | sudo tee \
-         /etc/modprobe.d/uscreen-evdi.conf\n    sudo modprobe -r evdi && sudo modprobe evdi\n\
+         /etc/modprobe.d/uscreen-evdi.conf\n\
+         This boot setting applies after reboot; preserve the loaded module.\n\
          Then run: uscreen doctor"
             .to_string(),
     )
@@ -3124,9 +3125,11 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
         std::fs::write(dir.join("count"), "0\n").unwrap();
         let msg = evdi_setup_problem_in(&dir).expect("no devices is a problem");
         assert!(msg.contains("initial_device_count"), "got: {msg}");
+        assert!(msg.contains("/sys/devices/evdi/add"), "T269: {msg}");
+        assert!(msg.contains("reboot"), "T269: {msg}");
         assert!(
-            msg.contains("modprobe -r evdi"),
-            "must give the reload, got: {msg}"
+            !msg.contains("modprobe -r"),
+            "T269: preserve live devices: {msg}"
         );
         let _ = std::fs::remove_dir_all(&dir);
     }

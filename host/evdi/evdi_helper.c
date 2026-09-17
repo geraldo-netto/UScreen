@@ -1287,8 +1287,8 @@ static evdi_handle acquire_capture_device(int *index) {
                             "[evdi-helper] Either the evdi kernel module is not loaded, or no device exists\n"
                             "[evdi-helper] and /sys/devices/evdi/add is root-only. Check `lsmod | grep evdi`;\n"
                             "[evdi-helper] then, once: echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf\n"
-                            "[evdi-helper]            sudo modprobe -r evdi; sudo modprobe evdi   (or reboot)\n"
-                            "[evdi-helper] The packages and install.sh do this — unless evdi-dkms failed to build, see docs/installation.md.\n");
+                            "[evdi-helper]            sudo modprobe evdi; echo 1 | sudo tee /sys/devices/evdi/add\n"
+                            "[evdi-helper] Keep the live module loaded. If adding fails, reboot after checking evdi-dkms; see docs/installation.md.\n");
             return EVDI_INVALID_HANDLE;
         }
         fprintf(stderr, "[evdi-helper] Found EVDI device at /dev/dri/card%d\n", (*index));

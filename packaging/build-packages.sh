@@ -19,6 +19,7 @@ distrobox enter "${USCREEN_BUILD_CONTAINER:-uscreen-build}" -- bash -lc '
 
   # ---- .deb ----
   R=dist/deb-root; rm -rf "$R"
+  install -Dm755 scripts/setup-evdi.sh "$R/usr/share/uscreen/setup-evdi.sh"
   install -Dm755 "$D/bin/uscreen"        "$R/usr/bin/uscreen"
   install -Dm755 "$D/bin/uscreen-gui"    "$R/usr/bin/uscreen-gui"
   install -Dm755 "$D/bin/evdi_helper"    "$R/usr/lib/uscreen/evdi_helper"

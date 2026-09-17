@@ -27,6 +27,7 @@ build() {
 
 package() {
   cd "UScreen-$pkgver"
+  install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/uscreen/setup-evdi.sh"
   install -Dm755 target/release/uscreen     "$pkgdir/usr/bin/uscreen"
   install -Dm755 target/release/uscreen-gui "$pkgdir/usr/bin/uscreen-gui"
   install -Dm755 host/evdi/evdi_helper      "$pkgdir/usr/lib/uscreen/evdi_helper"

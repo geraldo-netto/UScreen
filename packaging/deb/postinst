@@ -1,14 +1,7 @@
 #!/bin/sh
 set -e
 if [ "$1" = "configure" ]; then
-    # initial_device_count is only read when evdi loads. Reload it so a
-    # device exists now, not only after the next reboot.
-    if lsmod | grep -q '^evdi'; then
-        modprobe -r evdi 2>/dev/null && modprobe evdi 2>/dev/null || \
-            echo "uscreen: evdi is in use; reboot for the virtual display device to appear."
-    else
-        modprobe evdi 2>/dev/null || true
-    fi
+    sh /usr/share/uscreen/setup-evdi.sh 2 || true
     modprobe uinput 2>/dev/null || true
     udevadm control --reload 2>/dev/null || true
     udevadm trigger --name-match=uinput 2>/dev/null || true

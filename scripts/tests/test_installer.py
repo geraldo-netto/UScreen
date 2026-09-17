@@ -179,8 +179,7 @@ system_setup 3>&1 2>&1
 ''')
         for expected in ['mkdir -p /etc/modprobe.d /etc/modules-load.d',
                          'options evdi initial_device_count=2', 'evdi\nuinput',
-                         'sudo modprobe uinput', 'sudo modprobe -r evdi', 'sudo modprobe evdi',
-                         'sudo tee /sys/devices/evdi/add', 'No EVDI device could be created']:
+                         'sudo modprobe uinput', 'sudo sh', '/setup-evdi.sh 2']:
             self.assertIn(expected, output)
 
 

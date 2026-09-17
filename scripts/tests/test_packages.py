@@ -122,7 +122,7 @@ class PackageTest(unittest.TestCase):
         write('Makefile', 'VERSION = 1.2.3\n')
         for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
             write('dist/uscreen-1.2.3/bin/' + name, 'binary', True)
-        for name in ['scripts/uscreen.desktop', 'packaging/icons/uscreen.svg', 'packaging/icons/uscreen-pen.svg',
+        for name in ['scripts/setup-evdi.sh', 'scripts/uscreen.desktop', 'packaging/icons/uscreen.svg', 'packaging/icons/uscreen-pen.svg',
                      'packaging/uscreen.service', 'packaging/uscreen-evdi.conf', 'packaging/uscreen-modules.conf',
                      'packaging/60-uscreen-uinput.rules']:
             write(name, 'fixture')

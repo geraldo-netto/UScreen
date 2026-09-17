@@ -1,13 +1,6 @@
 # shellcheck shell=bash
 post_install() {
-  # initial_device_count is only read when evdi loads. If it is already
-  # loaded, reload it so a device exists without a reboot.
-  if lsmod | grep -q '^evdi'; then
-    modprobe -r evdi 2>/dev/null && modprobe evdi 2>/dev/null || \
-      echo "==> evdi is in use; reboot for the virtual display device to appear."
-  else
-    modprobe evdi 2>/dev/null || true
-  fi
+  sh /usr/share/uscreen/setup-evdi.sh 2 || true
   modprobe uinput 2>/dev/null || true
   # pacman's hicolor hook refreshes the icon cache; the mtime bump is what
   # KDE's own cache keys on.

@@ -116,7 +116,7 @@ fn check_modules(r: &mut Report, cfg: &FileConfig) {
                 // where evdi is already resident. Both halves matter.
                 r.hint(
                     "for every boot: echo 'options evdi initial_device_count=2' | sudo tee \
-                     /etc/modprobe.d/uscreen-evdi.conf && sudo modprobe -r evdi && sudo modprobe evdi",
+                     /etc/modprobe.d/uscreen-evdi.conf # takes effect after reboot; keep the live module loaded",
                 );
             }
         }

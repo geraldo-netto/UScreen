@@ -419,6 +419,12 @@ fn t097_make_setup_creates_missing_configuration_directories() {
         .replace("/etc/", &format!("{}/etc/", sandbox.0.display()))
         .replace("/sys/", &format!("{}/sys/", sandbox.0.display()));
     sandbox.write("Makefile", &makefile);
+    sandbox.write(
+        "scripts/setup-evdi.sh",
+        &std::fs::read_to_string(repo().join("scripts/setup-evdi.sh"))
+            .unwrap()
+            .replace("/sys/", &format!("{}/sys/", sandbox.0.display())),
+    );
     sandbox.write("sys/devices/evdi/count", "2");
     sandbox.write(
         "packaging/60-uscreen-uinput.rules",
@@ -543,6 +549,19 @@ fn t302_distribution_regressions_survive_release_version_bumps() {
 fn t129_distributed_notices_and_readme_links_exist() {
     let output = Command::new("python3")
         .arg(repo().join("scripts/tests/test_notices.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn t269_setup_preserves_live_devices_and_reports_missing_capacity() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_evdi_setup.py"))
         .output()
         .unwrap();
     assert!(

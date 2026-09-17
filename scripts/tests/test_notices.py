@@ -41,12 +41,15 @@ class NoticeTest(unittest.TestCase):
             run('tar', '-xf', f'dist/uscreen-{version}-linux-x86_64.tar.gz', '-C', str(extracted))
             docs = extracted / f'uscreen-{version}'
             self.verify_docs(docs)
+            self.assertEqual((docs / 'scripts/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: portable setup missing')
             env['USCREEN_TEST_BUILD'] = 'packages'
             run('bash', 'packaging/build-packages.sh')
             deb = root / 'deb'
             run('dpkg-deb', '-x', f'dist/uscreen_{version}_amd64.deb', str(deb))
             self.verify_docs(deb / 'usr/share/doc/uscreen')
+            self.assertEqual((deb / 'usr/share/uscreen/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Debian setup missing')
             rpm_files = run('rpm', '-qpl', f'dist/uscreen-{version}-1.x86_64.rpm').splitlines()
+            self.assertIn('/usr/share/uscreen/setup-evdi.sh', rpm_files, 'T269: RPM setup missing')
             for name in NOTICES:
                 self.assertIn('/usr/share/doc/uscreen/' + name, rpm_files)
             for link in re.findall(r'\]\(([^)]+)\)', (docs / 'README.md').read_text()):
@@ -68,6 +71,7 @@ class NoticeTest(unittest.TestCase):
             shutil.copy(docs / 'bin/libevdi.so.1.15.0', root / 'evdi-1.15.0/library/')
             run('bash', '-c', 'set -e; source packaging/arch/PKGBUILD; srcdir="$PWD"; pkgdir="$PWD/arch"; package')
             self.verify_docs(root / 'arch/usr/share/doc/uscreen')
+            self.assertEqual((root / 'arch/usr/share/uscreen/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Arch setup missing')
 
     def copy_sources(self, root):
         for name in ['Makefile', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',

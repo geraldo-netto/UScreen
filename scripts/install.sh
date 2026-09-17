@@ -262,29 +262,7 @@ configure_uinput() {
 }
 
 activate_evdi() {
-    # initial_device_count is only read when the module loads, so writing the
-    # modprobe.d file does nothing to a module that is already resident. That
-    # is the usual state after installing evdi-dkms by hand, and it is why the
-    # daemon could sit in a retry loop on a machine that looked correctly set
-    # up: /sys/devices/evdi/count stays 0, and creating a device needs a write
-    # to /sys/devices/evdi/add that only root can do.
-    if lsmod 2>/dev/null | grep -q '^evdi'; then
-        if ! sudo modprobe -r evdi 2>/dev/null; then
-            warn "evdi is loaded and in use — reboot to pick up the new setting"
-        fi
-    fi
-    sudo modprobe evdi 2>/dev/null || warn "evdi module not available yet (reboot after installing evdi-dkms)"
-
-    # Belt and braces: whatever happened above, make sure a device exists now.
-    if [ "$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)" = "0" ]; then
-        echo 1 | sudo tee /sys/devices/evdi/add >/dev/null 2>&1 || true
-    fi
-
-    if [ "$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)" = "0" ]; then
-        warn "No EVDI device could be created. Reboot, then run: uscreen doctor"
-    else
-        info "EVDI device ready (count=$(cat /sys/devices/evdi/count))"
-    fi
+    sudo sh "$SCRIPT_DIR/setup-evdi.sh" 2 || warn "EVDI setup deferred; existing devices were preserved"
 }
 
 system_setup() {

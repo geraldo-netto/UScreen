@@ -59,7 +59,6 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
-- **T269:** full installer/native package hooks may unload a live EVDI module.
 - **T284:** the optional in-process encoder lacks working VAAPI initialization;
   use the default FFmpeg path for VAAPI.
 - **T287/T318:** tilt-axis scaling and hover/button transitions need correction.
