@@ -129,7 +129,8 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         val i = arrivalWrite % ARRIVAL_RING
         arrivalSeq[i] = seq
         arrivalNanos[i] = System.nanoTime()
-        arrivalWrite = arrivalWrite + 1
+        // Keep a ring index: an unbounded Int eventually overflows in lookups.
+        arrivalWrite = (i + 1) % ARRIVAL_RING
     }
 
     /** Microseconds between the frame arriving and it being on screen, or -1. */

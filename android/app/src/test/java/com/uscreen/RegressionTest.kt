@@ -23,6 +23,23 @@ class RegressionTest {
     private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
     private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
 
+    @Test fun t253_arrivalHistorySurvivesCounterOverflowAndRingWraps() {
+        val receiver = VideoReceiver()
+        set(receiver, "arrivalWrite", Int.MAX_VALUE - 1)
+        val arrival = VideoReceiver::class.java.getDeclaredMethod("noteArrival", Int::class.javaPrimitiveType).apply { isAccessible = true }
+        val release = VideoReceiver::class.java.getDeclaredMethod("noteReleased", Int::class.javaPrimitiveType).apply { isAccessible = true }
+        val latency = VideoReceiver::class.java.getDeclaredMethod("decodeMicrosFor", Int::class.javaPrimitiveType).apply { isAccessible = true }
+        val first = 1000
+        val last = first + VideoReceiver.ARRIVAL_RING * 2
+        for (seq in first..last) {
+            arrival.invoke(receiver, seq)
+            release.invoke(receiver, seq)
+            assertTrue("T253: just-arrived frame must retain its timestamp", (latency.invoke(receiver, seq) as Int) >= 0)
+        }
+        assertEquals(-1, latency.invoke(receiver, first))
+        assertTrue((latency.invoke(receiver, last - VideoReceiver.ARRIVAL_RING + 1) as Int) >= 0)
+    }
+
     @Test fun t133_tokenRotationRestartsActiveReconnectsOnly() {
         val prefs = Prefs(app).apply { checkUpdates = false; hostToken = "a".repeat(64) }
         val controller = Robolectric.buildActivity(MainActivity::class.java).create()
