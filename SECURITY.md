@@ -11,7 +11,7 @@ With the default `require_token = true`, each daemon run creates a random
 on stdin, rather than in process arguments. The video and input connections
 must authenticate before receiving video or injecting input. Keep token
 authentication enabled: disabling it removes that protection and is also
-incompatible with the current Android video handshake (T267 in [TODO.md](TODO.md)).
+incompatible with the current Android video handshake (T267 in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md)).
 
 Processes running as the same Linux user can read the token. Authorized adb
 hosts and privileged Android apps are also inside the trust boundary: the

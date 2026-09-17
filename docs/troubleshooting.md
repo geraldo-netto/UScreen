@@ -24,7 +24,7 @@ echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-ev
 Use GUI system setup to add missing capacity for a larger tablet count.
 Reboot if a changed boot setting needs to take effect. **Do not unload EVDI
 from a running display session**: it can disrupt the display server. Installer
-reload behavior remains tracked as T269 in [TODO.md](../TODO.md).
+reload behavior remains tracked as T269 in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
 
 ## "Failed to open /dev/uinput"
 

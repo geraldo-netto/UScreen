@@ -2,7 +2,7 @@
 
 This describes the Linux host and Android client in the current checkout.
 Windows remains a [proposed integration](windows-port.md). Known behavioral
-limits are tracked in [TODO.md](../TODO.md); describing a path does not certify
+limits are tracked in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md); describing a path does not certify
 it on every desktop or device.
 
 ## Pipeline

@@ -15,7 +15,7 @@ fixed in commit `77045bd`. Permanent coverage in `host/src/capture.rs` includes
 `t223_initial_attach_waits_for_geometry_on_each_daemon_start` and
 `t223_setup_observes_settings_without_hotplug_for_encoder_only_changes`.
 T222 (the Xorg crash) and T224 (KScreen calls on an unsupported backend)
-remain unresolved in [TODO.md](../../TODO.md). The T223 fix does not prove
+remain unresolved in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md). The T223 fix does not prove
 that the session crash is prevented. The findings and validation below describe
 the original review, not a new reproduction during this documentation update.
 

@@ -234,7 +234,7 @@ also only a proposal and would need a supported transport, a native client,
 build/signing resources and a distribution plan. No particular Apple
 platform or regional distribution route has been selected or verified.
 
-Current defects and blocked decisions remain in [TODO.md](TODO.md).
+Current defects and blocked decisions remain in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
 
 ## Contributing
 

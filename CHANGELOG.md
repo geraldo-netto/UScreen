@@ -9,7 +9,7 @@ the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
 ## Unreleased
 
 Selected fork changes (the commit history contains the individual fixes;
-[TODO.md](TODO.md) retains unresolved issues):
+[TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md) retains unresolved issues):
 
 - Android brightness defaults to 50% and the display-mode preference to 60 Hz.
   Both are adjustable, persistent and scoped to UScreen's window; switching

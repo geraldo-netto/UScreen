@@ -50,7 +50,7 @@ capabilities, but only a real stream validates the selected configuration.
 
 ## Current fork limitations
 
-The full actionable list is [TODO.md](../TODO.md). In particular:
+The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md). In particular:
 
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
