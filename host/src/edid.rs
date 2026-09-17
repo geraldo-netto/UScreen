@@ -83,7 +83,7 @@ pub fn make_edid_sized(
         edid[39 + i * 2] = 0x01;
     }
 
-    // CVT-RB style blanking
+    // Custom fixed-porch timings; these do not implement the CVT-RB formulas.
     let h_active = width;
     let v_active = height;
     let (h_front, h_sync, h_back) = (48u32, 32u32, 80u32);

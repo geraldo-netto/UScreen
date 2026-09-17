@@ -105,7 +105,7 @@ def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm
         edid[38 + i * 2] = 0x01
         edid[39 + i * 2] = 0x01
 
-    # CVT-RB v2 timing for width@refresh
+    # Custom fixed-porch timings; these do not implement the CVT-RB formulas.
     h_active = width
     v_active = height
 
