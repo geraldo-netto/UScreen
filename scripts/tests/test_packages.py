@@ -27,6 +27,69 @@ class PackageTest(unittest.TestCase):
                         path = root / 'dist' / name
                         self.assertFalse(path.exists() and path.read_text() == 'stale')
 
+    def test_t235_checkout_paths_are_literal_container_arguments(self):
+        for name in ["project with spaces", "project'quote", 'project$(touch INJECTED)`touch INJECTED`']:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='uscreen-quoting-') as tmp:
+                root = Path(tmp) / name
+                root.mkdir()
+                self.create_fixture(root)
+                # Execute the actual inner program and preserve its positional arguments.
+                stub = root / 'bin/distrobox'
+                stub.write_text('#!/bin/bash\nshift 3\n[ "$1" = bash ] && shift\n[ "$1" = -lc ] && shift\nexec bash -c "$@"\n')
+                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_TEST_MODE='success')
+                result = subprocess.run(['bash', 'packaging/build-packages.sh'], cwd=root,
+                                        env=env, capture_output=True, text=True, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse((root / 'INJECTED').exists())
+
+    def test_t235_portable_build_uses_literal_checkout_path(self):
+        from test_notices import NoticeTest
+        for name in ["project with spaces", "project'quote", 'project$(touch INJECTED)`touch INJECTED`']:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='uscreen-build-path-') as tmp:
+                root = Path(tmp) / name
+                root.mkdir()
+                NoticeTest().copy_sources(root)
+                self.portable_fixture(root)
+                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'))
+                result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
+                                        env=env, capture_output=True, text=True, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertTrue((root / 'dist/uscreen-1.2.3-linux-x86_64.tar.gz').is_file())
+                self.assertFalse((root / 'INJECTED').exists())
+
+    def portable_fixture(self, root):
+        files = {
+            'bin/distrobox': '#!/bin/bash\nshift 3; shift 2; exec bash -c "$@"\n',
+            'bin/objdump': '#!/bin/sh\necho GLIBC_2.36\n',
+            'bin/readelf': '#!/bin/sh\necho "RUNPATH [$ORIGIN]"\n',
+            'android/gradlew': '#!/bin/sh\nexit 0\n',
+            'android/app/build/outputs/apk/release/app-release.apk': 'apk',
+        }
+        for name in ['cargo', 'make', 'gcc']:
+            files['bin/' + name] = '#!/bin/sh\nexit 0\n'
+        for name in ['release/uscreen', 'release/uscreen-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
+            files['target-deb12/' + name] = '#!/bin/sh\nexit 0\n'
+        for name, text in files.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+            path.chmod(0o755)
+
+    def test_t235_make_preserves_release_notes_path(self):
+        with tempfile.TemporaryDirectory(prefix='uscreen-notes-path-') as tmp:
+            root = Path(tmp)
+            shutil.copy(REPO / 'Makefile', root)
+            (root / 'scripts').mkdir()
+            publisher = root / 'scripts/publish-release.sh'
+            publisher.write_text('#!/bin/sh\nprintf "%s\n" "$#" "$@" > arguments\n')
+            publisher.chmod(0o755)
+            notes = "notes with 'quotes' $(touch INJECTED) `touch INJECTED`.md"
+            result = subprocess.run(['make', 'publish', 'NOTES=' + notes], cwd=root,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((root / 'arguments').read_text().splitlines(), ['1', notes])
+            self.assertFalse((root / 'INJECTED').exists())
+
     def create_fixture(self, root):
         def write(name, body, executable=False):
             path = root / name
@@ -53,10 +116,10 @@ class PackageTest(unittest.TestCase):
         assets = ['uscreen_1.2.3_amd64.deb', 'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz']
         for name in assets + ['uscreen-1.2.3-linux-x86_64.tar.gz', '.packages-ok']:
             write('dist/' + name, 'stale')
-        write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_MODE" != container ]; then bash -c "${@: -1}"; fi\nexit 0\n', True)
+        write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_MODE" != container ]; then shift 3; shift 2; bash -c "$@"; fi\nexit 0\n', True)
         write('bin/fakeroot', '#!/bin/sh\nexec "$@"\n', True)
         write('bin/dpkg-deb', '#!/bin/bash\nif [ "$1" = --info ]; then echo "Package: uscreen"; else echo new > "${@: -1}"; fi\n', True)
-        write('bin/rpmbuild', '#!/bin/sh\nmkdir -p dist/rpmbuild/RPMS/x86_64\necho new > dist/rpmbuild/RPMS/x86_64/uscreen-1.2.3-1.x86_64.rpm\necho Wrote\n[ "$USCREEN_TEST_MODE" != rpm ]\n', True)
+        write('bin/rpmbuild', '#!/bin/sh\nRB=${2#_topdir }\nmkdir -p "$RB/RPMS/x86_64"\necho new > "$RB/RPMS/x86_64/uscreen-1.2.3-1.x86_64.rpm"\necho Wrote\n[ "$USCREEN_TEST_MODE" != rpm ]\n', True)
         return assets
 
 

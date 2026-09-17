@@ -24,7 +24,7 @@ class NoticeTest(unittest.TestCase):
                     path.chmod(0o755)
             for name in ['release/uscreen', 'release/uscreen-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
                 write('target-deb12/' + name, '#!/bin/sh\nexit 0\n', True)
-            write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_BUILD" = portable ]; then touch target-deb12/.build-ok; else bash -c "${@: -1}"; fi\n', True)
+            write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_BUILD" = portable ]; then touch target-deb12/.build-ok; else shift 3; shift 2; bash -c "$@"; fi\n', True)
             write('bin/objdump', '#!/bin/sh\necho GLIBC_2.36\n', True)
             write('bin/readelf', '#!/bin/sh\necho "RUNPATH [$ORIGIN]"\n', True)
             write('bin/fakeroot', '#!/bin/sh\nexec "$@"\n', True)

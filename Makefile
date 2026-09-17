@@ -99,7 +99,7 @@ stop:
 # files is missing, uploads to a draft, verifies digests, then publishes.
 # Usage: GH_TOKEN=... make publish NOTES=path/to/notes.md
 publish:
-	./scripts/publish-release.sh $(NOTES)
+	./scripts/publish-release.sh $(call quote,$(value NOTES))
 
 # Write VERSION and the release date into the website, llms.txt, sitemap and
 # CITATION.cff. Usage: make release-metadata DATE=2026-09-15 (default: today)

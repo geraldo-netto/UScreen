@@ -14,27 +14,23 @@ CONTAINER="${USCREEN_BUILD_CONTAINER:-uscreen-build}"
 VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
 EVDI_TAG="v1.15.0"
 
-# distrobox enter reports success whatever the inner command returned, so a
-# sentinel file is the only reliable way to know the build actually finished.
+# Verify completion even when distrobox does not propagate failure.
 rm -f target-deb12/.build-ok
-distrobox enter "$CONTAINER" -- bash -lc "
-  set -e
-  export PATH=\"\$HOME/.cargo/bin:\$PATH\"
-  cd '$PWD'
-  export CARGO_TARGET_DIR='$PWD/target-deb12'
+distrobox enter "$CONTAINER" -- bash -lc '
+  set -euo pipefail
+  export PATH="$HOME/.cargo/bin:$PATH"
+  cd "$1"
+  export CARGO_TARGET_DIR="$PWD/target-deb12"
   cargo build --release --locked --manifest-path host/Cargo.toml
   cargo build --release --locked --manifest-path gui/Cargo.toml
 
-  # libevdi is not packaged on Debian 12, so the tarball carries its own copy
-  # next to the helper, found through an \\\$ORIGIN rpath. It stays a separate
-  # shared object (LGPL), replaceable by the user; only the kernel module has
-  # to come from the target system.
-  [ -d target-deb12/evdi-src ] || git clone -q --depth 1 --branch $EVDI_TAG https://github.com/DisplayLink/evdi target-deb12/evdi-src
+  # Keep LGPL libevdi replaceable beside the helper, located via $ORIGIN.
+  [ -d target-deb12/evdi-src ] || git clone -q --depth 1 --branch "$2" https://github.com/DisplayLink/evdi target-deb12/evdi-src
   make -s -C target-deb12/evdi-src/library >/dev/null
-  gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c \\
-      -Ltarget-deb12/evdi-src/library -levdi -lpthread -Wl,-rpath,'\$ORIGIN'
+  gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c \
+      -Ltarget-deb12/evdi-src/library -levdi -lpthread "-Wl,-rpath,\$ORIGIN"
   touch target-deb12/.build-ok
-"
+' uscreen-release "$PWD" "$EVDI_TAG"
 [ -f target-deb12/.build-ok ] || { echo "!! build inside $CONTAINER failed"; exit 1; }
 
 for b in target-deb12/release/uscreen target-deb12/release/uscreen-gui target-deb12/evdi_helper; do
