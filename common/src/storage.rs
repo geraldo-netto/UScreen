@@ -39,6 +39,31 @@ impl ConfigStore {
         FileConfig::update_at(&self.path, edit)
     }
 
+    /// Cooperative cancellation while waiting for a lock. Once filesystem
+    /// commit begins, callers must await completion rather than assume abort
+    /// undoes a write/fsync already in progress.
+    pub fn update_cancellable(
+        &self,
+        cancelled: &std::sync::atomic::AtomicBool,
+        edit: impl FnOnce(&mut FileConfig) -> Result<()>,
+    ) -> Result<FileConfig> {
+        use std::sync::atomic::Ordering;
+        let lock = FileConfig::open_lock_at(&self.path)?;
+        while !cancelled.load(Ordering::Acquire) {
+            match lock.try_lock() {
+                Ok(()) => {
+                    anyhow::ensure!(!cancelled.load(Ordering::Acquire), "config save cancelled");
+                    return FileConfig::update_locked_at(&self.path, edit);
+                }
+                Err(std::fs::TryLockError::WouldBlock) => {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(std::fs::TryLockError::Error(error)) => return Err(error.into()),
+            }
+        }
+        anyhow::bail!("config save cancelled")
+    }
+
     pub fn save_edits(&self, edited: &FileConfig, baseline: &FileConfig) -> Result<FileConfig> {
         self.update(|latest| {
             *latest = edited.merge_edits(baseline, latest.clone())?;
@@ -78,6 +103,12 @@ impl FileConfig {
     }
 
     fn lock_at(path: &Path) -> Result<std::fs::File> {
+        let lock = Self::open_lock_at(path)?;
+        lock.lock().context("lock config transaction")?;
+        Ok(lock)
+    }
+
+    fn open_lock_at(path: &Path) -> Result<std::fs::File> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -87,12 +118,15 @@ impl FileConfig {
             .read(true)
             .write(true)
             .open(path.with_extension("lock"))?;
-        lock.lock().context("lock config transaction")?;
         Ok(lock)
     }
 
     fn update_at(path: &Path, edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
         let _lock = Self::lock_at(path)?;
+        Self::update_locked_at(path, edit)
+    }
+
+    fn update_locked_at(path: &Path, edit: impl FnOnce(&mut Self) -> Result<()>) -> Result<Self> {
         // A partial edit must never replace unreadable preferences with defaults.
         // Only a genuinely absent file starts a new configuration.
         let mut config: Self = match std::fs::read_to_string(path) {

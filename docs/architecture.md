@@ -81,6 +81,13 @@ including waiting for connection and graphics-tablet mode; it is not proof
 that video is currently being decoded. Window brightness and preferred display
 mode are app-local controls, separate from host stream FPS and encoding.
 
+Daemon settings and mode persistence share one filesystem worker with one
+waiting queue slot. Their watch channels coalesce subsequent updates while a
+transaction is pending. Successful completion advances the settings baseline;
+failed edits remain pending for the next update. Shutdown cancels lock waits
+and joins the worker, including any already-started filesystem commit. Neither
+aborting an async caller nor dropping a handle rolls back an in-progress write.
+
 ## Protocol
 
 Slot indices start at zero. Default video port is `8890 + 2*slot`; default

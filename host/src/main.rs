@@ -11,6 +11,7 @@ mod kscreen;
 mod kwin;
 mod latency;
 mod osk;
+mod persistence;
 mod runtime;
 mod stream;
 mod tray;
@@ -169,6 +170,70 @@ mod cli_tests {
         true
     }
 
+    async fn assert_persistence_keeps_runtime_responsive(
+        writer: impl std::future::Future<Output = ()> + Send + 'static,
+    ) {
+        config::FileConfig::default().save().unwrap();
+        let lock = std::fs::File::open(config::config_path().with_extension("lock")).unwrap();
+        lock.lock().unwrap();
+        let (release, wait) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let _ = wait.recv_timeout(std::time::Duration::from_secs(2));
+            drop(lock);
+        });
+        let started = std::time::Instant::now();
+        let task = tokio::spawn(writer);
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        let elapsed = started.elapsed();
+        let _ = release.send(());
+        holder.join().unwrap();
+        task.await.unwrap();
+        assert!(
+            elapsed < std::time::Duration::from_millis(200),
+            "T385: config lock blocked the current-thread runtime for {elapsed:?}"
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn t385_mode_persistence_does_not_block_runtime() {
+        if isolated_config_test("cli_tests::t385_mode_persistence_does_not_block_runtime") {
+            return;
+        }
+        let (sender, persistence) = mode_channel(false);
+        sender.send(true).unwrap();
+        drop(sender);
+        assert_persistence_keeps_runtime_responsive(persistence.run()).await;
+        assert!(config::FileConfig::load().pen_only);
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn t385_settings_persistence_does_not_block_runtime() {
+        if isolated_config_test("cli_tests::t385_settings_persistence_does_not_block_runtime") {
+            return;
+        }
+        let initial = capture::EncoderSettings {
+            encoder: "h264_nvenc".into(),
+            fps: 60,
+            bitrate: 20000,
+            width: 1920,
+            height: 1080,
+            quality: 20,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+            geometry_ready: false,
+        };
+        let (sender, receiver) = watch::channel(initial.clone());
+        let cli = Cli::try_parse_from(["uscreen"]).unwrap();
+        let writer = persist_settings(receiver, CliOverrides::new(&cli));
+        sender
+            .send(capture::EncoderSettings { fps: 30, ..initial })
+            .unwrap();
+        drop(sender);
+        assert_persistence_keeps_runtime_responsive(writer).await;
+        assert_eq!(config::FileConfig::load().fps, 30);
+    }
+
     #[tokio::test]
     async fn t297_failed_settings_save_is_retried_on_next_update() {
         if isolated_config_test("cli_tests::t297_failed_settings_save_is_retried_on_next_update") {
@@ -190,7 +255,8 @@ mod cli_tests {
         };
         let (sender, receiver) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
-        let writer = persist_settings(receiver, CliOverrides::new(&cli));
+        let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
+        let writer = persist_settings_with(receiver, CliOverrides::new(&cli), worker.writer());
         tokio::pin!(writer);
         std::fs::write(config::config_path(), "invalid = [").unwrap();
         let unsaved = capture::EncoderSettings {
@@ -199,6 +265,9 @@ mod cli_tests {
         };
         sender.send(unsaved.clone()).unwrap();
         assert!(futures_util::poll!(&mut writer).is_pending());
+        // T385: prove the first transaction actually failed before repairing
+        // the file; polling an asynchronous writer alone cannot establish it.
+        worker.writer().barrier().await;
         assert_eq!(
             std::fs::read_to_string(config::config_path()).unwrap(),
             "invalid = ["
@@ -214,6 +283,7 @@ mod cli_tests {
             .unwrap();
         drop(sender);
         writer.await;
+        worker.shutdown().await;
         assert_eq!(
             config::FileConfig::load(),
             config::FileConfig {
@@ -1275,7 +1345,12 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     });
     // Snapshot before any producer runs; scheduling the writer can come later.
     // CLI overrides remain temporary and must never be written back.
-    let save_settings = persist_settings(settings_rx.clone(), CliOverrides::new(&cli));
+    let persistence = persistence::Worker::new(config::storage::ConfigStore::default())?;
+    let save_settings = persist_settings_with(
+        settings_rx.clone(),
+        CliOverrides::new(&cli),
+        persistence.writer(),
+    );
 
     // Tablet presence, published by the ADB monitor.
     let (tablet_tx, tablet_rx) = watch::channel(false);
@@ -1356,7 +1431,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Remember which mode the tablet was left in. Unlike the --pen-only flag,
     // which is a one-off for this run and never written back, a switch made
     // from the tablet is a deliberate choice and should survive a restart.
-    let mode_save_handle = tokio::spawn(mode_persistence.run());
+    let mode_save_handle = tokio::spawn(persist_mode(mode_persistence.0, persistence.writer()));
 
     // The daemon's only face on the desktop. It follows the same channels the
     // rest of the daemon does, so it cannot drift out of step with what is
@@ -1482,6 +1557,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     adb_handle.abort();
     save_handle.abort();
     mode_save_handle.abort();
+    let _ = tokio::join!(save_handle, mode_save_handle);
+    persistence.shutdown().await;
     tray_handle.abort();
     if let Some(h) = update_handle {
         h.abort();
@@ -1618,9 +1695,10 @@ fn spawn_display_gate(
     })
 }
 
-fn persist_settings(
+fn persist_settings_with(
     mut settings_rx: watch::Receiver<capture::EncoderSettings>,
     cli_overrides: CliOverrides,
+    writer: persistence::Writer,
 ) -> impl std::future::Future<Output = ()> + Send {
     // Capture the baseline at construction, even if this future is polled
     // after a tablet has already published its first settings change.
@@ -1628,11 +1706,15 @@ fn persist_settings(
     async move {
         while settings_rx.changed().await.is_ok() {
             let s = settings_rx.borrow().clone();
-            let result = config::FileConfig::update(|cfg| {
-                cli_overrides.apply_encoder(cfg, &s, &previous);
-                cli_overrides.apply_geometry(cfg, &s, &previous);
-                Ok(())
-            });
+            let next = s.clone();
+            let baseline = previous.clone();
+            let result = writer
+                .update(move |cfg| {
+                    cli_overrides.apply_encoder(cfg, &next, &baseline);
+                    cli_overrides.apply_geometry(cfg, &next, &baseline);
+                    Ok(())
+                })
+                .await;
             if let Err(e) = result {
                 warn!("Failed to persist settings: {}", e);
             } else {
@@ -1644,6 +1726,7 @@ fn persist_settings(
     }
 }
 
+#[derive(Clone, Copy)]
 struct CliOverrides {
     encoder: bool,
     fps: bool,
@@ -1712,21 +1795,42 @@ fn mode_channel(initial: bool) -> (watch::Sender<bool>, ModePersistence) {
     (sender, ModePersistence(receiver))
 }
 
+#[cfg(test)]
 impl ModePersistence {
     fn run(self) -> impl std::future::Future<Output = ()> + Send {
-        persist_mode(self.0)
+        let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
+        async move {
+            persist_mode(self.0, worker.writer()).await;
+            worker.shutdown().await;
+        }
     }
 }
 
-async fn persist_mode(mut mode_rx: watch::Receiver<bool>) {
+async fn persist_mode(mut mode_rx: watch::Receiver<bool>, writer: persistence::Writer) {
     while mode_rx.changed().await.is_ok() {
         let pen_only = *mode_rx.borrow();
-        if let Err(e) = config::FileConfig::update(|cfg| {
-            cfg.pen_only = pen_only;
-            Ok(())
-        }) {
+        if let Err(e) = writer
+            .update(move |cfg| {
+                cfg.pen_only = pen_only;
+                Ok(())
+            })
+            .await
+        {
             warn!("Failed to persist mode: {}", e);
         }
+    }
+}
+
+#[cfg(test)]
+fn persist_settings(
+    settings_rx: watch::Receiver<capture::EncoderSettings>,
+    cli: CliOverrides,
+) -> impl std::future::Future<Output = ()> + Send {
+    let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
+    let save = persist_settings_with(settings_rx, cli, worker.writer());
+    async move {
+        save.await;
+        worker.shutdown().await;
     }
 }
 
