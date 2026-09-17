@@ -21,6 +21,18 @@ void frame_exchange_mark_all(frame_exchange_t *frames) {
     memset(frames->dirty_write,  0xFF, (size_t)frames->dirty_bytes);
 }
 
+/* OR one bit range without revisiting every row of overlapping rectangles. */
+static void mark_range(unsigned char *mask, int first, int end) {
+    if (first >= end) return;
+    int begin_byte = first / 8, last_byte = (end - 1) / 8;
+    unsigned char left = (unsigned char)(0xFFu << (first & 7));
+    unsigned char right = (unsigned char)(0xFFu >> (7 - ((end - 1) & 7)));
+    if (begin_byte == last_byte) { mask[begin_byte] |= left & right; return; }
+    mask[begin_byte] |= left;
+    memset(mask + begin_byte + 1, 0xFF, (size_t)(last_byte - begin_byte - 1));
+    mask[last_byte] |= right;
+}
+
 void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) {
     if (!frames->dirty_fill || frames->chroma_rows <= 0) return;
     if (y1 < y0) { int t = y0; y0 = y1; y1 = t; }
@@ -30,12 +42,9 @@ void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) 
     int c0 = y0 / div, c1 = (y1 + div - 1) / div;
     if (c0 < 0) c0 = 0;
     if (c1 > frames->chroma_rows) c1 = frames->chroma_rows;
-    for (int cy = c0; cy < c1; cy++) {
-        unsigned char bit = (unsigned char)(1u << (cy & 7));
-        frames->dirty_fill[cy >> 3]   |= bit;
-        frames->dirty_latest[cy >> 3] |= bit;
-        frames->dirty_write[cy >> 3]  |= bit;
-    }
+    mark_range(frames->dirty_fill, c0, c1);
+    mark_range(frames->dirty_latest, c0, c1);
+    mark_range(frames->dirty_write, c0, c1);
 }
 
 void frame_exchange_resize(frame_exchange_t *frames, int width, int height) {

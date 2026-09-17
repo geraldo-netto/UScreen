@@ -1,0 +1,8 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.68s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 1 test
+test capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 209 filtered out; finished in 4.00s

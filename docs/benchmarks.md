@@ -10,6 +10,11 @@ For the current fork's proposed measurement matrix and optimization work, see
 the [performance and scalability research](reviews/2026-09-17-performance-scalability.md).
 That report separates code-derived hypotheses from measurements still needed.
 
+The [C conversion and worker-budget replay](benchmarks/2026-09-17-conversion.md)
+records T383's dirty-work scheduling, scaled kernels, scalar/vector comparisons
+and support for 128 participants. Its isolated CPU measurements do not establish
+an end-to-end display or Android battery gain.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

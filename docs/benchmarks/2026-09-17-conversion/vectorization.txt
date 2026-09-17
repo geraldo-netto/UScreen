@@ -1,0 +1,5 @@
+host/evdi/conversion.c:44:41: optimized: loop vectorized using 16 byte vectors
+host/evdi/conversion.c:44:41: optimized: loop vectorized using 8 byte vectors
+host/evdi/conversion.c:72:27: optimized: loop vectorized using 16 byte vectors
+host/evdi/conversion.c:72:27: optimized:  loop versioned for vectorization because of possible aliasing
+host/evdi/conversion.c:72:27: optimized: loop vectorized using 8 byte vectors

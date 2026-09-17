@@ -1,0 +1,22 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.82s
+     Running tests/conversion.rs (/build/debug/deps/conversion-633364a3828e82b0)
+
+running 2 tests
+test t383_conversion_matches_independent_oracle_and_preserves_three_histories ... ok
+test t383_empty_and_tiny_damage_does_not_wake_the_pool ...
+thread 't383_empty_and_tiny_damage_does_not_wake_the_pool' panicked at host/tests/conversion.rs:36:5:
+[evdi-helper] NV12 conversion using 8 thread(s)
+conversion-test: /work/host/tests/conversion_test.c:124: sparse_dispatch: Assertion `pool.generation == initial && "T383: empty work woke every worker"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    t383_empty_and_tiny_damage_does_not_wake_the_pool
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.48s
+
+error: test failed, to rerun pass `-p uscreen --test conversion`

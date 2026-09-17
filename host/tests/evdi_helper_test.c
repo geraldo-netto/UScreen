@@ -7,9 +7,11 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <sched.h>
 static DIR *mock_opendir(const char *);
 static int mock_pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 static long mock_sysconf(int);
+static int mock_sched_getaffinity(pid_t, size_t, cpu_set_t *);
 static int mock_poll(struct pollfd *, nfds_t, int);
 static int mock_nanosleep(const struct timespec *, struct timespec *);
 static void *mock_malloc(size_t);
@@ -17,6 +19,7 @@ static int mock_posix_memalign(void **, size_t, size_t);
 static int mock_clock_gettime(clockid_t, struct timespec *);
 #define pthread_create mock_pthread_create
 #define sysconf mock_sysconf
+#define sched_getaffinity mock_sched_getaffinity
 #define poll mock_poll
 #define nanosleep mock_nanosleep
 #define malloc mock_malloc
@@ -35,6 +38,7 @@ static int mock_clock_gettime(clockid_t, struct timespec *);
 #undef main
 #undef pthread_create
 #undef sysconf
+#undef sched_getaffinity
 #undef poll
 #undef nanosleep
 #undef malloc
@@ -90,6 +94,21 @@ static int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attrs,
     if (fail_worker && start == conv_worker && ((conv_worker_arg_t *)arg)->id == fail_worker) return EAGAIN;
     return pthread_create(thread, attrs, start, arg);
 }
+static int permitted_cpus = 8;
+static int mock_sched_getaffinity(pid_t pid, size_t size, cpu_set_t *set) {
+    (void)pid; (void)size;
+    if (permitted_cpus == -2) {
+        if (size < CPU_ALLOC_SIZE(4096)) { errno = EINVAL; return -1; }
+        CPU_ZERO_S(size, set);
+        CPU_SET_S(4095, size, set);
+        return 0;
+    }
+    if (permitted_cpus < 0) { errno = ENOSYS; return -1; }
+    CPU_ZERO_S(size, set);
+    for (int cpu = 0; cpu < permitted_cpus; cpu++) CPU_SET_S(cpu, size, set);
+    return 0;
+}
+
 static long mock_sysconf(int name) {
     return name == _SC_NPROCESSORS_ONLN ? 8 : sysconf(name);
 }
@@ -469,11 +488,26 @@ static void test_t013(void) {
 }
 
 static void stop_test_pool(void) {
-    pthread_mutex_lock(&g_conversion.mutex);
-    g_conversion.shutdown = 1;
-    pthread_cond_broadcast(&g_conversion.ready);
-    pthread_mutex_unlock(&g_conversion.mutex);
-    for (int i = 1; i < g_conversion.count; i++) pthread_join(g_conversion.threads[i], NULL);
+    conv_pool_stop(&g_conversion);
+}
+
+static void test_t383_affinity(void) {
+    const int available[] = {1, 2, 4, 8, 32, 130, 256, -1, -2};
+    const int expected[] = {1, 1, 2, 6, 30, 128, 128, 6, 1};
+    for (size_t i = 0; i < sizeof(available) / sizeof(available[0]); i++) {
+        permitted_cpus = available[i];
+        pid_t child = fork();
+        assert(child >= 0);
+        if (child == 0) {
+            conv_pool_init();
+            assert(g_conversion.count == expected[i] && "T383: worker budget ignores allowed CPUs");
+            conv_pool_destroy(&g_conversion);
+            _exit(0);
+        }
+        int status;
+        assert(waitpid(child, &status, 0) == child);
+        assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    }
 }
 
 static void test_t047(void) {
@@ -490,7 +524,10 @@ static void seed_test_pool_epoch(unsigned int epoch) {
     pthread_mutex_lock(&g_conversion.mutex);
     g_conversion.generation = epoch;
     g_conversion.active = g_conversion.count - 1;
-    pthread_cond_broadcast(&g_conversion.ready);
+    for (int i = 1; i < g_conversion.count; i++) {
+        g_conversion.workers[i].pending = 1;
+        pthread_cond_signal(&g_conversion.workers[i].ready);
+    }
     while (g_conversion.active > 0) pthread_cond_wait(&g_conversion.done, &g_conversion.mutex);
     pthread_mutex_unlock(&g_conversion.mutex);
 }
@@ -1090,6 +1127,7 @@ int main(int argc, char **argv) {
         {"T012", test_t012},
         {"T013", test_t013},
         {"T047", test_t047},
+        {"T383-affinity", test_t383_affinity},
         {"T048", test_t048},
         {"T049", test_t049},
         {"T050", test_t050},

@@ -23,8 +23,8 @@ static inline void write_chroma(unsigned char *uv, int sb, int sg, int sr) {
    source block, and each chroma sample the mean of the 2*scale square it
    covers. Box averaging rather than point sampling — dropping pixels would
    alias hard on desktop content, where single-pixel lines are everywhere. */
-static inline void convert_strip_scaled(const conv_job_t *j) {
-    const int n = j->scale, stride = j->stride, ow = j->ow;
+static inline void convert_strip_scaled(const conv_job_t *j, const int n) {
+    const int stride = j->stride, ow = j->ow;
     const int inv = n * n;
     for (int cy = j->cy0; cy < j->cy1; cy++) {
         if (!row_is_dirty(j->dirty, cy))
@@ -89,21 +89,51 @@ static inline void convert_strip(const conv_job_t *j) {
     }
 }
 
+/* Constant scales let the compiler simplify box sums/divisions without
+ * ISA-specific code or changes to the two-stage integer rounding. */
+static void convert_job(const conv_job_t *job) {
+    switch (job->scale) {
+        case 1: convert_strip(job); break;
+        case 2: convert_strip_scaled(job, 2); break;
+        case 3: convert_strip_scaled(job, 3); break;
+        case 4: convert_strip_scaled(job, 4); break;
+        default: convert_strip_scaled(job, job->scale); break;
+    }
+}
+
+static int dirty_row_count(const conv_job_t *frame) {
+    int rows = 0;
+    for (int cy = frame->cy0; cy < frame->cy1; cy++) rows += !!row_is_dirty(frame->dirty, cy);
+    return rows;
+}
+
+/* Explicit NULL masks retain fixed-width dispatch for callers measuring the
+ * pool itself. Capture always supplies its per-buffer stale-row history. */
+static int job_count(const conv_pool_t *pool, const conv_job_t *frame) {
+    if (!frame->dirty) return pool->count;
+    int dirty_rows = dirty_row_count(frame);
+    size_t pixels = (size_t)dirty_rows * frame->ow * 2 * frame->scale * frame->scale;
+    /* Target 256 Ki source pixels per job, rounded up. Sparse damage stays on
+     * the caller; large surfaces can use more than the former eight workers. */
+    size_t count = (pixels + 262143) / 262144;
+    if (count > (size_t)dirty_rows) count = (size_t)dirty_rows;
+    if (count > (size_t)pool->count) count = (size_t)pool->count;
+    return (int)count;
+}
+
 static void *conv_worker(void *arg) {
     conv_worker_arg_t *worker = arg;
     conv_pool_t *pool = worker->pool;
     int id = worker->id;
-    unsigned int last_gen = 0;
     for (;;) {
         pthread_mutex_lock(&pool->mutex);
-        while (pool->generation == last_gen && !pool->shutdown)
-            pthread_cond_wait(&pool->ready, &pool->mutex);
+        while (!worker->pending && !pool->shutdown)
+            pthread_cond_wait(&worker->ready, &pool->mutex);
         if (pool->shutdown) { pthread_mutex_unlock(&pool->mutex); break; }
-        last_gen = pool->generation;
+        worker->pending = 0;
         pthread_mutex_unlock(&pool->mutex);
 
-        if (pool->jobs[id].scale > 1) convert_strip_scaled(&pool->jobs[id]);
-        else convert_strip(&pool->jobs[id]);
+        convert_job(&pool->jobs[id]);
 
         pthread_mutex_lock(&pool->mutex);
         if (--pool->active == 0)
@@ -118,8 +148,13 @@ void conv_pool_start(conv_pool_t *pool, int count) {
     if (pool->count > MAX_CONV_THREADS) pool->count = MAX_CONV_THREADS;
     /* Worker threads handle jobs 1..n-1; the caller runs job 0 itself. */
     for (int i = 1; i < pool->count; i++) {
-        pool->workers[i] = (conv_worker_arg_t){pool, i};
-        int error = pthread_create(&pool->threads[i], NULL, conv_worker, &pool->workers[i]);
+        pool->workers[i].pool = pool;
+        pool->workers[i].id = i;
+        int error = pthread_cond_init(&pool->workers[i].ready, NULL);
+        if (error == 0) {
+            error = pthread_create(&pool->threads[i], NULL, conv_worker, &pool->workers[i]);
+            if (error) pthread_cond_destroy(&pool->workers[i].ready);
+        }
         if (error != 0) {
             fprintf(stderr, "[evdi-helper] Conversion worker unavailable: %s\n", strerror(error));
             pool->count = i;
@@ -129,41 +164,65 @@ void conv_pool_start(conv_pool_t *pool, int count) {
     fprintf(stderr, "[evdi-helper] NV12 conversion using %d thread(s)\n", pool->count);
 }
 
-void conv_pool_convert(conv_pool_t *pool, const conv_job_t *frame) {
-    int rows = frame->cy1 - frame->cy0;
-    for (int i = 0; i < pool->count; i++) {
+static int job_end(const conv_job_t *frame, int begin, int dirty_rows) {
+    int end = begin;
+    while (end < frame->cy1 && dirty_rows > 0) {
+        dirty_rows -= !!row_is_dirty(frame->dirty, end);
+        end++;
+    }
+    return end;
+}
+
+static void prepare_jobs(conv_pool_t *pool, const conv_job_t *frame, int count) {
+    int rows = dirty_row_count(frame), begin = frame->cy0;
+    for (int i = 0; i < count; i++) {
+        int owned = rows * (i + 1) / count - rows * i / count;
+        int end = i == count - 1 ? frame->cy1 : job_end(frame, begin, owned);
         pool->jobs[i] = *frame;
-        pool->jobs[i].cy0 = frame->cy0 + rows * i / pool->count;
-        pool->jobs[i].cy1 = frame->cy0 + rows * (i + 1) / pool->count;
+        pool->jobs[i].cy0 = begin;
+        pool->jobs[i].cy1 = end;
+        begin = end;
     }
-    if (pool->count > 1) {
-        pthread_mutex_lock(&pool->mutex);
-        pool->active = pool->count - 1;
-        pool->generation++;
-        pthread_cond_broadcast(&pool->ready);
-        pthread_mutex_unlock(&pool->mutex);
+}
+
+static void start_workers(conv_pool_t *pool, int count) {
+    pthread_mutex_lock(&pool->mutex);
+    pool->active = count - 1;
+    pool->generation++;
+    for (int i = 1; i < count; i++) {
+        pool->workers[i].pending = 1;
+        pthread_cond_signal(&pool->workers[i].ready);
     }
-    if (pool->jobs[0].scale > 1) convert_strip_scaled(&pool->jobs[0]);
-    else convert_strip(&pool->jobs[0]);   /* caller does its own strip */
-    if (pool->count > 1) {
-        pthread_mutex_lock(&pool->mutex);
-        while (pool->active > 0)
-            pthread_cond_wait(&pool->done, &pool->mutex);
-        pthread_mutex_unlock(&pool->mutex);
-    }
+    pthread_mutex_unlock(&pool->mutex);
+}
+
+void conv_pool_convert(conv_pool_t *pool, const conv_job_t *frame) {
+    int count = job_count(pool, frame);
+    pool->last_jobs = count;
+    if (count == 0) return;
+    if (count == 1) { convert_job(frame); return; }
+    prepare_jobs(pool, frame, count);
+    start_workers(pool, count);
+    convert_job(&pool->jobs[0]);   /* caller does its own strip */
+    pthread_mutex_lock(&pool->mutex);
+    while (pool->active > 0)
+        pthread_cond_wait(&pool->done, &pool->mutex);
+    pthread_mutex_unlock(&pool->mutex);
 }
 
 void conv_pool_stop(conv_pool_t *pool) {
     pthread_mutex_lock(&pool->mutex);
     pool->shutdown = 1;
-    pthread_cond_broadcast(&pool->ready);
+    for (int i = 1; i < pool->count; i++) pthread_cond_signal(&pool->workers[i].ready);
     pthread_mutex_unlock(&pool->mutex);
-    for (int i = 1; i < pool->count; i++) pthread_join(pool->threads[i], NULL);
+    for (int i = 1; i < pool->count; i++) {
+        pthread_join(pool->threads[i], NULL);
+        pthread_cond_destroy(&pool->workers[i].ready);
+    }
 }
 
 void conv_pool_destroy(conv_pool_t *pool) {
     conv_pool_stop(pool);
-    pthread_cond_destroy(&pool->ready);
     pthread_cond_destroy(&pool->done);
     pthread_mutex_destroy(&pool->mutex);
 }

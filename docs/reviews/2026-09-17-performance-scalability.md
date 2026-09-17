@@ -44,11 +44,13 @@ surfaces, encoded queues and Android memory. Raw FIFO traffic is **not** the
 encoded USB bit rate. At scale 2, packed output has approximately one quarter
 as many pixels, but the EVDI framebuffer grab remains full resolution.
 
-`conv_pool_init` independently chooses online CPUs minus two, clamped to 1–8,
-per helper. On a host exposing at least ten CPUs, four helpers request 28 worker
-threads plus four calling threads for conversion, before encoders, writers and
-Tokio. Oversubscription is therefore plausible; its actual effect depends on
-load, scheduling, affinity and memory bandwidth. T383 measures it.
+At the time of this review, `conv_pool_init` independently chose online CPUs
+minus two, clamped to 1–8, per helper. T383 replaces that policy with an
+affinity-aware capacity up to 128 participants and dispatch based on dirty work.
+See the [conversion replay](../benchmarks/2026-09-17-conversion.md) for results,
+including scalar comparisons and cases that did not improve. Independent pools
+still do not implement a global host CPU-time quota; encoder/compositor load,
+cgroup quotas and NUMA need system-level measurements.
 
 ## T382: measurement plan
 

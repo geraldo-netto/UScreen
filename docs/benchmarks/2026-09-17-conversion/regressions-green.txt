@@ -1,0 +1,53 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.91s
+     Running tests/conversion.rs (/build/debug/deps/conversion-633364a3828e82b0)
+
+running 5 tests
+test t383_conversion_matches_independent_oracle_and_preserves_three_histories ... ok
+test t383_empty_and_tiny_damage_does_not_wake_the_pool ... ok
+test t383_large_pool_balances_clustered_damage_without_waking_idle_workers ... ok
+test t383_large_pool_supports_128_workers_and_joins_them ... ok
+test t383_release_scalar_and_auto_vectorized_kernels_match_the_oracle ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.44s
+
+     Running tests/evdi_helper.rs (/build/debug/deps/evdi_helper-bd536a5905c54bda)
+
+running 28 tests
+test t012_nv12_crops_odd_dimensions_without_overwriting_buffers ... ok
+test t013_mode_changes_announce_actual_stream_dimensions ... ok
+test t047_failed_worker_creation_keeps_conversion_live ... ok
+test t048_rejects_unsupported_framebuffer_formats ... ok
+test t049_poll_timeout_preserves_frame_for_a_live_reader ... ok
+test t050_latency_samples_are_synchronized_with_statistics ... ok
+test t051_picks_lowest_card_including_card_zero ... ok
+test t052_zero_bytes_written_means_device_creation_failed ... ok
+test t081_idle_writer_releases_buffers_before_mode_changes ... ok
+test t082_small_modes_never_exceed_scaled_source_bounds ... ok
+test t083_mode_changes_and_signal_shutdown_are_race_free ... ok
+test t108_helpers_reserve_distinct_cards_and_find_new_devices ... ok
+test t113_stalled_fifo_obeys_deadline_mode_change_and_shutdown ... ok
+test t170_helper_options_preserve_bounds_and_missing_values ... ok
+test t226_partial_fifo_requires_a_replacement_inode ... ok
+test t254_conversion_epochs_wrap_without_overflow_or_stalled_workers ... ok
+test t272_failed_event_channel_exits_without_spinning ... ok
+test t274_delayed_writer_cannot_read_replaced_mode_buffers ... ok
+test t279_failed_mode_allocations_retire_capture ... ok
+test t290_capture_poll_deadlines_survive_long_uptimes ... ok
+test t293_nv12_preserves_neutral_gray_and_bt709_colors ... ok
+test t294_capture_watchdog_recovers_at_poll_deadline ... ok
+test t315_fatal_errors_fail_after_cleanup_and_signals_succeed ... ok
+test t324_mode_retirement_during_pacing_discards_claimed_frame ... ok
+test t340_unreadable_edid_never_acquires_a_display_device ... ok
+test t341_fifo_edid_fails_without_waiting_for_a_writer ... ok
+test t343_capture_destination_must_be_a_fifo ... ok
+test t383_conversion_workers_respect_affinity_and_fallback ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.02s
+
+     Running tests/evdi_modules.rs (/build/debug/deps/evdi_modules-ce17fdb2f72159ad)
+
+running 1 test
+test t380_independent_contexts_preserve_frame_and_callback_lifetimes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.86s

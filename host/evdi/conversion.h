@@ -13,21 +13,25 @@ typedef struct {
     const unsigned char *dirty; /* NULL = convert everything */
 } conv_job_t;
 
-#define MAX_CONV_THREADS 8
+#define MAX_CONV_THREADS 128
 typedef struct conv_pool conv_pool_t;
-typedef struct { conv_pool_t *pool; int id; } conv_worker_arg_t;
+typedef struct {
+    conv_pool_t *pool;
+    int id, pending;
+    pthread_cond_t ready;
+} conv_worker_arg_t;
 struct conv_pool {
-    int count;
+    int count, last_jobs;
     pthread_t threads[MAX_CONV_THREADS];
     conv_job_t jobs[MAX_CONV_THREADS];
     conv_worker_arg_t workers[MAX_CONV_THREADS];
     pthread_mutex_t mutex;
-    pthread_cond_t ready, done;
+    pthread_cond_t done;
     unsigned generation;
     int active, shutdown;
 };
-#define CONV_POOL_INITIALIZER { .count = 1, .mutex = PTHREAD_MUTEX_INITIALIZER, \
-    .ready = PTHREAD_COND_INITIALIZER, .done = PTHREAD_COND_INITIALIZER }
+#define CONV_POOL_INITIALIZER { .count = 1, .last_jobs = 1, .mutex = PTHREAD_MUTEX_INITIALIZER, \
+    .done = PTHREAD_COND_INITIALIZER }
 
 /* Initialize with CONV_POOL_INITIALIZER; do not move after start. One capture
  * thread owns submission. convert() joins every job before returning, so input,

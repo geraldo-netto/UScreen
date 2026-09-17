@@ -1,0 +1,23 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.56s
+     Running tests/evdi_helper.rs (/build/debug/deps/evdi_helper-bd536a5905c54bda)
+
+running 1 test
+test t383_conversion_workers_respect_affinity_and_fallback ... FAILED
+
+failures:
+
+failures:
+    t383_conversion_workers_respect_affinity_and_fallback
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 27 filtered out; finished in 1.66s
+
+
+thread 't383_conversion_workers_respect_affinity_and_fallback' panicked at host/tests/evdi_helper.rs:75:9:
+helper regression T383-affinity: signal: 6 (SIGABRT) (core dumped)
+[evdi-helper] NV12 conversion using 6 thread(s)
+helper-test: /work/host/tests/evdi_helper_test.c:501: test_t383_affinity: Assertion `g_conversion.count == expected[i] && "T383: worker budget ignores allowed CPUs"' failed.
+helper-test: /work/host/tests/evdi_helper_test.c:507: test_t383_affinity: Assertion `WIFEXITED(status) && WEXITSTATUS(status) == 0' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p uscreen --test evdi_helper`

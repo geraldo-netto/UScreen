@@ -240,3 +240,8 @@ fn t341_fifo_edid_fails_without_waiting_for_a_writer() {
 fn t226_partial_fifo_requires_a_replacement_inode() {
     Harness::build("T226").run("T226");
 }
+
+#[test]
+fn t383_conversion_workers_respect_affinity_and_fallback() {
+    Harness::build("T383-affinity").run("T383-affinity");
+}

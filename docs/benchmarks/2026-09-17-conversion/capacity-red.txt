@@ -1,0 +1,21 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.60s
+     Running tests/conversion.rs (/build/debug/deps/conversion-633364a3828e82b0)
+
+running 1 test
+test t383_large_pool_supports_128_workers_and_joins_them ...
+thread 't383_large_pool_supports_128_workers_and_joins_them' panicked at host/tests/conversion.rs:36:5:
+[evdi-helper] NV12 conversion using 8 thread(s)
+conversion-test: /work/host/tests/conversion_test.c:135: large_pool: Assertion `pool.count == 128 && "T383: requested 128-worker pool was truncated"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    t383_large_pool_supports_128_workers_and_joins_them
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 2.02s
+
+error: test failed, to rerun pass `-p uscreen --test conversion`

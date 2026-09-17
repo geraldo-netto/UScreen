@@ -9,6 +9,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <sched.h>
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
@@ -49,8 +50,26 @@ static void handle_signal(int sig) {
     g_running = 0;
 }
 
+/* Large CPU IDs require a dynamically sized mask even when only one CPU is
+ * allowed. A fixed cpu_set_t can fail with EINVAL on large kernel masks. */
+static long available_cpus(void) {
+    for (int cpus = CPU_SETSIZE; cpus <= INT_MAX / 2; cpus *= 2) {
+        size_t size = CPU_ALLOC_SIZE(cpus);
+        cpu_set_t *allowed = CPU_ALLOC(cpus);
+        if (!allowed) return 1;
+        int status = sched_getaffinity(0, size, allowed);
+        int error = errno;
+        long count = status == 0 ? CPU_COUNT_S(size, allowed) : 0;
+        CPU_FREE(allowed);
+        if (status == 0) return count;
+        if (error != EINVAL) return sysconf(_SC_NPROCESSORS_ONLN);
+    }
+    return 1;
+}
+
 static void conv_pool_init(void) {
-    long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    long cpus = available_cpus();
+    if (cpus > MAX_CONV_THREADS + 2) cpus = MAX_CONV_THREADS + 2;
     conv_pool_start(&g_conversion, (int)(cpus - 2));
 }
 

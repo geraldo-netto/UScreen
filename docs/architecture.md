@@ -72,6 +72,13 @@ the EVDI mode, registered BGRA framebuffer and event callbacks; callbacks receiv
 that capture context through EVDI's `user_data`. `conversion.c` owns a worker
 pool whose jobs borrow input, output and dirty masks until conversion completes.
 Native and scaled conversion retain their separate inner loops and BT.709 math.
+The helper sizes its pool from startup CPU affinity (minus two, clamped to
+1..128 participants including the caller). Dirty-work size limits the active
+jobs; empty masks skip dispatch, small updates stay on the caller, and selected
+workers divide dirty rows equally. Every buffer retains its own stale-row
+history. This is a per-helper work budget, not a global CPU-time quota; the
+[conversion measurements](benchmarks/2026-09-17-conversion.md) document thread,
+vectorization and multi-session tradeoffs.
 `frame_exchange.c` owns three NV12 buffers with matching dirty-row histories.
 Publishing swaps pointers; the writer claims an immutable lease containing the
 pointer, size, generation and capture timestamp. That lease spans pacing and
