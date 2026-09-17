@@ -82,12 +82,7 @@ async fn output_of(program: &str, args: &[&str]) -> Option<String> {
     Some(String::from_utf8_lossy(&out.stdout).to_string())
 }
 
-fn command_exists(name: &str) -> bool {
-    std::env::var("PATH")
-        .unwrap_or_default()
-        .split(':')
-        .any(|dir| Path::new(dir).join(name).exists())
-}
+use uscreen_config::linux::programs::command_exists;
 
 /// PIDs whose executable name matches exactly (`pgrep -x`).
 async fn pids_exact(name: &str) -> Vec<u32> {
@@ -1225,6 +1220,18 @@ fn report_transport(r: &mut Report, serial: &str) {
 
 #[cfg(test)]
 mod tests {
+    mod lookup_fixture {
+        include!("../../testdata/executable_lookup.rs");
+    }
+
+    #[test]
+    fn t232_executable_discovery_without_which() {
+        lookup_fixture::check(
+            super::command_exists,
+            "doctor::tests::t232_executable_discovery_without_which",
+        );
+    }
+
     #[test]
     fn t313_doctor_accepts_the_cli_vaapi_alias() {
         use super::*;

@@ -87,13 +87,7 @@ fn find_uscreen_bin_in(
         .or_else(|| installed.is_file().then_some(installed))
 }
 
-fn command_exists(name: &str) -> bool {
-    Command::new("which")
-        .arg(name)
-        .output_bounded()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-}
+use uscreen_config::linux::programs::command_exists;
 
 #[allow(clippy::field_reassign_with_default)]
 fn poll_status() -> Status {
@@ -1144,6 +1138,18 @@ fn main() -> eframe::Result {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    mod lookup_fixture {
+        include!("../../testdata/executable_lookup.rs");
+    }
+
+    #[test]
+    fn t232_executable_discovery_without_which() {
+        lookup_fixture::check(
+            command_exists,
+            "tests::t232_executable_discovery_without_which",
+        );
+    }
 
     #[test]
     fn t295_compatibility_url_prefills_the_actual_issue_form() {

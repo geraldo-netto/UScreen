@@ -9,3 +9,6 @@ uscreen-config = { path = "../common" }
 eframe = "0.32"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
