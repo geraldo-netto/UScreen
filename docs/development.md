@@ -192,6 +192,9 @@ distrobox create --image debian:12 --name uscreen-build
 GH_TOKEN=... make publish NOTES=release-notes.md
 ```
 
+Set `USCREEN_BUILD_CONTAINER=name` to use a differently named build container
+with `make dist` or `make publish`; an empty or unset value uses `uscreen-build`.
+
 `make publish` runs `scripts/build-release.sh` and `packaging/build-packages.sh`,
 requires HEAD and both local/origin tag objects to match, and refuses to
 continue unless all five release files exist. It creates a **draft**, uploads

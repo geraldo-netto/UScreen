@@ -108,10 +108,11 @@ dist:
 	@# Portable binaries (built against Debian 12 glibc) when the build
 	@# container exists; otherwise a local build, which only runs on
 	@# distributions at least as new as this machine.
-	@$(recursive_prefix)if distrobox list 2>/dev/null | grep -q ' uscreen-build '; then \
+	@$(recursive_prefix)build_container="$${USCREEN_BUILD_CONTAINER:-uscreen-build}"; \
+	if distrobox list 2>/dev/null | grep -Fq " $$build_container "; then \
 		./scripts/build-release.sh && ./packaging/build-packages.sh; \
 	else \
-		echo "!! no uscreen-build container: building locally (NOT portable — see scripts/build-release.sh)"; \
+		echo "!! no $$build_container container: building locally (NOT portable — see scripts/build-release.sh)"; \
 		$(recursive_make) dist-local; \
 	fi
 

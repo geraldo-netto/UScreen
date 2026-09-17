@@ -29,7 +29,7 @@ class MakeTest(unittest.TestCase):
             env['PATH'] = str(tools) + os.pathsep + env['PATH']
         return env
 
-    def run_dist(self, portable, *flags):
+    def run_dist(self, portable, *flags, container=None, listed='uscreen-build'):
         with tempfile.TemporaryDirectory(prefix='uscreen-make-dist-') as tmp:
             root = Path(tmp)
             makefile = (REPO / 'Makefile').read_text()
@@ -40,7 +40,7 @@ class MakeTest(unittest.TestCase):
                 script.write_text('#!/bin/sh\nprintf "executed\\n" >> release-marker\n')
                 script.chmod(0o755)
             distrobox = root / 'bin/distrobox'
-            distrobox.write_text('#!/bin/sh\n' + ('echo " uscreen-build "\n' if portable else 'exit 0\n'))
+            distrobox.write_text('#!/bin/sh\nprintf " %s \\n" "$USCREEN_TEST_CONTAINER_LIST"\n')
             distrobox.chmod(0o755)
             # Replace only the local fixture target; production dist dispatch stays intact.
             prefix = makefile[:makefile.index('dist-local: build')]
@@ -48,11 +48,34 @@ class MakeTest(unittest.TestCase):
             cargo = root / 'cargo'
             cargo.write_text(CARGO)
             cargo.chmod(0o755)
+            env = self.make_environment(root / 'bin')
+            env.pop('USCREEN_BUILD_CONTAINER', None)
+            env['USCREEN_TEST_CONTAINER_LIST'] = listed if portable else ''
+            if container is not None:
+                env['USCREEN_BUILD_CONTAINER'] = container
             result = subprocess.run(
                 ['make', '-j2', *flags, 'dist', f'CARGO={cargo}', 'CC=true'],
-                cwd=root, env=self.make_environment(root / 'bin'), capture_output=True, text=True)
+                cwd=root, env=env, capture_output=True, text=True)
             marker = root / 'release-marker'
             return result, marker.read_text() if marker.exists() else ''
+
+    def test_t304_dist_uses_the_requested_build_container(self):
+        for requested, listed, portable in [
+            ('custom-build', 'custom-build', True),
+            ('custom-build', 'uscreen-build', False),
+            ('ci.build', 'ci.build', True),
+            ('ci.build', 'ciXbuild', False),
+            ('ci-build', 'ci-build-backup', False),
+            ('', 'uscreen-build', True),
+            (None, 'uscreen-build', True),
+        ]:
+            with self.subTest(requested=requested, listed=listed):
+                result, marker = self.run_dist(True, container=requested, listed=listed)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(marker, 'executed\nexecuted\n' if portable else '')
+                if not portable:
+                    self.assertIn(f'no {requested} container', result.stdout)
+                    self.assertIn('T220: cargo executed with usable jobserver', result.stdout)
 
     def test_t291_dist_inspection_never_executes_release_scripts(self):
         for flag, expected_status in [('-n', 0), ('-t', 0), ('-q', 1)]:
