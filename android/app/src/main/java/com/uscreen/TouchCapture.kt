@@ -7,6 +7,8 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.*
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
@@ -25,6 +27,8 @@ class TouchCapture {
     private var connectionWanted = false
     private val touchSlots = mutableMapOf<Int, Int>()
     @Volatile private var isConnected = false
+    private val authenticatedControl = MutableStateFlow(false)
+    val controlConnected = authenticatedControl.asStateFlow()
     private var reconnectJob: Job? = null
     private var surfaceView: SurfaceView? = null
 
@@ -119,6 +123,7 @@ class TouchCapture {
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
                     applyModeGreeting(o)
+                    if (o.optString("type") == "connected") authenticatedControl.value = true
                 } catch (_: Exception) {}
             }
         }
@@ -126,6 +131,7 @@ class TouchCapture {
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             synchronized(this@TouchCapture) {
                 if (isStale(webSocket)) return
+                authenticatedControl.value = false
                 webSocket.close(1000, null)
             }
         }
@@ -136,6 +142,7 @@ class TouchCapture {
                 this@TouchCapture.webSocket = null
                 connectionGeneration++
                 isConnected = false
+                authenticatedControl.value = false
                 scheduleReconnect()
             }
         }
@@ -146,6 +153,7 @@ class TouchCapture {
                 this@TouchCapture.webSocket = null
                 connectionGeneration++
                 isConnected = false
+                authenticatedControl.value = false
                 Log.w(TAG, "Connection failed: ${t.message}")
                 scheduleReconnect()
             }
@@ -236,6 +244,7 @@ class TouchCapture {
 
     @Synchronized private fun connectWebSocket() {
         connectionGeneration++
+        authenticatedControl.value = false
         touchSlots.clear()
         touchEnabled = true
         penEnabled = true
@@ -600,6 +609,7 @@ class TouchCapture {
         val previous = webSocket
         webSocket = null
         isConnected = false
+        authenticatedControl.value = false
         previous?.close(1000, "Client closing")
     }
 }

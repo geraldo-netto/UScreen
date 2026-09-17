@@ -474,7 +474,7 @@ fun UScreenMain(
             .background(Color.Black)
     ) {
         StreamSurface(onSurfaceReady, onSurfaceDestroyed)
-        ConnectionLayers(penOnly, isConnected, showStats, fps, mbps)
+        ConnectionLayers(penOnly, isConnected, controlConnected(touchCapture), showStats, fps, mbps)
 
         // Subtle settings handle (top-right). Sits above the video surface, so
         // taps here are NOT forwarded to the Linux host.
@@ -570,11 +570,14 @@ private fun StreamSurface(onSurfaceReady: (SurfaceView) -> Unit, onSurfaceDestro
 }
 
 @Composable
-private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float) {
-    // Pen-only: there is no picture coming, so say so instead of leaving
-    // the user staring at a "waiting for the host" spinner forever.
+private fun controlConnected(capture: TouchCapture?): Boolean =
+    capture?.controlConnected?.collectAsState()?.value ?: false
+
+@Composable
+private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, controlConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float) {
+    // Drawing is available only while the authenticated control channel is alive.
     AnimatedVisibility(
-        visible = penOnly,
+        visible = penOnly && controlConnected,
         enter = fadeIn(),
         exit = fadeOut(),
         modifier = Modifier.fillMaxSize()
@@ -584,12 +587,12 @@ private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, sh
 
     // Connection screen
     AnimatedVisibility(
-        visible = !isConnected && !penOnly,
+        visible = if (penOnly) !controlConnected else !isConnected,
         enter = fadeIn(),
         exit = fadeOut(),
         modifier = Modifier.fillMaxSize()
     ) {
-        ConnectionScreen()
+        ConnectionScreen(penOnly)
     }
 
     // Stats chip (top-left, only while streaming)
@@ -704,7 +707,7 @@ private fun PenOnlyScreen() {
 }
 
 @Composable
-private fun ConnectionScreen() {
+private fun ConnectionScreen(penOnly: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -743,7 +746,7 @@ private fun ConnectionScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Waiting for the host…",
+                        text = if (penOnly) "Reconnecting to the host…" else "Waiting for the host…",
                         fontSize = 16.sp,
                         color = Warn,
                         fontWeight = FontWeight.Medium

@@ -6,6 +6,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
+import okhttp3.*
+import okio.ByteString
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -34,5 +36,57 @@ class SettingsLayoutTest {
         }
         compose.onNodeWithText("Apply").performScrollTo().assertIsDisplayed().performClick()
         compose.runOnIdle { assertTrue(applied); assertTrue(dismissed) }
+    }
+
+    private val draw = "Draw here — it goes to the screen on your computer."
+
+    private class Socket : WebSocket {
+        override fun request() = Request.Builder().url(TouchCapture.WS_URL).build()
+        override fun queueSize() = 0L
+        override fun send(text: String) = true
+        override fun send(bytes: ByteString) = true
+        override fun close(code: Int, reason: String?) = true
+        override fun cancel() {}
+    }
+
+    private fun install(capture: TouchCapture, socket: WebSocket) {
+        TouchCapture::class.java.getDeclaredField("webSocket").apply { isAccessible = true }.set(capture, socket)
+    }
+
+    @Test fun t241_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo() {
+        val capture = TouchCapture()
+        val receiver = VideoReceiver()
+        val listener = TouchCapture::class.java.getDeclaredField("wsListener")
+            .apply { isAccessible = true }.get(capture) as WebSocketListener
+        val old = Socket()
+        val fresh = Socket()
+        val response = Response.Builder().request(old.request()).protocol(Protocol.HTTP_1_1)
+            .code(101).message("Switching Protocols").build()
+        compose.setContent { UScreenTheme { UScreenMain({}, penOnly = true, touchCapture = capture, videoReceiver = receiver) } }
+        try {
+            compose.onNodeWithText(draw).assertDoesNotExist()
+            compose.runOnIdle { install(capture, old); listener.onOpen(old, response) }
+            compose.onNodeWithText(draw).assertDoesNotExist() // WebSocket open is not authentication.
+            compose.runOnIdle { listener.onMessage(old, """{"type":"connected","pen_only":true}""") }
+            compose.onNodeWithText(draw).assertIsDisplayed()
+            compose.runOnIdle { listener.onFailure(old, java.io.IOException("USB detached"), null) }
+            compose.onNodeWithText(draw).assertDoesNotExist()
+            compose.onNodeWithText("Reconnecting to the host…").assertIsDisplayed()
+            compose.runOnIdle {
+                install(capture, fresh)
+                listener.onOpen(fresh, response)
+                listener.onMessage(old, """{"type":"connected","pen_only":true}""")
+            }
+            compose.onNodeWithText(draw).assertDoesNotExist()
+            compose.runOnIdle {
+                listener.onMessage(fresh, """{"type":"connected","pen_only":true}""")
+                listener.onClosed(old, 1000, "late old close")
+            }
+            compose.onNodeWithText(draw).assertIsDisplayed()
+            compose.runOnIdle { capture.disconnect() }
+            compose.onNodeWithText(draw).assertDoesNotExist()
+            val running = VideoReceiver::class.java.getDeclaredField("isRunning").apply { isAccessible = true }
+            assertFalse(running.get(receiver) as Boolean)
+        } finally { capture.disconnect(); receiver.stop() }
     }
 }
