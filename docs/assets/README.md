@@ -1,14 +1,24 @@
 # Site and README images
 
-Nothing here yet on purpose: no image is referenced anywhere until a real one
-exists, and no mock-ups or rendered "screenshots" go in this directory.
+This directory currently contains no photographs. `docs/index.html` already
+has an inline SVG topology diagram and references GitHub's generated social
+preview at `opengraph.githubassets.com`. Those are illustrations/metadata, not
+screenshots or evidence of a running setup. The README currently uses no image.
 
-When a real photo of the tablet running UScreen is available, add:
+If a real photo of a tablet running UScreen is provided, possible assets are:
 
-| file | size | used by |
+| Proposed file | Suggested dimensions | Intended use |
 | --- | --- | --- |
-| `uscreen-hero.jpg` | 1600×1000, under 300 KB | README (below the intro), the hero of `docs/index.html` |
-| `uscreen-social.png` | 1280×640 | `og:image` and `twitter:image` in `docs/index.html`, the JSON-LD `screenshot`, and the repository's Social preview (uploaded by hand in **Settings → General → Social preview**; there is no API for it) |
+| `uscreen-hero.jpg` | 1600×1000, under 300 KB | README introduction and site hero |
+| `uscreen-social.png` | 1280×640 | Site social-preview metadata and repository social preview |
 
-The photo should show the tablet next to the laptop with a window moved onto
-it — that is the one thing the page claims that a diagram cannot prove.
+Do not reference these filenames until the files exist. Use accurate alt text
+and captions identifying the setup. Do not label a generated diagram or mock-up
+as a screenshot. A photo can illustrate an extended display; it cannot establish
+latency, reliability or general compatibility.
+
+The site is source in `docs/index.html`; fork Pages deployment was not verified
+on 2026-09-17. `robots.txt` and `sitemap.xml` contain the proposed Pages URLs.
+Before deployment, verify the site URL, update canonical/social URLs and the
+sitemap, and check documentation branch links and image loading. GitHub's
+repository social preview is configured separately from the page's meta tags.
