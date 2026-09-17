@@ -151,41 +151,42 @@ build_if_needed() {
     make -C "$PROJECT_DIR" build
 }
 
-install_bundled_libraries() {
-    local source_dir="$1" staged
-    staged=$(mktemp -d "$BIN_DIR/.uscreen-library.XXXXXXXX")
-    # A running helper may still map the installed library. Replacing its
-    # pathname preserves that inode; copying over it would corrupt the mapping.
-    if cp -P "$source_dir"/libevdi.so.1* "$staged/" && mv -f "$staged/"* "$BIN_DIR/"; then
-        rmdir "$staged"
+stage_install_binaries() {
+    local src_bin="$1" staged="$2" helper="$1/evdi_helper"
+    cp "$src_bin/uscreen" "$staged/uscreen" || return
+    if [ -f "$src_bin/uscreen-gui" ]; then
+        cp "$src_bin/uscreen-gui" "$staged/uscreen-gui" || return
     else
-        rm -rf "$staged"
-        return 1
+        warn "uscreen-gui not found, skipping"
+    fi
+    if [ ! -f "$helper" ]; then
+        helper="$PROJECT_DIR/host/evdi/evdi_helper"
+    fi
+    cp "$helper" "$staged/evdi_helper" || return
+    chmod +x "$staged/uscreen" "$staged/evdi_helper" || return
+    if [ -f "$src_bin/libevdi.so.1.15.0" ]; then
+        cp -P "$src_bin"/libevdi.so.1* "$staged/" || return
     fi
 }
 
 install_binaries() {
-    local src_bin
+    local src_bin staged
     if [ -f "$PROJECT_DIR/bin/uscreen" ]; then
         src_bin="$PROJECT_DIR/bin"
     else
         src_bin="$PROJECT_DIR/target/release"
     fi
 
-    rm -f "$BIN_DIR/uscreen" "$BIN_DIR/uscreen-gui" "$BIN_DIR/evdi_helper"
-    cp "$src_bin/uscreen" "$BIN_DIR/uscreen"
-    cp "$src_bin/uscreen-gui" "$BIN_DIR/uscreen-gui" 2>/dev/null || warn "uscreen-gui not found, skipping"
-    if [ -f "$src_bin/evdi_helper" ]; then
-        cp "$src_bin/evdi_helper" "$BIN_DIR/evdi_helper"
-        # The release helper finds libevdi next to itself ($ORIGIN rpath).
-        if [ -f "$src_bin/libevdi.so.1.15.0" ]; then
-            install_bundled_libraries "$src_bin"
-        fi
+    staged=$(mktemp -d "$BIN_DIR/.uscreen-install.XXXXXXXX") || return
+    # Finish every copy before replacing installed names. Atomic replacement
+    # also preserves the inodes mapped by running executables and libraries.
+    if stage_install_binaries "$src_bin" "$staged" && mv -f "$staged/"* "$BIN_DIR/"; then
+        rmdir "$staged"
+        info "Binaries installed to $BIN_DIR"
     else
-        cp "$PROJECT_DIR/host/evdi/evdi_helper" "$BIN_DIR/evdi_helper"
+        rm -rf "$staged"
+        return 1
     fi
-    chmod +x "$BIN_DIR/uscreen" "$BIN_DIR/evdi_helper"
-    info "Binaries installed to $BIN_DIR"
 }
 
 install_desktop_entry() {
@@ -289,6 +290,13 @@ system_setup() {
 }
 
 main() {
+    # Make has already built the source tree and owns the remaining setup.
+    if [[ ${1:-} == --binaries-only ]]; then
+        BIN_DIR="$2"
+        mkdir -p "$BIN_DIR"
+        install_binaries
+        return
+    fi
     echo "================================================"
     echo "  UScreen installer"
     echo "================================================"

@@ -34,6 +34,28 @@ class MakeTest(unittest.TestCase):
             return subprocess.run(['make', '-j2', *flags, 'build', f'CARGO={cargo}', 'CC=true'],
                                   cwd=root, env=env, capture_output=True, text=True)
 
+    def test_t261_failed_make_install_preserves_existing_binaries(self):
+        with tempfile.TemporaryDirectory(prefix='uscreen-make-install-') as tmp:
+            root = Path(tmp)
+            (root / 'Makefile').write_text((REPO / 'Makefile').read_text())
+            (root / 'scripts').mkdir()
+            (root / 'scripts/install.sh').write_text((REPO / 'scripts/install.sh').read_text())
+            source = root / 'target/release'
+            source.mkdir(parents=True)
+            installed = root / 'installed bin'
+            installed.mkdir()
+            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                (installed / name).write_text('old-' + name)
+            (source / 'uscreen').write_text('new daemon')
+            # Missing GUI/helper simulates a damaged build artifact after build.
+            result = subprocess.run(['make', '-o', 'build', 'install', f'BIN_DIR={installed}'],
+                                    cwd=root, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                self.assertEqual((installed / name).read_text(), 'old-' + name,
+                                 'T261: failed make install removed working binaries')
+            self.assertEqual(list(installed.glob('.uscreen-*')), [])
+
     def test_t220_parallel_build_passes_open_jobserver(self):
         result = self.run_build()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

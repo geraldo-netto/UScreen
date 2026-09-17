@@ -28,12 +28,7 @@ build: build-helper
 	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
 
 install: build
-	mkdir -p $(call quote,$(BIN_DIR))
-	# rm first: cp into a running binary fails with "text file busy"
-	rm -f $(call quote,$(BIN_DIR)/uscreen) $(call quote,$(BIN_DIR)/uscreen-gui) $(call quote,$(BIN_DIR)/evdi_helper)
-	cp target/release/uscreen $(call quote,$(BIN_DIR)/uscreen)
-	cp target/release/uscreen-gui $(call quote,$(BIN_DIR)/uscreen-gui)
-	cp host/evdi/evdi_helper $(call quote,$(BIN_DIR)/evdi_helper)
+	bash scripts/install.sh --binaries-only $(call quote,$(BIN_DIR))
 	@printf '✓ Binaries installed to %s\n' $(call quote,$(BIN_DIR))
 	mkdir -p $(call quote,$(value HOME)/.local/share/applications)
 	bash scripts/write-desktop-entry.sh $(call quote,$(BIN_DIR)/uscreen-gui) scripts/uscreen.desktop > $(call quote,$(value HOME)/.local/share/applications/uscreen.desktop)

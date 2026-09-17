@@ -313,6 +313,10 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
 #[test]
 fn t096_desktop_launches_installed_gui_with_stale_path() {
     let sandbox = Sandbox::new("desktop-install");
+    sandbox.script(
+        "scripts/install.sh",
+        &std::fs::read_to_string(repo().join("scripts/install.sh")).unwrap(),
+    );
     let makefile = std::fs::read_to_string(repo().join("Makefile"))
         .unwrap()
         .replace("${HOME}", sandbox.0.to_str().unwrap())

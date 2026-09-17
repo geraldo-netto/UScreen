@@ -37,6 +37,46 @@ class InstallerTest(unittest.TestCase):
             self.assertTrue((installed / 'libevdi.so.1').is_symlink())
             self.assertEqual((installed / 'libevdi.so.1').resolve(), installed / library)
 
+    def test_t261_failed_upgrade_preserves_installed_executables(self):
+        for failure in ['missing-helper', 'failed-copy']:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+                source, installed = self.upgrade_fixture(Path(tmp))
+                if failure == 'missing-helper':
+                    (source / 'evdi_helper').unlink()
+                stub = 'cp() { case "$1" in */uscreen-gui) return 77 ;; *) command cp "$@" ;; esac; }\n' if failure == 'failed-copy' else ''
+                result = self.install_fixture(source, installed, stub)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                    self.assertEqual((installed / name).read_text(), 'old-' + name,
+                                     'T261: failed staging replaced an installed executable')
+                self.assertEqual(list(installed.glob('.uscreen-*')), [])
+
+    def test_t261_omitted_optional_gui_keeps_existing_installation(self):
+        with tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+            source, installed = self.upgrade_fixture(Path(tmp))
+            (source / 'uscreen-gui').unlink()
+            result = self.install_fixture(source, installed)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((installed / 'uscreen-gui').read_text(), 'old-uscreen-gui')
+            for name in ['uscreen', 'evdi_helper']:
+                self.assertEqual((installed / name).read_text(), '#!/bin/sh\nexit 0\n')
+            self.assertEqual(list(installed.glob('.uscreen-*')), [])
+
+    def upgrade_fixture(self, root):
+        source = root / 'release' / 'bin'
+        installed = root / 'installed bin'
+        source.mkdir(parents=True)
+        installed.mkdir()
+        for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+            (source / name).write_text('#!/bin/sh\nexit 0\n')
+            (installed / name).write_text('old-' + name)
+        return source, installed
+
+    def install_fixture(self, source, installed, stub=''):
+        return subprocess.run(['bash', '-s', '--', str(source.parent), str(installed)],
+            input=SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\n' + stub + 'install_binaries\n',
+            cwd=REPO, capture_output=True, text=True)
+
     def run_installer(self, commands):
         result = subprocess.run(['bash', '-s'], input=SOURCE + commands,
                                 capture_output=True, text=True, cwd=REPO)
