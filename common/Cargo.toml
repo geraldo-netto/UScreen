@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default = ["storage", "commands", "platform-linux"]
 storage = ["dep:tempfile"]
-commands = ["dep:tempfile", "dep:tokio"]
+commands = ["dep:tempfile", "dep:tokio", "dep:libc"]
 platform-linux = ["storage", "commands", "dep:libc", "dep:clap"]
 
 [target.'cfg(target_os = "linux")'.dependencies]

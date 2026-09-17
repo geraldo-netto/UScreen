@@ -175,10 +175,22 @@ fi"#
 
 fn run_system_setup(max_tablets: u32) -> Result<(), String> {
     let script = system_setup_script(std::path::Path::new("/"), max_tablets);
-    let out = Command::new("pkexec")
-        .args(["sh", "-c", &script])
-        .output_timeout(Duration::from_secs(120))
-        .map_err(|e| format!("pkexec failed to run: {}", e))?;
+    system_setup_result(
+        Command::new("pkexec").args(["sh", "-c", &script]),
+        Duration::from_secs(120),
+    )
+}
+
+fn system_setup_result(command: &mut Command, timeout: Duration) -> Result<(), String> {
+    let out = command
+        .output_timeout(timeout)
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::TimedOut {
+                "Setup response timed out. Setup may still be running with elevated permissions. Wait and check its status before trying again.".to_owned()
+            } else {
+                format!("pkexec failed to run: {e}")
+            }
+        })?;
     if out.status.success() {
         Ok(())
     } else {
@@ -1784,6 +1796,17 @@ esac"#
         );
         assert!(!status.tablet_connected);
         assert!(status.tablet_model.is_empty());
+    }
+
+    #[test]
+    fn t328_setup_timeout_reports_continued_work() {
+        let result = system_setup_result(
+            Command::new("sh").args(["-c", "exec sleep 1"]),
+            Duration::from_millis(50),
+        )
+        .unwrap_err();
+        assert!(result.contains("Setup may still be running"), "{result}");
+        assert!(!result.contains("failed to run"), "{result}");
     }
 
     #[test]

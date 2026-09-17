@@ -477,5 +477,29 @@ allow 15 seconds; systemd actions allow 35 seconds. Both shipped user units set
 and dispatch/restart overhead. These lifecycle limits are defined in
 `common/src/commands.rs`; other external commands retain their five-second
 limit. The GUI runs lifecycle actions on its worker and reports an error without
-starting a replacement if a direct stop times out. Commands are killed and reaped
-at the deadline; descendant process-group cleanup remains tracked by T328.
+starting a replacement if a direct stop times out. On Linux each bounded command
+starts a private process group. Deadline expiration signals that group and the
+direct child; asynchronous cancellation also signals the group before dropping
+the child. Normal direct children are reaped, and successful commands preserve
+their status/output without running cancellation cleanup. A synchronous child
+that cannot be signalled is left with a background reaper, so waiting for that
+child does not extend the command deadline.
+
+This is a command-response deadline, not transactional cancellation of delegated
+work: processes that detach, change credentials or ask another service to act
+can continue. Linux checks signal permission separately for group members; a
+successful group signal does not prove every member was terminated. See the
+[Linux signal contract](https://man7.org/linux/man-pages/man2/kill.2.html) and
+[Rust process-group API](https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#tymethod.process_group).
+Timeout errors explicitly report this limit. The GUI's two-minute privileged
+setup deadline says setup may still be running and asks the user to check its
+status before retrying. It does not claim to undo configuration changes or kill
+root-owned work. Non-Linux adapters currently terminate only the direct child;
+the Windows plan must supply its own job/process-tree boundary.
+
+Permanent T328 tests use disposable process trees and an isolated Linux
+subreaper, cover sync/async timeout, task cancellation, detached work and normal
+completion, and verify no delayed writes from ordinary cancelled descendants.
+An injected permission denial covers eventual reaping without blocking the
+deadline; it does not execute privileged system setup. T094 continues to check
+direct-child reaping.

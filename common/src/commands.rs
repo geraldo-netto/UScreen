@@ -1,4 +1,8 @@
-//! Bounded subprocess operations shared by the daemon and settings GUI.
+//! Command deadlines, not transactional cancellation of delegated operations.
+//! Linux commands get a private process group. Timeout/cancellation signals its
+//! members and reaps the direct child when permitted. Detached processes, work
+//! sent to another service and privileged descendants can continue. Other
+//! platforms currently terminate only the direct child (see Windows plan).
 use std::io::{self, Read, Seek};
 use std::process::{Command, ExitStatus, Output, Stdio};
 use std::time::Duration;
@@ -63,12 +67,72 @@ impl CapturedOutput {
     }
 }
 fn timed_out() -> io::Error {
-    io::Error::new(io::ErrorKind::TimedOut, "command timed out")
+    io::Error::new(
+        io::ErrorKind::TimedOut,
+        "command timed out; detached or privileged work may still be running",
+    )
+}
+
+fn prepare_group(command: &mut Command) {
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = command;
+}
+
+fn terminate_group(pid: u32) {
+    #[cfg(target_os = "linux")]
+    {
+        // The direct child is still owned and unreaped: its PID cannot have
+        // been reused. prepare_group made that PID the new group's identity.
+        let result = unsafe { libc::kill(-(pid as libc::pid_t), libc::SIGKILL) };
+        if result < 0 && io::Error::last_os_error().raw_os_error() != Some(libc::ESRCH) {
+            tracing::warn!(
+                pid,
+                "Command group could not be terminated; delegated work may continue"
+            );
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = pid;
+}
+
+fn retire_sync(mut child: std::process::Child) {
+    terminate_group(child.id());
+    let signalled = child.kill();
+    reap_after_signal(child, signalled);
+}
+
+fn reap_after_signal(mut child: std::process::Child, signalled: io::Result<()>) {
+    if signalled.is_ok() {
+        let _ = child.wait();
+    } else {
+        // A pkexec child may have changed UID. Waiting here would turn a
+        // deadline into a wait for work we have no right to terminate.
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
+    }
+}
+
+struct RunningAsync(tokio::process::Child);
+impl Drop for RunningAsync {
+    fn drop(&mut self) {
+        // Tokio clears id() on wait/reap, avoiding signals to a recycled PID.
+        // On cancellation signal the group before kill_on_drop retires child.
+        if let Some(pid) = self.0.id() {
+            terminate_group(pid);
+        }
+    }
 }
 
 impl SyncCommandExt for Command {
     fn output_timeout(&mut self, timeout: Duration) -> io::Result<Output> {
         let output = CapturedOutput::new()?;
+        prepare_group(self);
         let mut child = self
             .stdin(Stdio::null())
             .stdout(output.stdout.try_clone()?)
@@ -82,8 +146,7 @@ impl SyncCommandExt for Command {
                     std::thread::sleep(Duration::from_millis(5))
                 }
                 result => {
-                    let _ = child.kill();
-                    let _ = child.wait();
+                    retire_sync(child);
                     return Err(result.err().unwrap_or_else(timed_out));
                 }
             }
@@ -103,17 +166,23 @@ pub trait AsyncCommandExt {
 impl AsyncCommandExt for tokio::process::Command {
     async fn output_timeout(&mut self, timeout: Duration) -> io::Result<Output> {
         let output = CapturedOutput::new()?;
-        let mut child = self
-            .kill_on_drop(true)
-            .stdin(Stdio::null())
-            .stdout(output.stdout.try_clone()?)
-            .stderr(output.stderr.try_clone()?)
-            .spawn()?;
-        match tokio::time::timeout(timeout, child.wait()).await {
+        prepare_group(self.as_std_mut());
+        let mut child = RunningAsync(
+            self.kill_on_drop(true)
+                .stdin(Stdio::null())
+                .stdout(output.stdout.try_clone()?)
+                .stderr(output.stderr.try_clone()?)
+                .spawn()?,
+        );
+        match tokio::time::timeout(timeout, child.0.wait()).await {
             Ok(status) => output.finish(status?),
             Err(_) => {
-                // Await kill also waits for termination, so no zombie remains.
-                let _ = child.kill().await;
+                if let Some(pid) = child.0.id() {
+                    terminate_group(pid);
+                }
+                // Await kill reaps when permitted. Permission failure returns
+                // immediately; Tokio then owns eventual direct-child reaping.
+                let _ = child.0.kill().await;
                 Err(timed_out())
             }
         }
@@ -123,6 +192,34 @@ impl AsyncCommandExt for tokio::process::Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t328_denied_signal_does_not_extend_deadline() {
+        let dir = tempfile::tempdir().unwrap();
+        let done = dir.path().join("done");
+        let child = Command::new("sh")
+            .args(["-c", "sleep 0.4; printf done > \"$1\"", "sh"])
+            .arg(&done)
+            .spawn()
+            .unwrap();
+        let pid = child.id();
+        let start = std::time::Instant::now();
+        // Isolate the EPERM result of a privileged child without authorizing
+        // real system setup or depending on root in the normal test suite.
+        reap_after_signal(child, Err(io::Error::from(io::ErrorKind::PermissionDenied)));
+        let elapsed = start.elapsed();
+        std::thread::sleep(Duration::from_millis(500));
+        assert!(
+            done.exists(),
+            "T328: denied work can continue after the deadline"
+        );
+        assert!(!std::path::Path::new(&format!("/proc/{pid}")).exists());
+        assert!(
+            elapsed < Duration::from_millis(200),
+            "T328: denied cancellation blocked for {elapsed:?}"
+        );
+        assert!(timed_out().to_string().contains("may still be running"));
+    }
 
     #[test]
     fn t268_lifecycle_deadlines_cover_cli_and_shipped_service_budgets() {
