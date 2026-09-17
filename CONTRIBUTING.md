@@ -64,6 +64,10 @@ For optional encoder changes, also run:
 cargo test --release -p uscreen --features inproc-encoder --bin uscreen
 ```
 
+Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
+for refactors. Its pinned parser setup, boundary tests and scope limitations
+are documented there; CI runs it on pushes and pull requests.
+
 Select checks appropriate to the affected components; document exact results
 and obstacles. Documentation edits need link/metadata/format checks and any
 automated tests that consume the edited files. Do not publish, install on the

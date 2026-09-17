@@ -103,6 +103,13 @@ GCC's ASan/UBSan/TSan runtimes must be installed with the compiler. The GUI
 startup test uses an isolated Xvfb session and accessibility bus. Android
 tests use Robolectric API 27 and 34; Gradle downloads their test images.
 
+The separate [complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
+checks the maximum of nine across owned source and tests. It uses pinned Python
+parsers and a checksum-verified Kotlin compiler; follow its setup and boundary
+test instructions before running `scripts/complexity/check.py`. CI runs both
+the checker tests and the audit. Its documented macro/C limitations still
+require review; this is not a native SonarQube analysis.
+
 `scripts/fake-tablet.py` pretends to be a tablet on the loopback ports
 (authenticates, reports a resolution, acks frames). With
 `USCREEN_FAKE_TABLET=fake1,fake2` and `max_tablets = 2` it exercises a
