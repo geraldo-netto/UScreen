@@ -11,8 +11,12 @@ and must be updated together — the session token between them needs both.
 | `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+ | `sudo apt install ./uscreen_*.deb` — pulls `evdi-dkms`, `ffmpeg` and `adb` |
 | `uscreen-<ver>-1.x86_64.rpm` | openSUSE | `sudo zypper install ./uscreen-*.rpm` |
 | `uscreen-<ver>-1.x86_64.rpm` | Fedora | enable [RPM Fusion](https://rpmfusion.org/Configuration) first (stock Fedora has no `ffmpeg`), then `sudo dnf install --allowerasing ./uscreen-*.rpm`, then build the evdi module from [DisplayLink/evdi](https://github.com/DisplayLink/evdi) — it is not packaged for Fedora |
-| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch, Manjaro, EndeavourOS, CachyOS | extract, `makepkg -si` — pulls `evdi-dkms` from the AUR |
+| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch, Manjaro, EndeavourOS, CachyOS | install `evdi-dkms` from the AUR first, then extract and run `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | anything else, or Bazzite/Nobara | extract, `./scripts/install.sh` |
+
+`makepkg -s` installs dependencies through pacman; it does not build AUR
+packages. Install the [AUR evdi-dkms package](https://aur.archlinux.org/packages/evdi-dkms)
+separately before building UScreen. See [makepkg(8)](https://man.archlinux.org/man/makepkg.8.en).
 
 Bazzite and Nobara ship the evdi module in the image; the tarball's installer
 is the right choice there (it layers `ffmpeg`/`android-tools` with rpm-ostree
