@@ -91,7 +91,7 @@ internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) :
             MotionEvent.ACTION_MOVE -> sendMotionSamples(event, vw, vh)
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_POINTER_UP -> sendContact(event, event.actionIndex, 1, vw, vh)
-            MotionEvent.ACTION_CANCEL -> cancelContacts(event, vw, vh)
+            MotionEvent.ACTION_CANCEL -> cancelContacts(event)
         }
         return true
     }
@@ -138,15 +138,15 @@ internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) :
                 getHistoricalAxis(event, MotionEvent.AXIS_TILT, index, h),
                 getHistoricalAxis(event, MotionEvent.AXIS_ORIENTATION, index, h))
             emitPen(hx.toDouble(), hy.toDouble(), hp, htx, hty,
-                isEraser(event, index), 2, event.getHistoricalEventTime(h))
+                isEraser(event, index), 2, event.getHistoricalEventTime(h), primaryButtonDown(event))
         }
     }
 
-    private fun cancelContacts(event: MotionEvent, vw: Float, vh: Float) {
+    private fun cancelContacts(event: MotionEvent) {
         // Release each device independently: a touch release cannot lift a pen.
         for (i in 0 until event.pointerCount) {
             if (!canForwardPointer(event, i)) continue
-            if (isPenLike(event, i)) sendPenEvent(event, i, 1, vw, vh)
+            if (isPenLike(event, i)) sendPenProximityExit(event.eventTime)
         }
         releaseTouches()
     }
@@ -249,14 +249,17 @@ internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) :
             getAxis(event, MotionEvent.AXIS_TILT, index),
             getAxis(event, MotionEvent.AXIS_ORIENTATION, index))
         emitPen(x.toDouble(), y.toDouble(), pressure, tiltX, tiltY,
-            isEraser(event, index), action, event.eventTime)
+            isEraser(event, index), action, event.eventTime, primaryButtonDown(event))
     }
 
     private fun emitPen(x: Double, y: Double, pressure: Double,
-                        tiltX: Double, tiltY: Double, eraser: Boolean, action: Int, sampleTimeMs: Long) {
+                        tiltX: Double, tiltY: Double, eraser: Boolean, action: Int, sampleTimeMs: Long, button: Boolean) {
         if (!penEnabled) return
-        send(PenMessage(action, x, y, pressure, tiltX, tiltY, eraser).toJson(), sampleTimeMs)
+        send(PenMessage(action, x, y, pressure, tiltX, tiltY, eraser, button).toJson(), sampleTimeMs)
     }
+
+    private fun primaryButtonDown(event: MotionEvent): Boolean =
+        event.buttonState and MotionEvent.BUTTON_STYLUS_PRIMARY != 0
 
     private fun sendPenButton(down: Boolean, sampleTimeMs: Long) {
         if (penEnabled) send(PenMessage(if (down) 5 else 6).toJson(), sampleTimeMs)

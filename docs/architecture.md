@@ -194,7 +194,7 @@ Examples of individual client messages (one JSON object per WebSocket message):
 
 ```json
 {"type":"touch","x":0.5,"y":0.3,"pressure":1.0,"action":0,"slot":0}
-{"type":"pen","x":0.5,"y":0.3,"pressure":0.8,"tilt_x":12.0,"tilt_y":-3.0,"eraser":false,"action":2}
+{"type":"pen","x":0.5,"y":0.3,"pressure":0.8,"tilt_x":12.0,"tilt_y":-3.0,"eraser":false,"button":false,"action":2}
 {"type":"resolution","width":2960,"height":1848,"width_mm":314,"height_mm":195}
 {"type":"config","bitrate":20000,"fps":60,"encoder":"h264_nvenc"}
 {"type":"mode","pen_only":true}
@@ -202,9 +202,25 @@ Examples of individual client messages (one JSON object per WebSocket message):
 ```
 
 Coordinates are normalized to 0–1; wire tilt values are degrees. Touch actions
-are 0 down, 1 up, 2 move; pen adds 3 hover, 4 hover exit, 5/6 stylus-button
-down/up. Physical dimensions, eraser and decode timing have defaults when
-omitted; config messages may omit settings they do not change. The Linux
+are 0 down, 1 up, 2 move; pen adds 3 hover, 4 exit/cancel, 5/6 stylus-button
+down/up. Pen tip-up publishes its final axes and releases pressure/touch while
+retaining tool proximity. Exit/cancel and controller teardown release the tool,
+tip and button. Positional pen samples carry optional `button`, the current
+primary stylus-button state; legacy clients may omit it and use actions 5/6.
+Changed button state is synchronized after tool entry and before tip-down,
+restoring a held modifier across Android's hover-to-contact transition.
+
+Android [hover events](https://developer.android.com/reference/android/view/MotionEvent#ACTION_HOVER_EXIT)
+refer to a view/window, not an unambiguous hardware proximity signal. UScreen
+ends its virtual tool proximity on hover-exit, including view-boundary exits,
+and restores it from subsequent down/hover samples. It does not infer continued
+physical proximity or delay release after a real exit. A reconnect releases
+previous controller state; new samples report the current button state again.
+`pen-lifecycle.json` exercises stylus/eraser, held-button contact, tip-up, real
+exit, cancellation, view boundaries and reentry across Android and Rust tests.
+
+Physical dimensions, eraser and decode timing have defaults when omitted;
+config messages may omit settings they do not change. The Linux
 input adapter clamps tilt to ±90° and emits milliradians with an axis resolution
 of 1000 units/radian. This matches [libinput's angular conversion](https://gitlab.freedesktop.org/libinput/libinput/-/blob/1.26.2/src/evdev-tablet.c#L371)
 within 0.03° of the clamped wire value; Android's degree protocol is unchanged.

@@ -177,6 +177,10 @@ pub enum InputEvent {
         /// Emitted as BTN_TOOL_RUBBER so GIMP's eraser works.
         #[serde(default)]
         eraser: bool,
+        /// Current primary stylus-button state on positional samples. Legacy
+        /// clients omit this and retain explicit action 5/6 behavior.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        button: Option<bool>,
         /// 0=down 1=up 2=move 3=hover 4=hover_exit
         /// 5=stylus button down 6=stylus button up
         action: u8,
@@ -537,6 +541,7 @@ impl UInputDevice {
         tilt_y: i32,
         action: u8,
         eraser: bool,
+        button: Option<bool>,
     ) -> Result<()> {
         // The active tablet-tool key depends on which end of the pen is in
         // use. An S Pen flipped to its eraser end reports TOOL_TYPE_ERASER.
@@ -547,7 +552,7 @@ impl UInputDevice {
         };
         match action {
             0 => {
-                // DOWN, in two frames.
+                // DOWN: proximity first, changed button state if any, then tip.
                 //
                 // A tablet tool has to enter proximity before it can touch:
                 // libinput wants to see the tool appear at a position, and only
@@ -561,13 +566,15 @@ impl UInputDevice {
                 self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
                 self.syn()?;
 
+                self.inject_pen_button(button)?;
                 self.emit(EV_KEY, BTN_TOUCH, 1)?;
                 self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
                 self.syn()?;
             }
             1 => {
-                // UP carries the final sample. Publish it while the tool is
-                // still in proximity: libinput ignores axes on proximity-out.
+                // UP lifts the tip but keeps the tool and held button in range.
+                // Only explicit exit/cancel or controller teardown ends proximity.
+                self.inject_pen_button(button)?;
                 self.emit(EV_ABS, ABS_X, x)?;
                 self.emit(EV_ABS, ABS_Y, y)?;
                 self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
@@ -575,12 +582,10 @@ impl UInputDevice {
                 self.emit(EV_KEY, BTN_TOUCH, 0)?;
                 self.emit(EV_ABS, ABS_PRESSURE, 0)?;
                 self.syn()?;
-
-                self.emit(EV_KEY, tool, 0)?;
-                self.syn()?;
             }
             2 => {
                 // MOVE (pressing)
+                self.inject_pen_button(button)?;
                 self.emit(EV_ABS, ABS_X, x)?;
                 self.emit(EV_ABS, ABS_Y, y)?;
                 self.emit(EV_ABS, ABS_PRESSURE, pressure)?;
@@ -599,9 +604,10 @@ impl UInputDevice {
                 self.emit(EV_ABS, ABS_TILT_X, tilt_x)?;
                 self.emit(EV_ABS, ABS_TILT_Y, tilt_y)?;
                 self.syn()?;
+                self.inject_pen_button(button)?;
             }
             4 => {
-                // HOVER_EXIT — pen left proximity
+                // Explicit exit/cancel from the Android input surface.
                 // Release the kernel key too: libinput clears its own button
                 // state on proximity-out, but a latched uinput key would make
                 // the kernel suppress the next press as a duplicate (T317).
@@ -623,6 +629,14 @@ impl UInputDevice {
                 self.syn()?;
             }
             _ => {}
+        }
+        Ok(())
+    }
+
+    fn inject_pen_button(&mut self, button: Option<bool>) -> Result<()> {
+        if let Some(down) = button {
+            self.emit(EV_KEY, BTN_STYLUS, i32::from(down))?;
+            self.syn()?;
         }
         Ok(())
     }
@@ -1935,6 +1949,7 @@ fn handle_event(
             tilt_x,
             tilt_y,
             eraser,
+            button,
             action,
         } => {
             inject_pen_event(
@@ -1943,6 +1958,7 @@ fn handle_event(
                 (tilt_x, tilt_y),
                 eraser,
                 action,
+                button,
                 pen_enabled,
             );
         }
@@ -2003,18 +2019,29 @@ fn inject_pen_event(
     tilt: (f64, f64),
     eraser: bool,
     action: u8,
+    button: Option<bool>,
     pen_enabled: bool,
 ) {
     if pen_enabled {
         note_pen_action(action);
     }
     if let Ok(mut guard) = devices.lock() {
-        guard.apply_pen(contact, tilt, eraser, action);
+        guard.apply_pen(contact, tilt, eraser, action, button);
     }
 }
 
 impl InjectDevices {
-    fn apply_pen(&mut self, contact: AbsoluteContact, tilt: (f64, f64), eraser: bool, action: u8) {
+    fn apply_pen(
+        &mut self,
+        contact: AbsoluteContact,
+        tilt: (f64, f64),
+        eraser: bool,
+        action: u8,
+        button: Option<bool>,
+    ) {
+        // Position samples restore actual button state after Android hover exits.
+        // Avoid emitting duplicate key/SYN frames for unchanged historical samples.
+        let button = button.filter(|down| action <= 3 && *down != self.pen_button);
         // Preserve wire degrees; advertise and emit Linux milliradians.
         let tilt_x = tilt_axis_units(tilt.0);
         let tilt_y = tilt_axis_units(tilt.1);
@@ -2027,6 +2054,7 @@ impl InjectDevices {
                 tilt_y,
                 action,
                 eraser,
+                button,
             ) {
                 Ok(_) => true,
                 Err(e) => {
@@ -2039,13 +2067,16 @@ impl InjectDevices {
             false
         };
         if ok {
-            self.record_pen_state(&contact, action);
+            self.record_pen_state(&contact, action, button);
         }
     }
 
-    fn record_pen_state(&mut self, contact: &AbsoluteContact, action: u8) {
+    fn record_pen_state(&mut self, contact: &AbsoluteContact, action: u8, button: Option<bool>) {
         if matches!(action, 0..=3) {
             self.last_pen_pos = (contact.x, contact.y);
+        }
+        if let Some(down) = button {
+            self.pen_button = down;
         }
         // Keep an ordinary cursor at the last pen position when proximity ends.
         if action == 4 {
@@ -2053,7 +2084,6 @@ impl InjectDevices {
         }
         match action {
             0 | 3 => self.pen_proximity = true,
-            1 => self.pen_proximity = false,
             4 => {
                 self.pen_proximity = false;
                 self.pen_button = false;
@@ -2542,6 +2572,109 @@ esac
         }
     }
 
+    // T318: Android motion/button fixtures drive the real wire decoder and
+    // Linux event writer, using regular files rather than host uinput devices.
+    #[test]
+    fn t318_pen_lifecycle_matches_android_samples() {
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../testdata/pen-lifecycle.json")).unwrap();
+        for case in cases {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            let devices = Arc::new(std::sync::Mutex::new(InjectDevices {
+                pen: Some(UInputDevice {
+                    file: file.reopen().unwrap(),
+                }),
+                ..InjectDevices::empty()
+            }));
+            let (mode, _rx) = watch::channel(false);
+            let tracker = crate::latency::LatencyTracker::new();
+            for step in case["events"].as_array().unwrap() {
+                handle_event(
+                    serde_json::from_value(step["wire"].clone()).unwrap(),
+                    &devices,
+                    &None,
+                    &mode,
+                    &tracker,
+                    true,
+                );
+                assert_t318_pen_state(file.path(), &devices, &case, step);
+                if step["name"] == "down-held" {
+                    assert_t318_modifier_precedes_tip(
+                        file.path(),
+                        case["eraser"].as_bool().unwrap(),
+                    );
+                }
+            }
+            // The same release operation is used by the controller lease on
+            // disconnect/replacement; no stale tool or modifier can survive it.
+            devices.lock().unwrap().release_all();
+            for key in [BTN_TOUCH, BTN_TOOL_PEN, BTN_TOOL_RUBBER, BTN_STYLUS] {
+                assert_eq!(t318_key_state(file.path(), key), 0);
+            }
+        }
+    }
+
+    fn assert_t318_modifier_precedes_tip(path: &std::path::Path, eraser: bool) {
+        let frames = input_frames(path);
+        let tail = &frames[frames.len() - 3..];
+        let tool = if eraser {
+            BTN_TOOL_RUBBER
+        } else {
+            BTN_TOOL_PEN
+        };
+        assert!(
+            tail[0].contains(&(EV_KEY, tool, 1)),
+            "T318 tool must enter first"
+        );
+        assert!(!tail[0].contains(&(EV_KEY, BTN_TOUCH, 1)));
+        assert_eq!(
+            tail[1],
+            [(EV_KEY, BTN_STYLUS, 1)],
+            "T318 modifier before tip"
+        );
+        assert!(tail[2].contains(&(EV_KEY, BTN_TOUCH, 1)));
+    }
+
+    fn t318_key_state(path: &std::path::Path, key: u16) -> i32 {
+        input_frames(path)
+            .iter()
+            .flatten()
+            .filter(|&&(kind, code, _)| kind == EV_KEY && code == key)
+            .map(|&(_, _, value)| value)
+            .next_back()
+            .unwrap_or(0)
+    }
+
+    fn assert_t318_pen_state(
+        path: &std::path::Path,
+        devices: &std::sync::Mutex<InjectDevices>,
+        case: &serde_json::Value,
+        step: &serde_json::Value,
+    ) {
+        let expected = &step["expected"];
+        let proximity = expected["proximity"].as_bool().unwrap();
+        let tool = if case["eraser"].as_bool().unwrap() {
+            BTN_TOOL_RUBBER
+        } else {
+            BTN_TOOL_PEN
+        };
+        for (key, value) in [
+            (BTN_TOUCH, expected["tip"].as_bool().unwrap()),
+            (tool, proximity),
+            (BTN_STYLUS, expected["button"].as_bool().unwrap()),
+        ] {
+            assert_eq!(
+                t318_key_state(path, key),
+                i32::from(value),
+                "T318 {} key {key}",
+                step["name"]
+            );
+        }
+        let devices = devices.lock().unwrap();
+        assert_eq!(devices.pen_proximity, proximity, "T318 {}", step["name"]);
+        assert_eq!(devices.pen_button, expected["button"].as_bool().unwrap());
+    }
+
     #[test]
     fn t317_proximity_exit_releases_stylus_button_for_next_press() {
         for eraser in [false, true] {
@@ -2562,6 +2695,7 @@ esac
                     (0.0, 0.0),
                     eraser,
                     action,
+                    None,
                 );
             }
             // Lifting the tip alone must preserve a physically held button.
@@ -2576,6 +2710,7 @@ esac
                 (0.0, 0.0),
                 eraser,
                 4,
+                None,
             );
             assert_eq!(
                 last_input_value(file.path(), BTN_STYLUS),
@@ -2594,6 +2729,7 @@ esac
                     (0.0, 0.0),
                     eraser,
                     action,
+                    None,
                 );
             }
             // Model Linux input_get_disposition's duplicate-key filtering.
@@ -2623,8 +2759,23 @@ esac
             let mut pen = UInputDevice {
                 file: file.reopen().unwrap(),
             };
-            pen.inject_pen(100, 200, 1000, 10, 20, 0, eraser).unwrap();
-            pen.inject_pen(300, 400, 123, 30, -40, 1, eraser).unwrap();
+            pen.inject_pen(100, 200, 1000, 10, 20, 0, eraser, None)
+                .unwrap();
+            pen.inject_pen(300, 400, 123, 30, -40, 1, eraser, None)
+                .unwrap();
+            let tip_frames = input_frames(file.path());
+            let tool = if eraser {
+                BTN_TOOL_RUBBER
+            } else {
+                BTN_TOOL_PEN
+            };
+            assert!(
+                !tip_frames
+                    .iter()
+                    .any(|frame| frame.contains(&(EV_KEY, tool, 0))),
+                "T318 tip-up must retain proximity"
+            );
+            pen.inject_pen(0, 0, 0, 0, 0, 4, eraser, None).unwrap();
             let frames = input_frames(file.path());
             let release = frames
                 .iter()
@@ -2652,7 +2803,16 @@ esac
                 !frames[release].contains(&(EV_KEY, tool, 0)),
                 "libinput discards updated axes in a proximity-out frame"
             );
-            assert_eq!(frames[release + 1], [(EV_KEY, tool, 0)]);
+            assert_eq!(
+                frames[release + 1],
+                [
+                    (EV_KEY, BTN_STYLUS, 0),
+                    (EV_KEY, BTN_TOUCH, 0),
+                    (EV_KEY, BTN_TOOL_PEN, 0),
+                    (EV_KEY, BTN_TOOL_RUBBER, 0),
+                    (EV_ABS, ABS_PRESSURE, 0),
+                ]
+            );
         }
     }
 
@@ -2680,6 +2840,7 @@ esac
                     (0.0, 0.0),
                     eraser,
                     action,
+                    None,
                 );
             }
             assert_eq!(
@@ -2724,6 +2885,7 @@ esac
                         tilt_x: 0.0,
                         tilt_y: 0.0,
                         eraser: false,
+                        button: None,
                     }
                 } else {
                     InputEvent::Touch {

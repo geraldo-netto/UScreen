@@ -1,0 +1,550 @@
+[
+  {
+    "tool": 2,
+    "eraser": false,
+    "events": [
+      {
+        "name": "hover",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "button",
+        "android_action": 11,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 5
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "hover-to-contact",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "down-held",
+        "android_action": 0,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 0,
+          "button": true
+        },
+        "expected": {
+          "tip": true,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "tip-up-held",
+        "android_action": 1,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 1,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "hover-held",
+        "android_action": 7,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 3,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "physical-exit",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "reenter-released",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "down",
+        "android_action": 0,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 0,
+          "button": false
+        },
+        "expected": {
+          "tip": true,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "cancel",
+        "android_action": 3,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "boundary-enter",
+        "android_action": 9,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 3,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "boundary-exit",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "reconnect-enter",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      }
+    ]
+  },
+  {
+    "tool": 4,
+    "eraser": true,
+    "events": [
+      {
+        "name": "hover",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "button",
+        "android_action": 11,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 5
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "hover-to-contact",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "down-held",
+        "android_action": 0,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 0,
+          "button": true
+        },
+        "expected": {
+          "tip": true,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "tip-up-held",
+        "android_action": 1,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 1,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "hover-held",
+        "android_action": 7,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 3,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "physical-exit",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "reenter-released",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "down",
+        "android_action": 0,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 0,
+          "button": false
+        },
+        "expected": {
+          "tip": true,
+          "proximity": true,
+          "button": false
+        }
+      },
+      {
+        "name": "cancel",
+        "android_action": 3,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "boundary-enter",
+        "android_action": 9,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 3,
+          "button": true
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": true
+        }
+      },
+      {
+        "name": "boundary-exit",
+        "android_action": 10,
+        "button_state": 32,
+        "wire": {
+          "type": "pen",
+          "x": 0.0,
+          "y": 0.0,
+          "pressure": 0.0,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": false,
+          "action": 4
+        },
+        "expected": {
+          "tip": false,
+          "proximity": false,
+          "button": false
+        }
+      },
+      {
+        "name": "reconnect-enter",
+        "android_action": 9,
+        "button_state": 0,
+        "wire": {
+          "type": "pen",
+          "x": 0.25,
+          "y": 0.5,
+          "pressure": 0.5,
+          "tilt_x": 0.0,
+          "tilt_y": 0.0,
+          "eraser": true,
+          "action": 3,
+          "button": false
+        },
+        "expected": {
+          "tip": false,
+          "proximity": true,
+          "button": false
+        }
+      }
+    ]
+  }
+]
