@@ -442,11 +442,14 @@ fun UScreenMain(
     val context = LocalContext.current
 
     LaunchedEffect(videoReceiver) {
+        // Always enqueue, including stop() callbacks on the UI thread. Mixing
+        // queued and immediate updates lets an older worker callback win.
+        val connectionUi = android.os.Handler(android.os.Looper.getMainLooper())
         videoReceiver?.onConnected = {
-            (context as? ComponentActivity)?.runOnUiThread { isConnected = true }
+            connectionUi.post { isConnected = true }
         }
         videoReceiver?.onDisconnected = {
-            (context as? ComponentActivity)?.runOnUiThread { isConnected = false }
+            connectionUi.post { isConnected = false }
         }
     }
 

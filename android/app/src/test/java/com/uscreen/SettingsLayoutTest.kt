@@ -40,6 +40,34 @@ class SettingsLayoutTest {
 
     private val draw = "Draw here — it goes to the screen on your computer."
 
+    @Test fun t300_queuedVideoCallbacksCannotUndoNewerConnectionState() {
+        val receiver = VideoReceiver()
+        val running = VideoReceiver::class.java.getDeclaredField("isRunning").apply { isAccessible = true }
+        compose.setContent { UScreenTheme { UScreenMain({}, videoReceiver = receiver) } }
+        try {
+            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.runOnIdle {
+                running.set(receiver, true)
+                // Joining on the UI thread leaves the worker's UI update queued.
+                Thread { receiver.onConnected!!.invoke() }.apply { start(); join(3000); assertFalse(isAlive) }
+                receiver.stop()
+            }
+            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.runOnIdle {
+                running.set(receiver, true)
+                receiver.onConnected!!.invoke()
+            }
+            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.runOnIdle {
+                Thread { receiver.onDisconnected!!.invoke() }.apply { start(); join(3000); assertFalse(isAlive) }
+                receiver.onConnected!!.invoke()
+            }
+            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.runOnIdle { receiver.stop() }
+            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+        } finally { receiver.stop() }
+    }
+
     @Test fun t248_stoppingVideoRestoresTheWaitingScreen() {
         val receiver = VideoReceiver()
         compose.setContent { UScreenTheme { UScreenMain({}, videoReceiver = receiver) } }
