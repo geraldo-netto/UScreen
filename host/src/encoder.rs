@@ -203,7 +203,7 @@ fn copy_plane(dst: &mut [u8], stride: usize, src: &[u8], row_bytes: usize, rows:
 // Blocking thread boundary takes owned session settings and channel handles.
 #[allow(clippy::too_many_arguments)]
 pub fn run(
-    fifo_path: &str,
+    fifo_path: &std::path::Path,
     encoder_name: &str,
     width: u32,
     height: u32,
@@ -231,7 +231,7 @@ pub fn run(
         .read(true)
         .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
         .open(fifo_path)
-        .with_context(|| format!("open {} for reading", fifo_path))?;
+        .with_context(|| format!("open {} for reading", fifo_path.display()))?;
     tracing::info!(
         "In-process encoder running: {} at {}x{}",
         encoder_name,
@@ -399,11 +399,15 @@ mod tests {
         assert!(encoder.drain().unwrap().is_empty(), "T265: EOF is normal");
     }
 
-    fn t228_encode_one(latency: crate::latency::LatencyTracker) -> u32 {
+    fn encode_one_from_fifo(
+        latency: crate::latency::LatencyTracker,
+        name: &std::ffi::OsStr,
+    ) -> u32 {
         use std::io::Write;
         let dir = tempfile::tempdir().unwrap();
-        let fifo = dir.path().join("frames");
-        let path = std::ffi::CString::new(fifo.to_str().unwrap()).unwrap();
+        use std::os::unix::ffi::OsStrExt;
+        let fifo = dir.path().join(name);
+        let path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
         assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
         let (tx, mut rx) = tokio::sync::broadcast::channel(8);
         let stop = Arc::new(AtomicBool::new(false));
@@ -411,7 +415,7 @@ mod tests {
         let writer_path = fifo.clone();
         let task = std::thread::spawn(move || {
             run(
-                fifo.to_str().unwrap(),
+                &fifo,
                 "libx264",
                 64,
                 64,
@@ -437,10 +441,22 @@ mod tests {
     }
 
     #[test]
+    fn t348_inproc_reads_native_fifo_paths() {
+        use std::os::unix::ffi::OsStrExt;
+        let latency = crate::latency::LatencyTracker::new();
+        for name in [
+            b"ordinary frames".as_slice(),
+            b"native-\xff frames".as_slice(),
+        ] {
+            encode_one_from_fifo(latency.clone(), std::ffi::OsStr::from_bytes(name));
+        }
+    }
+
+    #[test]
     fn t228_inproc_sequences_survive_restart() {
         let latency = crate::latency::LatencyTracker::new();
-        let old = t228_encode_one(latency.clone());
-        let fresh = t228_encode_one(latency.clone());
+        let old = encode_one_from_fifo(latency.clone(), std::ffi::OsStr::new("frames"));
+        let fresh = encode_one_from_fifo(latency.clone(), std::ffi::OsStr::new("frames"));
         assert_ne!(
             old, fresh,
             "T228: old and fresh frames cannot share an ACK identifier"

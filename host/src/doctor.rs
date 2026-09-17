@@ -89,11 +89,6 @@ async fn pids_exact(name: &str) -> Vec<u32> {
     parse_pids(output_of("pgrep", &["-x", name]).await)
 }
 
-/// PIDs whose full command line matches a pattern (`pgrep -f`).
-async fn pids_full(pattern: &str) -> Vec<u32> {
-    parse_pids(output_of("pgrep", &["-f", pattern]).await)
-}
-
 fn parse_pids(out: Option<String>) -> Vec<u32> {
     out.unwrap_or_default()
         .lines()
@@ -282,7 +277,17 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     report_helpers(r, &helpers, tracked, cfg.max_tablets);
     for instance in 0..cfg.max_tablets {
         let fifo = fifo_path_for(instance);
-        let encoders = pids_full(&format!("ffmpeg.*{}([[:space:]]|$)", fifo)).await;
+        let encoders = match encoders_for_fifo(&fifo) {
+            Ok(encoders) => encoders,
+            Err(error) => {
+                r.line(
+                    Level::Warn,
+                    "encoder process inspection",
+                    &error.to_string(),
+                );
+                continue;
+            }
+        };
         report_encoders(r, &encoders, tracked, &fifo);
     }
 }
@@ -308,21 +313,35 @@ fn report_daemon(r: &mut Report) -> Option<u32> {
     tracked
 }
 
-fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo: &str) {
+pub(crate) fn encoders_for_fifo(fifo: &Path) -> std::io::Result<Vec<u32>> {
+    Ok(uscreen_config::linux::processes::same_user_processes()?
+        .into_iter()
+        .filter(|process| {
+            process.executable_named("ffmpeg") && process.has_path_argument("-i", fifo)
+        })
+        .map(|process| process.pid)
+        .collect())
+}
+
+fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo: &Path) {
     if encoders.len() > 1 {
         r.line(
             Level::Fail,
-            &format!("ffmpeg on {fifo}"),
+            &format!("ffmpeg on {}", fifo.display()),
             &format!("{} running: {:?}", encoders.len(), encoders),
         );
         r.hint("two readers on one pipe corrupt frames — kill the strays");
     } else if encoders.len() == 1 && tracked.is_none() {
-        r.line(Level::Fail, &format!("ffmpeg on {fifo}"), "orphaned");
-        r.hint(&format!("pkill -f 'ffmpeg.*{}'", fifo));
+        r.line(
+            Level::Fail,
+            &format!("ffmpeg on {}", fifo.display()),
+            "orphaned",
+        );
+        r.hint("stop and start UScreen; capture startup retires processes matching this FIFO");
     } else {
         r.line(
             Level::Ok,
-            &format!("ffmpeg on {fifo}"),
+            &format!("ffmpeg on {}", fifo.display()),
             &format!("{}", encoders.len()),
         );
     }

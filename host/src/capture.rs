@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use bytes::Bytes;
-use std::path::PathBuf;
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -18,10 +19,8 @@ const RECONNECT_DELAY_MS: u64 = 2000;
 /// Capture FIFO, in the per-user runtime directory. It used to be
 /// /tmp/uscreen_capture.fifo with mode 0666, which let any local account read
 /// the raw frames off it.
-pub fn fifo_path_for(instance: u32) -> String {
+pub fn fifo_path_for(instance: u32) -> PathBuf {
     crate::runtime::fifo_path_for(instance)
-        .to_string_lossy()
-        .into_owned()
 }
 
 /// Which bitstream syntax is in play. H.264 and HEVC agree on Annex B start
@@ -373,12 +372,12 @@ impl CaptureManager {
         (((w / n) & !1).max(2), ((h / n) & !1).max(2))
     }
 
-    fn ensure_fifo(path: &str) -> Result<()> {
+    fn ensure_fifo(path: &Path) -> Result<()> {
         // Anything already there is replaced, whatever it is: a stale FIFO
         // may carry old permissions, and a regular file or symlink in this
         // spot is not ours. mkfifo itself never follows symlinks.
         let _ = std::fs::remove_file(path);
-        let c = std::ffi::CString::new(path).context("fifo path")?;
+        let c = std::ffi::CString::new(path.as_os_str().as_bytes()).context("fifo path")?;
         // 0600: the helper writes it and the encoder reads it, both as this
         // user. Nobody else has any business with a live copy of the screen.
         let rc = unsafe { libc::mkfifo(c.as_ptr(), 0o600) };
@@ -553,9 +552,8 @@ impl CaptureManager {
         Ok(())
     }
 
-    async fn retire_orphan_capture(fifo: &str) -> Result<()> {
+    async fn retire_orphan_capture(path: &Path) -> Result<()> {
         use uscreen_config::linux::processes;
-        let path = std::path::Path::new(fifo);
         let selected: Vec<_> = processes::same_user_processes()?
             .into_iter()
             .filter(|process| {
@@ -579,7 +577,7 @@ impl CaptureManager {
         Ok(())
     }
 
-    fn helper_command(&self, fifo: &str) -> Result<Command> {
+    fn helper_command(&self, fifo: &Path) -> Result<Command> {
         // EDID 1.4 pixel-clock field is 16-bit (max 655 MHz).
         // 2960×1848 @120 Hz needs ~706 MHz which overflows.
         // Cap the EDID at 90 Hz so KDE can render at 90 fps; the helper
@@ -603,7 +601,7 @@ impl CaptureManager {
             cmd.args(["--scale", &self.config.stream_scale.to_string()]);
         }
 
-        cmd.args(["--capture-fifo", fifo]);
+        cmd.arg("--capture-fifo").arg(fifo);
         if let Some(card) = self.config.card {
             cmd.args(["--card", &card.to_string()]);
         }
@@ -771,13 +769,15 @@ impl CaptureManager {
         ten_bit: bool,
         w: u32,
         h: u32,
-    ) -> Result<Vec<String>> {
+    ) -> Result<Vec<std::ffi::OsString>> {
         let fps = self.config.fps;
-        let mut encoder_args: Vec<String> = vec!["-hide_banner".into()];
+        let mut encoder_args: Vec<std::ffi::OsString> = vec!["-hide_banner".into()];
 
         if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
-            encoder_args
-                .extend_from_slice(&["-vaapi_device".into(), self.config.vaapi_device.clone()]);
+            encoder_args.extend_from_slice(&[
+                "-vaapi_device".into(),
+                self.config.vaapi_device.clone().into(),
+            ]);
         }
 
         encoder_args.extend_from_slice(&[
@@ -812,13 +812,13 @@ impl CaptureManager {
             // bottleneck the pipeline shrink 2.7x and NVENC takes it directly.
             "nv12".into(),
             "-s".into(),
-            format!("{}x{}", w, h),
+            format!("{}x{}", w, h).into(),
             "-framerate".into(),
-            fps.to_string(),
+            fps.to_string().into(),
             "-use_wallclock_as_timestamps".into(),
             "1".into(),
             "-i".into(),
-            fifo_path_for(self.config.instance),
+            fifo_path_for(self.config.instance).into_os_string(),
         ]);
 
         if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
@@ -843,14 +843,16 @@ impl CaptureManager {
 
         encoder_args.extend_from_slice(&[
             "-c:v".into(),
-            encoder.to_string(),
+            encoder.into(),
             "-fps_mode".into(),
             "passthrough".into(),
             "-force_key_frames".into(),
             "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into(),
         ]);
 
-        self.encoder_quality_args(&mut encoder_args, encoder, ten_bit)?;
+        let mut quality_args = Vec::new();
+        self.encoder_quality_args(&mut quality_args, encoder, ten_bit)?;
+        encoder_args.extend(quality_args.into_iter().map(std::ffi::OsString::from));
         encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
         Ok(encoder_args)
     }
@@ -2087,7 +2089,7 @@ mod inproc_tests {
         });
         let fifo = fifo_path_for(manager.config.instance);
         let path = std::path::Path::new(&fifo);
-        let cpath = std::ffi::CString::new(fifo.as_bytes()).unwrap();
+        let cpath = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
         assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
         let (_settings, settings_rx) = watch::channel(EncoderSettings {
             encoder: "libx264".into(),
@@ -2445,7 +2447,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
             manager.config.helper_path = helper.clone();
             manager.config.edid_path = Some(path);
             let output = manager
-                .helper_command("unused-test-fifo")
+                .helper_command(Path::new("unused-test-fifo"))
                 .unwrap()
                 .stderr(Stdio::piped())
                 .output()
@@ -3375,7 +3377,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
 mod orphan_tests {
     use super::*;
 
-    fn fixture_programs(root: &std::path::Path) {
+    pub(super) fn fixture_programs(root: &std::path::Path) {
         let source = root.join("fixture.c");
         std::fs::write(
             &source,
@@ -3408,7 +3410,7 @@ int main(void) {
         }
     }
 
-    async fn fixture_child(
+    pub(super) async fn fixture_child(
         program: &std::path::Path,
         flag: &str,
         fifo: &std::path::Path,
@@ -3435,9 +3437,7 @@ int main(void) {
         let fifo = dir.path().join("capture.fifo");
         let mut child = fixture_child(&dir.path().join("ffmpeg"), "-i", &fifo, true).await;
         let start = Instant::now();
-        CaptureManager::retire_orphan_capture(fifo.to_str().unwrap())
-            .await
-            .unwrap();
+        CaptureManager::retire_orphan_capture(&fifo).await.unwrap();
         let elapsed = start.elapsed();
         assert!(elapsed >= std::time::Duration::from_millis(1500));
         assert!(
@@ -3489,9 +3489,7 @@ int main(void) {
         for (program, flag, path, _) in &cases {
             children.push(fixture_child(&dir.path().join(program), flag, path, false).await);
         }
-        CaptureManager::retire_orphan_capture(fifo.to_str().unwrap())
-            .await
-            .unwrap();
+        CaptureManager::retire_orphan_capture(&fifo).await.unwrap();
         for (child, (_, _, _, retired)) in children.iter_mut().zip(cases) {
             assert_eq!(
                 child.try_wait().unwrap().is_some(),
@@ -3504,5 +3502,111 @@ int main(void) {
             let _ = child.kill().await;
             let _ = child.wait().await;
         }
+    }
+}
+
+#[cfg(test)]
+mod native_path_tests {
+    use super::*;
+    use std::os::unix::ffi::OsStringExt;
+    use std::os::unix::fs::FileTypeExt;
+
+    #[tokio::test]
+    async fn t348_native_runtime_paths_agree_across_capture_resources() {
+        const NAME: &str =
+            "capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources";
+        if std::env::var_os("USCREEN_T348_CHILD").is_none() {
+            for name in [
+                b"ordinary space [1]".as_slice(),
+                b"native-\xff space [1]".as_slice(),
+            ] {
+                let dir = tempfile::tempdir().unwrap();
+                let runtime = dir.path().join(std::ffi::OsString::from_vec(name.to_vec()));
+                std::fs::create_dir(&runtime).unwrap();
+                let result = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args(["--exact", NAME, "--nocapture"])
+                    .env("USCREEN_T348_CHILD", "1")
+                    .env("XDG_RUNTIME_DIR", &runtime)
+                    .env("HOME", dir.path())
+                    .output()
+                    .unwrap();
+                assert!(
+                    result.status.success(),
+                    "T348: {}{}",
+                    String::from_utf8_lossy(&result.stdout),
+                    String::from_utf8_lossy(&result.stderr)
+                );
+            }
+            return;
+        }
+        native_capture_resources().await;
+    }
+
+    async fn native_capture_resources() {
+        let expected = crate::runtime::fifo_path_for(0);
+        let path = fifo_path_for(0);
+        assert_eq!(
+            std::path::Path::new(&path),
+            expected,
+            "T348: lossy runtime FIFO"
+        );
+        assert_eq!(crate::runtime::runtime_dir(), expected.parent().unwrap());
+        crate::runtime::new_session_token().unwrap();
+        assert!(expected.parent().unwrap().join("token").is_file());
+        let missing = expected.parent().unwrap().join("missing").join("frames");
+        let error = CaptureManager::ensure_fifo(&missing).unwrap_err();
+        assert_eq!(
+            error
+                .downcast_ref::<std::io::Error>()
+                .unwrap()
+                .raw_os_error(),
+            Some(libc::ENOENT)
+        );
+        CaptureManager::ensure_fifo(&path).unwrap();
+        assert!(std::fs::metadata(&expected).unwrap().file_type().is_fifo());
+        let mut manager = CaptureManager::new(CaptureConfig {
+            encoder: "libx264".into(),
+            edid_path: Some("unused-fixture-edid".into()),
+            ..Default::default()
+        });
+        assert_native_argument(
+            &manager.helper_command(&path).unwrap(),
+            "--capture-fifo",
+            &expected,
+        );
+        #[cfg(not(feature = "inproc-encoder"))]
+        assert_native_argument(&manager.encoder_command(640, 480).unwrap(), "-i", &expected);
+        let children = tempfile::tempdir().unwrap();
+        super::orphan_tests::fixture_programs(children.path());
+        let mut child = super::orphan_tests::fixture_child(
+            &children.path().join("ffmpeg"),
+            "-i",
+            &expected,
+            false,
+        )
+        .await;
+        assert_eq!(
+            crate::doctor::encoders_for_fifo(&expected).unwrap(),
+            vec![child.id().unwrap()]
+        );
+        CaptureManager::retire_orphan_capture(&path).await.unwrap();
+        assert!(crate::doctor::encoders_for_fifo(&expected)
+            .unwrap()
+            .is_empty());
+        assert!(
+            child.try_wait().unwrap().is_some(),
+            "T348: native-path orphan survived"
+        );
+        manager.shutdown().await;
+        assert!(!expected.exists(), "T348: native FIFO survived cleanup");
+    }
+
+    fn assert_native_argument(command: &Command, flag: &str, path: &std::path::Path) {
+        let args = command.as_std().get_args().collect::<Vec<_>>();
+        assert!(
+            args.windows(2)
+                .any(|pair| pair[0] == flag && pair[1] == path.as_os_str()),
+            "T348: native argument lost: {args:?}"
+        );
     }
 }

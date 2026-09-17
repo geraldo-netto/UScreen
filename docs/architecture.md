@@ -181,6 +181,11 @@ file leaves the live keyboard unchanged and is retained for manual repair.
 Failed D-Bus restoration retains valid state for retry. These rules also apply
 when the KWin mode interface is absent: UScreen leaves the keyboard unchanged.
 
+Capture keeps runtime-directory and FIFO paths as native `PathBuf`/`OsString`
+values through creation, helper and encoder arguments, in-process reads,
+diagnostics and cleanup. Non-UTF-8 bytes are preserved; lossy display formatting
+is used only in messages. Token and FIFO resources use the same runtime directory.
+
 ### Capture orphan retirement
 
 Before attaching, capture scans same-user processes and checks executable names
