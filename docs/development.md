@@ -162,10 +162,21 @@ cargo build --release --manifest-path host/Cargo.toml --features inproc-encoder
 Encodes through libavcodec in-process instead of an `ffmpeg` child. Measured
 encoded-packet-to-acknowledgement latency was similar, with about one CPU
 core less and keyframes on demand; that metric excludes encoding time. Needs
-the ffmpeg development headers (`ffmpeg-devel` from RPM Fusion on Fedora,
-`libavcodec-dev libavformat-dev libavutil-dev libswscale-dev` on Debian). On
-atomic distributions build inside a container (`distrobox`); the binary links
-against the host's ffmpeg at runtime. `ten_bit` is not available on this path.
+the development libraries enabled by `ffmpeg-next` default features, plus
+`pkg-config` and libclang for bindgen. On Debian/Ubuntu, in addition to the
+normal build prerequisites:
+
+```bash
+sudo apt-get install -y libclang-dev libavcodec-dev libavformat-dev libavutil-dev \
+  libavfilter-dev libavdevice-dev libswresample-dev libswscale-dev
+```
+
+On Fedora, install the equivalent FFmpeg development libraries (for example
+RPM Fusion's `ffmpeg-devel`) and clang development package. Check that
+`pkg-config` resolves all seven libraries above. On atomic distributions a
+container can supply the build environment; the installed binary still needs
+ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
+on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
 
 ## Release APK
 
