@@ -34,6 +34,16 @@ check_release_refs() {
   [ "$local_tag" = "$remote_tag" ] || { echo "!! local and origin $tag differ"; exit 1; }
 }
 check_release_refs
+RELEASE_COMMIT=$(git rev-parse HEAD)
+RELEASE_TAG_OBJECT=$(git rev-parse "refs/tags/v$VERSION")
+
+check_release_sources() {
+  [ "$(git rev-parse HEAD)" = "$RELEASE_COMMIT" ] \
+    && [ "$(git rev-parse "refs/tags/v$VERSION")" = "$RELEASE_TAG_OBJECT" ] \
+    || { echo "!! release source/tag changed during the build"; exit 1; }
+  [ -z "$(git status --porcelain --untracked-files=all)" ] \
+    || { echo "!! uncommitted changes — release sources must remain clean"; exit 1; }
+}
 
 # Every place that repeats the version has to agree with the Makefile before
 # anything is built, so the public page never advertises the previous release.
@@ -51,7 +61,7 @@ require_metadata_line CHANGELOG.md "## $VERSION — $RELEASE_DATE"
 ./scripts/update-release-metadata.sh --check "$VERSION" "$RELEASE_DATE" \
   || { echo "!! website/citation metadata is stale — run 'scripts/update-release-metadata.sh $VERSION $RELEASE_DATE', commit, then publish again"; exit 1; }
 
-[ -z "$(git status --porcelain)" ] || { echo "!! uncommitted changes — commit first"; exit 1; }
+check_release_sources
 
 ./scripts/build-release.sh
 ./packaging/build-packages.sh
@@ -78,6 +88,10 @@ echo "All $(( ${#ASSETS[@]} )) files present."
 ASSETS+=("dist/SHA256SUMS:text/plain")
 
 check_release_refs
+# T263: HEAD/tag equality alone cannot detect edits to build inputs. Refuse
+# publication after staged, unstaged or untracked source changes. Ignored
+# outputs and externally supplied SDK/signing inputs follow development.md.
+check_release_sources
 
 # The release title is what shows up in feeds and search results, so it says
 # what the project is rather than just the tag.

@@ -127,6 +127,22 @@ class ReleaseTest(unittest.TestCase):
                     self.assertFalse(state['published'], 'incomplete release made public')
                     self.assertTrue(state['draft'])
 
+    def test_t263_source_changes_during_build_prevent_api_requests(self):
+        self.enable_uploads()
+        mutations = ['printf changed >> host/src/main.rs',
+                     'printf changed >> host/src/main.rs\ngit add host/src/main.rs',
+                     'printf injected > new-build-input.rs']
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                for name in ['requests', 'api-state', 'argv']:
+                    (self.base / name).unlink(missing_ok=True)
+                self.write('host/src/main.rs', '// pristine tagged source\n')
+                self.write('scripts/build-release.sh', '#!/bin/sh\nset -e\n' + mutation + '\n', True)
+                self.retag_fixture()
+                result = self.publish()
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse((self.base / 'requests').exists(), 'T263: source changed before API access')
+
     def test_t117_verifies_uploaded_set_and_digests(self):
         import json
         self.enable_uploads()

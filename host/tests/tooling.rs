@@ -476,6 +476,11 @@ fn t100_release_requires_matching_head_local_and_remote_tags() {
 }
 
 #[test]
+fn t263_release_rejects_source_changes_during_build() {
+    release_tests("t263");
+}
+
+#[test]
 fn t262_release_metadata_requires_literal_equality() {
     release_tests("t262");
 }

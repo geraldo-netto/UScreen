@@ -300,11 +300,18 @@ unpublished. Publishing needs Python 3.11+ on the host and `GH_TOKEN` with
 release write access; credentials are read from the environment inside Python.
 The Android release build runs on the host and needs the SDK/JDK and signing
 key described above. No publishing command belongs in routine validation.
-Existing publication limitations remain: the version checks use permissive
-regular expressions (T262), source mutations during the build are not rejected
-(T263), and the fork signing/package-maintainer policies are pending
-(T250/T308). Do not interpret successful guards as verification of these
-unimplemented guarantees.
+Version/date entries are checked literally. Before any release API request,
+the publisher rechecks the original HEAD/tag object and rejects staged,
+unstaged or untracked source changes made during the build. Use a dedicated
+release checkout and leave it untouched until publication finishes: these
+checks do not make a mutable filesystem an immutable build snapshot or detect
+temporary edits that were reverted before the final check.
+
+Ignored build outputs may change. SDK/compiler/container inputs and ignored
+signing configuration/keys are supplied by the trusted release environment and
+must stay fixed throughout the run; the Git checks do not attest those external
+inputs. The fork signing/package-maintainer policies remain pending
+(T250/T308), so a successful source check does not establish an official key.
 
 `make dist-local` uses the local toolchain and requires a successful signed APK
 build. It bundles libevdi v1.15.0 beside the helper; if the compiler cannot find
