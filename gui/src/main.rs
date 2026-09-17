@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use uscreen_config::commands::spawn_reaped;
 use uscreen_config::commands::SyncCommandExt;
+use uscreen_config::commands::{daemon_command_timeout, spawn_reaped};
 use uscreen_config::linux::daemon_is_running;
 use uscreen_config::model::{
     FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
@@ -29,7 +29,7 @@ fn set_autostart(on: bool) -> Result<(), String> {
     let verb = if on { "enable" } else { "disable" };
     let out = Command::new("systemctl")
         .args(["--user", verb, "--now", "uscreen.service"])
-        .output_bounded()
+        .output_timeout(daemon_command_timeout(true))
         .map_err(|e| format!("systemctl failed: {}", e))?;
     if out.status.success() {
         Ok(())
@@ -233,8 +233,16 @@ fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
     } else {
         find_uscreen_bin().ok_or("uscreen binary not found")?
     };
-    let output = daemon_command(&bin, action, managed)
-        .output_bounded()
+    execute_daemon_command(action, &mut daemon_command(&bin, action, managed), managed)
+}
+
+fn execute_daemon_command(
+    action: &str,
+    command: &mut Command,
+    managed: bool,
+) -> Result<(), String> {
+    let output = command
+        .output_timeout(daemon_command_timeout(managed))
         .map_err(|e| e.to_string())?;
     if output.status.success() {
         Ok(())
@@ -248,11 +256,19 @@ fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
 }
 
 fn restart_daemon() -> Result<(), String> {
-    if service_managed() {
-        return run_daemon_command("restart", true);
+    restart_with(service_managed(), run_daemon_command, start_direct_daemon)
+}
+
+fn restart_with(
+    managed: bool,
+    mut run: impl FnMut(&str, bool) -> Result<(), String>,
+    start: impl FnOnce() -> Result<(), String>,
+) -> Result<(), String> {
+    if managed {
+        return run("restart", true);
     }
-    run_daemon_command("stop", false)?;
-    start_direct_daemon()
+    run("stop", false)?;
+    start()
 }
 
 fn start_daemon() -> Result<(), String> {
@@ -1673,6 +1689,78 @@ mod tests {
                 ..Default::default()
             }
         ));
+    }
+
+    #[test]
+    fn t268_slow_valid_stop_completes_before_restart() {
+        for managed in [false, true] {
+            let sandbox = Sandbox::new();
+            let command = sandbox.script("slow-lifecycle", "sleep 6; echo completed");
+            let restarted = std::cell::Cell::new(false);
+            let before = std::time::Instant::now();
+            let result = restart_with(
+                managed,
+                |action, through_service| {
+                    assert_eq!(through_service, managed);
+                    assert_eq!(action, if managed { "restart" } else { "stop" });
+                    execute_daemon_command(action, &mut Command::new(&command), through_service)?;
+                    restarted.set(managed);
+                    Ok(())
+                },
+                || {
+                    restarted.set(true);
+                    Ok(())
+                },
+            );
+            assert!(
+                result.is_ok(),
+                "T268: valid cleanup was interrupted: {result:?}"
+            );
+            assert!(
+                restarted.get(),
+                "T268: restart abandoned after a valid stop"
+            );
+            assert!(before.elapsed() >= Duration::from_secs(6));
+        }
+    }
+
+    #[test]
+    fn t268_over_budget_stop_is_reaped_and_prevents_restart() {
+        let sandbox = Sandbox::new();
+        let pid_file = sandbox.0.join("pid");
+        let program = sandbox.script(
+            "stuck-stop",
+            r#"echo $$ > "$USCREEN_T268_PID"; exec sleep 60"#,
+        );
+        let restarted = std::cell::Cell::new(false);
+        let before = std::time::Instant::now();
+        let result = restart_with(
+            false,
+            |action, managed| {
+                execute_daemon_command(
+                    action,
+                    Command::new(&program).env("USCREEN_T268_PID", &pid_file),
+                    managed,
+                )
+            },
+            || {
+                restarted.set(true);
+                Ok(())
+            },
+        );
+        assert!(result.unwrap_err().contains("timed out"));
+        assert!(
+            !restarted.get(),
+            "T268: never overlap start with failed stop"
+        );
+        let elapsed = before.elapsed();
+        assert!(elapsed >= daemon_command_timeout(false));
+        assert!(elapsed < daemon_command_timeout(false) + Duration::from_secs(2));
+        let pid = std::fs::read_to_string(pid_file).unwrap();
+        assert!(
+            !std::path::Path::new(&format!("/proc/{}", pid.trim())).exists(),
+            "T268: timed out command not reaped"
+        );
     }
 
     #[test]

@@ -402,3 +402,14 @@ This writes package test artifacts under `dist/`, without an Android APK;
 use `scripts/build-release.sh` for the complete release bundle. Both paths
 share the Linux layout and ABI validator. Native install smoke scripts under
 `scripts/ci/` are intended only for disposable Docker containers.
+
+### Lifecycle command deadlines
+
+The CLI allows 10 seconds for daemon cleanup. GUI direct stop/restart commands
+allow 15 seconds; systemd actions allow 35 seconds. Both shipped user units set
+`TimeoutStopSec=15`: the GUI budget covers ExecStop, subsequent service retirement
+and dispatch/restart overhead. These lifecycle limits are defined in
+`common/src/commands.rs`; other external commands retain their five-second
+limit. The GUI runs lifecycle actions on its worker and reports an error without
+starting a replacement if a direct stop times out. Commands are killed and reaped
+at the deadline; descendant process-group cleanup remains tracked by T328.

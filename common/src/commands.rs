@@ -14,6 +14,21 @@ pub fn spawn_reaped(command: &mut std::process::Command) -> std::io::Result<u32>
 
 pub const COMMAND_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// Grace allowed by the daemon's `stop` command.
+pub const DAEMON_STOP_TIMEOUT: Duration = Duration::from_secs(10);
+/// Matches TimeoutStopSec in both shipped systemd user units (T268).
+pub const SERVICE_STOP_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// A service stop may spend one budget on ExecStop and another retiring the
+/// service process. Leave a further command budget for dispatch/restart.
+pub fn daemon_command_timeout(managed: bool) -> Duration {
+    if managed {
+        SERVICE_STOP_TIMEOUT * 2 + COMMAND_TIMEOUT
+    } else {
+        DAEMON_STOP_TIMEOUT + COMMAND_TIMEOUT
+    }
+}
+
 pub trait SyncCommandExt {
     fn output_bounded(&mut self) -> io::Result<Output> {
         self.output_timeout(COMMAND_TIMEOUT)
@@ -108,6 +123,25 @@ impl AsyncCommandExt for tokio::process::Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t268_lifecycle_deadlines_cover_cli_and_shipped_service_budgets() {
+        assert!(daemon_command_timeout(false) > DAEMON_STOP_TIMEOUT);
+        assert!(SERVICE_STOP_TIMEOUT > DAEMON_STOP_TIMEOUT);
+        assert!(daemon_command_timeout(true) > SERVICE_STOP_TIMEOUT * 2);
+        for unit in [
+            include_str!("../../scripts/uscreen.service"),
+            include_str!("../../packaging/uscreen.service"),
+        ] {
+            let seconds: u64 = unit
+                .lines()
+                .find_map(|line| line.strip_prefix("TimeoutStopSec="))
+                .expect("T268: explicit service stop deadline")
+                .parse()
+                .unwrap();
+            assert_eq!(Duration::from_secs(seconds), SERVICE_STOP_TIMEOUT);
+        }
+    }
 
     fn assert_reaped(path: &std::path::Path) {
         let pid = std::fs::read_to_string(path).unwrap();

@@ -7,6 +7,8 @@ PartOf=graphical-session.target
 Type=simple
 ExecStart=/usr/bin/uscreen start
 ExecStop=/usr/bin/uscreen stop
+# T268: longer than the CLI cleanup grace, bounded by the GUI action budget.
+TimeoutStopSec=15
 Restart=on-failure
 RestartSec=3
 

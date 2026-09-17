@@ -3150,13 +3150,18 @@ async fn stop_pids(pids: &[u32]) -> Result<()> {
             }
         }
     }
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+    tokio::time::timeout(config::commands::DAEMON_STOP_TIMEOUT, async {
         while pids.iter().any(|&pid| config::daemon_is_running(pid)) {
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         }
     })
     .await
-    .context("daemon did not finish shutting down within 10s")?;
+    .with_context(|| {
+        format!(
+            "daemon did not finish shutting down within {}s",
+            config::commands::DAEMON_STOP_TIMEOUT.as_secs()
+        )
+    })?;
     Ok(())
 }
 
