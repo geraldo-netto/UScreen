@@ -210,6 +210,15 @@ Independent width/height/FPS limits do not guarantee a valid EDID combination
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only
 in the app and do not set the host stream rate or other apps' display settings.
 
+ADB transport preference recognizes socket serials (`host:port`, including IPv6)
+and mDNS service serials (`_adb` / `_adb-tls-connect`, with optional `.local`
+and trailing dot). Plain device serials retain USB classification. The shared
+classifier drives selection, Wi-Fi setup eligibility and diagnostics; network
+ADB alone is not proof of physical Wi-Fi/radio use. Physical deduplication still
+requires a nonempty, non-`unknown` `ro.serialno`; service-name prefixes are never
+used to merge tablets. This follows AOSP's [mDNS connection naming](https://android.googlesource.com/platform/packages/modules/adb/+/refs/heads/main/client/transport_mdns.cpp)
+and [instance-name parsing](https://android.googlesource.com/platform/packages/modules/adb/+/refs/heads/main/client/mdns_utils.cpp).
+
 ## Encoder tuning
 
 - NVIDIA: `h264_nvenc` (default) or `hevc_nvenc` — see the codec section of

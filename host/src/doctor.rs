@@ -13,6 +13,7 @@ use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS, MIN_BITRATE_KBP
 use crate::vdisplay;
 use anyhow::Result;
 use std::path::Path;
+use uscreen_config::adb::{transport_of, Transport};
 use uscreen_config::commands::AsyncCommandExt;
 use uscreen_config::linux::processes::{self, CaptureRole, Process};
 
@@ -376,7 +377,7 @@ async fn check_tablet_with(
             (parts.next()? == "device").then(|| serial.to_owned())
         })
         .collect();
-    devices.sort_by_key(|serial| serial.contains(':'));
+    devices.sort_by_key(|serial| transport_of(serial) != Transport::Usb);
     let sessions = diagnostic_sessions(r, cfg, adb, &devices, sessions).await;
     if sessions.is_empty() {
         if list.contains("unauthorized") {
@@ -1212,17 +1213,12 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
-/// A network serial is `host:port`; a USB serial never contains a colon.
-/// Worth reporting because the two transports differ by far more than the
-/// median suggests — the Wi-Fi tail is several times worse.
+/// Use the same serial-form policy as connection preference and Wi-Fi setup.
+/// Network ADB does not by itself prove the tablet is using a Wi-Fi radio.
 fn report_transport(r: &mut Report, serial: &str) {
-    if serial.contains(':') {
-        r.line(
-            Level::Warn,
-            "transport",
-            "Wi-Fi — expect occasional stutter",
-        );
-        r.hint("plug the USB cable in for steady latency; the daemon prefers it automatically");
+    if transport_of(serial) == Transport::Network {
+        r.line(Level::Warn, "transport", Transport::Network.label());
+        r.hint("plug in USB; the daemon prefers it when both transports identify the same tablet");
     } else {
         r.line(Level::Ok, "transport", "USB");
     }
@@ -1553,6 +1549,30 @@ mod tests {
                 "T251: {text}"
             );
         }
+    }
+
+    #[test]
+    fn t278_doctor_uses_the_same_mdns_network_classification() {
+        use super::*;
+        for serial in [
+            "adb-TABLET-nonce._adb-tls-connect._tcp",
+            "tablet._adb._tcp.local.",
+            "192.0.2.1:5555",
+        ] {
+            let mut report = Report::new();
+            report_transport(&mut report, serial);
+            assert_eq!(report.warnings, 1, "T278: {serial}");
+            let text = report.messages.borrow().join("\n");
+            assert!(text.contains("Network ADB"), "T278: {text}");
+        }
+        let mut usb = Report::new();
+        report_transport(&mut usb, "USB_TABLET");
+        assert_eq!(usb.warnings, 0);
+        assert!(usb
+            .messages
+            .borrow()
+            .iter()
+            .any(|line| line == "transport: USB"));
     }
 
     #[test]

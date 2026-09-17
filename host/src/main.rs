@@ -25,6 +25,7 @@ use std::path::PathBuf;
 use tokio::signal;
 use tokio::sync::{broadcast, watch};
 use tracing::{error, info, warn};
+use uscreen_config::adb::{transport_of, Transport};
 use uscreen_config::commands::AsyncCommandExt;
 use uscreen_config::linux::cli::{Cli, Commands};
 
@@ -728,6 +729,90 @@ printf '%s\n' "$2" >> "$0.log"
         assert_eq!(
             std::fs::read_to_string(adb.with_extension("log")).unwrap(),
             "connect 192.0.2.1:5555\nconnect 192.0.2.2:5555\n"
+        );
+    }
+
+    #[test]
+    fn t278_network_serial_forms_do_not_claim_usb_transport() {
+        for serial in [
+            "192.0.2.1:5555",
+            "tablet.local:5555",
+            "[2001:db8::1]:5555",
+            "adb-43081FDAS000ST-XKzA7F._adb-tls-connect._tcp",
+            "tablet._adb._tcp.local.",
+        ] {
+            assert_eq!(transport_of(serial), Transport::Network, "T278: {serial}");
+            assert_eq!(transport_of(serial).label(), "Network ADB");
+        }
+        assert_eq!(transport_of("8002RH1010011900"), Transport::Usb);
+        assert_eq!(transport_of("8002RH1010011900").label(), "USB");
+    }
+
+    #[test]
+    fn t278_usb_replaces_current_mdns_without_guessing_unknown_identities() {
+        for network in [
+            "adb-TABLET-nonce._adb-tls-connect._tcp",
+            "TABLET._adb._tcp.local.",
+        ] {
+            let identities = std::collections::HashMap::from([
+                (network.into(), "same-tablet".into()),
+                ("TABLET".into(), "same-tablet".into()),
+            ]);
+            for devices in [
+                vec![network.into(), "TABLET".into()],
+                vec!["TABLET".into(), network.into()],
+            ] {
+                let chosen = select_device_transports(&devices, Some(network), &identities);
+                assert_eq!(
+                    chosen,
+                    ["TABLET"],
+                    "T278: wireless transport kept USB priority"
+                );
+                assert_eq!(
+                    current_transport(&chosen, Some(network), &identities).as_deref(),
+                    Some("TABLET")
+                );
+                assert_eq!(
+                    select_device_transports(&devices, Some(network), &Default::default()),
+                    devices,
+                    "T278: missing physical identity must not merge devices"
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn t278_wifi_setup_never_uses_mdns_as_the_usb_prerequisite() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(&adb, "#!/bin/sh\nprintf '%s\\n' \"$2\" >> \"$0.log\"\necho package:/data/app/com.uscreen/base.apk\n").unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let network = [
+            "adb-TABLET-nonce._adb-tls-connect._tcp",
+            "tablet._adb._tcp.local",
+            "[2001:db8::1]:5555",
+        ]
+        .map(String::from);
+        assert_eq!(
+            wifi_device_with(&network, adb.to_str().unwrap()).await,
+            None
+        );
+        assert!(
+            !adb.with_extension("log").exists(),
+            "T278: wireless transport probed as USB"
+        );
+        let mut both = network.to_vec();
+        both.push("USB_TABLET".into());
+        assert_eq!(
+            wifi_device_with(&both, adb.to_str().unwrap())
+                .await
+                .as_deref(),
+            Some("USB_TABLET")
+        );
+        assert_eq!(
+            std::fs::read_to_string(adb.with_extension("log")).unwrap(),
+            "USB_TABLET\n"
         );
     }
 
@@ -2729,7 +2814,7 @@ async fn app_running_with(serial: &str, adb: &str) -> Option<bool> {
 /// still had a 78.6 ms p95 and multi-second outliers. Other networks differ.
 fn announce_transport(serial: &str) {
     if transport_of(serial) == Transport::Network {
-        warn!("Running over Wi-Fi. Expect occasional stutter — the cable is much steadier.");
+        warn!("Using network ADB. USB is preferred when both transports identify the same tablet.");
     }
 }
 
@@ -2838,34 +2923,6 @@ async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
             let _ = child.kill().await;
             warn!("Could not launch the app (is it installed?)");
         }
-    }
-}
-
-/// How the tablet is reached. Nothing in the pipeline is tied to either — it
-/// speaks to whatever adb is connected to — but the difference is worth a
-/// dozen milliseconds, so it is worth naming.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Transport {
-    Usb,
-    Network,
-}
-
-impl Transport {
-    fn label(self) -> &'static str {
-        match self {
-            Transport::Usb => "USB",
-            Transport::Network => "Wi-Fi",
-        }
-    }
-}
-
-/// A network device's serial is its `host:port`; a USB serial never contains a
-/// colon. That is the whole distinction adb gives us without a second call.
-fn transport_of(serial: &str) -> Transport {
-    if serial.contains(':') {
-        Transport::Network
-    } else {
-        Transport::Usb
     }
 }
 
