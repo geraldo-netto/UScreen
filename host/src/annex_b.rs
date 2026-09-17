@@ -1,6 +1,13 @@
 //! Incremental Annex B access-unit assembly, shared NAL scanning in encoder_io.
 use crate::media::{Codec, EncoderGeneration, VideoPacket};
 use crate::media_storage::MediaBytes as Bytes;
+use crate::video_queue::{MAX_CONFIG_BYTES, MAX_FRAME_BYTES};
+use anyhow::{ensure, Result};
+use bytes::BufMut;
+use tokio::io::AsyncReadExt;
+
+const READ_BYTES: usize = 512 * 1024;
+const INPUT_BYTES: usize = MAX_FRAME_BYTES + READ_BYTES + 3;
 
 // Instrument explicit copies without changing the production hot path.
 macro_rules! copied {
@@ -41,6 +48,8 @@ const NAL_TYPE_SPS: u8 = 7;
 const NAL_TYPE_PPS: u8 = 8;
 pub(crate) struct AnnexBPacketizer {
     buffer: Vec<u8>,
+    /// Consumed bytes stay in place until more read capacity is needed.
+    consumed: usize,
     /// First unchecked prefix position; retain three bytes across chunk boundaries.
     scan_from: usize,
     /// Start of the retained, incomplete NAL (relative to buffer).
@@ -59,6 +68,7 @@ impl AnnexBPacketizer {
     pub(crate) fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
         Self {
             buffer: Vec::new(),
+            consumed: 0,
             scan_from: 0,
             nal_start: None,
             pending_access_unit: Vec::new(),
@@ -72,16 +82,72 @@ impl AnnexBPacketizer {
         }
     }
 
-    pub(crate) fn push(&mut self, data: &[u8]) -> Vec<VideoPacket> {
-        copied!(data.len());
-        self.buffer.extend_from_slice(data);
-        self.process_complete_nals(false)
+    /// Read directly into owned spare capacity. No zero-filled scratch buffer
+    /// or scratch-to-parser payload copy. Cancellation drops this generation.
+    pub(crate) async fn read_from(
+        &mut self,
+        stdout: &mut (impl tokio::io::AsyncRead + Unpin),
+    ) -> Result<(usize, Vec<VideoPacket>)> {
+        if self.buffer.capacity() == 0 {
+            self.buffer.reserve_exact(READ_BYTES);
+        }
+        // Use existing spare space; requiring a full READ_BYTES after every
+        // tiny read needlessly doubles the allocation for fragmented streams.
+        self.prepare_input(4096);
+        let count = stdout
+            .read_buf(&mut (&mut self.buffer).limit(READ_BYTES))
+            .await?;
+        let packets = if count == 0 {
+            self.finish()?
+        } else {
+            self.process_complete_nals(false)?
+        };
+        Ok((count, packets))
     }
 
-    pub(crate) fn finish(&mut self) -> Vec<VideoPacket> {
-        let mut out = self.process_complete_nals(true);
+    #[cfg(test)]
+    pub(crate) fn push(&mut self, data: &[u8]) -> Vec<VideoPacket> {
+        if data.len() <= READ_BYTES {
+            return self.push_part(data);
+        }
+        data.chunks(READ_BYTES)
+            .flat_map(|part| self.push_part(part))
+            .collect()
+    }
+
+    #[cfg(test)]
+    fn push_part(&mut self, data: &[u8]) -> Vec<VideoPacket> {
+        self.prepare_input(data.len());
+        copied!(data.len());
+        self.buffer.extend_from_slice(data);
+        self.process_complete_nals(false).unwrap()
+    }
+
+    fn prepare_input(&mut self, bytes: usize) {
+        let retained = self.buffer.len() - self.consumed;
+        // Reclaim a large consumed span while its tail is still small. Waiting
+        // for capacity exhaustion could copy almost the next complete picture.
+        let reclaim = self.consumed >= READ_BYTES && self.consumed >= retained;
+        if self.buffer.capacity() - self.buffer.len() >= bytes && !reclaim {
+            return;
+        }
+        let fits_after_compaction = self.buffer.capacity() - retained >= bytes;
+        let exceeds_cap = self.buffer.len() + bytes > INPUT_BYTES;
+        if self.consumed > 0 && (reclaim || fits_after_compaction || exceeds_cap) {
+            copied!(retained);
+            self.buffer.copy_within(self.consumed.., 0);
+            self.buffer.truncate(retained);
+            self.scan_from -= self.consumed;
+            self.nal_start = self.nal_start.map(|start| start - self.consumed);
+            self.consumed = 0;
+        }
+        reserve_bounded(&mut self.buffer, bytes, INPUT_BYTES);
+    }
+
+    pub(crate) fn finish(&mut self) -> Result<Vec<VideoPacket>> {
+        let mut out = self.process_complete_nals(true)?;
         self.emit_pending_access_unit(&mut out);
-        out
+        Ok(out)
     }
 
     fn emit_pending_access_unit(&mut self, out: &mut Vec<VideoPacket>) {
@@ -108,15 +174,15 @@ impl AnnexBPacketizer {
         }
     }
 
-    fn process_complete_nals(&mut self, flush: bool) -> Vec<VideoPacket> {
-        // Move ownership temporarily so processing a borrowed NAL can update
-        // packet/config state without cloning its bytes. Keep input capacity.
-        let mut input = std::mem::take(&mut self.buffer);
+    fn process_complete_nals(&mut self, flush: bool) -> Result<Vec<VideoPacket>> {
+        // Temporarily move the Vec so borrowed NALs can update assembly state.
+        // Return its capacity without shifting the unconsumed tail each chunk.
+        let input = std::mem::take(&mut self.buffer);
         let mut out = Vec::new();
-        self.scan_nals(&input, &mut out);
-        let drain_to = match (flush, self.nal_start) {
+        self.scan_nals(&input, &mut out)?;
+        self.consumed = match (flush, self.nal_start) {
             (true, Some(start)) => {
-                self.process_nal(&input[start..], &mut out);
+                self.process_nal(&input[start..], &mut out)?;
                 self.nal_start = None;
                 self.scan_from = input.len();
                 input.len()
@@ -124,24 +190,19 @@ impl AnnexBPacketizer {
             (_, Some(start)) => start,
             (_, None) => input.len().saturating_sub(3),
         };
-        self.scan_from -= drain_to;
-        self.nal_start = self.nal_start.map(|start| start - drain_to);
-        copied!(if drain_to > 0 {
-            input.len() - drain_to
-        } else {
-            0
-        });
-        input.drain(..drain_to);
+        // Up to three bytes may be the next split start code, not payload.
+        ensure!(
+            input.len() - self.consumed <= MAX_FRAME_BYTES + 3,
+            "Annex B unfinished NAL exceeds the frame limit"
+        );
         self.buffer = input;
-        // A partial trailing header can complete the preceding picture, but
-        // all trailing bytes still belong to the next access unit.
         if self.pending_has_vcl && self.trailing_nal_starts_picture() {
             self.emit_pending_access_unit(&mut out);
         }
-        out
+        Ok(out)
     }
 
-    fn scan_nals(&mut self, input: &[u8], out: &mut Vec<VideoPacket>) {
+    fn scan_nals(&mut self, input: &[u8], out: &mut Vec<VideoPacket>) -> Result<()> {
         let offset = self.scan_from;
         #[cfg(test)]
         crate::allocation_probe::scanned(input.len() - offset);
@@ -154,26 +215,28 @@ impl AnnexBPacketizer {
                 break;
             }
             if let Some(previous) = self.nal_start {
-                self.process_nal(&input[previous..start], out);
+                self.process_nal(&input[previous..start], out)?;
             }
             self.nal_start = Some(start);
             checked_until = offset + header;
         }
         // Never rescan inside a prefix already accepted at the very end.
         self.scan_from = checked_until.max(input.len().saturating_sub(3));
+        Ok(())
     }
 
     fn trailing_nal_starts_picture(&self) -> bool {
-        let Some(offset) = nal_header_offset(&self.buffer, 0) else {
+        let trailing = &self.buffer[self.consumed..];
+        let Some(offset) = nal_header_offset(trailing, 0) else {
             return false;
         };
-        let Some(&header) = self.buffer.get(offset) else {
+        let Some(&header) = trailing.get(offset) else {
             return false;
         };
         let (kind, _) = self.classify_nal(header);
         let vcl = kind == NalKind::Vcl;
         let prefix = matches!(kind, NalKind::Sps | NalKind::Pps | NalKind::Prefix);
-        prefix || (vcl && self.starts_new_picture(&self.buffer, offset))
+        prefix || (vcl && self.starts_new_picture(trailing, offset))
     }
 
     fn classify_nal(&self, header: u8) -> (NalKind, bool) {
@@ -209,28 +272,26 @@ impl AnnexBPacketizer {
         )
     }
 
-    fn process_nal(&mut self, nal: &[u8], out: &mut Vec<VideoPacket>) {
+    fn process_nal(&mut self, nal: &[u8], out: &mut Vec<VideoPacket>) -> Result<()> {
+        ensure!(
+            nal.len() <= MAX_FRAME_BYTES,
+            "Annex B NAL exceeds the frame limit"
+        );
         let Some(header_offset) = nal_header_offset(nal, 0) else {
-            return;
+            return Ok(());
         };
         match self.classify_nal(nal[header_offset]) {
             (NalKind::Sps | NalKind::Pps, _) => {
                 self.remember_parameter_set(nal, header_offset, out)
             }
             (NalKind::Prefix, _) => {
-                // Prefix metadata belongs to the following picture. Keep
-                // earlier AUD/SEI units when that picture has no slices yet.
                 if self.pending_has_vcl {
                     self.emit_pending_access_unit(out);
                 }
-                copied!(nal.len());
-                self.pending_access_unit.extend_from_slice(nal);
+                self.extend_pending(nal)
             }
             (NalKind::Vcl, is_key) => self.append_picture_slice(nal, header_offset, is_key, out),
-            (NalKind::Other, _) => {
-                copied!(nal.len());
-                self.pending_access_unit.extend_from_slice(nal);
-            }
+            (NalKind::Other, _) => self.extend_pending(nal),
         }
     }
 
@@ -239,8 +300,8 @@ impl AnnexBPacketizer {
         nal: &[u8],
         header_offset: usize,
         out: &mut Vec<VideoPacket>,
-    ) {
-        // Finish the old picture with its configuration before replacing it.
+    ) -> Result<()> {
+        // Flush with the original configuration before replacing it.
         if self.pending_has_vcl {
             self.emit_pending_access_unit(out);
         }
@@ -248,22 +309,56 @@ impl AnnexBPacketizer {
             Codec::H264 => nal[header_offset] & 0x1f,
             Codec::Hevc => (nal[header_offset] >> 1) & 0x3f,
         };
-        // Single-layer encoders emit one current set per type. Normalize the
-        // prefix so equivalent headers retain the same configuration bytes.
-        copied!(nal.len() - header_offset + 4);
-        let mut set = vec![0, 0, 0, 1];
-        set.extend_from_slice(&nal[header_offset..]);
-        if self.parameter_sets.get(&nal_type) != Some(&set) {
-            self.parameter_sets.insert(nal_type, set);
-            self.config = self
-                .parameter_sets
-                .values()
-                .flatten()
-                .copied()
-                .collect::<Vec<_>>()
-                .into();
-            copied!(self.config.len());
+        let previous = self.parameter_sets.get(&nal_type);
+        let payload = &nal[header_offset..];
+        if previous.is_some_and(|set| &set[4..] == payload) {
+            return Ok(());
         }
+        let total = self.config.len() - previous.map_or(0, Vec::len) + 4 + payload.len();
+        ensure!(
+            total <= MAX_CONFIG_BYTES,
+            "Annex B codec configuration exceeds the wire limit"
+        );
+        let mut set = Vec::with_capacity(4 + payload.len());
+        set.extend_from_slice(&[0, 0, 0, 1]);
+        set.extend_from_slice(payload);
+        copied!(set.len());
+        self.parameter_sets.insert(nal_type, set);
+        let mut config = Vec::with_capacity(total);
+        for set in self.parameter_sets.values() {
+            config.extend_from_slice(set);
+        }
+        copied!(config.len());
+        self.config = config.into();
+        Ok(())
+    }
+
+    fn extend_pending(&mut self, data: &[u8]) -> Result<()> {
+        ensure!(
+            data.len() <= MAX_FRAME_BYTES - self.pending_access_unit.len(),
+            "Annex B access unit exceeds the wire limit"
+        );
+        reserve_bounded(&mut self.pending_access_unit, data.len(), MAX_FRAME_BYTES);
+        copied!(data.len());
+        self.pending_access_unit.extend_from_slice(data);
+        Ok(())
+    }
+
+    fn prepend_configuration(&mut self) -> Result<()> {
+        if !self.config_ready() {
+            return Ok(());
+        }
+        let length = self.config.len() + self.pending_access_unit.len();
+        ensure!(
+            length <= MAX_FRAME_BYTES,
+            "Annex B keyframe configuration exceeds the wire limit"
+        );
+        let mut data = Vec::with_capacity(length);
+        data.extend_from_slice(&self.config);
+        data.extend_from_slice(&self.pending_access_unit);
+        copied!(length);
+        self.pending_access_unit = data;
+        Ok(())
     }
 
     fn append_picture_slice(
@@ -272,14 +367,20 @@ impl AnnexBPacketizer {
         header_offset: usize,
         is_key: bool,
         out: &mut Vec<VideoPacket>,
-    ) {
+    ) -> Result<()> {
         if self.pending_has_vcl && self.starts_new_picture(nal, header_offset) {
             self.emit_pending_access_unit(out);
         }
+        // Insert headers before the first key slice, avoiding a second copy
+        // of the large picture on emission. Existing prefix metadata stays after
+        // the headers, exactly as with the previous final coalescing copy.
+        if is_key && !self.pending_has_idr {
+            self.prepend_configuration()?;
+        }
         self.pending_has_idr |= is_key;
-        copied!(nal.len());
-        self.pending_access_unit.extend_from_slice(nal);
+        self.extend_pending(nal)?;
         self.pending_has_vcl = true;
+        Ok(())
     }
 
     /// Is this slice the first of a new picture?
@@ -308,17 +409,7 @@ impl AnnexBPacketizer {
 
         let au_data = std::mem::take(&mut self.pending_access_unit);
 
-        // Prepend SPS/PPS to IDR frames so the decoder can always decode them,
-        // even if it missed the initial config packet or reconnected mid-stream.
-        let data = if was_idr && self.config_ready() {
-            copied!(self.config.len() + au_data.len());
-            let mut full = Vec::with_capacity(self.config.len() + au_data.len());
-            full.extend_from_slice(&self.config);
-            full.extend_from_slice(&au_data);
-            Bytes::from(full)
-        } else {
-            Bytes::from(au_data)
-        };
+        let data = Bytes::from(au_data);
         let seq = self.sequences.next_sequence();
         Some(VideoPacket {
             data,
@@ -332,6 +423,22 @@ impl AnnexBPacketizer {
     fn first_mb_in_slice(nal: &[u8], header_offset: usize) -> Option<u32> {
         let payload = nal.get(header_offset + 1..)?;
         ExpGolombReader::new(payload).read_ue()
+    }
+}
+
+/// Explicit growth cap avoids Vec's doubling past the assembly limits.
+fn reserve_bounded(data: &mut Vec<u8>, extra: usize, limit: usize) {
+    let needed = data.len() + extra;
+    assert!(needed <= limit);
+    if data.capacity() < needed {
+        // Modest aligned headroom avoids doubling a large first slice just
+        // for a short continuation NAL. Still grow geometrically when needed.
+        let alignment = if needed >= 65536 { 4096 } else { 64 };
+        let capacity = needed
+            .max(data.capacity().saturating_mul(2))
+            .next_multiple_of(alignment)
+            .min(limit);
+        data.reserve_exact(capacity - data.len());
     }
 }
 
@@ -426,7 +533,7 @@ mod tests {
             assert_eq!(out[0].data.as_ref(), [first, continuation].concat());
             assert_eq!(out[0].seq, 0);
             assert!(p.push(&next[header_len + 1..]).is_empty());
-            let last = p.finish();
+            let last = p.finish().unwrap();
             assert_eq!(last.len(), 1);
             assert_eq!(last[0].data.as_ref(), next);
             assert_eq!(last[0].seq, 1);
@@ -454,12 +561,12 @@ mod tests {
             let mut packetizer = AnnexBPacketizer::new(codec, Default::default());
             let mut packets = Vec::new();
             for set in &sets {
-                packetizer.process_nal(set, &mut packets);
+                packetizer.process_nal(set, &mut packets).unwrap();
             }
             let initial = packetizer.codec_config().unwrap();
             for _ in 0..1000 {
                 for set in &sets {
-                    packetizer.process_nal(set, &mut packets);
+                    packetizer.process_nal(set, &mut packets).unwrap();
                 }
                 assert_eq!(
                     packetizer.codec_config().as_ref(),
@@ -468,7 +575,7 @@ mod tests {
                 );
             }
             *sets[0].last_mut().unwrap() = 0x81;
-            packetizer.process_nal(&sets[0], &mut packets);
+            packetizer.process_nal(&sets[0], &mut packets).unwrap();
             assert_eq!(packetizer.codec_config().unwrap().as_ref(), sets.concat());
             assert_eq!(packetizer.config.len(), initial.len());
         }
@@ -495,7 +602,7 @@ mod tests {
         let mut incomplete = AnnexBPacketizer::new(Codec::Hevc, Default::default());
         incomplete.push(&hevc_nal(HEVC_NAL_VPS, &[1, 2]));
         incomplete.push(&hevc_nal(HEVC_NAL_SPS, &[3, 4]));
-        incomplete.finish();
+        incomplete.finish().unwrap();
         assert!(
             incomplete.codec_config().is_none(),
             "config is not complete without a PPS"
@@ -509,7 +616,7 @@ mod tests {
         data.extend_from_slice(&hevc_nal(HEVC_NAL_PPS, &[5, 6]));
         data.extend_from_slice(&hevc_slice(19, true)); // IDR_W_RADL
         let mut out = p.push(&data);
-        out.extend(p.finish());
+        out.extend(p.finish().unwrap());
         assert!(p.codec_config().is_some(), "VPS+SPS+PPS should complete it");
         assert_eq!(out.len(), 1);
         assert!(out[0].is_idr, "IDR_W_RADL must be marked as a keyframe");
@@ -521,7 +628,7 @@ mod tests {
         // keyframe the encoder never sends.
         let mut p = AnnexBPacketizer::new(Codec::Hevc, Default::default());
         p.push(&hevc_slice(21, true)); // CRA_NUT
-        let out = p.finish();
+        let out = p.finish().unwrap();
         assert_eq!(out.len(), 1);
         assert!(out[0].is_idr, "CRA is a valid random access point");
     }
@@ -533,7 +640,7 @@ mod tests {
         data.extend_from_slice(&hevc_slice(1, false)); // ...continues
         data.extend_from_slice(&hevc_slice(1, true)); // picture 2 starts
         let mut out = p.push(&data);
-        out.extend(p.finish());
+        out.extend(p.finish().unwrap());
         assert_eq!(out.len(), 2, "two pictures, not three slices");
     }
     #[test]
@@ -542,7 +649,7 @@ mod tests {
         assert!(packetizer.push(&[0, 0]).is_empty());
         assert!(packetizer.push(&[0, 1, NAL_TYPE_IDR, 0x80]).is_empty());
 
-        let out = packetizer.finish();
+        let out = packetizer.finish().unwrap();
         assert_eq!(out.len(), 1);
         // No SPS/PPS seen, so IDR is emitted as-is
         assert_eq!(&out[0].data[..], &[0, 0, 0, 1, NAL_TYPE_IDR, 0x80]);
@@ -576,7 +683,7 @@ mod tests {
             ]
         );
 
-        let out = packetizer.finish();
+        let out = packetizer.finish().unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!(
             &out[0].data[..],
@@ -624,7 +731,7 @@ mod tests {
             ]
         );
 
-        let out = packetizer.finish();
+        let out = packetizer.finish().unwrap();
         assert_eq!(out.len(), 1);
         // IDR frame should now have SPS+PPS prepended
         assert_eq!(
@@ -673,7 +780,7 @@ mod tests {
         assert_eq!(out.len(), 1);
         assert_eq!(&out[0].data[..], &first[..]);
 
-        let out = packetizer.finish();
+        let out = packetizer.finish().unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!(&out[0].data[..], &nal(NAL_TYPE_NON_IDR, &[0x80]));
     }
@@ -722,7 +829,7 @@ mod tests {
                     for chunk in stream.chunks(chunk_size) {
                         packets.extend(packetizer.push(chunk));
                     }
-                    packets.extend(packetizer.finish());
+                    packets.extend(packetizer.finish().unwrap());
                     let actual: Vec<_> =
                         packets.iter().map(|packet| packet.data.as_ref()).collect();
                     assert_eq!(
@@ -750,7 +857,10 @@ mod tests {
             assert_eq!(packets[0].data.as_ref(), first.as_slice());
             assert!(packetizer.push(&sei[5..]).is_empty());
             assert!(packetizer.push(&first).is_empty());
-            assert_eq!(packetizer.finish()[0].data.as_ref(), [sei, first].concat());
+            assert_eq!(
+                packetizer.finish().unwrap()[0].data.as_ref(),
+                [sei, first].concat()
+            );
         }
     }
 }
@@ -758,3 +868,11 @@ mod tests {
 #[cfg(test)]
 #[path = "packetizer_profile.rs"]
 mod profile;
+
+#[cfg(test)]
+#[path = "packetizer_decode_tests.rs"]
+mod decode_tests;
+
+#[cfg(test)]
+#[path = "packetizer_read_profile.rs"]
+mod read_profile;

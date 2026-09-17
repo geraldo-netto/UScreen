@@ -12,7 +12,7 @@ fn nal(codec: Codec, kind: u8, payload: usize, first: bool) -> Vec<u8> {
     nal
 }
 
-fn fixture(codec: Codec, frames: usize, payload: usize) -> Vec<u8> {
+pub(super) fn fixture(codec: Codec, frames: usize, payload: usize) -> Vec<u8> {
     let (sets, idr, p): (&[u8], u8, u8) = match codec {
         Codec::H264 => (&[7, 8], 5, 1),
         Codec::Hevc => (&[32, 33, 34], 19, 1),
@@ -34,7 +34,7 @@ fn collect(codec: Codec, data: &[u8], chunk: usize) -> Vec<VideoPacket> {
     for part in data.chunks(chunk) {
         packets.extend(parser.push(part));
     }
-    packets.extend(parser.finish());
+    packets.extend(parser.finish().unwrap());
     packets
 }
 
@@ -66,7 +66,7 @@ fn replay(codec: Codec, data: &[u8], chunk: usize, repeats: usize) -> usize {
         for part in data.chunks(chunk) {
             count += std::hint::black_box(parser.push(part)).len();
         }
-        count += std::hint::black_box(parser.finish()).len();
+        count += std::hint::black_box(parser.finish().unwrap()).len();
     }
     count
 }

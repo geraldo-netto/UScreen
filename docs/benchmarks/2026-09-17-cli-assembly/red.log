@@ -1,0 +1,39 @@
+   Compiling uscreen v1.2.3 (/work/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.56s
+     Running unittests src/main.rs (/build/debug/deps/uscreen-369f9571987bb788)
+
+running 5 tests
+test capture::cli_encoder::packetizer_limits_tests::t407_combined_parameter_sets_are_bounded ...
+thread 'capture::cli_encoder::packetizer_limits_tests::t407_combined_parameter_sets_are_bounded' panicked at host/src/capture/../packetizer_limits_tests.rs:18:5:
+T407: oversized assembly was accepted
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test capture::cli_encoder::packetizer_limits_tests::t407_idr_with_prepended_configuration_obeys_wire_limit ...
+thread 'capture::cli_encoder::packetizer_limits_tests::t407_idr_with_prepended_configuration_obeys_wire_limit' panicked at host/src/capture/../packetizer_limits_tests.rs:18:5:
+T407: oversized assembly was accepted
+FAILED
+test capture::cli_encoder::packetizer_limits_tests::t407_prefix_only_access_unit_is_bounded ...
+thread 'capture::cli_encoder::packetizer_limits_tests::t407_prefix_only_access_unit_is_bounded' panicked at host/src/capture/../packetizer_limits_tests.rs:18:5:
+T407: oversized assembly was accepted
+FAILED
+test capture::cli_encoder::packetizer_limits_tests::t407_stdout_read_avoids_scratch_to_parser_payload_copy ...
+thread 'capture::cli_encoder::packetizer_limits_tests::t407_stdout_read_avoids_scratch_to_parser_payload_copy' panicked at host/src/capture/../packetizer_limits_tests.rs:62:5:
+T407: repeated input/assembly copies: 104030 for 51500 bytes
+FAILED
+test capture::cli_encoder::packetizer_limits_tests::t407_unfinished_nal_is_bounded_before_queue_admission ...
+thread 'capture::cli_encoder::packetizer_limits_tests::t407_unfinished_nal_is_bounded_before_queue_admission' panicked at host/src/capture/../packetizer_limits_tests.rs:18:5:
+T407: oversized assembly was accepted
+FAILED
+
+failures:
+
+failures:
+    capture::cli_encoder::packetizer_limits_tests::t407_combined_parameter_sets_are_bounded
+    capture::cli_encoder::packetizer_limits_tests::t407_idr_with_prepended_configuration_obeys_wire_limit
+    capture::cli_encoder::packetizer_limits_tests::t407_prefix_only_access_unit_is_bounded
+    capture::cli_encoder::packetizer_limits_tests::t407_stdout_read_avoids_scratch_to_parser_payload_copy
+    capture::cli_encoder::packetizer_limits_tests::t407_unfinished_nal_is_bounded_before_queue_admission
+
+test result: FAILED. 0 passed; 5 failed; 0 ignored; 0 measured; 210 filtered out; finished in 0.92s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

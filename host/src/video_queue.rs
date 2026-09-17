@@ -8,7 +8,7 @@ use tokio::sync::broadcast;
 pub(crate) const QUEUE_PACKETS: usize = 8;
 pub(crate) const RETAINED_BYTES: usize = 32 * 1024 * 1024;
 // Android's wire length is at most 8 MiB + 1, including type and sequence.
-const MAX_FRAME_BYTES: usize = 8 * 1024 * 1024 - 4;
+pub(crate) const MAX_FRAME_BYTES: usize = 8 * 1024 * 1024 - 4;
 pub(crate) const MAX_CONFIG_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Clone)]

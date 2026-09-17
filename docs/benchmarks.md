@@ -20,6 +20,10 @@ compares copying with owned stock-libavcodec buffers in the optional encoder.
 It includes native allocation/pool reuse and slow-consumer retention; its
 stage-level savings are not total encoding or battery gains.
 
+The [CLI assembly replay](benchmarks/2026-09-17-cli-assembly.md) records T407's
+owned reads, bounded assembly and 1/2/4-session comparison with committed T384.
+It retains both the original push replay and the actual read-boundary measurements.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

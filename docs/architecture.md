@@ -106,14 +106,17 @@ encoded output. `capture::placement` handles desktop placement, while
 `capture::process` provides bounded termination and validated orphan retirement.
 The `media` module owns codec, packet, generation and live-settings contracts,
 so streaming, input and encoding do not depend on capture management.
-`annex_b` assembles access units using `encoder_io`'s shared NAL scanner. An
-incremental cursor avoids rescanning retained NAL payloads; complete NALs are
-borrowed from the retained input buffer while assembling access units. Codec
-headers use immutable shared `MediaBytes`, preserving each queued packet's original
-configuration and backing-allocation identity. Payload buffering/assembly still copies bytes. Partial NAL
-buffering and generation retirement remain part of that boundary; the
-[packetizer replay](benchmarks.md#annex-b-packetizer-replay) records its measured
-allocation, copy and scanning changes. `capture::fifo` coordinates replacement of a damaged
+`annex_b` assembles access units using `encoder_io`'s shared NAL scanner.
+It reads into owned spare capacity and reclaims consumed input by offset;
+the incremental cursor avoids rescanning retained payloads. Borrowed complete
+NALs copy into bounded contiguous access-unit storage. Keyframe configuration
+is inserted before large slices, avoiding a second picture copy at publication.
+Immutable `MediaBytes` preserve each queued packet's configuration and full
+backing-allocation identity. NAL, access-unit and combined-configuration bounds
+apply before queue admission. The [CLI assembly report](benchmarks/2026-09-17-cli-assembly.md)
+records the ownership limits, real H.264/HEVC decode checks and comparison with
+the committed T384 baseline; [T384's original replay](benchmarks.md#annex-b-packetizer-replay)
+remains available. `capture::fifo` coordinates replacement of a damaged
 raw-frame FIFO; it creates the replacement before unlinking the old inode,
 preventing inode reuse during recovery. Raw frames still have no in-band
 sequence, size or generation header; both processes must use this reset

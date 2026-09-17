@@ -7,7 +7,6 @@ use anyhow::{Context, Result};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use tracing::{info, warn};
 
@@ -181,7 +180,6 @@ pub(super) async fn read_loop(
     latency: crate::latency::LatencyTracker,
     codec: Codec,
 ) -> Result<()> {
-    let mut buf = vec![0u8; 512 * 1024];
     let mut total: u64 = 0;
     let mut frames: u64 = 0;
     let mut last_log = Instant::now();
@@ -189,27 +187,15 @@ pub(super) async fn read_loop(
     let mut config_extracted = codec_config.lock().ok().and_then(|g| g.clone()).is_some();
 
     loop {
-        let n = stdout
-            .read(&mut buf)
+        let (n, access_units) = packetizer
+            .read_from(&mut stdout)
             .await
-            .context("Read error from encoder")?;
-
-        if n == 0 {
-            for data in packetizer.finish() {
-                if tx.receiver_count() > 0 {
-                    latency.on_encoded(data.seq);
-                    let _ = tx.send(data);
-                }
-            }
-            return Ok(());
-        }
-
+            .context("Read/assembly error from encoder")?;
         total += n as u64;
 
-        let chunk = &buf[..n];
-        let access_units = packetizer.push(chunk);
-
-        publish_initial_codec_config(&packetizer, &codec_config, &mut config_extracted, total);
+        if n > 0 {
+            publish_initial_codec_config(&packetizer, &codec_config, &mut config_extracted, total);
+        }
 
         for data in access_units {
             frames += 1;
@@ -217,6 +203,9 @@ pub(super) async fn read_loop(
                 latency.on_encoded(data.seq);
                 let _ = tx.send(data);
             }
+        }
+        if n == 0 {
+            return Ok(());
         }
         latency.maybe_report();
 
@@ -492,3 +481,7 @@ mod encoder_policy_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../packetizer_limits_tests.rs"]
+mod packetizer_limits_tests;
