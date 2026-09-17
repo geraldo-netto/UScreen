@@ -2780,7 +2780,7 @@ async fn stop_daemon() -> Result<()> {
 async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Result<()> {
     let uid = unsafe { libc::getuid() };
     pids.retain(|&pid| pid != std::process::id() && is_daemon_process(pid, uid));
-    let tracked = std::fs::read_to_string(&pid_path)
+    let tracked = std::fs::read_to_string(pid_path)
         .ok()
         .and_then(|s| s.trim().parse::<u32>().ok());
     if let Some(pid) = tracked.filter(|&p| p != std::process::id() && is_daemon_process(p, uid))
@@ -2791,7 +2791,7 @@ async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Resul
     }
     stop_pids(&pids).await?;
     if let Some(pid) = tracked {
-        remove_pid_file_if_ours(&pid_path, pid);
+        remove_pid_file_if_ours(pid_path, pid);
     }
     info!("uscreen daemon stopped");
     Ok(())
