@@ -43,6 +43,8 @@ The daemon itself never runs as root and needs no capabilities.
 
 ```bash
 systemctl --user disable --now uscreen 2>/dev/null
+# Also stop a daemon launched from the terminal or the GUI without systemd.
+uscreen stop
 # package installs:
 sudo apt remove uscreen      # or: sudo dnf remove uscreen / sudo zypper rm uscreen / sudo pacman -R uscreen
 # script installs:
