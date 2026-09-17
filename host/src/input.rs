@@ -1644,8 +1644,6 @@ async fn handle_connection(
     .context("WebSocket handshake failed")?;
 
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-    let mut mode_rx = mode_tx.subscribe();
-    let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
 
     if !authenticate_input(
         &mut ws_sender,
@@ -1659,6 +1657,29 @@ async fn handle_connection(
         return Ok(());
     }
 
+    serve_controller(
+        ws_sender,
+        ws_receiver,
+        config,
+        settings_tx,
+        mode_tx,
+        latency,
+        controllers,
+    )
+    .await
+}
+
+async fn serve_controller(
+    mut ws_sender: futures_util::stream::SplitSink<InputSocket, Message>,
+    mut ws_receiver: futures_util::stream::SplitStream<InputSocket>,
+    config: InputConfig,
+    settings_tx: Option<watch::Sender<EncoderSettings>>,
+    mode_tx: watch::Sender<bool>,
+    latency: crate::latency::LatencyTracker,
+    controllers: Arc<Controllers>,
+) -> Result<()> {
+    let mut mode_rx = mode_tx.subscribe();
+    let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
     let mut ownership = controllers.generation.subscribe();
     let lease = controllers.claim();
     if *ownership.borrow_and_update() != lease.id {
@@ -1667,9 +1688,15 @@ async fn handle_connection(
 
     let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
 
-    ws_sender
-        .send(Message::Text(serde_json::to_string(&resp)?))
-        .await?;
+    if !send_controller_message(
+        &mut ws_sender,
+        Message::Text(serde_json::to_string(&resp)?),
+        &mut ownership,
+    )
+    .await?
+    {
+        return Ok(());
+    }
 
     loop {
         let msg = tokio::select! {
@@ -1687,7 +1714,9 @@ async fn handle_connection(
             } => {
                 if changed.is_err() { settings_rx = None; continue; }
                 let response = config.response("mode", *mode_rx.borrow(), &settings_tx);
-                if ws_sender.send(Message::Text(serde_json::to_string(&response)?)).await.is_err() {
+                if !send_controller_message(&mut ws_sender,
+                    Message::Text(serde_json::to_string(&response)?), &mut ownership)
+                    .await.unwrap_or(false) {
                     break;
                 }
                 continue;
@@ -1701,10 +1730,9 @@ async fn handle_connection(
                 }
                 let pen_only = *mode_rx.borrow();
                 let resp = config.response("mode", pen_only, &settings_tx);
-                if ws_sender
-                    .send(Message::Text(serde_json::to_string(&resp)?))
-                    .await
-                    .is_err()
+                if !send_controller_message(&mut ws_sender,
+                    Message::Text(serde_json::to_string(&resp)?), &mut ownership)
+                    .await.unwrap_or(false)
                 {
                     break;
                 }
@@ -1728,7 +1756,12 @@ async fn handle_connection(
             }
             Ok(Message::Close(_)) | Err(_) => break,
             Ok(Message::Ping(data)) => {
-                let _ = ws_sender.send(Message::Pong(data)).await;
+                if !send_controller_message(&mut ws_sender, Message::Pong(data), &mut ownership)
+                    .await
+                    .unwrap_or(false)
+                {
+                    break;
+                }
             }
             _ => {}
         }
@@ -1767,6 +1800,23 @@ fn dispatch_controller_text(
 }
 
 type InputSocket = tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>;
+
+async fn send_controller_message(
+    sender: &mut futures_util::stream::SplitSink<InputSocket, Message>,
+    message: Message,
+    ownership: &mut watch::Receiver<u64>,
+) -> Result<bool> {
+    // A non-reading retired peer must not retain an admission slot merely
+    // because its socket is full. Cancellation drops this connection too.
+    tokio::select! {
+        biased;
+        _ = ownership.changed() => Ok(false),
+        result = sender.send(message) => {
+            result?;
+            Ok(true)
+        }
+    }
+}
 
 async fn authenticate_input(
     ws_sender: &mut futures_util::stream::SplitSink<InputSocket, Message>,
@@ -2547,6 +2597,73 @@ mod tests {
         assert!(
             matches!(closed, Ok(Ok(0)) | Ok(Err(_))),
             "unbounded pending handlers"
+        );
+    }
+
+    #[tokio::test]
+    async fn t323_replacement_cancels_a_backpressured_control_writer() {
+        use tokio::io::AsyncWriteExt;
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (socket, _) = listener.accept().await.unwrap();
+        // Bound both directions so a non-reading peer deterministically fills
+        // the server's Pong send buffer without a large memory/network load.
+        for stream in [&client, &socket] {
+            for option in [libc::SO_SNDBUF, libc::SO_RCVBUF] {
+                let size: libc::c_int = 4096;
+                assert_eq!(
+                    unsafe {
+                        libc::setsockopt(
+                            stream.as_raw_fd(),
+                            libc::SOL_SOCKET,
+                            option,
+                            (&size as *const libc::c_int).cast(),
+                            std::mem::size_of_val(&size) as libc::socklen_t,
+                        )
+                    },
+                    0
+                );
+            }
+        }
+        let controllers = Arc::new(Controllers::new(Arc::new(std::sync::Mutex::new(
+            InjectDevices::empty(),
+        ))));
+        let (mode, _mode_rx) = watch::channel(false);
+        let mut task = tokio::spawn(handle_connection(
+            PendingInput::new(socket),
+            InputConfig::default(),
+            None,
+            mode,
+            crate::latency::LatencyTracker::new(),
+            controllers.clone(),
+            Arc::new(tokio::sync::Notify::new()),
+        ));
+        let (mut client, _) = tokio_tungstenite::client_async("ws://localhost/", client)
+            .await
+            .unwrap();
+        assert!(matches!(client.next().await, Some(Ok(Message::Text(_)))));
+        // Valid masked 125-byte Ping frames; do not consume the Pong replies.
+        let mut ping = vec![0x89, 0xfd, 0, 0, 0, 0];
+        ping.extend_from_slice(&[1; 125]);
+        let traffic = ping.repeat(4096);
+        let stalled = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.get_mut().write_all(&traffic),
+        )
+        .await
+        .is_err();
+        let _replacement = controllers.claim();
+        let retired = tokio::time::timeout(std::time::Duration::from_millis(500), &mut task).await;
+        task.abort();
+        if retired.is_err() {
+            let _ = task.await;
+        }
+        assert!(stalled, "T323: fixture did not reach socket backpressure");
+        assert!(
+            matches!(retired, Ok(Ok(Ok(())))),
+            "T323: replaced controller retained its blocked writer"
         );
     }
 
