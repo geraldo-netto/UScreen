@@ -21,6 +21,57 @@ print('T220: cargo executed with usable jobserver')
 
 
 class MakeTest(unittest.TestCase):
+    def make_environment(self, tools=None):
+        env = dict(os.environ)
+        for name in ['MAKEFLAGS', 'MFLAGS', 'CARGO_MAKEFLAGS']:
+            env.pop(name, None)
+        if tools is not None:
+            env['PATH'] = str(tools) + os.pathsep + env['PATH']
+        return env
+
+    def run_dist(self, portable, *flags):
+        with tempfile.TemporaryDirectory(prefix='uscreen-make-dist-') as tmp:
+            root = Path(tmp)
+            makefile = (REPO / 'Makefile').read_text()
+            for directory in ['scripts', 'packaging', 'bin']:
+                (root / directory).mkdir()
+            for path in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
+                script = root / path
+                script.write_text('#!/bin/sh\nprintf "executed\\n" >> release-marker\n')
+                script.chmod(0o755)
+            distrobox = root / 'bin/distrobox'
+            distrobox.write_text('#!/bin/sh\n' + ('echo " uscreen-build "\n' if portable else 'exit 0\n'))
+            distrobox.chmod(0o755)
+            # Replace only the local fixture target; production dist dispatch stays intact.
+            prefix = makefile[:makefile.index('dist-local: build')]
+            (root / 'Makefile').write_text(prefix + 'dist-local: build\n\t@:\n')
+            cargo = root / 'cargo'
+            cargo.write_text(CARGO)
+            cargo.chmod(0o755)
+            result = subprocess.run(
+                ['make', '-j2', *flags, 'dist', f'CARGO={cargo}', 'CC=true'],
+                cwd=root, env=self.make_environment(root / 'bin'), capture_output=True, text=True)
+            marker = root / 'release-marker'
+            return result, marker.read_text() if marker.exists() else ''
+
+    def test_t291_dist_inspection_never_executes_release_scripts(self):
+        for flag, expected_status in [('-n', 0), ('-t', 0), ('-q', 1)]:
+            for portable in [False, True]:
+                with self.subTest(flag=flag, portable=portable):
+                    result, marker = self.run_dist(portable, flag)
+                    self.assertEqual(result.returncode, expected_status, result.stdout + result.stderr)
+                    self.assertEqual(marker, '', 'T291: Make inspection executed a release build')
+                    self.assertNotIn('T220: cargo executed', result.stdout)
+
+    def test_t291_dist_still_dispatches_portable_and_parallel_local_builds(self):
+        result, marker = self.run_dist(True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(marker, 'executed\nexecuted\n')
+        result, marker = self.run_dist(False)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(marker, '')
+        self.assertIn('T220: cargo executed with usable jobserver', result.stdout)
+
     def run_build(self, *flags):
         with tempfile.TemporaryDirectory(prefix='uscreen-make-') as tmp:
             root = Path(tmp)
@@ -28,11 +79,8 @@ class MakeTest(unittest.TestCase):
             cargo = root / 'cargo'
             cargo.write_text(CARGO)
             cargo.chmod(0o755)
-            env = dict(os.environ)
-            for name in ['MAKEFLAGS', 'MFLAGS', 'CARGO_MAKEFLAGS']:
-                env.pop(name, None)
             return subprocess.run(['make', '-j2', *flags, 'build', f'CARGO={cargo}', 'CC=true'],
-                                  cwd=root, env=env, capture_output=True, text=True)
+                                  cwd=root, env=self.make_environment(), capture_output=True, text=True)
 
     def test_t261_failed_make_install_preserves_existing_binaries(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-make-install-') as tmp:

@@ -6,7 +6,10 @@ CARGO = cargo
 # T220: forward the parallel jobserver on real builds; keep -n/-q/-t inert.
 # https://doc.rust-lang.org/rustc/jobserver.html
 make_mode = $(firstword -$(MAKEFLAGS))
-cargo_recursive = $(if $(or $(findstring n,$(make_mode)),$(findstring q,$(make_mode)),$(findstring t,$(make_mode))),,+)
+recursive_prefix = $(if $(or $(findstring n,$(make_mode)),$(findstring q,$(make_mode)),$(findstring t,$(make_mode))),,+)
+# T291: direct MAKE expansion marks an entire conditional recursive, even -n/-t.
+# Expand indirectly and explicitly share the jobserver only for real builds.
+recursive_make = $(MAKE)
 CC = gcc
 ADB = adb
 # Release bundles pin the same libevdi as the portable build. Override its path when needed.
@@ -24,7 +27,7 @@ build-helper:
 	@echo "✓ EVDI helper: host/evdi/evdi_helper"
 
 build: build-helper
-	$(cargo_recursive)$(CARGO) build --release
+	$(recursive_prefix)$(CARGO) build --release
 	@echo "✓ Binaries: $(PWD)/target/release/uscreen and uscreen-gui"
 
 install: build
@@ -105,11 +108,11 @@ dist:
 	@# Portable binaries (built against Debian 12 glibc) when the build
 	@# container exists; otherwise a local build, which only runs on
 	@# distributions at least as new as this machine.
-	@if distrobox list 2>/dev/null | grep -q ' uscreen-build '; then \
+	@$(recursive_prefix)if distrobox list 2>/dev/null | grep -q ' uscreen-build '; then \
 		./scripts/build-release.sh && ./packaging/build-packages.sh; \
 	else \
 		echo "!! no uscreen-build container: building locally (NOT portable — see scripts/build-release.sh)"; \
-		$(MAKE) dist-local; \
+		$(recursive_make) dist-local; \
 	fi
 
 dist-local: build
