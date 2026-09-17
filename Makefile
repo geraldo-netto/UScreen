@@ -116,14 +116,7 @@ dist:
 dist-local: build
 	rm -rf dist/uscreen-$(VERSION)
 	rm -f dist/uscreen-$(VERSION)-linux-x86_64.tar.gz
-	mkdir -p dist/uscreen-$(VERSION)/bin dist/uscreen-$(VERSION)/scripts dist/uscreen-$(VERSION)/packaging
-	cp target/release/uscreen target/release/uscreen-gui host/evdi/evdi_helper dist/uscreen-$(VERSION)/bin/
-	cp -L "$(LIBEVDI)" dist/uscreen-$(VERSION)/bin/libevdi.so.1.15.0
-	ln -sf libevdi.so.1.15.0 dist/uscreen-$(VERSION)/bin/libevdi.so.1
-	cp scripts/install.sh scripts/setup-evdi.sh scripts/write-desktop-entry.sh scripts/uscreen.desktop scripts/uscreen.service scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/scripts/
-	cp packaging/distribution-docs.txt packaging/uscreen-evdi.conf packaging/uscreen-modules.conf packaging/uscreen.service packaging/60-uscreen-uinput.rules dist/uscreen-$(VERSION)/packaging/
-	mkdir -p dist/uscreen-$(VERSION)/packaging/icons && cp packaging/icons/uscreen.svg packaging/icons/uscreen-pen.svg dist/uscreen-$(VERSION)/packaging/icons/
-	./scripts/copy-distribution-docs.sh dist/uscreen-$(VERSION)/
+	./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper $(call quote,$(LIBEVDI)) dist/uscreen-$(VERSION)
 	cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk ../dist/uscreen-$(VERSION)/uscreen.apk
 	tar -C dist -czf dist/uscreen-$(VERSION)-linux-x86_64.tar.gz uscreen-$(VERSION)
 	@echo "✓ Release: dist/uscreen-$(VERSION)-linux-x86_64.tar.gz"

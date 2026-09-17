@@ -354,6 +354,12 @@ only compatible with systems at least as new as the build host. All tar/native
 packages carry the notices and documentation listed in
 `packaging/distribution-docs.txt`.
 
+Local, portable and CI bundles share `scripts/stage-linux-bundle.sh`. It takes
+the Rust binary directory, helper executable, libevdi file and destination;
+it copies a replaceable library with its SONAME link and the common support
+files. Callers retain build/ABI validation and APK creation. CI package fixtures
+omit the APK; local and complete portable release bundles require it.
+
 Before that, for a new version:
 
 1. Bump `VERSION` in the Makefile, `version` in `host/Cargo.toml`,
