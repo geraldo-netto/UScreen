@@ -198,8 +198,14 @@ fn ensure_edid_in(
         "auto-v{}-{}x{}@{}-{}x{}mm.bin",
         EDID_GENERATION, width, height, refresh, width_mm, height_mm
     ));
-    if !path.exists() {
-        std::fs::write(&path, edid).context("write EDID")?;
+    if std::fs::read(&path).ok().as_deref() != Some(edid.as_slice()) {
+        // Only complete, matching generated contents are reusable. A previous
+        // interrupted write must not poison every subsequent capture attempt.
+        use std::io::Write;
+        let mut temporary = tempfile::NamedTempFile::new_in(dir).context("create EDID file")?;
+        temporary.write_all(&edid).context("write EDID")?;
+        temporary.as_file().sync_all().context("sync EDID")?;
+        temporary.persist(&path).context("replace EDID")?;
         tracing::info!(
             "Generated EDID for {}x{}@{} ({}x{}mm) at {:?}",
             width,
@@ -222,6 +228,33 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t246_repairs_incomplete_and_wrong_generated_edids() {
+        use std::os::unix::fs::MetadataExt;
+        let dir = tempfile::tempdir().unwrap();
+        let expected = make_edid_sized(1920, 1080, 60, 310, 194).unwrap();
+        let path = ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
+        let wrong_mode = make_edid_sized(1280, 720, 60, 310, 194).unwrap();
+        for corrupt in [vec![], expected[..64].to_vec(), wrong_mode] {
+            std::fs::write(&path, &corrupt).unwrap();
+            assert_eq!(ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap(), path);
+            assert_eq!(std::fs::read(&path).unwrap(), expected, "T246: damaged generated EDID was reused");
+        }
+        let valid_inode = std::fs::metadata(&path).unwrap().ino();
+        ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
+        assert_eq!(std::fs::metadata(&path).unwrap().ino(), valid_inode, "valid cache should be reused");
+    }
+
+    #[test]
+    fn t246_cache_directory_is_not_returned_as_an_edid() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        assert!(ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).is_err(),
+            "T246: helper would be given a directory instead of an EDID");
+    }
 
     // Independent DTD decoder: Linux drm_edid.h orders width low, height
     // low, then both high nibbles at offsets 12, 13, 14.
