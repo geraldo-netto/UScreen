@@ -72,7 +72,8 @@ On a systemd desktop, enable/start the installed service with
 through a user service or an XDG desktop entry; `make install` preserves that
 preference. The GUI can toggle either route. Read
 [installation details](docs/installation.md) first: full installer/native
-package hooks can reload EVDI and disrupt an active display session (T269).
+package setup preserves loaded EVDI devices. Attaching a virtual display under
+Cinnamon remains an unresolved crash risk (T222).
 
 **2. Tablet** — install the APK from the same checkout (for a debug build,
 `android/app/build/outputs/apk/debug/app-debug.apk`; release bundles use

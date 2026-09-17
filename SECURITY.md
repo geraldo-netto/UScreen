@@ -73,11 +73,12 @@ for normal streaming.
 | `/etc/udev/rules.d/60-uscreen-uinput.rules` or `/usr/lib/udev/rules.d/60-uscreen-uinput.rules` | Seat-user access to `/dev/uinput`; this permits synthetic input |
 | Distribution packages and, where the full script selects them, RPM Fusion configuration or rpm-ostree layers | Runtime/build dependencies |
 
-The full script and native package hooks can unload/reload EVDI (T269), which
-can disrupt attached displays. GUI system setup and `make setup-system` use
-add-only provisioning instead. See [installation.md](docs/installation.md)
-before changing a live display setup. Package-manager changes and external
-EVDI installations are not automatically undone by removing application files.
+Project setup helpers preserve a loaded EVDI module and existing devices,
+adding missing capacity or reporting why it cannot be added. This does not
+resolve the separate Cinnamon crash observed during virtual-display attachment
+(T222). See [installation.md](docs/installation.md) before changing a live
+display setup. Package-manager changes and external EVDI installations are not
+automatically undone by removing application files.
 
 ## How to uninstall completely
 
@@ -110,11 +111,13 @@ Run the final reload command only when a systemd user manager is available.
 Remove the desktop-autostart entry after either installation method if the GUI
 or installer created it; native package removal does not remove user preferences.
 
-Adapt the binary path if you selected a custom `BIN_DIR`. The full script
-uses `$XDG_DATA_HOME/icons/hicolor/scalable/apps` for icons when that variable
-is set; `make install` uses the default paths above. Remove only UScreen's
-two icons there. Native packages own their files under `/usr`; let the package
-manager remove them instead of deleting arbitrary system libraries.
+Adapt the binary path if you selected a custom `BIN_DIR`. Both user installers
+use an absolute `XDG_DATA_HOME` for launchers/icons and an absolute
+`XDG_CONFIG_HOME` for the user unit and desktop-autostart entry. Unset, empty or
+relative values use the HOME defaults shown above. Adjust those cleanup paths
+to your selected bases and remove only the named UScreen files. Native packages
+own their files under `/usr`; let the package manager remove them instead of
+deleting arbitrary system libraries.
 
 Remove the following only if UScreen created them and you do not need their
 settings for another EVDI/uinput application:
