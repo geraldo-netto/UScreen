@@ -154,7 +154,13 @@ impl Encoder {
     fn drain(&mut self) -> Result<Vec<(Bytes, bool)>> {
         let mut out = Vec::new();
         let mut packet = ffmpeg_next::Packet::empty();
-        while self.inner.receive_packet(&mut packet).is_ok() {
+        loop {
+            match self.inner.receive_packet(&mut packet) {
+                Ok(()) => {}
+                Err(ffmpeg_next::Error::Eof) => break,
+                Err(ffmpeg_next::Error::Other { errno: libc::EAGAIN }) => break,
+                Err(error) => return Err(error).context("receive encoded packet"),
+            }
             if let Some(data) = packet.data() {
                 let is_idr = packet.is_key();
                 out.push((Bytes::copy_from_slice(data), is_idr));
@@ -268,6 +274,33 @@ fn refresh_codec_config(
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+
+    #[test]
+    fn t265_drain_reports_codec_errors() {
+        ffmpeg_next::init().unwrap();
+        // A real libavcodec EINVAL exercises the failure path without hardware.
+        let context = ffmpeg_next::codec::context::Context::new()
+            .encoder().video().unwrap();
+        let mut encoder = Encoder {
+            inner: ffmpeg_next::codec::encoder::video::Encoder(context),
+            frame: ffmpeg_next::frame::Video::empty(),
+            pts: 0,
+        };
+        let error = encoder.drain().expect_err("T265: receive failures must reach the supervisor");
+        assert_eq!(error.downcast_ref::<ffmpeg_next::Error>(),
+            Some(&ffmpeg_next::Error::Other { errno: libc::EINVAL }));
+    }
+
+    #[test]
+    fn t265_drain_preserves_packets_and_normal_exhaustion() {
+        let mut encoder = Encoder::new("libx264", 64, 64, 60, 500, 20).unwrap();
+        assert!(encoder.drain().unwrap().is_empty(), "T265: EAGAIN is normal");
+        let packets = encoder.encode(&vec![128; 64 * 64 * 3 / 2], true).unwrap();
+        assert!(!packets.is_empty());
+        assert!(packets.iter().any(|(data, key)| !data.is_empty() && *key));
+        encoder.inner.send_eof().unwrap();
+        assert!(encoder.drain().unwrap().is_empty(), "T265: EOF is normal");
+    }
 
     fn t228_encode_one(latency: crate::latency::LatencyTracker) -> u32 {
         use std::io::Write;
