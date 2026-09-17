@@ -58,20 +58,63 @@ class DecoderSetupTest {
     @Test fun t243_invalidPacketReportsDisconnectionBeforeRetry() = checkDisconnected("invalid-packet")
     @Test fun t243_decoderResetReportsDisconnectionBeforeRetry() = checkDisconnected("input-timeout")
 
-    private class RecoverySocket(private val bytes: ByteArray?) : java.net.Socket() {
+    private class RecoverySocket(private val bytes: ByteArray?, private val holdAfterBytes: Boolean = false) : java.net.Socket() {
         private val releaseRead = java.util.concurrent.CountDownLatch(1)
+        val blockedRead = java.util.concurrent.CountDownLatch(1)
         @Volatile private var closed = false
         override fun setTcpNoDelay(value: Boolean) {}
         override fun setSoTimeout(value: Int) {}
         override fun setReceiveBufferSize(value: Int) {}
         override fun isClosed() = closed
-        override fun getInputStream(): java.io.InputStream = bytes?.inputStream() ?: object : java.io.InputStream() {
-            override fun read(): Int {
-                check(releaseRead.await(5, java.util.concurrent.TimeUnit.SECONDS))
-                throw java.io.EOFException()
+        override fun getInputStream(): java.io.InputStream {
+            val idle = object : java.io.InputStream() {
+                override fun read(): Int {
+                    blockedRead.countDown()
+                    check(releaseRead.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                    throw java.io.EOFException()
+                }
             }
+            val initial = bytes?.inputStream() ?: return idle
+            return if (holdAfterBytes) java.io.SequenceInputStream(initial, idle) else initial
         }
         override fun close() { closed = true; releaseRead.countDown() }
+    }
+
+    @Test fun t329_firstVideoFrameSurvivesLateUiSubscriptionAndStop() = checkLateSubscription(true)
+    @Test fun t329_firstVideoFrameSurvivesLateUiSubscriptionAndDisconnect() = checkLateSubscription(false)
+
+    private fun checkLateSubscription(stop: Boolean) {
+        val socket = RecoverySocket(byteArrayOf(0, 0, 0, 6, 1, 0, 0, 0, 1, 42), true)
+        val receiver = VideoReceiver { socket }
+        FailingCodecShadow.failAt = "none"
+        (get(receiver, "surfaceReady") as java.util.concurrent.atomic.AtomicBoolean).set(true)
+        set(receiver, "mediaCodec", MediaCodec.createDecoderByType(VideoReceiver.MIME_TYPE))
+        val connected = java.util.concurrent.atomic.AtomicInteger()
+        val disconnected = java.util.concurrent.atomic.AtomicInteger()
+        val disconnectedEvent = java.util.concurrent.CountDownLatch(1)
+        var job: kotlinx.coroutines.Job? = null
+        try {
+            receiver.start()
+            job = get(receiver, "job") as? kotlinx.coroutines.Job
+            assertTrue("T329: first frame was not consumed",
+                socket.blockedRead.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            val onConnected = { connected.incrementAndGet(); Unit }
+            val onDisconnected = { disconnected.incrementAndGet(); disconnectedEvent.countDown() }
+            receiver.observeConnection(onConnected, onDisconnected)
+            assertEquals("T329: the UI missed a frame received before its listener", 1, connected.get())
+            assertEquals(0, disconnected.get())
+            if (stop) receiver.stop() else socket.close()
+            assertTrue("T329: stream retirement was not reported",
+                disconnectedEvent.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals(1, disconnected.get())
+            receiver.observeConnection(onConnected, onDisconnected)
+            assertEquals("T329: retired readiness was replayed", 1, connected.get())
+            assertEquals("T329: new observer did not see retirement", 2, disconnected.get())
+        } finally {
+            receiver.stop()
+            socket.close()
+            kotlinx.coroutines.runBlocking { kotlinx.coroutines.withTimeout(2000) { job?.join() } }
+        }
     }
 
     private fun checkDisconnected(stage: String) {

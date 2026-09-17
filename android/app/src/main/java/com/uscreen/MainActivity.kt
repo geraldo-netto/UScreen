@@ -445,12 +445,10 @@ fun UScreenMain(
         // Always enqueue, including stop() callbacks on the UI thread. Mixing
         // queued and immediate updates lets an older worker callback win.
         val connectionUi = android.os.Handler(android.os.Looper.getMainLooper())
-        videoReceiver?.onConnected = {
-            connectionUi.post { isConnected = true }
-        }
-        videoReceiver?.onDisconnected = {
-            connectionUi.post { isConnected = false }
-        }
+        videoReceiver?.observeConnection(
+            connected = { connectionUi.post { isConnected = true } },
+            disconnected = { connectionUi.post { isConnected = false } }
+        )
     }
 
     // Auto-hide overlay shortly after connection

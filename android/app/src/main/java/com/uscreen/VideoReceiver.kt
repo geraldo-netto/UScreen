@@ -73,8 +73,17 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
     private fun isCurrent(generation: Long) = isRunning && sessionGeneration.get() == generation
     @Volatile private var codecAlive = false
 
+    private var videoConnected = false // Guarded by the receiver monitor.
     var onConnected: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
+
+    // Install both callbacks and replay readiness atomically: the first frame
+    // may precede Compose's effect, and retirement may race its registration.
+    @Synchronized fun observeConnection(connected: () -> Unit, disconnected: () -> Unit) {
+        onConnected = connected
+        onDisconnected = disconnected
+        if (videoConnected) connected() else disconnected()
+    }
 
     /**
      * Invoked with the host's frame sequence number once that frame is
@@ -398,6 +407,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         synchronized(this) {
             if (isRunning) return
             isRunning = true
+            videoConnected = false
             val generation = sessionGeneration.incrementAndGet()
             val sessionToken = token
             val sessionStatistics = ReceiverStatistics()
@@ -500,7 +510,10 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         if (isCurrent(generation)) {
             report()
             synchronized(this@VideoReceiver) {
-                if (isCurrent(generation)) onDisconnected?.invoke()
+                if (isCurrent(generation)) {
+                    videoConnected = false
+                    onDisconnected?.invoke()
+                }
             }
             delay(pauseMs)
         }
@@ -587,7 +600,10 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
             if (firstFrame) {
                 firstFrame = false
                 synchronized(this@VideoReceiver) {
-                    if (isCurrent(generation)) onConnected?.invoke()
+                    if (isCurrent(generation)) {
+                        videoConnected = true
+                        onConnected?.invoke()
+                    }
                 }
             }
             noteArrival(seq)
@@ -714,6 +730,7 @@ class VideoReceiver(private val openSocket: () -> Socket = { Socket(HOST, PORT) 
         val wasRunning = isRunning
         sessionGeneration.incrementAndGet()
         isRunning = false
+        videoConnected = false
         codecAlive = false
         // Close socket first to unblock any pending reads
         try {
