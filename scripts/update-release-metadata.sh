@@ -62,7 +62,8 @@ RULES = {
     ],
 }
 
-stale, broken = [], []
+# Keep edits in memory until every input file and required marker is valid.
+stale, broken = {}, []
 for path, rules in RULES.items():
     with open(path, encoding="utf-8") as f:
         original = f.read()
@@ -72,11 +73,7 @@ for path, rules in RULES.items():
         if n == 0:
             broken.append(f"{path}: no match for /{pattern}/")
     if text != original:
-        stale.append(path)
-        if not check:
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(text)
-            print(f"updated {path}")
+        stale[path] = text
 
 if broken:
     print("!! metadata markers missing — the files were rewritten without them:", file=sys.stderr)
@@ -91,4 +88,9 @@ if check:
     print(f"release metadata is {version} / {date} everywhere.")
 elif not stale:
     print(f"already {version} / {date} everywhere; nothing to do.")
+else:
+    for path, text in stale.items():
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"updated {path}")
 PY

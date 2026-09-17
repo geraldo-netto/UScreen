@@ -419,6 +419,11 @@ fn release_tests(pattern: &str) {
 }
 
 #[test]
+fn t277_release_metadata_validates_before_writing() {
+    release_tests("t277");
+}
+
+#[test]
 fn t100_release_requires_matching_head_local_and_remote_tags() {
     release_tests("t100");
 }

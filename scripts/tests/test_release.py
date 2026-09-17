@@ -193,5 +193,54 @@ class ReleaseTest(unittest.TestCase):
         self.assertTrue((self.base / 'build-called').exists())
 
 
+class MetadataTest(unittest.TestCase):
+    FILES = ['docs/index.html', 'docs/llms.txt', 'docs/sitemap.xml', 'CITATION.cff']
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='uscreen-metadata-')
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        for name in self.FILES + ['scripts/update-release-metadata.sh']:
+            target = self.root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(REPO / name, target)
+
+    def update(self, check=False):
+        return subprocess.run(
+            ['bash', 'scripts/update-release-metadata.sh'] + (['--check'] if check else [])
+            + ['9.9.9', '2030-01-02'], cwd=self.root, capture_output=True, text=True, timeout=10)
+
+    def test_t277_invalid_input_preserves_all_metadata(self):
+        citation = self.root / 'CITATION.cff'
+        citation.write_text(citation.read_text().replace('version:', 'missing-version-marker:'))
+        original = {name: (self.root / name).read_bytes() for name in self.FILES}
+        for missing_file in [False, True]:
+            with self.subTest(missing_file=missing_file):
+                for name, contents in original.items():
+                    (self.root / name).write_bytes(contents)
+                if missing_file:
+                    citation.unlink()
+                before = {name: (self.root / name).read_bytes() for name in self.FILES
+                          if (self.root / name).exists()}
+                result = self.update()
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                for name, contents in before.items():
+                    self.assertEqual((self.root / name).read_bytes(), contents,
+                                     'T277: failed validation modified ' + name)
+
+    def test_t277_check_is_read_only_and_valid_update_completes(self):
+        before = {name: (self.root / name).read_bytes() for name in self.FILES}
+        self.assertNotEqual(self.update(check=True).returncode, 0)
+        for name, contents in before.items():
+            self.assertEqual((self.root / name).read_bytes(), contents)
+        result = self.update()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('version: "9.9.9"', (self.root / 'CITATION.cff').read_text())
+        self.assertIn('Download 9.9.9</a>', (self.root / 'docs/index.html').read_text())
+        self.assertIn('<lastmod>2030-01-02</lastmod>', (self.root / 'docs/sitemap.xml').read_text())
+        result = self.update(check=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()
