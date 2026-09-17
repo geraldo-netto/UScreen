@@ -20,12 +20,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [27, 34])
 class RegressionTest {
     private val app get() = RuntimeEnvironment.getApplication()
-    private fun owner(target: Any, name: String): Any = when {
-        target is VideoReceiver && name == "mediaCodec" -> target.decoder
-        target is VideoReceiver && name == "socket" -> target.transport
-        target !is TouchCapture -> target
-        name == "touchSlots" -> target.motion
-        else -> target.control
+    private fun owner(target: Any, name: String): Any = when (target) {
+        is MainActivity -> if (name == "tiltListener") target.windowPolicy else target.session
+        is VideoReceiver -> videoOwner(target, name)
+        is TouchCapture -> if (name == "touchSlots") target.motion else target.control
+        else -> target
+    }
+    private fun videoOwner(target: VideoReceiver, name: String): Any = when (name) {
+        "mediaCodec" -> target.decoder
+        "socket" -> target.transport
+        else -> target
     }
     private fun get(target: Any, name: String): Any? {
         val owner = owner(target, name)
@@ -260,7 +264,6 @@ class RegressionTest {
         val activity = controller.get()
         val capture = get(activity, "touchCapture") as TouchCapture
         val receiver = get(activity, "videoReceiver") as VideoReceiver
-        val apply = MainActivity::class.java.getDeclaredMethod("applyToken", Boolean::class.javaPrimitiveType).apply { isAccessible = true }
         try {
             set(activity, "started", true)
             receiver.start() // No surface; session waits without real video I/O.
@@ -268,7 +271,7 @@ class RegressionTest {
             val generation = capture.connectionGeneration
             val oldJob = get(receiver, "job") as kotlinx.coroutines.Job
             prefs.hostToken = "b".repeat(64)
-            apply.invoke(activity, true)
+            activity.session.applyToken(true)
             assertTrue("Disconnected control session must rotate", capture.connectionGeneration > generation)
             assertTrue("Video retry must retire captured old token", oldJob.isCancelled)
             assertNotSame(oldJob, get(receiver, "job"))
@@ -281,7 +284,7 @@ class RegressionTest {
             val stoppedGeneration = capture.connectionGeneration
             val stoppedJob = get(receiver, "job")
             prefs.hostToken = "c".repeat(64)
-            apply.invoke(activity, true)
+            activity.session.applyToken(true)
             assertEquals(stoppedGeneration, capture.connectionGeneration)
             assertSame(stoppedJob, get(receiver, "job"))
             assertFalse(get(receiver, "isRunning") as Boolean)

@@ -229,6 +229,22 @@ The Android client marks its control connection authenticated only after
 callbacks from replaced sockets cannot restore it. Rust serialization and
 Android's pen-mode UI use the same `control-connected.json` regression fixture.
 
+`MainActivity` is Android's composition and lifecycle entry point. Its
+`SessionCoordinator` owns control/video transitions, token replacement, user
+settings events and observable state for that Activity instance.
+`ActivityWindowPolicy` owns brightness/refresh overrides, immersive mode and the
+orientation sensor. Focus regain still rereads the saved window preferences;
+backgrounding stops streaming and unregisters the sensor. Preferences affect
+only this app's window, preserving other apps' system display settings.
+
+Compose rendering (`UScreenUi.kt`) observes `StreamPresentation` and immutable
+`SettingsValues`; it emits `SettingsEvent` commands instead of accessing Prefs,
+VideoReceiver or TouchCapture. The settings sheet composes focused display,
+orientation, mode, stream and update sections. Draft bitrate/FPS changes still
+require Apply; local display controls apply immediately. Recomposition does not
+create/restart a session, and queued video/control callbacks retain their
+ordering and generation checks. Foreground-service lifecycle policy is unchanged.
+
 Android's `VideoReceiver` coordinates run generations, Surface readiness and
 visible connection state. `VideoTransport` owns the socket from before blocking
 connect until retirement, with a socket factory for tests; an old worker closes

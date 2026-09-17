@@ -14,9 +14,9 @@ import kotlin.math.roundToInt
 /** Tablet display controls apply immediately, independently of stream settings. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun DisplayControls(prefs: Prefs?, refreshRates: List<Float>, onChange: () -> Unit) {
-    var brightness by remember { mutableStateOf(prefs?.brightnessPercent ?: Prefs.DEFAULT_BRIGHTNESS_PERCENT) }
-    var refreshRate by remember { mutableStateOf(prefs?.displayRefreshRate ?: Prefs.DEFAULT_DISPLAY_REFRESH_RATE) }
+internal fun DisplayControls(settings: SettingsValues, refreshRates: List<Float>, onEvent: (SettingsEvent) -> Unit) {
+    val brightness = settings.brightness
+    val refreshRate = settings.refreshRate
     val rates = (refreshRates + Prefs.DEFAULT_DISPLAY_REFRESH_RATE + refreshRate)
         .filter { it.isFinite() && it > 0f }.distinct().sorted()
     val accent = MaterialTheme.colorScheme.primary
@@ -25,9 +25,7 @@ internal fun DisplayControls(prefs: Prefs?, refreshRates: List<Float>, onChange:
     Slider(
         value = brightness.toFloat(),
         onValueChange = {
-            brightness = it.roundToInt()
-            prefs?.brightnessPercent = brightness
-            onChange()
+            onEvent(SettingsEvent.Brightness(it.roundToInt()))
         },
         valueRange = 0f..100f,
         modifier = Modifier.semantics { contentDescription = "Brightness" },
@@ -39,9 +37,7 @@ internal fun DisplayControls(prefs: Prefs?, refreshRates: List<Float>, onChange:
             FilterChip(
                 selected = refreshRate == rate,
                 onClick = {
-                    refreshRate = rate
-                    prefs?.displayRefreshRate = rate
-                    onChange()
+                    onEvent(SettingsEvent.RefreshRate(rate))
                 },
                 label = { Text(if (rate == 0f) "System default" else "${formatRefreshRate(rate)} Hz") },
                 colors = FilterChipDefaults.filterChipColors(

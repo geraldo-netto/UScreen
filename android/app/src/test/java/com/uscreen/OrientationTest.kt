@@ -74,7 +74,7 @@ class OrientationTest {
         }
         val controller = Robolectric.buildActivity(MainActivity::class.java).create().start()
         try {
-            val listener = ReflectionHelpers.getField<OrientationEventListener>(controller.get(), "tiltListener")
+            val listener = ReflectionHelpers.getField<OrientationEventListener>(controller.get().windowPolicy, "tiltListener")
             assertNotNull("T238: production orientation listener", listener)
             check(controller.get(), listener)
         } finally { controller.stop().destroy() }

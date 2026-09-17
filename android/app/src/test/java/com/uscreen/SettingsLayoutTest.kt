@@ -22,6 +22,33 @@ import org.robolectric.annotation.LooperMode
 class SettingsLayoutTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun t377_recompositionAndLocalSettingsPreserveReceiverOwnership() {
+        val receiver = VideoReceiver { error("T377 must not open a socket") }
+        val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication())
+        val session = SessionCoordinator(prefs, { it() }, receiver, null)
+        receiver.start() // No Surface: this owns a job, without network or decoder work.
+        val jobField = VideoReceiver::class.java.getDeclaredField("job").apply { isAccessible = true }
+        val original = jobField.get(receiver)
+        compose.setContent { UScreenTheme {
+            UScreenMain({}, presentation = session.presentation, settings = session.settings,
+                onSettingsEvent = session::handle)
+        } }
+        try {
+            compose.onNodeWithText("⚙").performClick()
+            compose.runOnIdle {
+                session.handle(SettingsEvent.ShowStats(true))
+                session.handle(SettingsEvent.Brightness(65))
+                session.handle(SettingsEvent.CheckUpdates(false))
+            }
+            compose.onNodeWithText("Brightness: 65%").performScrollTo().assertIsDisplayed()
+            compose.runOnIdle {
+                assertSame("T377: rendering restarted the receiver", original, jobField.get(receiver))
+                assertFalse(prefs.hasUserSettings)
+                assertEquals(60, receiver.streamFps)
+            }
+        } finally { receiver.stop() }
+    }
+
     @Test fun t349_displayDefaultsCanBeChangedWhileStreaming() = checkDisplayControls(false)
     @Test fun t349_displayDefaultsCanBeChangedInPenMode() = checkDisplayControls(true)
 
@@ -29,9 +56,10 @@ class SettingsLayoutTest {
         val app = org.robolectric.RuntimeEnvironment.getApplication()
         val prefs = Prefs(app)
         var changes = 0
+        val session = SessionCoordinator(prefs, { it() }, null, null)
         compose.setContent { UScreenTheme {
-            UScreenMain({}, penOnly = penOnly, prefs = prefs,
-                displayRefreshRates = listOf(60f, 120f), onDisplaySettingsChange = { changes++ })
+            UScreenMain({}, penOnly = penOnly, settings = session.settings,
+                displayRefreshRates = listOf(60f, 120f), onSettingsEvent = { session.handle(it); changes++ })
         } }
         compose.onNodeWithText("⚙").performClick()
         compose.onNodeWithText("Brightness: 50%").performScrollTo().assertIsDisplayed()
@@ -66,9 +94,8 @@ class SettingsLayoutTest {
         compose.setContent {
             MaterialTheme {
                 CompositionLocalProvider(LocalDensity provides Density(1f, 1.8f)) {
-                    SettingsSheet(null, null, {}, false, {}, false, {}, false, {},
-                        Prefs.ORIENTATION_AUTO, {},
-                        { _, _ -> applied = true }, { dismissed = true })
+                    SettingsSheet(SettingsValues(), null, {}, false, { dismissed = true },
+                        onSettingsEvent = { if (it is SettingsEvent.Stream) applied = true })
                 }
             }
         }
@@ -137,7 +164,8 @@ class SettingsLayoutTest {
     @Test fun t300_queuedVideoCallbacksCannotUndoNewerConnectionState() {
         val receiver = VideoReceiver()
         val running = VideoReceiver::class.java.getDeclaredField("isRunning").apply { isAccessible = true }
-        compose.setContent { UScreenTheme { UScreenMain({}, videoReceiver = receiver) } }
+        val presentation = StreamPresentation(receiver, null)
+        compose.setContent { UScreenTheme { UScreenMain({}, presentation = presentation) } }
         try {
             compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
             compose.runOnIdle {
@@ -164,7 +192,8 @@ class SettingsLayoutTest {
 
     @Test fun t248_stoppingVideoRestoresTheWaitingScreen() {
         val receiver = VideoReceiver()
-        compose.setContent { UScreenTheme { UScreenMain({}, videoReceiver = receiver) } }
+        val presentation = StreamPresentation(receiver, null)
+        compose.setContent { UScreenTheme { UScreenMain({}, presentation = presentation) } }
         try {
             compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
             compose.runOnIdle {
@@ -201,7 +230,8 @@ class SettingsLayoutTest {
         val fresh = Socket()
         val response = Response.Builder().request(old.request()).protocol(Protocol.HTTP_1_1)
             .code(101).message("Switching Protocols").build()
-        compose.setContent { UScreenTheme { UScreenMain({}, penOnly = true, touchCapture = capture, videoReceiver = receiver) } }
+        val presentation = StreamPresentation(receiver, capture)
+        compose.setContent { UScreenTheme { UScreenMain({}, penOnly = true, presentation = presentation) } }
         try {
             compose.onNodeWithText(draw).assertDoesNotExist()
             compose.runOnIdle { install(capture, old); listener.onOpen(old, response) }
