@@ -56,6 +56,8 @@ impl Encoder {
         ctx.set_max_bit_rate((bitrate_kbps as usize) * 1000);
         ctx.set_colorspace(ffmpeg_next::color::Space::BT709);
         ctx.set_color_range(ffmpeg_next::color::Range::MPEG);
+        ctx.set_color_primaries(ffmpeg_next::color::Primaries::BT709);
+        ctx.set_color_transfer_characteristic(ffmpeg_next::color::TransferCharacteristic::BT709);
 
         let mut opts = ffmpeg_next::Dictionary::new();
         Self::low_latency_options(name, quality, bitrate_kbps, fps, &mut opts);
@@ -66,7 +68,10 @@ impl Encoder {
 
         let mut frame =
             ffmpeg_next::frame::Video::new(ffmpeg_next::format::Pixel::NV12, width, height);
+        frame.set_color_space(ffmpeg_next::color::Space::BT709);
         frame.set_color_range(ffmpeg_next::color::Range::MPEG);
+        frame.set_color_primaries(ffmpeg_next::color::Primaries::BT709);
+        frame.set_color_transfer_characteristic(ffmpeg_next::color::TransferCharacteristic::BT709);
 
         Ok(Self {
             inner,
@@ -289,6 +294,41 @@ mod tests {
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     };
+
+    #[test]
+    fn t310_encoded_bitstream_preserves_bt709_color_description() {
+        use ffmpeg_next::color::{Primaries, Range, Space, TransferCharacteristic};
+        let mut encoder = Encoder::new("libx264", 64, 64, 60, 500, 20).unwrap();
+        let packets = encoder.encode(&vec![128; 64 * 64 * 3 / 2], true).unwrap();
+        assert!(!packets.is_empty());
+        let codec = ffmpeg_next::decoder::find(ffmpeg_next::codec::Id::H264).unwrap();
+        let mut decoder = ffmpeg_next::codec::context::Context::new()
+            .decoder()
+            .open_as(codec)
+            .unwrap()
+            .video()
+            .unwrap();
+        for (data, _) in packets {
+            decoder
+                .send_packet(&ffmpeg_next::Packet::copy(&data))
+                .unwrap();
+        }
+        decoder.send_eof().unwrap();
+        let mut decoded = ffmpeg_next::frame::Video::empty();
+        decoder.receive_frame(&mut decoded).unwrap();
+        assert_eq!(decoded.color_space(), Space::BT709, "T310 matrix");
+        assert_eq!(decoded.color_range(), Range::MPEG, "T310 limited range");
+        assert_eq!(
+            decoded.color_primaries(),
+            Primaries::BT709,
+            "T310 primaries"
+        );
+        assert_eq!(
+            decoded.color_transfer_characteristic(),
+            TransferCharacteristic::BT709,
+            "T310 transfer characteristic"
+        );
+    }
 
     #[test]
     fn t266_reused_input_preserves_retained_frame_planes() {
