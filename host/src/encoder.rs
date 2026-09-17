@@ -33,6 +33,7 @@ impl Encoder {
         bitrate_kbps: u32,
         quality: u32,
     ) -> Result<Self> {
+        crate::config::validate_encoder_for_build(name)?;
         ffmpeg_next::init().context("initialise libavcodec")?;
 
         let codec = ffmpeg_next::encoder::find_by_name(name)
@@ -105,9 +106,6 @@ impl Encoder {
             }
             opts.set("cq", &quality.to_string());
             opts.set("bufsize", &bufsize);
-        } else if name.contains("vaapi") {
-            opts.set("rc_mode", "CQP");
-            opts.set("qp", &quality.to_string());
         } else {
             opts.set("preset", "ultrafast");
             opts.set("tune", "zerolatency");
@@ -294,6 +292,24 @@ mod tests {
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     };
+
+    #[test]
+    fn t284_vaapi_reports_build_limit_before_codec_initialization() {
+        for name in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+            let error = Encoder::new(name, 64, 64, 60, 500, 20)
+                .err()
+                .expect("T284: VAAPI must be rejected");
+            assert!(
+                error
+                    .to_string()
+                    .contains("VAAPI is unavailable in this in-process build"),
+                "T284: {error:#}"
+            );
+            assert!(error
+                .to_string()
+                .contains("without --features inproc-encoder"));
+        }
+    }
 
     #[test]
     fn t310_encoded_bitstream_preserves_bt709_color_description() {

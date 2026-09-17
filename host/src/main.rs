@@ -171,6 +171,39 @@ mod cli_tests {
         true
     }
 
+    #[cfg(feature = "inproc-encoder")]
+    #[tokio::test]
+    async fn t284_start_rejects_vaapi_before_runtime_or_helper_setup() {
+        use super::*;
+        if isolated_config_test(
+            "cli_tests::t284_start_rejects_vaapi_before_runtime_or_helper_setup",
+        ) {
+            return;
+        }
+        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+            for explicit in [false, true] {
+                let saved = config::FileConfig {
+                    encoder: if explicit { "libx264" } else { encoder }.into(),
+                    ..Default::default()
+                };
+                saved.save().unwrap();
+                let mut args = vec!["uscreen", "--helper", "/nonexistent-t284-helper"];
+                if explicit {
+                    args.extend(["--encoder", encoder]);
+                }
+                let error = run_daemon(Cli::try_parse_from(args).unwrap())
+                    .await
+                    .unwrap_err();
+                assert!(
+                    error
+                        .to_string()
+                        .contains("VAAPI is unavailable in this in-process build"),
+                    "T284: {error:#}"
+                );
+            }
+        }
+    }
+
     async fn assert_persistence_keeps_runtime_responsive(
         writer: impl std::future::Future<Output = ()> + Send + 'static,
     ) {
@@ -1244,6 +1277,16 @@ async fn start_servers(
 }
 
 async fn run_daemon(cli: Cli) -> Result<()> {
+    // Validate the complete effective range before claiming resources.
+    let file_cfg = config::FileConfig::load();
+    let effective = effective_config(&cli, &file_cfg);
+    config::validate_encoder_for_build(&effective.encoder)?;
+    config::slot_ports(
+        effective.video_port,
+        effective.input_port,
+        effective.max_tablets,
+    )?;
+
     let helper_path = find_helper(cli.helper.as_deref())?;
     let pid_path = get_pid_path();
     if let Some(parent) = pid_path.parent() {
@@ -1251,15 +1294,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     }
 
     ensure_single_daemon(&pid_path)?;
-
-    // Validate the complete effective range before claiming resources.
-    let file_cfg = config::FileConfig::load();
-    let effective = effective_config(&cli, &file_cfg);
-    config::slot_ports(
-        effective.video_port,
-        effective.input_port,
-        effective.max_tablets,
-    )?;
 
     // Write PID file for clean stop/status
     let pid = std::process::id();

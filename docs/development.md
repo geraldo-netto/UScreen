@@ -248,10 +248,16 @@ RPM Fusion's `ffmpeg-devel`) and clang development package. Check that
 container can supply the build environment; the installed binary still needs
 ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
 on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
-**In-process VAAPI is currently broken**: the encoder lacks the required
-hardware-frames context/render-node integration (T284). Use the default
-FFmpeg path for VAAPI; successfully compiling the optional feature does not
-validate every encoder.
+The optional build rejects `h264_vaapi`, `hevc_vaapi` and the legacy
+`vaapih264enc` alias before daemon resources or capture helpers are created.
+Tablet requests cannot switch a running optional build to VAAPI. This adapter
+has no hardware-frames context/render-node integration: use the default build
+for VAAPI, or select libx264/NVENC with the optional build. Compiling the feature
+does not establish hardware availability or validate every encoder on a device.
+
+Keep FFmpeg unmodified. Use distribution packages and their matching development
+libraries; implement compatibility and encoder integration in UScreen's adapters
+without maintaining or requiring FFmpeg patches.
 
 ## Release APK
 

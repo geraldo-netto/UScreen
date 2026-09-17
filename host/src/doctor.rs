@@ -224,6 +224,10 @@ async fn check_encoder_availability(r: &mut Report, cfg: &FileConfig) {
 }
 
 fn report_encoder_availability(r: &mut Report, cfg: &FileConfig, list: &str) {
+    if let Err(error) = config::validate_encoder_for_build(&cfg.encoder) {
+        r.line(Level::Fail, "configured encoder", &error.to_string());
+        return;
+    }
     let has = |name: &str| {
         list.lines()
             .any(|l| l.split_whitespace().any(|t| t == name))
@@ -1373,6 +1377,27 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "inproc-encoder")]
+    #[test]
+    fn t284_doctor_rejects_vaapi_even_when_ffmpeg_lists_it() {
+        use super::*;
+        let inventory = " V....D h264_vaapi H.264/AVC\n V....D hevc_vaapi HEVC\n";
+        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+            let cfg = FileConfig {
+                encoder: encoder.into(),
+                ..Default::default()
+            };
+            let mut report = Report::new();
+            report_encoder_availability(&mut report, &cfg, inventory);
+            assert_eq!(report.failures, 1, "T284: incompatible encoder advertised");
+            assert!(report
+                .messages
+                .borrow()
+                .join("\n")
+                .contains("without --features inproc-encoder"));
+        }
+    }
+
     #[test]
     fn t313_doctor_accepts_the_cli_vaapi_alias() {
         use super::*;
@@ -1386,9 +1411,20 @@ mod tests {
             assert_eq!(cfg.encoder, encoder, "T313: accepted configuration changed");
             let mut report = Report::new();
             report_encoder_availability(&mut report, &cfg, inventory);
-            assert_eq!(report.failures, failures, "T313: encoder {encoder}");
+            let expected = if cfg!(feature = "inproc-encoder") {
+                1
+            } else {
+                failures
+            };
+            assert_eq!(report.failures, expected, "T313: encoder {encoder}");
             assert_eq!(report.warnings, 0);
-            if failures > 0 {
+            if cfg!(feature = "inproc-encoder") {
+                assert!(report
+                    .messages
+                    .borrow()
+                    .join("\n")
+                    .contains("VAAPI is unavailable in this in-process build"));
+            } else if failures > 0 {
                 assert!(report
                     .messages
                     .borrow()

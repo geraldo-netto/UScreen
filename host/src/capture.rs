@@ -522,6 +522,7 @@ impl CaptureManager {
     }
 
     async fn start_helper(&mut self) -> Result<()> {
+        crate::config::validate_encoder_for_build(&self.config.encoder)?;
         let fifo = fifo_path_for(self.config.instance);
         Self::ensure_fifo(&fifo)?;
         Self::retire_orphan_capture(&fifo).await?;
@@ -693,6 +694,7 @@ impl CaptureManager {
     /// is started per session instead.
     #[cfg(feature = "inproc-encoder")]
     async fn start_encoder(&mut self) -> Result<(u32, u32)> {
+        crate::config::validate_encoder_for_build(&self.config.encoder)?;
         Ok(self.active_mode())
     }
 
@@ -2062,6 +2064,50 @@ impl<'a> ExpGolombReader<'a> {
 #[cfg(all(test, feature = "inproc-encoder"))]
 mod inproc_tests {
     use super::*;
+
+    #[tokio::test]
+    async fn t284_vaapi_is_rejected_before_fifo_or_helper_creation() {
+        if std::env::var_os("USCREEN_T284_CHILD").is_none() {
+            let root = tempfile::tempdir().unwrap();
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "capture::inproc_tests::t284_vaapi_is_rejected_before_fifo_or_helper_creation",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T284_CHILD", "1")
+                .env("XDG_RUNTIME_DIR", root.path())
+                .output()
+                .unwrap();
+            assert!(
+                result.status.success(),
+                "T284: {}{}",
+                String::from_utf8_lossy(&result.stdout),
+                String::from_utf8_lossy(&result.stderr)
+            );
+            return;
+        }
+        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+            let mut manager = CaptureManager::new(CaptureConfig {
+                encoder: encoder.into(),
+                helper_path: "/nonexistent-t284-helper".into(),
+                edid_path: Some("unused-t284-edid".into()),
+                ..Default::default()
+            });
+            let error = manager.start_helper().await.unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains("VAAPI is unavailable in this in-process build"),
+                "T284: {error:#}"
+            );
+            assert!(
+                !fifo_path_for(0).exists(),
+                "T284: invalid encoder claimed a FIFO"
+            );
+            assert!(manager.helper_child.is_none());
+        }
+    }
 
     fn fifo_is_open(path: &std::path::Path) -> bool {
         std::fs::read_dir("/proc/self/fd")

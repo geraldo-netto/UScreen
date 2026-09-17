@@ -59,8 +59,8 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
 
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
-- **T284:** the optional in-process encoder lacks working VAAPI initialization;
-  use the default FFmpeg path for VAAPI.
+- The optional in-process build supports libx264/NVENC and explicitly rejects
+  VAAPI configurations. Use the default FFmpeg subprocess build for VAAPI.
 - **T318:** stylus hover/button transitions need correction.
 - **T330:** a busy enumerated EVDI card can block a slot despite another free card.
 - **T332:** accepted dimensions/FPS can exceed the EDID pixel-clock limit;

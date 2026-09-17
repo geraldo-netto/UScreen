@@ -2185,10 +2185,9 @@ fn apply_tablet_config(
         new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
     }
     if let Some(e) = encoder {
-        if crate::config::supported_encoder(&e) {
-            new.encoder = e;
-        } else {
-            warn!("Ignoring unsupported encoder from tablet: {}", e);
+        match crate::config::validate_encoder_for_build(&e) {
+            Ok(()) => new.encoder = e,
+            Err(error) => warn!("Ignoring unsupported encoder from tablet: {e}: {error}"),
         }
     }
     if *tx.borrow() != new {
@@ -3339,6 +3338,21 @@ fi
         client.close(None).await.unwrap();
         task.await.unwrap().unwrap();
         assert_eq!(update["codec"], "hevc");
+    }
+
+    #[cfg(feature = "inproc-encoder")]
+    #[test]
+    fn t284_tablet_cannot_switch_inproc_capture_to_vaapi() {
+        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+            let (tx, rx) = watch::channel(settings("libx264"));
+            apply_tablet_config(&Some(tx), Some(2000), Some(45), Some(encoder.into()));
+            assert_eq!(
+                rx.borrow().encoder,
+                "libx264",
+                "T284: unsupported live encoder accepted"
+            );
+            assert_eq!((rx.borrow().bitrate, rx.borrow().fps), (2000, 45));
+        }
     }
 
     #[test]
