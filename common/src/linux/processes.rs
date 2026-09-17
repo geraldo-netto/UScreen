@@ -86,14 +86,56 @@ impl Process {
     }
 }
 
-pub fn same_user_processes() -> io::Result<Vec<Process>> {
-    let uid = unsafe { libc::getuid() };
-    Ok(std::fs::read_dir("/proc")?
-        .flatten()
-        .filter_map(|entry| entry.file_name().to_str()?.parse().ok())
-        .filter_map(Process::read)
+trait Inventory {
+    fn pids(&self) -> io::Result<Vec<u32>>;
+    fn uid(&self, pid: u32) -> Option<u32>;
+    fn name(&self, pid: u32) -> Option<String>;
+    fn read(&self, pid: u32) -> Option<Process>;
+}
+
+struct ProcInventory;
+impl Inventory for ProcInventory {
+    fn pids(&self) -> io::Result<Vec<u32>> {
+        Ok(std::fs::read_dir("/proc")?
+            .flatten()
+            .filter_map(|entry| entry.file_name().to_str()?.parse().ok())
+            .collect())
+    }
+    fn uid(&self, pid: u32) -> Option<u32> {
+        Some(std::fs::metadata(format!("/proc/{pid}")).ok()?.uid())
+    }
+    fn name(&self, pid: u32) -> Option<String> {
+        Some(
+            std::fs::read_to_string(format!("/proc/{pid}/comm"))
+                .ok()?
+                .trim()
+                .into(),
+        )
+    }
+    fn read(&self, pid: u32) -> Option<Process> {
+        Process::read(pid)
+    }
+}
+
+fn inventory(source: &impl Inventory, uid: u32, name: Option<&str>) -> io::Result<Vec<Process>> {
+    Ok(source
+        .pids()?
+        .into_iter()
+        .filter(|&pid| source.uid(pid) == Some(uid))
+        .filter(|&pid| name.is_none_or(|name| source.name(pid).as_deref() == Some(name)))
+        .filter_map(|pid| source.read(pid))
+        // A PID can be replaced between the cheap filter and full snapshot.
         .filter(|process| process.owned_by(uid))
         .collect())
+}
+
+pub fn same_user_processes() -> io::Result<Vec<Process>> {
+    inventory(&ProcInventory, unsafe { libc::getuid() }, None)
+}
+
+/// Read-only candidate filter; callers still validate the complete identity.
+pub fn same_user_processes_named(name: &str) -> io::Result<Vec<Process>> {
+    inventory(&ProcInventory, unsafe { libc::getuid() }, Some(name))
 }
 
 struct ProcessHandle(OwnedFd);
@@ -202,6 +244,68 @@ pub async fn retire(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+
+    struct FakeInventory {
+        reads: Cell<usize>,
+        names: Cell<usize>,
+    }
+    impl Inventory for FakeInventory {
+        fn pids(&self) -> io::Result<Vec<u32>> {
+            Ok((1..=1000).collect())
+        }
+        fn uid(&self, pid: u32) -> Option<u32> {
+            Some(if pid <= 100 { 1000 } else { 2000 })
+        }
+        fn name(&self, pid: u32) -> Option<String> {
+            self.names.set(self.names.get() + 1);
+            Some(if pid <= 2 { "uscreen" } else { "other" }.into())
+        }
+        fn read(&self, pid: u32) -> Option<Process> {
+            self.reads.set(self.reads.get() + 1);
+            Some(Process {
+                pid,
+                uid: if pid == 2 { 2000 } else { 1000 },
+                start_ticks: 1,
+                executable: PathBuf::from(OsString::from_vec(b"/native-\xff/uscreen".to_vec())),
+                arguments: vec!["uscreen".into()],
+                cwd: "/".into(),
+            })
+        }
+    }
+
+    #[test]
+    fn t409_inventory_filters_before_full_reads_and_rechecks_uid() {
+        let source = FakeInventory {
+            reads: Cell::new(0),
+            names: Cell::new(0),
+        };
+        let selected = inventory(&source, 1000, Some("uscreen")).unwrap();
+        assert_eq!(source.names.get(), 100, "other users need no comm read");
+        assert_eq!(
+            source.reads.get(),
+            2,
+            "only same-user named candidates need full snapshots"
+        );
+        assert_eq!(
+            selected.len(),
+            1,
+            "UID change after prefilter must be rejected"
+        );
+        assert_eq!(selected[0].pid, 1);
+        assert_eq!(
+            selected[0].executable.as_os_str().as_bytes(),
+            b"/native-\xff/uscreen"
+        );
+        source.reads.set(0);
+        let all = inventory(&source, 1000, None).unwrap();
+        assert_eq!(source.reads.get(), 100);
+        assert_eq!(
+            all.len(),
+            99,
+            "full discovery must retain all same-user names"
+        );
+    }
 
     #[test]
     fn t245_process_matching_preserves_ownership_and_native_arguments() {

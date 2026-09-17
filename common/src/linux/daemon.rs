@@ -4,6 +4,9 @@ use super::processes::{self, Process};
 use clap::Parser;
 use std::path::Path;
 
+mod status;
+pub use status::StatusProbe;
+
 fn matches(process: &Process, uid: u32) -> bool {
     if !process.owned_by(uid) || !super::daemon_is_running(process.pid) {
         return false;

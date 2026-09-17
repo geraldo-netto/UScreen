@@ -253,6 +253,16 @@ processes and concurrent diagnostic commands do not count as orphans. Its
 remediation uses validated UScreen stop/start operations rather than broad
 process-name signals.
 
+GUI status owns a cancellable poll worker. It revalidates a cached daemon
+identity each cycle and falls back to an owner/name-prefiltered inventory;
+destructive actions retain full discovery. Program/autostart probes expire
+after ten seconds or UI action completion. Dynamic setup/session state still
+refreshes every cycle; ADB device queries are skipped without live assignments.
+Status changes request repaint, while pending actions retain a short repaint
+timer. Dropping the window stops future samples after any in-flight probe.
+The [status-polling fixtures](benchmarks/2026-09-18-status-polling.md) document
+probe counts, refresh limits and lifecycle regressions.
+
 Autostart uses the loaded systemd user unit when available, with an XDG desktop
 entry as the fallback. The installer and GUI share the fallback template and
 test their generated commands against each other. The GUI persists the login

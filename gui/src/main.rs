@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod settings;
+mod status_poll;
+mod status_worker;
 
 use eframe::egui;
 use std::path::PathBuf;
@@ -39,7 +41,7 @@ fn set_autostart(on: bool) -> Result<(), String> {
     result.map_err(|e| format!("Autostart preference saved; daemon action failed: {e}"))
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq, Eq)]
 struct Status {
     daemon_running: bool,
     daemon_pid: u32,
@@ -92,44 +94,24 @@ fn find_uscreen_bin_in(
 
 use uscreen_config::linux::programs::command_exists;
 
-#[allow(clippy::field_reassign_with_default)]
+#[cfg(test)]
 fn poll_status() -> Status {
-    let mut s = Status::default();
-
-    s.evdi_count = std::fs::read_to_string("/sys/devices/evdi/count")
-        .ok()
-        .and_then(|t| t.trim().parse::<i32>().ok())
-        .unwrap_or(-1);
-    s.ffmpeg_ok = command_exists("ffmpeg");
-    s.autostart = autostart_enabled();
-    s.adb_ok = command_exists("adb");
-    s.uinput_ok = std::fs::OpenOptions::new()
-        .write(true)
-        .open("/dev/uinput")
-        .is_ok();
-
-    if let Some(pid) = daemon::discover(Some(&pid_path())).first() {
-        s.daemon_running = true;
-        s.daemon_pid = *pid;
-    }
-
-    if let Ok(out) = Command::new("adb").args(["devices", "-l"]).output_bounded() {
-        apply_tablet_status(
-            &mut s,
-            &String::from_utf8_lossy(&out.stdout),
-            uscreen_config::runtime::runtime_dir()
-                .ok()
-                .map(|dir| dir.join("sessions.json"))
-                .as_deref(),
-        );
-    }
-    s
+    status_poll::StatusPoller::default().poll(true)
 }
 
+#[cfg(test)]
 fn apply_tablet_status(s: &mut Status, text: &str, sessions_path: Option<&std::path::Path>) {
-    let mut sessions = sessions_path
+    let sessions = sessions_path
         .and_then(uscreen_config::runtime::load_sessions)
         .unwrap_or_default();
+    apply_tablet_sessions(s, text, sessions);
+}
+
+fn apply_tablet_sessions(
+    s: &mut Status,
+    text: &str,
+    mut sessions: Vec<uscreen_config::runtime::TabletSession>,
+) {
     sessions.sort_by_key(|session| session.instance);
     let models: Vec<_> = sessions
         .iter()
@@ -315,6 +297,7 @@ fn dispatch_action(
 }
 
 struct App {
+    _status_worker: Option<status_worker::StatusWorker>,
     store: ConfigStore,
     save: Option<settings::PendingSave>,
     cfg: FileConfig,
@@ -416,17 +399,19 @@ fn check_for_update() -> Option<String> {
 }
 
 impl App {
-    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let cfg = FileConfig::load();
         let status = Arc::new(Mutex::new(Status::default()));
 
         let update = Arc::new(Mutex::new(None));
         if cfg.check_updates {
             let slot = update.clone();
+            let repaint = cc.egui_ctx.clone();
             std::thread::spawn(move || {
                 if let Some(v) = check_for_update() {
                     if let Ok(mut g) = slot.lock() {
                         *g = Some(v);
+                        repaint.request_repaint();
                     }
                 }
             });
@@ -434,15 +419,23 @@ impl App {
 
         // Background poller: daemon + adb state every 2 seconds
         let status_bg = status.clone();
-        std::thread::spawn(move || loop {
-            let s = poll_status();
-            if let Ok(mut guard) = status_bg.lock() {
-                *guard = s;
-            }
-            std::thread::sleep(Duration::from_secs(2));
-        });
+        let repaint = cc.egui_ctx.clone();
+        let mut sampler = status_poll::StatusPoller::default();
+        let worker = status_worker::StatusWorker::start(
+            move |force| {
+                let s = sampler.poll(force);
+                if let Ok(mut guard) = status_bg.lock() {
+                    if *guard != s {
+                        *guard = s;
+                        repaint.request_repaint();
+                    }
+                }
+            },
+            Duration::from_secs(2),
+        );
 
         Self {
+            _status_worker: Some(worker),
             store: ConfigStore::default(),
             save: None,
             saved_cfg: cfg.clone(),
@@ -547,7 +540,6 @@ impl eframe::App for App {
 
 impl App {
     fn show_window(&mut self, ctx: &egui::Context) {
-        ctx.request_repaint_after(Duration::from_secs(1));
         self.poll_action();
         let status = self.status.lock().map(|s| s.clone()).unwrap_or_default();
         self.show_footer(ctx, &status);
@@ -565,9 +557,14 @@ impl App {
                     self.show_settings(ui, &status);
                 });
         });
+        // Include work started by a button during this frame.
+        if self.busy() {
+            ctx.request_repaint_after(Duration::from_millis(100));
+        }
     }
 
     fn poll_action(&mut self) {
+        let was_busy = self.busy();
         self.poll_save();
         if let Some(receiver) = &self.action {
             match receiver.try_recv() {
@@ -580,6 +577,11 @@ impl App {
                     self.action = None;
                 }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {}
+            }
+        }
+        if was_busy && !self.busy() {
+            if let Some(worker) = &self._status_worker {
+                worker.refresh();
             }
         }
     }
@@ -1242,6 +1244,7 @@ mod tests {
             ..saved_cfg.clone()
         };
         App {
+            _status_worker: None,
             store: ConfigStore::default(),
             save: None,
             cfg,
@@ -1259,6 +1262,38 @@ mod tests {
             })),
             update: Arc::new(Mutex::new(None)),
         }
+    }
+
+    #[test]
+    fn t409_idle_repaints_stop_while_action_completion_stays_visible() {
+        let mut app = settings_test_app(Tab::Video);
+        let ctx = egui::Context::default();
+        let frame = |app: &mut App, time| {
+            ctx.run(
+                egui::RawInput {
+                    time: Some(time),
+                    ..Default::default()
+                },
+                |ctx| app.show_window(ctx),
+            )
+            .viewport_output[&egui::ViewportId::ROOT]
+                .repaint_delay
+        };
+        for tick in 0..10 {
+            frame(&mut app, tick as f64);
+        }
+        assert_eq!(
+            frame(&mut app, 10.0),
+            Duration::MAX,
+            "T409: idle UI keeps scheduling repaint"
+        );
+        let (done, receiver) = std::sync::mpsc::channel();
+        app.action = Some(receiver);
+        assert!(frame(&mut app, 11.0) <= Duration::from_millis(100));
+        done.send("Completed".into()).unwrap();
+        frame(&mut app, 12.0);
+        assert!(!app.busy());
+        assert_eq!(app.message, "Completed");
     }
 
     #[test]
