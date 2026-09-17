@@ -355,10 +355,10 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         started = true
         applyOrientation()
-        // The foreground service holds the wake and Wi-Fi locks and keeps
-        // Samsung from killing the process. It lives exactly as long as we
-        // are streaming, i.e. between onStart and onStop: a backgrounded app
-        // must not keep the CPU and the radio awake for nothing.
+        // The foreground service manages wake and Wi-Fi locks between onStart
+        // and onStop, including connection waits and graphics-tablet mode.
+        // It supports the active link under Android power management; it
+        // cannot guarantee that the system will never terminate the process.
         startForegroundService(Intent(this, StreamingService::class.java))
         // At most one enabled update check per Activity instance, from onStart.
         // Activity recreation permits another check in the same process.
