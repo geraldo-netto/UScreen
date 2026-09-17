@@ -20,8 +20,19 @@ import org.robolectric.annotation.Config
 @Config(sdk = [27, 34])
 class RegressionTest {
     private val app get() = RuntimeEnvironment.getApplication()
-    private fun get(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
-    private fun set(target: Any, name: String, value: Any?) = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(target, value)
+    private fun owner(target: Any, name: String): Any = when {
+        target !is TouchCapture -> target
+        name == "touchSlots" -> target.motion
+        else -> target.control
+    }
+    private fun get(target: Any, name: String): Any? {
+        val owner = owner(target, name)
+        return owner.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(owner)
+    }
+    private fun set(target: Any, name: String, value: Any?) {
+        val owner = owner(target, name)
+        owner.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(owner, value)
+    }
 
     @Test fun t312_trafficRatesUseMonotonicElapsedTime() {
         val statistics = ReceiverStatistics()

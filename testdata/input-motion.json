@@ -1,0 +1,118 @@
+[
+  {
+    "name": "pen-down",
+    "tool": 2,
+    "android_action": 0,
+    "wire": {
+      "type": "pen",
+      "x": 0.25,
+      "y": 0.5,
+      "pressure": 0.5,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": false,
+      "action": 0
+    }
+  },
+  {
+    "name": "pen-hover",
+    "tool": 2,
+    "android_action": 7,
+    "wire": {
+      "type": "pen",
+      "x": 0.25,
+      "y": 0.5,
+      "pressure": 0.5,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": false,
+      "action": 3
+    }
+  },
+  {
+    "name": "pen-button-down",
+    "tool": 2,
+    "android_action": 11,
+    "wire": {
+      "type": "pen",
+      "x": 0.0,
+      "y": 0.0,
+      "pressure": 0.0,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": false,
+      "action": 5
+    }
+  },
+  {
+    "name": "pen-button-up",
+    "tool": 2,
+    "android_action": 12,
+    "wire": {
+      "type": "pen",
+      "x": 0.0,
+      "y": 0.0,
+      "pressure": 0.0,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": false,
+      "action": 6
+    }
+  },
+  {
+    "name": "pen-exit",
+    "tool": 2,
+    "android_action": 10,
+    "wire": {
+      "type": "pen",
+      "x": 0.0,
+      "y": 0.0,
+      "pressure": 0.0,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": false,
+      "action": 4
+    }
+  },
+  {
+    "name": "eraser-down",
+    "tool": 4,
+    "android_action": 0,
+    "wire": {
+      "type": "pen",
+      "x": 0.25,
+      "y": 0.5,
+      "pressure": 0.5,
+      "tilt_x": 0.0,
+      "tilt_y": 0.0,
+      "eraser": true,
+      "action": 0
+    }
+  },
+  {
+    "name": "touch-down",
+    "tool": 1,
+    "android_action": 0,
+    "wire": {
+      "type": "touch",
+      "x": 0.25,
+      "y": 0.5,
+      "pressure": 0.5,
+      "action": 0,
+      "slot": 0
+    }
+  },
+  {
+    "name": "touch-up",
+    "tool": 1,
+    "android_action": 1,
+    "wire": {
+      "type": "touch",
+      "x": 0.25,
+      "y": 0.5,
+      "pressure": 0.0,
+      "action": 1,
+      "slot": 0
+    }
+  }
+]

@@ -166,6 +166,16 @@ The Android client marks its control connection authenticated only after
 callbacks from replaced sockets cannot restore it. Rust serialization and
 Android's pen-mode UI use the same `control-connected.json` regression fixture.
 
+Android's `TouchCapture` is the Activity-facing facade. `ControlSession` owns
+socket generations, authentication, reconnects, host greetings and pending
+settings. `MotionTranslator` owns pointer slots and ordered Android samples;
+`PenMessage` and `TouchMessage` own their JSON field layouts. Connection callbacks
+and touch handling share the facade monitor so input cannot overtake the opening
+handshake. The control session accepts a WebSocket factory for isolated tests.
+The shared `input-motion.json` fixture is checked against Android translation
+and Rust deserialization/serialization; stylus history has separate ordering,
+pressure, tilt and eraser coverage.
+
 Examples of individual client messages (one JSON object per WebSocket message):
 
 ```json

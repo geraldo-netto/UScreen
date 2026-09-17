@@ -187,7 +187,7 @@ class SettingsLayoutTest {
     }
 
     private fun install(capture: TouchCapture, socket: WebSocket) {
-        TouchCapture::class.java.getDeclaredField("webSocket").apply { isAccessible = true }.set(capture, socket)
+        ControlSession::class.java.getDeclaredField("webSocket").apply { isAccessible = true }.set(capture.control, socket)
     }
 
     @Test fun t241_t247_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo() {
@@ -195,8 +195,8 @@ class SettingsLayoutTest {
         val greeting = javaClass.getResource("/control-connected.json")!!.readText()
         val capture = TouchCapture()
         val receiver = VideoReceiver()
-        val listener = TouchCapture::class.java.getDeclaredField("wsListener")
-            .apply { isAccessible = true }.get(capture) as WebSocketListener
+        val listener = ControlSession::class.java.getDeclaredField("wsListener")
+            .apply { isAccessible = true }.get(capture.control) as WebSocketListener
         val old = Socket()
         val fresh = Socket()
         val response = Response.Builder().request(old.request()).protocol(Protocol.HTTP_1_1)

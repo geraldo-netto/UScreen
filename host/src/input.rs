@@ -155,7 +155,7 @@ struct UinputSetup {
     ff_effects_max: u32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum InputEvent {
     #[serde(rename = "touch")]
@@ -2377,6 +2377,21 @@ esac
             super::primary_physical_output(&malformed, &[]).is_none(),
             "T372: preserve rejection of an absent connector name"
         );
+    }
+
+    #[test]
+    fn t375_android_motion_fixture_matches_host_fields() {
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../../testdata/input-motion.json")).unwrap();
+        for case in cases {
+            let event: super::InputEvent = serde_json::from_value(case["wire"].clone()).unwrap();
+            assert_eq!(
+                serde_json::to_value(event).unwrap(),
+                case["wire"],
+                "T375: {}",
+                case["name"]
+            );
+        }
     }
 
     #[test]
