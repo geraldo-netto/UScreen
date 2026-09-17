@@ -22,6 +22,44 @@ import org.robolectric.annotation.LooperMode
 class SettingsLayoutTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun t349_displayDefaultsCanBeChangedWhileStreaming() = checkDisplayControls(false)
+    @Test fun t349_displayDefaultsCanBeChangedInPenMode() = checkDisplayControls(true)
+
+    private fun checkDisplayControls(penOnly: Boolean) {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val prefs = Prefs(app)
+        var changes = 0
+        compose.setContent { UScreenTheme {
+            UScreenMain({}, penOnly = penOnly, prefs = prefs,
+                displayRefreshRates = listOf(60f, 120f), onDisplaySettingsChange = { changes++ })
+        } }
+        compose.onNodeWithText("⚙").performClick()
+        compose.onNodeWithText("Brightness: 50%").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Brightness").performScrollTo()
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(75f) }
+        compose.onNodeWithText("Brightness: 75%").assertIsDisplayed()
+        compose.onNodeWithText("60 Hz").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("System default").performScrollTo().performClick().assertIsSelected()
+        compose.runOnIdle {
+            val saved = app.getSharedPreferences("uscreen", android.content.Context.MODE_PRIVATE)
+            assertEquals(75, saved.getInt("brightness_percent", -1))
+            assertEquals(0f, saved.getFloat("display_refresh_rate", -1f), 0f)
+            assertFalse("T349 local display controls must not replace host stream settings", prefs.hasUserSettings)
+            assertEquals(60, prefs.fps)
+        }
+        compose.onNodeWithText("60 Hz").performScrollTo().performClick().assertIsSelected()
+        compose.runOnIdle {
+            val saved = app.getSharedPreferences("uscreen", android.content.Context.MODE_PRIVATE)
+            assertEquals(60f, saved.getFloat("display_refresh_rate", -1f), 0f)
+        }
+        compose.onNodeWithText("120 Hz").performScrollTo().performClick().assertIsSelected()
+        compose.runOnIdle {
+            assertEquals("T349 every change must apply immediately", 4, changes)
+            assertEquals(75, Prefs(app).brightnessPercent)
+            assertEquals(120f, Prefs(app).displayRefreshRate, 0f)
+        }
+    }
+
     @Test fun t090_shortLandscapeWithLargeFontsCanScrollToApply() {
         var applied = false
         var dismissed = false

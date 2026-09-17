@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
@@ -51,9 +52,8 @@ class MainActivity : ComponentActivity() {
         // Keep screen on while streaming
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        requestHighestRefreshRate()
-
         prefs = Prefs(this)
+        applyDisplaySettings()
         applyOrientation()
         videoReceiver = VideoReceiver()
         touchCapture = TouchCapture()
@@ -80,7 +80,9 @@ class MainActivity : ComponentActivity() {
                     onOrientationChange = { choice ->
                         prefs.orientation = choice
                         applyOrientation()
-                    }
+                    },
+                    displayRefreshRates = supportedDisplayModes().map { it.refreshRate },
+                    onDisplaySettingsChange = { applyDisplaySettings() }
                 )
             }
         }
@@ -155,39 +157,38 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    /**
-     * Ask for the panel's fastest mode.
-     *
-     * Refresh rate is a direct latency cost, not just a smoothness one: a
-     * decoded frame waits for the next vsync before it is visible, so 60Hz adds
-     * up to 16.7ms (~8ms on average) versus 8.3ms (~4ms) at 120Hz. Measured
-     * decode+render was ~14.8ms with the panel at 60Hz.
-     *
-     * This can only ask. Samsung's "Motion smoothness: Standard" setting
-     * (`secure refresh_rate_mode = 0`) caps the panel at 60Hz system-wide and
-     * overrides any app request — switching it to Adaptive is the user's call,
-     * and is worth more latency than any change on the host side.
-     */
-    private fun requestHighestRefreshRate() {
+    /** Window overrides apply only while UScreen is foreground. */
+    private fun applyDisplaySettings() {
+        window.attributes = window.attributes.apply { screenBrightness = prefs.brightnessPercent / 100f }
+        requestRefreshRate(prefs.displayRefreshRate)
+    }
+
+    private fun supportedDisplayModes(): List<android.view.Display.Mode> {
+        // This WindowManager belongs to the activity's display, including before attachment.
+        @Suppress("DEPRECATION")
+        val disp = windowManager.defaultDisplay
+        val current = disp.mode
+        return disp.supportedModes.filter {
+            it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
+        }
+    }
+
+    /** Prefer the requested rate at the current resolution; Android has the final say. */
+    private fun requestRefreshRate(refreshRate: Float) {
         try {
-            @Suppress("DEPRECATION")
-            val disp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display
-                else windowManager.defaultDisplay
-            val best = disp?.supportedModes?.maxByOrNull { it.refreshRate } ?: return
+            val best = if (refreshRate == 0f) null else
+                supportedDisplayModes().minByOrNull { abs(it.refreshRate - refreshRate) }
 
             // Reassigning the same LayoutParams instance can be ignored, so
             // apply the change through an explicit set.
             val lp = window.attributes
-            lp.preferredDisplayModeId = best.modeId
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                lp.preferredRefreshRate = best.refreshRate
-            }
+            lp.preferredDisplayModeId = best?.modeId ?: 0
+            lp.preferredRefreshRate = best?.refreshRate ?: 0f
             window.attributes = lp
 
             android.util.Log.i(
                 "UScreen",
-                "Requested display mode ${best.modeId} @ ${best.refreshRate}Hz " +
-                    "(current ${disp.refreshRate}Hz)"
+                "Requested display mode ${lp.preferredDisplayModeId} @ ${lp.preferredRefreshRate}Hz"
             )
         } catch (e: Exception) {
             android.util.Log.w("UScreen", "Could not request a refresh rate: ${e.message}")
@@ -346,7 +347,7 @@ class MainActivity : ComponentActivity() {
             enableImmersiveMode()
             // Re-assert once the window is actually attached: a request made in
             // onCreate can be dropped before the window exists.
-            requestHighestRefreshRate()
+            applyDisplaySettings()
         }
     }
 
@@ -429,6 +430,8 @@ fun UScreenMain(
     touchCapture: TouchCapture? = null,
     onOrientationChange: (Int) -> Unit = {},
     prefs: Prefs? = null,
+    displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
+    onDisplaySettingsChange: () -> Unit = {},
 ) {
     var isConnected by remember { mutableStateOf(false) }
     var fps by remember { mutableStateOf(0f) }
@@ -529,7 +532,9 @@ fun UScreenMain(
                 onApply = { bitrateKbps, newFps ->
                     applyStreamSettings(prefs, touchCapture, videoReceiver, bitrateKbps, newFps)
                 },
-                onDismiss = { showSettings = false }
+                onDismiss = { showSettings = false },
+                displayRefreshRates = displayRefreshRates,
+                onDisplaySettingsChange = onDisplaySettingsChange
             )
         }
     }
@@ -793,6 +798,8 @@ internal fun SettingsSheet(
     onOrientationChange: (Int) -> Unit,
     onApply: (bitrateKbps: Int, fps: Int) -> Unit,
     onDismiss: () -> Unit,
+    displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
+    onDisplaySettingsChange: () -> Unit = {},
 ) {
     var bitrateMbps by remember {
         mutableStateOf((prefs?.bitrateKbps ?: Prefs.DEFAULT_BITRATE_KBPS) / 1000f)
@@ -835,9 +842,10 @@ internal fun SettingsSheet(
                 Spacer(Modifier.height(16.dp))
             }
 
-            // What the tablet is for, right now. Everything below only applies
-            // when it is a screen, so the stream controls fold away when it
-            // isn't.
+            DisplayControls(prefs, displayRefreshRates, onDisplaySettingsChange)
+            Spacer(Modifier.height(20.dp))
+
+            // Stream controls fold away when the tablet is only used for drawing.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()

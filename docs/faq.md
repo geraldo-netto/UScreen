@@ -20,6 +20,15 @@ no USB tethering.
 No. USB tethering is not needed; USB debugging is. Wi-Fi works as a fallback,
 with noticeably more stutter — see the benchmarks.
 
+**Can I adjust the tablet's brightness and refresh rate?**
+Open UScreen's gear menu. Brightness starts at 50% and display refresh rate at
+60 Hz. Both controls apply immediately and remember your choices, including in
+graphics-tablet mode. They affect only UScreen; other apps keep the tablet's
+normal settings. Refresh-rate choices use the current display resolution,
+with the closest supported rate as a fallback. Choose **System default** to
+let Android select the refresh rate. Android may override a requested mode.
+These controls are separate from the stream's frame rate and bitrate.
+
 **Can I use it without the cable?**
 Yes, as a fallback. Run `uscreen wifi` once with the cable plugged in: it puts
 the tablet's adb on the network, remembers the address, and from then on the

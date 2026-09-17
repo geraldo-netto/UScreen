@@ -18,6 +18,8 @@ class Prefs(context: Context) {
          */
         const val DEFAULT_BITRATE_KBPS = 20_000
         const val DEFAULT_FPS = 60
+        const val DEFAULT_BRIGHTNESS_PERCENT = 50
+        const val DEFAULT_DISPLAY_REFRESH_RATE = 60f
 
         /** Kept in sync with `config::MAX_BITRATE_KBPS` on the host. */
         const val MAX_BITRATE_KBPS = 60_000
@@ -37,6 +39,17 @@ class Prefs(context: Context) {
     var fps: Int
         get() = sp.getInt("fps", DEFAULT_FPS)
         set(v) = sp.edit().putInt("fps", v).apply()
+
+    /** Local window preferences, independent of the host's stream configuration. */
+    var brightnessPercent: Int
+        get() = sp.getInt("brightness_percent", DEFAULT_BRIGHTNESS_PERCENT).coerceIn(0, 100)
+        set(v) = sp.edit().putInt("brightness_percent", v.coerceIn(0, 100)).apply()
+
+    /** Zero follows Android's system preference. */
+    var displayRefreshRate: Float
+        get() = sp.getFloat("display_refresh_rate", DEFAULT_DISPLAY_REFRESH_RATE)
+            .takeIf { it.isFinite() && it >= 0f } ?: DEFAULT_DISPLAY_REFRESH_RATE
+        set(v) = sp.edit().putFloat("display_refresh_rate", v).apply()
 
     var showStats: Boolean
         get() = sp.getBoolean("show_stats", false)
