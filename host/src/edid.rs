@@ -238,12 +238,23 @@ mod tests {
         let wrong_mode = make_edid_sized(1280, 720, 60, 310, 194).unwrap();
         for corrupt in [vec![], expected[..64].to_vec(), wrong_mode] {
             std::fs::write(&path, &corrupt).unwrap();
-            assert_eq!(ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap(), path);
-            assert_eq!(std::fs::read(&path).unwrap(), expected, "T246: damaged generated EDID was reused");
+            assert_eq!(
+                ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap(),
+                path
+            );
+            assert_eq!(
+                std::fs::read(&path).unwrap(),
+                expected,
+                "T246: damaged generated EDID was reused"
+            );
         }
         let valid_inode = std::fs::metadata(&path).unwrap().ino();
         ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
-        assert_eq!(std::fs::metadata(&path).unwrap().ino(), valid_inode, "valid cache should be reused");
+        assert_eq!(
+            std::fs::metadata(&path).unwrap().ino(),
+            valid_inode,
+            "valid cache should be reused"
+        );
     }
 
     #[test]
@@ -252,8 +263,10 @@ mod tests {
         let path = ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).unwrap();
         std::fs::remove_file(&path).unwrap();
         std::fs::create_dir(&path).unwrap();
-        assert!(ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).is_err(),
-            "T246: helper would be given a directory instead of an EDID");
+        assert!(
+            ensure_edid_in(dir.path(), 1920, 1080, 60, 310, 194).is_err(),
+            "T246: helper would be given a directory instead of an EDID"
+        );
     }
 
     // Independent DTD decoder: Linux drm_edid.h orders width low, height

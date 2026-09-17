@@ -345,8 +345,12 @@ impl ClientPlayback {
             self.wait_for_idr = true;
             return Ok(false);
         }
-        let Some(config) = packet.codec_config.as_ref() else { return Ok(false) };
-        let same_generation = self.last_generation.as_ref()
+        let Some(config) = packet.codec_config.as_ref() else {
+            return Ok(false);
+        };
+        let same_generation = self
+            .last_generation
+            .as_ref()
             .is_some_and(|previous| Arc::ptr_eq(previous, &packet.generation));
         if !same_generation {
             self.wait_for_idr = true;
@@ -409,20 +413,38 @@ mod tests {
     #[tokio::test]
     async fn t227_queued_frame_keeps_its_codec_configuration() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let mut viewer = TcpStream::connect(listener.local_addr().unwrap()).await.unwrap();
+        let mut viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
         let (server, _) = listener.accept().await.unwrap();
         let (_, writer) = server.into_split();
         let old = Bytes::from_static(b"h264-1280x800");
         let new = Bytes::from_static(b"hevc-1920x1080");
         let (tx, rx) = broadcast::channel(8);
-        tx.send(VideoPacket { seq: 0, is_idr: true, data: old.clone(), codec_config: Some(old.clone()),
-            generation: Arc::new(AtomicBool::new(true)) }).ok().unwrap();
+        tx.send(VideoPacket {
+            seq: 0,
+            is_idr: true,
+            data: old.clone(),
+            codec_config: Some(old.clone()),
+            generation: Arc::new(AtomicBool::new(true)),
+        })
+        .ok()
+        .unwrap();
         // The cache changes after encoding/queueing, before this client runs.
-        let playback = tokio::spawn(StreamServer::stream_packets(writer, rx,
-            Arc::new(Mutex::new(Some(new.clone())))));
-        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, new.to_vec()));
-        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, old.to_vec()),
-            "T227: each frame must follow its own encoder's configuration");
+        let playback = tokio::spawn(StreamServer::stream_packets(
+            writer,
+            rx,
+            Arc::new(Mutex::new(Some(new.clone()))),
+        ));
+        assert_eq!(
+            t227_read_packet(&mut viewer).await,
+            (PACKET_TYPE_CONFIG, new.to_vec())
+        );
+        assert_eq!(
+            t227_read_packet(&mut viewer).await,
+            (PACKET_TYPE_CONFIG, old.to_vec()),
+            "T227: each frame must follow its own encoder's configuration"
+        );
         let (kind, frame) = t227_read_packet(&mut viewer).await;
         assert_eq!(kind, PACKET_TYPE_FRAME);
         assert_eq!(&frame[4..], old.as_ref());
@@ -432,19 +454,34 @@ mod tests {
 
     async fn t227_retirement_case(new: &'static [u8]) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let mut viewer = TcpStream::connect(listener.local_addr().unwrap()).await.unwrap();
+        let mut viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
         let (server, _) = listener.accept().await.unwrap();
         let (_, socket) = server.into_split();
-        let mut playback = ClientPlayback { socket, last_sent_config: None,
-            last_generation: None, wait_for_idr: true, dropped: 0 };
+        let mut playback = ClientPlayback {
+            socket,
+            last_sent_config: None,
+            last_generation: None,
+            wait_for_idr: true,
+            dropped: 0,
+        };
         let old = crate::capture::EncoderGeneration::new();
         let fresh = crate::capture::EncoderGeneration::new();
-        let packet = |seq, is_idr, data: &'static [u8], generation: &crate::capture::EncoderGeneration| VideoPacket {
-            seq, is_idr, data: Bytes::from_static(data), codec_config: Some(Bytes::from_static(data)),
-            generation: generation.active.clone(),
-        };
+        let packet =
+            |seq, is_idr, data: &'static [u8], generation: &crate::capture::EncoderGeneration| {
+                VideoPacket {
+                    seq,
+                    is_idr,
+                    data: Bytes::from_static(data),
+                    codec_config: Some(Bytes::from_static(data)),
+                    generation: generation.active.clone(),
+                }
+            };
         let (tx, mut rx) = broadcast::channel(8);
-        tx.send(packet(0, true, b"h264-1280x800", &old)).ok().unwrap();
+        tx.send(packet(0, true, b"h264-1280x800", &old))
+            .ok()
+            .unwrap();
         let first = rx.recv().await.unwrap();
         let mut delayed = playback.drain_batch(&mut rx, first);
         drop(old); // restart after drain, while this client was delayed
@@ -452,13 +489,20 @@ mod tests {
         delayed.push(packet(2, true, new, &fresh));
         playback.send_batch(delayed).await.unwrap();
         drop(playback);
-        assert_eq!(t227_read_packet(&mut viewer).await, (PACKET_TYPE_CONFIG, new.to_vec()));
+        assert_eq!(
+            t227_read_packet(&mut viewer).await,
+            (PACKET_TYPE_CONFIG, new.to_vec())
+        );
         let (kind, frame) = t227_read_packet(&mut viewer).await;
         assert_eq!(kind, PACKET_TYPE_FRAME);
         assert_eq!(&frame[..4], &2u32.to_be_bytes());
         assert_eq!(&frame[4..], new);
         use tokio::io::AsyncReadExt;
-        assert_eq!(viewer.read(&mut [0]).await.unwrap(), 0, "T227: retired frames escaped");
+        assert_eq!(
+            viewer.read(&mut [0]).await.unwrap(),
+            0,
+            "T227: retired frames escaped"
+        );
     }
 
     #[tokio::test]

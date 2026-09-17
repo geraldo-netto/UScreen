@@ -612,16 +612,29 @@ printf '%s\n' "$2" >> "$0.log"
         let source = root.join("child.c");
         let executable = root.join("uscreen");
         std::fs::write(&source, "#include <stdio.h>\n#include <unistd.h>\nint main(void) { puts(\"ready\"); fflush(stdout); for (;;) pause(); }\n").unwrap();
-        assert!(std::process::Command::new("cc").arg(&source).arg("-o").arg(&executable).status().unwrap().success());
+        assert!(std::process::Command::new("cc")
+            .arg(&source)
+            .arg("-o")
+            .arg(&executable)
+            .status()
+            .unwrap()
+            .success());
         executable
     }
 
     async fn t237_child(executable: &std::path::Path, args: &[&str]) -> tokio::process::Child {
         use tokio::io::AsyncBufReadExt;
-        let mut child = tokio::process::Command::new(executable).args(args)
-            .stdout(std::process::Stdio::piped()).kill_on_drop(true).spawn().unwrap();
+        let mut child = tokio::process::Command::new(executable)
+            .args(args)
+            .stdout(std::process::Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
         let mut ready = String::new();
-        tokio::io::BufReader::new(child.stdout.take().unwrap()).read_line(&mut ready).await.unwrap();
+        tokio::io::BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut ready)
+            .await
+            .unwrap();
         assert_eq!(ready, "ready\n");
         child
     }
@@ -630,9 +643,14 @@ printf '%s\n' "$2" >> "$0.log"
     async fn t237_discovery_recognizes_default_and_explicit_daemons() {
         let root = tempfile::tempdir().unwrap();
         let executable = t237_process_fixture(root.path());
-        for (args, expected) in [(vec![], true), (vec!["start"], true),
-            (vec!["--fps", "30"], true), (vec!["status"], false), (vec!["doctor"], false),
-            (vec!["--helper", "start", "status"], false)] {
+        for (args, expected) in [
+            (vec![], true),
+            (vec!["start"], true),
+            (vec!["--fps", "30"], true),
+            (vec!["status"], false),
+            (vec!["doctor"], false),
+            (vec!["--helper", "start", "status"], false),
+        ] {
             let mut child = t237_child(&executable, &args).await;
             let detected = other_daemons().contains(&child.id().unwrap());
             child.kill().await.unwrap();
@@ -649,10 +667,18 @@ printf '%s\n' "$2" >> "$0.log"
         for stale in [false, true] {
             let mut daemon = t237_child(&executable, &[]).await;
             let pid = daemon.id().unwrap();
-            assert!(!is_daemon_process(pid, unsafe { libc::getuid() }.wrapping_add(1)));
-            if stale { std::fs::write(&pid_path, unrelated.id().unwrap().to_string()).unwrap(); }
+            assert!(!is_daemon_process(
+                pid,
+                unsafe { libc::getuid() }.wrapping_add(1)
+            ));
+            if stale {
+                std::fs::write(&pid_path, unrelated.id().unwrap().to_string()).unwrap();
+            }
             // Discovery is read-only; constrain all signals to fixture children.
-            let recovered = other_daemons().into_iter().filter(|&found| found == pid).collect();
+            let recovered = other_daemons()
+                .into_iter()
+                .filter(|&found| found == pid)
+                .collect();
             stop_daemon_at(&pid_path, recovered).await.unwrap();
             assert!(daemon.wait().await.unwrap().code().is_none());
             assert!(unrelated.try_wait().unwrap().is_none());
@@ -675,11 +701,23 @@ printf '%s\n' "$2" >> "$0.log"
         let mut daemon = t237_child(&executable, &[]).await;
         let pid = daemon.id().unwrap();
         let mut reports = Vec::new();
-        for stale in ["4294967295".to_string(), "0".into(), "broken".into(), unrelated.id().unwrap().to_string()] {
+        for stale in [
+            "4294967295".to_string(),
+            "0".into(),
+            "broken".into(),
+            unrelated.id().unwrap().to_string(),
+        ] {
             std::fs::write(&pid_path, &stale).unwrap();
             let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args(["--exact", "cli_tests::t244_status_recovers_daemon_despite_stale_pid_file", "--nocapture"])
-                .env("USCREEN_T244_CHILD", "1").env("HOME", root.path()).output().unwrap();
+                .args([
+                    "--exact",
+                    "cli_tests::t244_status_recovers_daemon_despite_stale_pid_file",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T244_CHILD", "1")
+                .env("HOME", root.path())
+                .output()
+                .unwrap();
             reports.push((stale, output));
         }
         daemon.kill().await.unwrap();
@@ -687,11 +725,21 @@ printf '%s\n' "$2" >> "$0.log"
         for (stale, output) in reports {
             assert!(output.status.success());
             let text = String::from_utf8(output.stdout).unwrap();
-            let reported = text.split("uscreen is running (PID: ").nth(1)
-                .and_then(|tail| tail.split(')').next()).unwrap_or("");
-            assert!(reported.split_whitespace().any(|value| value == pid.to_string()),
-                "T244: PID file {stale:?} hid daemon {pid}: {text}");
-            assert!(!reported.split_whitespace().any(|value| value == stale), "T244: unrelated process reported: {text}");
+            let reported = text
+                .split("uscreen is running (PID: ")
+                .nth(1)
+                .and_then(|tail| tail.split(')').next())
+                .unwrap_or("");
+            assert!(
+                reported
+                    .split_whitespace()
+                    .any(|value| value == pid.to_string()),
+                "T244: PID file {stale:?} hid daemon {pid}: {text}"
+            );
+            assert!(
+                !reported.split_whitespace().any(|value| value == stale),
+                "T244: unrelated process reported: {text}"
+            );
         }
     }
 
@@ -1444,22 +1492,34 @@ async fn persist_mode(mut mode_rx: watch::Receiver<bool>) {
 
 /// Recover same-user daemons even when their PID file is missing.
 fn other_daemons() -> Vec<u32> {
-    let Ok(entries) = std::fs::read_dir("/proc") else { return Vec::new() };
+    let Ok(entries) = std::fs::read_dir("/proc") else {
+        return Vec::new();
+    };
     let uid = unsafe { libc::getuid() };
-    entries.flatten()
+    entries
+        .flatten()
         .filter_map(|entry| entry.file_name().to_string_lossy().parse::<u32>().ok())
         .filter(|&pid| pid != std::process::id() && is_daemon_process(pid, uid))
         .collect()
 }
 
 fn is_daemon_process(pid: u32, uid: u32) -> bool {
-    use std::os::unix::{fs::MetadataExt, ffi::OsStringExt};
+    use std::os::unix::{ffi::OsStringExt, fs::MetadataExt};
     let base = PathBuf::from(format!("/proc/{pid}"));
     if std::fs::metadata(&base).map(|m| m.uid()).ok() != Some(uid)
-        || !config::daemon_is_running(pid) { return false; }
-    let Ok(cmdline) = std::fs::read(base.join("cmdline")) else { return false };
-    if cmdline.is_empty() { return false; }
-    let args = cmdline.split(|byte| *byte == 0).filter(|arg| !arg.is_empty())
+        || !config::daemon_is_running(pid)
+    {
+        return false;
+    }
+    let Ok(cmdline) = std::fs::read(base.join("cmdline")) else {
+        return false;
+    };
+    if cmdline.is_empty() {
+        return false;
+    }
+    let args = cmdline
+        .split(|byte| *byte == 0)
+        .filter(|arg| !arg.is_empty())
         .map(|arg| std::ffi::OsString::from_vec(arg.to_vec()));
     // Use the real parser: option values named "start" are not subcommands.
     Cli::try_parse_from(args).is_ok_and(|cli| matches!(cli.command, None | Some(Commands::Start)))
@@ -2783,8 +2843,7 @@ async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Resul
     let tracked = std::fs::read_to_string(pid_path)
         .ok()
         .and_then(|s| s.trim().parse::<u32>().ok());
-    if let Some(pid) = tracked.filter(|&p| p != std::process::id() && is_daemon_process(p, uid))
-    {
+    if let Some(pid) = tracked.filter(|&p| p != std::process::id() && is_daemon_process(p, uid)) {
         if !pids.contains(&pid) {
             pids.push(pid);
         }
@@ -2811,7 +2870,11 @@ async fn show_status() -> Result<()> {
     if pids.is_empty() {
         println!("uscreen is not running");
     } else {
-        let pids = pids.iter().map(u32::to_string).collect::<Vec<_>>().join(" ");
+        let pids = pids
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(" ");
         println!("uscreen is running (PID: {})", pids);
     }
     Ok(())

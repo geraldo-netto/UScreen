@@ -10,7 +10,10 @@
 //! their percentiles cannot be summed into total display latency.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex, atomic::{AtomicU32, Ordering}};
+use std::sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc, Mutex,
+};
 use std::time::Instant;
 use tracing::info;
 

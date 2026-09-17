@@ -165,7 +165,9 @@ impl Encoder {
             match self.inner.receive_packet(&mut packet) {
                 Ok(()) => {}
                 Err(ffmpeg_next::Error::Eof) => break,
-                Err(ffmpeg_next::Error::Other { errno: libc::EAGAIN }) => break,
+                Err(ffmpeg_next::Error::Other {
+                    errno: libc::EAGAIN,
+                }) => break,
                 Err(error) => return Err(error).context("receive encoded packet"),
             }
             if let Some(data) = packet.data() {
@@ -250,7 +252,10 @@ pub fn run(
             let seq = latency.next_sequence();
             if tx.receiver_count() > 0 {
                 latency.on_encoded(seq);
-                let _ = tx.send(crate::capture::VideoPacket { data, is_idr, seq,
+                let _ = tx.send(crate::capture::VideoPacket {
+                    data,
+                    is_idr,
+                    seq,
                     codec_config: codec_config.lock().ok().and_then(|g| g.clone()),
                     generation: generation.active.clone(),
                 });
@@ -280,7 +285,10 @@ fn refresh_codec_config(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    };
 
     #[test]
     fn t266_reused_input_preserves_retained_frame_planes() {
@@ -289,16 +297,25 @@ mod tests {
         let mut retained = ffmpeg_next::frame::Video::empty();
         // Model libavcodec retaining input using its real reference-counted buffers.
         unsafe {
-            assert_eq!(ffmpeg_next::ffi::av_frame_ref(retained.as_mut_ptr(), encoder.frame.as_ptr()), 0);
-            assert_eq!(ffmpeg_next::ffi::av_frame_is_writable(encoder.frame.as_mut_ptr()), 0);
+            assert_eq!(
+                ffmpeg_next::ffi::av_frame_ref(retained.as_mut_ptr(), encoder.frame.as_ptr()),
+                0
+            );
+            assert_eq!(
+                ffmpeg_next::ffi::av_frame_is_writable(encoder.frame.as_mut_ptr()),
+                0
+            );
         }
         encoder.encode(&vec![192; 64 * 64 * 3 / 2], false).unwrap();
         for plane in 0..2 {
             for row in 0..(64 >> plane) {
                 let old = row * retained.stride(plane);
                 let new = row * encoder.frame.stride(plane);
-                assert_eq!(&retained.data(plane)[old..old + 64], &[64; 64],
-                    "T266: a retained frame changed after the next submission");
+                assert_eq!(
+                    &retained.data(plane)[old..old + 64],
+                    &[64; 64],
+                    "T266: a retained frame changed after the next submission"
+                );
                 assert_eq!(&encoder.frame.data(plane)[new..new + 64], &[192; 64]);
             }
         }
@@ -309,21 +326,32 @@ mod tests {
         ffmpeg_next::init().unwrap();
         // A real libavcodec EINVAL exercises the failure path without hardware.
         let context = ffmpeg_next::codec::context::Context::new()
-            .encoder().video().unwrap();
+            .encoder()
+            .video()
+            .unwrap();
         let mut encoder = Encoder {
             inner: ffmpeg_next::codec::encoder::video::Encoder(context),
             frame: ffmpeg_next::frame::Video::empty(),
             pts: 0,
         };
-        let error = encoder.drain().expect_err("T265: receive failures must reach the supervisor");
-        assert_eq!(error.downcast_ref::<ffmpeg_next::Error>(),
-            Some(&ffmpeg_next::Error::Other { errno: libc::EINVAL }));
+        let error = encoder
+            .drain()
+            .expect_err("T265: receive failures must reach the supervisor");
+        assert_eq!(
+            error.downcast_ref::<ffmpeg_next::Error>(),
+            Some(&ffmpeg_next::Error::Other {
+                errno: libc::EINVAL
+            })
+        );
     }
 
     #[test]
     fn t265_drain_preserves_packets_and_normal_exhaustion() {
         let mut encoder = Encoder::new("libx264", 64, 64, 60, 500, 20).unwrap();
-        assert!(encoder.drain().unwrap().is_empty(), "T265: EAGAIN is normal");
+        assert!(
+            encoder.drain().unwrap().is_empty(),
+            "T265: EAGAIN is normal"
+        );
         let packets = encoder.encode(&vec![128; 64 * 64 * 3 / 2], true).unwrap();
         assert!(!packets.is_empty());
         assert!(packets.iter().any(|(data, key)| !data.is_empty() && *key));
@@ -341,9 +369,26 @@ mod tests {
         let stop = Arc::new(AtomicBool::new(false));
         let stopped = stop.clone();
         let writer_path = fifo.clone();
-        let task = std::thread::spawn(move || run(fifo.to_str().unwrap(), "libx264", 64, 64, 60, 500, 20,
-            tx, Arc::new(Mutex::new(None)), Arc::new(AtomicBool::new(false)), stopped, latency));
-        let mut writer = std::fs::OpenOptions::new().write(true).open(writer_path).unwrap();
+        let task = std::thread::spawn(move || {
+            run(
+                fifo.to_str().unwrap(),
+                "libx264",
+                64,
+                64,
+                60,
+                500,
+                20,
+                tx,
+                Arc::new(Mutex::new(None)),
+                Arc::new(AtomicBool::new(false)),
+                stopped,
+                latency,
+            )
+        });
+        let mut writer = std::fs::OpenOptions::new()
+            .write(true)
+            .open(writer_path)
+            .unwrap();
         writer.write_all(&vec![128; 64 * 64 * 3 / 2]).unwrap();
         let packet = rx.blocking_recv().unwrap();
         stop.store(true, Ordering::SeqCst);
@@ -356,7 +401,10 @@ mod tests {
         let latency = crate::latency::LatencyTracker::new();
         let old = t228_encode_one(latency.clone());
         let fresh = t228_encode_one(latency.clone());
-        assert_ne!(old, fresh, "T228: old and fresh frames cannot share an ACK identifier");
+        assert_ne!(
+            old, fresh,
+            "T228: old and fresh frames cannot share an ACK identifier"
+        );
         latency.on_rendered(fresh, 0);
         latency.on_rendered(old, 0);
     }

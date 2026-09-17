@@ -53,7 +53,9 @@ pub fn evdi_connectors() -> Vec<EvdiConnector> {
     let cards = evdi_cards();
     for entry in entries.flatten() {
         let file_name = entry.file_name();
-        let Some(name) = file_name.to_str() else { continue };
+        let Some(name) = file_name.to_str() else {
+            continue;
+        };
         // Entries look like "card2-DVI-I-1"; the part after the dash is the
         // connector name the compositor uses.
         let Some((card_part, connector)) = name.split_once('-') else {

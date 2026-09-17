@@ -2026,10 +2026,18 @@ fn apply_tablet_resolution(
         width, height, width_mm, height_mm
     );
     let Some(tx) = settings_tx else { return };
-    let Some(new) = negotiated_geometry(&tx.borrow(), (width, height), (width_mm, height_mm),
-        crate::config::FileConfig::load().auto_resolution) else { return };
+    let Some(new) = negotiated_geometry(
+        &tx.borrow(),
+        (width, height),
+        (width_mm, height_mm),
+        crate::config::FileConfig::load().auto_resolution,
+    ) else {
+        return;
+    };
     tx.send_if_modified(|current| {
-        if *current == new { return false; }
+        if *current == new {
+            return false;
+        }
         *current = new;
         true
     });
@@ -2042,12 +2050,15 @@ fn negotiated_geometry(
     auto_resolution: bool,
 ) -> Option<EncoderSettings> {
     if !(640..=crate::config::MAX_DIMENSION).contains(&pixels.0)
-        || !(480..=crate::config::MAX_DIMENSION).contains(&pixels.1) {
+        || !(480..=crate::config::MAX_DIMENSION).contains(&pixels.1)
+    {
         warn!("Ignoring implausible resolution {}x{}", pixels.0, pixels.1);
         return None;
     }
     let mut settings = current.clone();
-    if auto_resolution { (settings.width, settings.height) = pixels; }
+    if auto_resolution {
+        (settings.width, settings.height) = pixels;
+    }
     (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
     settings.geometry_ready = true;
     Some(settings)
@@ -2631,7 +2642,10 @@ fi
             let next = negotiated_geometry(&initial, (1280, 800), (220, 138), auto).unwrap();
             assert!(next.geometry_ready);
             assert_eq!((next.width_mm, next.height_mm), (220, 138));
-            assert_eq!((next.width, next.height), if auto { (1280, 800) } else { (1920, 1080) });
+            assert_eq!(
+                (next.width, next.height),
+                if auto { (1280, 800) } else { (1920, 1080) }
+            );
         }
         assert!(negotiated_geometry(&initial, (0, 0), (220, 138), false).is_none());
     }

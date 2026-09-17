@@ -119,13 +119,16 @@ pub struct EncoderGeneration {
 
 impl EncoderGeneration {
     pub fn new() -> Self {
-        Self { active: Arc::new(std::sync::atomic::AtomicBool::new(true)) }
+        Self {
+            active: Arc::new(std::sync::atomic::AtomicBool::new(true)),
+        }
     }
 }
 
 impl Drop for EncoderGeneration {
     fn drop(&mut self) {
-        self.active.store(false, std::sync::atomic::Ordering::Release);
+        self.active
+            .store(false, std::sync::atomic::Ordering::Release);
     }
 }
 
@@ -152,7 +155,14 @@ pub struct EncoderSettings {
 
 impl EncoderSettings {
     fn helper_geometry(&self) -> (u32, u32, u32, u32, u32, u32) {
-        (self.width, self.height, self.width_mm, self.height_mm, self.fps, self.stream_scale)
+        (
+            self.width,
+            self.height,
+            self.width_mm,
+            self.height_mm,
+            self.fps,
+            self.stream_scale,
+        )
     }
 }
 
@@ -2009,16 +2019,30 @@ mod tests {
     async fn t228_sequences_survive_encoder_restarts_before_ack() {
         let latency = crate::latency::LatencyTracker::new();
         let (tx, mut rx) = broadcast::channel(8);
-        let input = [nal(NAL_TYPE_IDR, &[0x80, 0x11]),
-            nal(NAL_TYPE_NON_IDR, &[0x80, 0x22])].concat();
+        let input = [
+            nal(NAL_TYPE_IDR, &[0x80, 0x11]),
+            nal(NAL_TYPE_NON_IDR, &[0x80, 0x22]),
+        ]
+        .concat();
         let mut sequences = Vec::new();
         for _ in 0..2 {
-            CaptureManager::read_loop(input.as_slice(), tx.clone(),
-                Arc::new(Mutex::new(None)), latency.clone(), Codec::H264).await.unwrap();
+            CaptureManager::read_loop(
+                input.as_slice(),
+                tx.clone(),
+                Arc::new(Mutex::new(None)),
+                latency.clone(),
+                Codec::H264,
+            )
+            .await
+            .unwrap();
             sequences.push(rx.recv().await.unwrap().seq);
             sequences.push(rx.recv().await.unwrap().seq);
         }
-        assert_eq!(sequences, vec![0, 1, 2, 3], "T228: restarted encoders must not reuse pending ACK identifiers");
+        assert_eq!(
+            sequences,
+            vec![0, 1, 2, 3],
+            "T228: restarted encoders must not reuse pending ACK identifiers"
+        );
         latency.on_rendered(sequences[2], 0);
         latency.on_rendered(sequences[0], 0); // delayed ACK from retired encoder
         latency.on_rendered(sequences[3], 0);
@@ -2131,7 +2155,9 @@ mod tests {
 
     #[tokio::test]
     async fn t223_initial_attach_waits_for_geometry_on_each_daemon_start() {
-        for _ in 0..2 { t223_initial_attach().await; }
+        for _ in 0..2 {
+            t223_initial_attach().await;
+        }
     }
 
     async fn t223_initial_attach() {
@@ -2150,18 +2176,41 @@ mod tests {
         let (shutdown, stop) = watch::channel(false);
         let (video, _) = broadcast::channel(8);
         let task = tokio::spawn(async move {
-            manager.stream_frames(video, settings_rx, display, stop).await.unwrap();
+            manager
+                .stream_frames(video, settings_rx, display, stop)
+                .await
+                .unwrap();
             manager.config.clone()
         });
         tokio::time::sleep(std::time::Duration::from_millis(80)).await;
         let premature = helper.with_extension("log").exists();
-        settings.send_modify(|s| { s.width = 1280; s.height = 800; s.width_mm = 220; s.height_mm = 138; s.geometry_ready = true; });
+        settings.send_modify(|s| {
+            s.width = 1280;
+            s.height = 800;
+            s.width_mm = 220;
+            s.height_mm = 138;
+            s.geometry_ready = true;
+        });
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         shutdown.send(true).unwrap();
         let config = task.await.unwrap();
-        assert!(!premature, "T223: attached default mode before tablet metadata");
-        assert_eq!((config.width, config.height, config.width_mm, config.height_mm), (1280, 800, 220, 138));
-        assert_eq!(std::fs::read_to_string(helper.with_extension("log")).unwrap(), "attach\n");
+        assert!(
+            !premature,
+            "T223: attached default mode before tablet metadata"
+        );
+        assert_eq!(
+            (
+                config.width,
+                config.height,
+                config.width_mm,
+                config.height_mm
+            ),
+            (1280, 800, 220, 138)
+        );
+        assert_eq!(
+            std::fs::read_to_string(helper.with_extension("log")).unwrap(),
+            "attach\n"
+        );
     }
 
     #[tokio::test]
@@ -2174,20 +2223,43 @@ mod tests {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             tx.send_modify(|s| s.bitrate += 1000);
         };
-        let (result, _) = tokio::join!(CaptureManager::while_settings_current(
-            &mut settings, &mut display, &mut shutdown,
-            tokio::time::sleep(std::time::Duration::from_millis(40)), true), update);
-        assert!(result.is_some(), "T223: encoder settings must not cancel the attaching helper");
-        assert!(settings.has_changed().unwrap(), "T223: apply new encoder settings before encoding");
+        let (result, _) = tokio::join!(
+            CaptureManager::while_settings_current(
+                &mut settings,
+                &mut display,
+                &mut shutdown,
+                tokio::time::sleep(std::time::Duration::from_millis(40)),
+                true
+            ),
+            update
+        );
+        assert!(
+            result.is_some(),
+            "T223: encoder settings must not cancel the attaching helper"
+        );
+        assert!(
+            settings.has_changed().unwrap(),
+            "T223: apply new encoder settings before encoding"
+        );
         settings.borrow_and_update();
         let update = async {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             tx.send_modify(|s| s.width = 1280);
         };
-        let (result, _) = tokio::join!(CaptureManager::while_settings_current(
-            &mut settings, &mut display, &mut shutdown,
-            std::future::pending::<()>(), true), update);
-        assert!(result.is_none(), "T223: geometry change must interrupt stale helper setup");
+        let (result, _) = tokio::join!(
+            CaptureManager::while_settings_current(
+                &mut settings,
+                &mut display,
+                &mut shutdown,
+                std::future::pending::<()>(),
+                true
+            ),
+            update
+        );
+        assert!(
+            result.is_none(),
+            "T223: geometry change must interrupt stale helper setup"
+        );
     }
 
     #[tokio::test]
