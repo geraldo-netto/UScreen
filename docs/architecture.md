@@ -474,7 +474,15 @@ process-wide retirement registry prevents a newly created Activity/receiver
 from allocating another codec while native cleanup remains unfinished. This is
 a retirement barrier, not a one-active-codec limit. A permanently stuck native
 call retains its storage and prevents decoder reconnection in that process.
-Codec creation/configuration still occurs within the receiver monitor.
+Codec setup runs on the receiver's I/O worker. It reserves a startup under the
+shared monitor and process-wide startup gate, then creates, configures and
+starts the codec outside the receiver monitor. It rechecks ownership and
+Surface/run validity between stages and publishes the finished codec under the
+monitor only if the attempt is still current. Invalidating a pending startup
+prevents publication; the worker retains its local codec until the native call
+returns, then retires that unpublished codec. The startup gate prevents another
+attempt across Activity recreation until this attempt finishes; unfinished
+native cleanup continues to block new allocation through the retirement registry.
 
 Codec invalidation interrupts the transport so reconnect obtains fresh
 configuration and a keyframe. Feeds check run generation and codec identity;
