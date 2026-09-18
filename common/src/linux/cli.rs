@@ -43,6 +43,10 @@ pub struct Cli {
     #[arg(long = "stream-scale")]
     pub stream_scale: Option<u32>,
 
+    /// Linux conversion participants per helper: auto (default), or 1–128.
+    #[arg(long = "conversion-threads", value_parser = parse_conversion_threads)]
+    pub conversion_threads: Option<u32>,
+
     /// Drive the laptop's own screen with the pen instead of streaming a second
     /// display to the tablet.
     #[arg(long = "pen-only")]
@@ -53,6 +57,17 @@ pub struct Cli {
 
     #[arg(long = "input-port")]
     pub input_port: Option<u16>,
+}
+
+fn parse_conversion_threads(value: &str) -> Result<u32, String> {
+    if value == "auto" {
+        return Ok(0);
+    }
+    let count: u32 = value.parse().map_err(|_| "Use auto or 1–128".to_string())?;
+    if count > crate::model::MAX_CONVERSION_THREADS {
+        return Err("Use auto or 1–128".into());
+    }
+    Ok(count)
 }
 
 #[derive(Subcommand)]

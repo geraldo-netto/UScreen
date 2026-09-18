@@ -22,6 +22,30 @@ fn manager_settings(manager: &CaptureManager) -> EncoderSettings {
         selection: None,
     }
 }
+
+#[test]
+fn t474_helper_command_forwards_conversion_capacity() {
+    let dir = tempfile::tempdir().unwrap();
+    for count in [0, 1, 128] {
+        let mut manager = test_manager();
+        manager.config.edid_path = Some(dir.path().join("edid"));
+        manager.config.conversion_threads = count;
+        let command = manager
+            .helper
+            .command(&manager.config, &dir.path().join("fifo"))
+            .unwrap();
+        let args: Vec<_> = command
+            .as_std()
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect();
+        let position = args
+            .iter()
+            .position(|arg| arg == "--conversion-threads")
+            .unwrap();
+        assert_eq!(args[position + 1], count.to_string());
+    }
+}
 #[tokio::test]
 async fn t347_helper_receives_the_original_edid_filename() {
     use std::os::unix::{ffi::OsStringExt, fs::PermissionsExt};

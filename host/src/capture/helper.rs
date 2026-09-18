@@ -224,6 +224,10 @@ impl HelperProcess {
         let mut cmd = Command::new(&config.helper_path);
         cmd.arg("--edid").arg(edid_path);
         cmd.args(["--fps", &config.fps.to_string()]);
+        cmd.args([
+            "--conversion-threads",
+            &config.conversion_threads.to_string(),
+        ]);
         if config.stream_scale > 1 {
             cmd.args(["--scale", &config.stream_scale.to_string()]);
         }

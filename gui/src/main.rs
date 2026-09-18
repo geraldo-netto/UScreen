@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod conversion_settings;
 mod pipe_settings;
 mod settings;
 mod status_poll;
@@ -1148,6 +1149,7 @@ impl App {
         self.setting_colour_depth(ui);
         self.setting_resolution(ui);
         self.setting_stream_detail(ui);
+        conversion_settings::show(ui, &mut self.cfg.conversion_threads);
         let status = self.status.lock().unwrap().clone();
         pipe_settings::show(ui, &mut self.cfg.pipe_capacity_mib, &status);
     }
@@ -1714,6 +1716,37 @@ mod tests {
             let status = app.status.lock().unwrap().clone();
             pipe_settings::show(ui, &mut app.cfg.pipe_capacity_mib, &status);
         })
+    }
+
+    fn conversion_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            conversion_settings::show(ui, &mut app.cfg.conversion_threads);
+        })
+    }
+
+    #[test]
+    fn t474_conversion_control_switches_auto_manual_and_preserves_custom_capacity() {
+        let mut app = settings_test_app(Tab::Video);
+        app.cfg = app.saved_cfg.clone();
+        let ctx = egui::Context::default();
+        click_settings_text(&mut app, &ctx, "Auto", conversion_test_frame);
+        click_settings_text(&mut app, &ctx, "Manual", conversion_test_frame);
+        assert_eq!(app.cfg.conversion_threads, 1);
+        assert!(app.cfg.requires_restart_from(&app.saved_cfg));
+        app.cfg.conversion_threads = 128;
+        let text = conversion_test_frame(&mut app, &ctx, vec![]);
+        assert!(
+            text.iter().any(|(label, _)| label.contains("128")),
+            "T474: {text:?}"
+        );
+        assert_eq!(app.cfg.conversion_threads, 128);
+        click_settings_text(&mut app, &ctx, "Manual", conversion_test_frame);
+        click_settings_text(&mut app, &ctx, "Auto", conversion_test_frame);
+        assert_eq!(app.cfg, app.saved_cfg);
     }
 
     fn collect_text_rects(shape: &egui::Shape, text: &mut Vec<(String, egui::Rect)>) {

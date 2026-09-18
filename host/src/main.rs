@@ -97,6 +97,7 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
         height: cli.height.unwrap_or(saved.height),
         quality: cli.quality.unwrap_or(saved.quality),
         stream_scale: cli.stream_scale.unwrap_or(saved.stream_scale),
+        conversion_threads: cli.conversion_threads.unwrap_or(saved.conversion_threads),
         video_port: cli.video_port.unwrap_or(saved.video_port),
         input_port: cli.input_port.unwrap_or(saved.input_port),
         pen_only: cli.pen_only || saved.pen_only,
@@ -108,6 +109,53 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 
 #[cfg(test)]
 mod cli_tests {
+    #[test]
+    fn t474_cli_overrides_saved_capacity_and_reaches_every_slot() {
+        use super::*;
+        let saved = config::FileConfig {
+            conversion_threads: 64,
+            ..Default::default()
+        };
+        assert_eq!(
+            effective_config(&Cli::try_parse_from(["uscreen"]).unwrap(), &saved).conversion_threads,
+            64
+        );
+        for (value, expected) in [("auto", 0), ("1", 1), ("128", 128)] {
+            let cli = Cli::try_parse_from(["uscreen", "--conversion-threads", value]).unwrap();
+            let effective = effective_config(&cli, &saved);
+            assert_eq!(effective.conversion_threads, expected);
+            let template = capture::CaptureConfig {
+                conversion_threads: effective.conversion_threads,
+                ..Default::default()
+            };
+            for instance in 0..4 {
+                assert_eq!(
+                    slot_capture_config(template.clone(), instance).conversion_threads,
+                    expected
+                );
+            }
+        }
+        assert_eq!(
+            saved.conversion_threads, 64,
+            "T474: CLI must not persist the override"
+        );
+    }
+    #[test]
+    fn t474_conversion_capacity_cli_accepts_auto_and_bounds() {
+        use super::*;
+        for value in ["auto", "0", "1", "64", "128"] {
+            assert!(
+                Cli::try_parse_from(["uscreen", "--conversion-threads", value]).is_ok(),
+                "T474: {value}"
+            );
+        }
+        for value in ["129", "-1", "garbage", "4294967296"] {
+            assert!(
+                Cli::try_parse_from(["uscreen", "--conversion-threads", value]).is_err(),
+                "T474: {value}"
+            );
+        }
+    }
     // Configuration writers are exercised only in child processes with a private XDG tree.
     fn isolated_config_test(name: &str) -> bool {
         if std::env::var_os("USCREEN_CONFIG_TEST_CHILD").is_some() {
@@ -1463,6 +1511,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             width_mm: edid::DEFAULT_WIDTH_MM,
             height_mm: edid::DEFAULT_HEIGHT_MM,
             stream_scale,
+            conversion_threads: effective.conversion_threads,
             position: config::Position::parse_or_default(&file_cfg.position),
             ten_bit: file_cfg.ten_bit,
             instance: 0,

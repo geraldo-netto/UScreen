@@ -17,6 +17,8 @@ pub struct CaptureConfig {
     pub width_mm: u32,
     pub height_mm: u32,
     pub stream_scale: u32,
+    /// Maximum Linux conversion participants including the caller; 0 = Auto.
+    pub conversion_threads: u32,
     /// Which edge of the existing desktop the virtual screen sits against.
     /// Not an encoder setting: changing it moves a window, it does not
     /// restart a stream.
@@ -45,6 +47,7 @@ impl Default for CaptureConfig {
             width_mm: crate::edid::DEFAULT_WIDTH_MM,
             height_mm: crate::edid::DEFAULT_HEIGHT_MM,
             stream_scale: 1,
+            conversion_threads: 0,
             position: crate::config::Position::Right,
             ten_bit: false,
             instance: 0,

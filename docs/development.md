@@ -218,12 +218,28 @@ them. See the README for config paths and the app gear-menu controls.
 | `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
 | `stream_scale` | 1 | Integer 1–4; divides stream dimensions, not capture dimensions |
 | `pipe_capacity_mib` | 1 | Linux raw capture pipe request per tablet: 1, 2, 4 or 8 MiB; [live apply, kernel limits and actual capacity](pipe-buffer.md) |
+| `conversion_threads` | 0 (Auto) | Linux conversion capacity per helper: 1–128 participants including the caller; explicit restart required |
 | `position` / `pen_only` | `right` / false | Placement / graphics-tablet mode |
 | `ten_bit` | false | HEVC FFmpeg path only; not HDR |
 | `max_tablets` | 1 | Up to four slots; EVDI capacity required |
 | `input_touch` / `input_pen` / `input_pointer` | true / true / true | Pointer creation also requires pen |
 | `video_port` / `input_port` | 8890 / 8891 | Incremented by two per additional slot |
 | `require_token` / `check_updates` / `auto_launch_app` | true / true / true | Keep authentication enabled; update checks are optional |
+
+On Linux, **Video → Conversion capacity** offers Auto or a manual 1–128 value.
+Use **Apply & restart** after changing it. Auto uses startup CPU affinity minus
+two, with at least one participant. Manual capacity bypasses that heuristic;
+dirty-work dispatch still uses fewer participants for small updates. The calling
+thread counts toward the limit, so 1 creates no conversion workers. Capacity
+does not limit encoder threads or the application's total threads.
+
+The equivalent CLI override is `uscreen --conversion-threads 8 start`; use
+`--conversion-threads auto` (or 0) to restore Auto for that run. CLI overrides
+do not change saved preferences. The startup log reports requested and effective
+capacity, which may be lower if worker creation fails. The setting applies to
+every helper: four active tablets can request four separate pools. Higher values
+consume more threads and may increase scheduling overhead; no throughput or
+latency gain on larger machines has been established. Tune for the workload.
 | `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
 
 Graphics-tablet mode requires `input_pen = true`. The GUI prevents incompatible

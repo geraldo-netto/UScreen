@@ -44,6 +44,7 @@ static fifo_writer_t g_fifo = FIFO_WRITER_INITIALIZER(&g_running, &g_frames.gene
 static writer_context_t g_writer = {&g_frames, &g_fifo, &g_running, 60};
 static int g_pin_card = -1;
 static int g_preferred_card = -1;
+static int g_conversion_threads; /* zero preserves Auto's affinity budget */
 
 static void handle_signal(int sig) {
     (void)sig;
@@ -68,9 +69,15 @@ static long available_cpus(void) {
 }
 
 static void conv_pool_init(void) {
-    long cpus = available_cpus();
-    if (cpus > MAX_CONV_THREADS + 2) cpus = MAX_CONV_THREADS + 2;
-    conv_pool_start(&g_conversion, (int)(cpus - 2));
+    int requested = g_conversion_threads;
+    if (!requested) {
+        long cpus = available_cpus();
+        if (cpus > MAX_CONV_THREADS + 2) cpus = MAX_CONV_THREADS + 2;
+        requested = cpus > 2 ? (int)(cpus - 2) : 1;
+    }
+    conv_pool_start(&g_conversion, requested);
+    fprintf(stderr, "[evdi-helper] Conversion capacity: policy=%s requested=%d effective=%d (including caller)\n",
+            g_conversion_threads ? "manual" : "auto", requested, g_conversion.count);
 }
 
 static int choose_card_after(const char *name, int after, int found) {
@@ -233,10 +240,18 @@ static int set_numeric_option(const char *name, const char *value) {
     return 1;
 }
 
+static int conversion_capacity(const char *value) {
+    char *end;
+    errno = 0;
+    long count = strtol(value, &end, 10);
+    return !errno && end != value && *end == '\0' && count >= 0 && count <= MAX_CONV_THREADS ? (int)count : 0;
+}
+
 static int set_helper_option(helper_options_t *options, const char *name, const char *value) {
     if (strcmp(name, "--edid") == 0) options->edid_path = value;
     else if (strcmp(name, "--capture-fifo") == 0) options->fifo_path = value;
     else if (strcmp(name, "--pipe-size-file") == 0) g_fifo.capacity_path = value;
+    else if (strcmp(name, "--conversion-threads") == 0) g_conversion_threads = conversion_capacity(value);
     else return set_numeric_option(name, value);
     return 1;
 }
@@ -392,7 +407,7 @@ int main(int argc, char *argv[]) {
     const char *fifo_path = options.fifo_path;
 
     if (!edid_path) {
-        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>] [--pipe-size-file <path>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>] [--pipe-size-file <path>] [--conversion-threads <0-128>]\n", argv[0]);
         return 1;
     }
 

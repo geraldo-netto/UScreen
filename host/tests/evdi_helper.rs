@@ -89,6 +89,11 @@ impl Drop for Harness {
 }
 
 #[test]
+fn t474_manual_conversion_capacity_ignores_affinity_and_handles_partial_creation() {
+    Harness::build("T474").run("T474");
+}
+
+#[test]
 fn t343_capture_destination_must_be_a_fifo() {
     Harness::build("T343").run("T343");
 }

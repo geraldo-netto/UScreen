@@ -549,6 +549,37 @@ static void test_t383_affinity(void) {
     }
 }
 
+static void t474_capacity_case(const char *request, int effective, int failure) {
+    pid_t child = fork();
+    assert(child >= 0);
+    if (child == 0) {
+        permitted_cpus = 1;
+        fail_worker = failure;
+        char *args[] = {"helper", "--conversion-threads", (char *)request};
+        parse_helper_options(3, args);
+        conv_pool_init();
+        assert(g_conversion.count == effective && "T474: explicit capacity ignored or incorrect failure accounting");
+        test_conversion(8, 8, 1);
+        conv_pool_destroy(&g_conversion);
+        _exit(0);
+    }
+    int status;
+    assert(waitpid(child, &status, 0) == child);
+    assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+}
+
+static void test_t474_capacity(void) {
+    t474_capacity_case("0", 1, 0);
+    t474_capacity_case("1", 1, 0);
+    t474_capacity_case("8", 8, 0);
+    t474_capacity_case("128", 128, 0);
+    t474_capacity_case("128", 3, 3);
+    t474_capacity_case("129", 1, 0);
+    t474_capacity_case("-1", 1, 0);
+    t474_capacity_case("8junk", 1, 0);
+    t474_capacity_case("4294967304", 1, 0);
+}
+
 static void test_t047(void) {
     fail_worker = 2;
     conv_pool_init();
@@ -1281,6 +1312,7 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T474", test_t474_capacity},
         {"T415-open", test_t415_open},
         {"T415-live", test_t415_live},
         {"T415-rounding", test_t415_rounding},

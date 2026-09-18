@@ -106,6 +106,38 @@ impl PendingSave {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t474_save_preserves_capacity_and_restarts_once_after_commit() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let baseline = store.load();
+        let edited = FileConfig {
+            conversion_threads: 128,
+            ..baseline.clone()
+        };
+        assert_eq!(apply_label(true, &edited, &baseline), "Apply & restart");
+        let readback = store.clone();
+        let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let restarted = calls.clone();
+        let saved = PendingSave::start_with_pipe(
+            store.clone(),
+            edited,
+            baseline,
+            Some(Box::new(move || {
+                assert_eq!(readback.load().conversion_threads, 128);
+                restarted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Ok(())
+            })),
+            Box::new(|_| panic!("T474: capacity-only edit must not publish pipe settings")),
+        )
+        .finish()
+        .unwrap();
+        assert_eq!(saved.config.conversion_threads, 128);
+        assert!(saved.restart.unwrap().is_ok());
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(store.load().conversion_threads, 128);
+    }
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,

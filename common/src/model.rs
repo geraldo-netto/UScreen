@@ -59,6 +59,15 @@ pub fn supported_encoder(name: &str) -> bool {
 }
 
 pub const PIPE_CAPACITIES_MIB: [u32; 4] = [1, 2, 4, 8];
+pub const MAX_CONVERSION_THREADS: u32 = 128;
+
+pub fn validated_conversion_threads(value: u32) -> u32 {
+    if value <= MAX_CONVERSION_THREADS {
+        value
+    } else {
+        0
+    }
+}
 
 pub fn validated_pipe_capacity(value: u32) -> u32 {
     if PIPE_CAPACITIES_MIB.contains(&value) {
@@ -93,6 +102,8 @@ pub struct FileConfig {
     pub stream_scale: u32,
     /// Linux raw capture pipe request, per active tablet. Kernel limits may reduce it.
     pub pipe_capacity_mib: u32,
+    /// Linux conversion participants per helper, including caller. Zero = Auto.
+    pub conversion_threads: u32,
     /// Use the tablet as a graphics tablet for the laptop's own screen rather
     /// than as a second display: no capture, no encoding, nothing streamed —
     /// the pen and touch simply drive the screen you are already looking at.
@@ -160,6 +171,7 @@ impl Default for FileConfig {
             quality: DEFAULT_QUALITY,
             stream_scale: 1,
             pipe_capacity_mib: 1,
+            conversion_threads: 0,
             pen_only: false,
             position: "right".into(),
             ten_bit: false,
@@ -283,6 +295,7 @@ impl FileConfig {
         self.quality = self.quality.clamp(MIN_QUALITY, MAX_QUALITY);
         self.stream_scale = self.stream_scale.clamp(1, 4);
         self.pipe_capacity_mib = validated_pipe_capacity(self.pipe_capacity_mib);
+        self.conversion_threads = validated_conversion_threads(self.conversion_threads);
         self.max_tablets = self.max_tablets.clamp(1, 4);
         self.width = self.width.clamp(640, MAX_DIMENSION);
         self.height = self.height.clamp(480, MAX_DIMENSION);
@@ -303,6 +316,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn t474_conversion_capacity_defaults_round_trips_and_rejects_invalid_values() {
+        let old: FileConfig = toml::from_str("fps = 60").unwrap();
+        assert_eq!(
+            toml::Value::try_from(old)
+                .unwrap()
+                .get("conversion_threads")
+                .and_then(toml::Value::as_integer),
+            Some(0)
+        );
+        for (value, expected) in [
+            (0, 0),
+            (1, 1),
+            (64, 64),
+            (128, 128),
+            (129, 0),
+            (u32::MAX, 0),
+        ] {
+            let mut config: FileConfig =
+                toml::from_str(&format!("conversion_threads = {value}")).unwrap();
+            config.sanitize();
+            assert_eq!(
+                toml::Value::try_from(config)
+                    .unwrap()
+                    .get("conversion_threads")
+                    .and_then(toml::Value::as_integer),
+                Some(expected)
+            );
+        }
+    }
+
+    #[test]
     fn t415_pipe_capacity_round_trips_and_invalid_values_fall_back() {
         for (value, expected) in [(1, 1), (2, 2), (4, 4), (8, 8), (0, 1), (3, 1), (16, 1)] {
             let mut config: FileConfig =
@@ -319,6 +363,25 @@ mod tests {
         }
         let defaults = toml::Value::try_from(FileConfig::default()).unwrap();
         assert_eq!(defaults["pipe_capacity_mib"].as_integer(), Some(1));
+    }
+
+    #[test]
+    fn t474_conversion_edit_merges_and_requires_explicit_restart() {
+        let baseline = FileConfig::default();
+        let latest = FileConfig {
+            pipe_capacity_mib: 4,
+            ..baseline.clone()
+        };
+        let edited = FileConfig {
+            conversion_threads: 128,
+            ..baseline.clone()
+        };
+        let merged = edited.merge_edits(&baseline, latest).unwrap();
+        assert_eq!(merged.conversion_threads, 128);
+        assert_eq!(merged.pipe_capacity_mib, 4);
+        assert!(merged.requires_restart_from(&baseline));
+        let unchanged = baseline.merge_edits(&baseline, merged.clone()).unwrap();
+        assert_eq!(unchanged, merged);
     }
 
     #[test]
