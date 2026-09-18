@@ -1,24 +1,41 @@
 # Rust
 /target/
 /target-portability/
+/target-deb12/
 
 # Cargo.lock is committed intentionally (this is a binary project)
 
 # Android
 android/.gradle/
+android/.kotlin/
 android/build/
 android/app/build/
 android/local.properties
 android/.idea/
 *.apk
+*.aab
 
 # Release signing — NEVER commit these
-android/keystore.properties
+keystore.properties
+keystore-password.txt
 *.keystore
 *.jks
+*.[pP]12
+*.[pP][fF][xX]
+*.[kK][eE][yY]
+*.[pP][eE][mM]
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+# This certificate contains only the fork's public verification key.
+!/docs/release-certificate.pem
 
-# Release tarballs
+# Release output (keep archived benchmark evidence under docs/ visible)
 /dist/
+/*.AppImage
+/AppDir/
+/*.AppDir/
 
 # EDID binaries (regenerate with: python3 scripts/gen-edid.py)
 edid/*.bin
@@ -26,6 +43,8 @@ s9ultra.bin
 
 # EVDI compiled helper
 host/evdi/evdi_helper
+host/evdi/*.o
+host/evdi/*.a
 
 # OS
 .DS_Store
@@ -36,6 +55,8 @@ host/evdi/evdi_helper
 # Temporary files
 /tmp/
 *.fifo
+hs_err_pid*.log
+replay_pid*.log
 
 # Local tooling and notes — not part of the project
 .claude/
@@ -50,7 +71,13 @@ AGENTS.md
 .env.*
 *.local
 
-# portable build tree (scripts/build-release.sh)
-target-deb12/
+# Python tooling environments and caches
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
 __pycache__/
-*.pyc
+*.py[cod]

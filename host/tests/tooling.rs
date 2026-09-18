@@ -117,6 +117,66 @@ fn t342_build_outputs_are_ignored_but_sources_are_visible() {
 }
 
 #[test]
+fn t489_private_signing_and_local_outputs_stay_out_of_git() {
+    let sandbox = Sandbox::new("signing-ignores");
+    sandbox.write(
+        ".gitignore",
+        &std::fs::read_to_string(repo().join(".gitignore")).unwrap(),
+    );
+    assert!(Command::new("git")
+        .arg("init")
+        .arg(&sandbox.0)
+        .output()
+        .unwrap()
+        .status
+        .success());
+    let cases = [
+        ("android/release.p12", true),
+        ("android/release.P12", true),
+        ("signing/release.pfx", true),
+        ("signing/release.PFX", true),
+        ("signing/release.key", true),
+        ("signing/private.pem", true),
+        ("signing/id_ed25519", true),
+        ("signing/id_rsa", true),
+        ("signing/keystore-password.txt", true),
+        ("nested/keystore.properties", true),
+        ("nested/.env.secret", true),
+        (".venv/bin/python", true),
+        ("scripts/.pytest_cache/v/cache/nodeids", true),
+        ("scripts/tests/__pycache__/fixture.pyo", true),
+        ("android/.kotlin/session", true),
+        ("android/app/release/app-release.aab", true),
+        ("UScreen.AppImage", true),
+        ("UScreen.AppDir/AppRun", true),
+        ("host/evdi/conversion.o", true),
+        ("host/evdi/libconversion.a", true),
+        ("hs_err_pid1234.log", true),
+        ("docs/release-certificate.pem", false),
+        ("Cargo.lock", false),
+        ("android/gradle/wrapper/gradle-wrapper.jar", false),
+        (".cargo/config.toml", false),
+        ("host/src/encoder.rs", false),
+        ("docs/benchmarks/trial/red.log", false),
+        ("docs/benchmarks/fixtures.tar.gz", false),
+        ("docs/benchmarks/trial/motion.bin.gz", false),
+        ("scripts/tests/example.pub", false),
+        ("testdata/raw-frame.bin", false),
+        ("signing/keystore.properties.example", false),
+    ];
+    for (name, ignored) in cases {
+        let path = sandbox.write(name, "non-secret regression fixture");
+        let status = Command::new("git")
+            .args(["-c", "core.excludesFile=/dev/null", "check-ignore", "-q"])
+            .arg(path)
+            .current_dir(&sandbox.0)
+            .status()
+            .unwrap();
+        assert_eq!(status.code(), Some(i32::from(!ignored)), "T489: {name}");
+    }
+}
+
+#[test]
 fn t034_ci_propagates_helper_build_failure_and_ships_helper() {
     let yaml = std::fs::read_to_string(repo().join(".github/workflows/build.yml")).unwrap();
     let step = yaml
