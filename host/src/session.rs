@@ -30,6 +30,8 @@ impl Spec {
             stream_scale: cfg.stream_scale,
             geometry_ready: false,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         }
     }
 
@@ -86,6 +88,7 @@ impl Spec {
             input,
             instance: self.capture.instance,
             ports: self.ports,
+            probe_config: self.capture,
         }
     }
 }
@@ -97,6 +100,8 @@ pub(crate) struct Prepared {
     pub relaunch: Arc<Notify>,
     mode: watch::Sender<bool>,
     capture: capture::CaptureManager,
+    #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+    probe_config: capture::CaptureConfig,
     stream: stream::StreamServer,
     input: input::InputServer,
     instance: u32,
@@ -118,6 +123,14 @@ impl Prepared {
         let settings_rx = self.settings_rx;
         let gate = spawn_display_gate(gate_tx, self.tablet.subscribe(), self.mode.subscribe());
         let stop = forward_shutdown(daemon_stop, stop_rx, capture_stop);
+        #[cfg(not(feature = "inproc-encoder"))]
+        let selector = crate::selection::spawn(
+            self.probe_config,
+            self.settings.clone(),
+            gate_rx.clone(),
+            capture_stop_rx.clone(),
+            self.capture.latency_tracker(),
+        );
         let mut manager = self.capture;
         let instance = self.instance;
         let capture = tokio::spawn(async move {
@@ -128,12 +141,16 @@ impl Prepared {
                 error!("Capture manager {instance} failed: {error}");
             }
         });
+        #[allow(unused_mut)]
+        let mut tasks = vec![stream, input, gate, stop];
+        #[cfg(not(feature = "inproc-encoder"))]
+        tasks.push(selector);
         Ok(Runtime {
             instance,
             tablet_tx: self.tablet,
             relaunch: self.relaunch,
             stop_tx,
-            tasks: vec![stream, input, gate, stop],
+            tasks,
             capture,
             video_port: self.ports.0,
             input_port: self.ports.1,

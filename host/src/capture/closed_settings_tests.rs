@@ -22,6 +22,8 @@ async fn t437_closed_settings_stops_idle_capture() {
         height_mm: 138,
         stream_scale: 1,
         decoders: None,
+        decoder_epoch: 0,
+        selection: None,
     });
     drop(settings_tx);
     let (_display_tx, display) = watch::channel(false);

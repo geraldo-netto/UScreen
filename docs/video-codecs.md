@@ -25,7 +25,7 @@ encoded dimensions after stream scaling. Together with `fps`, these request an
 Android capability report:
 
 ```json
-{"type":"decoders","capabilities":{"protocol":1,"width":1280,"height":800,"fps":60,"codecs":["h264","hevc","vp9","av1"]}}
+{"type":"decoders","capabilities":{"protocol":1,"width":1280,"height":800,"fps":60,"codecs":["h264","hevc","vp9","av1"],"hardware":["h264","hevc","vp9"]}}
 ```
 
 Android queries regular MediaCodec decoders for that format off the UI and
@@ -40,6 +40,61 @@ A supported-format report is advertised compatibility, not a successful decode
 trial or measured performance. Encoder startup can still fail on an unsupported
 host. Android selects a decoder by the actual configuration dimensions. Unknown
 codec names and mismatched configuration envelopes fail closed.
+
+## Automatic selection
+
+New configurations use `encoder = "auto"`; saved explicit choices are preserved.
+Linux settings also expose Automatic. The control reply contains
+`requested_encoder`, `effective_encoder` and `selection_reason`; the configured
+preference remains `auto` when the effective encoder changes.
+
+Until the current peer advertises support for the requested encoded geometry
+and FPS, automatic mode uses `libx264`. Every controller claim and retirement
+invalidates capability and selection state, including a coalesced reconnect.
+A peer without the new negotiation remains on H.264. Android reports hardware
+classification only when API 29+ provides it; older peers and versions remain
+unknown. [Hardware classification](https://developer.android.com/reference/android/media/MediaCodecInfo#isHardwareAccelerated())
+and [format support](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#isFormatSupported(android.media.MediaFormat))
+are advertised properties, not speed measurements. Framed-codec allocation
+prefers a compatible hardware decoder when that classification is available.
+
+For each advertised codec, a host worker tries its registered encoders using
+the production CLI quality/options and current geometry, render node and FPS.
+Each isolated process receives 65 deterministic NV12 frames with mixed spatial
+detail and a moving stripe. Rawvideo probe size is bounded to 32 bytes, and the
+first eight completed packets are excluded from cadence statistics. The worker
+records first output, subsequent packet-interval p95 and achieved packet rate.
+A missing encoder, unusable GPU, invalid output, excessive loss or eight-second
+deadline rejects that candidate. Probes are serialized across tablet sessions;
+they create no EVDI display or capture FIFO. The current stream continues during
+these offline probes, although resource contention can affect performance.
+
+Candidates that reach the requested FPS rank before those that do not. Within
+that class, an advertised hardware decoder ranks before software/unknown, then
+lower packet-interval p95 and first-output time break ties. This is a host
+throughput/cadence heuristic: batching affects packet intervals, the synthetic
+workload is not every desktop, and first output is not production startup time.
+It does **not** benchmark Android decoder speed, sustained thermal performance,
+image quality, or capture-to-display latency. Quantizer values are not equivalent
+across codecs. Automatic mode attempts a performant compatible choice; it does
+not claim a universally fastest codec or infer a UI gain from a newer format.
+
+The selected candidate then needs three fresh render acknowledgements within
+six seconds. Matching encoder identity and actual dimensions/rate/quality bind
+that evidence to the trial; old or duplicate acknowledgements cannot certify a
+replacement. Failed trials advance through the ranked list once, then restore
+the prior verified selection or H.264 fallback. Encoder changes can briefly
+interrupt video while preserving the capture display. The six-second check
+verifies startup rendering, not indefinite decoder reliability.
+
+Settings changes, controller replacement, inactive display and shutdown cancel
+selection and retire its child process. Interrupted trials cannot become a
+rollback target. Results stay in the current process/peer/settings epoch; there
+is no disk cache, no reuse across reconnects, and no migration of saved explicit
+preferences. The GPU path and depth are fixed for a daemon session; restarting
+for driver/configuration changes recalibrates. The optional in-process encoder
+build currently maps `auto` to `libx264`; these CLI measurements do not claim to
+rank a different adapter.
 
 ## Framing
 

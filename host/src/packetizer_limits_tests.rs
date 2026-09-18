@@ -15,7 +15,15 @@ fn nal(codec: Codec, kind: u8, payload: usize) -> Vec<u8> {
 
 async fn rejected(codec: Codec, data: &[u8]) {
     let (tx, _rx) = crate::video_queue::channel(8, Default::default());
-    let result = read_loop(data, tx, Default::default(), Default::default(), codec).await;
+    let result = read_loop(
+        data,
+        tx,
+        Default::default(),
+        Default::default(),
+        codec,
+        evidence(),
+    )
+    .await;
     assert!(result.is_err(), "T407: oversized assembly was accepted");
 }
 
@@ -65,6 +73,7 @@ fn t407_stdout_read_avoids_scratch_to_parser_payload_copy() {
             Default::default(),
             Default::default(),
             Codec::H264,
+            evidence(),
         ))
     });
     result.unwrap();
@@ -87,6 +96,7 @@ async fn t407_cancellation_retires_queued_generation_with_partial_next_nal() {
         Default::default(),
         Default::default(),
         Codec::H264,
+        evidence(),
     ));
     writer
         .write_all(&[0, 0, 0, 1, 5, 0x80, 0x55, 0, 0, 0, 1, 1, 0x80])
@@ -115,9 +125,14 @@ async fn t407_exact_frame_limit_survives_eof_and_read_boundaries() {
         Default::default(),
         Default::default(),
         Codec::H264,
+        evidence(),
     )
     .await
     .unwrap();
     assert_eq!(receiver.recv().await.unwrap().data.as_ref(), data);
     rejected(Codec::H264, &nal(Codec::H264, 1, maximum - 5)).await;
+}
+
+fn evidence() -> std::sync::Arc<crate::latency::EncoderEvidence> {
+    crate::latency::LatencyTracker::new().encoder_started("fixture", (0, 0, 0, 0, 0))
 }

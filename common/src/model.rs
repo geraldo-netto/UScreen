@@ -55,7 +55,7 @@ pub fn ffmpeg_encoder_name(name: &str) -> &str {
 }
 
 pub fn supported_encoder(name: &str) -> bool {
-    crate::encoding::find(name).is_some()
+    name == "auto" || crate::encoding::find(name).is_some()
 }
 
 /// Persistent settings, shared by the CLI daemon, the GUI and the tablet app
@@ -139,7 +139,7 @@ pub struct FileConfig {
 impl Default for FileConfig {
     fn default() -> Self {
         Self {
-            encoder: "h264_nvenc".into(),
+            encoder: "auto".into(),
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,
@@ -227,8 +227,8 @@ impl FileConfig {
     /// multi-second latency until they are clamped here.
     pub fn sanitize(&mut self) {
         if !supported_encoder(&self.encoder) {
-            tracing::warn!("Unknown encoder {:?} — using h264_nvenc", self.encoder);
-            self.encoder = "h264_nvenc".into();
+            tracing::warn!("Unknown encoder {:?} — using auto", self.encoder);
+            self.encoder = "auto".into();
         }
         let bitrate = self.bitrate.clamp(MIN_BITRATE_KBPS, MAX_BITRATE_KBPS);
         if bitrate != self.bitrate {
@@ -266,6 +266,20 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t434_auto_is_default_but_explicit_choices_survive() {
+        assert!(supported_encoder("auto"));
+        assert_eq!(FileConfig::default().encoder, "auto");
+        for name in ["auto", "h264_vaapi_baseline", "libvpx-vp9", "libaom-av1"] {
+            let mut settings = FileConfig {
+                encoder: name.into(),
+                ..Default::default()
+            };
+            settings.sanitize();
+            assert_eq!(settings.encoder, name);
+        }
+    }
 
     #[test]
     fn t093_all_slot_ports_are_unique_nonzero_and_representable() {

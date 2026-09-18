@@ -219,12 +219,12 @@ pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &st
     }
 }
 
-enum Packetizer {
+pub(super) enum Packetizer {
     AnnexB(AnnexBPacketizer),
     Ivf(crate::ivf::IvfPacketizer),
 }
 impl Packetizer {
-    fn new(codec: Codec, latency: crate::latency::LatencyTracker) -> Self {
+    pub(super) fn new(codec: Codec, latency: crate::latency::LatencyTracker) -> Self {
         if codec.framed() {
             Self::Ivf(crate::ivf::IvfPacketizer::new(codec, latency))
         } else {
@@ -237,7 +237,7 @@ impl Packetizer {
             Self::Ivf(p) => p.codec_config(),
         }
     }
-    async fn read_from(
+    pub(super) async fn read_from(
         &mut self,
         input: &mut (impl tokio::io::AsyncRead + Unpin),
     ) -> Result<(usize, Vec<crate::media::VideoPacket>)> {
@@ -254,6 +254,7 @@ pub(super) async fn read_loop(
     codec_config: CodecConfig,
     latency: crate::latency::LatencyTracker,
     codec: Codec,
+    evidence: std::sync::Arc<crate::latency::EncoderEvidence>,
 ) -> Result<()> {
     let mut total: u64 = 0;
     let mut frames: u64 = 0;
@@ -276,7 +277,7 @@ pub(super) async fn read_loop(
         for data in access_units {
             frames += 1;
             if tx.receiver_count() > 0 {
-                latency.on_encoded(data.seq);
+                latency.on_encoded_for(data.seq, &evidence);
                 let _ = tx.send(data);
             }
         }
@@ -394,6 +395,7 @@ mod tests {
                 CodecConfig::default(),
                 latency.clone(),
                 Codec::H264,
+                latency.encoder_started("fixture", (0, 0, 0, 0, 0)),
             )
             .await
             .unwrap();

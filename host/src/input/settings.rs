@@ -36,9 +36,12 @@ impl<'a> SessionSettings<'a> {
 }
 
 impl SessionSettings<'_> {
+    pub(super) fn sender(&self) -> Option<watch::Sender<EncoderSettings>> {
+        self.settings.clone()
+    }
     pub(super) fn forget_decoders(&self) {
         if let Some(tx) = self.settings {
-            tx.send_if_modified(|settings| settings.decoders.take().is_some());
+            tx.send_modify(EncoderSettings::clear_decoders);
         }
     }
 }
@@ -54,7 +57,7 @@ impl SettingsSink for SessionSettings<'_> {
         let Some(tx) = self.settings else {
             return;
         };
-        if capabilities.codecs.len() > 8 {
+        if capabilities.codecs.len() > 8 || capabilities.hardware.len() > 8 {
             return;
         }
         tx.send_if_modified(|settings| {

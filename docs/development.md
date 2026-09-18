@@ -185,7 +185,7 @@ COMMANDS
   doctor          diagnose the setup and print fixes
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
-  --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, h264_vaapi_baseline, hevc_vaapi, libx264
+  --encoder <NAME>      auto or a registered NVENC/VAAPI/software codec profile
   --fps <N>             frame rate (10–90)
   --bitrate <KBPS>      rate-control limit (1000–60000; not enforced by VAAPI CQP)
   --width/--height <N>  capture size (auto_resolution off)
@@ -211,7 +211,7 @@ them. See the README for config paths and the app gear-menu controls.
 
 | Host setting | Default | Scope or limit |
 | --- | --- | --- |
-| `encoder` | `h264_nvenc` | Explicit selection; no automatic GPU fallback |
+| `encoder` | `auto` | Bounded compatible-encoder probes with H.264 fallback; saved explicit choices remain |
 | `vaapi_device` | `/dev/dri/renderD128` | Used by VAAPI |
 | `fps` / `bitrate` / `quality` | 60 / 20000 kbps / 18 | Accepted ranges 10–90 / 1000–60000 / 12–32; encoder-specific rate control |
 | `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
@@ -241,7 +241,7 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
 
 ## Encoder tuning
 
-- NVIDIA: `h264_nvenc` (default) or `hevc_nvenc` — see the codec section of
+- NVIDIA: `h264_nvenc` or `hevc_nvenc` — see the codec section of
   the README for when HEVC and `ten_bit` are worth it.
 - AMD/Intel: `h264_vaapi`, optional `h264_vaapi_baseline`, or `hevc_vaapi`, constant-quality via `quality`.
   The explicit baseline profile maps to stock H.264 VAAPI with Constrained Baseline/CAVLC;
@@ -262,6 +262,9 @@ use the bitrate limit; **VAAPI CQP does not enforce it**. The desired bounded
 VAAPI policy/UI remains unresolved (T259). Do not interpret the configured
 bitrate as measured throughput. Static scenes may use much less bandwidth.
 
+Automatic selection and its measurement limits are described in
+[video codecs](video-codecs.md#automatic-selection).
+
 ## Optional in-process encoder
 
 ```bash
@@ -273,7 +276,9 @@ libavcodec APIs, with copying for small or unknown storage. This requires no
 FFmpeg patches. See [packet ownership and measurements](benchmarks/2026-09-17-packet-storage.md)
 for retained-memory accounting, regression coverage and measurement limits.
 
-Encodes through libavcodec in-process instead of an `ffmpeg` child. Measured
+Encodes through libavcodec in-process instead of an `ffmpeg` child. Automatic
+calibration currently uses CLI profiles; `auto` therefore uses `libx264` in this
+optional build. Select a supported explicit encoder to override it. Measured
 encoded-packet-to-acknowledgement latency was similar, with about one CPU
 core less and keyframes on demand; that metric excludes encoding time. Needs
 the development libraries enabled by `ffmpeg-next` default features, plus

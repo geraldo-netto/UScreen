@@ -93,6 +93,8 @@ pub struct EncoderSettings {
     /// Authenticated tablet metadata has supplied pixel and physical geometry.
     pub geometry_ready: bool,
     pub decoders: Option<DecoderCapabilities>,
+    pub decoder_epoch: u64,
+    pub selection: Option<crate::selection::Selected>,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -102,6 +104,8 @@ pub struct DecoderCapabilities {
     pub height: u32,
     pub fps: u32,
     pub codecs: Vec<String>,
+    #[serde(default)]
+    pub hardware: Vec<String>,
 }
 
 impl EncoderSettings {
@@ -118,7 +122,37 @@ impl EncoderSettings {
             ((self.height / scale) & !1).max(2),
         )
     }
+    pub fn clear_decoders(&mut self) {
+        self.decoders = None;
+        self.selection = None;
+        self.decoder_epoch = self.decoder_epoch.wrapping_add(1);
+    }
+    pub fn selection_reason(&self) -> &str {
+        if self.encoder != "auto" {
+            return if self.effective_encoder() == self.encoder {
+                "Explicit encoder preference"
+            } else {
+                "H.264 fallback: requested codec lacks current peer compatibility"
+            };
+        }
+        if cfg!(feature = "inproc-encoder") {
+            return "Automatic calibration requires the CLI build; using libx264";
+        }
+        self.selection
+            .as_ref()
+            .filter(|s| s.key.matches(self))
+            .map(|s| s.reason.as_str())
+            .unwrap_or("H.264 fallback while awaiting compatible encoder measurements")
+    }
     pub fn effective_encoder(&self) -> &str {
+        if self.encoder == "auto" {
+            return self
+                .selection
+                .as_ref()
+                .filter(|s| s.key.matches(self))
+                .map(|s| s.encoder.as_str())
+                .unwrap_or("libx264");
+        }
         let codec = Codec::from_encoder(&self.encoder);
         if !codec.framed() || self.decoder_supports(codec) {
             &self.encoder

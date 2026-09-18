@@ -1,7 +1,9 @@
 package com.uscreen
 
 import android.media.MediaCodecList
+import android.media.MediaCodecInfo
 import android.media.MediaFormat
+import android.os.Build
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlinx.coroutines.sync.Mutex
@@ -34,7 +36,12 @@ internal object VideoCodec {
 internal object DecoderCapabilities {
     private val admission = Mutex()
     suspend fun report(width: Int, height: Int, fps: Int): JSONObject = admission.withLock {
-        describe(width, height, fps, ::supported)
+        val decoders = VideoCodec.types.values.associateWith { mime -> compatible(mime, width, height, fps) }
+        describe(width, height, fps) { mime, _, _, _ ->
+            decoders[mime]?.isNotEmpty() == true
+        }.apply {
+            put("hardware", JSONArray(VideoCodec.types.filterValues { mime -> decoders[mime]?.any(::hardware) == true }.keys.toList()))
+        }
     }
     internal fun describe(width: Int, height: Int, fps: Int, supports: (String, Int, Int, Int) -> Boolean): JSONObject {
         val names = VideoCodec.types.filter { (_, mime) -> supports(mime, width, height, fps) }.keys
@@ -43,9 +50,22 @@ internal object DecoderCapabilities {
             put("codecs", JSONArray(names.toList()))
         }
     }
-    private fun supported(mime: String, width: Int, height: Int, fps: Int): Boolean = try {
+    internal fun hardware(info: MediaCodecInfo): Boolean =
+        Build.VERSION.SDK_INT >= 29 && info.isHardwareAccelerated
+
+    private fun compatible(mime: String, width: Int, height: Int, fps: Int): List<MediaCodecInfo> = try {
         val format = MediaFormat.createVideoFormat(mime, width, height)
         format.setInteger(MediaFormat.KEY_FRAME_RATE, fps)
-        MediaCodecList(MediaCodecList.REGULAR_CODECS).findDecoderForFormat(format) != null
-    } catch (_: Exception) { false }
+        compatible(format, mime)
+    } catch (_: Exception) { emptyList() }
+
+    internal fun decoderName(format: MediaFormat, mime: String): String? {
+        val choices = compatible(format, mime)
+        return (choices.firstOrNull(::hardware) ?: choices.firstOrNull())?.name
+    }
+    private fun compatible(format: MediaFormat, mime: String): List<MediaCodecInfo> =
+        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.filter { info ->
+            try { !info.isEncoder && info.getCapabilitiesForType(mime).isFormatSupported(format) }
+            catch (_: Exception) { false }
+        }
 }

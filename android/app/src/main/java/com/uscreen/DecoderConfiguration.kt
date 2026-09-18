@@ -22,8 +22,9 @@ internal object DecoderConfiguration {
         if (!VideoCodec.framed(parameters.mimeType)) return MediaCodec.createDecoderByType(parameters.mimeType)
         val format = MediaFormat.createVideoFormat(parameters.mimeType, parameters.width, parameters.height)
         format.setInteger(MediaFormat.KEY_FRAME_RATE, parameters.fps)
-        val name = checkNotNull(android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS)
-            .findDecoderForFormat(format)) { "No compatible decoder for stream format" }
+        val name = checkNotNull(DecoderCapabilities.decoderName(format, parameters.mimeType)) {
+            "No compatible decoder for stream format"
+        }
         return MediaCodec.createByCodecName(name)
     }
 

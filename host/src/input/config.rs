@@ -42,6 +42,8 @@ impl InputConfig {
                     .to_string()
             })
             .unwrap_or_else(|| self.codec.clone());
+        let (requested_encoder, effective_encoder, selection_reason) =
+            selection_fields(settings.as_deref());
         InputResponse {
             status: status.into(),
             transport: None,
@@ -57,6 +59,9 @@ impl InputConfig {
             width: self.virtual_width,
             height: self.virtual_height,
             codec,
+            requested_encoder,
+            effective_encoder,
+            selection_reason,
             pen_only,
             touch: self.touch,
             pen: self.pen,
@@ -81,5 +86,16 @@ impl Default for InputConfig {
             pen: true,
             pointer: true,
         }
+    }
+}
+
+fn selection_fields(settings: Option<&EncoderSettings>) -> (String, String, String) {
+    match settings {
+        Some(s) => (
+            s.encoder.clone(),
+            s.effective_encoder().into(),
+            s.selection_reason().into(),
+        ),
+        None => Default::default(),
     }
 }

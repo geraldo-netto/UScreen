@@ -91,6 +91,9 @@ pub struct InputResponse {
     /// Effective bitstream identity. Framed codecs additionally validate the
     /// versioned video configuration against this control announcement.
     pub codec: String,
+    pub requested_encoder: String,
+    pub effective_encoder: String,
+    pub selection_reason: String,
     /// Tells the tablet not to expect a video stream: it is acting as a
     /// graphics tablet for the host's own screen, not as a display.
     pub pen_only: bool,

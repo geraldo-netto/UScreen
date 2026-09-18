@@ -31,9 +31,11 @@ Container installation/build checks are described in [development.md](developmen
   manual configuration may be required or unavailable. Doctor reports manual
   mapping guidance instead of requiring KWin; display-only configurations skip
   input-mapping dependency checks.
-- **Encoding:** select NVENC for supported NVIDIA setups, VAAPI for supported
-  AMD/Intel setups, or `libx264` for CPU encoding. The default is
-  `h264_nvenc`; there is no automatic fallback to the correct GPU encoder.
+- **Encoding:** new configurations use `auto`, which probes compatible stock
+  FFmpeg encoders and checks render acknowledgements with H.264 fallback.
+  Existing explicit choices remain unchanged. NVENC/VAAPI still require actual
+  GPU encoding support; an advertised wrapper is insufficient. See
+  [selection policy and measurement limits](video-codecs.md#automatic-selection).
 - **Kernel:** a compatible EVDI module is needed for an extended output.
   Package/image availability varies; see [installation.md](installation.md).
 

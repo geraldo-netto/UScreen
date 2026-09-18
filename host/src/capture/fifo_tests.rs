@@ -56,6 +56,8 @@ fn settings() -> EncoderSettings {
         stream_scale: 1,
         geometry_ready: true,
         decoders: None,
+        decoder_epoch: 0,
+        selection: None,
     }
 }
 

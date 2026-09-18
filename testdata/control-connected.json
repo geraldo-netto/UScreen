@@ -7,5 +7,8 @@
   "touch": true,
   "pen": true,
   "video_width": 2960,
-  "video_height": 1848
+  "video_height": 1848,
+  "requested_encoder": "",
+  "effective_encoder": "",
+  "selection_reason": ""
 }

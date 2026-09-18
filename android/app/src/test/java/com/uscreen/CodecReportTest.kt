@@ -11,6 +11,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.MediaCodecInfoBuilder
+import org.robolectric.shadows.ShadowMediaCodecList
+import kotlinx.coroutines.runBlocking
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
@@ -43,5 +45,30 @@ class CodecReportTest {
         val receiver = context.packageManager.getReceiverInfo(ComponentName(context, CodecReportReceiver::class.java), 0)
         assertTrue(receiver.exported)
         assertEquals("android.permission.DUMP", receiver.permission)
+    }
+
+    @Test fun t434_empty_decoder_inventory_never_advertises_support() = runBlocking {
+        ShadowMediaCodecList.reset()
+        val report = DecoderCapabilities.report(640, 480, 30)
+        assertEquals(0, report.getJSONArray("codecs").length())
+        assertEquals(0, report.getJSONArray("hardware").length())
+    }
+
+    @Test fun t434_negotiation_reports_supported_hardware_without_guessing_on_old_android() = runBlocking {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("OMX.google.hevc", true, false))
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, false))
+            ShadowMediaCodecList.addCodec(codec("vendor.encoder", false, true, true))
+            val report = DecoderCapabilities.report(640, 480, 30)
+            assertEquals("[\"hevc\"]", report.getJSONArray("codecs").toString())
+            assertEquals(if (Build.VERSION.SDK_INT >= 29) "[\"hevc\"]" else "[]",
+                report.getJSONArray("hardware").toString())
+            val format = MediaFormat.createVideoFormat("video/hevc", 640, 480)
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+            assertEquals(if (Build.VERSION.SDK_INT >= 29) "vendor.hevc" else "OMX.google.hevc",
+                DecoderCapabilities.decoderName(format, "video/hevc"))
+            assertNull(DecoderCapabilities.decoderName(MediaFormat.createVideoFormat("video/av01", 640, 480), "video/av01"))
+        } finally { ShadowMediaCodecList.reset() }
     }
 }

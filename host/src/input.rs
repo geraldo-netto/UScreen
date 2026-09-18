@@ -63,12 +63,14 @@ impl Controllers {
         ControllerLease {
             controllers: self.clone(),
             id,
+            settings: None,
         }
     }
 }
 struct ControllerLease {
     controllers: Arc<Controllers>,
     id: u64,
+    settings: Option<watch::Sender<EncoderSettings>>,
 }
 impl Drop for ControllerLease {
     fn drop(&mut self) {
@@ -77,6 +79,9 @@ impl Drop for ControllerLease {
         let generation = self.controllers.generation.borrow();
         if *generation == self.id {
             self.controllers.devices.release_all();
+            if let Some(settings) = &self.settings {
+                settings.send_modify(EncoderSettings::clear_decoders);
+            }
         }
     }
 }
@@ -332,7 +337,6 @@ async fn serve_controller(
     let (settings_tx, mode_tx) = channels;
     let settings = SessionSettings::new(&settings_tx, &mode_tx, config.pen);
     let mut mode_rx = mode_tx.subscribe();
-    let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
     let mut ownership = controllers.generation.subscribe();
     let Some(lease) = claim_controller(&controllers, attachment, &settings) else {
         return Ok(());
@@ -340,6 +344,8 @@ async fn serve_controller(
     if *ownership.borrow_and_update() != lease.id {
         return Ok(());
     }
+    // Subscribe after the claim: its capability reset is already in the greeting.
+    let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
 
     let dispatch = ControllerDispatch {
         controllers: &controllers,
@@ -433,7 +439,11 @@ fn claim_controller(
     settings: &SessionSettings<'_>,
 ) -> Option<ControllerLease> {
     let mut lease = None;
-    let mut claim = || lease = Some(controllers.claim_with(|| settings.forget_decoders()));
+    let mut claim = || {
+        let mut claimed = controllers.claim_with(|| settings.forget_decoders());
+        claimed.settings = settings.sender();
+        lease = Some(claimed);
+    };
     match attachment {
         Some(attachment) => {
             attachment.apply(claim);
@@ -1676,6 +1686,8 @@ fi
             stream_scale: 1,
             geometry_ready: true,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         }
     }
 
@@ -1897,6 +1909,7 @@ fi
             height,
             fps: initial.fps,
             codecs: vec!["vp9".into()],
+            hardware: vec![],
         });
         assert_eq!(initial.effective_encoder(), "libvpx-vp9");
         let (tx, rx) = watch::channel(initial);
@@ -1914,6 +1927,26 @@ fi
     #[tokio::test]
     async fn t432_vp9_requires_current_peer_format_support() {
         framed_peer_support("libvpx-vp9", "vp9").await;
+    }
+
+    #[tokio::test]
+    async fn t434_disconnect_retires_capability_epoch_without_persisting_fallback() {
+        let (mut client, tx, task) = connection("auto").await;
+        let greeting = response(&mut client).await;
+        assert_eq!(greeting["requested_encoder"], "auto");
+        assert_eq!(greeting["effective_encoder"], "libx264");
+        let epoch = tx.borrow().decoder_epoch;
+        client.send(Message::Text(serde_json::json!({"type":"decoders", "capabilities": {
+            "protocol": 1, "width": greeting["video_width"], "height": greeting["video_height"],
+            "fps": greeting["fps"], "codecs": ["h264"], "hardware": []
+        }}).to_string())).await.unwrap();
+        response(&mut client).await;
+        assert!(tx.borrow().decoders.is_some());
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+        assert!(tx.borrow().decoders.is_none());
+        assert_ne!(tx.borrow().decoder_epoch, epoch);
+        assert_eq!(tx.borrow().encoder, "auto");
     }
 
     #[tokio::test]

@@ -204,6 +204,8 @@ pub fn run(
 
     let mut raw_input = input_frame::RawInput::default();
     let generation = crate::media::EncoderGeneration::new();
+    let evidence =
+        latency.encoder_started(encoder_name, (width, height, fps, bitrate_kbps, quality));
 
     while !stop.requested() {
         match raw_input.read(&mut enc.frame, &mut fifo, &stop) {
@@ -219,7 +221,7 @@ pub fn run(
             }
             let seq = latency.next_sequence();
             if tx.receiver_count() > 0 {
-                latency.on_encoded(seq);
+                latency.on_encoded_for(seq, &evidence);
                 let _ = tx.send(crate::media::VideoPacket {
                     data,
                     is_idr,

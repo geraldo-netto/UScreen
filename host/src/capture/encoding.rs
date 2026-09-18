@@ -68,7 +68,7 @@ impl EncoderProcess {
     pub(super) fn spawn_session(
         &mut self,
         config: &CaptureConfig,
-        _mode: Option<(u32, u32)>,
+        mode: Option<(u32, u32)>,
         output: EncoderOutput,
     ) -> Result<EncoderTask> {
         let stdout = self
@@ -79,12 +79,19 @@ impl EncoderProcess {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Encoder has no stdout"))?;
         let codec = crate::media::Codec::from_encoder(&config.encoder);
+        // Unknown dimensions cannot certify a matching automatic trial.
+        let (w, h) = mode.unwrap_or((0, 0));
+        let evidence = output.latency.encoder_started(
+            &config.encoder,
+            (w, h, config.fps, config.bitrate, config.quality),
+        );
         let handle = tokio::spawn(super::cli_encoder::read_loop(
             stdout,
             output.tx,
             output.codec_config,
             output.latency,
             codec,
+            evidence,
         ));
         Ok(EncoderTask { handle })
     }

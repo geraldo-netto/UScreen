@@ -28,7 +28,9 @@ const MAX_SAMPLES: usize = 1024;
 #[derive(Default)]
 struct Inner {
     /// (seq, time the complete access unit became ready for broadcast), oldest first.
-    sent: VecDeque<(u32, Instant)>,
+    sent: VecDeque<(u32, Instant, Option<Arc<EncoderEvidence>>)>,
+    encoder: Option<Arc<EncoderEvidence>>,
+    encoder_epoch: u64,
     discontinuous: bool,
     /// Round-trip latencies in microseconds, for the current report window.
     samples: Vec<u32>,
@@ -50,6 +52,22 @@ pub struct LatencyTracker {
     next_sequence: Arc<AtomicU32>,
 }
 
+/// Acknowledgements stay tied to the encoder that produced the sequence.
+/// Delayed acknowledgements from a retired encoder cannot certify its successor.
+#[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+pub(crate) struct EncoderEvidence {
+    pub name: String,
+    pub format: (u32, u32, u32, u32, u32),
+    pub epoch: u64,
+    rendered: std::sync::atomic::AtomicU64,
+}
+#[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+impl EncoderEvidence {
+    pub fn rendered(&self) -> u64 {
+        self.rendered.load(Ordering::Relaxed)
+    }
+}
+
 impl LatencyTracker {
     pub fn new() -> Self {
         Self::default()
@@ -60,19 +78,47 @@ impl LatencyTracker {
         self.next_sequence.fetch_add(1, Ordering::Relaxed)
     }
 
+    pub fn encoder_started(
+        &self,
+        name: &str,
+        format: (u32, u32, u32, u32, u32),
+    ) -> Arc<EncoderEvidence> {
+        let mut state = self.inner.lock().unwrap();
+        state.encoder_epoch = state.encoder_epoch.wrapping_add(1);
+        let evidence = Arc::new(EncoderEvidence {
+            name: name.into(),
+            format,
+            epoch: state.encoder_epoch,
+            rendered: Default::default(),
+        });
+        state.encoder = Some(evidence.clone());
+        evidence
+    }
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn encoder_evidence(&self) -> Option<Arc<EncoderEvidence>> {
+        self.inner.lock().ok()?.encoder.clone()
+    }
+
     /// A complete encoded access unit is ready for broadcast.
+    #[cfg(test)]
     pub fn on_encoded(&self, seq: u32) {
+        self.record_encoded(seq, None);
+    }
+    pub fn on_encoded_for(&self, seq: u32, encoder: &Arc<EncoderEvidence>) {
+        self.record_encoded(seq, Some(encoder.clone()));
+    }
+    fn record_encoded(&self, seq: u32, encoder: Option<Arc<EncoderEvidence>>) {
         let Ok(mut g) = self.inner.lock() else { return };
         if g.last_report.is_none() {
             g.last_report = Some(Instant::now());
         }
         if g.sent
             .back()
-            .is_some_and(|(previous, _)| previous.wrapping_add(1) != seq)
+            .is_some_and(|(previous, _, _)| previous.wrapping_add(1) != seq)
         {
             g.discontinuous = true;
         }
-        g.sent.push_back((seq, Instant::now()));
+        g.sent.push_back((seq, Instant::now(), encoder));
         while g.sent.len() > MAX_TRACKED {
             g.sent.pop_front();
             g.lost += 1;
@@ -87,7 +133,10 @@ impl LatencyTracker {
         let Some(pos) = g.position(seq) else {
             return;
         };
-        let (_, at) = g.sent[pos];
+        let (_, at, encoder) = &g.sent[pos];
+        if let Some(encoder) = encoder {
+            encoder.rendered.fetch_add(1, Ordering::Relaxed);
+        }
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
         g.sent.drain(..=pos);
         if g.sent.is_empty() {
@@ -134,7 +183,7 @@ impl Inner {
             return self
                 .sent
                 .iter()
-                .position(|(candidate, _)| *candidate == sequence);
+                .position(|(candidate, _, _)| *candidate == sequence);
         }
         // Contiguous sequences map directly from the deque's front, including
         // u32 wrap. Sparse/duplicate/out-of-order arrivals use the old search.
@@ -266,7 +315,7 @@ mod tests {
                 state
                     .sent
                     .iter()
-                    .map(|&(sequence, _)| sequence)
+                    .map(|&(sequence, _, _)| sequence)
                     .collect::<Vec<_>>(),
                 sequences[2..]
             );

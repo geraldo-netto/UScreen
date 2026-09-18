@@ -132,8 +132,9 @@ including the service's helper and stop commands.
 
 If `~/.local/bin` is not on PATH yet, use `~/.local/bin/uscreen` or add the
 directory to your shell's PATH. Run `uscreen doctor` to inspect the setup.
-Select an encoder supported by your GPU/FFmpeg; the default is NVIDIA NVENC,
-not automatic GPU detection.
+New configurations use [automatic encoder selection](video-codecs.md#automatic-selection)
+after tablet negotiation, with `libx264` fallback. Existing explicit preferences
+remain unchanged; choose a supported encoder or `auto` in Linux settings.
 
 For published artifacts, run `sha256sum -c SHA256SUMS` alongside all files
 listed in the manifest. An absent file is reported as a verification failure.

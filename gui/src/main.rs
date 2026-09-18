@@ -801,12 +801,21 @@ impl App {
 
     fn setting_encoder(&mut self, ui: &mut egui::Ui) {
         ui.label("Encoder");
-        let selected = uscreen_config::encoding::find(&self.cfg.encoder)
-            .map(|encoder| encoder.label)
-            .unwrap_or(&self.cfg.encoder);
+        let selected = if self.cfg.encoder == "auto" {
+            "Automatic (measure compatible encoders)"
+        } else {
+            uscreen_config::encoding::find(&self.cfg.encoder)
+                .map(|encoder| encoder.label)
+                .unwrap_or(&self.cfg.encoder)
+        };
         egui::ComboBox::from_id_salt("encoder")
             .selected_text(selected)
             .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut self.cfg.encoder,
+                    "auto".to_string(),
+                    "Automatic (measure compatible encoders)",
+                );
                 for encoder in uscreen_config::encoding::ENCODERS {
                     ui.selectable_value(
                         &mut self.cfg.encoder,
@@ -1506,11 +1515,33 @@ mod tests {
     }
 
     #[test]
+    fn t434_gui_persists_automatic_and_explicit_av1_choices() {
+        let root = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Video);
+        app.store = ConfigStore::new(root.path().join("config.toml"));
+        let ctx = egui::Context::default();
+        assert_eq!(app.cfg.encoder, "auto");
+        click_encoder_text(&mut app, &ctx, "Automatic (measure compatible encoders)");
+        click_encoder_text(&mut app, &ctx, "Software AV1 (libaom)");
+        assert_eq!(app.cfg.encoder, "libaom-av1");
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.store.load().encoder, "libaom-av1");
+        click_encoder_text(&mut app, &ctx, "Software AV1 (libaom)");
+        click_encoder_text(&mut app, &ctx, "Automatic (measure compatible encoders)");
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.store.load().encoder, "auto");
+    }
+
+    #[test]
     fn t400_gui_persists_explicit_low_latency_vaapi_selection() {
         let root = tempfile::tempdir().unwrap();
         let mut app = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         app.cfg.vaapi_device = "/dev/dri/renderD129".into();
+        // Preserve this regression's explicit NVIDIA-to-VAAPI transition.
+        app.cfg.encoder = "h264_nvenc".into();
         let ctx = egui::Context::default();
         click_encoder_text(&mut app, &ctx, "NVIDIA H.264 (NVENC)");
         click_encoder_text(&mut app, &ctx, "AMD / Intel H.264 low latency (VAAPI)");
@@ -1529,6 +1560,8 @@ mod tests {
         let mut app = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         app.cfg.vaapi_device = "/dev/dri/renderD129".into();
+        // Preserve this regression's explicit NVIDIA-to-VAAPI transition.
+        app.cfg.encoder = "h264_nvenc".into();
         let ctx = egui::Context::default();
         click_encoder_text(&mut app, &ctx, "NVIDIA H.264 (NVENC)");
         click_encoder_text(&mut app, &ctx, "AMD / Intel HEVC (VAAPI)");

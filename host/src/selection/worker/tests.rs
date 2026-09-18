@@ -1,0 +1,216 @@
+use super::*;
+use crate::media::DecoderCapabilities;
+
+fn settings() -> EncoderSettings {
+    EncoderSettings {
+        encoder: "auto".into(),
+        fps: 60,
+        bitrate: 20000,
+        quality: 18,
+        width: 640,
+        height: 480,
+        width_mm: 220,
+        height_mm: 138,
+        stream_scale: 1,
+        geometry_ready: true,
+        decoder_epoch: 1,
+        selection: None,
+        decoders: Some(DecoderCapabilities {
+            protocol: 1,
+            width: 640,
+            height: 480,
+            fps: 60,
+            codecs: vec!["h264".into(), "vp9".into(), "av1".into()],
+            hardware: vec!["h264".into(), "vp9".into()],
+        }),
+    }
+}
+fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
+    Candidate {
+        hardware,
+        measurement: Measurement {
+            encoder: name.into(),
+            fps,
+            p95_us: p95,
+            first_us: 1,
+        },
+    }
+}
+
+#[test]
+fn t434_ranking_uses_measured_capacity_then_decoder_class_and_tail_cadence() {
+    let hardware = candidate("vp9_vaapi", true, 120.0, 8);
+    let software = candidate("libaom-av1", false, 180.0, 5);
+    let overloaded = candidate("h264_nvenc", true, 20.0, 50);
+    let faster = candidate("libx264", true, 240.0, 3);
+    assert_eq!(rank(&hardware, &software, 60), Ordering::Less);
+    assert_eq!(rank(&software, &overloaded, 60), Ordering::Less);
+    assert_eq!(rank(&faster, &hardware, 60), Ordering::Less);
+}
+
+#[test]
+fn t434_old_peers_stale_formats_and_explicit_choices_do_not_select_candidates() {
+    let good = settings();
+    let key = Key::new(&good);
+    let (tx, _rx) = watch::channel(good.clone());
+    assert!(publish(&tx, &key, "libvpx-vp9", "fixture"));
+    assert_eq!(tx.borrow().effective_encoder(), "libvpx-vp9");
+    for bad in [
+        EncoderSettings {
+            decoders: None,
+            ..good.clone()
+        },
+        EncoderSettings {
+            fps: 30,
+            ..good.clone()
+        },
+        EncoderSettings {
+            decoder_epoch: 2,
+            ..good.clone()
+        },
+        EncoderSettings {
+            encoder: "libx264".into(),
+            ..good.clone()
+        },
+    ] {
+        tx.send_replace(bad);
+        assert!(!publish(&tx, &key, "libaom-av1", "stale"));
+        assert_eq!(tx.borrow().effective_encoder(), "libx264");
+    }
+    assert!(!eligible(
+        &EncoderSettings {
+            decoders: None,
+            ..good
+        },
+        true
+    ));
+}
+
+#[tokio::test]
+async fn t434_failed_render_trials_fall_through_and_preserve_fallback() {
+    let (tx, _rx) = watch::channel(settings());
+    let key = Key::new(&tx.borrow());
+    let candidates = vec![
+        candidate("libaom-av1", false, 120.0, 4),
+        candidate("libvpx-vp9", true, 120.0, 6),
+    ];
+    let mut attempts = Vec::new();
+    choose(&tx, &key, "libx264", candidates, |name| {
+        attempts.push(name.clone());
+        std::future::ready(name == "libvpx-vp9")
+    })
+    .await;
+    assert_eq!(attempts, ["libaom-av1", "libvpx-vp9"]);
+    assert_eq!(tx.borrow().effective_encoder(), "libvpx-vp9");
+    choose(
+        &tx,
+        &key,
+        "libx264",
+        vec![candidate("libaom-av1", false, 120.0, 4)],
+        |_| std::future::ready(false),
+    )
+    .await;
+    assert_eq!(tx.borrow().effective_encoder(), "libx264");
+    choose(&tx, &key, "libx264", vec![], |_| std::future::ready(true)).await;
+    assert_eq!(tx.borrow().effective_encoder(), "libx264");
+}
+
+#[tokio::test]
+async fn t434_peer_change_cancels_pending_work_but_selection_updates_do_not() {
+    let (tx, mut rx) = watch::channel(settings());
+    let key = Key::new(&tx.borrow());
+    let (_visible, mut display) = watch::channel(true);
+    let (_stop, mut stop) = watch::channel(false);
+    let work = async {
+        assert!(publish(&tx, &key, "libx264", "measuring"));
+        tokio::task::yield_now().await;
+        assert!(key.matches(&rx_snapshot(&tx)));
+        tx.send_modify(|s| {
+            s.clear_decoders();
+        });
+        std::future::pending::<()>().await;
+    };
+    assert!(until_changed(&key, &mut rx, &mut display, &mut stop, work)
+        .await
+        .is_none());
+    assert_eq!(tx.borrow().effective_encoder(), "libx264");
+}
+fn rx_snapshot(tx: &watch::Sender<EncoderSettings>) -> EncoderSettings {
+    tx.borrow().clone()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn t434_closed_display_watch_terminates_selector() {
+    let (settings, _rx) = watch::channel(settings());
+    let (display_tx, display) = watch::channel(true);
+    drop(display_tx);
+    let (stop_tx, stop) = watch::channel(false);
+    let config = CaptureConfig {
+        instance: u32::MAX,
+        ..Default::default()
+    };
+    let mut task = spawn(config, settings, display, stop, Default::default());
+    let result = tokio::time::timeout(Duration::from_millis(200), &mut task).await;
+    if result.is_err() {
+        stop_tx.send(true).unwrap();
+        task.await.unwrap();
+    }
+    assert!(
+        result.is_ok(),
+        "T434: closed display source restarted selection indefinitely"
+    );
+}
+
+#[test]
+fn t434_unverified_candidate_is_never_a_rollback_target() {
+    let (tx, _rx) = watch::channel(settings());
+    let key = Key::new(&tx.borrow());
+    publish(&tx, &key, "libaom-av1", "trial");
+    assert_eq!(fallback_encoder(&tx.borrow()), "libx264");
+    tx.send_modify(|s| s.selection.as_mut().unwrap().verified = true);
+    assert_eq!(fallback_encoder(&tx.borrow()), "libaom-av1");
+    tx.send_modify(|s| s.clear_decoders());
+    assert_eq!(fallback_encoder(&tx.borrow()), "libx264");
+}
+
+#[test]
+fn t434_only_fresh_acks_from_matching_encoder_certify_a_trial() {
+    let latency = LatencyTracker::new();
+    let key = Key::new(&settings());
+    let old = latency.encoder_started("libx264", key.format);
+    for seq in 0..3 {
+        latency.on_encoded_for(seq, &old);
+    }
+    let current = latency.encoder_started("libvpx-vp9", key.format);
+    for seq in 0..3 {
+        latency.on_rendered(seq, 100);
+    }
+    assert!(!matches_evidence(
+        latency.encoder_evidence(),
+        &key,
+        "libvpx-vp9",
+        None
+    ));
+    for seq in 3..6 {
+        latency.on_encoded_for(seq, &current);
+        latency.on_rendered(seq, 100);
+    }
+    assert!(matches_evidence(
+        latency.encoder_evidence(),
+        &key,
+        "libvpx-vp9",
+        None
+    ));
+    assert!(!matches_evidence(
+        latency.encoder_evidence(),
+        &key,
+        "libvpx-vp9",
+        Some((current.epoch, 3))
+    ));
+    assert!(!matches_evidence(
+        latency.encoder_evidence(),
+        &key,
+        "libaom-av1",
+        None
+    ));
+}

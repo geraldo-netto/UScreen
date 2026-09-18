@@ -18,6 +18,8 @@ fn manager_settings(manager: &CaptureManager) -> EncoderSettings {
         stream_scale: c.stream_scale,
         geometry_ready: true,
         decoders: None,
+        decoder_epoch: 0,
+        selection: None,
     }
 }
 #[tokio::test]
@@ -478,6 +480,8 @@ async fn drive_session(manager: &mut CaptureManager, display: bool, change_mode:
         stream_scale: c.stream_scale,
         geometry_ready: true,
         decoders: None,
+        decoder_epoch: 0,
+        selection: None,
     };
     let (_settings_tx, settings_rx) = watch::channel(settings);
     let (_display_tx, display_rx) = watch::channel(display);
@@ -657,6 +661,7 @@ fn t432_capability_metadata_restarts_only_when_effective_stream_changes() {
         height: settings.height,
         fps: settings.fps,
         codecs: vec!["h264".into()],
+        hardware: vec![],
     });
     assert!(!manager.stream_settings_changed(&settings));
     settings.encoder = "libvpx-vp9".into();

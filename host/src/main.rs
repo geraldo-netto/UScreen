@@ -28,6 +28,7 @@ mod persistence;
 #[cfg(test)]
 mod poll_probe;
 mod runtime;
+mod selection;
 mod session;
 mod stream;
 mod tray;
@@ -215,6 +216,8 @@ mod cli_tests {
             stream_scale: 1,
             geometry_ready: false,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
@@ -246,6 +249,8 @@ mod cli_tests {
             stream_scale: saved.stream_scale,
             geometry_ready: false,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
@@ -347,6 +352,8 @@ mod cli_tests {
             stream_scale: 1,
             geometry_ready: false,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         };
         let (tx, rx) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi"]).unwrap();
@@ -367,6 +374,8 @@ mod cli_tests {
             stream_scale: 2,
             geometry_ready: true,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
             ..initial
         })
         .unwrap();
@@ -406,6 +415,8 @@ mod cli_tests {
             stream_scale: 1,
             geometry_ready: true,
             decoders: None,
+            decoder_epoch: 0,
+            selection: None,
         };
         let changed = media::EncoderSettings {
             encoder: "h264_nvenc".into(),
@@ -1222,6 +1233,8 @@ printf '%s\n' "$2" >> "$0.log"
                 stream_scale: 1,
                 geometry_ready: true,
                 decoders: None,
+                decoder_epoch: 0,
+                selection: None,
             });
             let (mode_tx, _mode_rx) = watch::channel(false);
             let (_card_tx, card_rx) = watch::channel(None);
