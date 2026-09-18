@@ -120,11 +120,13 @@ async fn supervise(
     let mut fallback = fallback_encoder(snapshot).to_string();
     while let Some((name, remaining)) = choose(settings, &key, &fallback, pending, |name| {
         let key = &key;
-        async move { rendered(latency, key, &name).await }
+        let decoder = settings.borrow().decoder_choice().cloned();
+        async move { rendered(latency, key, &name, decoder.as_ref()).await }
     })
     .await
     {
-        super::health::failed(latency, &key, &name).await;
+        let decoder = settings.borrow().decoder_choice().cloned();
+        super::health::failed(latency, &key, &name, decoder.as_ref()).await;
         tracing::warn!(encoder = %name, "Verified encoder lost render progress; trying remaining compatible candidates");
         // Never return to a candidate that failed in this settings/peer epoch.
         pending = remaining;
@@ -223,12 +225,17 @@ fn publish_choice(
     })
 }
 
-async fn rendered(latency: &LatencyTracker, key: &Key, name: &str) -> bool {
+async fn rendered(
+    latency: &LatencyTracker,
+    key: &Key,
+    name: &str,
+    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
+) -> bool {
     let mut updates = latency.activity_updates();
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
-            if matches_evidence(latency.encoder_evidence(), key, name, previous) {
+            if matches_evidence(latency.encoder_evidence(), key, name, previous, decoder) {
                 return true;
             }
             if updates.changed().await.is_err() {
@@ -244,6 +251,7 @@ fn matches_evidence(
     key: &Key,
     name: &str,
     previous: Option<(u64, u64)>,
+    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
 ) -> bool {
     evidence.is_some_and(|e| {
         let before = previous
@@ -253,6 +261,7 @@ fn matches_evidence(
         e.active()
             && e.name == name
             && e.format == key.format
+            && e.decoder.as_ref() == decoder
             && e.rendered().saturating_sub(before) >= 3
     })
 }

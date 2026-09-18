@@ -144,7 +144,7 @@ internal class SessionCoordinator(
         // lets the host time encoded-packet readiness to receipt of the
         // render acknowledgement, including the return message path.
         videoReceiver?.onFrameRendered = { seq, decodeUs ->
-            touchCapture?.sendRendered(seq, decodeUs)
+            touchCapture?.sendRendered(seq, decodeUs, videoReceiver?.decoder?.configuredSelectionReceipt)
             // First frame ever on screen: say thanks once, then never again.
             if (!prefs.thankedOnce) {
                 prefs.thankedOnce = true

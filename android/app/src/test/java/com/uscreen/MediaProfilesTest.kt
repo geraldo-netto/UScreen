@@ -11,6 +11,14 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class MediaProfilesTest {
+    @Test fun t484_decoderReceiptMatchesSharedVectorAndOmitsDisabledHints() {
+        val vector = JSONObject(javaClass.getResource("/decoder-selection.json")!!.readText())
+        val selection = DecoderSelection.read(vector)!!
+        assertEquals(vector.getString("receipt"), selection.receipt())
+        assertEquals("10:vendor.avc:h264:baseline:41:8:0:0", selection.receipt(false))
+        assertNotEquals(selection.receipt(), selection.copy(name = "old.decoder").receipt())
+    }
+
     @Test fun t478_standardLevelTranslationRejectsUnknownValuesAndHighTier() {
         assertEquals(41, MediaProfiles.level("h264", Levels.AVCLevel41))
         assertEquals(9, MediaProfiles.level("h264", Levels.AVCLevel1b))

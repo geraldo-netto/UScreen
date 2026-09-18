@@ -40,7 +40,12 @@ impl Progress {
     }
 }
 
-pub(super) async fn failed(latency: &LatencyTracker, key: &Key, name: &str) {
+pub(super) async fn failed(
+    latency: &LatencyTracker,
+    key: &Key,
+    name: &str,
+    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
+) {
     let mut updates = latency.activity_updates();
     let mut progress = Progress::default();
     loop {
@@ -48,7 +53,7 @@ pub(super) async fn failed(latency: &LatencyTracker, key: &Key, name: &str) {
         // remains visible. Retired encoders' late ACKs cannot refresh this timer.
         let deadline = latency
             .encoder_evidence()
-            .filter(|e| e.name == name && e.format == key.format)
+            .filter(|e| e.name == name && e.format == key.format && e.decoder.as_ref() == decoder)
             .and_then(|e| progress.deadline(&e, Instant::now()));
         if deadline.is_some_and(|at| Instant::now() >= at) {
             return;

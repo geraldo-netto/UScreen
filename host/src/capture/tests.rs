@@ -23,6 +23,39 @@ fn manager_settings(manager: &CaptureManager) -> EncoderSettings {
     }
 }
 
+#[cfg(not(feature = "inproc-encoder"))]
+#[test]
+fn t484_decoder_only_change_restarts_encoder_without_restarting_helper() {
+    let manager = test_manager();
+    let mut selected = manager_settings(&manager);
+    selected.encoder = "auto".into();
+    let decoder = uscreen_config::negotiation::DecoderChoice {
+        name: "vendor.avc".into(),
+        stream: uscreen_config::negotiation::StreamProfile {
+            codec: "h264".into(),
+            format: uscreen_config::negotiation::Profile {
+                profile: "baseline".into(),
+                level: 31,
+                depth: 8,
+            },
+        },
+        low_latency: false,
+        operating_rate: Some(120),
+    };
+    selected.selection = Some(crate::selection::Selected {
+        key: crate::selection::Key::new(&selected),
+        encoder: manager.config.encoder.clone(),
+        reason: "T484 decoder-only trial".into(),
+        verified: false,
+        decoder: Some(decoder),
+    });
+    assert!(!manager.helper_settings_changed(&selected));
+    assert!(
+        manager.stream_settings_changed(&selected),
+        "T484: changed decoder retained old encoder generation"
+    );
+}
+
 #[test]
 fn t474_helper_command_forwards_conversion_capacity() {
     let dir = tempfile::tempdir().unwrap();

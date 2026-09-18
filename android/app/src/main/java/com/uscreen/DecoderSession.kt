@@ -28,6 +28,7 @@ internal class DecoderSession(
     private val statistics: () -> ReceiverStatistics,
 ) {
     @Volatile var mediaCodec: MediaCodec? = null; private set
+    @Volatile var configuredSelectionReceipt: String? = null; private set
     @Volatile private var codecAlive = false
     private var outputThread: Thread? = null
     private var frameCallbackThread: HandlerThread? = null
@@ -50,6 +51,7 @@ internal class DecoderSession(
         var owner: CodecLifetime? = null
         var thread: HandlerThread? = null
         var callbacks: CallbackDecoder? = null
+        var decoderReceipt: String? = null
     }
     private var startup: Startup? = null // guarded by monitor
 
@@ -89,6 +91,7 @@ internal class DecoderSession(
 
     private fun configureStartup(attempt: Startup, codec: MediaCodec, surface: Surface, parameters: DecoderFormat) {
         val format = DecoderConfiguration.format(codec, parameters, attempt.profile, attempt.hints)
+        attempt.decoderReceipt = parameters.selection?.receipt(attempt.hints)
         if (!startupCurrent(attempt)) return
         val thread = callbackThreadFactory().also { attempt.thread = it; it.start() }
         val handler = Handler(thread.looper)
@@ -109,6 +112,7 @@ internal class DecoderSession(
         val owner = attempt.owner!!
         discardedCount.set(0)
         timingEpoch = attempt.epoch
+        configuredSelectionReceipt = attempt.decoderReceipt
         mediaCodec = owner.codec
         lifetime = owner
         callbackDecoder = attempt.callbacks

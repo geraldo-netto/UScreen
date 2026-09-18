@@ -54,6 +54,32 @@ class WatchdogCodecShadow : ShadowMediaCodec() {
 @Config(sdk = [27, 34], shadows = [WatchdogCodecShadow::class])
 class DecoderWatchdogTest {
     @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
+    @Test fun t484_renderReceiptsFollowPublishedCodecConfiguration() {
+        WatchdogCodecShadow.callbacks.clear()
+        WatchdogCodecShadow.outputs.clear()
+        val receipts = mutableListOf<String?>()
+        lateinit var decoder: DecoderSession
+        decoder = DecoderSession(Any(), { true }, FrameTiming(), object : DecoderEvents {
+            override fun rendered(sequence: Int, decodeMicros: Int) { receipts.add(decoder.configuredSelectionReceipt) }
+            override fun invalidated() {}
+        }, { ReceiverStatistics() })
+        decoder.createCodec = { MediaCodec.createDecoderByType(it.mimeType) }
+        val surface = Surface(SurfaceTexture(1))
+        val selection = DecoderSelection("vendor.avc", "h264", "baseline", 41, 8, false, 120)
+        val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60, selection = selection)
+        try {
+            assertTrue(decoder.setupCodec(surface, format))
+            val old = decoder.mediaCodec!!
+            val callback = WatchdogCodecShadow.callbacks.last()
+            callback.onFrameRendered(old, 1, 0)
+            decoder.resetCodec()
+            assertTrue(decoder.setupCodec(surface, format.copy(selection = null)))
+            callback.onFrameRendered(old, 2, 0)
+            WatchdogCodecShadow.callbacks.last().onFrameRendered(decoder.mediaCodec!!, 3, 0)
+            assertEquals(listOf(selection.receipt(), null), receipts)
+        } finally { decoder.releaseCodec(); surface.release() }
+    }
+
     @Test fun t376_retiredCodecCallbacksCannotAcknowledgeReplacement() {
         WatchdogCodecShadow.outputs.clear()
         WatchdogCodecShadow.callbacks.clear()

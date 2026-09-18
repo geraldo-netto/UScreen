@@ -7,6 +7,19 @@ fn report() -> DecoderCapabilities {
     .unwrap()
 }
 
+#[test]
+fn t484_decoder_receipt_matches_shared_android_vector_and_changes_with_hints() {
+    let vector: serde_json::Value =
+        serde_json::from_str(include_str!("../../../testdata/decoder-selection.json")).unwrap();
+    let mut choice: DecoderChoice =
+        serde_json::from_value(vector["decoder_selection"].clone()).unwrap();
+    assert_eq!(choice.receipt(), vector["receipt"].as_str().unwrap());
+    choice.operating_rate = None;
+    assert_ne!(choice.receipt(), vector["receipt"].as_str().unwrap());
+    choice.name = "10:vendor.avc".into();
+    assert!(choice.receipt().starts_with("13:10:vendor.avc:"));
+}
+
 fn stream(profile: &str, depth: u8, level: u32) -> StreamProfile {
     StreamProfile {
         codec: "h264".into(),

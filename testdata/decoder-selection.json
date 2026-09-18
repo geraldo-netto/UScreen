@@ -1,0 +1,1 @@
+{"decoder_protocol":2,"decoder_selection":{"name":"vendor.avc","stream":{"codec":"h264","profile":"baseline","level":41,"depth":8},"low_latency":false,"operating_rate":120},"receipt":"10:vendor.avc:h264:baseline:41:8:0:120"}

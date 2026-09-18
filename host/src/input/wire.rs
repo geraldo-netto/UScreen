@@ -73,6 +73,9 @@ pub enum InputEvent {
         /// and acknowledgement return time; it is not a pure transport measure.
         #[serde(default)]
         decode_us: i64,
+        /// Configuration receipt from the decoder which actually rendered this sequence.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        decoder: Option<String>,
     },
 }
 

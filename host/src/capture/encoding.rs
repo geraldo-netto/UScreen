@@ -81,9 +81,10 @@ impl EncoderProcess {
         let codec = crate::media::Codec::from_encoder(&config.encoder);
         // Unknown dimensions cannot certify a matching automatic trial.
         let (w, h) = mode.unwrap_or((0, 0));
-        let evidence = output.latency.encoder_started(
+        let evidence = output.latency.encoder_started_with_decoder(
             &config.encoder,
             (w, h, config.fps, config.bitrate, config.quality),
+            config.decoder.clone(),
         );
         let handle = tokio::spawn(super::cli_encoder::read_loop(
             stdout,

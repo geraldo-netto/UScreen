@@ -191,6 +191,7 @@ impl CaptureManager {
         !settings.geometry_ready
             || self.helper_settings_changed(settings)
             || settings.effective_encoder() != self.config.encoder
+            || settings.decoder_choice() != self.config.decoder.as_ref()
             || settings.bitrate != self.config.bitrate
             || settings.quality != self.config.quality
     }
@@ -217,6 +218,7 @@ impl CaptureManager {
             .await;
         }
         self.config.encoder = s.effective_encoder().to_string();
+        self.config.decoder = s.decoder_choice().cloned();
         self.config.fps = s.fps;
         self.config.bitrate = s.bitrate;
         self.config.width = s.width;

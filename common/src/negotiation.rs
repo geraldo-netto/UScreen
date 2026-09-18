@@ -51,6 +51,24 @@ pub struct DecoderChoice {
     pub operating_rate: Option<u32>,
 }
 
+impl DecoderChoice {
+    /// Bounded configuration receipt, not authentication or proof a hint was honored.
+    /// Length-prefix the only arbitrary field so delimiter-containing names cannot collide.
+    pub fn receipt(&self) -> String {
+        format!(
+            "{}:{}:{}:{}:{}:{}:{}:{}",
+            self.name.len(),
+            self.name,
+            self.stream.codec,
+            self.stream.format.profile,
+            self.stream.format.level,
+            self.stream.format.depth,
+            u8::from(self.low_latency),
+            self.operating_rate.unwrap_or(0)
+        )
+    }
+}
+
 impl DecoderCapabilities {
     pub fn valid(&self) -> bool {
         let bounded = (2..=4096).contains(&self.width)

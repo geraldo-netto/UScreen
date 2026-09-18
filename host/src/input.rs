@@ -636,7 +636,11 @@ fn handle_event(
             settings.resolution((width, height), (width_mm, height_mm));
         }
         InputEvent::Decoders { capabilities } => settings.decoders(capabilities),
-        InputEvent::Rendered { seq, decode_us } => latency.on_rendered(seq, decode_us),
+        InputEvent::Rendered {
+            seq,
+            decode_us,
+            decoder,
+        } => latency.on_rendered_from(seq, decode_us, decoder.as_deref()),
         InputEvent::Config {
             bitrate,
             fps,

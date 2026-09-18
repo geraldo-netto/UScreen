@@ -375,10 +375,11 @@ internal class ControlSession(
      * delivery, callback scheduling and the return path, excluding capture and encoding, without
      * either side needing a shared time base.
      */
-    fun sendRendered(seq: Int, decodeUs: Int) {
+    fun sendRendered(seq: Int, decodeUs: Int, decoder: String? = null) {
         if (!isConnected) return
         val msg = JSONObject().apply {
             put("type", "rendered")
+            decoder?.let { put("decoder", it) }
             // Sent unsigned: the host's counter is a u32 and Kotlin's Int is
             // signed, so it wraps negative after ~2^31 frames (~1 year at
             // 60 fps, but free to get right).

@@ -6,6 +6,8 @@ pub struct CaptureConfig {
     /// Explicit EDID override; None = generate one for the configured mode
     pub edid_path: Option<PathBuf>,
     pub encoder: String,
+    /// Control-side decoder request whose ACKs may certify this encoder generation.
+    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
     // The experimental in-process encoder does not create VAAPI contexts.
     #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
     pub vaapi_device: String,
@@ -38,6 +40,7 @@ impl Default for CaptureConfig {
             helper_path: PathBuf::from("host/evdi/evdi_helper"),
             edid_path: None,
             encoder: String::from("h264_nvenc"),
+            decoder: None,
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,

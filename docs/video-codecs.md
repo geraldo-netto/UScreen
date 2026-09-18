@@ -143,9 +143,16 @@ across codecs. Automatic mode attempts a performant compatible choice; it does
 not claim a universally fastest codec or infer a UI gain from a newer format.
 
 The selected candidate then needs three fresh render acknowledgements within
-six seconds. Matching encoder identity and actual dimensions/rate/quality bind
-that evidence to the trial; old or duplicate acknowledgements cannot certify a
-replacement. Failed trials advance through the ranked list once, then restore
+six seconds. Matching encoder identity, dimensions/rate/quality and the complete
+decoder request bind that evidence to the trial. A decoder-only change restarts
+the encoder generation while preserving the helper/display. Version 2 render
+ACKs carry a `decoder` receipt from the published Android codec configuration:
+`name-length:name:codec:profile:level:depth:low-latency:operating-rate` (zero for
+disabled/absent hints). The receipt identifies supplied configuration keys;
+it does not prove Android honored them. Watchdog-disabled hints produce a
+different receipt. Missing or mismatched receipts cannot certify a rich trial,
+and retired codec callbacks cannot acknowledge its replacement. Legacy choices
+retain ACKs without this field. Failed trials advance through the ranked list once, then restore
 the prior verified selection or H.264 fallback. Encoder changes can briefly
 interrupt video while preserving the capture display.
 

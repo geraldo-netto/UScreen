@@ -83,6 +83,8 @@ pub(crate) struct EncoderEvidence {
     pub name: String,
     pub format: (u32, u32, u32, u32, u32),
     pub epoch: u64,
+    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    decoder_receipt: Option<String>,
     rendered: std::sync::atomic::AtomicU64,
     encoded: std::sync::atomic::AtomicU64,
     encoded_at_ack: std::sync::atomic::AtomicU64,
@@ -115,10 +117,20 @@ impl LatencyTracker {
         self.next_sequence.fetch_add(1, Ordering::Relaxed)
     }
 
+    #[cfg(any(test, feature = "inproc-encoder"))]
     pub fn encoder_started(
         &self,
         name: &str,
         format: (u32, u32, u32, u32, u32),
+    ) -> Arc<EncoderEvidence> {
+        self.encoder_started_with_decoder(name, format, None)
+    }
+
+    pub fn encoder_started_with_decoder(
+        &self,
+        name: &str,
+        format: (u32, u32, u32, u32, u32),
+        decoder: Option<uscreen_config::negotiation::DecoderChoice>,
     ) -> Arc<EncoderEvidence> {
         let mut state = self.inner.lock().unwrap();
         state.encoder_epoch = state.encoder_epoch.wrapping_add(1);
@@ -126,6 +138,8 @@ impl LatencyTracker {
             name: name.into(),
             format,
             epoch: state.encoder_epoch,
+            decoder_receipt: decoder.as_ref().map(|d| d.receipt()),
+            decoder,
             rendered: Default::default(),
             encoded: Default::default(),
             encoded_at_ack: Default::default(),
@@ -187,25 +201,16 @@ impl LatencyTracker {
     }
 
     /// The host received the tablet's render-callback acknowledgement.
+    #[cfg(test)]
     pub fn on_rendered(&self, seq: u32, decode_us: i64) {
+        self.on_rendered_from(seq, decode_us, None);
+    }
+
+    pub fn on_rendered_from(&self, seq: u32, decode_us: i64, decoder: Option<&str>) {
         let Ok(mut g) = self.inner.lock() else { return };
-        // Everything queued before this frame is now known to be behind it;
-        // drop it so the deque tracks only genuinely in-flight frames.
-        let Some(pos) = g.position(seq) else {
+        let Some(micros) = g.acknowledge(seq, decoder) else {
             return;
         };
-        let (_, at, encoder) = &g.sent[pos];
-        if let Some(encoder) = encoder {
-            encoder
-                .encoded_at_ack
-                .store(encoder.encoded(), Ordering::Relaxed);
-            encoder.rendered.fetch_add(1, Ordering::Release);
-        }
-        let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
-        g.sent.drain(..=pos);
-        if g.sent.is_empty() {
-            g.discontinuous = false;
-        }
         if g.samples.len() < MAX_SAMPLES {
             g.samples.push(micros);
             if decode_us > 0 {
@@ -244,6 +249,31 @@ impl LatencyTracker {
 }
 
 impl Inner {
+    fn acknowledge(&mut self, seq: u32, decoder: Option<&str>) -> Option<u32> {
+        // Everything queued before this frame is now known to be behind it;
+        // drop it so the deque tracks only genuinely in-flight frames.
+        let pos = self.position(seq)?;
+        let (_, at, encoder) = &self.sent[pos];
+        if encoder
+            .as_ref()
+            .is_some_and(|e| e.decoder_receipt.as_deref() != decoder)
+        {
+            return None;
+        }
+        if let Some(encoder) = encoder {
+            encoder
+                .encoded_at_ack
+                .store(encoder.encoded(), Ordering::Relaxed);
+            encoder.rendered.fetch_add(1, Ordering::Release);
+        }
+        let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
+        self.sent.drain(..=pos);
+        if self.sent.is_empty() {
+            self.discontinuous = false;
+        }
+        Some(micros)
+    }
+
     fn position(&self, sequence: u32) -> Option<usize> {
         if self.discontinuous {
             return self

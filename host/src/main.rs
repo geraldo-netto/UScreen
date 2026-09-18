@@ -1501,6 +1501,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             helper_path: helper_path.clone(),
             edid_path: cli.edid.clone(),
             encoder: encoder.clone(),
+            decoder: None,
             vaapi_device: file_cfg.vaapi_device.clone(),
             fps,
             bitrate,

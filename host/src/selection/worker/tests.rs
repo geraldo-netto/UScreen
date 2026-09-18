@@ -40,6 +40,63 @@ fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
     }
 }
 
+#[tokio::test(start_paused = true)]
+async fn t484_old_decoder_acks_cannot_certify_a_new_decoder_only_trial() {
+    let snapshot = settings();
+    let (tx, mut updates) = watch::channel(snapshot.clone());
+    let latency = LatencyTracker::new();
+    let old = latency.encoder_started("libx264", Key::new(&snapshot).format);
+    let mut trial = candidate("libx264", true, 100.0, 10);
+    trial.decoder = Some(uscreen_config::negotiation::DecoderChoice {
+        name: "vendor.avc".into(),
+        stream: uscreen_config::negotiation::StreamProfile {
+            codec: "h264".into(),
+            format: uscreen_config::negotiation::Profile {
+                profile: "baseline".into(),
+                level: 31,
+                depth: 8,
+            },
+        },
+        low_latency: false,
+        operating_rate: Some(120),
+    });
+    let requested = trial.decoder.clone();
+    let worker = tokio::spawn({
+        let tx = tx.clone();
+        let latency = latency.clone();
+        async move { supervise(&tx, &snapshot, &latency, vec![trial]).await }
+    });
+    updates.changed().await.unwrap();
+    for seq in 0..3 {
+        latency.on_encoded_for(seq, &old);
+        latency.on_rendered(seq, 100);
+    }
+    tokio::task::yield_now().await;
+    let verified = tx.borrow().selection.as_ref().unwrap().verified;
+    updates.borrow_and_update();
+    let current = latency.encoder_started_with_decoder("libx264", old.format, requested);
+    for seq in 3..6 {
+        latency.on_encoded_for(seq, &current);
+        latency.on_rendered_from(
+            seq,
+            100,
+            current.decoder.as_ref().map(|d| d.receipt()).as_deref(),
+        );
+    }
+    updates.changed().await.unwrap();
+    let replacement_verified = tx.borrow().selection.as_ref().unwrap().verified;
+    worker.abort();
+    let _ = worker.await;
+    assert!(
+        !verified,
+        "T484: previous decoder acknowledged the replacement's trial"
+    );
+    assert!(
+        replacement_verified,
+        "T484: matching replacement ACKs must verify"
+    );
+}
+
 #[test]
 fn t478_rich_selection_requires_actual_profile_and_conversion_intersection() {
     let mut settings = settings();
@@ -221,6 +278,7 @@ fn t434_only_fresh_acks_from_matching_encoder_certify_a_trial() {
         latency.encoder_evidence(),
         &key,
         "libvpx-vp9",
+        None,
         None
     ));
     for seq in 3..6 {
@@ -231,18 +289,21 @@ fn t434_only_fresh_acks_from_matching_encoder_certify_a_trial() {
         latency.encoder_evidence(),
         &key,
         "libvpx-vp9",
+        None,
         None
     ));
     assert!(!matches_evidence(
         latency.encoder_evidence(),
         &key,
         "libvpx-vp9",
-        Some((current.epoch, 3))
+        Some((current.epoch, 3)),
+        None
     ));
     assert!(!matches_evidence(
         latency.encoder_evidence(),
         &key,
         "libaom-av1",
+        None,
         None
     ));
 }
@@ -352,6 +413,7 @@ fn t465_retired_encoder_cannot_certify_a_trial_after_late_acks() {
         latency.encoder_evidence(),
         &key,
         "libx264",
+        None,
         None
     ));
 }

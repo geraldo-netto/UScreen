@@ -37,6 +37,37 @@ impl SettingsSink for Recorder {
 }
 
 #[test]
+fn t484_old_decoder_receipt_cannot_acknowledge_new_encoder_packets() {
+    let choice: uscreen_config::negotiation::DecoderChoice = serde_json::from_str(
+        r#"{"name":"vendor.avc","stream":{"codec":"h264","profile":"baseline","level":41,"depth":8},"low_latency":false,"operating_rate":120}"#).unwrap();
+    let tracker = crate::latency::LatencyTracker::new();
+    let encoder =
+        tracker.encoder_started_with_decoder("libx264", (640, 480, 60, 20000, 18), Some(choice));
+    tracker.on_encoded_for(1, &encoder);
+    let event = serde_json::from_str(
+        r#"{"type":"rendered","seq":1,"decode_us":100,"decoder":"retired-decoder"}"#,
+    )
+    .unwrap();
+    let sink = Recorder::default();
+    handle_event(event, &sink, &sink, &tracker, true);
+    assert_eq!(
+        encoder.rendered(),
+        0,
+        "T484: producer identity cannot prove which decoder rendered"
+    );
+    let omitted = serde_json::from_str(r#"{"type":"rendered","seq":1,"decode_us":100}"#).unwrap();
+    handle_event(omitted, &sink, &sink, &tracker, true);
+    assert_eq!(
+        encoder.rendered(),
+        0,
+        "T484: missing rich receipt became proof"
+    );
+    let matching = serde_json::from_str(r#"{"type":"rendered","seq":1,"decode_us":100,"decoder":"10:vendor.avc:h264:baseline:41:8:0:120"}"#).unwrap();
+    handle_event(matching, &sink, &sink, &tracker, true);
+    assert_eq!(encoder.rendered(), 1);
+}
+
+#[test]
 fn t370_dispatch_preserves_order_and_controller_ownership_with_adapters() {
     let sink = Arc::new(Recorder::default());
     let settings = Recorder::default();
