@@ -1162,7 +1162,15 @@ static int t226_command(int argc, char **argv, const char *root) {
     assert(frame);
     memset(frame, 48, 1024 * 1024);
     memset(frame + 1024 * 1024, 128, size - 1024 * 1024);
+    /* T459: a host allowing the requested 2 MiB can hold this entire frame.
+       Constrain only this empty, isolated first pipe to force a partial write;
+       replacement pipes still exercise the real saved 2/4 MiB requests. */
+    int partial_capacity = fcntl(g_fifo.fd, F_SETPIPE_SZ, 4096);
+    assert(partial_capacity > 0 && (size_t)partial_capacity < size);
+    const char *capacity_path = g_fifo.capacity_path;
+    g_fifo.capacity_path = NULL; /* Do not regrow it if this fixture is descheduled. */
     size_t remaining = fifo_writer_write(&g_fifo, frame, size, g_frames.generation);
+    g_fifo.capacity_path = capacity_path;
     assert(remaining > 0 && remaining < size);
     /* Reopen before the old reader drains, the original corruption trigger. */
     ensure_writer_fifo(&g_writer);

@@ -1,4 +1,5 @@
-//! T226: partial production C writes followed by real CLI/libavcodec encoding.
+//! T226/T459: partial production C writes followed by real CLI/libavcodec
+//! encoding, regardless of the host's maximum permitted pipe capacity.
 use super::*;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::fs::PermissionsExt;
