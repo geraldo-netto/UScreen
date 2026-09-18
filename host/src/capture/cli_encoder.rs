@@ -283,6 +283,7 @@ pub(super) async fn read_loop(
     codec: Codec,
     evidence: std::sync::Arc<crate::latency::EncoderEvidence>,
 ) -> Result<()> {
+    let _activity = latency.encoder_activity(evidence.clone());
     let mut total: u64 = 0;
     let mut frames: u64 = 0;
     let mut last_log = Instant::now();
@@ -306,6 +307,9 @@ pub(super) async fn read_loop(
             if tx.receiver_count() > 0 {
                 latency.on_encoded_for(data.seq, &evidence);
                 let _ = tx.send(data);
+            } else {
+                // Decoder setup may fail before a video client can subscribe.
+                latency.on_encoder_output(&evidence);
             }
         }
         if n == 0 {
@@ -405,6 +409,35 @@ mod tests {
             }
         }
     }
+    #[tokio::test]
+    async fn t465_output_health_survives_missing_video_subscriber_and_reader_eof() {
+        let latency = crate::latency::LatencyTracker::new();
+        let evidence = latency.encoder_started("libx264", (640, 480, 60, 20000, 18));
+        let (tx, rx) = crate::video_queue::channel(8, Default::default());
+        drop(rx); // A recovering decoder may fail before opening its video socket.
+        let packets = vec![vec![0, 0, 0, 1, 5, 0x80, 0x11]; 4];
+        let input = crate::framed_annex_b::tests::stream(Codec::H264, &packets);
+        read_loop(
+            input.as_slice(),
+            tx,
+            CodecConfig::default(),
+            latency,
+            Codec::H264,
+            evidence.clone(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            evidence.encoded(),
+            4,
+            "T465: output disappeared without a video client"
+        );
+        assert!(
+            !evidence.active(),
+            "T465: EOF did not retire encoder health"
+        );
+    }
+
     #[tokio::test]
     async fn t228_sequences_survive_encoder_restarts_before_ack() {
         let latency = crate::latency::LatencyTracker::new();

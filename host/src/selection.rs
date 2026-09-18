@@ -50,6 +50,8 @@ pub(crate) struct Selected {
 }
 
 #[cfg(not(feature = "inproc-encoder"))]
+mod health;
+#[cfg(not(feature = "inproc-encoder"))]
 mod worker;
 #[cfg(not(feature = "inproc-encoder"))]
 pub(crate) use worker::spawn;

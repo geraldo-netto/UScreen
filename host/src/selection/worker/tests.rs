@@ -214,3 +214,112 @@ fn t434_only_fresh_acks_from_matching_encoder_certify_a_trial() {
         None
     ));
 }
+
+#[tokio::test(start_paused = true)]
+async fn t465_verified_stream_failure_advances_without_control_reconnect() {
+    let initial = settings();
+    let key = Key::new(&initial);
+    let (tx, mut rx) = watch::channel(initial.clone());
+    let latency = LatencyTracker::new();
+    let observed = latency.clone();
+    let task = tokio::spawn(async move {
+        supervise(
+            &tx,
+            &initial,
+            &observed,
+            vec![
+                candidate("libvpx-vp9", true, 120.0, 4),
+                candidate("libx264", true, 120.0, 6),
+            ],
+        )
+        .await;
+    });
+    rx.wait_for(|s| s.effective_encoder() == "libvpx-vp9")
+        .await
+        .unwrap();
+    let encoder = latency.encoder_started("libvpx-vp9", key.format);
+    for _ in 0..3 {
+        let seq = latency.next_sequence();
+        latency.on_encoded_for(seq, &encoder);
+        latency.on_rendered(seq, 100);
+    }
+    rx.wait_for(|s| s.selection.as_ref().is_some_and(|s| s.verified))
+        .await
+        .unwrap();
+    for _ in 0..4 {
+        latency.on_encoded_for(latency.next_sequence(), &encoder);
+    }
+    let recovered = tokio::time::timeout(
+        Duration::from_secs(10),
+        rx.wait_for(|s| s.effective_encoder() == "libx264"),
+    )
+    .await;
+    task.abort();
+    assert!(
+        matches!(recovered, Ok(Ok(_))),
+        "T465: verified candidate remained selected after sustained lost render progress"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn t465_exhaustion_keeps_fallback_without_retrying_failed_candidates() {
+    let initial = settings();
+    let key = Key::new(&initial);
+    let (tx, mut rx) = watch::channel(initial.clone());
+    let latency = LatencyTracker::new();
+    let observed = latency.clone();
+    let task = tokio::spawn(async move {
+        supervise(
+            &tx,
+            &initial,
+            &observed,
+            vec![candidate("libvpx-vp9", true, 120.0, 4)],
+        )
+        .await;
+    });
+    rx.wait_for(|s| s.effective_encoder() == "libvpx-vp9")
+        .await
+        .unwrap();
+    let encoder = latency.encoder_started("libvpx-vp9", key.format);
+    for seq in 0..3 {
+        latency.on_encoded_for(seq, &encoder);
+        latency.on_rendered(seq, 100);
+    }
+    rx.wait_for(|s| s.selection.as_ref().is_some_and(|s| s.verified))
+        .await
+        .unwrap();
+    drop(latency.encoder_activity(encoder));
+    tokio::time::timeout(Duration::from_secs(10), task)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(rx.borrow().effective_encoder(), "libx264");
+    assert!(!rx.borrow().selection.as_ref().unwrap().verified);
+    assert!(rx
+        .borrow()
+        .selection
+        .as_ref()
+        .unwrap()
+        .reason
+        .contains("failed or did not render"));
+}
+
+#[test]
+fn t465_retired_encoder_cannot_certify_a_trial_after_late_acks() {
+    let latency = LatencyTracker::new();
+    let key = Key::new(&settings());
+    let old = latency.encoder_started("libx264", key.format);
+    for seq in 0..3 {
+        latency.on_encoded_for(seq, &old);
+    }
+    drop(latency.encoder_activity(old));
+    for seq in 0..3 {
+        latency.on_rendered(seq, 100);
+    }
+    assert!(!matches_evidence(
+        latency.encoder_evidence(),
+        &key,
+        "libx264",
+        None
+    ));
+}

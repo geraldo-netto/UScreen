@@ -46,10 +46,34 @@ struct Inner {
     last_report: Option<Instant>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct LatencyTracker {
     inner: Arc<Mutex<Inner>>,
     next_sequence: Arc<AtomicU32>,
+    activity: tokio::sync::watch::Sender<()>,
+}
+
+impl Default for LatencyTracker {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            next_sequence: Default::default(),
+            activity: tokio::sync::watch::channel(()).0,
+        }
+    }
+}
+
+#[cfg(not(feature = "inproc-encoder"))]
+pub(crate) struct EncoderActivity {
+    encoder: Arc<EncoderEvidence>,
+    activity: tokio::sync::watch::Sender<()>,
+}
+#[cfg(not(feature = "inproc-encoder"))]
+impl Drop for EncoderActivity {
+    fn drop(&mut self) {
+        self.encoder.active.store(false, Ordering::Release);
+        self.activity.send_replace(());
+    }
 }
 
 /// Acknowledgements stay tied to the encoder that produced the sequence.
@@ -60,11 +84,24 @@ pub(crate) struct EncoderEvidence {
     pub format: (u32, u32, u32, u32, u32),
     pub epoch: u64,
     rendered: std::sync::atomic::AtomicU64,
+    encoded: std::sync::atomic::AtomicU64,
+    encoded_at_ack: std::sync::atomic::AtomicU64,
+    active: std::sync::atomic::AtomicBool,
 }
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
 impl EncoderEvidence {
+    pub fn encoded(&self) -> u64 {
+        self.encoded.load(Ordering::Relaxed)
+    }
+    pub fn unrendered_output(&self) -> u64 {
+        self.encoded()
+            .saturating_sub(self.encoded_at_ack.load(Ordering::Relaxed))
+    }
+    pub fn active(&self) -> bool {
+        self.active.load(Ordering::Acquire)
+    }
     pub fn rendered(&self) -> u64 {
-        self.rendered.load(Ordering::Relaxed)
+        self.rendered.load(Ordering::Acquire)
     }
 }
 
@@ -90,13 +127,30 @@ impl LatencyTracker {
             format,
             epoch: state.encoder_epoch,
             rendered: Default::default(),
+            encoded: Default::default(),
+            encoded_at_ack: Default::default(),
+            active: std::sync::atomic::AtomicBool::new(true),
         });
         state.encoder = Some(evidence.clone());
+        drop(state);
+        self.activity.send_replace(());
         evidence
     }
     #[cfg(not(feature = "inproc-encoder"))]
     pub fn encoder_evidence(&self) -> Option<Arc<EncoderEvidence>> {
         self.inner.lock().ok()?.encoder.clone()
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn encoder_activity(&self, encoder: Arc<EncoderEvidence>) -> EncoderActivity {
+        EncoderActivity {
+            encoder,
+            activity: self.activity.clone(),
+        }
+    }
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn activity_updates(&self) -> tokio::sync::watch::Receiver<()> {
+        self.activity.subscribe()
     }
 
     /// A complete encoded access unit is ready for broadcast.
@@ -105,7 +159,14 @@ impl LatencyTracker {
         self.record_encoded(seq, None);
     }
     pub fn on_encoded_for(&self, seq: u32, encoder: &Arc<EncoderEvidence>) {
+        encoder.encoded.fetch_add(1, Ordering::Relaxed);
         self.record_encoded(seq, Some(encoder.clone()));
+        self.activity.send_replace(());
+    }
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn on_encoder_output(&self, encoder: &Arc<EncoderEvidence>) {
+        encoder.encoded.fetch_add(1, Ordering::Relaxed);
+        self.activity.send_replace(());
     }
     fn record_encoded(&self, seq: u32, encoder: Option<Arc<EncoderEvidence>>) {
         let Ok(mut g) = self.inner.lock() else { return };
@@ -135,7 +196,10 @@ impl LatencyTracker {
         };
         let (_, at, encoder) = &g.sent[pos];
         if let Some(encoder) = encoder {
-            encoder.rendered.fetch_add(1, Ordering::Relaxed);
+            encoder
+                .encoded_at_ack
+                .store(encoder.encoded(), Ordering::Relaxed);
+            encoder.rendered.fetch_add(1, Ordering::Release);
         }
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
         g.sent.drain(..=pos);
@@ -149,6 +213,8 @@ impl LatencyTracker {
                     .push((decode_us as u128).min(u32::MAX as u128) as u32);
             }
         }
+        drop(g);
+        self.activity.send_replace(());
     }
 
     /// Log percentiles if the report window has elapsed. Cheap to call often.

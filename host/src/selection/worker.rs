@@ -105,14 +105,38 @@ async fn optimize(
     snapshot: &EncoderSettings,
     latency: &LatencyTracker,
 ) {
-    let key = Key::new(snapshot);
-    let fallback = fallback_encoder(snapshot).to_string();
     let candidates = calibrate(base, snapshot).await;
-    choose(settings, &key, &fallback, candidates, |name| {
+    supervise(settings, snapshot, latency, candidates).await;
+}
+
+async fn supervise(
+    settings: &watch::Sender<EncoderSettings>,
+    snapshot: &EncoderSettings,
+    latency: &LatencyTracker,
+    candidates: Vec<Candidate>,
+) {
+    let key = Key::new(snapshot);
+    let mut pending = candidates;
+    let mut fallback = fallback_encoder(snapshot).to_string();
+    while let Some((name, remaining)) = choose(settings, &key, &fallback, pending, |name| {
         let key = &key;
         async move { rendered(latency, key, &name).await }
     })
-    .await;
+    .await
+    {
+        super::health::failed(latency, &key, &name).await;
+        tracing::warn!(encoder = %name, "Verified encoder lost render progress; trying remaining compatible candidates");
+        // Never return to a candidate that failed in this settings/peer epoch.
+        pending = remaining;
+        fallback = "libx264".into();
+        publish(
+            settings,
+            &key,
+            &fallback,
+            "Render progress lost; using H.264 during recovery backoff",
+        );
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
 }
 
 async fn choose<F: Future<Output = bool>>(
@@ -121,13 +145,14 @@ async fn choose<F: Future<Output = bool>>(
     fallback: &str,
     candidates: Vec<Candidate>,
     mut verify: impl FnMut(String) -> F,
-) {
-    for candidate in candidates {
+) -> Option<(String, Vec<Candidate>)> {
+    let mut candidates = candidates.into_iter();
+    while let Some(candidate) = candidates.next() {
         let reason = format!("Host probe: {:.1} FPS, packet-interval p95 {:.2} ms; {} decoder advertised; awaiting render ACKs",
             candidate.measurement.fps, candidate.measurement.p95_us as f64 / 1000.0,
             if candidate.hardware { "hardware" } else { "software/unknown" });
         if !publish(settings, key, &candidate.measurement.encoder, &reason) {
-            return;
+            return None;
         }
         if verify(candidate.measurement.encoder.clone()).await {
             let verified = reason.replace(
@@ -146,7 +171,7 @@ async fn choose<F: Future<Output = bool>>(
                 });
                 true
             });
-            return;
+            return Some((candidate.measurement.encoder, candidates.collect()));
         }
         tracing::warn!(encoder = %candidate.measurement.encoder, "Automatic codec trial produced no verified render ACKs; trying next compatible candidate");
     }
@@ -156,6 +181,7 @@ async fn choose<F: Future<Output = bool>>(
         fallback,
         "Preserved fallback: compatible encoder trials failed or did not render",
     );
+    None
 }
 
 fn publish(
@@ -180,17 +206,20 @@ fn publish(
 }
 
 async fn rendered(latency: &LatencyTracker, key: &Key, name: &str) -> bool {
+    let mut updates = latency.activity_updates();
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
             if matches_evidence(latency.encoder_evidence(), key, name, previous) {
-                return;
+                return true;
             }
-            tokio::time::sleep(Duration::from_millis(50)).await;
+            if updates.changed().await.is_err() {
+                return false;
+            }
         }
     })
     .await
-    .is_ok()
+    .unwrap_or(false)
 }
 fn matches_evidence(
     evidence: Option<Arc<crate::latency::EncoderEvidence>>,
@@ -203,7 +232,10 @@ fn matches_evidence(
             .filter(|&(epoch, _)| epoch == e.epoch)
             .map(|(_, count)| count)
             .unwrap_or(0);
-        e.name == name && e.format == key.format && e.rendered().saturating_sub(before) >= 3
+        e.active()
+            && e.name == name
+            && e.format == key.format
+            && e.rendered().saturating_sub(before) >= 3
     })
 }
 

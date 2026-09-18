@@ -105,8 +105,23 @@ six seconds. Matching encoder identity and actual dimensions/rate/quality bind
 that evidence to the trial; old or duplicate acknowledgements cannot certify a
 replacement. Failed trials advance through the ranked list once, then restore
 the prior verified selection or H.264 fallback. Encoder changes can briefly
-interrupt video while preserving the capture display. The six-second check
-verifies startup rendering, not indefinite decoder reliability.
+interrupt video while preserving the capture display.
+
+After startup verification, the selector continues observing encoder-generation
+output and render progress through notifications. Three or more produced packets
+without render progress for six seconds, or an encoder exit without recovery for
+six seconds, trigger fallback and a two-second recovery backoff before trying the
+remaining ranked candidates. Output remains observable while a failing decoder
+has no video socket. A recovered render acknowledgement clears the stall window;
+late acknowledgements from retired encoders cannot clear a replacement's window.
+Idle content alone is not a failure. These thresholds are a bounded recovery
+policy, not a latency or throughput benchmark.
+
+Each candidate is attempted at most once in the current selection cycle. Exhaustion
+keeps H.264 without claiming it has rendered successfully, and does not repeatedly
+cycle through known failures. A settings/peer change permits fresh calibration;
+backgrounding and shutdown cancel monitoring and pending recovery. Explicit
+encoder choices retain their existing behavior.
 
 Settings changes, controller replacement, inactive display and shutdown cancel
 selection and retire its child process. Interrupted trials cannot become a
