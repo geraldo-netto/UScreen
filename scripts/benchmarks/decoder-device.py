@@ -101,9 +101,8 @@ def run(args):
             order = args.variants if (number + case) % 2 else list(reversed(args.variants))
             for variant, profile in order:
                 trial(args, variant, profile, scene, rate, number)
-    # Complete runs return to the previously authorized UScreen session. An
-    # interrupted/backgrounded trial aborts above and does not steal focus back.
-    capture(args.serial, 'shell', 'am', 'start', '-n', 'com.uscreen/.MainActivity')
+    # The Activity finishes its own task. Never relaunch another Activity here:
+    # the user may have chosen a different app just after measurement completed.
 
 
 def main():

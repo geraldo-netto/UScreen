@@ -107,7 +107,6 @@ def trial(args, row, meta, policy, number):
     (folder / 'battery-after.txt').write_text(DEVICE.capture(args.serial, 'shell', 'dumpsys', 'battery'))
     (folder / 'thermal-after.txt').write_text(DEVICE.capture(args.serial, 'shell', 'dumpsys', 'thermalservice'))
     DEVICE.logs(args, PACKAGE, folder)
-    DEVICE.capture(args.serial, 'shell', 'am', 'start', '-n', 'com.uscreen/.MainActivity')
     print(number, row['scene'], row['rate'], row['encoder'], len(acks_rows(result)), 'ACKs', flush=True)
 
 

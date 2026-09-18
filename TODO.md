@@ -4,7 +4,6 @@
 
 | id | status | severity | effort | description |
 | --- | --- | --- | --- | --- |
-| T485 | open | medium | small | Stop benchmark drivers from relaunching UScreen after a successful result. `scripts/benchmarks/decoder-device.py:run`, `decoder-plan.py:run` and `profile-usb.py:trial` issue `am start com.uscreen/.MainActivity` after completion; if the user switches apps between completion and that call, the driver can steal foreground focus despite the Activity already finishing its own task. Add a permanent mocked completion/switch regression before fixing all three drivers; rely on Android task completion rather than choosing the next foreground app, and align the benchmark documentation. |
 | T486 | open | low | small | Align `host/src/input/wire.rs` render-event comments with the measured contract: `Rendered` currently says the tablet has put a frame on screen, while `DecoderSession::notifyRendered`, `latency.rs` and `docs/video-codecs.md` measure render-callback execution/ACK receipt without optical presentation proof. Describe `decode_us` as complete-frame arrival to callback execution, retain the distinct clock boundaries and do not imply independent percentiles can be subtracted for transport latency. Documentation-only correction; no artificial regression test. |
 
 ## Other items

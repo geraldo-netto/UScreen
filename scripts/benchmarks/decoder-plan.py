@@ -71,7 +71,6 @@ def run(args):
                                 burst=item.get('burst', 1), selection=item.get('selection'))
         setattr(trial, item['scene'], fixture)
         DEVICE.trial(trial, variant, item['profile'], item['scene'], item['rate'], item['trial'])
-    DEVICE.capture(args.serial, 'shell', 'am', 'start', '-n', 'com.uscreen/.MainActivity')
 
 
 def main():

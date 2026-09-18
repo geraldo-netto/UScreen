@@ -210,7 +210,9 @@ decoder sources. `decoder-plan.py` runs the archived negotiated plans.
 `profile-usb.py` consumes the same verified NV12 corpus, exports current options
 through `common/examples/encoder-options.rs`, creates one non-rebinding loopback
 ADB reverse route and removes it afterward. Focus/input loss stops the current
-new replay APK; unsuccessful runs do not relaunch UScreen. No installed user
+new replay APK. T485 removes host-side relaunches after successful runs too:
+Android finishes the benchmark Activity's own task, preserving another app
+selected by the user during completion. No installed user
 preferences are changed. The initial USB smoke exposed an intentional-reset
 classification error in the new harness; it was excluded, fixed and covered by
 an API 27/34 regression before the successful 24-trial cohort.
