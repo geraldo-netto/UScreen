@@ -209,8 +209,8 @@ fn forward_shutdown(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         tokio::select! {
-            _ = daemon.changed() => {},
-            _ = local.changed() => {},
+            _ = daemon.wait_for(|stop| *stop) => {},
+            _ = local.wait_for(|stop| *stop) => {},
         }
         let _ = capture.send(true);
     })
@@ -261,6 +261,67 @@ fn spawn_display_gate(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn t450_initial_or_already_seen_stop_is_forwarded() {
+        for daemon_stops in [true, false] {
+            for initially_set in [true, false] {
+                let (daemon, mut daemon_rx) = watch::channel(daemon_stops && initially_set);
+                let (local, mut local_rx) = watch::channel(!daemon_stops && initially_set);
+                if !initially_set {
+                    if daemon_stops {
+                        daemon.send(true).unwrap();
+                    } else {
+                        local.send(true).unwrap();
+                    }
+                    daemon_rx.borrow_and_update();
+                    local_rx.borrow_and_update();
+                }
+                let (capture, mut capture_rx) = watch::channel(false);
+                let task = forward_shutdown(daemon_rx, local_rx, capture);
+                let stopped = tokio::time::timeout(
+                    Duration::from_millis(100),
+                    capture_rx.wait_for(|stop| *stop),
+                )
+                .await;
+                task.abort();
+                assert!(
+                    matches!(stopped, Ok(Ok(_))),
+                    "T450: already-requested stop was missed"
+                );
+            }
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn t450_false_update_keeps_capture_alive_until_true_or_channel_close() {
+        for close in [false, true] {
+            let (daemon, daemon_rx) = watch::channel(false);
+            let (_local, local_rx) = watch::channel(false);
+            let (capture, mut capture_rx) = watch::channel(false);
+            let task = forward_shutdown(daemon_rx, local_rx, capture);
+            daemon.send(false).unwrap();
+            tokio::task::yield_now().await;
+            assert!(
+                !*capture_rx.borrow(),
+                "T450: false is not a shutdown request"
+            );
+            if !close {
+                daemon.send(true).unwrap();
+            }
+            drop(daemon);
+            let stopped = tokio::time::timeout(
+                Duration::from_millis(100),
+                capture_rx.wait_for(|stop| *stop),
+            )
+            .await;
+            task.abort();
+            assert!(
+                matches!(stopped, Ok(Ok(_))),
+                "T450: stop/closure was missed"
+            );
+        }
+    }
 
     fn spec(ports: (u16, u16)) -> Spec {
         Spec {
