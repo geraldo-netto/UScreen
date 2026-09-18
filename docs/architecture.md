@@ -33,6 +33,10 @@ from the existing implementation.
 3. **Encode.** The default FFmpeg child uses NVENC, VAAPI or software libx264.
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
    CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
+   VAAPI requests async depth one only when stock encoder help advertises it.
+   The explicit `h264_vaapi_baseline` choice maps to stock H.264 VAAPI with
+   Constrained Baseline/CAVLC; existing selections retain their profile policy.
+   See the [codec measurements](benchmarks/2026-09-18-codecs.md).
    B-frames/lookahead are disabled on the low-latency paths. An optional
    in-process libavcodec encoder avoids the child process; it does not support
    `ten_bit`. The optional build rejects VAAPI before capture setup and rejects

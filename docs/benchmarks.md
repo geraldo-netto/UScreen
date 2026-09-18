@@ -39,6 +39,12 @@ T399's 96 valid cadence/steady/burst decoder trials and whole-raw-picture admiss
 comparison. Sparse input increases decoder delay; render-latest found no ready
 output backlog. Existing keepalive and output defaults remain selected.
 
+The [codec comparison](benchmarks/2026-09-18-codecs.md) records matched-quality
+H.264/HEVC/VP9/AV1 samples, paced VAAPI depth and concurrency trials, and repeated
+physical decoding. T400 adds capability-gated VAAPI depth one and an explicit
+low-latency H.264 profile while preserving saved selections; the report also
+records the failed VAAPI HEVC sample and software AV1 motion delay.
+
 The [Android socket-input replay](benchmarks/2026-09-18-decoder-input.md) compares
 reusable heap staging with direct reads into codec-owned input buffers. T403 keeps
 staging as the default and adds tested payload/cancellation contracts; it makes

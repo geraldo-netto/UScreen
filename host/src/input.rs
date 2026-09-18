@@ -1857,7 +1857,12 @@ fi
     #[cfg(feature = "inproc-encoder")]
     #[test]
     fn t284_tablet_cannot_switch_inproc_capture_to_vaapi() {
-        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+        for encoder in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vaapih264enc",
+        ] {
             let (tx, rx) = watch::channel(settings("libx264"));
             apply_tablet_config(&Some(tx), Some(2000), Some(45), Some(encoder.into()));
             assert_eq!(

@@ -1,0 +1,16 @@
+from pathlib import Path
+import json,math,statistics
+from collections import defaultdict
+out=Path('docs/benchmarks/2026-09-18-codecs')
+summary={}
+for name,root in [('default','/tmp/uscreen-t400-latency'),('depth1','/tmp/uscreen-t400-latency-depth1'),('concurrency','/tmp/uscreen-t400-concurrency-reviewed')]:
+ groups=defaultdict(list)
+ for p in sorted(Path(root).glob('**/result.json')):
+  r=json.loads(p.read_text());v=sorted(r['latency_ms'][r['warmup_frames']:]);assert r['returncode']==0;assert len(r['packets'])==240
+  key=f'{r["scene"]}/{r["encoder"]}'
+  if name=='concurrency':key=p.parent.parent.name.rsplit('-round',1)[0]
+  row=dict(path=str(p.relative_to(root)),p50_ms=v[math.floor(.5*(len(v)-1))],p99_ms=v[math.floor(.99*(len(v)-1))],frames=len(v))
+  groups[key].append(row)
+ summary[name]=[dict(group=k,trials=rows,median={metric:statistics.median(r[metric] for r in rows) for metric in ['p50_ms','p99_ms']}) for k,rows in sorted(groups.items())]
+ for r in summary[name]:print(name,r['group'],r['median'])
+(out/'latency-summary.json').write_text(json.dumps(summary,indent=2)+'\n')

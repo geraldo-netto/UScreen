@@ -74,7 +74,7 @@ async fn native_capture_resources() {
         &cli_encoder::CliEncoder {
             config: &manager.config,
         }
-        .encoder_command(640, 480)
+        .encoder_command(640, 480, true)
         .unwrap(),
         "-i",
         &expected,

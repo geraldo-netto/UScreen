@@ -33,7 +33,12 @@ impl CliEncoder<'_> {
         }
     }
 
-    pub(super) fn encoder_command(&self, w: u32, h: u32) -> Result<Command> {
+    pub(super) fn encoder_command(
+        &self,
+        w: u32,
+        h: u32,
+        async_depth_supported: bool,
+    ) -> Result<Command> {
         let encoder = crate::config::ffmpeg_encoder_name(&self.config.encoder);
         let codec = Codec::from_encoder(encoder);
         // 10-bit only makes sense on HEVC here: NVENC's H.264 encoder is
@@ -45,7 +50,12 @@ impl CliEncoder<'_> {
                 encoder
             );
         }
-        let encoder_args = self.encoder_arguments(encoder, codec, ten_bit, w, h)?;
+        let mut encoder_args = self.encoder_arguments(encoder, codec, ten_bit, w, h)?;
+        if !async_depth_supported {
+            if let Some(index) = encoder_args.iter().position(|arg| arg == "-async_depth") {
+                encoder_args.drain(index..index + 2);
+            }
+        }
         let mut cmd = Command::new("ffmpeg");
         cmd.args(&encoder_args)
             .stdout(Stdio::piped())
@@ -145,7 +155,7 @@ impl CliEncoder<'_> {
         ]);
 
         let mut quality_args = Vec::new();
-        self.encoder_quality_args(&mut quality_args, encoder, ten_bit)?;
+        self.encoder_quality_args(&mut quality_args, &self.config.encoder, ten_bit)?;
         encoder_args.extend(quality_args.into_iter().map(std::ffi::OsString::from));
         encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
         Ok(encoder_args)
@@ -172,6 +182,29 @@ impl CliEncoder<'_> {
         Ok(())
     }
 }
+/// T400: distribution FFmpeg options vary; probe the selected stock encoder.
+/// Uses the shared asynchronous deadline/cancellation implementation.
+pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &str) -> bool {
+    use uscreen_config::commands::AsyncCommandExt;
+    if !matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+        return false;
+    }
+    let output = Command::new(program)
+        .args(["-hide_banner", "-h", &format!("encoder={encoder}")])
+        .output_bounded()
+        .await;
+    match output {
+        Ok(output) if output.status.success() => {
+            [&output.stdout, &output.stderr].iter().any(|bytes| {
+                String::from_utf8_lossy(bytes)
+                    .lines()
+                    .any(|line| line.split_whitespace().next() == Some("-async_depth"))
+            })
+        }
+        _ => false,
+    }
+}
+
 pub(super) async fn read_loop(
     mut stdout: impl tokio::io::AsyncRead + Unpin,
     tx: crate::video_queue::VideoSender,
@@ -352,6 +385,81 @@ mod encoder_policy_tests {
     }
 
     #[test]
+    fn t400_baseline_profile_reaches_stock_vaapi_command() {
+        let config = CaptureConfig {
+            encoder: "h264_vaapi_baseline".into(),
+            ten_bit: true,
+            vaapi_device: "/dev/dri/renderD129".into(),
+            instance: u32::MAX,
+            ..Default::default()
+        };
+        for supported in [false, true] {
+            let command = CliEncoder { config: &config }
+                .encoder_command(640, 480, supported)
+                .unwrap();
+            let args = command
+                .as_std()
+                .get_args()
+                .map(|arg| arg.to_str().unwrap())
+                .collect::<Vec<_>>();
+            let value = |flag| {
+                args.windows(2)
+                    .rfind(|pair| pair[0] == flag)
+                    .map(|pair| pair[1])
+            };
+            assert_eq!(value("-c:v"), Some("h264_vaapi"));
+            assert_eq!(value("-profile:v"), Some("constrained_baseline"));
+            assert_eq!(value("-coder"), Some("cavlc"));
+            assert_eq!(value("-vaapi_device"), Some("/dev/dri/renderD129"));
+            assert_eq!(value("-vf"), Some("format=nv12,hwupload"));
+            assert_eq!(value("-async_depth"), supported.then_some("1"));
+            assert_eq!(value("-f"), Some("h264"));
+        }
+    }
+
+    #[tokio::test]
+    async fn t400_optional_control_uses_successful_encoder_help() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let program = dir.path().join("ffmpeg");
+        for (help, status, stream, expected) in [
+            ("  -async_depth <int> E..V. processing depth", 0, "1", true),
+            ("  -async_depth <int> E..V. processing depth", 0, "2", true),
+            ("  -idr_interval <int> E..V. IDR interval", 0, "1", false),
+            ("Unknown option -async_depth", 0, "1", false),
+            ("  -async_depth <int> E..V. processing depth", 1, "1", false),
+        ] {
+            std::fs::write(&program, format!("#!/bin/sh\n[ \"$1 $2 $3\" = '-hide_banner -h encoder=h264_vaapi' ] || exit 2\nprintf '%s\\n' '{help}' >&{stream}\nexit {status}\n")).unwrap();
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+            assert_eq!(
+                supports_async_depth(program.as_os_str(), "h264_vaapi").await,
+                expected,
+                "T400: {help}/{status}/{stream}"
+            );
+        }
+        std::fs::remove_file(&program).unwrap();
+        assert!(!supports_async_depth(program.as_os_str(), "libx264").await);
+        assert!(!supports_async_depth(program.as_os_str(), "hevc_vaapi").await);
+    }
+
+    #[test]
+    fn t400_unsupported_vaapi_omits_optional_depth() {
+        for encoder in ["h264_vaapi", "hevc_vaapi"] {
+            let config = CaptureConfig {
+                encoder: encoder.into(),
+                instance: u32::MAX,
+                ..Default::default()
+            };
+            let manager = CliEncoder { config: &config };
+            let command = manager.encoder_command(640, 480, false).unwrap();
+            assert!(
+                command.as_std().get_args().all(|arg| arg != "-async_depth"),
+                "T400: older stock FFmpeg must not receive unsupported optional controls"
+            );
+        }
+    }
+
+    #[test]
     fn t373_cli_quality_profiles_keep_adapter_contracts() {
         for (fps, bitrate, quality, nvbuf, swbuf) in
             [(10, 1000, 12, 200, 200), (90, 60000, 32, 666, 1333)]
@@ -407,7 +515,9 @@ mod encoder_policy_tests {
             let depth = if ten_bit { "-profile:v main10" } else { "" };
             format!("-preset p1 -tune ull -zerolatency 1 -delay 0 -bf 0 -rc-lookahead 0 -multipass 0 -rc vbr -cq {quality} -b:v 0 -bufsize {nvbuf}k -forced-idr 1 {limits} {depth}")
         } else if name.ends_with("_vaapi") {
-            format!("-rc_mode CQP -qp {quality} -bf 0 -idr_interval 0 {limits}")
+            // T400: live VAAPI output must not inherit FFmpeg's two-frame
+            // asynchronous queue. Preserve this command-boundary regression.
+            format!("-rc_mode CQP -qp {quality} -bf 0 -idr_interval 0 -async_depth 1 {limits}")
         } else {
             format!("-preset ultrafast -tune zerolatency -crf {quality} -bufsize {swbuf}k -x264-params scenecut=0 {limits}")
         }
@@ -430,7 +540,7 @@ mod encoder_policy_tests {
                     ..Default::default()
                 };
                 let manager = CliEncoder { config: &config };
-                let command = manager.encoder_command(640, 480).unwrap();
+                let command = manager.encoder_command(640, 480, true).unwrap();
                 let args = command
                     .as_std()
                     .get_args()

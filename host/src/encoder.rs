@@ -285,7 +285,12 @@ mod tests {
 
     #[test]
     fn t284_vaapi_reports_build_limit_before_codec_initialization() {
-        for name in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+        for name in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vaapih264enc",
+        ] {
             let error = Encoder::new(name, 64, 64, 60, 500, 20)
                 .err()
                 .expect("T284: VAAPI must be rejected");

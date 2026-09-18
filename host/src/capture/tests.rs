@@ -323,7 +323,7 @@ async fn t116_idle_stream_provides_regular_decodable_join_points() {
         manager.config.fps = fps;
         manager
             .encoder
-            .start_with(&manager.config, manager.active_mode(), |command| {
+            .start_with(&manager.config, manager.active_mode(), true, |command| {
                 let mut args: Vec<_> = command.as_std().get_args().map(|a| a.to_owned()).collect();
                 let input = args.iter().position(|a| a == "-i").unwrap() + 1;
                 args[input] = "pipe:0".into();
@@ -540,7 +540,7 @@ async fn t020_encoder_records_the_dimensions_passed_to_its_process() {
     let stream_tx = manager.helper.stream_tx.clone();
     let used = manager
         .encoder
-        .start_with(&manager.config, manager.active_mode(), |command| {
+        .start_with(&manager.config, manager.active_mode(), true, |command| {
             let args: Vec<_> = command.as_std().get_args().collect();
             assert!(args.windows(2).any(|pair| pair == ["-s", "1280x720"]));
             // A helper announcement races with spawning the encoder.
@@ -559,7 +559,7 @@ async fn t054_vaapi_uses_the_configured_render_node() {
     let mut args = Vec::new();
     manager
         .encoder
-        .start_with(&manager.config, manager.active_mode(), |command| {
+        .start_with(&manager.config, manager.active_mode(), true, |command| {
             args = command
                 .as_std()
                 .get_args()
@@ -583,7 +583,7 @@ async fn t055_hevc_vaapi_supports_eight_and_ten_bit_output() {
         let result =
             manager
                 .encoder
-                .start_with(&manager.config, manager.active_mode(), |command| {
+                .start_with(&manager.config, manager.active_mode(), true, |command| {
                     args = command
                         .as_std()
                         .get_args()

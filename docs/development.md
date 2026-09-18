@@ -184,7 +184,7 @@ COMMANDS
   doctor          diagnose the setup and print fixes
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
-  --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, hevc_vaapi, libx264
+  --encoder <NAME>      h264_nvenc, hevc_nvenc, h264_vaapi, h264_vaapi_baseline, hevc_vaapi, libx264
   --fps <N>             frame rate (10–90)
   --bitrate <KBPS>      rate-control limit (1000–60000; not enforced by VAAPI CQP)
   --width/--height <N>  capture size (auto_resolution off)
@@ -224,7 +224,7 @@ them. See the README for config paths and the app gear-menu controls.
 | `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
 
 Independent width/height/FPS limits do not guarantee a valid EDID combination
-(T332). The GUI offers all five registered encoders, including HEVC VAAPI;
+(T332). The GUI offers all six registered encoder/profile choices, including HEVC VAAPI;
 10-bit controls are enabled for HEVC. The render-node path remains a config setting.
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only
 in the app and do not set the host stream rate or other apps' display settings.
@@ -242,7 +242,10 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
 
 - NVIDIA: `h264_nvenc` (default) or `hevc_nvenc` — see the codec section of
   the README for when HEVC and `ten_bit` are worth it.
-- AMD/Intel: `h264_vaapi` or `hevc_vaapi`, constant-quality via `quality`.
+- AMD/Intel: `h264_vaapi`, optional `h264_vaapi_baseline`, or `hevc_vaapi`, constant-quality via `quality`.
+  The explicit baseline profile maps to stock H.264 VAAPI with Constrained Baseline/CAVLC;
+  it reduced decoder delay on the tested tablet at higher bandwidth. Existing selections
+  stay unchanged. See [codec measurements](benchmarks/2026-09-18-codecs.md).
   Set `vaapi_device = "/dev/dri/renderD129"` in config.toml to select another GPU
   (default: `/dev/dri/renderD128`). HEVC supports `ten_bit = true`.
 - CPU: `libx264`, `ultrafast`/`zerolatency`; throughput depends on CPU,
@@ -282,7 +285,7 @@ RPM Fusion's `ffmpeg-devel`) and clang development package. Check that
 container can supply the build environment; the installed binary still needs
 ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
 on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
-The optional build rejects `h264_vaapi`, `hevc_vaapi` and the legacy
+The optional build rejects `h264_vaapi`, `h264_vaapi_baseline`, `hevc_vaapi` and the legacy
 `vaapih264enc` alias before daemon resources or capture helpers are created.
 Tablet requests cannot switch a running optional build to VAAPI. This adapter
 has no hardware-frames context/render-node integration: use the default build

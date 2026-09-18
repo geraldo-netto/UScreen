@@ -1451,6 +1451,24 @@ mod tests {
     }
 
     #[test]
+    fn t400_gui_persists_explicit_low_latency_vaapi_selection() {
+        let root = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Video);
+        app.store = ConfigStore::new(root.path().join("config.toml"));
+        app.cfg.vaapi_device = "/dev/dri/renderD129".into();
+        let ctx = egui::Context::default();
+        click_encoder_text(&mut app, &ctx, "NVIDIA H.264 (NVENC)");
+        click_encoder_text(&mut app, &ctx, "AMD / Intel H.264 low latency (VAAPI)");
+        assert_eq!(app.cfg.encoder, "h264_vaapi_baseline");
+        app.apply(false);
+        wait_for_work(&mut app);
+        let saved = app.store.load();
+        assert_eq!(saved.encoder, "h264_vaapi_baseline");
+        assert_eq!(saved.vaapi_device, "/dev/dri/renderD129");
+        assert_eq!(saved.fps, uscreen_config::FileConfig::default().fps);
+    }
+
+    #[test]
     fn t240_gui_selects_hevc_vaapi_and_preserves_depth_and_device() {
         let root = tempfile::tempdir().unwrap();
         let mut app = settings_test_app(Tab::Video);

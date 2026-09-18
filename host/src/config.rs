@@ -19,7 +19,12 @@ mod tests {
         for name in ["h264_nvenc", "hevc_nvenc", "libx264"] {
             assert!(validate_encoder_for_build(name).is_ok(), "T284: {name}");
         }
-        for name in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+        for name in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vaapih264enc",
+        ] {
             assert_eq!(
                 validate_encoder_for_build(name).is_ok(),
                 !cfg!(feature = "inproc-encoder"),

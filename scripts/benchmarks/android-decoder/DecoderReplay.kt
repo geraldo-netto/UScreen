@@ -27,7 +27,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
     fun run(clip: ReplayClip, rate: Int, seconds: Int, warmup: Int): JSONObject {
         try {
             configure(clip)
-            feed(clip.config, true)
+            if (clip.config.isNotEmpty()) feed(clip.config, true)
             phase(clip, rate, warmup)
             result.put("before", ReplayStats.process()).put("dequeues_before", BenchMetrics.snapshot())
             result.put("discarded_outputs_before", discardedOutputs(decoder))
@@ -49,6 +49,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
                 .put("profile", profile).put("seconds", seconds).put("warmup", warmup).put("send_fps", rate)
                 .put("burst", burst)
                 .put("width", clip.width).put("height", clip.height).put("stream_fps", clip.fps)
+                .put("mime", clip.mime)
                 .put("fixture_sha256", clip.sha256).put("fingerprint", Build.FINGERPRINT).put("sdk", Build.VERSION.SDK_INT)
         } finally { decoder.releaseCodec(); input?.close() }
     }
@@ -56,7 +57,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
     private fun configure(clip: ReplayClip) {
         applyProfile(decoder, profile) // Generated bridge: legacy source lacks profile selection.
         decoder.createCodec = { mime -> MediaCodec.createDecoderByType(mime).also { result.put("codec", inventory(it, mime, clip)) } }
-        check(decoder.setupCodec(surface, DecoderFormat("video/avc", clip.width, clip.height, clip.fps)))
+        check(decoder.setupCodec(surface, DecoderFormat(clip.mime, clip.width, clip.height, clip.fps)))
         input = createReplayInput(decoder, profile, active::get)
     }
 

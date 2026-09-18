@@ -1365,7 +1365,12 @@ mod tests {
     fn t284_doctor_rejects_vaapi_even_when_ffmpeg_lists_it() {
         use super::*;
         let inventory = " V....D h264_vaapi H.264/AVC\n V....D hevc_vaapi HEVC\n";
-        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+        for encoder in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vaapih264enc",
+        ] {
             let cfg = FileConfig {
                 encoder: encoder.into(),
                 ..Default::default()

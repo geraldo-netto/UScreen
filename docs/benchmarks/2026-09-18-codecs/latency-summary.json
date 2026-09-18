@@ -1,0 +1,962 @@
+{
+  "default": [
+    {
+      "group": "motion/h264_vaapi",
+      "trials": [
+        {
+          "path": "motion-h264_vaapi-0/result.json",
+          "p50_ms": 17.826094,
+          "p99_ms": 18.688091,
+          "frames": 180
+        },
+        {
+          "path": "motion-h264_vaapi-1/result.json",
+          "p50_ms": 17.802127,
+          "p99_ms": 18.670708,
+          "frames": 180
+        },
+        {
+          "path": "motion-h264_vaapi-2/result.json",
+          "p50_ms": 17.845071,
+          "p99_ms": 18.054185,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.826094,
+        "p99_ms": 18.670708
+      }
+    },
+    {
+      "group": "motion/hevc_vaapi",
+      "trials": [
+        {
+          "path": "motion-hevc_vaapi-0/result.json",
+          "p50_ms": 17.822757,
+          "p99_ms": 19.355463,
+          "frames": 180
+        },
+        {
+          "path": "motion-hevc_vaapi-1/result.json",
+          "p50_ms": 17.783201,
+          "p99_ms": 19.509892,
+          "frames": 180
+        },
+        {
+          "path": "motion-hevc_vaapi-2/result.json",
+          "p50_ms": 17.795345,
+          "p99_ms": 18.352252,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.795345,
+        "p99_ms": 19.355463
+      }
+    },
+    {
+      "group": "motion/libaom-av1",
+      "trials": [
+        {
+          "path": "motion-libaom-av1-0/result.json",
+          "p50_ms": 7.830603,
+          "p99_ms": 59.701654,
+          "frames": 180
+        },
+        {
+          "path": "motion-libaom-av1-1/result.json",
+          "p50_ms": 7.198119,
+          "p99_ms": 59.923393,
+          "frames": 180
+        },
+        {
+          "path": "motion-libaom-av1-2/result.json",
+          "p50_ms": 7.170365,
+          "p99_ms": 57.574208,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 7.198119,
+        "p99_ms": 59.701654
+      }
+    },
+    {
+      "group": "motion/libvpx-vp9",
+      "trials": [
+        {
+          "path": "motion-libvpx-vp9-0/result.json",
+          "p50_ms": 3.14739,
+          "p99_ms": 5.691172,
+          "frames": 180
+        },
+        {
+          "path": "motion-libvpx-vp9-1/result.json",
+          "p50_ms": 3.198209,
+          "p99_ms": 6.048144,
+          "frames": 180
+        },
+        {
+          "path": "motion-libvpx-vp9-2/result.json",
+          "p50_ms": 3.300847,
+          "p99_ms": 6.160971,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.198209,
+        "p99_ms": 6.048144
+      }
+    },
+    {
+      "group": "motion/libx264",
+      "trials": [
+        {
+          "path": "motion-libx264-0/result.json",
+          "p50_ms": 1.641727,
+          "p99_ms": 2.744951,
+          "frames": 180
+        },
+        {
+          "path": "motion-libx264-1/result.json",
+          "p50_ms": 1.543868,
+          "p99_ms": 1.832886,
+          "frames": 180
+        },
+        {
+          "path": "motion-libx264-2/result.json",
+          "p50_ms": 1.585608,
+          "p99_ms": 2.292826,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 1.585608,
+        "p99_ms": 2.292826
+      }
+    },
+    {
+      "group": "motion/libx265",
+      "trials": [
+        {
+          "path": "motion-libx265-0/result.json",
+          "p50_ms": 5.948109,
+          "p99_ms": 15.802228,
+          "frames": 180
+        },
+        {
+          "path": "motion-libx265-1/result.json",
+          "p50_ms": 6.246007,
+          "p99_ms": 16.032283,
+          "frames": 180
+        },
+        {
+          "path": "motion-libx265-2/result.json",
+          "p50_ms": 6.109151,
+          "p99_ms": 16.368293,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 6.109151,
+        "p99_ms": 16.032283
+      }
+    },
+    {
+      "group": "pen/h264_vaapi",
+      "trials": [
+        {
+          "path": "pen-h264_vaapi-0/result.json",
+          "p50_ms": 17.821345,
+          "p99_ms": 18.293538,
+          "frames": 180
+        },
+        {
+          "path": "pen-h264_vaapi-1/result.json",
+          "p50_ms": 17.880269,
+          "p99_ms": 18.685046,
+          "frames": 180
+        },
+        {
+          "path": "pen-h264_vaapi-2/result.json",
+          "p50_ms": 17.804453,
+          "p99_ms": 18.345238,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.821345,
+        "p99_ms": 18.345238
+      }
+    },
+    {
+      "group": "pen/hevc_vaapi",
+      "trials": [
+        {
+          "path": "pen-hevc_vaapi-0/result.json",
+          "p50_ms": 17.826665,
+          "p99_ms": 19.425018,
+          "frames": 180
+        },
+        {
+          "path": "pen-hevc_vaapi-1/result.json",
+          "p50_ms": 17.799563,
+          "p99_ms": 18.339648,
+          "frames": 180
+        },
+        {
+          "path": "pen-hevc_vaapi-2/result.json",
+          "p50_ms": 17.797288,
+          "p99_ms": 18.231789,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.799563,
+        "p99_ms": 18.339648
+      }
+    },
+    {
+      "group": "pen/libaom-av1",
+      "trials": [
+        {
+          "path": "pen-libaom-av1-0/result.json",
+          "p50_ms": 2.975948,
+          "p99_ms": 54.45932,
+          "frames": 180
+        },
+        {
+          "path": "pen-libaom-av1-1/result.json",
+          "p50_ms": 2.858431,
+          "p99_ms": 55.614906,
+          "frames": 180
+        },
+        {
+          "path": "pen-libaom-av1-2/result.json",
+          "p50_ms": 2.764619,
+          "p99_ms": 54.07676,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 2.858431,
+        "p99_ms": 54.45932
+      }
+    },
+    {
+      "group": "pen/libvpx-vp9",
+      "trials": [
+        {
+          "path": "pen-libvpx-vp9-0/result.json",
+          "p50_ms": 1.766849,
+          "p99_ms": 5.619033,
+          "frames": 180
+        },
+        {
+          "path": "pen-libvpx-vp9-1/result.json",
+          "p50_ms": 1.781137,
+          "p99_ms": 5.637058,
+          "frames": 180
+        },
+        {
+          "path": "pen-libvpx-vp9-2/result.json",
+          "p50_ms": 1.560399,
+          "p99_ms": 5.336286,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 1.766849,
+        "p99_ms": 5.619033
+      }
+    },
+    {
+      "group": "pen/libx264",
+      "trials": [
+        {
+          "path": "pen-libx264-0/result.json",
+          "p50_ms": 1.353379,
+          "p99_ms": 1.740207,
+          "frames": 180
+        },
+        {
+          "path": "pen-libx264-1/result.json",
+          "p50_ms": 1.32288,
+          "p99_ms": 1.833528,
+          "frames": 180
+        },
+        {
+          "path": "pen-libx264-2/result.json",
+          "p50_ms": 1.3178,
+          "p99_ms": 2.0515,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 1.32288,
+        "p99_ms": 1.833528
+      }
+    },
+    {
+      "group": "pen/libx265",
+      "trials": [
+        {
+          "path": "pen-libx265-0/result.json",
+          "p50_ms": 3.118956,
+          "p99_ms": 13.711582,
+          "frames": 180
+        },
+        {
+          "path": "pen-libx265-1/result.json",
+          "p50_ms": 3.046184,
+          "p99_ms": 13.573064,
+          "frames": 180
+        },
+        {
+          "path": "pen-libx265-2/result.json",
+          "p50_ms": 2.832812,
+          "p99_ms": 13.681554,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.046184,
+        "p99_ms": 13.681554
+      }
+    },
+    {
+      "group": "text/h264_vaapi",
+      "trials": [
+        {
+          "path": "text-h264_vaapi-0/result.json",
+          "p50_ms": 17.781908,
+          "p99_ms": 18.347212,
+          "frames": 180
+        },
+        {
+          "path": "text-h264_vaapi-1/result.json",
+          "p50_ms": 17.832706,
+          "p99_ms": 18.683373,
+          "frames": 180
+        },
+        {
+          "path": "text-h264_vaapi-2/result.json",
+          "p50_ms": 17.753934,
+          "p99_ms": 18.209947,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.781908,
+        "p99_ms": 18.347212
+      }
+    },
+    {
+      "group": "text/hevc_vaapi",
+      "trials": [
+        {
+          "path": "text-hevc_vaapi-0/result.json",
+          "p50_ms": 17.796136,
+          "p99_ms": 18.391077,
+          "frames": 180
+        },
+        {
+          "path": "text-hevc_vaapi-1/result.json",
+          "p50_ms": 17.973009,
+          "p99_ms": 18.905172,
+          "frames": 180
+        },
+        {
+          "path": "text-hevc_vaapi-2/result.json",
+          "p50_ms": 17.816496,
+          "p99_ms": 18.658635,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 17.816496,
+        "p99_ms": 18.658635
+      }
+    },
+    {
+      "group": "text/libaom-av1",
+      "trials": [
+        {
+          "path": "text-libaom-av1-0/result.json",
+          "p50_ms": 2.783566,
+          "p99_ms": 50.875355,
+          "frames": 180
+        },
+        {
+          "path": "text-libaom-av1-1/result.json",
+          "p50_ms": 2.760331,
+          "p99_ms": 53.711593,
+          "frames": 180
+        },
+        {
+          "path": "text-libaom-av1-2/result.json",
+          "p50_ms": 2.657533,
+          "p99_ms": 52.920693,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 2.760331,
+        "p99_ms": 52.920693
+      }
+    },
+    {
+      "group": "text/libvpx-vp9",
+      "trials": [
+        {
+          "path": "text-libvpx-vp9-0/result.json",
+          "p50_ms": 1.946336,
+          "p99_ms": 6.01511,
+          "frames": 180
+        },
+        {
+          "path": "text-libvpx-vp9-1/result.json",
+          "p50_ms": 1.851433,
+          "p99_ms": 6.183585,
+          "frames": 180
+        },
+        {
+          "path": "text-libvpx-vp9-2/result.json",
+          "p50_ms": 1.730959,
+          "p99_ms": 5.267272,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 1.851433,
+        "p99_ms": 6.01511
+      }
+    },
+    {
+      "group": "text/libx264",
+      "trials": [
+        {
+          "path": "text-libx264-0/result.json",
+          "p50_ms": 1.267273,
+          "p99_ms": 1.500243,
+          "frames": 180
+        },
+        {
+          "path": "text-libx264-1/result.json",
+          "p50_ms": 1.426781,
+          "p99_ms": 2.055517,
+          "frames": 180
+        },
+        {
+          "path": "text-libx264-2/result.json",
+          "p50_ms": 1.284886,
+          "p99_ms": 1.685211,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 1.284886,
+        "p99_ms": 1.685211
+      }
+    },
+    {
+      "group": "text/libx265",
+      "trials": [
+        {
+          "path": "text-libx265-0/result.json",
+          "p50_ms": 2.731585,
+          "p99_ms": 13.900568,
+          "frames": 180
+        },
+        {
+          "path": "text-libx265-1/result.json",
+          "p50_ms": 3.00757,
+          "p99_ms": 13.138252,
+          "frames": 180
+        },
+        {
+          "path": "text-libx265-2/result.json",
+          "p50_ms": 2.86337,
+          "p99_ms": 14.464148,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 2.86337,
+        "p99_ms": 13.900568
+      }
+    }
+  ],
+  "depth1": [
+    {
+      "group": "motion/h264_vaapi",
+      "trials": [
+        {
+          "path": "motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.273204,
+          "p99_ms": 4.382721,
+          "frames": 180
+        },
+        {
+          "path": "motion-h264_vaapi-1/result.json",
+          "p50_ms": 3.3696,
+          "p99_ms": 4.756403,
+          "frames": 180
+        },
+        {
+          "path": "motion-h264_vaapi-2/result.json",
+          "p50_ms": 3.151608,
+          "p99_ms": 4.274862,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.273204,
+        "p99_ms": 4.382721
+      }
+    },
+    {
+      "group": "motion/hevc_vaapi",
+      "trials": [
+        {
+          "path": "motion-hevc_vaapi-0/result.json",
+          "p50_ms": 3.153032,
+          "p99_ms": 6.45436,
+          "frames": 180
+        },
+        {
+          "path": "motion-hevc_vaapi-1/result.json",
+          "p50_ms": 3.188399,
+          "p99_ms": 6.693902,
+          "frames": 180
+        },
+        {
+          "path": "motion-hevc_vaapi-2/result.json",
+          "p50_ms": 3.527465,
+          "p99_ms": 6.947243,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.188399,
+        "p99_ms": 6.693902
+      }
+    },
+    {
+      "group": "pen/h264_vaapi",
+      "trials": [
+        {
+          "path": "pen-h264_vaapi-0/result.json",
+          "p50_ms": 3.19422,
+          "p99_ms": 5.132762,
+          "frames": 180
+        },
+        {
+          "path": "pen-h264_vaapi-1/result.json",
+          "p50_ms": 3.131279,
+          "p99_ms": 4.221769,
+          "frames": 180
+        },
+        {
+          "path": "pen-h264_vaapi-2/result.json",
+          "p50_ms": 3.211655,
+          "p99_ms": 4.270984,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.19422,
+        "p99_ms": 4.270984
+      }
+    },
+    {
+      "group": "pen/hevc_vaapi",
+      "trials": [
+        {
+          "path": "pen-hevc_vaapi-0/result.json",
+          "p50_ms": 3.082435,
+          "p99_ms": 6.137696,
+          "frames": 180
+        },
+        {
+          "path": "pen-hevc_vaapi-1/result.json",
+          "p50_ms": 3.19366,
+          "p99_ms": 6.760001,
+          "frames": 180
+        },
+        {
+          "path": "pen-hevc_vaapi-2/result.json",
+          "p50_ms": 3.196285,
+          "p99_ms": 6.624709,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.19366,
+        "p99_ms": 6.624709
+      }
+    },
+    {
+      "group": "text/h264_vaapi",
+      "trials": [
+        {
+          "path": "text-h264_vaapi-0/result.json",
+          "p50_ms": 3.258145,
+          "p99_ms": 4.593068,
+          "frames": 180
+        },
+        {
+          "path": "text-h264_vaapi-1/result.json",
+          "p50_ms": 3.129506,
+          "p99_ms": 4.076037,
+          "frames": 180
+        },
+        {
+          "path": "text-h264_vaapi-2/result.json",
+          "p50_ms": 3.222305,
+          "p99_ms": 4.489388,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.222305,
+        "p99_ms": 4.489388
+      }
+    },
+    {
+      "group": "text/hevc_vaapi",
+      "trials": [
+        {
+          "path": "text-hevc_vaapi-0/result.json",
+          "p50_ms": 3.237064,
+          "p99_ms": 6.126906,
+          "frames": 180
+        },
+        {
+          "path": "text-hevc_vaapi-1/result.json",
+          "p50_ms": 3.03386,
+          "p99_ms": 6.173246,
+          "frames": 180
+        },
+        {
+          "path": "text-hevc_vaapi-2/result.json",
+          "p50_ms": 3.202517,
+          "p99_ms": 6.517461,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.202517,
+        "p99_ms": 6.173246
+      }
+    }
+  ],
+  "concurrency": [
+    {
+      "group": "depth1-clients1",
+      "trials": [
+        {
+          "path": "depth1-clients1-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.524922,
+          "p99_ms": 5.248342,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients1-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.270344,
+          "p99_ms": 4.677959,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients1-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.417381,
+          "p99_ms": 5.227559,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 3.417381,
+        "p99_ms": 5.227559
+      }
+    },
+    {
+      "group": "depth1-clients2",
+      "trials": [
+        {
+          "path": "depth1-clients2-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 4.09825,
+          "p99_ms": 6.563025,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients2-round0/motion-h264_vaapi-1/result.json",
+          "p50_ms": 4.413935,
+          "p99_ms": 6.151462,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients2-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 4.509871,
+          "p99_ms": 6.029182,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients2-round1/motion-h264_vaapi-1/result.json",
+          "p50_ms": 3.643702,
+          "p99_ms": 6.255473,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients2-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.731152,
+          "p99_ms": 6.0953,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients2-round2/motion-h264_vaapi-1/result.json",
+          "p50_ms": 4.196298,
+          "p99_ms": 6.130027,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 4.1472739999999995,
+        "p99_ms": 6.1407445
+      }
+    },
+    {
+      "group": "depth1-clients4",
+      "trials": [
+        {
+          "path": "depth1-clients4-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.653242,
+          "p99_ms": 8.451275,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round0/motion-h264_vaapi-1/result.json",
+          "p50_ms": 5.821919,
+          "p99_ms": 9.591568,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round0/motion-h264_vaapi-2/result.json",
+          "p50_ms": 5.288409,
+          "p99_ms": 9.513205,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round0/motion-h264_vaapi-3/result.json",
+          "p50_ms": 6.646968,
+          "p99_ms": 9.788202,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.217571,
+          "p99_ms": 6.669841,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round1/motion-h264_vaapi-1/result.json",
+          "p50_ms": 4.897867,
+          "p99_ms": 9.087543,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round1/motion-h264_vaapi-2/result.json",
+          "p50_ms": 6.207449,
+          "p99_ms": 9.516338,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round1/motion-h264_vaapi-3/result.json",
+          "p50_ms": 5.014264,
+          "p99_ms": 7.967239,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 3.212451,
+          "p99_ms": 7.059729,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round2/motion-h264_vaapi-1/result.json",
+          "p50_ms": 4.355147,
+          "p99_ms": 8.020541,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round2/motion-h264_vaapi-2/result.json",
+          "p50_ms": 5.819021,
+          "p99_ms": 8.654316,
+          "frames": 180
+        },
+        {
+          "path": "depth1-clients4-round2/motion-h264_vaapi-3/result.json",
+          "p50_ms": 6.124265,
+          "p99_ms": 9.391844,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 5.151336499999999,
+        "p99_ms": 8.870929499999999
+      }
+    },
+    {
+      "group": "depth2-clients1",
+      "trials": [
+        {
+          "path": "depth2-clients1-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.127691,
+          "p99_ms": 19.525547,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients1-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.16512,
+          "p99_ms": 18.961292,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients1-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.006084,
+          "p99_ms": 18.952589,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 18.127691,
+        "p99_ms": 18.961292
+      }
+    },
+    {
+      "group": "depth2-clients2",
+      "trials": [
+        {
+          "path": "depth2-clients2-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 17.952759,
+          "p99_ms": 18.827063,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients2-round0/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.001454,
+          "p99_ms": 18.930545,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients2-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.046767,
+          "p99_ms": 18.469752,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients2-round1/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.105211,
+          "p99_ms": 18.433712,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients2-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.040209,
+          "p99_ms": 19.361273,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients2-round2/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.025671,
+          "p99_ms": 19.163298,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 18.03294,
+        "p99_ms": 18.878804
+      }
+    },
+    {
+      "group": "depth2-clients4",
+      "trials": [
+        {
+          "path": "depth2-clients4-round0/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.402092,
+          "p99_ms": 19.344881,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round0/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.343338,
+          "p99_ms": 19.03187,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round0/motion-h264_vaapi-2/result.json",
+          "p50_ms": 18.336184,
+          "p99_ms": 19.060596,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round0/motion-h264_vaapi-3/result.json",
+          "p50_ms": 18.281127,
+          "p99_ms": 19.092428,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round1/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.495741,
+          "p99_ms": 19.77778,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round1/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.539868,
+          "p99_ms": 19.842916,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round1/motion-h264_vaapi-2/result.json",
+          "p50_ms": 18.575997,
+          "p99_ms": 19.930578,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round1/motion-h264_vaapi-3/result.json",
+          "p50_ms": 18.48492,
+          "p99_ms": 19.845692,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round2/motion-h264_vaapi-0/result.json",
+          "p50_ms": 18.166153,
+          "p99_ms": 19.737616,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round2/motion-h264_vaapi-1/result.json",
+          "p50_ms": 18.336154,
+          "p99_ms": 20.173244,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round2/motion-h264_vaapi-2/result.json",
+          "p50_ms": 18.309683,
+          "p99_ms": 19.943357,
+          "frames": 180
+        },
+        {
+          "path": "depth2-clients4-round2/motion-h264_vaapi-3/result.json",
+          "p50_ms": 18.311807,
+          "p99_ms": 19.645617,
+          "frames": 180
+        }
+      ],
+      "median": {
+        "p50_ms": 18.339761,
+        "p99_ms": 19.757697999999998
+      }
+    }
+  ]
+}

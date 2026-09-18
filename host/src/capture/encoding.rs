@@ -29,7 +29,10 @@ impl EncoderProcess {
         config: &CaptureConfig,
         mode: (u32, u32),
     ) -> Result<(u32, u32)> {
-        self.start_with(config, mode, |mut command| command.spawn())
+        let encoder = crate::config::ffmpeg_encoder_name(&config.encoder);
+        let async_depth =
+            super::cli_encoder::supports_async_depth(std::ffi::OsStr::new("ffmpeg"), encoder).await;
+        self.start_with(config, mode, async_depth, |mut command| command.spawn())
     }
 
     #[cfg(feature = "inproc-encoder")]
@@ -47,14 +50,15 @@ impl EncoderProcess {
         &mut self,
         config: &CaptureConfig,
         mode: (u32, u32),
+        async_depth_supported: bool,
         spawn: impl FnOnce(tokio::process::Command) -> std::io::Result<Child>,
     ) -> Result<(u32, u32)> {
         use anyhow::Context;
         let adapter = super::cli_encoder::CliEncoder { config };
         let (w, h) = mode;
         adapter.log_encoder_dimensions(w, h);
-        let child =
-            spawn(adapter.encoder_command(w, h)?).context("Failed to spawn ffmpeg encoder")?;
+        let child = spawn(adapter.encoder_command(w, h, async_depth_supported)?)
+            .context("Failed to spawn ffmpeg encoder")?;
         tracing::info!("Encoder started (PID: {})", child.id().unwrap_or(0));
         self.child = Some(child);
         Ok(mode)

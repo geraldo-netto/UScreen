@@ -129,7 +129,12 @@ mod cli_tests {
         ) {
             return;
         }
-        for encoder in ["h264_vaapi", "hevc_vaapi", "vaapih264enc"] {
+        for encoder in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vaapih264enc",
+        ] {
             for explicit in [false, true] {
                 let saved = config::FileConfig {
                     encoder: if explicit { "libx264" } else { encoder }.into(),

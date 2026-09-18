@@ -162,6 +162,9 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 - **Codec** — `h264_nvenc` is the configured default and requires working
   NVIDIA NVENC. Select VAAPI for a supported AMD/Intel setup or `libx264` for
   software encoding. HEVC is optional and needs a compatible tablet decoder.
+  `h264_vaapi_baseline` is an explicit low-latency VAAPI H.264 profile; it trades
+  higher bandwidth for lower decoder delay on the measured tablet. Existing
+  selections stay unchanged; see [codec measurements](docs/benchmarks/2026-09-18-codecs.md).
   `ten_bit` requests HEVC Main10 on the FFmpeg path; capture is still 8-bit,
   and this does not enable HDR or guarantee less banding on every scene.
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a

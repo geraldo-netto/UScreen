@@ -17,7 +17,7 @@ pub struct Encoder {
     pub hevc: bool,
 }
 
-pub const ENCODERS: [Encoder; 5] = [
+pub const ENCODERS: [Encoder; 6] = [
     Encoder {
         name: "h264_nvenc",
         label: "NVIDIA H.264 (NVENC)",
@@ -33,6 +33,12 @@ pub const ENCODERS: [Encoder; 5] = [
     Encoder {
         name: "h264_vaapi",
         label: "AMD / Intel H.264 (VAAPI)",
+        backend: Backend::Vaapi,
+        hevc: false,
+    },
+    Encoder {
+        name: "h264_vaapi_baseline",
+        label: "AMD / Intel H.264 low latency (VAAPI)",
         backend: Backend::Vaapi,
         hevc: false,
     },
@@ -54,6 +60,14 @@ pub fn canonical_name(name: &str) -> &str {
     match name {
         "vaapih264enc" => "h264_vaapi",
         _ => name,
+    }
+}
+
+/// A selectable profile is not necessarily a distinct FFmpeg encoder.
+pub fn ffmpeg_name(name: &str) -> &str {
+    match canonical_name(name) {
+        "h264_vaapi_baseline" => "h264_vaapi",
+        other => other,
     }
 }
 
@@ -146,7 +160,9 @@ impl Profile {
     fn cli_controls(&self, ten_bit: bool, options: &mut Vec<(String, String)>) {
         let controls: &[(&str, &str)] = match self.encoder.backend {
             Backend::Nvenc => &[("-bf", "0"), ("-b:v", "0")],
-            Backend::Vaapi => &[("-bf", "0"), ("-idr_interval", "0")],
+            // T400: request processing depth one when the CLI capability probe
+            // confirms support; avoids a measured extra input interval.
+            Backend::Vaapi => &[("-bf", "0"), ("-idr_interval", "0"), ("-async_depth", "1")],
             Backend::X264 => &[("-x264-params", "scenecut=0")],
         };
         options.extend(
@@ -154,6 +170,10 @@ impl Profile {
                 .iter()
                 .map(|&(key, value)| (key.into(), value.into())),
         );
+        if self.encoder.name == "h264_vaapi_baseline" {
+            options.push(("-profile:v".into(), "constrained_baseline".into()));
+            options.push(("-coder".into(), "cavlc".into()));
+        }
         if self.encoder.backend == Backend::Nvenc && ten_bit {
             options.push(("-profile:v".into(), "main10".into()));
         }
@@ -174,6 +194,27 @@ impl Profile {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t400_low_latency_vaapi_is_distinct_from_stock_encoder_name() {
+        let profile = Profile::new("h264_vaapi_baseline", 60, 20000, 18)
+            .expect("T400: explicit low-latency profile must be selectable");
+        assert_eq!(profile.encoder.backend, Backend::Vaapi);
+        assert!(!profile.encoder.hevc);
+        assert!(profile.encoder.validate_inproc().is_err());
+        assert_eq!(
+            crate::ffmpeg_encoder_name("h264_vaapi_baseline"),
+            "h264_vaapi"
+        );
+        let options = profile.cli_options(false);
+        assert!(options.contains(&("-profile:v".into(), "constrained_baseline".into())));
+        assert!(options.contains(&("-coder".into(), "cavlc".into())));
+        assert!(!Profile::new("h264_vaapi", 60, 20000, 18)
+            .unwrap()
+            .cli_options(false)
+            .iter()
+            .any(|(key, _)| key == "-profile:v"));
+    }
 
     #[test]
     fn t373_registry_preserves_aliases_and_adapter_capabilities() {
