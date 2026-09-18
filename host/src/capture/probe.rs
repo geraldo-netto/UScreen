@@ -58,18 +58,11 @@ fn command(config: &CaptureConfig, depth: bool) -> Result<Command> {
         .collect::<Vec<_>>();
     let input = args.iter().position(|arg| arg == "-i").unwrap();
     args[input + 1] = "pipe:0".into();
-    // Bound rawvideo probing for every codec in this isolated corpus. Production
-    // startup is not measured: steady packet cadence is the ranking evidence.
+    // T447: production already bounds raw probing and retains the probe frame.
+    // Startup is not measured: steady packet cadence is the ranking evidence.
     let mut command = Command::new("ffmpeg");
     command
-        .args([
-            "-loglevel",
-            "error",
-            "-probesize",
-            "32",
-            "-analyzeduration",
-            "0",
-        ])
+        .args(["-loglevel", "error"])
         .args(args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

@@ -3,6 +3,10 @@
 #[path = "timestamp_tests.rs"]
 mod timestamp_tests;
 
+#[cfg(test)]
+#[path = "startup_packet_tests.rs"]
+mod startup_packet_tests;
+
 use super::{fifo_path_for, CaptureConfig};
 use crate::annex_b::AnnexBPacketizer;
 use crate::media::Codec;
@@ -88,16 +92,15 @@ impl CliEncoder<'_> {
             ]);
         }
 
-        if codec.framed() {
-            encoder_args.extend(
-                ["-probesize", "32", "-analyzeduration", "0"]
-                    .into_iter()
-                    .map(std::ffi::OsString::from),
-            );
-        }
+        // T447: the raw format is fully specified. Probe at most one picture
+        // and retain it; `nobuffer` discards that picture instead of reducing
+        // the encoder's steady-state queue.
+        encoder_args.extend(
+            ["-probesize", "32", "-analyzeduration", "0"]
+                .into_iter()
+                .map(std::ffi::OsString::from),
+        );
         encoder_args.extend_from_slice(&[
-            "-fflags".into(),
-            "nobuffer".into(),
             "-flags".into(),
             "low_delay".into(),
             // The helper emits BT.709 limited-range NV12. Say so on the
@@ -693,9 +696,9 @@ mod framed_tests {
         let mut parser =
             crate::ivf::IvfPacketizer::new(Codec::from_encoder(encoder), Default::default());
         let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-            // nobuffer consumes the initial rawvideo probe frame. Warm startup,
-            // then every sparse input must produce output while stdin stays open.
-            stdin.write_all(&vec![80; 64 * 64 * 3]).await.unwrap();
+            // T447: retain the probe picture too. Every input, starting with
+            // the first, must produce output while stdin stays open.
+            stdin.write_all(&vec![80; 64 * 64 * 3 / 2]).await.unwrap();
             let first = parser.read_from(&mut stdout).await.unwrap().1;
             assert!(first[0].is_idr);
             for value in [100, 120, 140] {

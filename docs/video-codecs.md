@@ -11,6 +11,16 @@ strict order while preserving forward wall-time gaps for sparse keyframes.
 The [T421 report](reviews/2026-09-18-timestamps.md) describes the deterministic
 regressions and isolated hardware checks; it does not establish an A/V latency gain.
 
+Rawvideo startup probing is bounded to 32 bytes for every CLI codec, with the
+probe picture retained (T447). Permanent stock-FFmpeg tests supply just one
+picture while keeping stdin open: H.264 starts encoded output and VP9/AV1 emit
+their complete framed picture. Five-picture EOF tests retain all five pictures.
+An isolated H.264 VAAPI burst now retains
+[all 128 supplied pictures](reviews/2026-09-18-timestamps/startup-retained.json),
+compared with 127 under the earlier `nobuffer` options. H.264/HEVC Annex B
+publication still needs a following delimiter or EOF; T448 tracks that separate
+assembly delay. These checks do not measure physical tablet startup latency.
+
 VP9 uses 8-bit 4:2:0 profile 0. The libvpx profile selects realtime operation,
 CPU-used 8, row threading, no lookahead and no alternate-reference generation.
 Its CRF quality target is combined with the configured bitrate target/maxrate;
