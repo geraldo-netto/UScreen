@@ -173,13 +173,14 @@ impl Monitor {
             }
         }
         let Some(devices) = adb_inventory::with_synthetic(
-            result.devices, self.discovery.inventory(), result.synthetic,
+            result.devices,
+            self.discovery.inventory(),
+            result.synthetic,
         ) else {
             return;
         };
-        self.identities.retain(|serial, _| {
-            devices.contains(serial) || self.current.as_ref() == Some(serial)
-        });
+        self.identities
+            .retain(|serial, _| devices.contains(serial) || self.current.as_ref() == Some(serial));
         self.discovery.refresh(devices, &self.config.adb);
     }
 

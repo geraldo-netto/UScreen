@@ -1,8 +1,8 @@
+mod adb_inventory;
 #[cfg(test)]
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
-mod adb_inventory;
 mod attachment;
 mod capture;
 mod config;
