@@ -56,7 +56,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
 
     private fun configure(clip: ReplayClip) {
         applyProfile(decoder, profile) // Generated bridge: legacy source lacks profile selection.
-        decoder.createCodec = { mime -> MediaCodec.createDecoderByType(mime).also { result.put("codec", inventory(it, mime, clip)) } }
+        observeReplayCodec(decoder) { codec, mime -> result.put("codec", inventory(codec, mime, clip)) }
         check(decoder.setupCodec(surface, DecoderFormat(clip.mime, clip.width, clip.height, clip.fps)))
         input = createReplayInput(decoder, profile, active::get)
     }

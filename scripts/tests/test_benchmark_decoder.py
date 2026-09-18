@@ -14,6 +14,20 @@ SPEC.loader.exec_module(BENCH)
 
 
 class DecoderBenchmarkTests(unittest.TestCase):
+    def test_t458_generated_replay_includes_current_decoder_dependencies(self):
+        path = PATH.with_name('decoder-project.py')
+        spec = importlib.util.spec_from_file_location('decoder_project', path)
+        project = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(project)
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(directory=Path(directory) / 'replay', revision=None,
+                                   package='com.uscreen.decoderbench.candidate')
+            output = project.prepare(args)
+            self.assertEqual((output / 'app/src/main/java/VideoCodec.kt').read_text(),
+                             (project.SOURCE / 'VideoCodec.kt').read_text())
+            self.assertIn('org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3',
+                          (output / 'app/build.gradle.kts').read_text())
+
     def test_t386_selected_variants_match_provenance_and_trials(self):
         with tempfile.TemporaryDirectory() as directory:
             selected = [('candidate', 'callback-unhinted')]

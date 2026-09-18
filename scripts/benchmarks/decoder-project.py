@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
           'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
-          'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt']
+          'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt', 'VideoCodec.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
@@ -28,6 +28,7 @@ android {
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
 }
+dependencies { implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3") }
 '''
 BRIDGE = '''package com.uscreen.benchmark
 import com.uscreen.*
@@ -103,6 +104,17 @@ def instrument_timing(name, text):
     return text
 
 
+def codec_observer(directory):
+    source = (directory / 'originals/DecoderSession.kt').read_text()
+    mime = 'request.mimeType' if 'var createCodec: (DecoderFormat)' in source else 'request'
+    return '''
+internal fun observeReplayCodec(decoder: DecoderSession, observe: (android.media.MediaCodec, String) -> Unit) {
+    val create = decoder.createCodec
+    decoder.createCodec = { request -> create(request).also { observe(it, MIME) } }
+}
+'''.replace('MIME', mime)
+
+
 def prepare(args):
     directory = args.directory.resolve()
     directory.mkdir()
@@ -122,6 +134,7 @@ def prepare(args):
     if latest:
         bridge = bridge.replace('"sync-normal" ->', '"render-latest" -> DecoderProfile(renderLatest = true)\n        "sync-normal" ->')
     bridge += '\ninternal fun discardedOutputs(decoder: DecoderSession): Long = ' + ('decoder.discardedOutputs' if latest else '0L') + '\n'
+    bridge += codec_observer(directory)
     (directory / 'app/src/main/java/ProfileBridge.kt').write_text(bridge)
     return directory
 

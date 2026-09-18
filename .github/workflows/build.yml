@@ -82,7 +82,7 @@ jobs:
           chmod +x gradlew
           ./gradlew lintDebug testDebugUnitTest assembleDebug
 
-      - name: Build isolated decoder replay
+      - name: Build isolated decoder replay (T458)
         run: >-
           python3 scripts/benchmarks/decoder-project.py
           --directory "${{ runner.temp }}/uscreen-decoder-replay"
