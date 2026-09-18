@@ -48,6 +48,11 @@ fn t383_empty_and_tiny_damage_does_not_wake_the_pool() {
 }
 
 #[test]
+fn t452_extreme_damage_endpoints_clip_without_overflow() {
+    run("damage-extreme");
+}
+
+#[test]
 fn t383_large_pool_supports_128_workers_and_joins_them() {
     run("large");
 }

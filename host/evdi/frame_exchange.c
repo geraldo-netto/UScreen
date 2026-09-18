@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <stdint.h>
 #include <unistd.h>
 
 void frame_exchange_init(frame_exchange_t *frames) {
@@ -39,7 +40,9 @@ void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) 
     /* Source rows map onto output chroma rows through the scale: one
        chroma row covers 2*scale source rows. */
     int div = 2 * scale;
-    int c0 = y0 / div, c1 = (y1 + div - 1) / div;
+    /* The driver may report an out-of-frame endpoint. Round in a wider
+       type before clipping so INT_MAX cannot overflow into a negative row. */
+    int c0 = y0 / div, c1 = (int)(((int64_t)y1 + div - 1) / div);
     if (c0 < 0) c0 = 0;
     if (c1 > frames->chroma_rows) c1 = frames->chroma_rows;
     mark_range(frames->dirty_fill, c0, c1);

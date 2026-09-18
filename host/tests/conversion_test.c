@@ -3,6 +3,7 @@
 #include "frame_exchange.h"
 #include <assert.h>
 #include <stdint.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -111,6 +112,30 @@ static void damage_matrix(void) {
             check_damage(ranges[range][0], ranges[range][1], scale);
 }
 
+static void extreme_damage_case(int first, int end, int scale, int all) {
+    unsigned char masks[3][11], expected[11] = {0};
+    expected[0] = expected[10] = 0xA5;
+    for (int i = 0; i < 3; i++) memcpy(masks[i], expected, sizeof(expected));
+    if (all) { memset(expected + 1, 0xFF, 8); expected[9] = 1; }
+    frame_exchange_t frames = FRAME_EXCHANGE_INITIALIZER;
+    frames.dirty_fill = masks[0] + 1; frames.dirty_latest = masks[1] + 1; frames.dirty_write = masks[2] + 1;
+    frames.chroma_rows = 65; frames.dirty_bytes = 9;
+    frame_exchange_damage(&frames, first, end, scale);
+    for (int i = 0; i < 3; i++)
+        assert(memcmp(masks[i], expected, sizeof(expected)) == 0 && "T452: extreme damage lost rows or changed canaries");
+    pthread_mutex_destroy(&frames.mutex);
+}
+
+static void extreme_damage(void) {
+    const int ranges[][3] = {
+        {INT_MIN, INT_MAX, 1}, {INT_MAX, INT_MIN, 1}, {0, INT_MAX, 1},
+        {INT_MAX - 1, INT_MAX, 0}, {INT_MIN, -1, 0},
+    };
+    for (int scale = 1; scale <= 4; scale++)
+        for (size_t n = 0; n < sizeof(ranges) / sizeof(ranges[0]); n++)
+            extreme_damage_case(ranges[n][0], ranges[n][1], scale, ranges[n][2]);
+}
+
 static void sparse_dispatch(void) {
     conv_pool_t pool = CONV_POOL_INITIALIZER;
     conv_pool_start(&pool, 8);
@@ -167,7 +192,8 @@ static void density_dispatch(void) {
 
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "density") == 0) density_dispatch();
+    if (strcmp(argv[1], "damage-extreme") == 0) extreme_damage();
+    else if (strcmp(argv[1], "density") == 0) density_dispatch();
     else if (strcmp(argv[1], "dispatch") == 0) sparse_dispatch();
     else if (strcmp(argv[1], "large") == 0) large_pool();
     else { assert(strcmp(argv[1], "equivalence") == 0); conversion_matrix(); damage_matrix(); }
