@@ -34,6 +34,25 @@ class DecoderNegotiationTest {
         override fun setTouchEnabled(enabled: Boolean) {}
         override fun setPenEnabled(enabled: Boolean) {}
     }
+    @Test fun t276_sharedScaledGreetingUsesEncodedDimensionsForCapabilities() {
+        lateinit var socket: Socket
+        val requested = java.util.concurrent.LinkedBlockingQueue<Triple<Int, Int, Int>>()
+        val control = ControlSession(Any(), Input, WebSocket.Factory { _, listener ->
+            Socket(listener).also { socket = it }
+        }) { width, height, fps ->
+            requested.put(Triple(width, height, fps))
+            DecoderCapabilities.describe(width, height, fps) { _, _, _, _ -> true }
+        }
+        try {
+            control.connect()
+            socket.open()
+            socket.listener.onMessage(socket, javaClass.getResource("/control-scaled.json")!!.readText())
+            assertEquals(Triple(640, 400, 30), requested.poll(2, TimeUnit.SECONDS))
+            assertTrue(control.controlConnected.value)
+            assertFalse(control.isPenOnly)
+        } finally { control.disconnect() }
+    }
+
     @Test fun t432_staleCapabilityQueryCannotPublishAfterReconnect() {
         val sockets = CopyOnWriteArrayList<Socket>()
         val entered = CountDownLatch(1)

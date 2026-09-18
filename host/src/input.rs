@@ -1692,6 +1692,55 @@ fi
     }
 
     #[test]
+    fn t276_replies_follow_geometry_and_scale_across_reconnect() {
+        let cfg = InputConfig::default();
+        let (tx, _rx) = watch::channel(settings("h264_nvenc"));
+        let source = Some(tx.clone());
+        for (width, height, scale, ready) in [
+            (1920, 1080, 1, false),
+            (1280, 800, 2, true),
+            (2560, 1600, 4, true),
+        ] {
+            tx.send_modify(|s| {
+                s.width = width;
+                s.height = height;
+                s.stream_scale = scale;
+                s.geometry_ready = ready;
+            });
+            for status in ["mode", "connected"] {
+                let reply = cfg.response(status, false, &source);
+                assert_eq!(
+                    (reply.width, reply.height),
+                    (width, height),
+                    "T276: {status}"
+                );
+                assert_eq!(
+                    (reply.video_width, reply.video_height),
+                    (width / scale, height / scale)
+                );
+            }
+        }
+        let fallback = cfg.response("connected", false, &None);
+        assert_eq!((fallback.width, fallback.height), (2960, 1848));
+        assert_eq!((fallback.video_width, fallback.video_height), (2960, 1848));
+    }
+
+    #[test]
+    fn t276_scaled_greeting_matches_android_fixture() {
+        let cfg = InputConfig::default();
+        let mut current = settings("h264_nvenc");
+        current.width = 1280;
+        current.height = 800;
+        current.stream_scale = 2;
+        current.fps = 30;
+        let (tx, _rx) = watch::channel(current);
+        let actual = serde_json::to_value(cfg.response("connected", false, &Some(tx))).unwrap();
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/control-scaled.json")).unwrap();
+        assert_eq!(actual, fixture, "T276");
+    }
+
+    #[test]
     fn t346_greeting_uses_one_encoder_settings_snapshot() {
         let cfg = InputConfig::default();
         let fallback = cfg.response("connected", false, &None);

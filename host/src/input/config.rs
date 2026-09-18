@@ -44,6 +44,10 @@ impl InputConfig {
             .unwrap_or_else(|| self.codec.clone());
         let (requested_encoder, effective_encoder, selection_reason) =
             selection_fields(settings.as_deref());
+        let (width, height) = settings
+            .as_ref()
+            .map(|s| (s.width, s.height))
+            .unwrap_or((self.virtual_width, self.virtual_height));
         InputResponse {
             status: status.into(),
             transport: None,
@@ -56,8 +60,8 @@ impl InputConfig {
                 .as_ref()
                 .map(|s| s.video_dimensions().1)
                 .unwrap_or(self.virtual_height),
-            width: self.virtual_width,
-            height: self.virtual_height,
+            width,
+            height,
             codec,
             requested_encoder,
             effective_encoder,

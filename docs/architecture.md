@@ -409,8 +409,11 @@ The server sends `status: "mode"` for subsequent mode/settings notifications.
 `video_width` and `video_height` describe the requested encoded dimensions for
 [decoder capability negotiation](video-codecs.md#negotiation).
 `codec` is `h264`, `hevc`, `vp9` or `av1`; FPS is omitted if no shared settings source exists.
-Width/height currently come from startup input configuration and can be stale
-after geometry negotiation (T276); they are not reliable current-stream dimensions.
+`width` and `height` describe the requested virtual-display geometry before
+stream scaling. They share the same settings snapshot as FPS, codec and encoded
+dimensions, including after negotiation and reconnect. Before negotiation the
+configured geometry is used; without shared settings, startup input dimensions
+remain the fallback. These requested sizes do not confirm display attachment.
 The Android client marks its control connection authenticated only after
 `status: "connected"` from the current socket. Disconnects clear that state;
 callbacks from replaced sockets cannot restore it. Rust serialization and

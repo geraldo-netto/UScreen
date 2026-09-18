@@ -1,0 +1,15 @@
+{
+  "status": "connected",
+  "width": 1280,
+  "height": 800,
+  "video_width": 640,
+  "video_height": 400,
+  "fps": 30,
+  "codec": "h264",
+  "pen_only": false,
+  "touch": true,
+  "pen": true,
+  "requested_encoder": "h264_nvenc",
+  "effective_encoder": "h264_nvenc",
+  "selection_reason": "Explicit encoder preference"
+}
