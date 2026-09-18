@@ -59,6 +59,22 @@ fn t382_benchmark_units_and_window_statistics() {
 }
 
 #[test]
+fn t483_codec_validation_and_cache_regressions_run_in_normal_suite() {
+    let output = Command::new("python3")
+        .args(["-m", "unittest", "discover", "-s"])
+        .arg(repo().join("scripts/tests"))
+        .args(["-p", "test_codec*.py"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn t342_build_outputs_are_ignored_but_sources_are_visible() {
     let sandbox = Sandbox::new("build-ignores");
     sandbox.write(
