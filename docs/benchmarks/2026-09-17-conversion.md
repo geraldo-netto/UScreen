@@ -125,6 +125,13 @@ multi-tablet CPU scheduler. Keep encoder/compositor work in physical system
 measurements before selecting a shared hard quota. NUMA placement, memory
 bandwidth and sustained 128-core measurements remain part of T382.
 
+Performance controls should offer sensible defaults and explain their tradeoffs;
+users decide which settings are worthwhile on their systems. Measurements guide
+recommendations, while correctness and lifecycle tests establish supported use.
+The current helper selects its capacity automatically and has no explicit
+conversion-thread setting. T474 tracks a Linux-only Auto / 1–128 participant
+control; its availability does not require a large-machine benchmark.
+
 ## mmap, DMA-BUF and other boundaries
 
 Changing malloc to anonymous mmap would not eliminate the present capture copy:
