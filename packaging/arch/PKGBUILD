@@ -16,8 +16,8 @@ sha256sums=('SKIP' 'SKIP')
 
 build() {
   cd "UScreen-$pkgver"
-  cargo build --release --locked --manifest-path host/Cargo.toml
-  cargo build --release --locked --manifest-path gui/Cargo.toml
+  cargo build --release --locked --target-dir target --manifest-path host/Cargo.toml
+  cargo build --release --locked --target-dir target --manifest-path gui/Cargo.toml
   # libevdi built from upstream and shipped next to the helper (rpath $ORIGIN),
   # so the only thing the system must provide is the evdi kernel module.
   make -C "$srcdir/evdi-${_evdi#v}/library"

@@ -500,6 +500,11 @@ its external `evdi-dkms` kernel prerequisite is assumed installed; ordinary
 userspace dependencies are resolved by the package manager. Fedora uses
 RPM Fusion for the declared FFmpeg dependency.
 
+The Arch source `build()` recipe pins both Cargo builds to `target/`, matching
+`package()` even when `CARGO_TARGET_DIR` or Cargo configuration redirects other
+builds. T467 exercises the real recipe with minimal Cargo crates, both override
+forms and deliberately stale binaries, then runs the packaged outputs.
+
 These jobs check the glibc 2.36 ceiling for the daemon, GUI, helper **and
 bundled libevdi**, verify the helper's `$ORIGIN` lookup and ELF dependency resolution,
 check notices, and exercise an idle daemon's direct start/status/stop with
