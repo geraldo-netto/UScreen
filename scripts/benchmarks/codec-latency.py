@@ -5,9 +5,10 @@ import hashlib
 import importlib.util
 import json
 import mmap
+import os
+import selectors
 from pathlib import Path
 import subprocess
-import threading
 import time
 
 SPEC = importlib.util.spec_from_file_location('codec_host', Path(__file__).with_name('codec-host.py'))
@@ -15,56 +16,136 @@ HOST = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(HOST)
 
 
-def collect_packets(stream, packets, headers):
-    for line in stream:
+REPLAY_GRACE_SECONDS = 30
+
+
+def remaining(deadline):
+    seconds = deadline - time.monotonic()
+    if seconds <= 0:
+        raise TimeoutError('encoder replay deadline exceeded')
+    return seconds
+
+
+class PacedInput:
+    def __init__(self, stream, raw, meta):
+        self.stream, self.raw = stream, raw
+        self.frame_bytes = meta['width'] * meta['height'] * 3 // 2
+        self.count, self.fps = meta['frames'], meta['fps']
+        if self.count <= 0 or self.fps <= 0 or len(raw) != self.frame_bytes * self.count:
+            raise ValueError('raw input does not match complete frame metadata')
+        self.frames = []
+        self.start = time.monotonic_ns()
+        self.position = 0
+        self.admitted = None
+
+    def delay(self):
+        scheduled = self.start + len(self.frames) * 1_000_000_000 // self.fps
+        return max(0, (scheduled - time.monotonic_ns()) / 1e9)
+
+    def write(self):
+        end = (len(self.frames) + 1) * self.frame_bytes
+        count = os.write(self.stream.fileno(), self.raw[self.position:end])
+        if count <= 0:
+            raise BrokenPipeError('encoder input made no progress')
+        self.position += count
+        if self.position != end:
+            return False
+        scheduled = self.start + len(self.frames) * 1_000_000_000 // self.fps
+        self.frames.append(dict(index=len(self.frames), scheduled_ns=scheduled,
+                                admitted_ns=self.admitted, written_ns=time.monotonic_ns()))
+        self.admitted = None
+        return True
+
+    def done(self):
+        return len(self.frames) == self.count
+
+
+class PacketOutput:
+    def __init__(self):
+        self.pending = bytearray()
+        self.packets, self.headers = [], []
+
+    def line(self, raw):
         observed = time.monotonic_ns()
-        text = line.decode('ascii').strip()
+        text = raw.decode('ascii').strip()
         if text.startswith('#'):
-            headers.append(text)
+            self.headers.append(text)
         elif text:
             cells = [cell.strip() for cell in text.split(',')]
-            packets.append(dict(observed_ns=observed, pts=int(cells[2]), bytes=int(cells[4]), line=text))
+            if len(cells) < 6:
+                raise ValueError('malformed encoder framecrc line')
+            self.packets.append(dict(observed_ns=observed, pts=int(cells[2]), bytes=int(cells[4]), line=text))
+
+    def read(self, stream):
+        data = os.read(stream.fileno(), 65536)
+        self.pending.extend(data)
+        while b'\n' in self.pending:
+            end = self.pending.index(b'\n')
+            self.line(self.pending[:end])
+            del self.pending[:end + 1]
+        if len(self.pending) > 65536:
+            raise ValueError('encoder framecrc line exceeds limit')
+        if not data and self.pending:
+            raise ValueError('truncated encoder framecrc line')
+        return bool(data)
 
 
-def write_frames(stream, raw, meta):
-    frame_bytes = meta['width'] * meta['height'] * 3 // 2
-    frames = []
-    start = time.monotonic_ns()
-    with memoryview(raw) as view:
-        for index in range(meta['frames']):
-            deadline = start + index * 1_000_000_000 // meta['fps']
-            delay = deadline - time.monotonic_ns()
-            if delay > 0:
-                time.sleep(delay / 1e9)
-            admitted = time.monotonic_ns()
-            position, end = index * frame_bytes, (index + 1) * frame_bytes
-            while position < end:
-                position += stream.write(view[position:end])
-            frames.append(dict(index=index, scheduled_ns=deadline, admitted_ns=admitted, written_ns=time.monotonic_ns()))
-    return frames
+def pump_input(selector, writer):
+    if writer.write():
+        selector.unregister(writer.stream)
+        if writer.done():
+            writer.stream.close()
+
+
+def pump_io(process, raw, meta, deadline):
+    writer = PacedInput(process.stdin, raw, meta)
+    output = PacketOutput()
+    os.set_blocking(process.stdin.fileno(), False)
+    os.set_blocking(process.stdout.fileno(), False)
+    with selectors.DefaultSelector() as selector:
+        selector.register(process.stdout, selectors.EVENT_READ)
+        while not writer.done() or selector.get_map():
+            wait = schedule_input(selector, writer, deadline)
+            for key, _ in selector.select(wait):
+                if key.fileobj is process.stdin:
+                    pump_input(selector, writer)
+                elif not output.read(process.stdout):
+                    selector.unregister(process.stdout)
+    return writer.frames, output
+
+
+def schedule_input(selector, writer, deadline):
+    wait = remaining(deadline)
+    if not writer.done() and writer.stream not in selector.get_map():
+        delay = writer.delay()
+        if delay == 0:
+            # Keep the original admission boundary before pipe backpressure.
+            writer.admitted = time.monotonic_ns()
+            selector.register(writer.stream, selectors.EVENT_WRITE)
+        else:
+            wait = min(wait, delay)
+    return wait
 
 
 def replay(command, source, meta, folder):
-    packets, headers = [], []
+    deadline = time.monotonic() + meta['frames'] / meta['fps'] + REPLAY_GRACE_SECONDS
     with (folder / 'ffmpeg.log').open('wb') as log, source.open('rb') as pixels:
-        with mmap.mmap(pixels.fileno(), 0, access=mmap.ACCESS_READ) as raw:
+        with mmap.mmap(pixels.fileno(), 0, access=mmap.ACCESS_READ) as raw, memoryview(raw) as view:
             process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, bufsize=0)
-            reader = threading.Thread(target=collect_packets, args=(process.stdout, packets, headers))
-            reader.start()
             try:
-                frames = write_frames(process.stdin, raw, meta)
-                process.stdin.close()
-                status = process.wait(timeout=30)
-                reader.join(timeout=5)
-                if reader.is_alive() or status != 0:
+                frames, output = pump_io(process, view, meta, deadline)
+                status = process.wait(timeout=remaining(deadline))
+                if status != 0:
                     raise RuntimeError(f'encoder completion failed: {status}')
+            except subprocess.TimeoutExpired as error:
+                raise TimeoutError('encoder replay deadline exceeded') from error
             finally:
                 if process.poll() is None:
                     process.kill()
-                    process.wait()
-                reader.join(timeout=5)
+                process.wait(timeout=1)
+                process.stdin.close()
                 process.stdout.close()
-    return dict(frames=frames, packets=packets, headers=headers, returncode=status)
+    return dict(frames=frames, packets=output.packets, headers=output.headers, returncode=status)
 
 
 def trial(args, meta, scene, selected, number):
