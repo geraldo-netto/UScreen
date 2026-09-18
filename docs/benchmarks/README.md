@@ -156,3 +156,11 @@ load. Repeat runs and report variability; a later run on a different charging
 port is a separate power experiment. Small changes below gauge/timing variation
 are inconclusive. The full T382 multi-device/stage-trace matrix remains separate
 from this single-tablet baseline.
+
+The isolated decoder and static power-control APKs use the same
+`showWhenLocked`/`turnScreenOn` Activity flags as UScreen (T460). Their own test
+content can remain visible above an existing secure keyguard; they do not unlock
+the tablet. Without those flags Android can pause the replay before codec setup,
+retire its Surface and produce misleading decoder errors. Switching to another
+app still cancels the replay. Discard incomplete trials and verify the observed
+refresh rate. This does not relax the unlocked **Linux desktop** requirement.

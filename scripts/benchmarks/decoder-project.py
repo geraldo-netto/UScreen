@@ -17,6 +17,7 @@ MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/androi
 <uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
 <activity android:name="com.uscreen.benchmark.MainActivity" android:exported="true"
+ android:showWhenLocked="true" android:turnScreenOn="true"
  android:permission="android.permission.DUMP" android:screenOrientation="landscape" />
 </application></manifest>
 '''

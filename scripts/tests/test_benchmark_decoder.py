@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 PATH = Path(__file__).resolve().parents[1] / 'benchmarks/decoder-device.py'
@@ -14,6 +15,22 @@ SPEC.loader.exec_module(BENCH)
 
 
 class DecoderBenchmarkTests(unittest.TestCase):
+    def test_t460_replay_can_remain_visible_over_the_same_keyguard_as_uscreen(self):
+        path = PATH.with_name('decoder-project.py')
+        spec = importlib.util.spec_from_file_location('decoder_project', path)
+        project = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(project)
+        android = '{http://schemas.android.com/apk/res/android}'
+        production = ET.parse(project.ROOT / 'android/app/src/main/AndroidManifest.xml')
+        activity = next(a for a in production.findall('./application/activity')
+                        if a.get(android + 'name') == '.MainActivity')
+        replay = ET.fromstring(project.MANIFEST).find('./application/activity')
+        for attribute in ['showWhenLocked', 'turnScreenOn']:
+            self.assertEqual(activity.get(android + attribute), 'true')
+            self.assertEqual(replay.get(android + attribute), activity.get(android + attribute),
+                             'T460: keyguard must not retire the benchmark Surface at launch')
+        self.assertEqual(replay.get(android + 'permission'), 'android.permission.DUMP')
+
     def test_t458_generated_replay_includes_current_decoder_dependencies(self):
         path = PATH.with_name('decoder-project.py')
         spec = importlib.util.spec_from_file_location('decoder_project', path)
