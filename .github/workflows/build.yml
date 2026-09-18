@@ -22,7 +22,7 @@ jobs:
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
             libclang-dev libavcodec-dev libavformat-dev libavutil-dev \
             libavfilter-dev libavdevice-dev libswresample-dev libswscale-dev \
-            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin
+            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin python3-xlib python3-tk
           sudo apt-get install -y libevdi-dev
 
       - name: Cache cargo

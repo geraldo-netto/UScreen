@@ -15,7 +15,7 @@ Android APK variant/signing configuration identical between comparisons. Record
 the source commit and SHA-256 of the daemon, GUI, helper, libevdi and APK. The
 default CLI encoder uses the installed stock FFmpeg; record that version too.
 
-The initial workload requires Linux X11, Python 3 with Tk, an existing
+The workload requires Linux X11, Python 3 with Tk and python-xlib, an existing
 non-primary 1280×800 virtual display and one connected Android tablet already
 running a debuggable UScreen APK (`run-as` reads the app's process counters).
 The collector does not create displays, change settings or
@@ -38,7 +38,8 @@ Use a new output directory each time. Adjust the monitor position to the actual
 `xrandr --listmonitors` result. The workload has fixed 1280×800 content; a different
 resolution needs a separately recorded workload rather than silently scaling
 this one. Plotting requires matplotlib; collection and summarization use the
-Python standard library plus Tk.
+Python standard library plus Tk and python-xlib. The normal automated suite also
+requires these modules and Xvfb; its visibility tests use a private X server.
 The initial collector uses Android clock-tick/page-size constants of 100 Hz and
 4,096 bytes, verified with `adb shell getconf CLK_TCK` and `getconf PAGESIZE` on
 this tablet. Verify and adapt these before using different hardware; T382 retains
@@ -51,6 +52,31 @@ and moves four colored rectangles, scheduled at 60 updates/s. Scheduling counts
 describe requested drawing updates, not display presentation. The script records
 actual phase timestamps and source hashes. The application remains unmodified.
 
+The T424 visibility guard requires an unlocked logind session
+(`XDG_SESSION_ID`, `loginctl`) and a responding Cinnamon, GNOME or freedesktop
+ScreenSaver `GetActive` D-Bus interface (`gdbus`). Missing or unknown lock status
+rejects the run. Both sources are checked because Cinnamon can report an active
+lock screen while logind's `LockedHint` is false. Unlock manually before starting;
+the collector never unlocks the desktop.
+
+The workload takes keyboard focus once, after checking lock status. A background
+observer checks lock status, exact window geometry, focus and X11 window stacking
+every 250 ms plus query time. Each phase boundary checks the latest result; a
+result older than two seconds also invalidates the run. Any mapped InputOutput
+window overlapping the target above it or its ancestors rejects coverage,
+including under compositor redirection. This deliberately rejects transparent
+overlapping windows too. It does not prove optical presentation, detect every
+brief change between polls or inspect arbitrary compositor effects; keep the
+tablet foreground and desktop free of effects/overlays during measurement.
+
+Loss of visibility stops the workload and writes `invalid.json`; raw observations
+stay in that run's directory. The summary marks it incomplete/invalid, clears
+ordinary performance results and places any calculated observations under
+`invalid_data` for diagnosis. Older datasets remain readable with visibility
+explicitly `unverified`; they are not retroactively certified. Use a new directory
+for every retry and exclude invalid/unverified runs from controlled comparisons.
+The timeline plotter refuses invalid runs as well.
+
 ## What is recorded
 
 | Artifact | Meaning |
@@ -58,6 +84,7 @@ actual phase timestamps and source hashes. The application remains unmodified.
 | `metadata.json` | Source/workload identity, phase plan, host clock-tick units, kernel and Android build. |
 | `deployment.json` | Build profile, installed artifact hashes, settings, device/driver/USB information and validation evidence. Supplement per run with its deployment facts. |
 | `phases.jsonl` | Actual host UTC/monotonic phase boundaries and workload update counts. |
+| `invalid.json` | Failure reason when visibility is lost or the workload is interrupted; excludes the run from valid comparisons. |
 | `samples.jsonl.gz` | Five-second process CPU ticks/RSS/threads and host load; thirty-second Android battery/thermal/display observations; minute app memory snapshots. |
 | `host-windows.jsonl.gz` | Filtered, original-timestamp performance messages from the service journal. |
 | `android.log.gz` | Filtered decoder/statistics messages; no screenshots, input coordinates or tokens. |

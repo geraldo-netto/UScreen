@@ -125,19 +125,40 @@ def phase_summary(phase, end, samples, logs, meta):
                 battery=battery_summary(selected), log_windows=window_values(windows))
 
 
+def visibility_integrity(folder, meta, phases):
+    reasons = [row['reason'] for row in phases if row.get('event') == 'invalid']
+    marker = folder / 'invalid.json'
+    if marker.exists():
+        reasons.append(json.loads(marker.read_text())['reason'])
+    guarded = meta.get('visibility_guard_version') == 1
+    complete = bool(phases and phases[-1]['event'] == 'complete')
+    if guarded:
+        if not complete:
+            reasons.append('workload did not complete')
+        if not all(row.get('visibility_verified') is True for row in phases):
+            reasons.append('missing phase visibility verification')
+    return complete and not reasons, guarded, list(dict.fromkeys(reasons))
+
+
 def summarize(folder):
     meta = json.loads((folder / 'metadata.json').read_text())
     samples = load_lines(folder, 'samples.jsonl')
     phases = load_lines(folder, 'phases.jsonl')
     logs = load_lines(folder, 'host-windows.jsonl')
-    complete = bool(phases and phases[-1]['event'] == 'complete')
+    complete, guarded, reasons = visibility_integrity(folder, meta, phases)
     summaries = []
     for start, end in zip(phases, phases[1:]):
         if start.get('measured'):
             summaries.append(phase_summary(start, end['utc'], samples, logs, meta))
-    return dict(complete=complete, source_commit=meta['source_commit'], phases=summaries,
+    result = dict(complete=complete, source_commit=meta['source_commit'], phases=summaries,
                 whole_run_battery=battery_summary(samples),
                 semantics='Latency distributions describe logged five-second window statistics, not pooled frame percentiles. CPU 100% is one core. Negative battery mA is net discharge while USB powered.')
+    result.update(visibility='invalid' if reasons else ('verified' if guarded else 'unverified'),
+                  invalid_reasons=reasons)
+    if reasons:
+        result['invalid_data'] = dict(phases=result['phases'], whole_run_battery=result['whole_run_battery'])
+        result.update(phases=[], whole_run_battery=None)
+    return result
 
 
 if __name__ == '__main__':

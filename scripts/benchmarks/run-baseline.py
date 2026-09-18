@@ -44,7 +44,7 @@ def metadata(args, monitors):
     if code or not pid.isdigit():
         raise ValueError('UScreen must already be running on the tablet')
     scripts = Path(__file__).parent
-    result = dict(start_utc=time.time(), geometry=args.geometry, monitors=monitors,
+    result = dict(start_utc=time.time(), geometry=args.geometry, monitors=monitors, visibility_guard_version=1,
                   host_ticks_per_second=os.sysconf('SC_CLK_TCK'), android_ticks_per_second=100,
                   android_page_size=4096, android_pid=int(pid), plan=phases(args.seconds, args.warmup),
                   source_commit=command(['git', 'rev-parse', 'HEAD'])[1],
@@ -93,15 +93,21 @@ def run_workload(args, meta, state, thread, resources):
     events = resources.enter_context((args.output / 'phases.jsonl').open('w'))
 
     def event(value):
+        if value['event'] == 'invalid':
+            (args.output / 'invalid.json').write_text(json.dumps(value, indent=2) + '\n')
         events.write(json.dumps(dict(utc=time.time(), monotonic=time.monotonic(), **value)) + '\n')
         events.flush()
         print(json.dumps(value), flush=True)
 
     work = Workload(args.geometry, meta['plan'], state, event)
-    previous = signal.signal(signal.SIGTERM, lambda *_: work.root.destroy())
+    previous = signal.signal(signal.SIGTERM, lambda *_: work.invalidate('terminated by SIGTERM'))
     resources.callback(signal.signal, signal.SIGTERM, previous)
     thread.start()
-    work.run()
+    try:
+        work.run()
+    except BaseException as error:
+        event(dict(event='invalid', reason=f'workload interrupted: {type(error).__name__}'))
+        raise
 
 
 def main():

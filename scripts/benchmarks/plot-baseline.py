@@ -5,11 +5,7 @@ import json
 from pathlib import Path
 import re
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
-from summarize import host_cpu, load_lines
+from summarize import host_cpu, load_lines, visibility_integrity
 
 
 def series(folder):
@@ -41,9 +37,18 @@ def shade(axes, phases, start):
 
 
 def plot(folder, output):
+    metadata = json.loads((folder / 'metadata.json').read_text())
+    phases = load_lines(folder, 'phases.jsonl')
+    _, _, reasons = visibility_integrity(folder, metadata, phases)
+    if reasons:
+        raise ValueError('Cannot plot invalid baseline: ' + '; '.join(reasons))
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     meta, charge, cpu, latency = series(folder)
     fig, axes = plt.subplots(3, 1, figsize=(11, 8), sharex=True, constrained_layout=True)
-    shade(axes, load_lines(folder, 'phases.jsonl'), meta['start_utc'])
+    shade(axes, phases, meta['start_utc'])
     axes[0].step(*zip(*charge), where='post', color='#8f3c68', linewidth=1.5)
     axes[0].set_ylabel('Battery charge change (mAh)')
     axes[1].plot(*zip(*cpu), color='#25643d', linewidth=1)

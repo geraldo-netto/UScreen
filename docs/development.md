@@ -99,7 +99,7 @@ tests spawning processes; concurrency tests still run their own concurrent
 clients/tasks. On Debian/Ubuntu, add:
 
 ```bash
-sudo apt-get install -y python3 ffmpeg rpm fakeroot dpkg-dev \
+sudo apt-get install -y python3 python3-xlib python3-tk ffmpeg rpm fakeroot dpkg-dev \
   xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin libxkbcommon-x11-0 libegl1
 ```
 

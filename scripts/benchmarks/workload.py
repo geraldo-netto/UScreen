@@ -1,6 +1,7 @@
 """Deterministic T382 Tk text/grid workload on one existing X11 display."""
 import math
 import time
+from visibility import VisibilityMonitor
 
 
 def phases(seconds, warmup):
@@ -21,13 +22,29 @@ class Workload:
         self.root.overrideredirect(True)
         self.root.geometry(geometry)
         self.root.attributes('-topmost', True)
+        self.geometry = geometry
         self.canvas = tk.Canvas(self.root, width=1280, height=800, bg='#18212e', highlightthickness=0)
         self.canvas.pack(fill='both', expand=True)
         self.plan, self.state, self.event = plan, state, event
         self.index, self.ticks = -1, 0
         self.lines, self.boxes = [], []
         self.paint()
-        self.next_phase()
+
+    def invalidate(self, reason):
+        self.state['invalid_reason'] = reason
+        self.event({'event': 'invalid', 'reason': reason, 'phase': self.index})
+        self.root.destroy()
+
+    def check_visibility(self):
+        problem = self.guard.problem()
+        if problem:
+            self.invalidate(problem)
+            return False
+        return True
+
+    def watch_visibility(self):
+        if self.check_visibility():
+            self.root.after(100, self.watch_visibility)
 
     def paint(self):
         for x in range(0, 1280, 32):
@@ -43,15 +60,17 @@ class Workload:
                                                           index * 180 + 130, fill=color))
 
     def next_phase(self):
+        if not self.check_visibility():
+            return
         self.index += 1
         if self.index == len(self.plan):
-            self.event({'event': 'complete', 'ticks': self.ticks})
+            self.event({'event': 'complete', 'ticks': self.ticks, 'visibility_verified': True})
             self.root.destroy()
             return
         phase = self.plan[self.index]
         self.started = time.monotonic()
         self.state.update(phase=self.index, **phase, phase_started=self.started, ticks=self.ticks)
-        self.event({'event': 'phase', **self.state})
+        self.event({'event': 'phase', **self.state, 'visibility_verified': True})
         self.draw(0)
         self.root.after(max(1, int(phase['seconds'] * 1000)), self.next_phase)
         self.root.after(1, lambda: self.tick(self.index))
@@ -78,4 +97,12 @@ class Workload:
         self.root.after(wait, lambda: self.tick(phase_index))
 
     def run(self):
-        self.root.mainloop()
+        self.root.update()
+        self.guard = VisibilityMonitor(self.root.winfo_id(), self.geometry, take_focus=True)
+        try:
+            self.guard.start()
+            self.root.after(100, self.watch_visibility)
+            self.next_phase()
+            self.root.mainloop()
+        finally:
+            self.guard.close()
