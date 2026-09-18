@@ -59,6 +59,9 @@ class Sampler:
         self.extra_pids = extra_pids
         self.android_page_size = android_page_size
         self.count = 0
+        self.failure = None
+        self.done = threading.Event()
+        self.last_sample = time.monotonic()
         self.file = (folder / 'samples.jsonl').open('w')
 
     def android(self, args):
@@ -97,6 +100,8 @@ class Sampler:
         result['host'] = [host_process(pid, role) for pid, role in pids]
         result['loadavg'] = os.getloadavg()
         result['android'] = self.app_process()
+        if 'ticks' not in result['android']:
+            raise ValueError('Android process sample unavailable')
         if self.count % 6 == 0:
             self.slow_sample(result)
         if self.count % 12 == 0:
@@ -105,6 +110,7 @@ class Sampler:
         self.file.write(json.dumps(result) + '\n')
         self.file.flush()
         self.count += 1
+        self.last_sample = time.monotonic()
 
     def run(self):
         try:
@@ -112,8 +118,20 @@ class Sampler:
                 start = time.monotonic()
                 self.sample()
                 self.stop.wait(max(0, 5 - (time.monotonic() - start)))
+        except Exception as error:
+            self.failure = f'sampler failed: {error}'
         finally:
             self.file.close()
+            self.done.set()
+
+    def problem(self):
+        if self.failure:
+            return self.failure
+        if self.done.is_set():
+            return 'sampler exited before workload completion'
+        if time.monotonic() - self.last_sample > 30:
+            return 'sampler observations are stale'
+        return None
 
 
 def journal_record(line):
@@ -126,21 +144,62 @@ def journal_record(line):
 
 
 def filtered_logs(args, path, pattern, journal=False):
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    return LogCollector(args, path, pattern, journal)
 
-    def read():
-        with process.stdout, path.open('w') as out:
-            for line in process.stdout:
-                record = journal_record(line) if journal else None
-                message = record['message'] if journal else line
-                if not pattern.search(message):
+
+class LogCollector:
+    def __init__(self, args, path, pattern, journal):
+        self.path, self.pattern, self.journal = path, pattern, journal
+        self.failure, self.closing = None, False
+        self.receipts = []
+        self.process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        self.thread = threading.Thread(target=self.read, daemon=True)
+        self.thread.start()
+
+    def __iter__(self):
+        return iter((self.process, self.thread))
+
+    def read(self):
+        try:
+            self.copy_lines()
+            if not self.closing:
+                self.failure = f'{self.path.name} collector exited early'
+        except Exception as error:
+            self.failure = f'{self.path.name} collector failed: {error}'
+
+    def copy_lines(self):
+        with self.process.stdout, self.path.open('w') as out:
+            for line in self.process.stdout:
+                record = journal_record(line) if self.journal else None
+                message = record['message'] if self.journal else line
+                if not self.pattern.search(message):
                     continue
-                if journal:
+                self.receipts.append(time.time())
+                if self.journal:
                     line = json.dumps(record) + '\n'
                 # Defensive redaction if future performance messages add an identifier.
                 line = re.sub(r'\b[0-9a-fA-F]{64}\b', '[redacted]', line)
                 out.write(line)
                 out.flush()
-    thread = threading.Thread(target=read, daemon=True)
-    thread.start()
-    return process, thread
+
+    def problem(self):
+        if self.failure:
+            return self.failure
+        if self.process.poll() is not None or not self.thread.is_alive():
+            return f'{self.path.name} collector exited early'
+        return None
+
+    def close(self):
+        if self.closing:
+            return
+        self.failure = self.problem()
+        self.closing = True
+        self.process.terminate()
+        try:
+            self.process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait(timeout=3)
+        self.thread.join(timeout=3)
+        if self.thread.is_alive():
+            self.failure = f'{self.path.name} collector did not stop'

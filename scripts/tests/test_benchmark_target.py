@@ -64,8 +64,8 @@ class BenchmarkTargetTests(unittest.TestCase):
     def test_t441_startup_failure_retires_log_collectors_and_sampler(self):
         with tempfile.TemporaryDirectory() as directory:
             args = SimpleNamespace(output=Path(directory) / 'raw', geometry='1280x800+0+0', serial='fixture')
-            sampler = MagicMock()
-            logs = [('collector', 'reader')]
+            sampler = MagicMock(failure=None)
+            logs = [MagicMock(failure=None, path=Path('fixture.log'), receipts=[])]
             with patch.object(BASELINE, 'arguments', return_value=args), \
                  patch.object(BASELINE, 'ensure_target', return_value='monitor'), \
                  patch.object(BASELINE, 'metadata', return_value={'plan': [], 'android_page_size': 16384}), \

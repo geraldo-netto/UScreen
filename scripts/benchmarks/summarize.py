@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import statistics
+from observation_integrity import observation_integrity
 
 
 def load_lines(folder, name):
@@ -140,12 +141,24 @@ def visibility_integrity(folder, meta, phases):
     return complete and not reasons, guarded, list(dict.fromkeys(reasons))
 
 
+def read_evidence(folder, name, reasons):
+    try:
+        return load_lines(folder, name)
+    except (OSError, ValueError) as error:
+        reasons.append(f'missing or invalid {name}: {error}')
+        return []
+
+
 def summarize(folder):
     meta = json.loads((folder / 'metadata.json').read_text())
-    samples = load_lines(folder, 'samples.jsonl')
-    phases = load_lines(folder, 'phases.jsonl')
-    logs = load_lines(folder, 'host-windows.jsonl')
+    missing = []
+    samples = read_evidence(folder, 'samples.jsonl', missing)
+    phases = read_evidence(folder, 'phases.jsonl', missing)
+    logs = read_evidence(folder, 'host-windows.jsonl', missing)
     complete, guarded, reasons = visibility_integrity(folder, meta, phases)
+    reasons.extend(missing)
+    reasons.extend(observation_integrity(folder, meta, phases, samples, logs, load_lines))
+    complete = complete and not reasons
     summaries = []
     for start, end in zip(phases, phases[1:]):
         if start.get('measured'):
@@ -154,6 +167,7 @@ def summarize(folder):
                 whole_run_battery=battery_summary(samples),
                 semantics='Latency distributions describe logged five-second window statistics, not pooled frame percentiles. CPU 100% is one core. Negative battery mA is net discharge while USB powered.')
     result.update(visibility='invalid' if reasons else ('verified' if guarded else 'unverified'),
+                  observation='invalid' if reasons else ('verified' if meta.get('observation_guard_version') == 1 else 'unverified'),
                   invalid_reasons=reasons)
     if reasons:
         result['invalid_data'] = dict(phases=result['phases'], whole_run_battery=result['whole_run_battery'])

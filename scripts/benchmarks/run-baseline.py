@@ -14,6 +14,7 @@ import time
 
 from observe import Sampler, command, filtered_logs
 from workload import Workload, phases
+from android_session import AndroidSessionMonitor
 
 
 def arguments():
@@ -45,6 +46,7 @@ def metadata(args, monitors):
         raise ValueError('UScreen must already be running on the tablet')
     scripts = Path(__file__).parent
     result = dict(start_utc=time.time(), geometry=args.geometry, monitors=monitors, visibility_guard_version=1,
+                  observation_guard_version=1,
                   host_ticks_per_second=os.sysconf('SC_CLK_TCK'), **android_units(args.serial),
                   android_pid=int(pid), plan=phases(args.seconds, args.warmup),
                   source_commit=command(['git', 'rev-parse', 'HEAD'])[1],
@@ -89,14 +91,8 @@ def start_logs(args, meta):
 
 
 def retire_logs(logs):
-    for process, thread in logs:
-        process.terminate()
-        try:
-            process.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        thread.join(timeout=3)
+    for collector in logs:
+        collector.close()
 
 
 def retire_sampler(sampler, thread, stop):
@@ -105,21 +101,47 @@ def retire_sampler(sampler, thread, stop):
         thread.join(timeout=45)
     if not thread.is_alive():
         sampler.file.close()
+    else:
+        sampler.failure = 'sampler did not stop within its shutdown deadline'
 
 
-def run_workload(args, meta, state, thread, resources):
+def observation_problem(observers):
+    for observer in [observers['monitor'], observers['sampler'], *observers['logs']]:
+        problem = observer.problem()
+        if problem:
+            return problem
+    return None
+
+
+def observer_report(folder, observers):
+    errors = [observer.failure for observer in [observers.get('monitor'), observers.get('sampler'), *observers.get('logs', [])]
+              if observer is not None and observer.failure]
+    if not observers.get('complete'):
+        errors.append('workload did not complete')
+    receipts = {collector.path.name: collector.receipts for collector in observers.get('logs', [])}
+    (folder / 'observer.json').write_text(json.dumps(dict(complete=not errors, errors=errors, log_receipts=receipts), indent=2) + '\n')
+
+
+def run_workload(args, meta, state, thread, resources, observers):
     events = resources.enter_context((args.output / 'phases.jsonl').open('w'))
 
     def event(value):
         if value['event'] == 'invalid':
             (args.output / 'invalid.json').write_text(json.dumps(value, indent=2) + '\n')
+        if value['event'] == 'complete':
+            observers['complete'] = True
         events.write(json.dumps(dict(utc=time.time(), monotonic=time.monotonic(), **value)) + '\n')
         events.flush()
         print(json.dumps(value), flush=True)
 
     work = Workload(args.geometry, meta['plan'], state, event)
+    monitor = AndroidSessionMonitor(args.serial, meta['android_pid'], args.output)
+    observers['monitor'] = monitor
+    resources.callback(monitor.close)
+    work.observation_problem = lambda: observation_problem(observers)
     previous = signal.signal(signal.SIGTERM, lambda *_: work.invalidate('terminated by SIGTERM'))
     resources.callback(signal.signal, signal.SIGTERM, previous)
+    monitor.start()
     thread.start()
     try:
         work.run()
@@ -136,16 +158,20 @@ def main():
     (args.output / 'metadata.json').write_text(json.dumps(meta, indent=2) + '\n')
     state, stop = {}, threading.Event()
     with ExitStack() as resources:
+        observers = {}
+        resources.callback(observer_report, args.output, observers)
         logs = start_logs(args, meta)
+        observers['logs'] = logs
         resources.callback(retire_logs, logs)
         extra = [(os.getpid(), 'benchmark-workload-and-observer')]
         for name in ['cinnamon', 'Xorg']:
             extra.extend((int(pid), name) for pid in command(['pgrep', '-x', name])[1].split())
         sampler = Sampler(args.serial, args.output, state, stop, extra,
                           android_page_size=meta['android_page_size'])
+        observers['sampler'] = sampler
         thread = threading.Thread(target=sampler.run)
         resources.callback(retire_sampler, sampler, thread, stop)
-        run_workload(args, meta, state, thread, resources)
+        run_workload(args, meta, state, thread, resources, observers)
 
 
 if __name__ == '__main__':

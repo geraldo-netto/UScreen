@@ -28,6 +28,7 @@ class Workload:
         self.plan, self.state, self.event = plan, state, event
         self.index, self.ticks = -1, 0
         self.lines, self.boxes = [], []
+        self.observation_problem = lambda: None
         self.paint()
 
     def invalidate(self, reason):
@@ -36,7 +37,7 @@ class Workload:
         self.root.destroy()
 
     def check_visibility(self):
-        problem = self.guard.problem()
+        problem = self.guard.problem() or self.observation_problem()
         if problem:
             self.invalidate(problem)
             return False

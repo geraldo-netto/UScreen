@@ -80,6 +80,21 @@ overlapping windows too. It does not prove optical presentation, detect every
 brief change between polls or inspect arbitrary compositor effects; keep the
 tablet foreground and desktop free of effects/overlays during measurement.
 
+T470 adds a separate tablet session observer. Every half second plus query time,
+it uses a read-only ADB query with a two-second deadline to check the UScreen PID,
+process start time, focused window and reported keyguard state. A changed process,
+background app, showing keyguard, failed query or observation older than four
+seconds invalidates the workload. It never launches the app, restores focus or
+unlocks the tablet. The device must allow `run-as com.uscreen` to read its process
+stat, as required by the existing process sampler. These periodic checks cannot
+prove optical presentation or exclude changes occurring entirely between polls.
+
+Sampler exceptions and log-reader failure/early exit are owned and reported to
+the workload; a sampler without a successful collection for 30 seconds is stale.
+Cleanup writes `observer.json` with completion/errors and host arrival times for
+filtered log records. Android log timestamps retain their native clock and are
+not compared directly with host phase boundaries.
+
 Loss of visibility stops the workload and writes `invalid.json`; raw observations
 stay in that run's directory. The summary marks it incomplete/invalid, clears
 ordinary performance results and places any calculated observations under
@@ -89,6 +104,16 @@ for every retry and exclude invalid/unverified runs from controlled comparisons.
 The timeline plotter refuses invalid runs as well. Missing battery, CPU or latency
 traces are labelled “No observations”; available traces remain plotted. Its title
 uses recorded geometry and visibility status and does not invent encoder/FPS facts.
+Summaries require at least two process samples per measured phase with no gap
+above 30 seconds, stable Android process identity and retained host/Android logs.
+New guarded runs additionally require continuous tablet-session observations,
+Android log receipts in each measured phase and clean observer completion.
+Missing files, failures and stale evidence quarantine the results with explicit
+reasons; sparse video does not require a minimum FPS. The plotter applies these
+additional requirements to new guarded runs. Historical observation status stays
+`unverified` without the new evidence. Reanalysis of the retained September 17
+baseline passed its available-evidence checks; no archived files were changed
+and it was not retrospectively certified for foreground continuity.
 
 ## What is recorded
 
@@ -101,6 +126,8 @@ uses recorded geometry and visibility status and does not invent encoder/FPS fac
 | `samples.jsonl.gz` | Five-second process CPU ticks/RSS/threads and host load; thirty-second Android battery/thermal/display observations; minute app memory snapshots. |
 | `host-windows.jsonl.gz` | Filtered, original-timestamp performance messages from the service journal. |
 | `android.log.gz` | Filtered decoder/statistics messages; no screenshots, input coordinates or tokens. |
+| `android-session.jsonl` | Host-timestamped tablet process identity and foreground checks (T470). |
+| `observer.json` | Owned collector completion/errors and host log-arrival timestamps (T470). |
 | `summary.json` | Per-phase CPU/RSS distributions, charge change and distributions of log-window statistics. |
 | `timeline.png` | Battery change, host pipeline CPU and logged latency windows across all phases, including warm-up. |
 | `run-integrity.json` | Coverage/continuity checks, recovery provenance and validation evidence. |

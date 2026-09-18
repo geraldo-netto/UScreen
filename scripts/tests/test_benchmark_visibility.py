@@ -45,7 +45,10 @@ class VisibilityIntegrityTests(unittest.TestCase):
                            visibility_verified=guarded)]
             if complete:
                 phases.append(dict(event='complete', utc=20, visibility_verified=guarded))
-            for name, rows in [('phases', phases), ('samples', []), ('host-windows', [])]:
+            samples = [dict(utc=t, monotonic=t, host=[], android=dict(pid=123, start_ticks=1, ticks=t),
+                            collection_seconds=.01) for t in [0, 5, 10, 15]]
+            (folder / 'android.log').write_text('15.0 123 123 D UScreen: fixture\n')
+            for name, rows in [('phases', phases), ('samples', samples), ('host-windows', [dict(utc=15, message='fixture')])]:
                 (folder / f'{name}.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
             if invalid:
                 (folder / 'invalid.json').write_text(json.dumps(dict(reason='desktop locked')))
@@ -65,6 +68,7 @@ class VisibilityIntegrityTests(unittest.TestCase):
         work.root = MagicMock()
         work.guard = MagicMock()
         work.guard.problem.return_value = 'workload occluded'
+        work.observation_problem = lambda: None
         work.event = MagicMock()
         work.next_phase()
         events = [call.args[0] for call in work.event.call_args_list]

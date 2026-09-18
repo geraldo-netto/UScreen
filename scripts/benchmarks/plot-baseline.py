@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 import re
 
-from summarize import PATTERNS, host_cpu, load_lines, visibility_integrity
+from summarize import PATTERNS, host_cpu, load_lines, visibility_integrity, summarize
 
 
 def series(folder):
@@ -69,6 +69,8 @@ def plot(folder, output):
     metadata = json.loads((folder / 'metadata.json').read_text())
     phases = load_lines(folder, 'phases.jsonl')
     _, guarded, reasons = visibility_integrity(folder, metadata, phases)
+    if metadata.get('observation_guard_version') == 1:
+        reasons.extend(summarize(folder)['invalid_reasons'])
     if reasons:
         raise ValueError('Cannot plot invalid baseline: ' + '; '.join(reasons))
     import matplotlib
