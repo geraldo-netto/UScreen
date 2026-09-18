@@ -2,6 +2,7 @@
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
+mod adb_inventory;
 mod attachment;
 mod capture;
 mod config;
@@ -2584,26 +2585,7 @@ async fn adb_devices() -> Vec<String> {
 }
 
 async fn adb_devices_using(adb: &str) -> Vec<String> {
-    let Ok(out) = tokio::process::Command::new(adb)
-        .arg("devices")
-        .output_bounded()
-        .await
-    else {
-        return Vec::new();
-    };
-    let text = String::from_utf8_lossy(&out.stdout);
-    let mut ready: Vec<String> = text
-        .lines()
-        .skip(1)
-        .filter_map(|line| {
-            let mut parts = line.split_whitespace();
-            let serial = parts.next()?;
-            let state = parts.next()?;
-            (state == "device").then(|| serial.to_string())
-        })
-        .collect();
-    ready.sort_by_key(|s| transport_of(s) != Transport::Usb);
-    ready
+    adb_inventory::query(adb).await.unwrap_or_default()
 }
 
 /// The ports the tablet app dials on its own loopback. Fixed in the app

@@ -77,6 +77,10 @@ impl Discovery {
         self.observed.contains_key(serial)
     }
 
+    pub fn inventory(&self) -> &[String] {
+        &self.inventory
+    }
+
     pub async fn next(&mut self) -> Option<(String, Option<String>)> {
         let (serial, result) = self.work.next().await;
         let result = result.ok()?;

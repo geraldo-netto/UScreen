@@ -220,6 +220,9 @@ replace an attached tablet or admit an unverified new one (T413). A successful
 package-path response confirms presence; an empty normal absence response
 confirms removal. This follows Android's
 [package-path command](https://android.googlesource.com/platform/frameworks/base/+/main/services/core/java/com/android/server/pm/PackageManagerShellCommand.java).
+Failed, timed-out or malformed device listings also preserve the last confirmed
+inventory (T443). A successful, correctly headed empty listing confirms that
+no usable device remains; offline/unauthorized entries are not usable transports.
 Discovery
 owns up to four concurrent identity/package probe sequences; device mutation
 jobs own up to four forwarding/launch/recovery sequences, with one mutation

@@ -27,7 +27,8 @@ enum Mutation {
 }
 
 struct Inventory {
-    devices: Vec<String>,
+    devices: Option<Vec<String>>,
+    synthetic: Vec<String>,
     reconnected: Option<String>,
 }
 
@@ -148,8 +149,9 @@ impl Monitor {
             {
                 error!("adb is not installed; install android-tools (or adb) and restart");
             }
-            let mut devices = adb_devices_using(&adb).await;
-            add_fake_tablets(&mut devices);
+            let devices = adb_inventory::query(&adb).await;
+            let mut synthetic = Vec::new();
+            add_fake_tablets(&mut synthetic);
             let reconnected = if reconnect {
                 WifiReconnect::new(path, adb).connect().await
             } else {
@@ -157,6 +159,7 @@ impl Monitor {
             };
             Inventory {
                 devices,
+                synthetic,
                 reconnected,
             }
         });
@@ -169,10 +172,15 @@ impl Monitor {
                 self.wifi_announced = true;
             }
         }
+        let Some(devices) = adb_inventory::with_synthetic(
+            result.devices, self.discovery.inventory(), result.synthetic,
+        ) else {
+            return;
+        };
         self.identities.retain(|serial, _| {
-            result.devices.contains(serial) || self.current.as_ref() == Some(serial)
+            devices.contains(serial) || self.current.as_ref() == Some(serial)
         });
-        self.discovery.refresh(result.devices, &self.config.adb);
+        self.discovery.refresh(devices, &self.config.adb);
     }
 
     fn probe_ready(&mut self, serial: String, identity: Option<String>) {
@@ -661,3 +669,7 @@ pub(crate) mod test_support;
 #[cfg(test)]
 #[path = "monitor/probe_tests.rs"]
 mod probe_tests;
+
+#[cfg(test)]
+#[path = "monitor/inventory_tests.rs"]
+mod inventory_tests;
