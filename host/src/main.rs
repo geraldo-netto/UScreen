@@ -2348,8 +2348,25 @@ fn app_launch_command(token: Option<&str>) -> String {
 }
 
 async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
+    app_command_using(serial, app_launch_command(token), "launch", adb).await;
+}
+
+fn token_delivery_command(token: Option<&str>) -> String {
+    let mut command = "am broadcast -n com.uscreen/.TokenReceiver".to_string();
+    if let Some(token) = token {
+        command.push_str(" --es token ");
+        command.push_str(token);
+    }
+    command.push_str(" >/dev/null 2>&1; exit\n");
+    command
+}
+
+async fn redeliver_token_using(serial: &str, token: Option<&str>, adb: &str) {
+    app_command_using(serial, token_delivery_command(token), "token delivery", adb).await;
+}
+
+async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) {
     use tokio::io::AsyncWriteExt;
-    let cmd = app_launch_command(token);
 
     let child = tokio::process::Command::new(adb)
         .kill_on_drop(true)
@@ -2373,10 +2390,10 @@ async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
         child.wait().await
     };
     match tokio::time::timeout(std::time::Duration::from_secs(15), operation).await {
-        Ok(Ok(st)) if st.success() => info!("UScreen app launched on tablet"),
+        Ok(Ok(st)) if st.success() => info!("UScreen {action} command completed on tablet"),
         _ => {
             let _ = child.kill().await;
-            warn!("Could not launch the app (is it installed?)");
+            warn!("Could not complete UScreen {action} (is the matching app installed?)");
         }
     }
 }

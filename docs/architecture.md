@@ -322,6 +322,18 @@ no token or one saved 64-byte hexadecimal token; neither is authenticated.
 This permits existing Android preferences and legacy tokenless clients to work
 without changing the enabled-authentication handshake.
 
+Explicit launch/reconnect still delivers credentials through the shell-permission
+protected `TokenActivity`, which opens the launcher. Authentication retries use
+the equally protected `TokenReceiver` broadcast instead (T420); they never start
+an Activity or foreground service. A started Android session observes token
+changes and reconnects with the new credentials. A stopped session stays stopped
+and consumes the latest stored token when the user returns. Update host and APK
+together: an older APK without the receiver cannot consume this recovery path;
+the explicit launch gate remains compatible. Tokens travel on ADB shell stdin,
+never in the local ADB process arguments. Fake-ADB and API 27/34 lifecycle tests
+cover delivery, permission declarations, active rotation and background resume;
+physical replay on the disconnected tablet remains part of T382 validation.
+
 ### Video TCP
 
 The client sends exactly 64 ASCII token bytes, with **no newline or length

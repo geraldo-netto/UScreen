@@ -457,7 +457,7 @@ impl Monitor {
         let token = self.config.token.clone();
         let job_serial = serial.clone();
         self.mutations.schedule(serial, async move {
-            launch_app_using(&job_serial, token.as_deref(), &adb).await;
+            redeliver_token_using(&job_serial, token.as_deref(), &adb).await;
             Mutation::Token
         });
     }

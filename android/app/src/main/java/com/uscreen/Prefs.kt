@@ -93,6 +93,15 @@ class Prefs(context: Context) {
         get() = sp.getString("host_token", null)
         set(v) = sp.edit().putString("host_token", v).apply()
 
+    /** The returned cleanup retains the listener until its owner stops. */
+    internal fun observeHostToken(changed: () -> Unit): () -> Unit {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "host_token") changed()
+        }
+        sp.registerOnSharedPreferenceChangeListener(listener)
+        return { sp.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     /**
      * Whether to ask GitHub for a newer release on an Activity instance
      * starting (at most once per instance). The host has `check_updates`

@@ -54,6 +54,11 @@
             android:theme="@android:style/Theme.NoDisplay" />
 
         <receiver
+            android:name=".TokenReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
+        <receiver
             android:name=".CodecReportReceiver"
             android:exported="true"
             android:permission="android.permission.DUMP" />

@@ -66,6 +66,7 @@ internal class SessionCoordinator(
     var settings by mutableStateOf(SettingsValues.read(prefs)); private set
     private var updateChecked = false
     private var started = false
+    private var stopTokenObservation: (() -> Unit)? = null
     private var codecSupported = true
     val presentation = StreamPresentation(videoReceiver, touchCapture)
 
@@ -111,11 +112,16 @@ internal class SessionCoordinator(
 
     fun start() {
         started = true
+        stopTokenObservation?.invoke()
+        stopTokenObservation = prefs.observeHostToken { if (started) applyToken(restart = true) }
+        applyToken(restart = false)
         touchCapture?.connect()
         if (prefs.hasUserSettings) touchCapture?.sendConfig(prefs.bitrateKbps, prefs.fps)
     }
     fun stop() {
         started = false
+        stopTokenObservation?.invoke()
+        stopTokenObservation = null
         videoReceiver?.stop()
         touchCapture?.disconnect()
     }
@@ -210,4 +216,3 @@ internal fun applyStreamSettings(prefs: Prefs?, touchCapture: TouchCapture?, vid
     videoReceiver?.streamFps = newFps
     touchCapture?.sendConfig(bitrateKbps, newFps)
 }
-

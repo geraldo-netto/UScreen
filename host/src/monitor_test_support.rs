@@ -98,3 +98,42 @@ async fn t431_reassignment_rejects_late_recovery_and_cancels_work() {
     assert!(!state.mutations.contains("OLD"));
     state.stop().await;
 }
+
+#[tokio::test]
+async fn t420_token_retry_does_not_launch_over_another_foreground_app() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = tempfile::tempdir().unwrap();
+    let adb = root.path().join("adb");
+    std::fs::write(
+        &adb,
+        r#"#!/bin/sh
+if [ "$4" = pidof ]; then echo 123; exit 0; fi
+printf '%s\n' "$*" >> "$0.args"
+cat >> "$0.commands"
+"#,
+    )
+    .unwrap();
+    std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let token = "a".repeat(64);
+    let mut state = fixture(
+        &["tablet".into()],
+        true,
+        Some(&token),
+        adb.to_str().unwrap(),
+    );
+    state.redeliver("tablet".into());
+    finish(&mut state).await;
+    state.stop().await;
+    let command = std::fs::read_to_string(adb.with_extension("commands")).unwrap();
+    let arguments = std::fs::read_to_string(adb.with_extension("args")).unwrap();
+    assert!(
+        !command.contains("am start"),
+        "T420: token recovery must not launch an Activity"
+    );
+    assert!(command.contains("am broadcast -n com.uscreen/.TokenReceiver"));
+    assert!(command.contains(&token));
+    assert!(
+        !arguments.contains(&token),
+        "T420: token leaked to adb argv"
+    );
+}
