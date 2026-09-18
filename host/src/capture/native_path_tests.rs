@@ -1,6 +1,6 @@
 use super::*;
 use std::os::unix::ffi::OsStringExt;
-use std::os::unix::fs::FileTypeExt;
+use std::os::unix::fs::{DirBuilderExt, FileTypeExt};
 use tokio::process::Command;
 
 #[tokio::test]
@@ -14,7 +14,10 @@ async fn t348_native_runtime_paths_agree_across_capture_resources() {
         ] {
             let dir = tempfile::tempdir().unwrap();
             let runtime = dir.path().join(std::ffi::OsString::from_vec(name.to_vec()));
-            std::fs::create_dir(&runtime).unwrap();
+            std::fs::DirBuilder::new()
+                .mode(0o700)
+                .create(&runtime)
+                .unwrap();
             let result = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", NAME, "--nocapture"])
                 .env("USCREEN_T348_CHILD", "1")

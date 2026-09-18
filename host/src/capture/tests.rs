@@ -662,3 +662,28 @@ fn t432_capability_metadata_restarts_only_when_effective_stream_changes() {
     settings.encoder = "libvpx-vp9".into();
     assert!(manager.stream_settings_changed(&settings));
 }
+
+#[test]
+fn t436_capture_fixtures_survive_shared_umask() {
+    let mut failures = Vec::new();
+    for name in [
+        "capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug",
+        "capture::card_allocation_tests::t330_daemon_slots_share_free_card_leases_across_restarts",
+        "capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources",
+    ] {
+        let output = std::process::Command::new("/bin/sh")
+            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .arg(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .output()
+            .unwrap();
+        if !output.status.success() {
+            failures.push(format!(
+                "{name}: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+    }
+    assert!(failures.is_empty(), "T436: {}", failures.join("\n"));
+}

@@ -1,5 +1,6 @@
 //! T330: real daemon helper commands and C allocation, entirely fake DRM.
 use super::*;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 pub(super) fn compile_helper(root: &Path) -> PathBuf {
@@ -142,7 +143,10 @@ async fn t330_daemon_slots_share_free_card_leases_across_restarts() {
         allocation_lifecycle(Path::new(&root)).await;
         return;
     }
-    let root = tempfile::tempdir().unwrap();
+    let root = tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o700))
+        .tempdir()
+        .unwrap();
     compile_helper(root.path());
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", "capture::card_allocation_tests::t330_daemon_slots_share_free_card_leases_across_restarts", "--nocapture"])

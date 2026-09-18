@@ -1,6 +1,7 @@
 //! T226: partial production C writes followed by real CLI/libavcodec encoding.
 use super::*;
 use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Stdio;
 use tokio::io::AsyncWriteExt;
@@ -11,7 +12,10 @@ fn isolated_fixture() -> bool {
     if std::env::var_os("USCREEN_T226_ROOT").is_some() {
         return false;
     }
-    let root = tempfile::tempdir().unwrap();
+    let root = tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o700))
+        .tempdir()
+        .unwrap();
     card_allocation_tests::compile_helper(root.path());
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", NAME, "--nocapture"])

@@ -136,6 +136,27 @@ pub fn token_matches(expected: &str, presented: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t436_runtime_fixture_survives_shared_umask() {
+        let output = std::process::Command::new("/bin/sh")
+            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .arg(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "linux::runtime::tests::t252_runtime_paths_reject_unsafe_state",
+                "--nocapture",
+            ])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T436: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 
     // T252: child processes isolate runtime environment and use only disposable
     // directories. Existing private files must never be created through unsafe paths.
@@ -150,7 +171,10 @@ mod tests {
             "file",
             "unwritable",
         ] {
-            let root = tempfile::tempdir().unwrap();
+            let root = tempfile::Builder::new()
+                .permissions(std::fs::Permissions::from_mode(0o700))
+                .tempdir()
+                .unwrap();
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",

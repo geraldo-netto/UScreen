@@ -23,6 +23,10 @@ fn autostart_enabled() -> bool {
 }
 
 fn set_autostart(on: bool) -> Result<(), String> {
+    set_autostart_with(on, || !daemon::discover(Some(&pid_path())).is_empty())
+}
+
+fn set_autostart_with(on: bool, running: impl Fn() -> bool) -> Result<(), String> {
     let bin = if on {
         find_uscreen_bin().ok_or("uscreen binary not found")?
     } else {
@@ -30,13 +34,13 @@ fn set_autostart(on: bool) -> Result<(), String> {
     };
     uscreen_config::linux::autostart::set_enabled(on, &bin).map_err(|e| e.to_string())?;
     let result = if on {
-        if daemon::discover(Some(&pid_path())).is_empty() {
-            start_daemon()
+        if !running() {
+            start_daemon_with(service_managed_with(&running))
         } else {
             Ok(())
         }
     } else {
-        stop_daemon()
+        run_daemon_command("stop", service_managed_with(&running))
     };
     result.map_err(|e| format!("Autostart preference saved; daemon action failed: {e}"))
 }
@@ -194,6 +198,10 @@ fn daemon_command(bin: &std::path::Path, action: &str, managed: bool) -> Command
 }
 
 fn service_managed() -> bool {
+    service_managed_with(|| !daemon::discover(Some(&pid_path())).is_empty())
+}
+
+fn service_managed_with(running: impl FnOnce() -> bool) -> bool {
     if Command::new("systemctl")
         .args(["--user", "is-active", "--quiet", "uscreen.service"])
         .output_bounded()
@@ -201,7 +209,7 @@ fn service_managed() -> bool {
     {
         return true;
     }
-    if !daemon::discover(Some(&pid_path())).is_empty() {
+    if running() {
         return false;
     }
     uscreen_config::linux::autostart::systemd_available()
@@ -252,7 +260,11 @@ fn restart_with(
 }
 
 fn start_daemon() -> Result<(), String> {
-    if service_managed() {
+    start_daemon_with(service_managed())
+}
+
+fn start_daemon_with(managed: bool) -> Result<(), String> {
+    if managed {
         return run_daemon_command("start", true);
     }
     start_direct_daemon()
@@ -1610,13 +1622,34 @@ mod tests {
     }
 
     #[test]
+    fn t436_autostart_fixture_ignores_unrelated_live_daemon() {
+        let fixture = daemon_fixture::Fixture::new();
+        let unrelated = fixture.start(&["start"]);
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::t231_autostart_supports_a_desktop_without_a_user_manager",
+                "--nocapture",
+            ])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T436: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(uscreen_config::linux::processes::Process::read(unrelated.pid()).is_some());
+    }
+
+    #[test]
     fn t231_autostart_supports_a_desktop_without_a_user_manager() {
         if std::env::var_os("USCREEN_T231_CHILD").is_some() {
             if std::env::var("USCREEN_T231_CHILD").unwrap() == "offline-enabled" {
                 let path = uscreen_config::linux::autostart::desktop_path();
                 let original = std::fs::read(&path).unwrap();
                 assert!(
-                    set_autostart(false).is_err(),
+                    set_autostart_with(false, || false).is_err(),
                     "T231: unreachable enabled service was reported disabled"
                 );
                 assert!(autostart_enabled());
@@ -1627,12 +1660,12 @@ mod tests {
                 autostart_enabled(),
                 "T231: enabled desktop autostart was ignored"
             );
-            set_autostart(false).unwrap();
+            set_autostart_with(false, || false).unwrap();
             assert!(
                 !autostart_enabled(),
                 "T231: disabling autostart did not persist"
             );
-            set_autostart(true).unwrap();
+            set_autostart_with(true, || false).unwrap();
             assert!(
                 autostart_enabled(),
                 "T231: enabling autostart did not persist"
@@ -1648,6 +1681,17 @@ mod tests {
                 std::fs::read_to_string(log).unwrap(),
                 "stop\nstart\n",
                 "T231: autostart toggle lost current-daemon actions"
+            );
+            let routes = std::env::var_os("USCREEN_T231_ROUTES").unwrap();
+            let expected = if std::env::var("USCREEN_T231_CHILD").unwrap() == "managed" {
+                "managed\nmanaged\n"
+            } else {
+                "direct\ndirect\n"
+            };
+            assert_eq!(
+                std::fs::read_to_string(routes).unwrap(),
+                expected,
+                "T436: unrelated daemon changed fixture service routing"
             );
             return;
         }
@@ -1667,7 +1711,7 @@ mod tests {
             install_t231_systemctl(&sandbox, mode);
             sandbox.script(
                 "uscreen",
-                "printf '%s\\n' \"$*\" >> \"$USCREEN_T231_ACTIONS\"",
+                "printf '%s\\n' \"$*\" >> \"$USCREEN_T231_ACTIONS\"; printf 'direct\\n' >> \"$USCREEN_T231_ROUTES\"",
             );
             let output = Command::new(std::env::current_exe().unwrap())
                 .args([
@@ -1679,6 +1723,7 @@ mod tests {
                 .env("HOME", &home)
                 .env("XDG_CONFIG_HOME", &config)
                 .env("USCREEN_T231_ACTIONS", sandbox.0.join("actions"))
+                .env("USCREEN_T231_ROUTES", sandbox.0.join("routes"))
                 .env("USCREEN_T231_STATE", sandbox.0.join("enabled"))
                 .env("PATH", &sandbox.0)
                 .output()
@@ -1704,7 +1749,7 @@ is-active) exit 1 ;;
 is-enabled) [ -f "$USCREEN_T231_STATE" ] && echo enabled ;;
 enable) : > "$USCREEN_T231_STATE" ;;
 disable) /bin/rm -f "$USCREEN_T231_STATE" ;;
-start|stop) printf '%s\n' "$2" >> "$USCREEN_T231_ACTIONS" ;;
+start|stop) printf '%s\n' "$2" >> "$USCREEN_T231_ACTIONS"; printf 'managed\n' >> "$USCREEN_T231_ROUTES" ;;
 *) exit 99 ;;
 esac"#
             }

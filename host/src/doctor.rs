@@ -253,8 +253,12 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
             return;
         }
     };
+    report_process_inventory(r, cfg, &inventory);
+}
+
+fn report_process_inventory(r: &mut Report, cfg: &FileConfig, inventory: &[Process]) {
     let pid_file = crate::get_pid_path();
-    let daemons = uscreen_config::linux::daemon::from_processes(&inventory, Some(&pid_file));
+    let daemons = uscreen_config::linux::daemon::from_processes(inventory, Some(&pid_file));
     let tracked = report_daemon(r, &daemons, &pid_file);
     let fifos = match (0..cfg.max_tablets)
         .map(fifo_path_for)
@@ -268,11 +272,11 @@ async fn check_processes(r: &mut Report, cfg: &FileConfig) {
     };
     let helpers = fifos
         .iter()
-        .flat_map(|fifo| capture_pids(&inventory, CaptureRole::Helper, fifo))
+        .flat_map(|fifo| capture_pids(inventory, CaptureRole::Helper, fifo))
         .collect::<Vec<_>>();
     report_helpers(r, &helpers, tracked, cfg.max_tablets);
     for fifo in fifos {
-        report_encoders(r, &encoders_for_fifo(&inventory, &fifo), tracked, &fifo);
+        report_encoders(r, &encoders_for_fifo(inventory, &fifo), tracked, &fifo);
     }
 }
 
@@ -1390,6 +1394,25 @@ mod tests {
         include!("../../testdata/daemon_process.rs");
     }
 
+    #[test]
+    fn t436_doctor_fixture_ignores_unrelated_live_daemon() {
+        let fixture = daemon_fixture::Fixture::new();
+        let unrelated = fixture.start(&["start"]);
+        let output = std::process::Command::new("/bin/sh")
+            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .arg(std::env::current_exe().unwrap())
+            .args(["doctor::tests::t251_doctor_", "--nocapture"])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T436: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(uscreen_config::linux::processes::Process::read(unrelated.pid()).is_some());
+    }
+
     #[tokio::test]
     async fn t251_doctor_recovers_daemons_without_broad_orphan_matches() {
         if std::env::var_os("USCREEN_T251_CHILD").is_some() {
@@ -1502,11 +1525,16 @@ mod tests {
         daemon: Option<u32>,
         name: &str,
     ) {
+        use std::os::unix::fs::DirBuilderExt;
         let runtime = fixture.root.path().join("runtime");
-        std::fs::create_dir(&runtime).unwrap();
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&runtime)
+            .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
             .env("USCREEN_T251_CHILD", "1")
+            .env("USCREEN_T251_ROOT", fixture.root.path())
             .env("USCREEN_T251_DIAGNOSTIC", diagnostic.to_string())
             .env("USCREEN_T251_DAEMON", daemon.unwrap_or(0).to_string())
             .env("HOME", fixture.root.path())
@@ -1523,6 +1551,14 @@ mod tests {
 
     async fn check_t251_report(running: bool) {
         use super::*;
+        let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T251_ROOT").unwrap());
+        // Keep real /proc identity and liveness validation; inject only this
+        // fixture's process inventory at the production reporting boundary.
+        let inventory = processes::same_user_processes()
+            .unwrap()
+            .into_iter()
+            .filter(|process| process.executable.starts_with(&root))
+            .collect::<Vec<_>>();
         let diagnostic = std::env::var("USCREEN_T251_DIAGNOSTIC").unwrap();
         let daemon = std::env::var("USCREEN_T251_DAEMON").unwrap();
         let path = crate::get_pid_path();
@@ -1539,14 +1575,14 @@ mod tests {
                 std::fs::write(&path, text).unwrap();
             }
             let mut report = Report::new();
-            check_processes(
+            report_process_inventory(
                 &mut report,
                 &FileConfig {
                     max_tablets: 1,
                     ..Default::default()
                 },
-            )
-            .await;
+                &inventory,
+            );
             let text = report.messages.borrow().join("\n");
             assert_eq!(report.failures, 0, "T251: {stale:?}: {text}");
             assert!(
