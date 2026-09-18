@@ -132,5 +132,54 @@ in the normal automated suite:
   timestamp-order and copy-budget regressions remain in the suite.
 
 Recommendation: use the framed CLI path. Keep latency claims at this measured
-boundary until the tablet is available for matched physical replay. T416
-separately measures the bounded publication batch and metadata-allocation cost.
+boundary until the tablet is available for matched physical replay.
+
+## Publication batches and metadata (T416)
+
+T448's complete-packet boundary also removes T416's large pre-admission batch.
+The permanent `t416_dense_packets_publish_singly_before_slow_consumer_admission`
+regression feeds 10,000 minimum-size synthetic units through one-byte, seven-byte
+and 512 KiB input buffers. Every read publishes exactly one picture, in sequence,
+to an eight-packet queue whose consumer does not drain. T448/T407 retain the
+configuration, EOF, partial-packet cancellation, generation and size regressions.
+
+An opt-in release replay compares the former read path with framed publication
+for 1/2/4 sessions, three repeats and three payload sizes. Fixture construction
+and runtime startup are outside the counters. Each session measures its own
+thread CPU time and allocation calls; the existing backing-budget queue is
+inside the measurement. These units exercise parser boundaries, not valid
+compressed pictures or a physical display.
+
+| Payload / pictures | Peak batch, legacy → framed | Peak batch vector storage, legacy → framed |
+|---|---:|---:|
+| 6 bytes / 87,381 | 87,380 → 1 | 12,582,912 → 384 bytes |
+| 512 bytes / 1,024 | 1,023 → 1 | 98,304 → 384 bytes |
+| 1 MiB / 4 | 1 → 1 | 384 → 384 bytes |
+
+Vector storage is the measured capacity multiplied by `size_of(VideoPacket)`;
+it excludes separately allocated payload/backing metadata and is therefore a
+lower bound on the old batch's total retained storage. It is independent of the
+queue's encoded-byte budget. All concurrency levels produced these bounds.
+
+| Payload | One-session mean CPU ns/picture, legacy → framed | Four-session mean CPU ns/picture | Allocation calls/picture, legacy → framed |
+|---|---:|---:|---:|
+| 6 bytes | 223 → 204 | 256 → 201 | 3.00 → 4.00 |
+| 512 bytes | 574 → 524 | 654 → 556 | 2.02 → 3.02 |
+| 1 MiB | 873,406 → 702,398 | 783,883 → 798,850 | 7.00 → 7.00 |
+
+There is one additional small output-vector allocation per tiny/dense packet;
+large-frame reuse and the full parser costs differ. The four-session large-unit
+sample is about 2% slower, while the sparse/60-FPS encoder trials above show no
+large CPU penalty on their workload. Do not treat these short synthetic CPU
+measurements as universal throughput gains. With publication already bounded
+to one picture, no additional callback/batch-drain interface is justified by
+this evidence. Keep the simpler framing and its measured latency benefit.
+
+Raw [batch samples](2026-09-18-packet-framing/batch-profile.json) and
+[source identity](2026-09-18-packet-framing/batch-environment.json) are preserved.
+Repeat without a display or tablet:
+
+```sh
+cargo test --locked -p uscreen --release --bin uscreen \
+  t416_packet_batch_profile -- --ignored --nocapture
+```

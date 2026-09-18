@@ -106,6 +106,8 @@ impl AnnexBPacketizer {
             crate::encoder_io::annex_b_prefix_len(input).is_some(),
             "Expected Annex B packet"
         );
+        #[cfg(test)]
+        crate::allocation_probe::scanned(input.len());
         let mut starts = crate::encoder_io::annex_b_offsets(input).peekable();
         let mut out = Vec::new();
         while let Some((start, header)) = starts.next() {

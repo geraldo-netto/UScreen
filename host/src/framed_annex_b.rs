@@ -219,4 +219,7 @@ pub(crate) fn adler(data: &[u8]) -> u32 {
 }
 
 #[cfg(test)]
+#[path = "packet_batch_profile.rs"]
+mod batch_profile;
+#[cfg(test)]
 pub(crate) mod tests;

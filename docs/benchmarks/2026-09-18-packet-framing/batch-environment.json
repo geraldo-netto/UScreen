@@ -1,0 +1,11 @@
+{
+  "base_commit": "058f86902becc8356608ab25a115586daa9bb243",
+  "note": "Base plus T416 test/measurement additions. Hardware/toolchain unchanged from environment.json.",
+  "sources": {
+    "host/src/packet_batch_profile.rs": "5f04d0bad4dc0a3d4f4d1d96887b104b12f2ed5d5ace9d9e909c5ccf18a92983",
+    "host/src/framed_annex_b.rs": "7de3084467b23c0abcd0d09505ec05afc4b361f7de393165e75cc914f4bb1086",
+    "host/src/annex_b.rs": "1ef05a633c0aeadbd0faa32c3ebd0e64654298f1bcac8b718f95b38634d282be",
+    "host/src/video_queue.rs": "35e3342b0910477362cc6a3ec732cf4e3d72b5f0a9df0fdb3981bce85ddb753a",
+    "host/src/allocation_probe.rs": "5eff001879923f913e2dd5cc8eefa7de93409cd86e3a6c95f92985d28dfb3979"
+  }
+}

@@ -1,0 +1,2414 @@
+[
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 21840768,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 21843776
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16509342,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16514841
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 14341075,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 14340684
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 20230005,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 20231048
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 18498424,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 18510111
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 17641571,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 17655433
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 19553839,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 19561359
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 20152480,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 20160862
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 30300959,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 30319045
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 29364856,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 29387187
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 18854491,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 18862234
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 19103616,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 19112730
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16794437,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16806477
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16971667,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16980815
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 0,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 18731039,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 18742541
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 19140596,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 19147647
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 18807763,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 18814972
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 18805979,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 18811786
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16827487,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16828580
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 18774621,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 18782590
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 21557108,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 21566168
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 19796553,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 19804872
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 22110253,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 22441065
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 21526120,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 21535188
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 18566030,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 18741520
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 17188944,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 17213045
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16919239,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16920477
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16743401,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16768323
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 1,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 17982630,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 18001193
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 17928748,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 17936207
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 17564487,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 17572351
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 21599236,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 21616625
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 18796412,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 18811165
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16586227,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16593314
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 19991498,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 19996233
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 22355221,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 23375186
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 20691317,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 20702012
+        },
+        {
+          "allocation_counts": {
+            "allocations": 262161,
+            "explicit_copy_bytes": 524292,
+            "reallocations": 15,
+            "requested_bytes": 38100504,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 21110752,
+          "packets": 87381,
+          "peak_batch_packets": 87380,
+          "peak_batch_vector_bytes": 12582912,
+          "wall_ns": 24087849
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 3473097,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 19045668,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 19047082
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16901356,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16908405
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 17303018,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 17304303
+        },
+        {
+          "allocation_counts": {
+            "allocations": 349540,
+            "explicit_copy_bytes": 524286,
+            "reallocations": 0,
+            "requested_bytes": 45964702,
+            "scanner_input_bytes": 524286
+          },
+          "cpu_ns": 16891627,
+          "packets": 87381,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 16898916
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524286,
+    "repeat": 2,
+    "workload": "minimum"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 749993,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 750015
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 551002,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 550939
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 434513,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 434503
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 703647,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 703595
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 603169,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 608501
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 821838,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 821794
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 685683,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 685751
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 642462,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 642416
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 859348,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 859406
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 777685,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 777788
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 557834,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 557822
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 520785,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 520850
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 604581,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 604863
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 602197,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 602108
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 0,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 432630,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 432549
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 538478,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 538334
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 432028,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 431998
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 580066,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 580135
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 579064,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 579064
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 810787,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 810673
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 551882,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 551851
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 716080,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 716209
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 471533,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 471755
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 955207,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 955212
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 542936,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 542882
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 598260,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 598301
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 536143,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 536090
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 601726,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 601697
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 1,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 579364,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 583852
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 520895,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 520880
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 423482,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 423441
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 603329,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 603281
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 570949,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 570988
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 566410,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 566419
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 651198,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 651173
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 716871,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 717081
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 584143,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 584343
+        },
+        {
+          "allocation_counts": {
+            "allocations": 2066,
+            "explicit_copy_bytes": 524800,
+            "reallocations": 8,
+            "requested_bytes": 1820912,
+            "scanner_input_bytes": 524291
+          },
+          "cpu_ns": 427059,
+          "packets": 1024,
+          "peak_batch_packets": 1023,
+          "peak_batch_vector_bytes": 98304,
+          "wall_ns": 426969
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 556961,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 574044,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 573973
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 589874,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 589954
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 518451,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 518466
+        },
+        {
+          "allocation_counts": {
+            "allocations": 3088,
+            "explicit_copy_bytes": 524288,
+            "reallocations": 0,
+            "requested_bytes": 1493744,
+            "scanner_input_bytes": 524288
+          },
+          "cpu_ns": 590074,
+          "packets": 1024,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 590024
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 524288,
+    "repeat": 2,
+    "workload": "dense"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 4314612,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 4329346
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3032885,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3032942
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2625222,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2625241
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 4536088,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 4540837
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2935663,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2935774
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3178247,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3183755
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3144454,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3144329
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3249661,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3254402
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3998121,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 4004106
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 4507133,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 4512522
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3331824,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3332032
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3459263,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3459460
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3119517,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3119740
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3240543,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3240605
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 0,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3155625,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3163906
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2670958,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2671010
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2547497,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2547601
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3001507,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3001571
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3086826,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3086987
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2679153,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2679276
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2715340,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2721980
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2879629,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2879835
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2700454,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2707441
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2695884,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2702401
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2686898,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2686941
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3457650,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3457847
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3161175,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3166502
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3548359,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3552390
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 1,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3010634,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3010900
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2724939,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2733572
+        }
+      ],
+      "sessions": 1
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2586630,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2586667
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2698159,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2703593
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3250553,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3250685
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3206109,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3210828
+        }
+      ],
+      "sessions": 2
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": false,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2719158,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2719013
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3121601,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3127817
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 3268536,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3268780
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 5767168,
+            "reallocations": 2,
+            "requested_bytes": 8392624,
+            "scanner_input_bytes": 4194328
+          },
+          "cpu_ns": 2626434,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2632216
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  },
+  {
+    "framed_bytes": 4194509,
+    "measurement": {
+      "framed": true,
+      "samples": [
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3044157,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3044214
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3237247,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3236557
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 2706624,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 2706650
+        },
+        {
+          "allocation_counts": {
+            "allocations": 28,
+            "explicit_copy_bytes": 4194304,
+            "reallocations": 0,
+            "requested_bytes": 5771184,
+            "scanner_input_bytes": 4194304
+          },
+          "cpu_ns": 3351551,
+          "packets": 4,
+          "peak_batch_packets": 1,
+          "peak_batch_vector_bytes": 384,
+          "wall_ns": 3351620
+        }
+      ],
+      "sessions": 4
+    },
+    "raw_bytes": 4194304,
+    "repeat": 2,
+    "workload": "large"
+  }
+]
