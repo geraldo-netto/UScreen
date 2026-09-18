@@ -130,7 +130,12 @@ fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
         return None;
     }
     let root = tempfile::tempdir().unwrap();
-    std::fs::create_dir(root.path().join("runtime")).unwrap();
+    // T435: production rejects shared runtime directories, regardless of umask.
+    use std::os::unix::fs::DirBuilderExt;
+    std::fs::DirBuilder::new()
+        .mode(0o700)
+        .create(root.path().join("runtime"))
+        .unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
@@ -152,6 +157,37 @@ fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
     );
     print!("{}", String::from_utf8_lossy(&output.stdout));
     Some(root)
+}
+
+#[test]
+fn t435_shared_umask_keeps_monitor_fixture_private() {
+    use std::os::unix::process::CommandExt;
+    if std::env::var_os("USCREEN_T435_CHILD").is_none() {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "discovery_tests::t435_shared_umask_keeps_monitor_fixture_private",
+            ])
+            .env("USCREEN_T435_CHILD", "1");
+        unsafe {
+            command.pre_exec(|| {
+                libc::umask(0o002);
+                Ok(())
+            });
+        }
+        let output = command.output().unwrap();
+        assert!(
+            output.status.success(),
+            "T435: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    if isolated_monitor_test("t435_shared_umask_keeps_monitor_fixture_private").is_none() {
+        runtime::runtime_dir().expect("T435: fixture must meet production runtime permissions");
+    }
 }
 
 fn discovery_adb(root: &std::path::Path) -> PathBuf {
