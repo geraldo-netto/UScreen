@@ -111,6 +111,66 @@ mod tests {
     };
 
     #[test]
+    fn t429_profile_switches_persist_before_one_restart_and_report_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let mut baseline = store
+            .update(|cfg| {
+                cfg.encoder = "h264_vaapi".into();
+                cfg.vaapi_device = "/dev/dri/renderD129".into();
+                Ok(())
+            })
+            .unwrap();
+        let calls = Arc::new(AtomicUsize::new(0));
+        for (index, (name, fail)) in [
+            ("h264_vaapi_baseline", false),
+            ("h264_vaapi", false),
+            ("h264_vaapi_baseline", true),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let edited = FileConfig {
+                encoder: name.into(),
+                ..baseline.clone()
+            };
+            assert_eq!(
+                apply_label(true, &edited, &baseline),
+                "Apply & restart",
+                "T429"
+            );
+            let expected = edited.clone();
+            let readback = store.clone();
+            let count = calls.clone();
+            let restart: Restart = Box::new(move || {
+                assert_eq!(
+                    readback.load(),
+                    expected,
+                    "T429: persist exact profile before restart"
+                );
+                count.fetch_add(1, Ordering::SeqCst);
+                if fail {
+                    Err("isolated restart failure".into())
+                } else {
+                    Ok(())
+                }
+            });
+            let saved = PendingSave::start(store.clone(), edited.clone(), baseline, Some(restart))
+                .finish()
+                .unwrap();
+            assert_eq!(
+                calls.load(Ordering::SeqCst),
+                index + 1,
+                "T429: one restart invocation per edit"
+            );
+            assert_eq!(saved.config, edited);
+            assert_eq!(store.load(), edited, "T429: no silent profile reversion");
+            assert_eq!(saved.message().contains("restart failed"), fail);
+            baseline = saved.config;
+        }
+    }
+
+    #[test]
     fn t332_invalid_display_mode_cannot_save_or_restart() {
         let dir = tempfile::tempdir().unwrap();
         let store = ConfigStore::new(dir.path().join("config.toml"));
