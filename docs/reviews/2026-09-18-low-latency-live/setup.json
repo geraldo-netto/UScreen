@@ -1,0 +1,97 @@
+{
+  "observed_utc": "2026-09-18T19:01:50.053666+00:00",
+  "checkout": "9c917bb",
+  "installed_host_source": "52fcd75",
+  "installed_android_source": "bdaa17a",
+  "host_settings": {
+    "encoder": "h264_vaapi_baseline",
+    "fps": 60,
+    "bitrate": 20000,
+    "width": 1280,
+    "height": 800,
+    "quality": 18,
+    "stream_scale": 1,
+    "ten_bit": false,
+    "vaapi_device": "/dev/dri/renderD128",
+    "pipe_capacity_mib": 4
+  },
+  "previous_host_settings": {
+    "encoder": "h264_vaapi",
+    "fps": 60,
+    "bitrate": 20000,
+    "width": 1280,
+    "height": 800,
+    "quality": 18,
+    "stream_scale": 1,
+    "ten_bit": false,
+    "vaapi_device": "/dev/dri/renderD128",
+    "pipe_capacity_mib": 4
+  },
+  "processes_before": {
+    "uscreen": [
+      149897
+    ],
+    "evdi_helper": [
+      149961
+    ],
+    "ffmpeg": [
+      150084
+    ],
+    "cinnamon": [
+      1897918
+    ],
+    "Xorg": [
+      1897166
+    ]
+  },
+  "processes_after": {
+    "uscreen": [
+      149897
+    ],
+    "evdi_helper": [
+      651015
+    ],
+    "ffmpeg": [
+      651155
+    ],
+    "cinnamon": [
+      1897918
+    ],
+    "Xorg": [
+      1897166
+    ]
+  },
+  "installed_sha256": {
+    "uscreen": "df9a0ba70fe864378e735d8a94ac8436b82534dae5c2518a140ba748de01f7d9",
+    "evdi_helper": "2432e4e738fa8af94b915e218f310015ba3fa75497c0657f9fa7727360fc0267",
+    "android_apk": "64de043cdca55972e27058fc9b1d3a6101a61c365a60a3405fce6863b4d04467"
+  },
+  "android_preferences": {
+    "display_refresh_rate": "60.0",
+    "battery_saver": "true",
+    "bitrate_kbps": "20000",
+    "show_stats": "false",
+    "fps": "60",
+    "has_user_settings": "true"
+  },
+  "power_locks": [],
+  "wifi_locks": [],
+  "android_window": [
+    "Window #10 Window{eae5af4 u0 com.uscreen/com.uscreen.MainActivity}, [type=1, isChildWindow=false]-[Surface(name=*Title#17200)/@0xb40787d]:",
+    "mDisplayId=0 taskId=427 mSession=Session{ff8f8e1 27400:u0a10323} mClient=android.os.BinderProxy@71384c7",
+    "mOwnerUid=10323 showForAllUsers=false package=com.uscreen appop=NONE",
+    "mAttrs={(0,0)(fillxfill) sim={adjust=resize} layoutInDisplayCutoutMode=shortEdges ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x103030e sbrt=0.5 preferredRefreshRate=60.0 preferredDisplayMode=1",
+    "fl=KEEP_SCREEN_ON LAYOUT_IN_SCREEN FULLSCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS",
+    "pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED"
+  ],
+  "battery_snapshot": [
+    "USB powered: true",
+    "Max charging current: 500000",
+    "Max charging voltage: 5000000",
+    "Charge counter: 4885110",
+    "level: 49",
+    "temperature: 307",
+    "Capacity level: 3"
+  ],
+  "measurement_limits": "Uncontrolled before/after current content, logged window percentiles; no energy comparison or optical latency. Resumed windows exclude the transition interruption."
+}

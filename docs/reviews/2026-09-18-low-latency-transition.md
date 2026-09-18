@@ -4,7 +4,10 @@ The Linux encoder selector currently requests a full daemon restart. A reconnect
 is therefore expected when switching between `h264_vaapi` and
 `h264_vaapi_baseline`. This investigation does **not** establish the cause or
 duration of the user's longer searching interval, or prove which profile resumed.
-T429 remains blocked on correlated evidence from the reported transition.
+This was the initial isolated investigation. A later
+[live encoder-only change](2026-09-18-low-latency-live.md) recorded a missing-FIFO
+failure and a roughly 21-second recovery, making deterministic T429 follow-up
+actionable. The user's original option/path remains unconfirmed.
 
 Source inspected: `0458085`, plus the permanent T429 test added with this report.
 The checks below use private configuration files, injected restart actions and
