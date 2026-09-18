@@ -1,0 +1,146 @@
+[
+  {
+    "scene": "motion",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 0,
+    "bytes": 3555984,
+    "mbps": 7.111968,
+    "sha256": "5be7517a83df8b4dc69c4775fb151b664371431ef4534dd0083b4d921b9157e4"
+  },
+  {
+    "scene": "motion",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 1,
+    "bytes": 3558738,
+    "mbps": 7.117476,
+    "sha256": "7d2ec95e4b392a7b7fba23785547091bdbca4420c7a944692cd983c883e85423"
+  },
+  {
+    "scene": "text",
+    "rate": 5,
+    "repeat": 0,
+    "phase": 0,
+    "bytes": 344025,
+    "mbps": 0.68805,
+    "sha256": "f979f87f33390f321f8280ee094561a0f32cd6b31cc14b513fdca13f0185fabc"
+  },
+  {
+    "scene": "text",
+    "rate": 5,
+    "repeat": 0,
+    "phase": 1,
+    "bytes": 344025,
+    "mbps": 0.68805,
+    "sha256": "f979f87f33390f321f8280ee094561a0f32cd6b31cc14b513fdca13f0185fabc"
+  },
+  {
+    "scene": "text",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 0,
+    "bytes": 432567,
+    "mbps": 0.865134,
+    "sha256": "74f4647747891c530cec4cdf3c53d6bdd0d98fa324346f6578dd4ffb34894c0b"
+  },
+  {
+    "scene": "text",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 1,
+    "bytes": 432567,
+    "mbps": 0.865134,
+    "sha256": "ad6e33441c7200634785e62d5da003be77bdd59df8bfd3f299c0db132dccf3a6"
+  },
+  {
+    "scene": "pen",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 0,
+    "bytes": 476052,
+    "mbps": 0.952104,
+    "sha256": "ffb7530dc688e0c45c4dd4d76661025dda76949d52529361381a942c0e2c363b"
+  },
+  {
+    "scene": "pen",
+    "rate": 60,
+    "repeat": 0,
+    "phase": 1,
+    "bytes": 476091,
+    "mbps": 0.952182,
+    "sha256": "dfc8c611dc0b4f51ca0657a565eba0e7de27b0b69d8ddd4a9d8a0ac3616c72b0"
+  },
+  {
+    "scene": "motion",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 0,
+    "bytes": 3555984,
+    "mbps": 7.111968,
+    "sha256": "5be7517a83df8b4dc69c4775fb151b664371431ef4534dd0083b4d921b9157e4"
+  },
+  {
+    "scene": "motion",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 1,
+    "bytes": 3558738,
+    "mbps": 7.117476,
+    "sha256": "7d2ec95e4b392a7b7fba23785547091bdbca4420c7a944692cd983c883e85423"
+  },
+  {
+    "scene": "text",
+    "rate": 5,
+    "repeat": 1,
+    "phase": 0,
+    "bytes": 344025,
+    "mbps": 0.68805,
+    "sha256": "f979f87f33390f321f8280ee094561a0f32cd6b31cc14b513fdca13f0185fabc"
+  },
+  {
+    "scene": "text",
+    "rate": 5,
+    "repeat": 1,
+    "phase": 1,
+    "bytes": 344025,
+    "mbps": 0.68805,
+    "sha256": "f979f87f33390f321f8280ee094561a0f32cd6b31cc14b513fdca13f0185fabc"
+  },
+  {
+    "scene": "text",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 0,
+    "bytes": 432567,
+    "mbps": 0.865134,
+    "sha256": "c9cde897263f931356415dcb5289e80ffdc431ac0053f103356164de9c0c3101"
+  },
+  {
+    "scene": "text",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 1,
+    "bytes": 432567,
+    "mbps": 0.865134,
+    "sha256": "95759d1cde2289e0dcd4d127719f0f517ede4320b4b635748a20ce6472da2638"
+  },
+  {
+    "scene": "pen",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 0,
+    "bytes": 476052,
+    "mbps": 0.952104,
+    "sha256": "ffb7530dc688e0c45c4dd4d76661025dda76949d52529361381a942c0e2c363b"
+  },
+  {
+    "scene": "pen",
+    "rate": 60,
+    "repeat": 1,
+    "phase": 1,
+    "bytes": 476052,
+    "mbps": 0.952104,
+    "sha256": "ffb7530dc688e0c45c4dd4d76661025dda76949d52529361381a942c0e2c363b"
+  }
+]

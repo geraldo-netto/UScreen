@@ -70,6 +70,11 @@ The [raw-pipe capacity ramp](benchmarks/2026-09-17-pipe-capacity.md) compares
 ordinary ring I/O. Both use isolated host transports and preserve their
 measurement limits; neither changes the installed applications.
 
+The [lossless RGB compression screen](benchmarks/2026-09-18-frame-compression.md)
+records T419's host frame/rectangle/tile/XOR comparisons and native tablet
+decompression. Android reconstruction, upload, presentation and battery
+comparisons remain open; no new production compression mode is enabled.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

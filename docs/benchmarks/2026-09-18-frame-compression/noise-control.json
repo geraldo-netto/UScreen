@@ -1,0 +1,415 @@
+{
+  "seed": 419,
+  "frames": 4,
+  "description": "independent uniform random RGB frames; size stress control, not real desktop/video or latency benchmark",
+  "rows": [
+    {
+      "mode": "full",
+      "codec": "lz4",
+      "frames": [
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.770565,
+          "compression_ms": 3.176302,
+          "decompression_ms": 1.498117,
+          "reconstruction_ms": 0.100445,
+          "host_total_ms": 6.5454289999999995,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.389215,
+          "compression_ms": 1.770965,
+          "decompression_ms": 0.143689,
+          "reconstruction_ms": 0.05698,
+          "host_total_ms": 2.360849,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.244665,
+          "compression_ms": 1.172865,
+          "decompression_ms": 0.993488,
+          "reconstruction_ms": 0.07209,
+          "host_total_ms": 2.483108,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.171653,
+          "compression_ms": 1.744945,
+          "decompression_ms": 0.251979,
+          "reconstruction_ms": 0.057752,
+          "host_total_ms": 2.226329,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1480.34352
+    },
+    {
+      "mode": "full",
+      "codec": "zstd1",
+      "frames": [
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.233463,
+          "compression_ms": 2.136424,
+          "decompression_ms": 0.151925,
+          "reconstruction_ms": 0.053214,
+          "host_total_ms": 2.575026,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.136875,
+          "compression_ms": 2.705509,
+          "decompression_ms": 0.148768,
+          "reconstruction_ms": 0.053454,
+          "host_total_ms": 3.044606,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.145772,
+          "compression_ms": 1.958149,
+          "decompression_ms": 0.124792,
+          "reconstruction_ms": 0.052822,
+          "host_total_ms": 2.2815349999999994,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.234375,
+          "compression_ms": 3.234525,
+          "decompression_ms": 0.939272,
+          "reconstruction_ms": 0.085386,
+          "host_total_ms": 4.493558,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1474.59936
+    },
+    {
+      "mode": "rect",
+      "codec": "lz4",
+      "frames": [
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.421869,
+          "compression_ms": 1.786686,
+          "decompression_ms": 1.22209,
+          "reconstruction_ms": 0.069856,
+          "host_total_ms": 3.5005010000000003,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.696782,
+          "compression_ms": 2.628709,
+          "decompression_ms": 0.270886,
+          "reconstruction_ms": 0.260065,
+          "host_total_ms": 3.8564420000000004,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.741518,
+          "compression_ms": 2.162605,
+          "decompression_ms": 0.165161,
+          "reconstruction_ms": 0.15979,
+          "host_total_ms": 3.229074,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.369928,
+          "compression_ms": 2.034156,
+          "decompression_ms": 0.138268,
+          "reconstruction_ms": 0.135653,
+          "host_total_ms": 3.678005,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1480.34928
+    },
+    {
+      "mode": "rect",
+      "codec": "zstd1",
+      "frames": [
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.97937,
+          "compression_ms": 3.976103,
+          "decompression_ms": 0.349067,
+          "reconstruction_ms": 0.06693,
+          "host_total_ms": 5.37147,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 2.131064,
+          "compression_ms": 3.69102,
+          "decompression_ms": 0.340561,
+          "reconstruction_ms": 0.276697,
+          "host_total_ms": 6.439342000000001,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.697312,
+          "compression_ms": 3.75265,
+          "decompression_ms": 0.343457,
+          "reconstruction_ms": 0.331944,
+          "host_total_ms": 6.125363,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 16,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.740015,
+          "compression_ms": 3.359006,
+          "decompression_ms": 0.266006,
+          "reconstruction_ms": 0.222231,
+          "host_total_ms": 5.587258,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1474.60512
+    },
+    {
+      "mode": "tiles",
+      "codec": "lz4",
+      "frames": [
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.201641,
+          "compression_ms": 1.843887,
+          "decompression_ms": 1.021461,
+          "reconstruction_ms": 0.061329,
+          "host_total_ms": 3.128318,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.642987,
+          "compression_ms": 2.914554,
+          "decompression_ms": 0.203424,
+          "reconstruction_ms": 0.373966,
+          "host_total_ms": 5.134931,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.922128,
+          "compression_ms": 2.024317,
+          "decompression_ms": 0.162405,
+          "reconstruction_ms": 0.30935,
+          "host_total_ms": 3.4181999999999997,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 2.383153,
+          "compression_ms": 2.638589,
+          "decompression_ms": 0.359718,
+          "reconstruction_ms": 0.351902,
+          "host_total_ms": 5.733362,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1481.78352
+    },
+    {
+      "mode": "tiles",
+      "codec": "zstd1",
+      "frames": [
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.327706,
+          "compression_ms": 4.52112,
+          "decompression_ms": 0.484049,
+          "reconstruction_ms": 0.068213,
+          "host_total_ms": 6.401088,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.642226,
+          "compression_ms": 4.478688,
+          "decompression_ms": 0.52578,
+          "reconstruction_ms": 0.41775,
+          "host_total_ms": 7.064444,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 2.338085,
+          "compression_ms": 3.436997,
+          "decompression_ms": 0.25278,
+          "reconstruction_ms": 0.33978,
+          "host_total_ms": 6.367641999999999,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 4000,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.602298,
+          "compression_ms": 4.198034,
+          "decompression_ms": 0.379015,
+          "reconstruction_ms": 0.441236,
+          "host_total_ms": 6.620583,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1476.03936
+    },
+    {
+      "mode": "xor",
+      "codec": "lz4",
+      "frames": [
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.136645,
+          "compression_ms": 2.071258,
+          "decompression_ms": 1.074695,
+          "reconstruction_ms": 0.076879,
+          "host_total_ms": 3.359477,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.346051,
+          "compression_ms": 1.868074,
+          "decompression_ms": 0.138048,
+          "reconstruction_ms": 0.108461,
+          "host_total_ms": 2.460634,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.410025,
+          "compression_ms": 1.994048,
+          "decompression_ms": 0.232902,
+          "reconstruction_ms": 0.135603,
+          "host_total_ms": 2.772578,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3084049,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.21677,
+          "compression_ms": 2.1031,
+          "decompression_ms": 0.199476,
+          "reconstruction_ms": 0.124842,
+          "host_total_ms": 3.6441879999999998,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1480.34352
+    },
+    {
+      "mode": "xor",
+      "codec": "zstd1",
+      "frames": [
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 0.888954,
+          "compression_ms": 3.359477,
+          "decompression_ms": 0.191792,
+          "reconstruction_ms": 0.059435,
+          "host_total_ms": 4.499658,
+          "refresh": true
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.474289,
+          "compression_ms": 4.208323,
+          "decompression_ms": 0.615814,
+          "reconstruction_ms": 0.249705,
+          "host_total_ms": 6.548131,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.771516,
+          "compression_ms": 4.285844,
+          "decompression_ms": 0.51549,
+          "reconstruction_ms": 0.137226,
+          "host_total_ms": 6.710076,
+          "refresh": false
+        },
+        {
+          "payload_bytes": 3072082,
+          "region_metadata_bytes": 0,
+          "raw_bytes": 3072000,
+          "preparation_ms": 1.522934,
+          "compression_ms": 3.736669,
+          "decompression_ms": 0.512173,
+          "reconstruction_ms": 0.320662,
+          "host_total_ms": 6.092438,
+          "refresh": false
+        }
+      ],
+      "projected_60fps_mbps": 1474.59936
+    }
+  ]
+}

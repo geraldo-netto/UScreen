@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Recompute T419 summaries from retained per-frame and native-call records."""
+import argparse
+import collections
+import csv
+import json
+import math
+from pathlib import Path
+import statistics
+
+METRICS = ('preparation_ms', 'compression_ms', 'decompression_ms', 'reconstruction_ms', 'host_total_ms')
+
+
+def quantiles(values):
+    ordered = sorted(values)
+    return {str(q): ordered[math.floor(q*(len(ordered)-1))] for q in (.5, .95, .99)}
+
+
+def read_trial(path):
+    row = json.loads(path.read_text())
+    frames = row['frames']
+    sizes = {key: sum(frame[key] for frame in frames) for key in ('payload_bytes', 'region_metadata_bytes')}
+    return dict(scene=row['scene'], rate=row['rate'], mode=row['mode'], codec=row['codec'],
+                repeat=row['repeat'], rgb_sha256=row['rgb_sha256'], frames=len(frames), **sizes,
+                mbps=sum(sizes.values())*8/row['seconds']/1e6,
+                times={key: quantiles([frame[key] for frame in frames]) for key in METRICS})
+
+
+def compare_payloads(path, original):
+    trial = json.loads(path.read_text())
+    reference = json.loads(original.read_text())
+    assert trial['rgb_sha256'] == reference['rgb_sha256']
+    assert len(trial['frames']) == len(reference['frames'])
+    for current, prior in zip(trial['frames'], reference['frames']):
+        for key in ('payload_bytes', 'raw_bytes', 'region_metadata_bytes'):
+            assert current[key] == prior[key]
+
+
+def host(root, name):
+    groups = collections.defaultdict(list)
+    for path in sorted((root / name).glob('*.json')):
+        if path.name == 'metadata.json':
+            continue
+        if name != 'results':
+            compare_payloads(path, root / 'results' / path.name)
+        row = read_trial(path)
+        groups[(row['scene'], row['rate'], row['mode'], row['codec'])].append(row)
+    return [aggregate(key, rows) for key, rows in sorted(groups.items())]
+
+
+def aggregate(key, rows):
+    assert len(rows) == 3
+    assert len({row['rgb_sha256'] for row in rows}) == 1
+    return dict(zip(('scene', 'rate', 'mode', 'codec'), key), trials=rows,
+                mbps=statistics.median(row['mbps'] for row in rows),
+                times={metric: {str(q): statistics.median(row['times'][metric][str(q)] for row in rows)
+                                for q in (.5, .95, .99)} for metric in METRICS})
+
+
+def native_case(root, item):
+    trials = []
+    for repeat in range(3):
+        path = root / 'android-native' / (item['path'] + f'-{repeat}.csv')
+        with path.open() as source:
+            rows = list(csv.DictReader(source))
+        assert len(rows) == 50*len(item['samples'])
+        trials.append(quantiles([int(row['decompression_ns'])/1e6 for row in rows]))
+    return dict(scene=item['scene'], mode=item['mode'], codec=item['codec'], trials=trials,
+                median={str(q): statistics.median(row[str(q)] for row in trials) for q in (.5, .95, .99)})
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('root', type=Path)
+    root = parser.parse_args().root
+    names = ('results', 'axes-results', 'byteaxes-results', 'packed-results')
+    data = {name: host(root, name) for name in names}
+    manifest = json.loads((root / 'native-fixtures/manifest.json').read_text())
+    data['android'] = [native_case(root, item) for item in manifest]
+    (root / 'analysis.json').write_text(json.dumps(data, indent=2)+'\n')
+    print('Validated', sum(len(data[name])*3 for name in names), 'host trials and', len(manifest)*3, 'native sample batches')
+
+
+if __name__ == '__main__':
+    main()
