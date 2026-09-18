@@ -24,6 +24,7 @@ impl InputSink for Recorder {
     }
 }
 impl SettingsSink for Recorder {
+    fn decoders(&self, _: crate::media::DecoderCapabilities) {}
     fn resolution(&self, pixels: (u32, u32), millimetres: (u32, u32)) {
         self.record(format!("resolution {pixels:?} {millimetres:?}"));
     }
@@ -166,8 +167,10 @@ fn t281_retired_socket_cannot_claim_or_dispatch_into_current_controller() {
     let current = tablet.lease();
     let recorder = Arc::new(Recorder::default());
     let controllers = Arc::new(Controllers::new(recorder.clone()));
-    let controller = claim_controller(&controllers, Some(&current)).unwrap();
-    assert!(claim_controller(&controllers, Some(&old)).is_none());
+    let (claim_mode, _) = watch::channel(false);
+    let claim_settings = SessionSettings::new(&None, &claim_mode, false);
+    let controller = claim_controller(&controllers, Some(&current), &claim_settings).unwrap();
+    assert!(claim_controller(&controllers, Some(&old), &claim_settings).is_none());
     assert_eq!(*controllers.generation.borrow(), controller.id);
     let settings = Recorder::default();
     let latency = crate::latency::LatencyTracker::new();

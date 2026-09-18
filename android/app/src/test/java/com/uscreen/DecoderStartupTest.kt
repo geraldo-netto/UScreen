@@ -82,7 +82,7 @@ class DecoderStartupTest {
         val error = AtomicReference<Throwable?>()
         receiver.decoder.createCodec = { mime ->
             StartupCodecShadow.gate("create")
-            MediaCodec.createDecoderByType(mime)
+            MediaCodec.createDecoderByType(mime.mimeType)
         }
         val setup = Thread {
             try { result.set(receiver.setupCodec(surface)) }

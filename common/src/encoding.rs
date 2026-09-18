@@ -7,6 +7,7 @@ pub enum Backend {
     Nvenc,
     Vaapi,
     X264,
+    Vpx,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -17,7 +18,7 @@ pub struct Encoder {
     pub hevc: bool,
 }
 
-pub const ENCODERS: [Encoder; 6] = [
+pub const ENCODERS: [Encoder; 8] = [
     Encoder {
         name: "h264_nvenc",
         label: "NVIDIA H.264 (NVENC)",
@@ -54,6 +55,18 @@ pub const ENCODERS: [Encoder; 6] = [
         backend: Backend::X264,
         hevc: false,
     },
+    Encoder {
+        name: "libvpx-vp9",
+        label: "Software VP9 (libvpx)",
+        backend: Backend::Vpx,
+        hevc: false,
+    },
+    Encoder {
+        name: "vp9_vaapi",
+        label: "Intel / AMD VP9 (VAAPI)",
+        backend: Backend::Vaapi,
+        hevc: false,
+    },
 ];
 
 pub fn canonical_name(name: &str) -> &str {
@@ -81,6 +94,10 @@ pub const INPROC_VAAPI_UNSUPPORTED: &str = "VAAPI is unavailable in this in-proc
 impl Encoder {
     pub fn validate_inproc(&self) -> Result<()> {
         anyhow::ensure!(self.backend != Backend::Vaapi, INPROC_VAAPI_UNSUPPORTED);
+        anyhow::ensure!(
+            !crate::video::Codec::from_encoder(self.name).framed(),
+            "VP9 requires the stock FFmpeg CLI adapter; build without inproc-encoder"
+        );
         Ok(())
     }
 }
@@ -102,7 +119,7 @@ impl Profile {
         let buffer_kbits = match encoder.backend {
             Backend::Nvenc => Some((bitrate_kbps / gop).max(200)),
             Backend::X264 => Some((bitrate_kbps * 2 / gop).max(200)),
-            Backend::Vaapi => None,
+            Backend::Vaapi | Backend::Vpx => None,
         };
         Ok(Self {
             encoder,
@@ -131,6 +148,16 @@ impl Profile {
             ),
             Backend::Vaapi => (&[("rc_mode", "CQP")], "qp"),
             Backend::X264 => (&[("preset", "ultrafast"), ("tune", "zerolatency")], "crf"),
+            Backend::Vpx => (
+                &[
+                    ("deadline", "realtime"),
+                    ("cpu-used", "8"),
+                    ("lag-in-frames", "0"),
+                    ("auto-alt-ref", "0"),
+                    ("row-mt", "1"),
+                ],
+                "crf",
+            ),
         };
         let mut options = static_options
             .iter()
@@ -153,6 +180,9 @@ impl Profile {
         if let Some(buffer) = self.buffer_kbits {
             options.push(("-bufsize".into(), format!("{buffer}k")));
         }
+        if self.encoder.backend == Backend::Vpx {
+            options.push(("-b:v".into(), format!("{}k", self.bitrate_kbps)));
+        }
         self.cli_controls(ten_bit, &mut options);
         options
     }
@@ -162,14 +192,22 @@ impl Profile {
             Backend::Nvenc => &[("-bf", "0"), ("-b:v", "0")],
             // T400: request processing depth one when the CLI capability probe
             // confirms support; avoids a measured extra input interval.
+            Backend::Vaapi if self.encoder.name == "vp9_vaapi" => {
+                &[("-bf", "0"), ("-async_depth", "1")]
+            }
             Backend::Vaapi => &[("-bf", "0"), ("-idr_interval", "0"), ("-async_depth", "1")],
             Backend::X264 => &[("-x264-params", "scenecut=0")],
+            Backend::Vpx => &[("-pix_fmt", "yuv420p")],
         };
         options.extend(
             controls
                 .iter()
                 .map(|&(key, value)| (key.into(), value.into())),
         );
+        self.cli_profile(ten_bit, options);
+    }
+
+    fn cli_profile(&self, ten_bit: bool, options: &mut Vec<(String, String)>) {
         if self.encoder.name == "h264_vaapi_baseline" {
             options.push(("-profile:v".into(), "constrained_baseline".into()));
             options.push(("-coder".into(), "cavlc".into()));
@@ -225,6 +263,7 @@ mod tests {
             assert_eq!(
                 encoder.validate_inproc().is_ok(),
                 encoder.backend != Backend::Vaapi
+                    && !crate::video::Codec::from_encoder(encoder.name).framed()
             );
             for fps in [0, 10, 90] {
                 let profile = Profile::new(encoder.name, fps, 60000, 32).unwrap();
@@ -233,6 +272,7 @@ mod tests {
                 assert_eq!(
                     profile.inproc_options().is_ok(),
                     encoder.backend != Backend::Vaapi
+                        && !crate::video::Codec::from_encoder(encoder.name).framed()
                 );
             }
         }

@@ -122,7 +122,7 @@ class DecoderSchedulingTest {
                 override fun invalidated() {}
             }, { ReceiverStatistics() })
             var created = 0
-            fresh.createCodec = { mime -> created++; MediaCodec.createDecoderByType(mime) }
+            fresh.createCodec = { mime -> created++; MediaCodec.createDecoderByType(mime.mimeType) }
             val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
             try {
                 assertFalse("T386: recreated receiver bypassed outstanding retirement", fresh.setupCodec(surface, format))

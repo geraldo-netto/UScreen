@@ -15,6 +15,8 @@ mod encoder;
 #[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]
 mod encoder_io;
 mod input;
+#[cfg(not(feature = "inproc-encoder"))]
+mod ivf;
 mod kscreen;
 mod kwin;
 mod latency;
@@ -212,6 +214,7 @@ mod cli_tests {
             height_mm: 194,
             stream_scale: 1,
             geometry_ready: false,
+            decoders: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
@@ -242,6 +245,7 @@ mod cli_tests {
             height_mm: 194,
             stream_scale: saved.stream_scale,
             geometry_ready: false,
+            decoders: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen"]).unwrap();
@@ -342,6 +346,7 @@ mod cli_tests {
             height_mm: 194,
             stream_scale: 1,
             geometry_ready: false,
+            decoders: None,
         };
         let (tx, rx) = watch::channel(initial.clone());
         let cli = Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi"]).unwrap();
@@ -361,6 +366,7 @@ mod cli_tests {
             quality: 25,
             stream_scale: 2,
             geometry_ready: true,
+            decoders: None,
             ..initial
         })
         .unwrap();
@@ -399,6 +405,7 @@ mod cli_tests {
             height_mm: 194,
             stream_scale: 1,
             geometry_ready: true,
+            decoders: None,
         };
         let changed = media::EncoderSettings {
             encoder: "h264_nvenc".into(),
@@ -1214,6 +1221,7 @@ printf '%s\n' "$2" >> "$0.log"
                 height_mm: 194,
                 stream_scale: 1,
                 geometry_ready: true,
+                decoders: None,
             });
             let (mode_tx, _mode_rx) = watch::channel(false);
             let (_card_tx, card_rx) = watch::channel(None);

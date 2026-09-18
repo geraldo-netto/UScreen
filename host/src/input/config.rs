@@ -37,8 +37,8 @@ impl InputConfig {
         let codec = settings
             .as_ref()
             .map(|current| {
-                crate::media::Codec::from_encoder(&current.encoder)
-                    .muxer()
+                crate::media::Codec::from_encoder(current.effective_encoder())
+                    .wire_name()
                     .to_string()
             })
             .unwrap_or_else(|| self.codec.clone());
@@ -46,6 +46,14 @@ impl InputConfig {
             status: status.into(),
             transport: None,
             fps: settings.as_ref().map(|current| current.fps),
+            video_width: settings
+                .as_ref()
+                .map(|s| s.video_dimensions().0)
+                .unwrap_or(self.virtual_width),
+            video_height: settings
+                .as_ref()
+                .map(|s| s.video_dimensions().1)
+                .unwrap_or(self.virtual_height),
             width: self.virtual_width,
             height: self.virtual_height,
             codec,

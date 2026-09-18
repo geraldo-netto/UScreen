@@ -30,7 +30,8 @@ from the existing implementation.
    it closes when the helper opens the replacement FIFO or shuts down. The helper
    and virtual display stay attached; delayed reports for old inodes are
    ignored. The target FPS is not a guarantee of capture throughput.
-3. **Encode.** The default FFmpeg child uses NVENC, VAAPI or software libx264.
+3. **Encode.** The default FFmpeg child uses NVENC, VAAPI, software libx264 or libvpx VP9.
+   VP9 framing, profiles and peer checks are described in [video codecs](video-codecs.md).
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
    CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
    VAAPI requests async depth one only when stock encoder help advertises it.
@@ -39,16 +40,16 @@ from the existing implementation.
    See the [codec measurements](benchmarks/2026-09-18-codecs.md).
    B-frames/lookahead are disabled on the low-latency paths. An optional
    in-process libavcodec encoder avoids the child process; it does not support
-   `ten_bit`. The optional build rejects VAAPI before capture setup and rejects
-   live tablet requests to select it; VAAPI uses the default FFmpeg child path.
-4. **Keyframes and delivery.** The FFmpeg CLI requests an IDR each second of
+   `ten_bit`. The optional build rejects VAAPI and VP9 before capture setup and rejects
+   live tablet requests to select them; both use the default FFmpeg child path.
+4. **Keyframes and delivery.** The FFmpeg CLI requests a random-access keyframe each second of
    capture wall-clock time, including the five-fps idle floor. Actual recovery
    also waits for capture, encoding, packetization and transport. The software
    regression checks recovery under 1.6 seconds at idle. The optional in-process
    encoder can honor a next-frame keyframe request; its periodic GOP counts
    frames. The TCP server skips a lagging client's backlog to a retained IDR,
    or waits for another IDR if necessary.
-5. **Decode.** Android receives length-prefixed Annex B access units through
+5. **Decode.** Android receives length-prefixed encoded access units through
    adb forwarding and feeds MediaCodec, rendering to a SurfaceView. It requests
    the legacy low-latency hints (including a Qualcomm vendor key) and a 2x
    operating rate without querying advertised support. Experimental profiles
@@ -146,7 +147,8 @@ encoded output. `capture::placement` handles desktop placement, while
 `capture::process` provides bounded termination and validated orphan retirement.
 The `media` module owns codec, packet, generation and live-settings contracts,
 so streaming, input and encoding do not depend on capture management.
-`annex_b` assembles access units using `encoder_io`'s shared NAL scanner.
+`ivf` reads bounded VP9 packets and classifies random-access headers.
+`annex_b` assembles H.264/HEVC access units using `encoder_io`'s shared NAL scanner.
 It reads into owned spare capacity and reclaims consumed input by offset;
 the incremental cursor avoids rescanning retained payloads. Borrowed complete
 NALs copy into bounded contiguous access-unit storage. Keyframe configuration
@@ -322,8 +324,8 @@ The server sends:
 | --- | --- |
 | Packet length | Four-byte unsigned big-endian integer; excludes these four bytes, includes type and all payload bytes |
 | Packet type | One byte: 0 for codec configuration, 1 for frame |
-| Type 0 payload | Annex B codec parameter sets: SPS/PPS for H.264, VPS/SPS/PPS for HEVC |
-| Type 1 payload | Four-byte unsigned big-endian sequence number, then Annex B access-unit bytes |
+| Type 0 payload | H.264/HEVC Annex B parameter sets, or the [VP9 configuration envelope](video-codecs.md#framing) |
+| Type 1 payload | Four-byte unsigned big-endian sequence number, then encoded access-unit bytes |
 
 The codec is announced on the input/control connection; there is no separate
 codec-name field in the video packet header.
@@ -365,7 +367,9 @@ required. A representative host greeting is valid JSON:
 ```
 
 The server sends `status: "mode"` for subsequent mode/settings notifications.
-`codec` is `h264` or `hevc`; FPS is omitted if no shared settings source exists.
+`video_width` and `video_height` describe the requested encoded dimensions for
+[decoder capability negotiation](video-codecs.md#negotiation).
+`codec` is `h264`, `hevc` or `vp9`; FPS is omitted if no shared settings source exists.
 Width/height currently come from startup input configuration and can be stale
 after geometry negotiation (T276); they are not reliable current-stream dimensions.
 The Android client marks its control connection authenticated only after

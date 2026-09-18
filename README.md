@@ -161,7 +161,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   tilt sensor, or pin *camera up* / *camera down*.
 - **Codec** — `h264_nvenc` is the configured default and requires working
   NVIDIA NVENC. Select VAAPI for a supported AMD/Intel setup or `libx264` for
-  software encoding. HEVC is optional and needs a compatible tablet decoder.
+  software encoding. VP9 (`libvpx-vp9` or supported `vp9_vaapi`) uses tablet
+  capability negotiation; see [codec compatibility](docs/video-codecs.md). HEVC is optional and needs a compatible tablet decoder.
   `h264_vaapi_baseline` is an explicit low-latency VAAPI H.264 profile; it trades
   higher bandwidth for lower decoder delay on the measured tablet. Existing
   selections stay unchanged; see [codec measurements](docs/benchmarks/2026-09-18-codecs.md).

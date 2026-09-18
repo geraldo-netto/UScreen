@@ -17,6 +17,7 @@ fn manager_settings(manager: &CaptureManager) -> EncoderSettings {
         height_mm: c.height_mm,
         stream_scale: c.stream_scale,
         geometry_ready: true,
+        decoders: None,
     }
 }
 #[tokio::test]
@@ -476,6 +477,7 @@ async fn drive_session(manager: &mut CaptureManager, display: bool, change_mode:
         height_mm: c.height_mm,
         stream_scale: c.stream_scale,
         geometry_ready: true,
+        decoders: None,
     };
     let (_settings_tx, settings_rx) = watch::channel(settings);
     let (_display_tx, display_rx) = watch::channel(display);
@@ -643,4 +645,20 @@ async fn t022_helper_disconnects_cleanly_on_display_off_mode_change_and_crash() 
             "display={display}, change_mode={change_mode}"
         );
     }
+}
+
+#[test]
+fn t432_capability_metadata_restarts_only_when_effective_stream_changes() {
+    let manager = CaptureManager::new(Default::default());
+    let mut settings = manager_settings(&manager);
+    settings.decoders = Some(crate::media::DecoderCapabilities {
+        protocol: 1,
+        width: settings.width,
+        height: settings.height,
+        fps: settings.fps,
+        codecs: vec!["h264".into()],
+    });
+    assert!(!manager.stream_settings_changed(&settings));
+    settings.encoder = "libvpx-vp9".into();
+    assert!(manager.stream_settings_changed(&settings));
 }

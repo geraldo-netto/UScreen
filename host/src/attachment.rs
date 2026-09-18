@@ -50,7 +50,8 @@ impl Attachment {
         state.generation = state.generation.wrapping_add(1);
         if !preserve {
             self.0.settings.send_if_modified(|settings| {
-                let ready = settings.geometry_ready;
+                let ready = settings.geometry_ready || settings.decoders.is_some();
+                settings.decoders = None;
                 settings.geometry_ready = false;
                 ready
             });

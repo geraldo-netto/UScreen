@@ -29,6 +29,7 @@ impl Spec {
             height_mm: cfg.height_mm,
             stream_scale: cfg.stream_scale,
             geometry_ready: false,
+            decoders: None,
         }
     }
 
@@ -38,7 +39,7 @@ impl Spec {
             instance: self.capture.instance,
             token: self.token.clone(),
             codec: media::Codec::from_encoder(&self.capture.encoder)
-                .muxer()
+                .wire_name()
                 .into(),
             virtual_width: self.capture.width,
             virtual_height: self.capture.height,

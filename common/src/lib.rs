@@ -4,6 +4,7 @@ pub mod encoding;
 pub mod model;
 pub mod release;
 pub mod version;
+pub mod video;
 pub use model::*;
 
 #[cfg(feature = "storage")]

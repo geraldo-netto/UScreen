@@ -66,6 +66,7 @@ pub(crate) struct AnnexBPacketizer {
 
 impl AnnexBPacketizer {
     pub(crate) fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
+        assert!(!codec.framed(), "Framed codecs do not use Annex B");
         Self {
             buffer: Vec::new(),
             consumed: 0,
@@ -159,6 +160,7 @@ impl AnnexBPacketizer {
     fn config_ready(&self) -> bool {
         let required: &[u8] = match self.codec {
             Codec::H264 => &[NAL_TYPE_SPS, NAL_TYPE_PPS],
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => &[HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS],
         };
         required
@@ -242,6 +244,7 @@ impl AnnexBPacketizer {
     fn classify_nal(&self, header: u8) -> (NalKind, bool) {
         match self.codec {
             Codec::H264 => Self::classify_h264(header & 0x1f),
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => Self::classify_hevc((header >> 1) & 0x3f),
         }
     }
@@ -307,6 +310,7 @@ impl AnnexBPacketizer {
         }
         let nal_type = match self.codec {
             Codec::H264 => nal[header_offset] & 0x1f,
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => (nal[header_offset] >> 1) & 0x3f,
         };
         let previous = self.parameter_sets.get(&nal_type);
@@ -391,6 +395,7 @@ impl AnnexBPacketizer {
     fn starts_new_picture(&self, nal: &[u8], header_offset: usize) -> bool {
         match self.codec {
             Codec::H264 => Self::first_mb_in_slice(nal, header_offset) == Some(0),
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => nal.get(header_offset + 2).is_some_and(|b| b & 0x80 != 0),
         }
     }
@@ -791,17 +796,20 @@ mod tests {
         payload.extend_from_slice(&[marker, 0x80]);
         match codec {
             Codec::H264 => nal(6, &payload),
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => hevc_nal(if suffix { 40 } else { 39 }, &payload),
         }
     }
     fn t285_pictures(codec: Codec, with_aud: bool) -> (Vec<u8>, Vec<u8>) {
         let first = match codec {
             Codec::H264 => nal(NAL_TYPE_NON_IDR, &[0x80, 0x11]),
+            Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
             Codec::Hevc => hevc_nal(1, &[0x80, 0x11]),
         };
         let mut next = if with_aud {
             match codec {
                 Codec::H264 => nal(NAL_TYPE_AUD, &[0x10]),
+                Codec::Vp9 => unreachable!("VP9 uses IVF framing"),
                 Codec::Hevc => hevc_nal(HEVC_NAL_AUD, &[0x10]),
             }
         } else {

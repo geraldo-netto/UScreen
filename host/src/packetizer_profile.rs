@@ -5,6 +5,7 @@ fn nal(codec: Codec, kind: u8, payload: usize, first: bool) -> Vec<u8> {
     let mut nal = vec![0, 0, 0, 1];
     match codec {
         Codec::H264 => nal.push(kind),
+        Codec::Vp9 => unreachable!("Annex B fixture"),
         Codec::Hevc => nal.extend_from_slice(&[kind << 1, 1]),
     }
     nal.push(if first { 0x80 } else { 0x40 });
@@ -15,6 +16,7 @@ fn nal(codec: Codec, kind: u8, payload: usize, first: bool) -> Vec<u8> {
 pub(super) fn fixture(codec: Codec, frames: usize, payload: usize) -> Vec<u8> {
     let (sets, idr, p): (&[u8], u8, u8) = match codec {
         Codec::H264 => (&[7, 8], 5, 1),
+        Codec::Vp9 => unreachable!("Annex B fixture"),
         Codec::Hevc => (&[32, 33, 34], 19, 1),
     };
     let mut data = vec![0x55; 5]; // Ignore preamble bytes.

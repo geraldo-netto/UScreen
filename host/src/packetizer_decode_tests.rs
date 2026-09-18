@@ -5,6 +5,7 @@ use std::process::{Command, Stdio};
 fn encode(codec: Codec) -> Vec<u8> {
     let (name, flag, options) = match codec {
         Codec::H264 => ("libx264", "-x264-params", "keyint=4:scenecut=0:aud=1"),
+        Codec::Vp9 => unreachable!("Annex B fixture"),
         Codec::Hevc => (
             "libx265",
             "-x265-params",

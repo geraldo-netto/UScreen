@@ -89,6 +89,7 @@ async fn cancel_waiting_encoder() -> (bool, bool) {
         height_mm: 194,
         stream_scale: 1,
         geometry_ready: true,
+        decoders: None,
     });
     let (_display, display_rx) = watch::channel(true);
     let (_shutdown, shutdown_rx) = watch::channel(false);

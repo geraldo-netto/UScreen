@@ -2,38 +2,8 @@
 use crate::media_storage::MediaBytes as Bytes;
 use std::sync::Arc;
 
-/// Which bitstream syntax is in play. H.264 and HEVC agree on Annex B start
-/// codes and on nothing else that matters here: the NAL header is one byte
-/// against two, the type lives in different bits, and a keyframe is a
-/// different set of type numbers.
-///
-/// Not gated on the packetizer's feature flag: the daemon has to tell the
-/// tablet which codec to build a decoder for regardless of how it was
-/// compiled.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Codec {
-    H264,
-    Hevc,
-}
+pub use uscreen_config::video::Codec;
 
-impl Codec {
-    pub fn from_encoder(name: &str) -> Self {
-        if name.contains("hevc") || name.contains("h265") || name.contains("265") {
-            Codec::Hevc
-        } else {
-            Codec::H264
-        }
-    }
-
-    /// Name for ffmpeg's `-f`, which wants the bitstream format, not the
-    /// encoder.
-    pub fn muxer(self) -> &'static str {
-        match self {
-            Codec::H264 => "h264",
-            Codec::Hevc => "hevc",
-        }
-    }
-}
 /// Immutable current codec headers with race-free publication notifications.
 /// T405: publishers may run on native encoder threads without a Tokio runtime.
 #[derive(Clone)]
@@ -122,9 +92,50 @@ pub struct EncoderSettings {
     pub stream_scale: u32,
     /// Authenticated tablet metadata has supplied pixel and physical geometry.
     pub geometry_ready: bool,
+    pub decoders: Option<DecoderCapabilities>,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct DecoderCapabilities {
+    pub protocol: u32,
+    pub width: u32,
+    pub height: u32,
+    pub fps: u32,
+    pub codecs: Vec<String>,
 }
 
 impl EncoderSettings {
+    pub fn same_stream(&self, other: &Self) -> bool {
+        self.effective_encoder() == other.effective_encoder()
+            && self.helper_geometry() == other.helper_geometry()
+            && (self.bitrate, self.quality, self.geometry_ready)
+                == (other.bitrate, other.quality, other.geometry_ready)
+    }
+    pub fn video_dimensions(&self) -> (u32, u32) {
+        let scale = self.stream_scale.max(1);
+        (
+            ((self.width / scale) & !1).max(2),
+            ((self.height / scale) & !1).max(2),
+        )
+    }
+    pub fn effective_encoder(&self) -> &str {
+        let codec = Codec::from_encoder(&self.encoder);
+        if !codec.framed() || self.decoder_supports(codec) {
+            &self.encoder
+        } else {
+            "libx264"
+        }
+    }
+    pub fn decoder_supports(&self, codec: Codec) -> bool {
+        let Some(caps) = &self.decoders else {
+            return false;
+        };
+        caps.protocol == 1
+            && (caps.width, caps.height) == self.video_dimensions()
+            && caps.fps == self.fps
+            && caps.codecs.iter().any(|name| name == codec.wire_name())
+    }
+
     pub(crate) fn helper_geometry(&self) -> (u32, u32, u32, u32, u32, u32) {
         (
             self.width,

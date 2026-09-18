@@ -66,7 +66,7 @@ class DecoderWatchdogTest {
             override fun invalidated() { retirements++ }
         }, { statistics })
         val formats = mutableListOf<String>()
-        decoder.createCodec = { formats.add(it); MediaCodec.createDecoderByType(it) }
+        decoder.createCodec = { formats.add(it.mimeType); MediaCodec.createDecoderByType(it.mimeType) }
         val surface = Surface(SurfaceTexture(1))
         val format = DecoderFormat(VideoReceiver.MIME_TYPE, 1280, 800, 60)
         try {

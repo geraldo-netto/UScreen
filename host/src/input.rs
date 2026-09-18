@@ -47,9 +47,15 @@ impl Controllers {
             generation: watch::channel(0).0,
         }
     }
+    #[cfg(test)]
     fn claim(self: &Arc<Self>) -> ControllerLease {
+        self.claim_with(|| {})
+    }
+
+    fn claim_with(self: &Arc<Self>, initialize: impl FnOnce()) -> ControllerLease {
         let mut id = 0;
         self.generation.send_modify(|generation| {
+            initialize();
             self.devices.release_all();
             *generation = generation.wrapping_add(1);
             id = *generation;
@@ -328,7 +334,7 @@ async fn serve_controller(
     let mut mode_rx = mode_tx.subscribe();
     let mut settings_rx = settings_tx.as_ref().map(watch::Sender::subscribe);
     let mut ownership = controllers.generation.subscribe();
-    let Some(lease) = claim_controller(&controllers, attachment) else {
+    let Some(lease) = claim_controller(&controllers, attachment, &settings) else {
         return Ok(());
     };
     if *ownership.borrow_and_update() != lease.id {
@@ -424,9 +430,10 @@ async fn serve_controller(
 fn claim_controller(
     controllers: &Arc<Controllers>,
     attachment: Option<&crate::attachment::Lease>,
+    settings: &SessionSettings<'_>,
 ) -> Option<ControllerLease> {
     let mut lease = None;
-    let mut claim = || lease = Some(controllers.claim());
+    let mut claim = || lease = Some(controllers.claim_with(|| settings.forget_decoders()));
     match attachment {
         Some(attachment) => {
             attachment.apply(claim);
@@ -593,6 +600,7 @@ fn handle_event(
         } => {
             settings.resolution((width, height), (width_mm, height_mm));
         }
+        InputEvent::Decoders { capabilities } => settings.decoders(capabilities),
         InputEvent::Rendered { seq, decode_us } => latency.on_rendered(seq, decode_us),
         InputEvent::Config {
             bitrate,
@@ -1667,6 +1675,7 @@ fi
             height_mm: 194,
             stream_scale: 1,
             geometry_ready: true,
+            decoders: None,
         }
     }
 
@@ -1874,6 +1883,62 @@ fi
             .await
             .unwrap();
         assert_eq!(response(&mut client).await["fps"], 90);
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+    }
+
+    #[test]
+    fn t432_new_controller_cannot_reuse_old_apk_capabilities() {
+        let mut initial = settings("libvpx-vp9");
+        let (width, height) = initial.video_dimensions();
+        initial.decoders = Some(crate::media::DecoderCapabilities {
+            protocol: 1,
+            width,
+            height,
+            fps: initial.fps,
+            codecs: vec!["vp9".into()],
+        });
+        assert_eq!(initial.effective_encoder(), "libvpx-vp9");
+        let (tx, rx) = watch::channel(initial);
+        let source = Some(tx);
+        let (mode, _) = watch::channel(false);
+        let session = SessionSettings::new(&source, &mode, false);
+        let controllers = Arc::new(Controllers::new(Arc::new(std::sync::Mutex::new(
+            InjectDevices::empty(),
+        ))));
+        let _lease = claim_controller(&controllers, None, &session).unwrap();
+        assert!(rx.borrow().decoders.is_none());
+        assert_eq!(rx.borrow().effective_encoder(), "libx264");
+    }
+
+    #[tokio::test]
+    async fn t432_vp9_requires_current_peer_format_support() {
+        let (mut client, tx, task) = connection("libvpx-vp9").await;
+        let greeting = response(&mut client).await;
+        assert_eq!(
+            greeting["codec"], "h264",
+            "T432: old/unknown peer needs fallback"
+        );
+        let caps = serde_json::json!({ "protocol": 1, "width": greeting["video_width"],
+            "height": greeting["video_height"], "fps": greeting["fps"], "codecs": ["vp9"] });
+        client
+            .send(Message::Text(
+                serde_json::json!({"type":"decoders", "capabilities":caps}).to_string(),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response(&mut client).await["codec"], "vp9");
+        assert_eq!(
+            tx.borrow().encoder,
+            "libvpx-vp9",
+            "T432: do not persist fallback over preference"
+        );
+        tx.send_modify(|settings| settings.fps = 30);
+        assert_eq!(
+            response(&mut client).await["codec"],
+            "h264",
+            "T432: stale capability must not authorize changed rate"
+        );
         client.close(None).await.unwrap();
         task.await.unwrap().unwrap();
     }

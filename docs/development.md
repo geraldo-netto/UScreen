@@ -136,6 +136,7 @@ host/              Rust daemon
   src/main.rs        CLI, orchestration, adb monitor, per-tablet sessions
   src/media.rs       Shared codec, frame-generation and live-settings contracts
   src/annex_b.rs     Incremental H.264/HEVC access-unit assembly
+  src/ivf.rs         Bounded VP9 packet framing
   src/capture.rs     Capture supervision: settings, cancellation, retries
   src/capture/       Helper/FIFO, encoder, process and desktop adapters
   src/encoder.rs     optional in-process libavcodec encoder
@@ -224,7 +225,7 @@ them. See the README for config paths and the app gear-menu controls.
 | `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
 
 Independent width/height/FPS limits do not guarantee a valid EDID combination
-(T332). The GUI offers all six registered encoder/profile choices, including HEVC VAAPI;
+(T332). The GUI offers all registered encoder/profile choices, including HEVC VAAPI;
 10-bit controls are enabled for HEVC. The render-node path remains a config setting.
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only
 in the app and do not set the host stream rate or other apps' display settings.
@@ -248,7 +249,10 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
   stay unchanged. See [codec measurements](benchmarks/2026-09-18-codecs.md).
   Set `vaapi_device = "/dev/dri/renderD129"` in config.toml to select another GPU
   (default: `/dev/dri/renderD128`). HEVC supports `ten_bit = true`.
-- CPU: `libx264`, `ultrafast`/`zerolatency`; throughput depends on CPU,
+- VP9: `libvpx-vp9` or `vp9_vaapi` on a GPU with encoding support. The CLI
+  uses IVF framing and requires a current tablet capability report; see
+  [codec compatibility and protocol](video-codecs.md).
+- CPU H.264: `libx264`, `ultrafast`/`zerolatency`; throughput depends on CPU,
   resolution and content. No general laptop FPS limit has been measured here.
 
 `quality` selects NVENC CQ, VAAPI QP or x264 CRF. NVENC VBR and x264 VBV
@@ -285,9 +289,9 @@ RPM Fusion's `ffmpeg-devel`) and clang development package. Check that
 container can supply the build environment; the installed binary still needs
 ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
 on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
-The optional build rejects `h264_vaapi`, `h264_vaapi_baseline`, `hevc_vaapi` and the legacy
-`vaapih264enc` alias before daemon resources or capture helpers are created.
-Tablet requests cannot switch a running optional build to VAAPI. This adapter
+The optional build rejects VAAPI selections (including the legacy
+`vaapih264enc` alias) and VP9 before daemon resources or capture helpers are
+created. Tablet requests cannot switch a running optional build to these encoders. This adapter
 has no hardware-frames context/render-node integration: use the default build
 for VAAPI, or select libx264/NVENC with the optional build. Compiling the feature
 does not establish hardware availability or validate every encoder on a device.
@@ -308,7 +312,7 @@ The CLI adapter adds command syntax, periodic wall-clock IDRs, explicit
 `scenecut=0` for x264, VAAPI upload filters and optional HEVC depth conversion.
 The in-process adapter sets bitrate/GOP/B-frame/color fields through the typed
 libavcodec context, passes buffer sizes in bits, and requests IDRs on frames.
-Its input remains 8-bit NV12 and VAAPI is rejected. Both adapters use BT.709
+Its input remains 8-bit NV12; VAAPI and VP9 are rejected. Both adapters use BT.709
 limited-range input; CLI color tags stay before `-i` to avoid conversion.
 T373 boundary tests preserve these adapter differences, while the existing
 software encode/decode regressions verify color and rate behavior.

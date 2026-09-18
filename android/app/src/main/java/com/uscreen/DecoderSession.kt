@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong
 import com.uscreen.VideoReceiver.Companion.ACK_EVERY
 import com.uscreen.VideoReceiver.Companion.TAG
 
-internal data class DecoderFormat(val mimeType: String, val width: Int, val height: Int, val fps: Int)
+internal data class DecoderFormat(val mimeType: String, val width: Int, val height: Int, val fps: Int, val codecPrivate: ByteArray? = null)
 
 internal interface DecoderEvents {
     fun rendered(sequence: Int, decodeMicros: Int)
@@ -31,7 +31,7 @@ internal class DecoderSession(
     private var outputThread: Thread? = null
     private var frameCallbackThread: HandlerThread? = null
     var callbackThreadFactory: () -> HandlerThread = { HandlerThread("uscreen-frame-cb") }
-    var createCodec: (String) -> MediaCodec = MediaCodec::createDecoderByType
+    var createCodec: (DecoderFormat) -> MediaCodec = DecoderConfiguration::create
     var outputClock: () -> Long = System::nanoTime
     var inputClock: () -> Long = System::nanoTime
     private val renderedCount = AtomicLong(0)
@@ -57,7 +57,7 @@ internal class DecoderSession(
         val attempt = reserveStartup(valid) ?: return false
         var published = false
         try {
-            val codec = createCodec(parameters.mimeType)
+            val codec = createCodec(parameters)
             attempt.owner = CodecLifetime(codec)
             if (!startupCurrent(attempt)) return false
             configureStartup(attempt, codec, surface, parameters)

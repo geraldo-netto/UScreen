@@ -1,1 +1,11 @@
-{"status":"connected","width":2960,"height":1848,"codec":"h264","pen_only":true,"touch":true,"pen":true}
+{
+  "status": "connected",
+  "width": 2960,
+  "height": 1848,
+  "codec": "h264",
+  "pen_only": true,
+  "touch": true,
+  "pen": true,
+  "video_width": 2960,
+  "video_height": 1848
+}

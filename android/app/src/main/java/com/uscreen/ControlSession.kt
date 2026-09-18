@@ -28,6 +28,7 @@ internal class ControlSession(
     private val lock: Any,
     private val input: ControlInputState,
     private val client: WebSocket.Factory,
+    private val decoderCapabilities: suspend (Int, Int, Int) -> JSONObject = DecoderCapabilities::report,
 ) {
     private companion object {
         const val TAG = TouchCapture.TAG
@@ -46,6 +47,8 @@ internal class ControlSession(
     private val connection = MutableStateFlow(ControlConnection())
     val connectionState = connection.asStateFlow()
     private var reconnectJob: Job? = null
+    private var capabilityJob: Job? = null
+    private var capabilityRequest: Triple<Int, Int, Int>? = null
 
     /** Set from the host's greeting: it is using us as a graphics tablet for
      *  its own screen, so no video will arrive and none should be waited for. */
@@ -105,6 +108,7 @@ internal class ControlSession(
                     val o = JSONObject(text)
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
+                    requestDecoderCapabilities(webSocket, o)
                     applyModeGreeting(o)
                     acceptGreeting(o)
                 } catch (_: Exception) {}
@@ -186,6 +190,9 @@ internal class ControlSession(
     }
 
     private fun resetGreeting() {
+        capabilityJob?.cancel()
+        capabilityJob = null
+        capabilityRequest = null
         connection.value = ControlConnection()
         authenticatedControl.value = false
     }
@@ -201,6 +208,25 @@ internal class ControlSession(
             input.setTouchEnabled(o.getBoolean("touch"))
         }
         if (o.has("pen")) input.setPenEnabled(o.getBoolean("pen"))
+    }
+
+    private fun requestDecoderCapabilities(source: WebSocket, message: JSONObject) {
+        val width = message.optInt("video_width")
+        val height = message.optInt("video_height")
+        val fps = message.optInt("fps")
+        if (width !in 2..4096 || height !in 2..4096 || fps !in 10..90) return
+        val request = Triple(width, height, fps)
+        if (capabilityRequest == request) return
+        capabilityRequest = request
+        capabilityJob?.cancel()
+        capabilityJob = scope.launch {
+            val report = decoderCapabilities(width, height, fps)
+            synchronized(lock) {
+                if (isActive && webSocket === source && isConnected && capabilityRequest == request) {
+                    enqueue(JSONObject().put("type", "decoders").put("capabilities", report))
+                }
+            }
+        }
     }
 
     private fun applyDecoderGreeting(o: JSONObject) {

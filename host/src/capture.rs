@@ -121,7 +121,7 @@ impl CaptureManager {
                     let different = if helper_only {
                         current.helper_geometry() != initial.helper_geometry()
                             || !current.geometry_ready
-                    } else { *current != initial };
+                    } else { !current.same_stream(&initial) };
                     if different { return None; }
                 }
                 result = Self::while_active(display, shutdown, &mut operation) => {
@@ -183,6 +183,14 @@ impl CaptureManager {
             || settings.stream_scale != self.config.stream_scale
     }
 
+    fn stream_settings_changed(&self, settings: &EncoderSettings) -> bool {
+        !settings.geometry_ready
+            || self.helper_settings_changed(settings)
+            || settings.effective_encoder() != self.config.encoder
+            || settings.bitrate != self.config.bitrate
+            || settings.quality != self.config.quality
+    }
+
     async fn apply_stream_settings(&mut self, run: &mut CaptureRun) {
         let s = run.settings_rx.borrow_and_update().clone();
         // The physical size is baked into the EDID alongside the mode,
@@ -204,7 +212,7 @@ impl CaptureManager {
             )
             .await;
         }
-        self.config.encoder = s.encoder;
+        self.config.encoder = s.effective_encoder().to_string();
         self.config.fps = s.fps;
         self.config.bitrate = s.bitrate;
         self.config.width = s.width;
@@ -399,9 +407,9 @@ impl CaptureManager {
                         resume_same_encoder = true;
                     }
                 }
-                _ = run.settings_rx.changed() => {
-                    info!("Settings changed — restarting encoder");
-                    settings_changed = true;
+                changed = run.settings_rx.changed() => {
+                    settings_changed = changed.is_err() || self.stream_settings_changed(&run.settings_rx.borrow_and_update());
+                    resume_same_encoder = !settings_changed;
                 }
                 _ = run.stream_rx.changed() => {
                     let now = self.active_mode();

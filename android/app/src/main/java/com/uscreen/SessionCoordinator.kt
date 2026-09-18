@@ -66,6 +66,7 @@ internal class SessionCoordinator(
     var settings by mutableStateOf(SettingsValues.read(prefs)); private set
     private var updateChecked = false
     private var started = false
+    private var codecSupported = true
     val presentation = StreamPresentation(videoReceiver, touchCapture)
 
     fun powerNow(): StreamingPower = powerFor(settings.batterySaver, presentation.connected, penOnlyMode, presentation.connectionState.value)
@@ -146,8 +147,13 @@ internal class SessionCoordinator(
         }
         touchCapture?.onCodecKnown = { codec ->
             withCurrentControl {
-                val mime = if (codec == "hevc") VideoReceiver.MIME_TYPE_HEVC
-                           else VideoReceiver.MIME_TYPE
+                val mime = VideoCodec.types[codec]
+                codecSupported = mime != null
+                if (mime == null) {
+                    Log.w("UScreen", "Unsupported host video codec: $codec")
+                    videoReceiver?.stop()
+                    return@withCurrentControl
+                }
                 val vr = videoReceiver
                 if (vr != null && vr.mimeType != mime) {
                     Log.i("UScreen", "Host is sending $codec — rebuilding the decoder")
@@ -160,7 +166,7 @@ internal class SessionCoordinator(
         touchCapture?.onModeKnown = { penOnly ->
             withCurrentControl {
                 penOnlyMode = penOnly
-                if (penOnly) videoReceiver?.stop() else videoReceiver?.start()
+                if (penOnly || !codecSupported) videoReceiver?.stop() else videoReceiver?.start()
             }
         }
 
@@ -188,7 +194,7 @@ internal class SessionCoordinator(
             Log.i("UScreen", "New session token — reconnecting")
             touchCapture?.disconnect()
             touchCapture?.connect()
-            if (!penOnlyMode) {
+            if (!penOnlyMode && codecSupported) {
                 videoReceiver?.stop()
                 videoReceiver?.start()
             }

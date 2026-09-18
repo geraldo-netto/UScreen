@@ -52,6 +52,10 @@ pub enum InputEvent {
     /// The tablet asking to switch between being a second screen and being a
     /// graphics tablet. Applied live: the host remaps the input devices onto
     /// the other output and brings the virtual display up or down to match.
+    #[serde(rename = "decoders")]
+    Decoders {
+        capabilities: crate::media::DecoderCapabilities,
+    },
     #[serde(rename = "mode")]
     Mode { pen_only: bool },
     /// Must be the first message on the socket. Proves the client is the
@@ -82,9 +86,10 @@ pub struct InputResponse {
     pub fps: Option<u32>,
     pub width: u32,
     pub height: u32,
-    /// Which bitstream the tablet should expect: "h264" or "hevc". It has to
-    /// build the decoder before the first frame arrives, and the frames
-    /// themselves carry nothing that identifies the codec.
+    pub video_width: u32,
+    pub video_height: u32,
+    /// Effective bitstream identity. Framed codecs additionally validate the
+    /// versioned video configuration against this control announcement.
     pub codec: String,
     /// Tells the tablet not to expect a video stream: it is acting as a
     /// graphics tablet for the host's own screen, not as a display.

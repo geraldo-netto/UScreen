@@ -225,7 +225,7 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
     private fun ensureSurfaceCodec(generation: Long): Boolean {
         val (surface, parameters) = synchronized(this) {
             if (!isCurrent(generation)) return false
-            if (decoder.mediaCodec != null) return true
+            if (decoder.mediaCodec != null || VideoCodec.framed(mimeType)) return true
             val surface = pendingSurface.get()?.takeIf { it.isValid } ?: return false
             surface to DecoderFormat(mimeType, formatWidth, formatHeight, streamFps)
         }
@@ -255,8 +255,9 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
         while (isCurrent(generation) && !connection.isClosed) {
             val codec = synchronized(this@VideoReceiver) {
                 if (isCurrent(generation)) decoder.mediaCodec else null
-            } ?: break
+            }
 
+            if (codec == null && !VideoCodec.framed(mimeType)) break
             if (!reader.read() || !isCurrent(generation)) break
             sessionStatistics.bytesReceived(reader.size)
             if (!packets.handle(codec, reader)) break
@@ -265,16 +266,20 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
 
     private inner class VideoPackets(private val generation: Long) : VideoPacketSink {
         private var firstFrame = true
-        private lateinit var codec: MediaCodec
+        private var codec: MediaCodec? = null
 
-        fun handle(codec: MediaCodec, reader: VideoPacketReader): Boolean {
+        fun handle(codec: MediaCodec?, reader: VideoPacketReader): Boolean {
             this.codec = codec
             return reader.dispatch(this)
         }
 
         override fun configuration(data: ByteArray, offset: Int, size: Int) {
             Log.i(TAG, "Received codec config: ${size}B")
-            feedDecoder(generation, codec, data, offset, size, true, 0L)
+            if (VideoCodec.framed(mimeType) || VideoCodec.hasConfigurationHeader(data, offset, size)) {
+                configureFramed(generation, VideoCodec.configuration(data, offset, size, mimeType, streamFps))
+            } else {
+                feedDecoder(generation, checkNotNull(codec), data, offset, size, true, 0L)
+            }
         }
 
         override fun frame(sequence: Int, data: ByteArray, offset: Int, size: Int) {
@@ -289,10 +294,21 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
                 }
             }
             feedDecoder(
-                generation, codec, data, offset, size, false,
+                generation, checkNotNull(codec), data, offset, size, false,
                 seq.toLong() and 0xFFFFFFFFL
             )
         }
+    }
+
+    private fun configureFramed(generation: Long, parameters: DecoderFormat) {
+        val surface = synchronized(this) {
+            check(isCurrent(generation)) { "Retired stream configuration" }
+            decoder.releaseCodec()
+            pendingSurface.get()?.takeIf { it.isValid }
+        } ?: throw IllegalStateException("Surface retired during video configuration")
+        check(decoder.setupCodec(surface, parameters) {
+            isCurrent(generation) && surfaceReady.get() && pendingSurface.get() === surface
+        }) { "Unable to configure framed video decoder" }
     }
 
     internal fun setupCodec(surface: Surface): Boolean =

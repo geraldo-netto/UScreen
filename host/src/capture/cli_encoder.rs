@@ -77,13 +77,20 @@ impl CliEncoder<'_> {
         let fps = self.config.fps;
         let mut encoder_args: Vec<std::ffi::OsString> = vec!["-hide_banner".into()];
 
-        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+        if encoder.ends_with("_vaapi") {
             encoder_args.extend_from_slice(&[
                 "-vaapi_device".into(),
                 self.config.vaapi_device.clone().into(),
             ]);
         }
 
+        if codec.framed() {
+            encoder_args.extend(
+                ["-probesize", "32", "-analyzeduration", "0"]
+                    .into_iter()
+                    .map(std::ffi::OsString::from),
+            );
+        }
         encoder_args.extend_from_slice(&[
             "-fflags".into(),
             "nobuffer".into(),
@@ -125,7 +132,7 @@ impl CliEncoder<'_> {
             fifo_path_for(self.config.instance)?.into_os_string(),
         ]);
 
-        if matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+        if encoder.ends_with("_vaapi") {
             encoder_args.extend_from_slice(&[
                 "-vf".into(),
                 if ten_bit {
@@ -157,6 +164,13 @@ impl CliEncoder<'_> {
         let mut quality_args = Vec::new();
         self.encoder_quality_args(&mut quality_args, &self.config.encoder, ten_bit)?;
         encoder_args.extend(quality_args.into_iter().map(std::ffi::OsString::from));
+        if codec.framed() {
+            encoder_args.extend(
+                ["-flush_packets", "1"]
+                    .into_iter()
+                    .map(std::ffi::OsString::from),
+            );
+        }
         encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
         Ok(encoder_args)
     }
@@ -186,7 +200,7 @@ impl CliEncoder<'_> {
 /// Uses the shared asynchronous deadline/cancellation implementation.
 pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &str) -> bool {
     use uscreen_config::commands::AsyncCommandExt;
-    if !matches!(encoder, "h264_vaapi" | "hevc_vaapi") {
+    if !encoder.ends_with("_vaapi") {
         return false;
     }
     let output = Command::new(program)
@@ -205,8 +219,37 @@ pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &st
     }
 }
 
+enum Packetizer {
+    AnnexB(AnnexBPacketizer),
+    Ivf(crate::ivf::IvfPacketizer),
+}
+impl Packetizer {
+    fn new(codec: Codec, latency: crate::latency::LatencyTracker) -> Self {
+        if codec.framed() {
+            Self::Ivf(crate::ivf::IvfPacketizer::new(codec, latency))
+        } else {
+            Self::AnnexB(AnnexBPacketizer::new(codec, latency))
+        }
+    }
+    fn codec_config(&self) -> Option<crate::media_storage::MediaBytes> {
+        match self {
+            Self::AnnexB(p) => p.codec_config(),
+            Self::Ivf(p) => p.codec_config(),
+        }
+    }
+    async fn read_from(
+        &mut self,
+        input: &mut (impl tokio::io::AsyncRead + Unpin),
+    ) -> Result<(usize, Vec<crate::media::VideoPacket>)> {
+        match self {
+            Self::AnnexB(p) => p.read_from(input).await,
+            Self::Ivf(p) => p.read_from(input).await,
+        }
+    }
+}
+
 pub(super) async fn read_loop(
-    mut stdout: impl tokio::io::AsyncRead + Unpin,
+    stdout: impl tokio::io::AsyncRead + Unpin,
     tx: crate::video_queue::VideoSender,
     codec_config: CodecConfig,
     latency: crate::latency::LatencyTracker,
@@ -215,7 +258,8 @@ pub(super) async fn read_loop(
     let mut total: u64 = 0;
     let mut frames: u64 = 0;
     let mut last_log = Instant::now();
-    let mut packetizer = AnnexBPacketizer::new(codec, latency.clone());
+    let mut stdout = tokio::io::BufReader::new(stdout);
+    let mut packetizer = Packetizer::new(codec, latency.clone());
     let mut config_extracted = codec_config.current().is_some();
 
     loop {
@@ -246,18 +290,18 @@ pub(super) async fn read_loop(
 }
 
 fn publish_initial_codec_config(
-    packetizer: &AnnexBPacketizer,
+    packetizer: &Packetizer,
     codec_config: &CodecConfig,
     config_extracted: &mut bool,
     total: u64,
 ) {
     if !*config_extracted {
         if let Some(config) = packetizer.codec_config() {
-            info!("Extracted codec config (SPS+PPS): {} bytes", config.len());
+            info!("Extracted codec configuration: {} bytes", config.len());
             codec_config.publish(Some(config));
             *config_extracted = true;
         } else if total > 1024 * 1024 {
-            warn!("Could not find SPS/PPS in first 1MB of stream");
+            warn!("Could not find codec configuration in first 1MB of stream");
             *config_extracted = true;
         }
     }
@@ -592,3 +636,66 @@ mod encoder_policy_tests {
 #[cfg(test)]
 #[path = "../packetizer_limits_tests.rs"]
 mod packetizer_limits_tests;
+
+#[cfg(test)]
+mod framed_tests {
+    use super::*;
+    use tokio::io::AsyncWriteExt;
+
+    #[tokio::test]
+    async fn t432_stock_cli_emits_sparse_vp9_without_next_frame_or_eof() {
+        let config = CaptureConfig {
+            encoder: "libvpx-vp9".into(),
+            fps: 60,
+            instance: u32::MAX,
+            ..Default::default()
+        };
+        let built = CliEncoder { config: &config }
+            .encoder_command(64, 64, false)
+            .unwrap();
+        let mut args = built
+            .as_std()
+            .get_args()
+            .map(std::ffi::OsStr::to_owned)
+            .collect::<Vec<_>>();
+        let input = args.iter().position(|arg| arg == "-i").unwrap();
+        args[input + 1] = "pipe:0".into();
+        let mut child = Command::new("ffmpeg")
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        let mut stdout = tokio::io::BufReader::new(child.stdout.take().unwrap());
+        let mut parser = crate::ivf::IvfPacketizer::new(Codec::Vp9, Default::default());
+        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            // nobuffer consumes the initial rawvideo probe frame. Warm startup,
+            // then every sparse input must produce output while stdin stays open.
+            stdin.write_all(&vec![80; 64 * 64 * 3]).await.unwrap();
+            let first = parser.read_from(&mut stdout).await.unwrap().1;
+            assert!(first[0].is_idr);
+            for value in [100, 120, 140] {
+                stdin
+                    .write_all(&vec![value; 64 * 64 * 3 / 2])
+                    .await
+                    .unwrap();
+                let frame = parser.read_from(&mut stdout).await.unwrap().1;
+                assert_eq!(
+                    frame.len(),
+                    1,
+                    "T432: sparse frame must not wait for its successor"
+                );
+            }
+        })
+        .await;
+        child.kill().await.unwrap();
+        child.wait().await.unwrap();
+        assert!(
+            outcome.is_ok(),
+            "T432: stock CLI retained a frame or failed to encode"
+        );
+    }
+}

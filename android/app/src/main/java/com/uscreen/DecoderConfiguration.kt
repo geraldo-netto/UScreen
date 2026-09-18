@@ -18,6 +18,15 @@ internal data class DecoderProfile(
 )
 
 internal object DecoderConfiguration {
+    fun create(parameters: DecoderFormat): MediaCodec {
+        if (!VideoCodec.framed(parameters.mimeType)) return MediaCodec.createDecoderByType(parameters.mimeType)
+        val format = MediaFormat.createVideoFormat(parameters.mimeType, parameters.width, parameters.height)
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, parameters.fps)
+        val name = checkNotNull(android.media.MediaCodecList(android.media.MediaCodecList.REGULAR_CODECS)
+            .findDecoderForFormat(format)) { "No compatible decoder for stream format" }
+        return MediaCodec.createByCodecName(name)
+    }
+
     internal interface Support {
         fun lowLatency(codec: MediaCodec, mime: String): Boolean
         fun operatingRate(codec: MediaCodec, parameters: DecoderFormat, fps: Int): Boolean
@@ -25,6 +34,9 @@ internal object DecoderConfiguration {
     fun format(codec: MediaCodec, parameters: DecoderFormat, profile: DecoderProfile, allowHints: Boolean,
                support: Support = PlatformSupport): MediaFormat {
         val format = MediaFormat.createVideoFormat(parameters.mimeType, parameters.width, parameters.height)
+        parameters.codecPrivate?.takeIf { it.isNotEmpty() }?.let {
+            format.setByteBuffer("csd-0", java.nio.ByteBuffer.wrap(it))
+        }
         format.setInteger(MediaFormat.KEY_FRAME_RATE, parameters.fps)
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
         format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)

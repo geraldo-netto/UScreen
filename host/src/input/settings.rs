@@ -9,6 +9,7 @@ pub(super) trait SettingsSink: Sync {
     fn resolution(&self, pixels: (u32, u32), millimetres: (u32, u32));
     fn configure(&self, bitrate: Option<u32>, fps: Option<u32>, encoder: Option<String>);
     fn mode(&self, pen_only: bool);
+    fn decoders(&self, capabilities: crate::media::DecoderCapabilities);
 }
 
 pub(super) struct SessionSettings<'a> {
@@ -34,12 +35,35 @@ impl<'a> SessionSettings<'a> {
     }
 }
 
+impl SessionSettings<'_> {
+    pub(super) fn forget_decoders(&self) {
+        if let Some(tx) = self.settings {
+            tx.send_if_modified(|settings| settings.decoders.take().is_some());
+        }
+    }
+}
+
 impl SettingsSink for SessionSettings<'_> {
     fn resolution(&self, pixels: (u32, u32), millimetres: (u32, u32)) {
         apply_tablet_resolution(self.settings, pixels, millimetres, (self.auto_resolution)());
     }
     fn configure(&self, bitrate: Option<u32>, fps: Option<u32>, encoder: Option<String>) {
         apply_tablet_config(self.settings, bitrate, fps, encoder);
+    }
+    fn decoders(&self, capabilities: crate::media::DecoderCapabilities) {
+        let Some(tx) = self.settings else {
+            return;
+        };
+        if capabilities.codecs.len() > 8 {
+            return;
+        }
+        tx.send_if_modified(|settings| {
+            if settings.decoders.as_ref() == Some(&capabilities) {
+                return false;
+            }
+            settings.decoders = Some(capabilities);
+            true
+        });
     }
     fn mode(&self, pen_only: bool) {
         apply_tablet_mode(self.mode, pen_only, self.pen_enabled);
