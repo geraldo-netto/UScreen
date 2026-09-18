@@ -129,16 +129,8 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
         surfaceReady.set(true)
         Log.i(TAG, "Surface stored, ready for codec setup")
 
-        // Only while receiving. Building a decoder for a surface that shows
-        // nothing (no host yet, or pen-only mode, where this receiver is
-        // stopped on purpose) costs a hardware codec and a polling thread
-        // that nothing releases until the next stop(); start() sets the
-        // codec up itself once it runs.
-        synchronized(this) {
-            if (isRunning && decoder.mediaCodec == null && surfaceReady.get()) {
-                setupCodec(surface)
-            }
-        }
+        // The I/O worker observes this Surface. Never enter native decoder
+        // creation/configuration from an Activity Surface callback.
     }
 
     /**
@@ -189,10 +181,7 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
             try {
                 awaitSurface(generation)
                 if (!isCurrent(generation)) return
-                val codecReady = synchronized(this@VideoReceiver) {
-                    if (!isCurrent(generation)) return
-                    ensureSurfaceCodec()
-                }
+                val codecReady = ensureSurfaceCodec(generation)
                 if (!codecReady) {
                     Log.w(TAG, "Codec/surface not ready, retrying...")
                     delay(500)
@@ -233,11 +222,16 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
         }
     }
 
-    // Caller holds the receiver monitor so surface/codec ownership stays atomic.
-    private fun ensureSurfaceCodec(): Boolean {
-        if (decoder.mediaCodec != null) return true
-        val surface = pendingSurface.get()
-        return if (surface != null && surface.isValid) setupCodec(surface) else false
+    private fun ensureSurfaceCodec(generation: Long): Boolean {
+        val (surface, parameters) = synchronized(this) {
+            if (!isCurrent(generation)) return false
+            if (decoder.mediaCodec != null) return true
+            val surface = pendingSurface.get()?.takeIf { it.isValid } ?: return false
+            surface to DecoderFormat(mimeType, formatWidth, formatHeight, streamFps)
+        }
+        return decoder.setupCodec(surface, parameters) {
+            isCurrent(generation) && surfaceReady.get() && pendingSurface.get() === surface
+        }
     }
 
     private suspend fun disconnectAndPause(generation: Long, pauseMs: Long, report: () -> Unit) {
@@ -301,7 +295,7 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
         }
     }
 
-    @Synchronized internal fun setupCodec(surface: Surface): Boolean =
+    internal fun setupCodec(surface: Surface): Boolean =
         decoder.setupCodec(surface, DecoderFormat(mimeType, formatWidth, formatHeight, streamFps))
 
     internal fun feedDecoder(

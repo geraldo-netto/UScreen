@@ -10,7 +10,14 @@ internal class CodecLifetime(val codec: MediaCodec) {
         // Activity recreation replaces DecoderSession, so an unfinished native
         // retirement must close admission across receiver instances as well.
         private val retiringOwners = ConcurrentHashMap.newKeySet<CodecLifetime>()
+        private var starting = false
         fun retirementPending(): Boolean = retiringOwners.isNotEmpty()
+        @Synchronized fun beginStartup(): Boolean {
+            if (starting || retirementPending()) return false
+            starting = true
+            return true
+        }
+        @Synchronized fun finishStartup() { starting = false }
     }
     private val gate = Object()
     private var users = 0

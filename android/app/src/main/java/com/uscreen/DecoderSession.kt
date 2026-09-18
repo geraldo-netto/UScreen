@@ -44,74 +44,101 @@ internal class DecoderSession(
     private var callbackDecoder: CallbackDecoder? = null
     var profile = DecoderProfile()
 
-    fun setupCodec(surface: Surface, parameters: DecoderFormat): Boolean {
+    private class Startup(val epoch: FrameTiming.Epoch, val profile: DecoderProfile,
+                          val hints: Boolean, val valid: () -> Boolean) {
+        var owner: CodecLifetime? = null
+        var thread: HandlerThread? = null
+        var callbacks: CallbackDecoder? = null
+    }
+    private var startup: Startup? = null // guarded by monitor
+
+    /** Called on the receiver's I/O worker. Native setup never owns monitor. */
+    fun setupCodec(surface: Surface, parameters: DecoderFormat, valid: () -> Boolean = { true }): Boolean {
+        val attempt = reserveStartup(valid) ?: return false
+        var published = false
+        try {
+            val codec = createCodec(parameters.mimeType)
+            attempt.owner = CodecLifetime(codec)
+            if (!startupCurrent(attempt)) return false
+            configureStartup(attempt, codec, surface, parameters)
+            if (!startupCurrent(attempt)) return false
+            codec.start()
+            published = publishStartup(attempt)
+            return published
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to setup codec", error)
+            return false
+        } finally {
+            if (!published) discardStartup(attempt)
+            CodecLifetime.finishStartup()
+        }
+    }
+
+    private fun reserveStartup(valid: () -> Boolean): Startup? = synchronized(monitor) {
+        if (!valid() || startup != null || mediaCodec != null || retiring?.finished == false) return null
+        if (!CodecLifetime.beginStartup()) return null
+        retiring = null
+        outputWatchdog.restarted(outputClock())
+        Startup(timing.beginEpoch(), profile, outputWatchdog.lowLatencyHints, valid).also { startup = it }
+    }
+
+    private fun startupCurrent(attempt: Startup): Boolean = synchronized(monitor) {
+        startup === attempt && attempt.valid()
+    }
+
+    private fun configureStartup(attempt: Startup, codec: MediaCodec, surface: Surface, parameters: DecoderFormat) {
+        val format = DecoderConfiguration.format(codec, parameters, attempt.profile, attempt.hints)
+        if (!startupCurrent(attempt)) return
+        val thread = callbackThreadFactory().also { attempt.thread = it; it.start() }
+        val handler = Handler(thread.looper)
+        val callbacks = callbacks(attempt.owner!!, handler, attempt.epoch, attempt.profile)
+        attempt.callbacks = callbacks
+        if (callbacks != null) codec.setCallback(callbacks, handler)
+        codec.configure(format, surface, null, 0)
+        if (!startupCurrent(attempt)) return
+        codec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+        // Callback execution is acknowledgement timing, not physical presentation.
+        codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->
+            notifyRendered(codec, attempt.epoch, presentationTimeUs.toInt())
+        }, handler)
+    }
+
+    private fun publishStartup(attempt: Startup): Boolean = synchronized(monitor) {
+        if (!startupCurrent(attempt)) return false
+        val owner = attempt.owner!!
+        discardedCount.set(0)
+        timingEpoch = attempt.epoch
+        mediaCodec = owner.codec
+        lifetime = owner
+        callbackDecoder = attempt.callbacks
+        frameCallbackThread = attempt.thread
+        codecAlive = true
+        if (attempt.callbacks == null) startOutputThread(owner.codec, attempt.epoch)
+        startup = null
+        Log.i(TAG, "Codec configured and started with surface")
+        true
+    }
+
+    private fun discardStartup(attempt: Startup) {
         synchronized(monitor) {
-            // Bound retired ownership on reconnect and across Activity/receiver
-            // recreation. A stuck native call must not admit repeated codecs.
-            if (retiring?.finished == false || CodecLifetime.retirementPending()) return false
-            retiring = null
-            val codecTiming = timing.beginEpoch()
-            var pendingCodec: MediaCodec? = null
-            var pendingThread: HandlerThread? = null
-            var pendingOwner: CodecLifetime? = null
-            var pendingCallbacks: CallbackDecoder? = null
-            try {
-                outputWatchdog.restarted(outputClock())
-
-                val codec = createCodec(parameters.mimeType)
-                pendingCodec = codec
-                val owner = CodecLifetime(codec)
-                pendingOwner = owner
-                val format = DecoderConfiguration.format(codec, parameters, profile, outputWatchdog.lowLatencyHints)
-
-                // Acknowledge MediaCodec's render notification. Callback delivery can
-                // be delayed or batched, so its execution is not a physical-screen
-                // timestamp. The host sequence travels as the presentation timestamp;
-                // the separate MediaCodec render-time argument is currently unused.
-                val cbThread = callbackThreadFactory()
-                pendingThread = cbThread
-                cbThread.start()
-                val handler = Handler(cbThread.looper)
-                val callbacks = callbacks(owner, handler, codecTiming)
-                pendingCallbacks = callbacks
-                if (callbacks != null) codec.setCallback(callbacks, handler)
-                codec.configure(format, surface, null, 0)
-                codec.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT)
-                codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->
-                    notifyRendered(codec, codecTiming, presentationTimeUs.toInt())
-                }, handler)
-
-                codec.start()
-                discardedCount.set(0)
-                timingEpoch = codecTiming
-                mediaCodec = codec
-                lifetime = owner
-                callbackDecoder = callbacks
-                frameCallbackThread = cbThread
-                codecAlive = true
-                if (callbacks == null) startOutputThread(codec, codecTiming)
-                Log.i(TAG, "Codec configured and started with surface")
-                return true
-            } catch (e: Exception) {
-                timing.retire(codecTiming)
-                Log.e(TAG, "Failed to setup codec", e)
-                // Ownership transfers only after successful startup. A failure at
-                // configure/listener/start must retire these locals before retry.
-                if (mediaCodec === pendingCodec) {
-                    codecAlive = false
-                    mediaCodec = null
-                    lifetime = null
-                }
-                if (frameCallbackThread === pendingThread) frameCallbackThread = null
-                pendingCallbacks?.close()
-                pendingOwner?.let { retiring = it; it.retire(); it.awaitRetirement(500) }
-                pendingThread?.let {
-                    it.quitSafely()
-                    if (Thread.currentThread() !== it) it.join(500)
-                }
-                return false
+            if (startup === attempt) startup = null
+            timing.retire(attempt.epoch)
+            if (mediaCodec === attempt.owner?.codec) {
+                codecAlive = false
+                mediaCodec = null
+                lifetime = null
+                callbackDecoder = null
+                frameCallbackThread = null
             }
         }
+        attempt.callbacks?.close()
+        attempt.thread?.let {
+            it.quitSafely()
+            if (Thread.currentThread() !== it) it.join(500)
+        }
+        // Setup owns these locals until its native call returns. Retirement can
+        // now free them; the process-wide gate remains closed until then.
+        attempt.owner?.let { it.retire(); it.awaitRetirement(500) }
     }
 
     private fun notifyRendered(codec: MediaCodec, codecTiming: FrameTiming.Epoch, sequence: Int) {
@@ -124,8 +151,8 @@ internal class DecoderSession(
         }
     }
 
-    private fun callbacks(owner: CodecLifetime, handler: Handler, epoch: FrameTiming.Epoch): CallbackDecoder? {
-        if (!profile.callbacks) return null
+    private fun callbacks(owner: CodecLifetime, handler: Handler, epoch: FrameTiming.Epoch, selected: DecoderProfile): CallbackDecoder? {
+        if (!selected.callbacks) return null
         val capturedStatistics = statistics()
         return CallbackDecoder(owner, handler,
             queued = { synchronized(monitor) { if (mediaCodec === owner.codec) checkOutputProgress() } },
@@ -189,7 +216,7 @@ internal class DecoderSession(
     private fun retireFailedOutput(codec: MediaCodec, message: String, error: Exception) {
         if (codecAlive) Log.w(TAG, message, error)
         synchronized(monitor) {
-            if (mediaCodec === codec) resetCodec()
+            if (mediaCodec === codec || startup?.owner?.codec === codec) resetCodec()
         }
     }
 
@@ -287,6 +314,8 @@ internal class DecoderSession(
     /** Tear the decoder down without touching the surface or the socket. */
     fun releaseCodec() {
         synchronized(monitor) {
+            startup?.let { timing.retire(it.epoch) }
+            startup = null
             codecAlive = false
             timing.retire(timingEpoch)
             val owner = mediaCodec?.let { ownerFor(it) } ?: lifetime
