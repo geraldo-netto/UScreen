@@ -370,6 +370,14 @@ are documented in [the packetizer replay](benchmarks.md#annex-b-packetizer-repla
 
 ## Release APK
 
+The fork's permanent release key has been provisioned. See
+[release signing](release-signing.md) for the public certificate, fingerprint
+and migration status. T250 must migrate the application ID and add publication
+verification before this key is used for official fork releases; current code
+still builds `com.uscreen`. Reuse the designated key for future fork updates.
+
+For an independent signing identity, the existing local-build mechanism is:
+
 ```bash
 cd android
 keytool -genkeypair -keystore uscreen-release.keystore -alias uscreen \
@@ -380,8 +388,7 @@ keytool -genkeypair -keystore uscreen-release.keystore -alias uscreen \
 
 The keystore and `keystore.properties` are gitignored. Create a new key only
 for a new signing identity; do not regenerate an established release key.
-The fork's official identity and migration policy remain pending (T250);
-a developer's new key is not automatically the official fork key. Android
+An independently generated developer key is not the official fork key. Android
 requires compatible signing credentials for in-place updates. Debug and
 release APKs normally use different keys. See [release integrity](../SECURITY.md#release-integrity).
 
@@ -425,8 +432,10 @@ temporary edits that were reverted before the final check.
 Ignored build outputs may change. SDK/compiler/container inputs and ignored
 signing configuration/keys are supplied by the trusted release environment and
 must stay fixed throughout the run; the Git checks do not attest those external
-inputs. The fork signing/package-maintainer policies remain pending
-(T250/T308), so a successful source check does not establish an official key.
+inputs. The fork certificate is designated, but application-ID migration and
+publication-time certificate verification remain T250; replacing the Debian
+release asset with AppImage remains T308. A successful source check does not
+verify that an APK uses the designated certificate.
 
 `make dist-local` uses the local toolchain and requires a successful signed APK
 build. It bundles libevdi v1.15.0 beside the helper; if the compiler cannot find

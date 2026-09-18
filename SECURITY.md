@@ -158,9 +158,16 @@ The publishing workflow produces `SHA256SUMS` and verifies uploaded asset
 hashes before publication. Checksums detect changes relative to that manifest;
 they do not independently authenticate its publisher.
 
-The fork's official Android signing identity and migration policy are not
-yet established (T250). No upstream certificate fingerprint is asserted as
-the fork's identity. Android updates require compatible signing credentials;
+The fork's permanent Android release key is provisioned; its public certificate
+and SHA-256 fingerprint are recorded in [release signing](docs/release-signing.md).
+The selected application ID is `io.github.geraldo_netto.uscreen`. Current code
+still builds `com.uscreen` and accepts a supplied keystore: application-ID
+migration and publication-time certificate enforcement remain open under T250.
+Provisioning the key does not establish that existing APKs were signed with it.
+The planned fork package installs separately from upstream; no upstream
+certificate is asserted as the fork identity.
+
+Android updates require compatible signing credentials;
 a debug APK, a differently signed release, a version downgrade or platform
 requirements can prevent installation over an existing app. Such a failure
 alone does not establish who built the APK. Preserve the chosen release key

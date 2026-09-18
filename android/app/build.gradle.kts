@@ -6,8 +6,8 @@ plugins {
 }
 
 // Release signing: keystore.properties is NOT committed — each maintainer
-// supplies a key (see docs/development.md, "Release APK"). The fork's
-// official signing identity/migration policy remains pending (T250).
+// supplies a key (see docs/development.md, "Release APK"). The fork key is
+// provisioned; package migration and publication verification remain T250.
 val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
