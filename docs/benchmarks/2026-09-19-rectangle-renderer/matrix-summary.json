@@ -1,0 +1,6172 @@
+{
+  "trials": [
+    {
+      "path": "000-text-5-0",
+      "scene": "text",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.060270755,
+        "cpu_ms": 1675,
+        "cpu_percent_one_core": 8.349837449639148
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 2002944,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "inputs": 100,
+        "callbacks": 100,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 12.869,
+          "p95": 14.245,
+          "p99": 14.515
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5458984375,
+          "total_rss_mib": 39.3642578125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.2197265625,
+          "total_rss_mib": 133.986328125,
+          "total_swap_pss_mib": 0.41796875
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.34375,
+          "total_rss_mib": 191.91015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.076171875,
+          "total_rss_mib": 6.98828125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.8330078125,
+          "total_rss_mib": 63.5517578125,
+          "total_swap_pss_mib": 37.6640625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5458984375,
+          "total_rss_mib": 39.3642578125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.392578125,
+          "total_rss_mib": 134.138671875,
+          "total_swap_pss_mib": 0.4541015625
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.3408203125,
+          "total_rss_mib": 191.91015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.080078125,
+          "total_rss_mib": 6.99609375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 83.8056640625,
+          "total_rss_mib": 63.5244140625,
+          "total_swap_pss_mib": 37.6640625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.957919051,
+          "cpu_percent_one_core": 7.955652092664879
+        },
+        "com.uscreen": {
+          "seconds": 14.962351605,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.959715348,
+          "cpu_percent_one_core": 1.3369238340937983
+        },
+        "surfaceflinger": {
+          "seconds": 14.956810073,
+          "cpu_percent_one_core": 4.412705628932406
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.956537524,
+          "cpu_percent_one_core": 1.1366267073994205
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "001-text-5-1",
+      "scene": "text",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.060646332,
+        "cpu_ms": 491,
+        "cpu_percent_one_core": 2.4475781680910993
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1847296,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 4.386615,
+          "p95": 4.689384,
+          "p99": 4.689384
+        },
+        "upload_ms": {
+          "p50": 5.888,
+          "p95": 6.105885,
+          "p99": 6.105885
+        },
+        "swap_ms": {
+          "p50": 5.887346,
+          "p95": 6.698884,
+          "p99": 6.698884
+        },
+        "admission_to_swap_ms": {
+          "p50": 16.189154,
+          "p95": 17.005807,
+          "p99": 17.005807
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.305146,
+          "p95": 0.800882,
+          "p99": 0.800882
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 37.80773,
+          "p95": 44.921846,
+          "p99": 44.921846
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 38.048952,
+          "p95": 45.178267,
+          "p99": 45.178267
+        },
+        "compressed_storage_bytes": 112006,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.7724609375,
+          "total_rss_mib": 38.6103515625,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.521484375,
+          "total_rss_mib": 154.634765625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 73.2958984375,
+          "total_rss_mib": 189.24609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.837890625,
+          "total_rss_mib": 5.625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 82.8876953125,
+          "total_rss_mib": 62.6494140625,
+          "total_swap_pss_mib": 37.6640625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.7724609375,
+          "total_rss_mib": 38.6103515625,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.5439453125,
+          "total_rss_mib": 154.658203125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 73.2958984375,
+          "total_rss_mib": 189.24609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.837890625,
+          "total_rss_mib": 5.625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 82.8291015625,
+          "total_rss_mib": 62.5908203125,
+          "total_swap_pss_mib": 37.6640625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.845571501,
+          "cpu_percent_one_core": 2.1555249656669986
+        },
+        "com.uscreen": {
+          "seconds": 14.838337602,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.841216361,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.843588642,
+          "cpu_percent_one_core": 0.7410606872300038
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.844415933,
+          "cpu_percent_one_core": 0.20209619654558625
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "002-text-5-2",
+      "scene": "text",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.063350216,
+        "cpu_ms": 529,
+        "cpu_percent_one_core": 2.6366483877559803
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1900544,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 6.894385,
+          "p95": 7.098692,
+          "p99": 7.098692
+        },
+        "upload_ms": {
+          "p50": 5.378231,
+          "p95": 5.568308,
+          "p99": 5.568308
+        },
+        "swap_ms": {
+          "p50": 5.598769,
+          "p95": 6.203769,
+          "p99": 6.203769
+        },
+        "admission_to_swap_ms": {
+          "p50": 17.827346,
+          "p95": 18.611769,
+          "p99": 18.611769
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.318834,
+          "p95": 0.815575,
+          "p99": 0.815575
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 41.259577,
+          "p95": 49.649962,
+          "p99": 49.649962
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 42.051063,
+          "p95": 50.085302,
+          "p99": 50.085302
+        },
+        "compressed_storage_bytes": 74658,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.7724609375,
+          "total_rss_mib": 38.6103515625,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.6650390625,
+          "total_rss_mib": 154.759765625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.9033203125,
+          "total_rss_mib": 193.8515625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8173828125,
+          "total_rss_mib": 5.58984375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 82.8447265625,
+          "total_rss_mib": 62.6064453125,
+          "total_swap_pss_mib": 37.6640625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.7724609375,
+          "total_rss_mib": 38.6103515625,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.6884765625,
+          "total_rss_mib": 154.783203125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.9033203125,
+          "total_rss_mib": 193.8515625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8173828125,
+          "total_rss_mib": 5.58984375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 82.8564453125,
+          "total_rss_mib": 62.6181640625,
+          "total_swap_pss_mib": 37.6640625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.849319768,
+          "cpu_percent_one_core": 2.3570103241647695
+        },
+        "com.uscreen": {
+          "seconds": 14.850069764,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.852779574,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.854887887,
+          "cpu_percent_one_core": 0.7404970056776033
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.85968991,
+          "cpu_percent_one_core": 0.20188846592156107
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "003-pen-60-0",
+      "scene": "pen",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.054078409,
+        "cpu_ms": 8325,
+        "cpu_percent_one_core": 41.51275281871768
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3502080,
+        "art.gc.bytes-freed": 6379216,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 111
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.899,
+          "p95": 13.14,
+          "p99": 13.772
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2802734375,
+          "total_rss_mib": 40.0986328125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.3330078125,
+          "total_rss_mib": 134.091796875,
+          "total_swap_pss_mib": 0.453125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.3779296875,
+          "total_rss_mib": 194.83203125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.9765625,
+          "total_rss_mib": 6.78515625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.5556640625,
+          "total_rss_mib": 64.2744140625,
+          "total_swap_pss_mib": 37.6640625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2802734375,
+          "total_rss_mib": 40.0986328125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.3740234375,
+          "total_rss_mib": 135.228515625,
+          "total_swap_pss_mib": 0.453125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.3779296875,
+          "total_rss_mib": 194.83203125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.01953125,
+          "total_rss_mib": 6.87109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.5634765625,
+          "total_rss_mib": 64.2822265625,
+          "total_swap_pss_mib": 37.6640625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.16326529,
+          "cpu_percent_one_core": 41.25089183423093
+        },
+        "com.uscreen": {
+          "seconds": 17.170074539,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.170119126,
+          "cpu_percent_one_core": 14.501937824237318
+        },
+        "surfaceflinger": {
+          "seconds": 17.170623921,
+          "cpu_percent_one_core": 19.27710964510618
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.1767719,
+          "cpu_percent_one_core": 11.177886107924621
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "004-pen-60-1",
+      "scene": "pen",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.061493409,
+        "cpu_ms": 5443,
+        "cpu_percent_one_core": 27.13157933475759
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.231577,
+          "p95": 0.320154,
+          "p99": 4.374577
+        },
+        "upload_ms": {
+          "p50": 0.409269,
+          "p95": 0.487885,
+          "p99": 2.109308
+        },
+        "swap_ms": {
+          "p50": 2.883384,
+          "p95": 3.630115,
+          "p99": 4.005
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.536424,
+          "p95": 4.359577,
+          "p99": 9.579154
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.251275,
+          "p95": 0.518154,
+          "p99": 0.682769
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 34.515115,
+          "p95": 40.892846,
+          "p99": 41.419539
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 34.785788,
+          "p95": 41.124294,
+          "p99": 41.707794
+        },
+        "compressed_storage_bytes": 114124,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.9892578125,
+          "total_rss_mib": 39.8271484375,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.8095703125,
+          "total_rss_mib": 157.9541015625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.8173828125,
+          "total_rss_mib": 191.77734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0,
+          "total_rss_mib": 5.79296875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.1982421875,
+          "total_rss_mib": 63.9716796875,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.9892578125,
+          "total_rss_mib": 39.8271484375,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.859375,
+          "total_rss_mib": 158.0087890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.8173828125,
+          "total_rss_mib": 191.77734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0,
+          "total_rss_mib": 5.79296875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2021484375,
+          "total_rss_mib": 63.9755859375,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.916597576,
+          "cpu_percent_one_core": 26.614648412768847
+        },
+        "com.uscreen": {
+          "seconds": 14.917607653,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.917704521,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.915775982,
+          "cpu_percent_one_core": 17.565294646163586
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.912298065,
+          "cpu_percent_one_core": 13.076455362549112
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "005-pen-60-2",
+      "scene": "pen",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.060485909,
+        "cpu_ms": 5519,
+        "cpu_percent_one_core": 27.51179619993122
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.253384,
+          "p95": 0.357269,
+          "p99": 6.964423
+        },
+        "upload_ms": {
+          "p50": 0.412577,
+          "p95": 0.464885,
+          "p99": 2.035308
+        },
+        "swap_ms": {
+          "p50": 2.920808,
+          "p95": 3.622346,
+          "p99": 3.913847
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.594731,
+          "p95": 4.388807,
+          "p99": 12.1745
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.246983,
+          "p95": 0.493378,
+          "p99": 0.674461
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 36.761269,
+          "p95": 43.108461,
+          "p99": 43.642115
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 37.038658,
+          "p95": 43.408371,
+          "p99": 43.939229
+        },
+        "compressed_storage_bytes": 76511,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.9892578125,
+          "total_rss_mib": 39.8271484375,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.72265625,
+          "total_rss_mib": 157.8642578125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.0146484375,
+          "total_rss_mib": 192.97265625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8232421875,
+          "total_rss_mib": 5.59765625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2216796875,
+          "total_rss_mib": 63.9951171875,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.9892578125,
+          "total_rss_mib": 39.8271484375,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.7744140625,
+          "total_rss_mib": 157.9189453125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.0146484375,
+          "total_rss_mib": 192.97265625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8232421875,
+          "total_rss_mib": 5.59765625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2255859375,
+          "total_rss_mib": 63.9990234375,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.909488758,
+          "cpu_percent_one_core": 27.029766515888202
+        },
+        "com.uscreen": {
+          "seconds": 14.907477379,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.902771072,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.906147266,
+          "cpu_percent_one_core": 17.64372747073865
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.912763941,
+          "cpu_percent_one_core": 13.34427345509606
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "006-motion-60-0",
+      "scene": "motion",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.055866332,
+        "cpu_ms": 8474,
+        "cpu_percent_one_core": 42.25197685167739
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3457024,
+        "art.gc.bytes-freed": 7034576,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 112
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.459,
+          "p95": 12.755,
+          "p99": 13.391
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2802734375,
+          "total_rss_mib": 40.0986328125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 41.3701171875,
+          "total_rss_mib": 137.115234375,
+          "total_swap_pss_mib": 0.4541015625
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.4560546875,
+          "total_rss_mib": 193.91796875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.9765625,
+          "total_rss_mib": 6.78515625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.5126953125,
+          "total_rss_mib": 64.2392578125,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2802734375,
+          "total_rss_mib": 40.0986328125,
+          "total_swap_pss_mib": 12.50390625
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.1826171875,
+          "total_rss_mib": 135.330078125,
+          "total_swap_pss_mib": 0.3330078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.451171875,
+          "total_rss_mib": 193.91796875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.01953125,
+          "total_rss_mib": 6.87109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.5205078125,
+          "total_rss_mib": 64.2470703125,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.125320046,
+          "cpu_percent_one_core": 41.80943760915218
+        },
+        "com.uscreen": {
+          "seconds": 17.130724523,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.134930578,
+          "cpu_percent_one_core": 14.59007953735055
+        },
+        "surfaceflinger": {
+          "seconds": 17.141124001,
+          "cpu_percent_one_core": 18.726893287818996
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.145863346,
+          "cpu_percent_one_core": 11.023066974582663
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "007-motion-60-1",
+      "scene": "motion",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.060512024,
+        "cpu_ms": 7058,
+        "cpu_percent_one_core": 35.18354861309596
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.069885,
+          "p95": 1.379731,
+          "p99": 3.397538
+        },
+        "upload_ms": {
+          "p50": 1.128038,
+          "p95": 1.416424,
+          "p99": 1.71927
+        },
+        "swap_ms": {
+          "p50": 2.875308,
+          "p95": 3.626692,
+          "p99": 3.829807
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.172692,
+          "p95": 6.243039,
+          "p99": 8.105961
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.255365,
+          "p95": 0.536853,
+          "p99": 0.688957
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 31.865693,
+          "p95": 40.835423,
+          "p99": 41.516731
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 32.199713,
+          "p95": 41.105744,
+          "p99": 41.76718
+        },
+        "compressed_storage_bytes": 112656,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.6455078125,
+          "total_rss_mib": 159.2119140625,
+          "total_swap_pss_mib": 0.4208984375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.3310546875,
+          "total_rss_mib": 195.36328125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0,
+          "total_rss_mib": 5.79296875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2060546875,
+          "total_rss_mib": 63.9833984375,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.7275390625,
+          "total_rss_mib": 159.2705078125,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.322265625,
+          "total_rss_mib": 195.36328125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0,
+          "total_rss_mib": 5.79296875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.1748046875,
+          "total_rss_mib": 63.9521484375,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.864562526,
+          "cpu_percent_one_core": 34.30978874137369
+        },
+        "com.uscreen": {
+          "seconds": 14.852237273,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.848930549,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.851174901,
+          "cpu_percent_one_core": 17.70903660842961
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.856708939,
+          "cpu_percent_one_core": 12.452286758769354
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "008-motion-60-2",
+      "scene": "motion",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.060908332,
+        "cpu_ms": 7304,
+        "cpu_percent_one_core": 36.409119064409865
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1884160,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.192692,
+          "p95": 1.5615,
+          "p99": 5.70077
+        },
+        "upload_ms": {
+          "p50": 1.125961,
+          "p95": 1.407692,
+          "p99": 1.6855
+        },
+        "swap_ms": {
+          "p50": 2.968961,
+          "p95": 13.785769,
+          "p99": 14.714654
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.447731,
+          "p95": 16.212769,
+          "p99": 17.027154
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.263405,
+          "p95": 0.675743,
+          "p99": 1.234372
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 33.377961,
+          "p95": 55.984154,
+          "p99": 56.6155
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 33.641651,
+          "p95": 56.670115,
+          "p99": 57.125218
+        },
+        "compressed_storage_bytes": 78993,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.7958984375,
+          "total_rss_mib": 159.3017578125,
+          "total_swap_pss_mib": 0.458984375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.87109375,
+          "total_rss_mib": 191.91015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8271484375,
+          "total_rss_mib": 5.6015625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2763671875,
+          "total_rss_mib": 64.0537109375,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 63.8427734375,
+          "total_rss_mib": 161.3486328125,
+          "total_swap_pss_mib": 0.458984375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.87109375,
+          "total_rss_mib": 191.91015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8271484375,
+          "total_rss_mib": 5.6015625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2763671875,
+          "total_rss_mib": 64.0537109375,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.880885393,
+          "cpu_percent_one_core": 35.750560934381895
+        },
+        "com.uscreen": {
+          "seconds": 14.877936905,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.87549532,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.872346057,
+          "cpu_percent_one_core": 17.818305127137076
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.871047706,
+          "cpu_percent_one_core": 12.642014450948732
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "009-scroll-60-0",
+      "scene": "scroll",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.056126947,
+        "cpu_ms": 8384,
+        "cpu_percent_one_core": 41.802687139722565
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3538944,
+        "art.gc.bytes-freed": 6915792,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 111
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.639,
+          "p95": 12.987,
+          "p99": 13.462
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 40.677734375,
+          "total_rss_mib": 136.513671875,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.38671875,
+          "total_rss_mib": 192.92578125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.978515625,
+          "total_rss_mib": 6.78515625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.8310546875,
+          "total_rss_mib": 63.5595703125,
+          "total_swap_pss_mib": 37.65625
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.7119140625,
+          "total_rss_mib": 134.943359375,
+          "total_swap_pss_mib": 0.3330078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.3818359375,
+          "total_rss_mib": 192.92578125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.021484375,
+          "total_rss_mib": 6.87109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 83.8388671875,
+          "total_rss_mib": 63.5673828125,
+          "total_swap_pss_mib": 37.65625
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.140640312,
+          "cpu_percent_one_core": 41.42202316111469
+        },
+        "com.uscreen": {
+          "seconds": 17.142324331,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.146480164,
+          "cpu_percent_one_core": 14.230325854999194
+        },
+        "surfaceflinger": {
+          "seconds": 17.144454888,
+          "cpu_percent_one_core": 18.664927061867633
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.139406287,
+          "cpu_percent_one_core": 10.968874700321177
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "010-scroll-60-1",
+      "scene": "scroll",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.055755409,
+        "cpu_ms": 8234,
+        "cpu_percent_one_core": 41.05554656049007
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.417654,
+          "p95": 3.087577,
+          "p99": 3.532654
+        },
+        "upload_ms": {
+          "p50": 1.210654,
+          "p95": 1.579692,
+          "p99": 1.7465
+        },
+        "swap_ms": {
+          "p50": 2.410538,
+          "p95": 3.018462,
+          "p99": 3.320384
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.063885,
+          "p95": 7.356462,
+          "p99": 7.851961
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.234256,
+          "p95": 0.501197,
+          "p99": 0.689113
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 30.444116,
+          "p95": 39.118461,
+          "p99": 39.668115
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 30.598436,
+          "p95": 39.38312,
+          "p99": 39.880069
+        },
+        "compressed_storage_bytes": 112971,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 62.3603515625,
+          "total_rss_mib": 159.8291015625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.35546875,
+          "total_rss_mib": 194.40625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.005859375,
+          "total_rss_mib": 5.80078125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2919921875,
+          "total_rss_mib": 64.0771484375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.416015625,
+          "total_rss_mib": 157.8837890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.35546875,
+          "total_rss_mib": 194.40625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.005859375,
+          "total_rss_mib": 5.80078125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2998046875,
+          "total_rss_mib": 64.0849609375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 16.985654081,
+          "cpu_percent_one_core": 40.79913535830119
+        },
+        "com.uscreen": {
+          "seconds": 16.985479522,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 16.984233619,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 16.985360511,
+          "cpu_percent_one_core": 16.367035590440523
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 16.988309156,
+          "cpu_percent_one_core": 10.595521799556307
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "011-scroll-60-2",
+      "scene": "scroll",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.055442754,
+        "cpu_ms": 8370,
+        "cpu_percent_one_core": 41.73430675486148
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1884160,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 3.102038,
+          "p95": 3.886,
+          "p99": 4.411231
+        },
+        "upload_ms": {
+          "p50": 1.123884,
+          "p95": 1.424038,
+          "p99": 1.626847
+        },
+        "swap_ms": {
+          "p50": 2.143885,
+          "p95": 2.751462,
+          "p99": 3.105924
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.406807,
+          "p95": 7.688193,
+          "p99": 8.244423
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.205185,
+          "p95": 0.484236,
+          "p99": 0.802846
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 34.296539,
+          "p95": 40.508038,
+          "p99": 41.134885
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 34.543888,
+          "p95": 40.714548,
+          "p99": 41.374651
+        },
+        "compressed_storage_bytes": 76298,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.59375,
+          "total_rss_mib": 158.0634765625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.6240234375,
+          "total_rss_mib": 195.6796875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8369140625,
+          "total_rss_mib": 5.62109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2607421875,
+          "total_rss_mib": 64.0458984375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.64453125,
+          "total_rss_mib": 158.1142578125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.6240234375,
+          "total_rss_mib": 195.6796875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8369140625,
+          "total_rss_mib": 5.62109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2685546875,
+          "total_rss_mib": 64.0537109375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.07364969,
+          "cpu_percent_one_core": 41.70168727410501
+        },
+        "com.uscreen": {
+          "seconds": 17.083384638,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.089904554,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.086383033,
+          "cpu_percent_one_core": 16.15321390530365
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.075887724,
+          "cpu_percent_one_core": 10.775428075776682
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "012-photo-60-0",
+      "scene": "photo",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.054590178,
+        "cpu_ms": 8546,
+        "cpu_percent_one_core": 42.61368556598584
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3489792,
+        "art.gc.bytes-freed": 6067920,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 113
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.748,
+          "p95": 13.011,
+          "p99": 13.702
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.4541015625,
+          "total_rss_mib": 135.279296875,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.2705078125,
+          "total_rss_mib": 191.8359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.986328125,
+          "total_rss_mib": 6.796875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.7958984375,
+          "total_rss_mib": 63.5322265625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.279296875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.1484375,
+          "total_rss_mib": 134.369140625,
+          "total_swap_pss_mib": 0.3330078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.265625,
+          "total_rss_mib": 191.8359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.029296875,
+          "total_rss_mib": 6.8828125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.5458984375,
+          "total_rss_mib": 64.2822265625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.203308189,
+          "cpu_percent_one_core": 42.37557055834942
+        },
+        "com.uscreen": {
+          "seconds": 17.206119261,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.209992656,
+          "cpu_percent_one_core": 14.700761648018219
+        },
+        "surfaceflinger": {
+          "seconds": 17.212255163,
+          "cpu_percent_one_core": 19.462876701951668
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.213447948,
+          "cpu_percent_one_core": 11.328352145896297
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "013-photo-60-1",
+      "scene": "photo",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.054230216,
+        "cpu_ms": 8261,
+        "cpu_percent_one_core": 41.19330391155613
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.893423,
+          "p95": 3.554769,
+          "p99": 3.903692
+        },
+        "upload_ms": {
+          "p50": 1.016961,
+          "p95": 1.262923,
+          "p99": 1.508461
+        },
+        "swap_ms": {
+          "p50": 2.297423,
+          "p95": 2.835615,
+          "p99": 3.117308
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.201385,
+          "p95": 7.3995,
+          "p99": 7.890077
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.233097,
+          "p95": 0.387464,
+          "p99": 0.613762
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 30.309769,
+          "p95": 39.468731,
+          "p99": 39.965462
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 30.624675,
+          "p95": 39.692051,
+          "p99": 40.216206
+        },
+        "compressed_storage_bytes": 1292500,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.49609375,
+          "total_rss_mib": 158.9541015625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.3740234375,
+          "total_rss_mib": 194.49609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.03515625,
+          "total_rss_mib": 5.85546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2607421875,
+          "total_rss_mib": 64.0458984375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.5517578125,
+          "total_rss_mib": 159.0126953125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.3740234375,
+          "total_rss_mib": 194.49609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.03515625,
+          "total_rss_mib": 5.85546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2607421875,
+          "total_rss_mib": 64.0458984375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 16.973180609,
+          "cpu_percent_one_core": 40.946951311616715
+        },
+        "com.uscreen": {
+          "seconds": 16.978647387,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 16.978703581,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 16.976507664,
+          "cpu_percent_one_core": 16.611190333215756
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 16.978112387,
+          "cpu_percent_one_core": 10.248489115505583
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "014-photo-60-2",
+      "scene": "photo",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.055724755,
+        "cpu_ms": 8600,
+        "cpu_percent_one_core": 42.880524663442905
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1884160,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.988461,
+          "p95": 6.090847,
+          "p99": 6.516962
+        },
+        "upload_ms": {
+          "p50": 0.751923,
+          "p95": 0.940808,
+          "p99": 1.149538
+        },
+        "swap_ms": {
+          "p50": 1.915308,
+          "p95": 2.485154,
+          "p99": 2.794
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.72823,
+          "p95": 9.200692,
+          "p99": 9.760231
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.161577,
+          "p95": 0.392737,
+          "p99": 0.638637
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 36.018346,
+          "p95": 45.325808,
+          "p99": 45.759116
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 36.201423,
+          "p95": 45.512826,
+          "p99": 45.943416
+        },
+        "compressed_storage_bytes": 1231392,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.6025390625,
+          "total_rss_mib": 159.0712890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.8916015625,
+          "total_rss_mib": 192.01171875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8623046875,
+          "total_rss_mib": 5.66796875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2646484375,
+          "total_rss_mib": 64.0498046875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.6611328125,
+          "total_rss_mib": 159.1298828125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.8916015625,
+          "total_rss_mib": 192.01171875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8623046875,
+          "total_rss_mib": 5.66796875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2607421875,
+          "total_rss_mib": 64.0458984375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.85682455,
+          "cpu_percent_one_core": 42.40475465532774
+        },
+        "com.uscreen": {
+          "seconds": 14.854444996,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.850493028,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.845394185,
+          "cpu_percent_one_core": 15.829825538579998
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.837390067,
+          "cpu_percent_one_core": 12.46850013139848
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "015-text-5-2",
+      "scene": "text",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.055652332,
+        "cpu_ms": 520,
+        "cpu_percent_one_core": 2.5927852726600604
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1847296,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 6.887269,
+          "p95": 7.019269,
+          "p99": 7.019269
+        },
+        "upload_ms": {
+          "p50": 5.307308,
+          "p95": 5.448539,
+          "p99": 5.448539
+        },
+        "swap_ms": {
+          "p50": 5.804731,
+          "p95": 6.629692,
+          "p99": 6.629692
+        },
+        "admission_to_swap_ms": {
+          "p50": 18.024192,
+          "p95": 18.95727,
+          "p99": 18.95727
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.32522,
+          "p95": 0.827419,
+          "p99": 0.827419
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 38.603615,
+          "p95": 49.918231,
+          "p99": 49.918231
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 38.861267,
+          "p95": 50.77257,
+          "p99": 50.77257
+        },
+        "compressed_storage_bytes": 74658,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.0751953125,
+          "total_rss_mib": 154.517578125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.9384765625,
+          "total_rss_mib": 193.03125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8310546875,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 82.8681640625,
+          "total_rss_mib": 62.6494140625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.0908203125,
+          "total_rss_mib": 154.533203125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.9384765625,
+          "total_rss_mib": 193.03125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8310546875,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 82.8212890625,
+          "total_rss_mib": 62.6025390625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.912370386,
+          "cpu_percent_one_core": 2.347044708120892
+        },
+        "com.uscreen": {
+          "seconds": 14.909855189,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.906169199,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.903227602,
+          "cpu_percent_one_core": 0.8051947081845285
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.897459987,
+          "cpu_percent_one_core": 0.20137661068517024
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "016-text-5-1",
+      "scene": "text",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.061757986,
+        "cpu_ms": 499,
+        "cpu_percent_one_core": 2.487319408140726
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1900544,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 4.397808,
+          "p95": 4.797307,
+          "p99": 4.797307
+        },
+        "upload_ms": {
+          "p50": 5.761538,
+          "p95": 5.996462,
+          "p99": 5.996462
+        },
+        "swap_ms": {
+          "p50": 5.703,
+          "p95": 6.186192,
+          "p99": 6.186192
+        },
+        "admission_to_swap_ms": {
+          "p50": 15.991385,
+          "p95": 16.514115,
+          "p99": 16.514115
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.7938,
+          "p95": 0.80707,
+          "p99": 0.80707
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 38.204115,
+          "p95": 44.184538,
+          "p99": 44.184538
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 39.002414,
+          "p95": 44.983767,
+          "p99": 44.983767
+        },
+        "compressed_storage_bytes": 112006,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.177734375,
+          "total_rss_mib": 154.658203125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.8720703125,
+          "total_rss_mib": 193.96484375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8310546875,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 82.9189453125,
+          "total_rss_mib": 62.7001953125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 57.1923828125,
+          "total_rss_mib": 154.673828125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.8720703125,
+          "total_rss_mib": 193.96484375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8310546875,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 82.8955078125,
+          "total_rss_mib": 62.6767578125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.955091203,
+          "cpu_percent_one_core": 2.1397395419147145
+        },
+        "com.uscreen": {
+          "seconds": 14.958382943,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.951680412,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.947364834,
+          "cpu_percent_one_core": 0.7359156695619596
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.948041348,
+          "cpu_percent_one_core": 0.20069519010270803
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "017-text-5-0",
+      "scene": "text",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.060244293,
+        "cpu_ms": 1738,
+        "cpu_percent_one_core": 8.663902466065547
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1941504,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "inputs": 100,
+        "callbacks": 100,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 12.854,
+          "p95": 13.856,
+          "p99": 14.222
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.048828125,
+          "total_rss_mib": 133.841796875,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.6845703125,
+          "total_rss_mib": 195.27734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.966796875,
+          "total_rss_mib": 6.7578125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.8896484375,
+          "total_rss_mib": 63.6259765625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.150390625,
+          "total_rss_mib": 133.966796875,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.6845703125,
+          "total_rss_mib": 195.27734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.970703125,
+          "total_rss_mib": 6.765625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 83.8896484375,
+          "total_rss_mib": 63.6259765625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.930289944,
+          "cpu_percent_one_core": 8.305264028032596
+        },
+        "com.uscreen": {
+          "seconds": 14.928958449,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.927012531,
+          "cpu_percent_one_core": 1.2728601895751968
+        },
+        "surfaceflinger": {
+          "seconds": 14.924919778,
+          "cpu_percent_one_core": 4.15412618105933
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.917508967,
+          "cpu_percent_one_core": 1.0725651337227047
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "018-pen-60-2",
+      "scene": "pen",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.061914447,
+        "cpu_ms": 5429,
+        "cpu_percent_one_core": 27.06122595798347
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.252346,
+          "p95": 0.351847,
+          "p99": 6.983731
+        },
+        "upload_ms": {
+          "p50": 0.411654,
+          "p95": 0.502346,
+          "p99": 1.9535
+        },
+        "swap_ms": {
+          "p50": 2.871885,
+          "p95": 3.6485,
+          "p99": 4.008231
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.567115,
+          "p95": 4.425538,
+          "p99": 11.745192
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.248002,
+          "p95": 0.537783,
+          "p99": 0.681129
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 37.253692,
+          "p95": 43.580731,
+          "p99": 44.149153
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 37.564105,
+          "p95": 43.794355,
+          "p99": 44.376304
+        },
+        "compressed_storage_bytes": 76511,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.3828125,
+          "total_rss_mib": 157.8603515625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 72.4716796875,
+          "total_rss_mib": 188.5625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8515625,
+          "total_rss_mib": 5.63671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2177734375,
+          "total_rss_mib": 64.0029296875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.43359375,
+          "total_rss_mib": 157.9111328125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 72.4716796875,
+          "total_rss_mib": 188.5625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8515625,
+          "total_rss_mib": 5.63671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2216796875,
+          "total_rss_mib": 64.0068359375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.821389611,
+          "cpu_percent_one_core": 26.65067246507322
+        },
+        "com.uscreen": {
+          "seconds": 14.822704649,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.824385963,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.827645486,
+          "cpu_percent_one_core": 17.467372027780353
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.829675466,
+          "cpu_percent_one_core": 13.014445288603325
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "019-pen-60-1",
+      "scene": "pen",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.061312948,
+        "cpu_ms": 5403,
+        "cpu_percent_one_core": 26.93243465173424
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.231808,
+          "p95": 0.300692,
+          "p99": 2.632308
+        },
+        "upload_ms": {
+          "p50": 0.41127,
+          "p95": 0.496039,
+          "p99": 1.500923
+        },
+        "swap_ms": {
+          "p50": 2.89773,
+          "p95": 3.726192,
+          "p99": 4.044077
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.563539,
+          "p95": 4.441692,
+          "p99": 6.160923
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.248811,
+          "p95": 0.519339,
+          "p99": 0.691976
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 33.884346,
+          "p95": 40.258077,
+          "p99": 40.768577
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 34.124364,
+          "p95": 40.508075,
+          "p99": 41.028999
+        },
+        "compressed_storage_bytes": 114124,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.4609375,
+          "total_rss_mib": 157.9306640625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.6123046875,
+          "total_rss_mib": 192.70703125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8330078125,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2763671875,
+          "total_rss_mib": 64.0615234375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.5078125,
+          "total_rss_mib": 157.9814453125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.6123046875,
+          "total_rss_mib": 192.70703125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8330078125,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2802734375,
+          "total_rss_mib": 64.0654296875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.890742185,
+          "cpu_percent_one_core": 26.325081391502177
+        },
+        "com.uscreen": {
+          "seconds": 14.891769881,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.889199501,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.888221547,
+          "cpu_percent_one_core": 17.530636495169023
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.886450188,
+          "cpu_percent_one_core": 12.96481011675824
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "020-pen-60-0",
+      "scene": "pen",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.055301025,
+        "cpu_ms": 8412,
+        "cpu_percent_one_core": 41.944022627802966
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3481600,
+        "art.gc.bytes-freed": 6391504,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 112
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.975,
+          "p95": 13.212,
+          "p99": 13.76
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.279296875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.2236328125,
+          "total_rss_mib": 134.087890625,
+          "total_swap_pss_mib": 0.4541015625
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.2724609375,
+          "total_rss_mib": 193.87109375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.98828125,
+          "total_rss_mib": 6.796875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.6201171875,
+          "total_rss_mib": 64.3564453125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.279296875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.2529296875,
+          "total_rss_mib": 135.216796875,
+          "total_swap_pss_mib": 0.4541015625
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.2724609375,
+          "total_rss_mib": 193.87109375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.03125,
+          "total_rss_mib": 6.8828125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.6240234375,
+          "total_rss_mib": 64.3603515625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.132580724,
+          "cpu_percent_one_core": 40.916194197060534
+        },
+        "com.uscreen": {
+          "seconds": 17.136038712,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.138581253,
+          "cpu_percent_one_core": 14.353580169125099
+        },
+        "surfaceflinger": {
+          "seconds": 17.138091032,
+          "cpu_percent_one_core": 19.488751657133808
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.136295896,
+          "cpu_percent_one_core": 11.320999659283661
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "021-motion-60-2",
+      "scene": "motion",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.063633101,
+        "cpu_ms": 7305,
+        "cpu_percent_one_core": 36.40915861662118
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.196577,
+          "p95": 1.544731,
+          "p99": 4.748885
+        },
+        "upload_ms": {
+          "p50": 1.125461,
+          "p95": 1.400269,
+          "p99": 1.692616
+        },
+        "swap_ms": {
+          "p50": 2.889423,
+          "p95": 3.524385,
+          "p99": 3.800346
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.320193,
+          "p95": 6.311192,
+          "p99": 8.459539
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.256153,
+          "p95": 0.518435,
+          "p99": 0.701297
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 34.399192,
+          "p95": 40.656538,
+          "p99": 41.261693
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 34.697515,
+          "p95": 40.930176,
+          "p99": 41.551496
+        },
+        "compressed_storage_bytes": 78993,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.60546875,
+          "total_rss_mib": 159.0673828125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.0224609375,
+          "total_rss_mib": 195.125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.01171875,
+          "total_rss_mib": 5.8046875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.3271484375,
+          "total_rss_mib": 64.1123046875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.65625,
+          "total_rss_mib": 159.1220703125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.0224609375,
+          "total_rss_mib": 195.125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.01171875,
+          "total_rss_mib": 5.8046875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.3388671875,
+          "total_rss_mib": 64.1240234375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.907292396,
+          "cpu_percent_one_core": 36.42512574219719
+        },
+        "com.uscreen": {
+          "seconds": 14.913441559,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.916101523,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.914579914,
+          "cpu_percent_one_core": 17.83489723034783
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.912701221,
+          "cpu_percent_one_core": 13.07610184836278
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "022-motion-60-1",
+      "scene": "motion",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.06276737,
+        "cpu_ms": 7369,
+        "cpu_percent_one_core": 36.72972857682096
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.103769,
+          "p95": 1.395192,
+          "p99": 3.703
+        },
+        "upload_ms": {
+          "p50": 1.161077,
+          "p95": 1.441307,
+          "p99": 1.80623
+        },
+        "swap_ms": {
+          "p50": 2.935885,
+          "p95": 3.619693,
+          "p99": 3.904346
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.293154,
+          "p95": 6.294693,
+          "p99": 8.762385
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.265585,
+          "p95": 0.540667,
+          "p99": 0.708486
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 31.720539,
+          "p95": 37.822077,
+          "p99": 38.496346
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 32.011493,
+          "p95": 38.086166,
+          "p99": 38.76318
+        },
+        "compressed_storage_bytes": 112656,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.62890625,
+          "total_rss_mib": 159.1337890625,
+          "total_swap_pss_mib": 0.4599609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.9208984375,
+          "total_rss_mib": 192.015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8330078125,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.2685546875,
+          "total_rss_mib": 64.0537109375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 63.6865234375,
+          "total_rss_mib": 161.1962890625,
+          "total_swap_pss_mib": 0.4599609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.9208984375,
+          "total_rss_mib": 192.015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8330078125,
+          "total_rss_mib": 5.60546875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.2724609375,
+          "total_rss_mib": 64.0576171875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.994876815,
+          "cpu_percent_one_core": 36.479125954060066
+        },
+        "com.uscreen": {
+          "seconds": 14.9906912,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.986391493,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.983090761,
+          "cpu_percent_one_core": 18.420765408323486
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.978185674,
+          "cpu_percent_one_core": 13.352752085799787
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "023-motion-60-0",
+      "scene": "motion",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.056222447,
+        "cpu_ms": 8483,
+        "cpu_percent_one_core": 42.29610048660426
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3530752,
+        "art.gc.bytes-freed": 7063248,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 111
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.404,
+          "p95": 12.558,
+          "p99": 13.099
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 41.427734375,
+          "total_rss_mib": 137.263671875,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.3408203125,
+          "total_rss_mib": 192.94140625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.990234375,
+          "total_rss_mib": 6.796875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.9248046875,
+          "total_rss_mib": 63.6611328125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.544921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.2685546875,
+          "total_rss_mib": 135.494140625,
+          "total_swap_pss_mib": 0.3330078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.3359375,
+          "total_rss_mib": 192.94140625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.033203125,
+          "total_rss_mib": 6.8828125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 83.9287109375,
+          "total_rss_mib": 63.6650390625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.144085789,
+          "cpu_percent_one_core": 42.17197749114694
+        },
+        "com.uscreen": {
+          "seconds": 17.1424357,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.143215475,
+          "cpu_percent_one_core": 14.583028508541801
+        },
+        "surfaceflinger": {
+          "seconds": 17.144441951,
+          "cpu_percent_one_core": 19.13156467486353
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.140597457,
+          "cpu_percent_one_core": 11.201476522721189
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "024-scroll-60-2",
+      "scene": "scroll",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.055005908,
+        "cpu_ms": 8465,
+        "cpu_percent_one_core": 42.20891302068023
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1884160,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 3.123769,
+          "p95": 3.853346,
+          "p99": 4.211231
+        },
+        "upload_ms": {
+          "p50": 1.112269,
+          "p95": 1.360038,
+          "p99": 1.614192
+        },
+        "swap_ms": {
+          "p50": 2.184,
+          "p95": 2.767923,
+          "p99": 3.002346
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.4685,
+          "p95": 7.629961,
+          "p99": 8.168616
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.205952,
+          "p95": 0.469927,
+          "p99": 0.611411
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 32.144846,
+          "p95": 41.276192,
+          "p99": 41.952154
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 32.327328,
+          "p95": 41.487884,
+          "p99": 42.154744
+        },
+        "compressed_storage_bytes": 76298,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.4306640625,
+          "total_rss_mib": 157.9033203125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.2646484375,
+          "total_rss_mib": 194.37109375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.015625,
+          "total_rss_mib": 5.80859375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.3466796875,
+          "total_rss_mib": 64.1318359375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.16015625,
+          "total_rss_mib": 157.9580078125,
+          "total_swap_pss_mib": 0.4033203125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.2236328125,
+          "total_rss_mib": 194.37109375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.015625,
+          "total_rss_mib": 5.80859375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.349609375,
+          "total_rss_mib": 64.1357421875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.063766593,
+          "cpu_percent_one_core": 41.96025514634745
+        },
+        "com.uscreen": {
+          "seconds": 17.063903303,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.064124322,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.065545913,
+          "cpu_percent_one_core": 16.172937063194198
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.066438355,
+          "cpu_percent_one_core": 10.312637958724224
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "025-scroll-60-1",
+      "scene": "scroll",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.055700909,
+        "cpu_ms": 8209,
+        "cpu_percent_one_core": 40.93100528995329
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.418731,
+          "p95": 2.991846,
+          "p99": 3.310577
+        },
+        "upload_ms": {
+          "p50": 1.221461,
+          "p95": 1.584346,
+          "p99": 1.745692
+        },
+        "swap_ms": {
+          "p50": 2.444308,
+          "p95": 3.075193,
+          "p99": 3.322461
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.137077,
+          "p95": 7.335885,
+          "p99": 7.85077
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.240178,
+          "p95": 0.505229,
+          "p99": 0.655777
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 30.700308,
+          "p95": 39.838039,
+          "p99": 40.367731
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 30.953329,
+          "p95": 40.103193,
+          "p99": 40.617245
+        },
+        "compressed_storage_bytes": 112971,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 62.166015625,
+          "total_rss_mib": 160.0048828125,
+          "total_swap_pss_mib": 0.4033203125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.7333984375,
+          "total_rss_mib": 191.88671875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8486328125,
+          "total_rss_mib": 5.6328125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.357421875,
+          "total_rss_mib": 64.1435546875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.2841796875,
+          "total_rss_mib": 158.0517578125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.732421875,
+          "total_rss_mib": 191.88671875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8486328125,
+          "total_rss_mib": 5.6328125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.357421875,
+          "total_rss_mib": 64.1435546875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.054522595,
+          "cpu_percent_one_core": 40.69301829671063
+        },
+        "com.uscreen": {
+          "seconds": 17.05201145,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.050838744,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.054991179,
+          "cpu_percent_one_core": 16.534749097216167
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.06156692,
+          "cpu_percent_one_core": 10.784472543627311
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "026-scroll-60-0",
+      "scene": "scroll",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.052873178,
+        "cpu_ms": 8347,
+        "cpu_percent_one_core": 41.62495780982394
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3530752,
+        "art.gc.bytes-freed": 6833872,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 114
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.655,
+          "p95": 12.91,
+          "p99": 13.354
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 40.5400390625,
+          "total_rss_mib": 136.404296875,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 71.8515625,
+          "total_rss_mib": 188.50390625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.994140625,
+          "total_rss_mib": 6.8046875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.6640625,
+          "total_rss_mib": 64.4033203125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.6572265625,
+          "total_rss_mib": 134.927734375,
+          "total_swap_pss_mib": 0.333984375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 71.8466796875,
+          "total_rss_mib": 188.50390625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.037109375,
+          "total_rss_mib": 6.890625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.6796875,
+          "total_rss_mib": 64.4189453125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.119370065,
+          "cpu_percent_one_core": 41.298248552114586
+        },
+        "com.uscreen": {
+          "seconds": 17.130100276,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.142658255,
+          "cpu_percent_one_core": 14.408500497754337
+        },
+        "surfaceflinger": {
+          "seconds": 17.145948432,
+          "cpu_percent_one_core": 18.896592468183854
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.141429695,
+          "cpu_percent_one_core": 11.084256294877276
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "027-photo-60-2",
+      "scene": "photo",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.049962639,
+        "cpu_ms": 8612,
+        "cpu_percent_one_core": 42.95269849155952
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1884160,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.973115,
+          "p95": 6.080384,
+          "p99": 6.342731
+        },
+        "upload_ms": {
+          "p50": 0.709154,
+          "p95": 0.926307,
+          "p99": 1.041
+        },
+        "swap_ms": {
+          "p50": 1.923808,
+          "p95": 2.512577,
+          "p99": 2.784307
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.694961,
+          "p95": 9.2305,
+          "p99": 9.582346
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.160692,
+          "p95": 0.30795,
+          "p99": 0.569251
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 34.853423,
+          "p95": 40.988846,
+          "p99": 41.603077
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 35.067757,
+          "p95": 41.140699,
+          "p99": 41.758675
+        },
+        "compressed_storage_bytes": 1231392,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 63.3232421875,
+          "total_rss_mib": 161.1025390625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.802734375,
+          "total_rss_mib": 193.9765625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0390625,
+          "total_rss_mib": 5.8515625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.326171875,
+          "total_rss_mib": 64.1123046875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.3740234375,
+          "total_rss_mib": 159.1572265625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.802734375,
+          "total_rss_mib": 193.9765625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.0390625,
+          "total_rss_mib": 5.8515625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.330078125,
+          "total_rss_mib": 64.1162109375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.811272589,
+          "cpu_percent_one_core": 42.6026863126285
+        },
+        "com.uscreen": {
+          "seconds": 14.809813261,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.814484043,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.820336835,
+          "cpu_percent_one_core": 15.046891476404152
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.818394189,
+          "cpu_percent_one_core": 11.269777134419028
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "028-photo-60-1",
+      "scene": "photo",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.055409947,
+        "cpu_ms": 8264,
+        "cpu_percent_one_core": 41.20583933132802
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.851,
+          "p95": 3.5805,
+          "p99": 4.059731
+        },
+        "upload_ms": {
+          "p50": 1.0055,
+          "p95": 1.273577,
+          "p99": 1.499769
+        },
+        "swap_ms": {
+          "p50": 2.268924,
+          "p95": 2.856192,
+          "p99": 3.1035
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.117923,
+          "p95": 7.444462,
+          "p99": 8.017884
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.232848,
+          "p95": 0.493089,
+          "p99": 0.661857
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 31.511231,
+          "p95": 40.623423,
+          "p99": 41.212346
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 31.759409,
+          "p95": 40.912401,
+          "p99": 41.458811
+        },
+        "compressed_storage_bytes": 1292500,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.3037109375,
+          "total_rss_mib": 159.0205078125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.95703125,
+          "total_rss_mib": 196.1328125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8701171875,
+          "total_rss_mib": 5.671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.396484375,
+          "total_rss_mib": 64.1826171875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.3505859375,
+          "total_rss_mib": 159.0712890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.95703125,
+          "total_rss_mib": 196.1328125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8701171875,
+          "total_rss_mib": 5.671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.396484375,
+          "total_rss_mib": 64.1826171875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.007799084,
+          "cpu_percent_one_core": 40.98119906976672
+        },
+        "com.uscreen": {
+          "seconds": 17.006264138,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.004072279,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.003492779,
+          "cpu_percent_one_core": 16.17314769231626
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.005217492,
+          "cpu_percent_one_core": 10.290959235442163
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "029-photo-60-0",
+      "scene": "photo",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.054580755,
+        "cpu_ms": 8353,
+        "cpu_percent_one_core": 41.65133194279035
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3530752,
+        "art.gc.bytes-freed": 6129360,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 113
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.637,
+          "p95": 12.959,
+          "p99": 13.728
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.8076171875,
+          "total_rss_mib": 38.6337890625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.4736328125,
+          "total_rss_mib": 135.345703125,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.173828125,
+          "total_rss_mib": 191.8359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.00390625,
+          "total_rss_mib": 6.8203125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.71875,
+          "total_rss_mib": 64.4580078125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.8076171875,
+          "total_rss_mib": 38.6337890625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.1025390625,
+          "total_rss_mib": 134.376953125,
+          "total_swap_pss_mib": 0.333984375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.1689453125,
+          "total_rss_mib": 191.8359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.046875,
+          "total_rss_mib": 6.90625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.72265625,
+          "total_rss_mib": 64.4619140625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.103045349,
+          "cpu_percent_one_core": 41.396136509770535
+        },
+        "com.uscreen": {
+          "seconds": 17.101740672,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.102164043,
+          "cpu_percent_one_core": 14.208728169664653
+        },
+        "surfaceflinger": {
+          "seconds": 17.105913041,
+          "cpu_percent_one_core": 19.116196792082125
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.111314783,
+          "cpu_percent_one_core": 10.986882211224177
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "030-text-5-0",
+      "scene": "text",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.05881987,
+        "cpu_ms": 1721,
+        "cpu_percent_one_core": 8.579766961135785
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1941504,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "inputs": 100,
+        "callbacks": 100,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 12.877,
+          "p95": 14.46,
+          "p99": 14.859
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.0087890625,
+          "total_rss_mib": 133.822265625,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.830078125,
+          "total_rss_mib": 193.49609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.1630859375,
+          "total_rss_mib": 6.9765625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.015625,
+          "total_rss_mib": 63.7548828125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.1259765625,
+          "total_rss_mib": 133.962890625,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.830078125,
+          "total_rss_mib": 193.49609375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.1669921875,
+          "total_rss_mib": 6.984375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.015625,
+          "total_rss_mib": 63.7548828125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.944365794,
+          "cpu_percent_one_core": 8.096696886834781
+        },
+        "com.uscreen": {
+          "seconds": 14.94503537,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.946045666,
+          "cpu_percent_one_core": 1.3381465871937608
+        },
+        "surfaceflinger": {
+          "seconds": 14.948267564,
+          "cpu_percent_one_core": 4.214535211540049
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.948583422,
+          "cpu_percent_one_core": 1.070335532693527
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "031-text-5-1",
+      "scene": "text",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.062352447,
+        "cpu_ms": 490,
+        "cpu_percent_one_core": 2.442385564177802
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1900544,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 4.336462,
+          "p95": 4.454539,
+          "p99": 4.454539
+        },
+        "upload_ms": {
+          "p50": 5.62823,
+          "p95": 5.951308,
+          "p99": 5.951308
+        },
+        "swap_ms": {
+          "p50": 5.704846,
+          "p95": 6.132192,
+          "p99": 6.132192
+        },
+        "admission_to_swap_ms": {
+          "p50": 15.903846,
+          "p95": 16.375269,
+          "p99": 16.375269
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.260537,
+          "p95": 0.792306,
+          "p99": 0.792306
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 39.982692,
+          "p95": 47.862731,
+          "p99": 47.862731
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 40.204602,
+          "p95": 48.171264,
+          "p99": 48.171264
+        },
+        "compressed_storage_bytes": 112006,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 56.9609375,
+          "total_rss_mib": 154.689453125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.28125,
+          "total_rss_mib": 194.4375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.865234375,
+          "total_rss_mib": 5.65234375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 82.9921875,
+          "total_rss_mib": 62.7744140625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 56.9765625,
+          "total_rss_mib": 154.705078125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.28125,
+          "total_rss_mib": 194.4375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.865234375,
+          "total_rss_mib": 5.65234375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 82.9609375,
+          "total_rss_mib": 62.7431640625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.880927392,
+          "cpu_percent_one_core": 2.150403611081607
+        },
+        "com.uscreen": {
+          "seconds": 14.884994734,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.890994761,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.901047222,
+          "cpu_percent_one_core": 0.8724219047374548
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.905577892,
+          "cpu_percent_one_core": 0.2683559154151848
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "032-text-5-2",
+      "scene": "text",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.062015255,
+        "cpu_ms": 521,
+        "cpu_percent_one_core": 2.596947481984157
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1847296,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 6.8505,
+          "p95": 7.040923,
+          "p99": 7.040923
+        },
+        "upload_ms": {
+          "p50": 5.338769,
+          "p95": 5.513923,
+          "p99": 5.513923
+        },
+        "swap_ms": {
+          "p50": 5.517115,
+          "p95": 6.504076,
+          "p99": 6.504076
+        },
+        "admission_to_swap_ms": {
+          "p50": 17.524308,
+          "p95": 18.760077,
+          "p99": 18.760077
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.314614,
+          "p95": 0.805338,
+          "p99": 0.805338
+        },
+        "presented": 20,
+        "updates": 20,
+        "inputs": 100,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 42.071308,
+          "p95": 48.888615,
+          "p99": 48.888615
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 42.306603,
+          "p95": 49.188264,
+          "p99": 49.188264
+        },
+        "compressed_storage_bytes": 74658,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 56.9091796875,
+          "total_rss_mib": 154.701171875,
+          "total_swap_pss_mib": 0.4599609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.2734375,
+          "total_rss_mib": 195.43359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8466796875,
+          "total_rss_mib": 5.62109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 83.06640625,
+          "total_rss_mib": 62.8486328125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 39.76953125,
+          "total_rss_mib": 38.6142578125,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 56.9248046875,
+          "total_rss_mib": 154.716796875,
+          "total_swap_pss_mib": 0.4599609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.2734375,
+          "total_rss_mib": 195.43359375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8466796875,
+          "total_rss_mib": 5.62109375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 83.0234375,
+          "total_rss_mib": 62.8056640625,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.880964846,
+          "cpu_percent_one_core": 2.351998029846028
+        },
+        "com.uscreen": {
+          "seconds": 14.884237004,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.890782311,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.896952814,
+          "cpu_percent_one_core": 0.8055338665450108
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.895825587,
+          "cpu_percent_one_core": 0.26853160817691846
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "033-pen-60-0",
+      "scene": "pen",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.056199448,
+        "cpu_ms": 8524,
+        "cpu_percent_one_core": 42.50057455850645
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3534848,
+        "art.gc.bytes-freed": 6411984,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 111
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.994,
+          "p95": 13.219,
+          "p99": 13.821
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.2275390625,
+          "total_rss_mib": 134.154296875,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 71.876953125,
+          "total_rss_mib": 188.5390625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.0,
+          "total_rss_mib": 6.80859375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.02734375,
+          "total_rss_mib": 63.7666015625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.2490234375,
+          "total_rss_mib": 135.275390625,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 71.876953125,
+          "total_rss_mib": 188.5390625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.04296875,
+          "total_rss_mib": 6.89453125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.03125,
+          "total_rss_mib": 63.7705078125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.184237702,
+          "cpu_percent_one_core": 41.49151171931339
+        },
+        "com.uscreen": {
+          "seconds": 17.175029757,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.166016174,
+          "cpu_percent_one_core": 14.447149384353132
+        },
+        "surfaceflinger": {
+          "seconds": 17.156582836,
+          "cpu_percent_one_core": 19.05973952539368
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.147605713,
+          "cpu_percent_one_core": 11.080264101008373
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "034-pen-60-1",
+      "scene": "pen",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.062753217,
+        "cpu_ms": 5414,
+        "cpu_percent_one_core": 26.98532918907906
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.229269,
+          "p95": 0.275808,
+          "p99": 4.401769
+        },
+        "upload_ms": {
+          "p50": 0.411461,
+          "p95": 0.495308,
+          "p99": 2.043808
+        },
+        "swap_ms": {
+          "p50": 2.866539,
+          "p95": 3.579962,
+          "p99": 3.843731
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.5075,
+          "p95": 4.3025,
+          "p99": 9.871808
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.24793,
+          "p95": 0.487532,
+          "p99": 0.684976
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 34.825385,
+          "p95": 41.181423,
+          "p99": 41.694308
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 35.06717,
+          "p95": 41.425023,
+          "p99": 41.915241
+        },
+        "compressed_storage_bytes": 114124,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.123046875,
+          "total_rss_mib": 157.8603515625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.0703125,
+          "total_rss_mib": 193.23828125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.021484375,
+          "total_rss_mib": 5.8125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.435546875,
+          "total_rss_mib": 64.2216796875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.169921875,
+          "total_rss_mib": 157.9111328125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.0703125,
+          "total_rss_mib": 193.23828125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.021484375,
+          "total_rss_mib": 5.8125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.439453125,
+          "total_rss_mib": 64.2255859375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.878007008,
+          "cpu_percent_one_core": 26.414828262191392
+        },
+        "com.uscreen": {
+          "seconds": 14.878383779,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.876618057,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.877190663,
+          "cpu_percent_one_core": 17.409200827421028
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.876516048,
+          "cpu_percent_one_core": 13.04068771035147
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "035-pen-60-2",
+      "scene": "pen",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.061099294,
+        "cpu_ms": 5380,
+        "cpu_percent_one_core": 26.81807173751981
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 0.252692,
+          "p95": 0.353077,
+          "p99": 7.001077
+        },
+        "upload_ms": {
+          "p50": 0.407846,
+          "p95": 0.500193,
+          "p99": 2.025808
+        },
+        "swap_ms": {
+          "p50": 2.868,
+          "p95": 3.604693,
+          "p99": 3.860808
+        },
+        "admission_to_swap_ms": {
+          "p50": 3.548,
+          "p95": 4.389346,
+          "p99": 11.99327
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.24479,
+          "p95": 0.49537,
+          "p99": 0.660321
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 35.451461,
+          "p95": 41.706885,
+          "p99": 42.423769
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 35.715043,
+          "p95": 41.983036,
+          "p99": 42.68128
+        },
+        "compressed_storage_bytes": 76511,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 62.232421875,
+          "total_rss_mib": 159.9580078125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 78.052734375,
+          "total_rss_mib": 194.21484375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8447265625,
+          "total_rss_mib": 5.6171875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.443359375,
+          "total_rss_mib": 64.2294921875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.279296875,
+          "total_rss_mib": 158.0087890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 78.052734375,
+          "total_rss_mib": 194.21484375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8447265625,
+          "total_rss_mib": 5.6171875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.443359375,
+          "total_rss_mib": 64.2294921875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.94667752,
+          "cpu_percent_one_core": 26.427277866365582
+        },
+        "com.uscreen": {
+          "seconds": 14.946552272,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.942564409,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.939474196,
+          "cpu_percent_one_core": 17.135810580839802
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.938206124,
+          "cpu_percent_one_core": 12.852948902045823
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "036-motion-60-0",
+      "scene": "motion",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.05391387,
+        "cpu_ms": 8402,
+        "cpu_percent_one_core": 41.89705837207727
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3530752,
+        "art.gc.bytes-freed": 7063248,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 111
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.377,
+          "p95": 12.6,
+          "p99": 13.258
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 41.3173828125,
+          "total_rss_mib": 137.201171875,
+          "total_swap_pss_mib": 0.45703125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 74.40625,
+          "total_rss_mib": 191.0703125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.998046875,
+          "total_rss_mib": 6.8046875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.72265625,
+          "total_rss_mib": 64.4619140625,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.1064453125,
+          "total_rss_mib": 135.373046875,
+          "total_swap_pss_mib": 0.333984375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 74.4013671875,
+          "total_rss_mib": 191.0703125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.041015625,
+          "total_rss_mib": 6.890625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.7265625,
+          "total_rss_mib": 64.4658203125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.155533584,
+          "cpu_percent_one_core": 41.56093405715897
+        },
+        "com.uscreen": {
+          "seconds": 17.156841749,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.162918275,
+          "cpu_percent_one_core": 14.682817686492772
+        },
+        "surfaceflinger": {
+          "seconds": 17.166609717,
+          "cpu_percent_one_core": 19.74763832746137
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.169923871,
+          "cpu_percent_one_core": 11.764758045385278
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "037-motion-60-1",
+      "scene": "motion",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.057172908,
+        "cpu_ms": 7254,
+        "cpu_percent_one_core": 36.1666124796016
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.124731,
+          "p95": 1.400077,
+          "p99": 3.706577
+        },
+        "upload_ms": {
+          "p50": 1.154923,
+          "p95": 1.44923,
+          "p99": 2.031577
+        },
+        "swap_ms": {
+          "p50": 2.914577,
+          "p95": 3.617077,
+          "p99": 3.9255
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.296231,
+          "p95": 6.331231,
+          "p99": 8.570616
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.250772,
+          "p95": 0.536174,
+          "p99": 0.712791
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 31.889885,
+          "p95": 40.989692,
+          "p99": 41.604346
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 32.163985,
+          "p95": 41.244733,
+          "p99": 41.883811
+        },
+        "compressed_storage_bytes": 112656,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.423828125,
+          "total_rss_mib": 159.1337890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.62109375,
+          "total_rss_mib": 191.79296875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.029296875,
+          "total_rss_mib": 5.82421875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.408203125,
+          "total_rss_mib": 64.1943359375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.482421875,
+          "total_rss_mib": 159.1962890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.62109375,
+          "total_rss_mib": 191.79296875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.029296875,
+          "total_rss_mib": 5.82421875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.408203125,
+          "total_rss_mib": 64.1943359375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.910577948,
+          "cpu_percent_one_core": 36.35003296922505
+        },
+        "com.uscreen": {
+          "seconds": 14.899706109,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.892689421,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.88516846,
+          "cpu_percent_one_core": 18.340403787408665
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.874556009,
+          "cpu_percent_one_core": 13.244092790453923
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "038-motion-60-2",
+      "scene": "motion",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.059177447,
+        "cpu_ms": 7381,
+        "cpu_percent_one_core": 36.79612496325907
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 1.198385,
+          "p95": 1.600923,
+          "p99": 5.793769
+        },
+        "upload_ms": {
+          "p50": 1.129693,
+          "p95": 1.430923,
+          "p99": 1.841808
+        },
+        "swap_ms": {
+          "p50": 2.849231,
+          "p95": 3.553461,
+          "p99": 3.8045
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.268308,
+          "p95": 6.371424,
+          "p99": 10.566
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.256139,
+          "p95": 0.504369,
+          "p99": 0.693128
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 36.128307,
+          "p95": 42.471385,
+          "p99": 43.006423
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 36.402436,
+          "p95": 42.713558,
+          "p99": 43.277699
+        },
+        "compressed_storage_bytes": 78993,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.384765625,
+          "total_rss_mib": 159.0830078125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.60546875,
+          "total_rss_mib": 192.7734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8505859375,
+          "total_rss_mib": 5.625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.416015625,
+          "total_rss_mib": 64.2021484375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.435546875,
+          "total_rss_mib": 159.1376953125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.60546875,
+          "total_rss_mib": 192.7734375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8505859375,
+          "total_rss_mib": 5.625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.404296875,
+          "total_rss_mib": 64.1904296875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.892070679,
+          "cpu_percent_one_core": 36.328057505319876
+        },
+        "com.uscreen": {
+          "seconds": 14.890545443,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.893424347,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.898099933,
+          "cpu_percent_one_core": 17.720380530890885
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.900414967,
+          "cpu_percent_one_core": 13.08688385067578
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "039-scroll-60-0",
+      "scene": "scroll",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.054029062,
+        "cpu_ms": 8471,
+        "cpu_percent_one_core": 42.24088822156709
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3457024,
+        "art.gc.bytes-freed": 6772432,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 118
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.679,
+          "p95": 12.846,
+          "p99": 13.526
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 40.4755859375,
+          "total_rss_mib": 136.353515625,
+          "total_swap_pss_mib": 0.455078125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 77.365234375,
+          "total_rss_mib": 194.046875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.00390625,
+          "total_rss_mib": 6.8125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.765625,
+          "total_rss_mib": 64.5048828125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 41.2763671875,
+          "total_rss_mib": 40.1025390625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.57421875,
+          "total_rss_mib": 134.853515625,
+          "total_swap_pss_mib": 0.3330078125
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 77.3603515625,
+          "total_rss_mib": 194.046875,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.046875,
+          "total_rss_mib": 6.8984375,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.765625,
+          "total_rss_mib": 64.5048828125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.20789199,
+          "cpu_percent_one_core": 42.01560542221883
+        },
+        "com.uscreen": {
+          "seconds": 17.210037671,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.20268695,
+          "cpu_percent_one_core": 14.707004826359407
+        },
+        "surfaceflinger": {
+          "seconds": 17.198775958,
+          "cpu_percent_one_core": 19.71070504248963
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.198307714,
+          "cpu_percent_one_core": 11.687196399932958
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "040-scroll-60-1",
+      "scene": "scroll",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.056781755,
+        "cpu_ms": 8375,
+        "cpu_percent_one_core": 41.756449774960416
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.485885,
+          "p95": 3.204077,
+          "p99": 3.390154
+        },
+        "upload_ms": {
+          "p50": 1.234115,
+          "p95": 1.582039,
+          "p99": 1.791346
+        },
+        "swap_ms": {
+          "p50": 2.415269,
+          "p95": 3.016692,
+          "p99": 3.279808
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.189539,
+          "p95": 7.415423,
+          "p99": 7.919577
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.236761,
+          "p95": 0.451719,
+          "p99": 0.678948
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 33.7125,
+          "p95": 39.907961,
+          "p99": 40.519346
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 33.98848,
+          "p95": 40.167999,
+          "p99": 40.736589
+        },
+        "compressed_storage_bytes": 112971,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.158203125,
+          "total_rss_mib": 157.9541015625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.2060546875,
+          "total_rss_mib": 195.39453125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.029296875,
+          "total_rss_mib": 5.82421875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.451171875,
+          "total_rss_mib": 64.2373046875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 62.2080078125,
+          "total_rss_mib": 160.0087890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.2060546875,
+          "total_rss_mib": 195.39453125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.029296875,
+          "total_rss_mib": 5.82421875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.455078125,
+          "total_rss_mib": 64.2412109375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.028315955,
+          "cpu_percent_one_core": 41.636530698258355
+        },
+        "com.uscreen": {
+          "seconds": 17.029420825,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.032242794,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.03338469,
+          "cpu_percent_one_core": 16.849264266807328
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.031423297,
+          "cpu_percent_one_core": 10.86227479488381
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "041-scroll-60-2",
+      "scene": "scroll",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.050236678,
+        "cpu_ms": 8426,
+        "cpu_percent_one_core": 42.02444158300324
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 3.135693,
+          "p95": 3.851654,
+          "p99": 4.225769
+        },
+        "upload_ms": {
+          "p50": 1.101884,
+          "p95": 1.334307,
+          "p99": 1.512962
+        },
+        "swap_ms": {
+          "p50": 2.175577,
+          "p95": 2.761846,
+          "p99": 3.092538
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.415308,
+          "p95": 7.587846,
+          "p99": 8.063116
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.203529,
+          "p95": 0.411961,
+          "p99": 0.64123
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 33.672,
+          "p95": 39.872231,
+          "p99": 40.464385
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 33.935156,
+          "p95": 40.094085,
+          "p99": 40.658534
+        },
+        "compressed_storage_bytes": 76298,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.1025390625,
+          "total_rss_mib": 157.8837890625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.5068359375,
+          "total_rss_mib": 191.6953125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8583984375,
+          "total_rss_mib": 5.640625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.494140625,
+          "total_rss_mib": 64.2802734375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 60.0517578125,
+          "total_rss_mib": 157.9384765625,
+          "total_swap_pss_mib": 0.4150390625
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.2939453125,
+          "total_rss_mib": 191.6953125,
+          "total_swap_pss_mib": 0.30078125
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8583984375,
+          "total_rss_mib": 5.640625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.498046875,
+          "total_rss_mib": 64.2841796875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.004591933,
+          "cpu_percent_one_core": 41.871042998582965
+        },
+        "com.uscreen": {
+          "seconds": 16.999700943,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 16.988134323,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 16.98343503,
+          "cpu_percent_one_core": 16.015605766414854
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 16.984512232,
+          "cpu_percent_one_core": 10.480136112748392
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "042-photo-60-0",
+      "scene": "photo",
+      "codec": 0,
+      "cpu": {
+        "seconds": 20.053453909,
+        "cpu_ms": 8385,
+        "cpu_percent_one_core": 41.81324592785888
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 3457024,
+        "art.gc.bytes-freed": 6067920,
+        "art.gc.gc-count": 1,
+        "art.gc.gc-time": 110
+      },
+      "metrics": {
+        "inputs": 1200,
+        "callbacks": 1200,
+        "missing_callbacks": 0,
+        "admission_to_callback_ms": {
+          "p50": 11.674,
+          "p95": 13.104,
+          "p99": 14.006
+        }
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 39.3876953125,
+          "total_rss_mib": 135.373046875,
+          "total_swap_pss_mib": 0.4501953125
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 76.2431640625,
+          "total_rss_mib": 193.1484375,
+          "total_swap_pss_mib": 0.30078125
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.013671875,
+          "total_rss_mib": 6.828125,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 86.0546875,
+          "total_rss_mib": 65.7939453125,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.5419921875,
+          "total_rss_mib": 39.3681640625,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 38.0908203125,
+          "total_rss_mib": 134.423828125,
+          "total_swap_pss_mib": 0.3349609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 76.2744140625,
+          "total_rss_mib": 193.1484375,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 7.056640625,
+          "total_rss_mib": 6.9140625,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.0546875,
+          "total_rss_mib": 63.7939453125,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.206002235,
+          "cpu_percent_one_core": 42.020220044450085
+        },
+        "com.uscreen": {
+          "seconds": 17.210715435,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.214614269,
+          "cpu_percent_one_core": 14.580634574659026
+        },
+        "surfaceflinger": {
+          "seconds": 17.215895847,
+          "cpu_percent_one_core": 19.226417430823343
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.213707078,
+          "cpu_percent_one_core": 11.095808656120784
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "043-photo-60-1",
+      "scene": "photo",
+      "codec": 1,
+      "cpu": {
+        "seconds": 20.054945178,
+        "cpu_ms": 8386,
+        "cpu_percent_one_core": 41.815123031098224
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 2.908154,
+          "p95": 3.601423,
+          "p99": 4.056654
+        },
+        "upload_ms": {
+          "p50": 1.024885,
+          "p95": 1.34427,
+          "p99": 1.547615
+        },
+        "swap_ms": {
+          "p50": 2.340692,
+          "p95": 2.914154,
+          "p99": 3.153615
+        },
+        "admission_to_swap_ms": {
+          "p50": 6.306385,
+          "p95": 7.475346,
+          "p99": 7.98377
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.23415,
+          "p95": 0.419002,
+          "p99": 0.620557
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 30.787308,
+          "p95": 39.786999,
+          "p99": 40.437462
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 31.02491,
+          "p95": 40.004017,
+          "p99": 40.647672
+        },
+        "compressed_storage_bytes": 1292500,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.28515625,
+          "total_rss_mib": 159.0634765625,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 79.021484375,
+          "total_rss_mib": 195.41015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.052734375,
+          "total_rss_mib": 5.8671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.513671875,
+          "total_rss_mib": 64.2998046875,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.33203125,
+          "total_rss_mib": 159.1142578125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 79.021484375,
+          "total_rss_mib": 195.41015625,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 6.052734375,
+          "total_rss_mib": 5.8671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.517578125,
+          "total_rss_mib": 64.3037109375,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 17.006636551,
+          "cpu_percent_one_core": 41.689607340865436
+        },
+        "com.uscreen": {
+          "seconds": 17.004450523,
+          "cpu_percent_one_core": 0.0
+        },
+        "media.unisoc.codec2": {
+          "seconds": 17.004823371,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 17.007457535,
+          "cpu_percent_one_core": 16.345770637845074
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 17.008113098,
+          "cpu_percent_one_core": 10.465593624311635
+        }
+      },
+      "surface": null
+    },
+    {
+      "path": "044-photo-60-2",
+      "scene": "photo",
+      "codec": 2,
+      "cpu": {
+        "seconds": 20.049632755,
+        "cpu_ms": 8500,
+        "cpu_percent_one_core": 42.39479148504732
+      },
+      "allocations": {
+        "art.gc.bytes-allocated": 1830912,
+        "art.gc.bytes-freed": 0,
+        "art.gc.gc-count": 0,
+        "art.gc.gc-time": 0
+      },
+      "metrics": {
+        "read_decode_ms": {
+          "p50": 3.003654,
+          "p95": 6.083269,
+          "p99": 6.539731
+        },
+        "upload_ms": {
+          "p50": 0.750884,
+          "p95": 0.938616,
+          "p99": 1.079192
+        },
+        "swap_ms": {
+          "p50": 1.937193,
+          "p95": 2.531615,
+          "p99": 3.013654
+        },
+        "admission_to_swap_ms": {
+          "p50": 5.741846,
+          "p95": 9.167577,
+          "p99": 9.825
+        },
+        "schedule_lateness_ms": {
+          "p50": 0.162917,
+          "p95": 0.408667,
+          "p99": 0.997915
+        },
+        "presented": 1200,
+        "updates": 1200,
+        "inputs": 1200,
+        "absent_presentation": 0,
+        "admission_to_egl_present_ms": {
+          "p50": 36.327153,
+          "p95": 45.415731,
+          "p99": 45.960423
+        },
+        "schedule_to_egl_present_ms": {
+          "p50": 36.493946,
+          "p95": 45.60531,
+          "p99": 46.12308
+        },
+        "compressed_storage_bytes": 1231392,
+        "input_mode": "read"
+      },
+      "memory": [
+        {
+          "source": "memory-2-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-2-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.3046875,
+          "total_rss_mib": 159.0830078125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-2-com.uscreen.txt",
+          "total_pss_mib": 75.5078125,
+          "total_rss_mib": 191.89453125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-2-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8759765625,
+          "total_rss_mib": 5.671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-2-surfaceflinger.txt",
+          "total_pss_mib": 84.533203125,
+          "total_rss_mib": 64.3193359375,
+          "total_swap_pss_mib": 37.6484375
+        },
+        {
+          "source": "memory-7-android.hardware.graphics.composer@2.4-service.txt",
+          "total_pss_mib": 40.986328125,
+          "total_rss_mib": 39.8310546875,
+          "total_swap_pss_mib": 12.5
+        },
+        {
+          "source": "memory-7-com.uscreen.rectbench.txt",
+          "total_pss_mib": 61.3515625,
+          "total_rss_mib": 159.1298828125,
+          "total_swap_pss_mib": 0.4609375
+        },
+        {
+          "source": "memory-7-com.uscreen.txt",
+          "total_pss_mib": 75.5078125,
+          "total_rss_mib": 191.89453125,
+          "total_swap_pss_mib": 0.306640625
+        },
+        {
+          "source": "memory-7-media.unisoc.codec2.txt",
+          "total_pss_mib": 5.8759765625,
+          "total_rss_mib": 5.671875,
+          "total_swap_pss_mib": 1.953125
+        },
+        {
+          "source": "memory-7-surfaceflinger.txt",
+          "total_pss_mib": 84.529296875,
+          "total_rss_mib": 64.3154296875,
+          "total_swap_pss_mib": 37.6484375
+        }
+      ],
+      "services": {
+        "com.uscreen.rectbench": {
+          "seconds": 14.935472344,
+          "cpu_percent_one_core": 41.77972986911782
+        },
+        "com.uscreen": {
+          "seconds": 14.938879039,
+          "cpu_percent_one_core": 0.06693942680634621
+        },
+        "media.unisoc.codec2": {
+          "seconds": 14.939443539,
+          "cpu_percent_one_core": 0.0
+        },
+        "surfaceflinger": {
+          "seconds": 14.941333449,
+          "cpu_percent_one_core": 16.531322377825074
+        },
+        "android.hardware.graphics.composer@2.4-service": {
+          "seconds": 14.940890594,
+          "cpu_percent_one_core": 12.917569992615126
+        }
+      },
+      "surface": null
+    }
+  ],
+  "cohorts": [
+    {
+      "scene": "motion",
+      "codec": 0,
+      "trials": 3,
+      "cpu_percent_one_core": 42.25197685167739,
+      "sampled_app_pss_mib": {
+        "p50": 39.2685546875,
+        "p95": 41.3701171875,
+        "p99": 41.3701171875
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "motion",
+      "codec": 1,
+      "trials": 3,
+      "cpu_percent_one_core": 36.1666124796016,
+      "sampled_app_pss_mib": {
+        "p50": 61.62890625,
+        "p95": 61.7275390625,
+        "p99": 61.7275390625
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "motion",
+      "codec": 2,
+      "trials": 3,
+      "cpu_percent_one_core": 36.40915861662118,
+      "sampled_app_pss_mib": {
+        "p50": 61.60546875,
+        "p95": 61.7958984375,
+        "p99": 61.7958984375
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "pen",
+      "codec": 0,
+      "trials": 3,
+      "cpu_percent_one_core": 41.944022627802966,
+      "sampled_app_pss_mib": {
+        "p50": 38.3330078125,
+        "p95": 39.2529296875,
+        "p99": 39.2529296875
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "pen",
+      "codec": 1,
+      "trials": 3,
+      "cpu_percent_one_core": 26.98532918907906,
+      "sampled_app_pss_mib": {
+        "p50": 60.4609375,
+        "p95": 60.8095703125,
+        "p99": 60.8095703125
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "pen",
+      "codec": 2,
+      "trials": 3,
+      "cpu_percent_one_core": 27.06122595798347,
+      "sampled_app_pss_mib": {
+        "p50": 60.43359375,
+        "p95": 60.7744140625,
+        "p99": 60.7744140625
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "photo",
+      "codec": 0,
+      "trials": 3,
+      "cpu_percent_one_core": 41.81324592785888,
+      "sampled_app_pss_mib": {
+        "p50": 38.1484375,
+        "p95": 39.4541015625,
+        "p99": 39.4541015625
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "photo",
+      "codec": 1,
+      "trials": 3,
+      "cpu_percent_one_core": 41.20583933132802,
+      "sampled_app_pss_mib": {
+        "p50": 61.33203125,
+        "p95": 61.49609375,
+        "p99": 61.49609375
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "photo",
+      "codec": 2,
+      "trials": 3,
+      "cpu_percent_one_core": 42.880524663442905,
+      "sampled_app_pss_mib": {
+        "p50": 61.3740234375,
+        "p95": 61.6611328125,
+        "p99": 61.6611328125
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "scroll",
+      "codec": 0,
+      "trials": 3,
+      "cpu_percent_one_core": 41.802687139722565,
+      "sampled_app_pss_mib": {
+        "p50": 38.7119140625,
+        "p95": 40.5400390625,
+        "p99": 40.5400390625
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "scroll",
+      "codec": 1,
+      "trials": 3,
+      "cpu_percent_one_core": 41.05554656049007,
+      "sampled_app_pss_mib": {
+        "p50": 60.416015625,
+        "p95": 62.2080078125,
+        "p99": 62.2080078125
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "scroll",
+      "codec": 2,
+      "trials": 3,
+      "cpu_percent_one_core": 42.02444158300324,
+      "sampled_app_pss_mib": {
+        "p50": 60.16015625,
+        "p95": 60.59375,
+        "p99": 60.59375
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "text",
+      "codec": 0,
+      "trials": 3,
+      "cpu_percent_one_core": 8.579766961135785,
+      "sampled_app_pss_mib": {
+        "p50": 38.1259765625,
+        "p95": 38.2197265625,
+        "p99": 38.2197265625
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "text",
+      "codec": 1,
+      "trials": 3,
+      "cpu_percent_one_core": 2.4475781680910993,
+      "sampled_app_pss_mib": {
+        "p50": 57.177734375,
+        "p95": 57.521484375,
+        "p99": 57.521484375
+      },
+      "sample_count": 6
+    },
+    {
+      "scene": "text",
+      "codec": 2,
+      "trials": 3,
+      "cpu_percent_one_core": 2.596947481984157,
+      "sampled_app_pss_mib": {
+        "p50": 57.0751953125,
+        "p95": 57.6650390625,
+        "p99": 57.6650390625
+      },
+      "sample_count": 6
+    }
+  ],
+  "completed_trials": 45
+}

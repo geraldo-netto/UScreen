@@ -1,0 +1,14 @@
+{
+  "source_sha256": "40f3637a0b104177f20099729ef39505b571ed86cfb020c1eb38e11dfcb81bac",
+  "selected_picture_indices": [
+    0,
+    5,
+    10,
+    15
+  ],
+  "all_selected_pictures_are_idr": true,
+  "sha256": "f1c3288af41121904e1e96981814f39caba2e49ec2000471654c7f407a2bac54",
+  "source_cadence": 5,
+  "control_cadence": 1,
+  "nominal_fps": 60
+}

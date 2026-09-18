@@ -4,7 +4,10 @@
 H.264 path, with tablet CPU, memory traffic and battery cost as selection
 criteria.** The earlier byte savings justify investigation, not a new default.
 Ample host resources do not remove the tablet's power constraints. T419 remains
-open for an Android renderer and a controlled comparison.
+open for an Android renderer and a controlled comparison at this stage.
+The subsequent [renderer experiment](2026-09-19-rectangle-renderer.md) supplies
+matched local replay CPU/memory, presentation, mmap and retirement evidence;
+live transport and sustained power remain unmeasured.
 
 ## Why decompression time is not enough
 

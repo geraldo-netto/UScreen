@@ -1,0 +1,122 @@
+{
+  "boundary": "Original RGB versus decoded H.264 converted from limited BT.709 to full RGB; includes chroma subsampling",
+  "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers\nbuilt with gcc 13 (Ubuntu 13.2.0-23ubuntu3)\nconfiguration: --prefix=/usr --extra-version=3ubuntu5 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --enable-libvpl --disable-libmfx --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared\nlibavutil      58. 29.100 / 58. 29.100\nlibavcodec     60. 31.102 / 60. 31.102\nlibavformat    60. 16.100 / 60. 16.100\nlibavdevice    60.  3.100 / 60.  3.100\nlibavfilter     9. 12.100 /  9. 12.100\nlibswscale      7.  5.100 /  7.  5.100\nlibswresample   4. 12.100 /  4. 12.100\nlibpostproc    57.  3.100 / 57.  3.100\n",
+  "source_sha256": "3009f098ed347fd58f56d5579ffec7504b562598e86f1d97ba27245fbcc9ebb8",
+  "scenes": [
+    {
+      "rgb_samples": 61440000,
+      "rgb_mse": 19.287696158854168,
+      "rgb_psnr_db": 35.2780000493217,
+      "maximum_channel_error": 86,
+      "scene": "text",
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "/tmp/uscreen-t419-render-fixtures/text-5.h264",
+        "-vf",
+        "scale=in_color_matrix=bt709:in_range=limited:out_range=full,format=rgb24",
+        "-f",
+        "rawvideo",
+        "-y",
+        "/tmp/uscreen-t419-render-fixtures/text-5-decoded.rgb"
+      ],
+      "h264_sha256": "99e7ab211acb60eaa232e07837023ea4c402b5cc3b5ea0af51087c7a207f2a5f",
+      "reference_sha256": "3624382622d65a6868ec8b96d79ca96f1f87f63a232399e453dd6cc3ea77ba5c"
+    },
+    {
+      "rgb_samples": 368640000,
+      "rgb_mse": 19.81883713921441,
+      "rgb_psnr_db": 35.16002191992021,
+      "maximum_channel_error": 97,
+      "scene": "pen",
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "/tmp/uscreen-t419-render-fixtures/pen-60.h264",
+        "-vf",
+        "scale=in_color_matrix=bt709:in_range=limited:out_range=full,format=rgb24",
+        "-f",
+        "rawvideo",
+        "-y",
+        "/tmp/uscreen-t419-render-fixtures/pen-60-decoded.rgb"
+      ],
+      "h264_sha256": "14a9e03129e3a091b100ba5081805736e8dfa14b47d993f542e1b035da4777e3",
+      "reference_sha256": "a7dc721d3edf87203293563b87eda89f42eed525b54975938ac00fb6dc1bf937"
+    },
+    {
+      "rgb_samples": 368640000,
+      "rgb_mse": 46.99484922688802,
+      "rgb_psnr_db": 31.410301002709986,
+      "maximum_channel_error": 173,
+      "scene": "motion",
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "/tmp/uscreen-t419-render-fixtures/motion-60.h264",
+        "-vf",
+        "scale=in_color_matrix=bt709:in_range=limited:out_range=full,format=rgb24",
+        "-f",
+        "rawvideo",
+        "-y",
+        "/tmp/uscreen-t419-render-fixtures/motion-60-decoded.rgb"
+      ],
+      "h264_sha256": "6be1b66eaf91bb1c5388cf1286b514d0779df8d00cf5010bd9082926012185c1",
+      "reference_sha256": "abe45538a3656418efc16e7a1a6abb91716226b59e844da2a62d8e1f3c919160"
+    },
+    {
+      "rgb_samples": 368640000,
+      "rgb_mse": 18.12092398546007,
+      "rgb_psnr_db": 35.54900022297766,
+      "maximum_channel_error": 95,
+      "scene": "scroll",
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "/tmp/uscreen-t419-render-fixtures/scroll-60.h264",
+        "-vf",
+        "scale=in_color_matrix=bt709:in_range=limited:out_range=full,format=rgb24",
+        "-f",
+        "rawvideo",
+        "-y",
+        "/tmp/uscreen-t419-render-fixtures/scroll-60-decoded.rgb"
+      ],
+      "h264_sha256": "98b78eb2e9d44e1be0bc0e0c8929ccafed150f113b6e6bb0d7f026278c00bf0d",
+      "reference_sha256": "68e857e1e8dcccaaf6ad98f1b486820479833031b00d3d46600ed52bd15d6985"
+    },
+    {
+      "rgb_samples": 368640000,
+      "rgb_mse": 17.942975,
+      "rgb_psnr_db": 35.59185908839502,
+      "maximum_channel_error": 96,
+      "scene": "photo",
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "/tmp/uscreen-t419-render-fixtures/photo-60.h264",
+        "-vf",
+        "scale=in_color_matrix=bt709:in_range=limited:out_range=full,format=rgb24",
+        "-f",
+        "rawvideo",
+        "-y",
+        "/tmp/uscreen-t419-render-fixtures/photo-60-decoded.rgb"
+      ],
+      "h264_sha256": "1853467207307d6b6846b1bf0e2530aaa9abc45bb6c679f390a9b107b52d0290",
+      "reference_sha256": "956e49d214158129beb83bb7c2d0634674b09a01ed8ee86651964ec596f9bb6f"
+    }
+  ]
+}

@@ -10,6 +10,10 @@ The [tablet resource follow-up](2026-09-18-frame-compression-resources.md) recor
 current app/codec/compositor CPU and memory observations and defines the next
 controlled experiment, including buffer reuse, allocation peaks and memory
 traffic. Its live-session observation does not compare compression candidates.
+The subsequent [Android renderer comparison](2026-09-19-rectangle-renderer.md)
+measures both compressors against hardware H.264 with local fixtures: CPU
+improves on some UI scenes, while app memory and photo/scroll bandwidth rise.
+It does not establish an end-to-end latency or battery advantage.
 
 ## Scope and comparable inputs
 
