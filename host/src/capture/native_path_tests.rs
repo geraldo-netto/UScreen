@@ -67,6 +67,8 @@ async fn native_capture_resources() {
         edid_path: Some("unused-fixture-edid".into()),
         ..Default::default()
     });
+    // Cleanup belongs to the manager only after it creates the native FIFO.
+    manager.helper.fifo = Some(fifo::Owned::create(&path).unwrap());
     assert_native_argument(
         &manager.helper.command(&manager.config, &path).unwrap(),
         "--capture-fifo",

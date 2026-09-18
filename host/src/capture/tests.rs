@@ -713,7 +713,8 @@ async fn t022_helper_disconnects_cleanly_on_display_off_mode_change_and_crash() 
 
 #[test]
 fn t432_capability_metadata_restarts_only_when_effective_stream_changes() {
-    let manager = CaptureManager::new(Default::default());
+    let mut manager = test_manager();
+    manager.config.encoder = CaptureConfig::default().encoder;
     let mut settings = manager_settings(&manager);
     settings.decoders = Some(crate::media::DecoderCapabilities {
         protocol: 1,

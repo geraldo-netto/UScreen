@@ -3,9 +3,11 @@
 On 2026-09-18 at 20:58:37 CEST, an authenticated control request changed the
 installed host from `h264_vaapi` to `h264_vaapi_baseline`. The daemon saved the
 choice and playback resumed using Constrained Baseline/CAVLC. The transition
-also exposed an unexpected missing-FIFO failure and helper reattachment. T429
-is actionable for deterministic reproduction of this ordering; no behavioral
-fix was made during this configuration task.
+also exposed an unexpected missing-FIFO failure and helper reattachment. No
+behavioral fix was made during that configuration task. Subsequent
+[T429 regression work](2026-09-18-fifo-ownership.md) reproduced unowned-manager
+cleanup deleting the FIFO and fixed its ownership. This historical trace alone
+does not identify which process deleted the path.
 
 ## Saved configuration
 
@@ -81,7 +83,7 @@ new controlled performance or power benchmark. Historical log labels say
 “encode→display”; the actual measured boundary is packet readiness through the
 tablet's render callback and host ACK receipt, not optical display.
 
-## Required follow-up
+## Investigation proposed at observation time
 
 Reproduce retirement arriving around replacement encoder startup using the
 normal fake-helper/FIFO test suite. Locate the ordering that lets FFmpeg open a
@@ -94,3 +96,7 @@ establish that their earlier searching interval had the same cause. Physical
 normal/low-latency/normal transition validation still needs an isolated display
 setup avoiding T222; do not deliberately repeat reattachments on the active
 Cinnamon session as a regression test.
+
+The subsequent [ownership investigation](2026-09-18-fifo-ownership.md) establishes
+the tested cause and verification scope. It supersedes the initial hypothesis
+that partial-write retirement itself removed the path.

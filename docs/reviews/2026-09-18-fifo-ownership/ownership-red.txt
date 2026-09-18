@@ -1,0 +1,74 @@
+   Compiling uscreen v1.2.3 (/backups/disk2/projects/uscreen/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.00s
+     Running unittests src/main.rs (target/debug/deps/uscreen-bb160ce949f8ccc9)
+
+running 3 tests
+test capture::ownership_tests::t429_retired_owner_preserves_replacement_paths ...
+thread 'capture::ownership_tests::t429_retired_owner_preserves_replacement_paths' (658184) panicked at host/src/capture/ownership_tests.rs:18:9:
+T429:
+running 1 test
+test capture::ownership_tests::t429_retired_owner_preserves_replacement_paths ... FAILED
+
+failures:
+
+failures:
+    capture::ownership_tests::t429_retired_owner_preserves_replacement_paths
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 363 filtered out; finished in 0.02s
+
+
+thread 'capture::ownership_tests::t429_retired_owner_preserves_replacement_paths' (658186) panicked at host/src/capture/ownership_tests.rs:73:14:
+T429: retired manager removed a replacement path: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once ...
+thread 'capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once' (658188) panicked at host/src/capture/ownership_tests.rs:18:9:
+T429:
+running 1 test
+test capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once ... FAILED
+
+failures:
+
+failures:
+    capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 363 filtered out; finished in 0.02s
+
+
+thread 'capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once' (658190) panicked at host/src/capture/ownership_tests.rs:88:5:
+T429: Drop removed the next owner's FIFO after shutdown
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+FAILED
+test capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo ...
+thread 'capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo' (658192) panicked at host/src/capture/ownership_tests.rs:18:9:
+T429:
+running 1 test
+test capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo ... FAILED
+
+failures:
+
+failures:
+    capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 363 filtered out; finished in 0.00s
+
+
+thread 'capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo' (658194) panicked at host/src/capture/ownership_tests.rs:36:14:
+T429: an unstarted manager removed another capture's FIFO: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+FAILED
+
+failures:
+
+failures:
+    capture::ownership_tests::t429_retired_owner_preserves_replacement_paths
+    capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once
+    capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 361 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p uscreen --bin uscreen`

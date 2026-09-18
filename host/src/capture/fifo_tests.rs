@@ -9,7 +9,7 @@ use tokio::io::AsyncWriteExt;
 
 const NAME: &str = "capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug";
 
-fn isolated_fixture() -> bool {
+fn isolated_fixture(name: &str) -> bool {
     if std::env::var_os("USCREEN_T226_ROOT").is_some() {
         return false;
     }
@@ -19,7 +19,7 @@ fn isolated_fixture() -> bool {
         .unwrap();
     card_allocation_tests::compile_helper(root.path());
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", NAME, "--nocapture"])
+        .args(["--exact", name, "--nocapture"])
         .env("USCREEN_T226_ROOT", root.path())
         .env("HOME", root.path())
         .env("XDG_RUNTIME_DIR", root.path())
@@ -107,21 +107,7 @@ async fn live_recovery(
     rx: &mut broadcast::Receiver<VideoPacket>,
 ) -> VideoPacket {
     std::fs::write(root.join("request-live"), "").unwrap();
-    let next = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        loop {
-            let packet = rx.recv().await.unwrap();
-            if !Arc::ptr_eq(&packet.generation, &first.generation) {
-                break packet;
-            }
-        }
-    })
-    .await
-    .expect("T226: active encoder never recovered");
-    assert!(
-        !first.generation.load(std::sync::atomic::Ordering::Acquire),
-        "T226: old frames still active"
-    );
-    assert!(next.seq > first.seq);
+    let next = next_generation(first, rx).await;
     std::fs::write(root.join("request-stale"), "").unwrap();
     wait_for_marker(root, "stale").await;
     for _ in 0..4 {
@@ -134,6 +120,28 @@ async fn live_recovery(
             "T226: stale reset retired the fresh encoder"
         );
     }
+    next
+}
+
+async fn next_generation(
+    first: &VideoPacket,
+    rx: &mut broadcast::Receiver<VideoPacket>,
+) -> VideoPacket {
+    let next = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let packet = rx.recv().await.unwrap();
+            if !Arc::ptr_eq(&packet.generation, &first.generation) {
+                break packet;
+            }
+        }
+    })
+    .await
+    .expect("T226/T429: active encoder never recovered");
+    assert!(
+        !first.generation.load(std::sync::atomic::Ordering::Acquire),
+        "T226: old frames still active"
+    );
+    assert!(next.seq > first.seq);
     next
 }
 
@@ -168,13 +176,8 @@ async fn wait_pipe_request(mib: u32) {
     .expect("T415: helper did not report the current request after FIFO recovery");
 }
 
-#[tokio::test]
-async fn t226_partial_frame_recovers_without_display_hotplug() {
-    if isolated_fixture() {
-        return;
-    }
-    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T226_ROOT").unwrap());
-    let mut manager = CaptureManager::new(CaptureConfig {
+fn manager(root: &Path) -> CaptureManager {
+    CaptureManager::new(CaptureConfig {
         helper_path: root.join("evdi_helper"),
         edid_path: Some(root.join("unused.edid")),
         encoder: "libx264".into(),
@@ -185,7 +188,16 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
         height_mm: 200,
         quality: 20,
         ..Default::default()
-    });
+    })
+}
+
+#[tokio::test]
+async fn t226_partial_frame_recovers_without_display_hotplug() {
+    if isolated_fixture(NAME) {
+        return;
+    }
+    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T226_ROOT").unwrap());
+    let mut manager = manager(&root);
     uscreen_config::linux::pipe::publish(2).unwrap();
     manager.start_helper().await.unwrap();
     let old_reader = std::fs::OpenOptions::new()
@@ -222,5 +234,60 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
         std::fs::read_to_string(root.join("starts")).unwrap(),
         "ready\n",
         "T226: recovery detached and reattached the virtual display"
+    );
+}
+
+#[tokio::test]
+async fn t429_encoder_changes_survive_unstarted_manager_cleanup() {
+    if isolated_fixture(
+        "capture::fifo_tests::t429_encoder_changes_survive_unstarted_manager_cleanup",
+    ) {
+        return;
+    }
+    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T226_ROOT").unwrap());
+    let mut manager = manager(&root);
+    manager.start_helper().await.unwrap();
+    let old_reader = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NONBLOCK)
+        .open(fifo_path_for(0).unwrap())
+        .unwrap();
+    wait_for_marker(&root, "partial").await;
+    let (video, mut rx) = crate::video_queue::channel(16, Default::default());
+    let (settings, settings_rx) = watch::channel(settings());
+    let (_display, display_rx) = watch::channel(true);
+    let (stop, stop_rx) = watch::channel(false);
+    let session = tokio::spawn(async move {
+        manager
+            .stream_frames(video, settings_rx, display_rx, stop_rx)
+            .await
+    });
+    let mut packet = tokio::time::timeout(std::time::Duration::from_secs(10), rx.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    // Mirrors the metadata-only manager used by T432, including default slot 0.
+    // The live fixture owns that slot inside this test's private runtime.
+    drop(CaptureManager::new(Default::default()));
+    for quality in [22, 20] {
+        settings.send_modify(|s| s.quality = quality);
+        packet = next_generation(&packet, &mut rx).await;
+        assert_fresh_frame(&decode(packet.clone()).await);
+    }
+    stop.send(true).unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(4), session)
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    drop(old_reader);
+    assert!(
+        !fifo_path_for(0).unwrap().exists(),
+        "T429: owned FIFO leaked on shutdown"
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.join("starts")).unwrap(),
+        "ready\n",
+        "T429: encoder-only updates reattached the display"
     );
 }

@@ -59,7 +59,7 @@ impl CaptureManager {
         self.helper.active_mode(&self.config)
     }
     async fn start_session_encoder(&mut self) -> Result<(u32, u32)> {
-        self.helper.recover_fifo(self.config.instance)?;
+        self.helper.recover_fifo()?;
         self.encoder.start(&self.config, self.active_mode()).await
     }
     /// Which EVDI card the helper opened; None until it has.
@@ -544,9 +544,7 @@ impl CaptureManager {
         self.helper.abort_stdout();
         self.encoder.shutdown().await;
         self.helper.terminate().await;
-        if let Ok(fifo) = fifo_path_for(self.config.instance) {
-            let _ = std::fs::remove_file(fifo);
-        }
+        self.helper.fifo.take();
     }
 }
 
@@ -623,9 +621,6 @@ impl SessionChanges {
 impl Drop for CaptureManager {
     fn drop(&mut self) {
         self.stop();
-        if let Ok(fifo) = fifo_path_for(self.config.instance) {
-            let _ = std::fs::remove_file(fifo);
-        }
     }
 }
 
@@ -641,6 +636,9 @@ mod native_path_tests;
 #[cfg(test)]
 #[path = "capture/orphan_tests.rs"]
 mod orphan_tests;
+#[cfg(test)]
+#[path = "capture/ownership_tests.rs"]
+mod ownership_tests;
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 #[path = "capture/tests.rs"]
 mod tests;

@@ -1,0 +1,26 @@
+   Compiling uscreen v1.2.3 (/backups/disk2/projects/uscreen/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.66s
+     Running unittests src/main.rs (target/debug/deps/uscreen-9a1d32836ea2d8fd)
+
+running 19 tests
+test capture::card_allocation_tests::t330_daemon_slots_share_free_card_leases_across_restarts ... ok
+test capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug ... ok
+test capture::fifo_tests::t429_encoder_changes_survive_unstarted_manager_cleanup ... ok
+test capture::helper::tests::evdi_problem_reports_a_missing_module ... ok
+test capture::helper::tests::evdi_problem_reports_a_module_with_no_devices ... ok
+test capture::helper::tests::evdi_problem_stays_quiet_when_a_device_exists ... ok
+test capture::inproc_tests::t284_vaapi_is_rejected_before_fifo_or_helper_creation ... ok
+test capture::inproc_tests::t322_cancelled_inprocess_session_releases_fifo ... ok
+test capture::inproc_tests::t455_inprocess_runtime_fixtures_survive_shared_umask ... ok
+test capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources ... ok
+test capture::orphan_tests::t245_changed_or_foreign_process_identity_is_never_signalled ... ok
+test capture::orphan_tests::t245_orphan_cleanup_matches_literal_fifo_arguments_and_programs ... ok
+test capture::orphan_tests::t245_retirement_waits_for_term_resistant_children ... ok
+test capture::ownership_tests::t429_ownership_does_not_hold_fifo_endpoints_open ... ok
+test capture::ownership_tests::t429_retired_owner_preserves_replacement_paths ... ok
+test capture::ownership_tests::t429_shutdown_releases_fifo_ownership_once ... ok
+test capture::ownership_tests::t429_unstarted_managers_preserve_live_fifo ... ok
+test capture::placement::tests::t224_kde_wayland_still_enables_positions_and_disables_output ... ok
+test capture::placement::tests::t224_non_kde_sessions_skip_placement_commands_and_retries ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 7.57s

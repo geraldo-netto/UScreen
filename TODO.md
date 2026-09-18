@@ -4,7 +4,6 @@
 
 | id | status | severity | effort | description |
 | --- | --- | --- | --- | --- |
-| T429 | open | medium | medium | Reproduce and fix the missing-FIFO failure during an encoder-only low-latency transition. The [2026-09-18 live observation](docs/reviews/2026-09-18-low-latency-live.md) on installed host `52fcd75` records partial FIFO retirement, replacement FFmpeg failing with ENOENT, helper reattachment and approximately 21.6 seconds until codec configuration returned; Constrained Baseline then streamed successfully. The relevant FIFO recovery code is unchanged in `9c917bb`. Add a permanent deterministic failing regression for the retirement/restart ordering before a cause-specific fix; preserve the helper and display across an encoder-only update. Daemon, Cinnamon and Xorg PIDs stayed unchanged in this observation. Separately retain the [Linux GUI full-daemon restart findings](docs/reviews/2026-09-18-low-latency-transition.md): the user's original option/path is unconfirmed, and that path plus physical transition verification needs an isolated display setup avoiding T222. Preserve exact build hashes, configuration, FIFO ownership, reconnect and first-render evidence; resumed latency does not prove interruption fixed. |
 
 ## Other items
 

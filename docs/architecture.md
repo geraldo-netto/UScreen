@@ -185,9 +185,15 @@ records the ownership limits, real H.264/HEVC decode checks and comparison with
 the committed T384 baseline; its former unframed read path and
 [T384's original replay](benchmarks.md#annex-b-packetizer-replay) remain as test
 and benchmark comparisons. The [framed packet report](benchmarks/2026-09-18-packet-framing.md)
-measures the subsequent sparse-cadence improvement. `capture::fifo` coordinates replacement of a damaged
-raw-frame FIFO; it creates the replacement before unlinking the old inode,
-preventing inode reuse during recovery. Raw frames still have no in-band
+measures the subsequent sparse-cadence improvement. `capture::fifo` owns the
+created FIFO inode through an `O_PATH` descriptor, which does not count as a
+pipe reader or writer. Cleanup removes only that owned inode if it still occupies
+the path; an unstarted manager, a manager already shut down, or an old owner
+cannot remove a subsequently replaced FIFO. Partial-frame recovery creates and
+pins the replacement before atomically publishing it, then transfers ownership.
+This prevents inode reuse during recovery and keeps cleanup bound to the current
+generation. See the [T429 regressions](reviews/2026-09-18-fifo-ownership.md).
+Raw frames still have no in-band
 sequence, size or generation header; both processes must use this reset
 protocol rather than assuming a close/reopen establishes a frame boundary.
 

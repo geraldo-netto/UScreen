@@ -1,0 +1,2 @@
+    Checking uscreen v1.2.3 (/backups/disk2/projects/uscreen/host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.01s

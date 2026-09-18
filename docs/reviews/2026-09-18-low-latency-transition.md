@@ -6,8 +6,10 @@ is therefore expected when switching between `h264_vaapi` and
 duration of the user's longer searching interval, or prove which profile resumed.
 This was the initial isolated investigation. A later
 [live encoder-only change](2026-09-18-low-latency-live.md) recorded a missing-FIFO
-failure and a roughly 21-second recovery, making deterministic T429 follow-up
-actionable. The user's original option/path remains unconfirmed.
+failure and a roughly 21-second recovery. Subsequent
+[T429 regressions and fix](2026-09-18-fifo-ownership.md) address FIFO cleanup by
+unowned or retired managers. The user's original option/path remains unconfirmed;
+the GUI's deliberate full restart remains distinct from an encoder-only update.
 
 Source inspected: `0458085`, plus the permanent T429 test added with this report.
 The checks below use private configuration files, injected restart actions and

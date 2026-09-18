@@ -64,6 +64,7 @@ pub(super) struct DetectedMode {
 
 pub(super) struct HelperProcess {
     pub(super) child: Option<Child>,
+    pub(super) fifo: Option<fifo::Owned>,
     stdout_task: Option<tokio::task::JoinHandle<()>>,
     /// Retained across restarts as a preference, never a reservation.
     pub(super) card: Option<u32>,
@@ -83,6 +84,7 @@ impl HelperProcess {
         let (stream_tx, stream_rx) = watch::channel(None);
         Self {
             child: None,
+            fifo: None,
             stdout_task: None,
             card: None,
             mode_tx,
@@ -100,9 +102,12 @@ impl HelperProcess {
             None => Ok(false),
         }
     }
-    pub(super) fn recover_fifo(&self, instance: u32) -> Result<()> {
+    pub(super) fn recover_fifo(&mut self) -> Result<()> {
         if let Some(retired) = *self.fifo_reset_rx.borrow() {
-            fifo::replace_retired(&fifo_path_for(instance)?, retired)?;
+            self.fifo
+                .as_mut()
+                .context("no owned capture FIFO")?
+                .replace_retired(retired)?;
         }
         Ok(())
     }
@@ -171,7 +176,7 @@ impl HelperProcess {
     pub(super) async fn start(&mut self, config: &CaptureConfig) -> Result<()> {
         crate::config::validate_encoder_for_build(&config.encoder)?;
         let fifo = fifo_path_for(config.instance)?;
-        ensure_fifo(&fifo)?;
+        self.fifo = Some(fifo::Owned::create(&fifo)?);
         process::retire_orphan_capture(&fifo).await?;
         let mut child = self
             .command(config, &fifo)?
