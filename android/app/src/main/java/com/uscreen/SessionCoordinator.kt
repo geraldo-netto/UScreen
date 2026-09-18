@@ -112,8 +112,6 @@ internal class SessionCoordinator(
 
     fun nativeResolution(width: Int, height: Int, widthMm: Int, heightMm: Int) {
         touchCapture?.setNativeResolution(width, height, widthMm, heightMm)
-        videoReceiver?.formatWidth = width
-        videoReceiver?.formatHeight = height
     }
 
     fun start() {
@@ -155,6 +153,23 @@ internal class SessionCoordinator(
         }
         videoReceiver?.streamFps = prefs.fps
         connectSettingsCallbacks()
+        connectFormatCallbacks()
+        touchCapture?.onModeKnown = { penOnly ->
+            withCurrentControl {
+                penOnlyMode = penOnly
+                if (penOnly || !codecSupported) videoReceiver?.stop() else videoReceiver?.start()
+            }
+        }
+
+    }
+
+    private fun connectFormatCallbacks() {
+        touchCapture?.onStreamFormat = { format ->
+            withCurrentControl {
+                codecSupported = format != null
+                if (format == null) videoReceiver?.stop() else videoReceiver?.setStreamFormat(format)
+            }
+        }
         touchCapture?.onCodecKnown = { codec ->
             withCurrentControl {
                 val mime = VideoCodec.types[codec]
@@ -173,13 +188,6 @@ internal class SessionCoordinator(
                 }
             }
         }
-        touchCapture?.onModeKnown = { penOnly ->
-            withCurrentControl {
-                penOnlyMode = penOnly
-                if (penOnly || !codecSupported) videoReceiver?.stop() else videoReceiver?.start()
-            }
-        }
-
     }
 
     private fun connectSettingsCallbacks() {

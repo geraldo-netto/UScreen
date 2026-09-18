@@ -51,6 +51,9 @@ internal class ControlSession(
     private var reconnectJob: Job? = null
     private var capabilityJob: Job? = null
     private var capabilityRequest: Triple<Int, Int, Int>? = null
+    private var streamFormat: DecoderFormat? = null
+    private var formatReceived = false
+    private var encodedDimensionsKnown = false
 
     /** Set from the host's greeting: it is using us as a graphics tablet for
      *  its own screen, so no video will arrive and none should be waited for. */
@@ -59,6 +62,7 @@ internal class ControlSession(
     var onModeKnown: ((penOnly: Boolean) -> Unit)? = null
     var onCodecKnown: ((codec: String) -> Unit)? = null
     var onFpsKnown: ((fps: Int) -> Unit)? = null
+    var onStreamFormat: ((DecoderFormat?) -> Unit)? = null
     var onSettingsRejected: ((RejectedStreamSettings) -> Unit)? = null
     @Volatile var settingsGeneration = 0L
         private set
@@ -117,7 +121,7 @@ internal class ControlSession(
                     }
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
-                    requestDecoderCapabilities(webSocket, o)
+                    requestDecoderCapabilities(webSocket, streamFormat.takeIf { encodedDimensionsKnown })
                     applyModeGreeting(o)
                     acceptGreeting(o)
                 } catch (_: Exception) {}
@@ -202,6 +206,9 @@ internal class ControlSession(
         capabilityJob?.cancel()
         capabilityJob = null
         capabilityRequest = null
+        streamFormat = null
+        formatReceived = false
+        encodedDimensionsKnown = false
         connection.value = ControlConnection()
         authenticatedControl.value = false
     }
@@ -219,11 +226,15 @@ internal class ControlSession(
         if (o.has("pen")) input.setPenEnabled(o.getBoolean("pen"))
     }
 
-    private fun requestDecoderCapabilities(source: WebSocket, message: JSONObject) {
-        val width = message.optInt("video_width")
-        val height = message.optInt("video_height")
-        val fps = message.optInt("fps")
-        if (width !in 2..4096 || height !in 2..4096 || fps !in 10..90) return
+    private fun requestDecoderCapabilities(source: WebSocket, format: DecoderFormat?) {
+        if (format == null) {
+            capabilityJob?.cancel()
+            capabilityRequest = null
+            return
+        }
+        val width = format.width
+        val height = format.height
+        val fps = format.fps
         val request = Triple(width, height, fps)
         if (capabilityRequest == request) return
         capabilityRequest = request
@@ -258,13 +269,16 @@ internal class ControlSession(
     }
 
     private fun applyDecoderGreeting(o: JSONObject) {
-        if (o.has("fps")) {
-            val fps = o.getInt("fps")
-            if (fps in 10..90) onFpsKnown?.invoke(fps)
-        }
-        if (o.has("codec")) {
-            onCodecKnown?.invoke(o.getString("codec"))
-        }
+        if (formatReceived && listOf("codec", "fps", "video_width", "video_height").none(o::has)) return
+        if (o.has("video_width") || o.has("video_height")) encodedDimensionsKnown = true
+        streamFormat = StreamFormat.read(o, streamFormat, nativeWidth, nativeHeight,
+            pendingConfig?.optInt("fps") ?: Prefs.DEFAULT_FPS)
+        formatReceived = true
+        onStreamFormat?.invoke(streamFormat)
+        // Retain the public per-field notifications for independent observers.
+        if (streamFormat == null) return
+        if (o.has("fps")) onFpsKnown?.invoke(streamFormat!!.fps)
+        if (o.has("codec")) onCodecKnown?.invoke(o.getString("codec"))
     }
 
     private fun applyModeGreeting(o: JSONObject) {

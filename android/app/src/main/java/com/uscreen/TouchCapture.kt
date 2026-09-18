@@ -31,6 +31,10 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
         get() = control.onFpsKnown
         set(value) { control.onFpsKnown = value }
 
+    internal var onStreamFormat: ((DecoderFormat?) -> Unit)?
+        get() = control.onStreamFormat
+        set(value) { control.onStreamFormat = value }
+
     internal val settingsGeneration get() = control.settingsGeneration
     internal var onSettingsRejected: ((RejectedStreamSettings) -> Unit)?
         get() = control.onSettingsRejected

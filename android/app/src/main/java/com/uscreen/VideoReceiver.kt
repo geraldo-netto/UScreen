@@ -100,6 +100,18 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
             }
         }
 
+    /** Retire once, then publish all format fields before a replacement worker starts. */
+    @Synchronized internal fun setStreamFormat(format: DecoderFormat) {
+        if (format == DecoderFormat(mimeType, formatWidth, formatHeight, streamFps)) return
+        val restart = isRunning
+        stop()
+        mimeType = format.mimeType
+        formatWidth = format.width
+        formatHeight = format.height
+        streamFps = format.fps
+        if (restart) start()
+    }
+
     @Volatile private var statistics = ReceiverStatistics()
     val currentFps get() = statistics.fps
     val currentMbps get() = statistics.mbps

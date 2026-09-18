@@ -408,6 +408,15 @@ required. A representative host greeting is valid JSON:
 The server sends `status: "mode"` for subsequent mode/settings notifications.
 `video_width` and `video_height` describe the requested encoded dimensions for
 [decoder capability negotiation](video-codecs.md#negotiation).
+Android validates codec, encoded dimensions and FPS as one control format for
+both capability queries and decoder setup. A format change retires the old
+receiver generation before publishing all fields and restarting. Native panel
+updates do not overwrite the negotiated size, and queued greetings from retired
+control connections cannot apply it. Older hosts that omit both encoded fields
+retain the native-panel hint (1920×1080 when unavailable); they receive no new
+capability query. Explicitly malformed formats stop video instead of configuring
+an unsupported size. VP9/AV1 also retain their framed configuration headers.
+
 `codec` is `h264`, `hevc`, `vp9` or `av1`; FPS is omitted if no shared settings source exists.
 `width` and `height` describe the requested virtual-display geometry before
 stream scaling. They share the same settings snapshot as FPS, codec and encoded
