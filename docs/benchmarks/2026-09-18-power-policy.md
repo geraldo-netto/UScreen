@@ -1,11 +1,11 @@
 # Opt-in Android power policy — implementation and lifecycle checks
 
 T388's candidate is implemented, tested and installed, but sustained power
-validation is **pending**. The Linux desktop was locked when preparing the
-controlled workload: the captured virtual-display image contained the lock
-screen rather than the test pattern. No new desktop baseline or battery-saving
-percentage is accepted from that state. T388 remains in TODO.md pending an
-unlocked session and the matched measurements below.
+validation is **incomplete**. The first preparation attempt captured a locked
+Linux desktop and was rejected. A [later guarded run](2026-09-18-power-validation.md)
+completed three measured phases before focus loss invalidated the fourth.
+No battery-saving percentage is established. T388 remains in TODO.md pending an
+uninterrupted session for the complete matched comparison and remaining controls.
 
 ## Behavior
 
@@ -120,9 +120,11 @@ session, so it cannot substitute for the original static/motion workload.
    a battery-life estimate.
 3. Add an app-off static-image control at matching brightness/refresh, plus
    waiting, pen-only, background and reconnect observations. The separate
-   `power-project.py` control APK avoids streaming/decoding work. Its prepared
-   image/APK was rejected because the screenshot contained the lock screen;
-   recapture verified workload pixels and rebuild before use.
+   `power-project.py` control APK avoids streaming/decoding work. The first
+   image/APK was rejected because the screenshot contained the lock screen.
+   The later attempt recaptured verified workload pixels, rebuilt the control
+   and passed a short visibility smoke check; its sustained measurement remains
+   pending as recorded in the [validation report](2026-09-18-power-validation.md).
 4. Evaluate available network transport and any physically available higher-power
    data port separately. Preserve the actual link/power-source facts; a charging
    flag or advertised limit is not a USB wattmeter.
@@ -131,6 +133,6 @@ session, so it cannot substitute for the original static/motion workload.
 
 The original [4490763 baseline](2026-09-17-device-baseline.md) lost 189.81 mAh
 over 35.5 minutes despite USB power. Its gauge moves in 9.99 mAh steps, making
-short comparisons weak evidence. New power savings remain unmeasured; component
+short comparisons weak evidence. New power savings remain unestablished; component
 latency improvements from the [codec experiments](2026-09-18-codecs.md) cannot be
 added to claim a total capture-to-display or battery improvement.

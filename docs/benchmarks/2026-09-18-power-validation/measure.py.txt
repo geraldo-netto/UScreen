@@ -1,0 +1,124 @@
+from pathlib import Path
+from contextlib import ExitStack
+from types import SimpleNamespace
+import dbus,importlib.util,json,os,re,subprocess,sys,threading,time,xml.etree.ElementTree as ET
+sys.path.insert(0,str(Path('scripts/benchmarks').resolve()))
+from observe import Sampler,command
+from workload import Workload
+spec=importlib.util.spec_from_file_location('baseline',Path('scripts/benchmarks/run-baseline.py'));baseline=importlib.util.module_from_spec(spec);spec.loader.exec_module(baseline)
+ADB=['adb','-s','8002RH1010011900'];ROOT=Path('/tmp/uscreen-t388-measured');ROOT.mkdir()
+GEOMETRY='1280x800+3840+0';APP='com.uscreen';CONTROL='com.uscreen.powercontrol'
+
+def adb(*args):
+    return subprocess.check_output(ADB+list(args),text=True,timeout=30).strip()
+
+def preferences():
+    root=ET.fromstring(adb('exec-out','run-as',APP,'cat','shared_prefs/uscreen.xml'))
+    return {node.get('name'):node.get('value',node.text) for node in root if node.get('name')!='host_token'}
+
+def nodes():
+    adb('shell','uiautomator','dump','/sdcard/uscreen-t388.xml')
+    return list(ET.fromstring(adb('shell','cat','/sdcard/uscreen-t388.xml')).iter('node'))
+
+def tap(node):
+    x,y,r,b=map(int,re.findall(r'\d+',node.get('bounds')))
+    adb('shell','input','tap',str((x+r)//2),str((y+b)//2))
+
+def foreground():
+    text=adb('shell','dumpsys','activity','activities')
+    return next((line.strip() for line in text.splitlines() if 'topResumedActivity=' in line),'unknown')
+
+def saver(value):
+    if APP+'/' not in foreground(): raise RuntimeError('UScreen is not foreground; refusing to steal focus')
+    gear=next(n for n in nodes() if n.get('text')=='⚙');tap(gear)
+    for _ in range(6):
+        switch=next((n for n in nodes() if n.get('content-desc')=='Battery saver'),None)
+        if switch is not None:
+            if (switch.get('checked')=='true') != value:tap(switch)
+            adb('shell','input','keyevent','4')
+            assert preferences().get('battery_saver','false')==str(value).lower()
+            return
+        adb('shell','input','swipe','1000','710','1000','280','450')
+    raise RuntimeError('Battery saver control not found')
+
+def locks():
+    power=adb('shell','dumpsys','power');wifi=adb('shell','dumpsys','wifi')
+    services=adb('shell','dumpsys','activity','services',APP)
+    return dict(wake=[s.strip() for s in power.splitlines() if 'PARTIAL_WAKE_LOCK' in s and 'UScreen::' in s],
+                wifi=[s.strip() for s in wifi.splitlines() if 'WifiLock{UScreen::' in s],
+                service=[s.strip() for s in services.splitlines() if 'isForeground=' in s or 'ServiceRecord{' in s])
+
+class TabletGuard:
+    def __init__(self,folder,expected,saving):
+        self.expected,self.saving=expected,saving
+        self.stop=threading.Event();self.problem=None;self.checked=0
+        self.file=(folder/'tablet-guard.jsonl').open('w')
+        self.thread=threading.Thread(target=self.run)
+    def sample(self,count):
+        top=foreground();prefs=preferences()
+        row=dict(utc=time.time(),monotonic=time.monotonic(),foreground=top,preferences=prefs)
+        if self.expected+'/' not in top:self.problem='tablet foreground changed'
+        if prefs!=self.expected_prefs:self.problem='tablet preferences changed'
+        if count%6==0:row['power']=locks()
+        self.checked=time.monotonic();self.file.write(json.dumps(row)+'\n');self.file.flush()
+    def run(self):
+        count=0
+        try:
+            while not self.stop.is_set():
+                self.sample(count);count+=1
+                if self.problem:return
+                self.stop.wait(5)
+        except Exception as error:self.problem='tablet observation failed: '+str(error)
+    def start(self):
+        self.expected_prefs=preferences();self.sample(0);self.thread.start()
+    def close(self):
+        self.stop.set();self.thread.join(timeout=45);self.file.close()
+
+class CheckedWorkload(Workload):
+    tablet=None
+    def check_visibility(self):
+        guard=type(self).tablet
+        failure=guard.problem or ('tablet observation stale' if time.monotonic()-guard.checked>35 else None)
+        if failure:self.invalidate(failure);return False
+        return super().check_visibility()
+baseline.Workload=CheckedWorkload
+
+def measure(name,kind,saving,trial,seconds=300,warmup=30,control=False):
+    folder=ROOT/name;folder.mkdir()
+    args=SimpleNamespace(serial='8002RH1010011900',output=folder,geometry=GEOMETRY,seconds=seconds,warmup=warmup)
+    meta=baseline.metadata(args,baseline.ensure_target(GEOMETRY))
+    meta['plan']=[dict(trial=trial,kind=kind,measured=False,seconds=warmup),dict(trial=trial,kind=kind,measured=True,seconds=seconds)]
+    meta.update(profile='streaming-off' if control else ('saver' if saving else 'normal'),preferences=preferences(),runtime_source='52fcd75',pipe_capacity_mib=4)
+    (folder/'metadata.json').write_text(json.dumps(meta,indent=2)+'\n')
+    state,stop={},threading.Event()
+    with ExitStack() as resources:
+        guard=TabletGuard(folder,CONTROL if control else APP,saving);guard.start();resources.callback(guard.close);CheckedWorkload.tablet=guard
+        logs=baseline.start_logs(args,meta);resources.callback(baseline.retire_logs,logs)
+        sampler=Sampler(args.serial,folder,state,stop,[(os.getpid(),'benchmark-workload-and-observer')],android_page_size=meta['android_page_size'])
+        thread=threading.Thread(target=sampler.run);resources.callback(baseline.retire_sampler,sampler,thread,stop)
+        baseline.run_workload(args,meta,state,thread,resources)
+    if (folder/'invalid.json').exists():raise RuntimeError('Invalid measurement '+name)
+    from summarize import summarize
+    (folder/'summary.json').write_text(json.dumps(summarize(folder),indent=2)+'\n')
+    print('FINISHED',name,flush=True)
+
+original=preferences();(ROOT/'original-preferences.json').write_text(json.dumps(original,indent=2)+'\n')
+bus=dbus.SessionBus();manager=dbus.Interface(bus.get_object('org.gnome.SessionManager','/org/gnome/SessionManager'),'org.gnome.SessionManager')
+cookie=manager.Inhibit('UScreen battery benchmark',0,'Matched visible workload measurements',8)
+plan=[('static',False),('static',True),('motion',True),('motion',False),('motion',False),('motion',True),('static',True),('static',False)]
+(ROOT/'plan.json').write_text(json.dumps(dict(seconds=300,warmup=30,cases=plan,control_seconds=600),indent=2)+'\n')
+try:
+    for index,(kind,saving) in enumerate(plan):
+        saver(saving)
+        name=f'{index+1:02d}-'+('saver-' if saving else 'normal-')+kind
+        print('START',name,flush=True);measure(name,kind,saving,index//4+1)
+    saver(original.get('battery_saver','false')=='true')
+    adb('shell','am','start','-W','-n',CONTROL+'/com.uscreen.benchmark.MainActivity')
+    time.sleep(2)
+    print('START streaming-off control',flush=True);measure('09-streaming-off','static',False,3,600,60,True)
+finally:
+    top=foreground()
+    if CONTROL+'/' in top:adb('shell','am','start','-n',APP+'/.MainActivity');time.sleep(2)
+    if APP+'/' in foreground():saver(original.get('battery_saver','false')=='true')
+    (ROOT/'final-preferences.json').write_text(json.dumps(preferences(),indent=2)+'\n')
+    manager.Uninhibit(cookie)

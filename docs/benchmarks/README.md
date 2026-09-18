@@ -13,6 +13,11 @@ stock FFmpeg input-to-packet-ready delay on the host, including sparse input
 and one/two/four concurrent encoders. It is separate from the physical-tablet
 baseline's packet-ready-to-render-ACK observations.
 
+The [2026-09-18 battery-profile validation](2026-09-18-power-validation.md)
+records three accepted USB phases and a fourth rejected after focus loss.
+It verifies lock ownership but does not establish a battery-saving improvement;
+the full matched comparison and streaming-off control remain pending.
+
 ## Repeating the device baseline
 
 Build/install both applications first. Keep the Linux release profile and the

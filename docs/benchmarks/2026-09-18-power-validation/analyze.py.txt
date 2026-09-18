@@ -1,0 +1,50 @@
+"""Aggregate retained phase results; do not pool reported percentiles."""
+from pathlib import Path
+import json, statistics, sys
+root=Path(sys.argv[1])
+rows=[]
+excluded=[]
+for folder in sorted(root.glob('[0-9]*')):
+    if not (folder/'summary.json').exists():continue
+    meta=json.loads((folder/'metadata.json').read_text())
+    summary=json.loads((folder/'summary.json').read_text())
+    if not summary['complete'] or summary['visibility']!='verified':
+        excluded.append(dict(name=folder.name,reasons=summary['invalid_reasons']))
+        continue
+    phase=summary['phases'][0]
+    guards=[json.loads(line) for line in (folder/'tablet-guard.jsonl').read_text().splitlines()]
+    samples=[json.loads(line) for line in (folder/'samples.jsonl').read_text().splitlines()]
+    selected=[r for r in samples if phase['start_utc']<=r['utc']<phase['end_utc']]
+    def window(name,field):
+        return phase['log_windows'].get(name,{}).get(field)
+    identities={}
+    for sample in samples:
+        for proc in sample['host']+[dict(sample['android'],role='android_app')]:
+            identities.setdefault(proc['role'],set()).add((proc.get('pid'),proc.get('start_ticks')))
+    row=dict(name=folder.name,profile=meta['profile'],workload=phase['kind'],
+             battery=phase['battery'],
+             packet_ready_to_ack_p50_windows=window('packet_ready_to_ack_window','p50_ms'),
+             packet_ready_to_ack_p95_windows=window('packet_ready_to_ack_window','p95_ms'),
+             tablet_arrival_to_callback_p50_windows=window('tablet_arrival_to_callback_window','p50_ms'),
+             encoded_fps_windows=window('encoder_window','fps'),
+             encoded_kbps_windows=window('encoder_window','kbps'),
+             cpu=phase['processes']['cpu_percent_one_core'],
+             lock_counts=sorted({(len(g['power']['wake']),len(g['power']['wifi'])) for g in guards if 'power' in g}),
+             service_foreground_observations=sum(any('isForeground=true' in line for line in g['power']['service']) for g in guards if 'power' in g),
+             identity_sets={k:sorted(v) for k,v in identities.items()},
+             thermal=sorted({s for sample in selected for s in sample.get('thermal',[]) if 'Thermal Status' in s}),
+             display=sorted({s for sample in selected for s in sample.get('display',[])}),
+             host_load_1m=dict(minimum=min(r['loadavg'][0] for r in selected),maximum=max(r['loadavg'][0] for r in selected)),
+             max_tablet_observation_gap_seconds=max(b['monotonic']-a['monotonic'] for a,b in zip(guards,guards[1:])),
+             max_process_sample_gap_seconds=max(b['monotonic']-a['monotonic'] for a,b in zip(samples,samples[1:])),
+             guard_preferences_match=all(g['preferences']==meta['preferences'] for g in guards))
+    rows.append(row)
+groups=[]
+for profile,workload in sorted({(r['profile'],r['workload']) for r in rows}):
+    matches=[r for r in rows if (r['profile'],r['workload'])==(profile,workload)]
+    seconds=sum(r['battery']['seconds'] for r in matches)
+    delta=sum(r['battery']['charge_delta_uah'] for r in matches)
+    groups.append(dict(profile=profile,workload=workload,trials=len(matches),seconds=seconds,
+                       charge_delta_uah=delta,net_battery_ma=delta*3.6/seconds))
+result=dict(phases=rows,groups=groups,excluded=excluded,semantics='Net battery current while USB powered. Disjoint endpoint deltas are summed; rate uses summed observation durations. Window percentiles remain separate. No isolated app energy or optical latency claim.')
+print(json.dumps(result,indent=2))

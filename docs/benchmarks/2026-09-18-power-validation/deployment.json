@@ -1,0 +1,46 @@
+{
+  "recorded_utc": 1789739373.1411858,
+  "runtime_source": "52fcd75",
+  "android_source": "bdaa17a (unchanged Android runtime sources in later host/tool commits)",
+  "installed_files_sha256": {
+    "/home/netto/.local/bin/uscreen": "df9a0ba70fe864378e735d8a94ac8436b82534dae5c2518a140ba748de01f7d9",
+    "/home/netto/.local/bin/uscreen-gui": "a7c5ea5554efbd84a1cf8a9706189d836b7b13040689312722aff7c5f8e65ebe",
+    "/home/netto/.local/bin/evdi_helper": "2432e4e738fa8af94b915e218f310015ba3fa75497c0657f9fa7727360fc0267"
+  },
+  "installed_apk_sha256": "64de043cdca55972e27058fc9b1d3a6101a61c365a60a3405fce6863b4d04467",
+  "android_version": [
+    "versionCode=12 minSdk=27 targetSdk=34",
+    "versionName=1.2.3"
+  ],
+  "host_config": {
+    "encoder": "h264_vaapi",
+    "fps": 60,
+    "quality": 18,
+    "stream_scale": 1,
+    "pipe_capacity_mib": 4,
+    "input_pen": false,
+    "input_touch": false,
+    "input_pointer": false,
+    "pen_only": false,
+    "auto_resolution": true
+  },
+  "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+  "pipe_max_size": "8388608",
+  "desktop_processes": "PID                  STARTED COMMAND\n1897166 Thu Sep 17 01:52:45 2026 Xorg\n1897918 Thu Sep 17 01:52:53 2026 cinnamon",
+  "display": [
+    "mActiveModeId=1",
+    "mBrightnessState=0.5",
+    "DisplayModeRecord{mMode={id=1, width=800, height=1280, fps=60.0, vsync=60.0, synthetic=false, alternativeRefreshRates=[90.0], supportedHdrTypes=[]}}",
+    "DisplayModeRecord{mMode={id=2, width=800, height=1280, fps=90.0, vsync=90.0, synthetic=false, alternativeRefreshRates=[60.0], supportedHdrTypes=[]}}"
+  ],
+  "adbd_wireless_port": "",
+  "usb_debug_port": "",
+  "usb_device": {
+    "sysfs": "/sys/devices/pci0000:00/0000:00:08.1/0000:08:00.3/usb1/1-1/1-1.4",
+    "idVendor": "18d1",
+    "idProduct": "4ee8",
+    "product": "RugKing Pad 2 Pro",
+    "speed": "480",
+    "bMaxPower": "500mA"
+  }
+}

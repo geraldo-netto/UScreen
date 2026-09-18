@@ -1,0 +1,569 @@
+{
+  "phases": [
+    {
+      "name": "01-normal-static",
+      "profile": "normal",
+      "workload": "static",
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789738535.0410898,
+        "last_utc": 1789738805.0446868,
+        "seconds": 270.00359722902067,
+        "charge_delta_uah": -9990,
+        "net_battery_ma": -133.1982253906597,
+        "first_level": 51,
+        "last_level": 51,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 30.7,
+          "median": 30.8,
+          "maximum": 31.0,
+          "mean": 30.84
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "packet_ready_to_ack_p50_windows": {
+        "n": 57,
+        "minimum": 220.2,
+        "median": 221.6,
+        "maximum": 222.3,
+        "mean": 221.59473684210528
+      },
+      "packet_ready_to_ack_p95_windows": {
+        "n": 57,
+        "minimum": 234.9,
+        "median": 237.1,
+        "maximum": 241.1,
+        "mean": 237.19298245614036
+      },
+      "tablet_arrival_to_callback_p50_windows": {
+        "n": 57,
+        "minimum": 214.8,
+        "median": 215.6,
+        "maximum": 216.5,
+        "mean": 215.68245614035087
+      },
+      "encoded_fps_windows": {
+        "n": 57,
+        "minimum": 5.0,
+        "median": 5.0,
+        "maximum": 5.0,
+        "mean": 5.0
+      },
+      "encoded_kbps_windows": {
+        "n": 57,
+        "minimum": 1654.0,
+        "median": 1722.0,
+        "maximum": 1986.0,
+        "mean": 1719.6315789473683
+      },
+      "cpu": {
+        "uscreen": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.399994938465554,
+          "mean": 0.11186284318980863
+        },
+        "evdi_helper": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.19999728615818615,
+          "maximum": 0.5999914791620643,
+          "mean": 0.2169462521942968
+        },
+        "ffmpeg": {
+          "n": 59,
+          "minimum": 0.1999986911697284,
+          "median": 0.5999898760192329,
+          "maximum": 0.7999901287544383,
+          "mean": 0.5152472124657478
+        },
+        "uscreen-gui": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.19999842833100032,
+          "mean": 0.02372848561219933
+        },
+        "benchmark-workload-and-observer": {
+          "n": 59,
+          "minimum": 0.5999887096491869,
+          "median": 0.7999880793790594,
+          "maximum": 0.9999831266987216,
+          "mean": 0.7321935282732456
+        },
+        "pipeline_total": {
+          "n": 59,
+          "minimum": 0.3999932401931506,
+          "median": 0.7999906421988586,
+          "maximum": 1.3999810364198082,
+          "mean": 0.8440563078498532
+        },
+        "android_app": {
+          "n": 59,
+          "minimum": 11.199813632899778,
+          "median": 11.799832944962633,
+          "maximum": 11.999906549492312,
+          "mean": 11.752383169372441
+        }
+      },
+      "lock_counts": [
+        [
+          1,
+          1
+        ]
+      ],
+      "service_foreground_observations": 12,
+      "identity_sets": {
+        "uscreen": [
+          [
+            149897,
+            53472055
+          ]
+        ],
+        "evdi_helper": [
+          [
+            149961,
+            53472096
+          ]
+        ],
+        "ffmpeg": [
+          [
+            150084,
+            53473536
+          ]
+        ],
+        "uscreen-gui": [
+          [
+            152315,
+            53508078
+          ]
+        ],
+        "benchmark-workload-and-observer": [
+          [
+            221417,
+            53752578
+          ]
+        ],
+        "android_app": [
+          [
+            27400,
+            9695998
+          ]
+        ]
+      },
+      "thermal": [
+        "Thermal Status: 0"
+      ],
+      "display": [
+        "mActiveModeId=1",
+        "mBrightnessState=0.5"
+      ],
+      "host_load_1m": {
+        "minimum": 1.26025390625,
+        "maximum": 3.69775390625
+      },
+      "max_tablet_observation_gap_seconds": 5.8600357519462705,
+      "max_process_sample_gap_seconds": 5.000094088027254,
+      "guard_preferences_match": true
+    },
+    {
+      "name": "02-saver-static",
+      "profile": "saver",
+      "workload": "static",
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789738875.2202232,
+        "last_utc": 1789739145.2281413,
+        "seconds": 270.00791729497723,
+        "charge_delta_uah": -19980,
+        "net_battery_ma": -266.39218849801495,
+        "first_level": 51,
+        "last_level": 51,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 30.8,
+          "median": 30.8,
+          "maximum": 30.8,
+          "mean": 30.8
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "packet_ready_to_ack_p50_windows": {
+        "n": 57,
+        "minimum": 221.3,
+        "median": 221.9,
+        "maximum": 223.0,
+        "mean": 221.96666666666667
+      },
+      "packet_ready_to_ack_p95_windows": {
+        "n": 57,
+        "minimum": 234.8,
+        "median": 237.5,
+        "maximum": 241.0,
+        "mean": 237.49122807017545
+      },
+      "tablet_arrival_to_callback_p50_windows": {
+        "n": 57,
+        "minimum": 215.0,
+        "median": 215.9,
+        "maximum": 216.7,
+        "mean": 215.91228070175438
+      },
+      "encoded_fps_windows": {
+        "n": 57,
+        "minimum": 5.0,
+        "median": 5.0,
+        "maximum": 5.0,
+        "mean": 5.0
+      },
+      "encoded_kbps_windows": {
+        "n": 57,
+        "minimum": 1379.0,
+        "median": 1722.0,
+        "maximum": 1985.0,
+        "mean": 1721.6140350877192
+      },
+      "cpu": {
+        "uscreen": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.1999969450851011,
+          "maximum": 0.7999662625489306,
+          "mean": 0.24744941930418177
+        },
+        "evdi_helper": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.3999935472307481,
+          "maximum": 0.9999729563345322,
+          "mean": 0.4508316997463771
+        },
+        "ffmpeg": {
+          "n": 59,
+          "minimum": 0.3999927982867003,
+          "median": 0.5999916860355998,
+          "maximum": 2.199974302567822,
+          "mean": 1.101656847429411
+        },
+        "uscreen-gui": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.39999048047071867,
+          "mean": 0.05423531456649492
+        },
+        "benchmark-workload-and-observer": {
+          "n": 59,
+          "minimum": 0.5999891974300504,
+          "median": 0.9999813951520923,
+          "maximum": 3.3999172821136923,
+          "mean": 1.71519401779081
+        },
+        "pipeline_total": {
+          "n": 59,
+          "minimum": 0.3999941235247069,
+          "median": 0.999993709258262,
+          "maximum": 3.799897234071222,
+          "mean": 1.79993796647997
+        },
+        "android_app": {
+          "n": 59,
+          "minimum": 11.398921563837844,
+          "median": 11.7997191738862,
+          "maximum": 12.599396597248298,
+          "mean": 11.769163874634737
+        }
+      },
+      "lock_counts": [
+        [
+          0,
+          0
+        ]
+      ],
+      "service_foreground_observations": 12,
+      "identity_sets": {
+        "uscreen": [
+          [
+            149897,
+            53472055
+          ]
+        ],
+        "evdi_helper": [
+          [
+            149961,
+            53472096
+          ]
+        ],
+        "ffmpeg": [
+          [
+            150084,
+            53473536
+          ]
+        ],
+        "uscreen-gui": [
+          [
+            152315,
+            53508078
+          ]
+        ],
+        "benchmark-workload-and-observer": [
+          [
+            221417,
+            53752578
+          ]
+        ],
+        "android_app": [
+          [
+            27400,
+            9695998
+          ]
+        ]
+      },
+      "thermal": [
+        "Thermal Status: 0"
+      ],
+      "display": [
+        "mActiveModeId=1",
+        "mBrightnessState=0.5"
+      ],
+      "host_load_1m": {
+        "minimum": 0.28515625,
+        "maximum": 15.31640625
+      },
+      "max_tablet_observation_gap_seconds": 5.930276327999309,
+      "max_process_sample_gap_seconds": 5.0004730430664495,
+      "guard_preferences_match": true
+    },
+    {
+      "name": "03-saver-motion",
+      "profile": "saver",
+      "workload": "motion",
+      "battery": {
+        "samples": 10,
+        "first_utc": 1789739215.7428062,
+        "last_utc": 1789739485.746998,
+        "seconds": 270.0041946140118,
+        "charge_delta_uah": -39960,
+        "net_battery_ma": -532.791722756942,
+        "first_level": 51,
+        "last_level": 51,
+        "temperature_c": {
+          "n": 10,
+          "minimum": 30.8,
+          "median": 30.8,
+          "maximum": 30.8,
+          "mean": 30.8
+        },
+        "usb_reported_values": [
+          [
+            "true",
+            "500000",
+            "5000000"
+          ]
+        ]
+      },
+      "packet_ready_to_ack_p50_windows": {
+        "n": 57,
+        "minimum": 36.9,
+        "median": 37.3,
+        "maximum": 38.4,
+        "mean": 37.38947368421053
+      },
+      "packet_ready_to_ack_p95_windows": {
+        "n": 57,
+        "minimum": 39.8,
+        "median": 45.4,
+        "maximum": 48.6,
+        "mean": 44.835087719298244
+      },
+      "tablet_arrival_to_callback_p50_windows": {
+        "n": 57,
+        "minimum": 30.3,
+        "median": 30.6,
+        "maximum": 30.9,
+        "mean": 30.582456140350878
+      },
+      "encoded_fps_windows": {
+        "n": 57,
+        "minimum": 60.0,
+        "median": 60.2,
+        "maximum": 60.2,
+        "mean": 60.10526315789474
+      },
+      "encoded_kbps_windows": {
+        "n": 57,
+        "minimum": 28701.0,
+        "median": 28774.0,
+        "maximum": 29009.0,
+        "mean": 28777.263157894737
+      },
+      "cpu": {
+        "uscreen": {
+          "n": 59,
+          "minimum": 0.5999897519293698,
+          "median": 0.7999900591677388,
+          "maximum": 3.3999437200141265,
+          "mean": 1.2576013779683386
+        },
+        "evdi_helper": {
+          "n": 59,
+          "minimum": 9.599836030869916,
+          "median": 11.19980764112196,
+          "maximum": 40.19838132380602,
+          "mean": 15.162410043129682
+        },
+        "ffmpeg": {
+          "n": 59,
+          "minimum": 3.9999332059152715,
+          "median": 4.799929381493091,
+          "maximum": 21.199545621422164,
+          "mean": 7.250697703212808
+        },
+        "uscreen-gui": {
+          "n": 59,
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.19999778774220048,
+          "mean": 0.03728731696875159
+        },
+        "benchmark-workload-and-observer": {
+          "n": 59,
+          "minimum": 2.3999583184693853,
+          "median": 2.7999580964011757,
+          "maximum": 12.599492653730247,
+          "mean": 4.206692536221552
+        },
+        "pipeline_total": {
+          "n": 59,
+          "minimum": 14.59975620159074,
+          "median": 16.799744640372463,
+          "maximum": 64.59739884372809,
+          "mean": 23.67070912431083
+        },
+        "android_app": {
+          "n": 59,
+          "minimum": 68.79895424152531,
+          "median": 73.19873685286824,
+          "maximum": 75.79874528737376,
+          "mean": 72.95469669829619
+        }
+      },
+      "lock_counts": [
+        [
+          0,
+          0
+        ]
+      ],
+      "service_foreground_observations": 12,
+      "identity_sets": {
+        "uscreen": [
+          [
+            149897,
+            53472055
+          ]
+        ],
+        "evdi_helper": [
+          [
+            149961,
+            53472096
+          ]
+        ],
+        "ffmpeg": [
+          [
+            150084,
+            53473536
+          ]
+        ],
+        "uscreen-gui": [
+          [
+            152315,
+            53508078
+          ]
+        ],
+        "benchmark-workload-and-observer": [
+          [
+            221417,
+            53752578
+          ]
+        ],
+        "android_app": [
+          [
+            27400,
+            9695998
+          ]
+        ],
+        "adb": [
+          [
+            272172,
+            53835152
+          ]
+        ]
+      },
+      "thermal": [
+        "Thermal Status: 0"
+      ],
+      "display": [
+        "mActiveModeId=1",
+        "mBrightnessState=0.5"
+      ],
+      "host_load_1m": {
+        "minimum": 2.12939453125,
+        "maximum": 17.3134765625
+      },
+      "max_tablet_observation_gap_seconds": 5.915985150029883,
+      "max_process_sample_gap_seconds": 5.000233897939324,
+      "guard_preferences_match": true
+    }
+  ],
+  "groups": [
+    {
+      "profile": "normal",
+      "workload": "static",
+      "trials": 1,
+      "seconds": 270.00359722902067,
+      "charge_delta_uah": -9990,
+      "net_battery_ma": -133.1982253906597
+    },
+    {
+      "profile": "saver",
+      "workload": "motion",
+      "trials": 1,
+      "seconds": 270.0041946140118,
+      "charge_delta_uah": -39960,
+      "net_battery_ma": -532.791722756942
+    },
+    {
+      "profile": "saver",
+      "workload": "static",
+      "trials": 1,
+      "seconds": 270.00791729497723,
+      "charge_delta_uah": -19980,
+      "net_battery_ma": -266.39218849801495
+    }
+  ],
+  "excluded": [
+    {
+      "name": "04-normal-motion",
+      "reasons": [
+        "workload lost keyboard focus",
+        "workload did not complete",
+        "missing phase visibility verification"
+      ]
+    }
+  ],
+  "semantics": "Net battery current while USB powered. Disjoint endpoint deltas are summed; rate uses summed observation durations. Window percentiles remain separate. No isolated app energy or optical latency claim."
+}
