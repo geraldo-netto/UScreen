@@ -1,0 +1,2 @@
+2026-09-18T02:33:28+02:00 morpheus env[2765192]: 2026-09-18T00:33:28.192217Z  INFO uscreen: 2507: Delivering the session token to the app (attempt 12, next in 600s)
+2026-09-18T02:33:28+02:00 morpheus env[2765192]: 2026-09-18T00:33:28.308923Z  INFO uscreen: 2929: UScreen app launched on tablet

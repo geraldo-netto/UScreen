@@ -35,6 +35,8 @@ internal class DecoderSession(
     var outputClock: () -> Long = System::nanoTime
     var inputClock: () -> Long = System::nanoTime
     private val renderedCount = AtomicLong(0)
+    private val discardedCount = AtomicLong(0)
+    val discardedOutputs: Long get() = discardedCount.get()
     private val outputWatchdog = DecoderOutputWatchdog()
     private var timingEpoch = timing.currentEpoch()
     private var lifetime: CodecLifetime? = null
@@ -80,6 +82,7 @@ internal class DecoderSession(
                 }, handler)
 
                 codec.start()
+                discardedCount.set(0)
                 timingEpoch = codecTiming
                 mediaCodec = codec
                 lifetime = owner
@@ -150,14 +153,17 @@ internal class DecoderSession(
         val outputOwner = synchronized(monitor) { ownerFor(codec) } ?: return
         outputThread = Thread({
             val info = MediaCodec.BufferInfo()
+            val drainer = outputDrainer(codec, outputOwner)
+            val latest = profile.renderLatest
             var rendered = 0L
             while (codecAlive && mediaCodec === codec) {
                 try {
                     val index = outputOwner.use { codec.dequeueOutputBuffer(info, 10_000) } ?: break
                     if (mediaCodec !== codec || !codecAlive || outputOwner.retired) break
                     if (index >= 0) {
-                        val seq = info.presentationTimeUs.toInt()
-                        outputOwner.use { codec.releaseOutputBuffer(index, true) } ?: break
+                        val seq = outputOwner.use {
+                            drainer.release(index, info.presentationTimeUs.toInt(), latest)
+                        } ?: break
                         recordOutput(codec, codecTiming, outputStatistics, seq)
                         rendered++
                         if (rendered <= 2) Log.i(TAG, "Rendered output frame #$rendered")
@@ -175,6 +181,10 @@ internal class DecoderSession(
             start()
         }
     }
+
+    private fun outputDrainer(codec: MediaCodec, owner: CodecLifetime) = DecodedOutputDrainer(codec,
+        { mediaCodec === codec && codecAlive && !owner.retired },
+        { discardedCount.incrementAndGet() })
 
     private fun retireFailedOutput(codec: MediaCodec, message: String, error: Exception) {
         if (codecAlive) Log.w(TAG, message, error)

@@ -14,11 +14,15 @@ internal object BenchMetrics {
     private val inputNanos = AtomicLong()
     private val outputNanos = AtomicLong()
     private val arrivals = AtomicLongArray(65536)
+    private val syntheticSources = AtomicLongArray(65536)
+    private val discards = AtomicLongArray(65536)
     private val releases = AtomicLongArray(65536)
     private val notifications = AtomicLongArray(65536)
     private val renderedTimes = AtomicLongArray(65536)
     private val acknowledgements = AtomicLongArray(65536)
     fun arrived(sequence: Int) { arrivals.set(sequence, System.nanoTime()) }
+    fun sourceReady(sequence: Int, nanos: Long) { syntheticSources.set(sequence, nanos) }
+    fun discarded(sequence: Int) { discards.set(sequence, System.nanoTime()) }
     fun released(sequence: Int) { releases.set(sequence, System.nanoTime()) }
     fun notified(sequence: Int, renderedNanos: Long) {
         notifications.set(sequence, System.nanoTime())
@@ -28,7 +32,8 @@ internal object BenchMetrics {
     fun trace(first: Int, end: Int): JSONArray = JSONArray().apply {
         for (sequence in first until end) {
             put(JSONArray().put(sequence).put(arrivals.get(sequence)).put(releases.get(sequence))
-                .put(notifications.get(sequence)).put(renderedTimes.get(sequence)).put(acknowledgements.get(sequence)))
+                .put(notifications.get(sequence)).put(renderedTimes.get(sequence)).put(acknowledgements.get(sequence))
+                .put(syntheticSources.get(sequence)).put(discards.get(sequence)))
         }
     }
     fun input(codec: MediaCodec, timeout: Long): Int {

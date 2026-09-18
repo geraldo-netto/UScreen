@@ -30,7 +30,8 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
             val seconds = intent.getIntExtra("seconds", 30).coerceIn(1, 600)
             val warmup = intent.getIntExtra("warmup", 5).coerceIn(0, 60)
             val rate = intent.getIntExtra("rate", 60).coerceIn(1, 90)
-            DecoderReplay(holder.surface, profile, active).run(ReplayClip(File(filesDir, "stream.bin")), rate, seconds, warmup)
+            val burst = intent.getIntExtra("burst", 1).coerceIn(1, 32)
+            DecoderReplay(holder.surface, profile, active, burst).run(ReplayClip(File(filesDir, "stream.bin")), rate, seconds, warmup)
         } catch (error: Exception) { JSONObject().put("error", error.stackTraceToString()) }
         result.put("display_hz", windowManager.defaultDisplay.refreshRate)
         File(filesDir, "result.json").writeText(result.toString(2))

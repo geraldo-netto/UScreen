@@ -14,6 +14,7 @@ internal data class DecoderProfile(
     val hints: DecoderHints = DecoderHints.LEGACY,
     val operatingRateMultiplier: Int? = 2,
     val renderPriority: Int = Thread.MAX_PRIORITY,
+    val renderLatest: Boolean = false,
 )
 
 internal object DecoderConfiguration {

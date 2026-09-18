@@ -554,3 +554,10 @@ Orphan retirement requires `pidfd_open` (Linux 5.3+) and `pidfd_send_signal` to 
 available; there is no PID-only signalling fallback. A run without matching
 orphans does not need those syscalls. Doctor shares the capture-role/FIFO matcher
 for reporting but never signals processes.
+
+T399's optional `DecodedOutputDrainer` prototype decodes all input and can release
+older already-decoded outputs without presentation, with a four-output batch cap.
+It is disabled by default: the [cadence and burst experiments](benchmarks/2026-09-18-frame-pacing.md)
+found no ready-output backlog or latency advantage. Capture retains its 200 ms
+keepalive; the tablet's sparse-input delay argues against lengthening it without
+new device evidence. This does not enable arbitrary encoded-reference dropping.

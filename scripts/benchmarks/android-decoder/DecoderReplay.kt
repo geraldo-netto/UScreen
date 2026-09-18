@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.LockSupport
 import org.json.JSONObject
 
-internal class DecoderReplay(private val surface: Surface, private val profile: String, private val active: AtomicBoolean) {
+internal class DecoderReplay(private val surface: Surface, private val profile: String, private val active: AtomicBoolean,
+                             private val burst: Int = 1) {
     private val stats = ReplayStats()
     private val timings = FrameTiming()
     private val result = JSONObject()
@@ -29,6 +30,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
             feed(clip.config, true)
             phase(clip, rate, warmup)
             result.put("before", ReplayStats.process()).put("dequeues_before", BenchMetrics.snapshot())
+            result.put("discarded_outputs_before", discardedOutputs(decoder))
             val first = sequence.toInt()
             stats.begin(first)
             val sent = phase(clip, rate, seconds)
@@ -38,12 +40,14 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
                 LockSupport.parkNanos(1_000_000)
             }
             result.put("callback_drain_ns", System.nanoTime() - drain)
+            result.put("discarded_outputs_after", discardedOutputs(decoder))
             result.put("trace_columns", org.json.JSONArray(listOf("sequence", "feed_ns", "release_note_ns",
-                "notification_ns", "reported_render_ns", "ack_event_ns")))
+                "notification_ns", "reported_render_ns", "ack_event_ns", "synthetic_source_ns", "discard_note_ns")))
             result.put("trace", BenchMetrics.trace(first, sequence.toInt()))
             input?.let { result.put("input_transport", it.summary()) }
             return result.put("stats", stats.finish()).put("sent", sent).put("completed", active.get())
                 .put("profile", profile).put("seconds", seconds).put("warmup", warmup).put("send_fps", rate)
+                .put("burst", burst)
                 .put("width", clip.width).put("height", clip.height).put("stream_fps", clip.fps)
                 .put("fixture_sha256", clip.sha256).put("fingerprint", Build.FINGERPRINT).put("sdk", Build.VERSION.SDK_INT)
         } finally { decoder.releaseCodec(); input?.close() }
@@ -70,9 +74,11 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
         val start = System.nanoTime()
         var sent = 0
         repeat(rate * seconds) { index ->
-            val deadline = start + index * 1_000_000_000L / rate
+            val delivery = ReplayPacing.deliveryIndex(index, rate * seconds, burst)
+            val deadline = start + delivery * 1_000_000_000L / rate
             parkUntil(deadline)
             if (!active.get()) return sent
+            BenchMetrics.sourceReady(sequence.toInt(), start + index * 1_000_000_000L / rate)
             feed(clip.frames[index % clip.frames.size], false)
             sent++
         }

@@ -1,0 +1,12 @@
+from pathlib import Path
+import json,statistics,math
+from collections import defaultdict
+root=Path('/tmp/uscreen-t399-burst-series');groups=defaultdict(list)
+for p in sorted(root.glob('*/result.json')):
+ r=json.loads(p.read_text()); assert r['completed'];assert not r['stats']['invalidations'];assert not r['stats']['duplicates'];assert r['display_hz']==60
+ trace=r['trace'];values=[(x[2]-x[6])/1e6 for x in trace if x[2] and x[6]]
+ values.sort();m=dict(source_release_p50_ms=values[math.floor(.5*(len(values)-1))],source_release_p99_ms=values[math.floor(.99*(len(values)-1))],discarded=sum(bool(x[7]) for x in trace),released=sum(bool(x[2]) for x in trace),notified=sum(bool(x[3]) for x in trace),sent=r['sent'],trial=r['trial'])
+ groups[r['scene'],r['profile']].append(m)
+summary=[dict(scene=s,profile=p,trials=rows,medians={k:statistics.median(r[k] for r in rows) for k in rows[0] if k!='trial'}) for (s,p),rows in sorted(groups.items())]
+Path('/tmp/uscreen-t399-burst-source-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+for g in summary:print(g['scene'],g['profile'],g['medians'])

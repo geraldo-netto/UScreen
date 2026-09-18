@@ -64,7 +64,8 @@ def trial(args, variant, profile, scene, rate, number):
     started = datetime.now(timezone.utc).isoformat()
     command = capture(args.serial, 'shell', 'am', 'start', '-S', '-W', '-n', f'{package}/com.uscreen.benchmark.MainActivity',
                       '--ez', 'run', 'true', '--es', 'profile', profile, '--ei', 'rate', str(rate),
-                      '--ei', 'seconds', str(args.seconds), '--ei', 'warmup', str(args.warmup))
+                      '--ei', 'seconds', str(args.seconds), '--ei', 'warmup', str(args.warmup),
+                      '--ei', 'burst', str(getattr(args, 'burst', 1)))
     (folder / 'launch.txt').write_text(command)
     if 'Status: ok' not in command:
         raise RuntimeError(f'activity launch failed: {command}')

@@ -1,0 +1,7 @@
+Stopping: com.uscreen.decoderbench.candidate
+Starting: Intent { cmp=com.uscreen.decoderbench.candidate/com.uscreen.benchmark.MainActivity (has extras) }
+Status: ok
+LaunchState: UNKNOWN (0)
+Activity: com.uscreen.decoderbench.candidate/com.uscreen.benchmark.MainActivity
+WaitTime: 252
+Complete

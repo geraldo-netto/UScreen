@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
           'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
-          'ChannelPacketReader.kt', 'VideoPacketReader.kt']
+          'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
@@ -96,8 +96,10 @@ def instrument_timing(name, text):
     if name == 'DecoderSession.kt':
         listener = 'codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->'
         assert text.count(listener) == 1, 'render callback hook changed'
-        return text.replace(listener, 'codec.setOnFrameRenderedListener({ _, presentationTimeUs, renderedNanos ->\n'
+        text = text.replace(listener, 'codec.setOnFrameRenderedListener({ _, presentationTimeUs, renderedNanos ->\n'
                             '                    BenchMetrics.notified(presentationTimeUs.toInt(), renderedNanos)')
+        text = text.replace('{ discardedCount.incrementAndGet() }',
+                            '{ sequence -> BenchMetrics.discarded(sequence); discardedCount.incrementAndGet() }')
     return text
 
 
@@ -116,6 +118,10 @@ def prepare(args):
             continue
         shutil.copy2(path, directory / 'app/src/main/java' / path.name)
     bridge = (BRIDGE if profiles else LEGACY_BRIDGE) + (SOCKET_BRIDGE if direct_input else NO_SOCKET_BRIDGE)
+    latest = (directory / 'originals/DecodedOutputDrainer.kt').exists()
+    if latest:
+        bridge = bridge.replace('"sync-normal" ->', '"render-latest" -> DecoderProfile(renderLatest = true)\n        "sync-normal" ->')
+    bridge += '\ninternal fun discardedOutputs(decoder: DecoderSession): Long = ' + ('decoder.discardedOutputs' if latest else '0L') + '\n'
     (directory / 'app/src/main/java/ProfileBridge.kt').write_text(bridge)
     return directory
 

@@ -1,0 +1,29 @@
+FFF..
+======================================================================
+FAIL: test_t399_invalid_burst_or_profile_cannot_mislabel_measurement (test_benchmark_decoder_plan.DecoderPlanTests.test_t399_invalid_burst_or_profile_cannot_mislabel_measurement) (update={'burst': 1.5})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 35, in test_t399_invalid_burst_or_profile_cannot_mislabel_measurement
+    with self.subTest(update=update), self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_t399_invalid_burst_or_profile_cannot_mislabel_measurement (test_benchmark_decoder_plan.DecoderPlanTests.test_t399_invalid_burst_or_profile_cannot_mislabel_measurement) (update={'burst': True})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 35, in test_t399_invalid_burst_or_profile_cannot_mislabel_measurement
+    with self.subTest(update=update), self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_t399_invalid_burst_or_profile_cannot_mislabel_measurement (test_benchmark_decoder_plan.DecoderPlanTests.test_t399_invalid_burst_or_profile_cannot_mislabel_measurement) (update={'profile': 'typo-profile'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 35, in test_t399_invalid_burst_or_profile_cannot_mislabel_measurement
+    with self.subTest(update=update), self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=3)

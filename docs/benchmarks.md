@@ -34,6 +34,11 @@ T386's bounded codec lifetime, Activity-recreation regression and 84 profile
 trials plus 36 correlated trace trials on the connected tablet. It preserves
 synchronous defaults and distinguishes native output from render notifications.
 
+The [frame-pacing experiments](benchmarks/2026-09-18-frame-pacing.md) retain
+T399's 96 valid cadence/steady/burst decoder trials and whole-raw-picture admission
+comparison. Sparse input increases decoder delay; render-latest found no ready
+output backlog. Existing keepalive and output defaults remain selected.
+
 The [Android socket-input replay](benchmarks/2026-09-18-decoder-input.md) compares
 reusable heap staging with direct reads into codec-owned input buffers. T403 keeps
 staging as the default and adds tested payload/cancellation contracts; it makes

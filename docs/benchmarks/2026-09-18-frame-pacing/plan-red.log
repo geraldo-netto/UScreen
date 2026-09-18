@@ -1,0 +1,25 @@
+FF
+======================================================================
+FAIL: test_t399_out_of_range_rate_cannot_be_silently_clamped (test_benchmark_decoder_plan.DecoderPlanTests.test_t399_out_of_range_rate_cannot_be_silently_clamped)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 36, in test_t399_out_of_range_rate_cannot_be_silently_clamped
+    self.rejected(120, 'a' * 64)
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 28, in rejected
+    with self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_t399_wrong_installed_apk_cannot_claim_provenance (test_benchmark_decoder_plan.DecoderPlanTests.test_t399_wrong_installed_apk_cannot_claim_provenance)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 33, in test_t399_wrong_installed_apk_cannot_claim_provenance
+    self.rejected(60, 'b' * 64)
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_decoder_plan.py", line 28, in rejected
+    with self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+FAILED (failures=2)
