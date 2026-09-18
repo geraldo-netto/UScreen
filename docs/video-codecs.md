@@ -71,8 +71,13 @@ A peer without the new negotiation remains on H.264. Android reports hardware
 classification only when API 29+ provides it; older peers and versions remain
 unknown. [Hardware classification](https://developer.android.com/reference/android/media/MediaCodecInfo#isHardwareAccelerated())
 and [format support](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#isFormatSupported(android.media.MediaFormat))
-are advertised properties, not speed measurements. Framed-codec allocation
-prefers a compatible hardware decoder when that classification is available.
+are advertised properties, not speed measurements. Decoder allocation for every supported codec uses the same format-compatible
+inventory as capability reporting and prefers hardware when that classification
+is available. API 27 retains platform order among compatible decoders because
+hardware classification is unknown. A missing compatible decoder or a creation
+failure is explicit; native creation errors identify the selected decoder and
+enter the existing retirement/retry path rather than silently opening a default
+codec that may reject the format.
 
 For each advertised codec, a host worker tries its registered encoders using
 the production CLI quality/options and current geometry, render node and FPS.

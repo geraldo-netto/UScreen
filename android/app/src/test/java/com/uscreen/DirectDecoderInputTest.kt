@@ -75,6 +75,7 @@ internal class DirectInputFixture(callbacks: Boolean = false) : AutoCloseable {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [DirectInputCodecShadow::class])
 class DirectDecoderInputTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
 
     @Test fun t403_fill_uses_codec_owned_storage_and_preserves_csd_and_unsigned_sequence() {
         DirectInputFixture().use { fixture ->

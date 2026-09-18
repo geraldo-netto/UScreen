@@ -52,6 +52,7 @@ class FailingCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [FailingCodecShadow::class])
 class DecoderSetupTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
     private fun owner(target: Any, name: String): Any = when {
         target is VideoReceiver && name == "socket" -> target.transport
         target is VideoReceiver && name in setOf("mediaCodec", "codecAlive", "outputThread") -> target.decoder

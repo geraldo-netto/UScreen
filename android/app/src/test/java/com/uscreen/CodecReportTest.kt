@@ -1,6 +1,7 @@
 package com.uscreen
 
 import android.content.ComponentName
+import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Build
@@ -10,12 +11,27 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadows.ShadowMediaCodec
 import org.robolectric.shadows.MediaCodecInfoBuilder
 import org.robolectric.shadows.ShadowMediaCodecList
 import kotlinx.coroutines.runBlocking
 
+@Implements(MediaCodec::class)
+class SelectionCodecShadow : ShadowMediaCodec() {
+    companion object { var failCreation = false }
+    private var requestedName = ""
+    @Implementation public override fun __constructor__(name: String, nameIsType: Boolean, encoder: Boolean) {
+        requestedName = name
+        check(!failCreation) { "T468 injected creation failure" }
+        super.__constructor__(name, nameIsType, encoder)
+    }
+    @Implementation fun getName() = requestedName
+}
+
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [27, 34])
+@Config(sdk = [27, 34], shadows = [SelectionCodecShadow::class])
 class CodecReportTest {
     private fun codec(name: String, software: Boolean, main10: Boolean, encoder: Boolean = false): MediaCodecInfo {
         val profile = MediaCodecInfo.CodecProfileLevel().apply {
@@ -28,6 +44,46 @@ class CodecReportTest {
         return MediaCodecInfoBuilder.newBuilder().setName(name).setIsEncoder(encoder)
             .setIsSoftwareOnly(software).setIsHardwareAccelerated(!software)
             .setCapabilities(capabilities).build()
+    }
+
+    @Test fun t468_legacyDecoderCreationUsesTheAdvertisedCompatibleSelection() = runBlocking {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("OMX.google.hevc", true, false))
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, false))
+            val parameters = DecoderFormat("video/hevc", 640, 480, 30)
+            val report = DecoderCapabilities.report(parameters.width, parameters.height, parameters.fps)
+            assertEquals("[\"hevc\"]", report.getJSONArray("codecs").toString())
+            val expected = if (Build.VERSION.SDK_INT >= 29) "vendor.hevc" else "OMX.google.hevc"
+            val decoder = DecoderConfiguration.create(parameters)
+            try { assertEquals("T468: opened decoder differs from advertised selection", expected, decoder.name) }
+            finally { decoder.release() }
+        } finally { ShadowMediaCodecList.reset() }
+    }
+
+    @Test fun t468_creationFailureNamesTheChosenDecoderWithoutSilentFallback() {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, false))
+            SelectionCodecShadow.failCreation = true
+            val error = runCatching { DecoderConfiguration.create(DecoderFormat("video/hevc", 640, 480, 30)) }.exceptionOrNull()
+            assertTrue("T468: chosen decoder missing from failure: $error", error?.message?.contains("vendor.hevc") == true)
+            assertNotNull(error?.cause)
+        } finally { SelectionCodecShadow.failCreation = false; ShadowMediaCodecList.reset() }
+    }
+
+    @Test fun t468_unsupportedLegacyFormatNeverAllocatesTheDefaultDecoder() {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, false))
+            val invalid = DecoderFormat("video/hevc", 4096, 4096, 90)
+            val error = runCatching { DecoderConfiguration.create(invalid).release() }.exceptionOrNull()
+            assertTrue("T468: unsupported format used the default codec: $error", error is IllegalStateException)
+            ShadowMediaCodecList.reset()
+            assertTrue("T468: missing decoder accepted", runCatching {
+                DecoderConfiguration.create(DecoderFormat("video/avc", 640, 480, 30)).release()
+            }.isFailure)
+        } finally { ShadowMediaCodecList.reset() }
     }
 
     @Test fun t098_decoderInventoryDistinguishesHardwareSoftwareAbsentAndUnknown() {

@@ -53,6 +53,7 @@ class WatchdogCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [WatchdogCodecShadow::class])
 class DecoderWatchdogTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
     @Test fun t376_retiredCodecCallbacksCannotAcknowledgeReplacement() {
         WatchdogCodecShadow.outputs.clear()
         WatchdogCodecShadow.callbacks.clear()

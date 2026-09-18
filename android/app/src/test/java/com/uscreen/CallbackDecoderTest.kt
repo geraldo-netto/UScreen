@@ -50,6 +50,7 @@ class CallbackCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [CallbackCodecShadow::class])
 class CallbackDecoderTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
     private class Fixture : AutoCloseable {
         private val surface = Surface(SurfaceTexture(1))
         val invalidated = CountDownLatch(1)

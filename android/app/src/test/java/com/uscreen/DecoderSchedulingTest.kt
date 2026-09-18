@@ -49,6 +49,7 @@ class SchedulingCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [SchedulingCodecShadow::class])
 class DecoderSchedulingTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
     private class Fixture : AutoCloseable {
         val monitor = Any()
         private val surface = Surface(SurfaceTexture(1))

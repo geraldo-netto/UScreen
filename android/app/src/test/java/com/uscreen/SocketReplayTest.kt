@@ -14,6 +14,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [DirectInputCodecShadow::class])
 class SocketReplayTest {
+    @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
     @Test fun t403_backgrounding_cancels_a_backpressured_producer() = stalledWrite(true)
 
     @Test fun t403_write_deadline_bounds_a_backpressured_producer() = stalledWrite(false)

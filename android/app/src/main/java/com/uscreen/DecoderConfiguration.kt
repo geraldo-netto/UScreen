@@ -19,13 +19,13 @@ internal data class DecoderProfile(
 
 internal object DecoderConfiguration {
     fun create(parameters: DecoderFormat): MediaCodec {
-        if (!VideoCodec.framed(parameters.mimeType)) return MediaCodec.createDecoderByType(parameters.mimeType)
         val format = MediaFormat.createVideoFormat(parameters.mimeType, parameters.width, parameters.height)
         format.setInteger(MediaFormat.KEY_FRAME_RATE, parameters.fps)
         val name = checkNotNull(DecoderCapabilities.decoderName(format, parameters.mimeType)) {
             "No compatible decoder for stream format"
         }
-        return MediaCodec.createByCodecName(name)
+        return try { MediaCodec.createByCodecName(name) }
+        catch (failure: Exception) { throw IllegalStateException("Unable to create compatible decoder $name", failure) }
     }
 
     internal interface Support {
