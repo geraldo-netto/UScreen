@@ -1,0 +1,49 @@
+from pathlib import Path
+import json,hashlib,tarfile,gzip,shutil,subprocess,struct
+root=Path('docs/benchmarks/2026-09-18-hevc-interop');root.mkdir()
+fixtures=[('original-vaapi',Path('/tmp/uscreen-t400-fixtures/motion-hevc_vaapi.bin')),('original-x265',Path('/tmp/uscreen-t400-fixtures/motion-libx265.bin'))]
+for prefix,source in [('vaapi','/tmp/uscreen-t422-cases'),('features','/tmp/uscreen-t422-features')]:
+    fixtures += [(prefix+'-'+p.parent.name,p) for p in sorted(Path(source).glob('*/stream.bin'))]
+rows=[];temp=Path('/tmp/uscreen-t422-software');temp.mkdir()
+with tarfile.open(root/'fixtures.tar.xz','w:xz') as tar:
+    for name,path in fixtures:
+        data=path.read_bytes();width,height,fps,count=struct.unpack_from('>4I',data,8);mime_size=struct.unpack_from('>H',data,24)[0];pos=26+mime_size
+        config_size=struct.unpack_from('>I',data,pos)[0];config=data[pos+4:pos+4+config_size];pos+=4+config_size
+        elementary=temp/(name+'.hevc')
+        with elementary.open('wb') as stream:
+            for _ in range(count):
+                size=struct.unpack_from('>I',data,pos)[0];pos+=4;stream.write(data[pos:pos+size]);pos+=size
+        assert pos==len(data)
+        cmd=['ffmpeg','-v','error','-i',str(elementary),'-pix_fmt','nv12','-f','framemd5','-']
+        result=subprocess.run(cmd,capture_output=True,text=True,timeout=30)
+        frames=len([s for s in result.stdout.splitlines() if s and not s.startswith('#')])
+        row=dict(name=name,sha256=hashlib.sha256(data).hexdigest(),width=width,height=height,fps=fps,frames=count,configuration_hex=config.hex(),software_returncode=result.returncode,software_frames=frames,software_errors=result.stderr,software_framemd5_sha256=hashlib.sha256(result.stdout.encode()).hexdigest())
+        rows.append(row);tar.add(path,arcname=name+'.bin')
+        print(name,'software frames',frames,'rc',result.returncode,flush=True)
+(root/'fixtures.json').write_text(json.dumps(rows,indent=2)+'\n')
+summary=[]
+with tarfile.open(root/'trials.tar.gz','w:gz') as tar:
+    for name in ['valid-results','feature-results']:
+        source=Path('/tmp/uscreen-t422-'+name)
+        for path in sorted(source.rglob('*')):
+            if path.is_file():tar.add(path,arcname=name+'/'+str(path.relative_to(source)))
+        for path in sorted(source.glob('*/result.json')):
+            row=json.loads(path.read_text());summary.append({k:row.get(k) for k in ['case','completed','sent','display_hz','codec','stats','source_sha256','requested_profile','started_utc','finished_utc']})
+(root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+with tarfile.open(root/'encoder-commands.tar.gz','w:gz') as tar:
+    for source in ['/tmp/uscreen-t422-cases','/tmp/uscreen-t422-features']:
+        for path in sorted(Path(source).glob('*/*')):
+            if path.suffix in ['.log','.json']:tar.add(path,arcname=Path(source).name+'/'+str(path.relative_to(source)))
+    tar.add('/tmp/uscreen-t400-matched/motion-hevc_vaapi-q21/result.json',arcname='original-vaapi.json')
+    x265=next(Path('/tmp/uscreen-t400-matched').glob('motion-libx265-*/result.json'));tar.add(x265,arcname='original-x265.json')
+with tarfile.open(root/'replay-sources.tar.gz','w:gz') as tar:
+    source=Path('/tmp/uscreen-t422-replay-controls')
+    for path in sorted((source/'app/src').rglob('*')):
+        if path.is_file():tar.add(path,arcname=str(path.relative_to(source)))
+    tar.add(source/'app/build.gradle.kts',arcname='app/build.gradle.kts')
+for name in ['encode','feature-controls','replay-valid','feature-replay','archive']:
+    shutil.copy2('/tmp/uscreen-t422-'+name+'.py',root/(name+'.py.txt'))
+# T460 evidence distinguishes pre-fix keyguard interruption from actual decoder failure.
+shutil.copy2('/tmp/uscreen-t460-control-result.json',root/'t460-control.json')
+with gzip.open(root/'t460-red.log.gz','wb') as output:output.write(Path('/tmp/uscreen-t460-red.log').read_bytes())
+(root/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in sorted(root.iterdir()) if p.is_file()))

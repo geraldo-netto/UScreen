@@ -1,0 +1,23 @@
+import importlib.util,json,subprocess,hashlib
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('fixtures',Path('scripts/benchmarks/codec-fixtures.py'));f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f)
+root=Path('/tmp/uscreen-t422-cases');meta=json.loads(Path('/tmp/uscreen-t400-corpus/metadata.json').read_text())
+original=json.loads(Path('/tmp/uscreen-t400-matched/motion-hevc_vaapi-q21/result.json').read_text())['command']
+variants={'depth1':['-async_depth','1'],'refs1':['-refs','1'],'refs4':['-refs','4'],'intra':['-g','1'],'level41':['-level','4.1'],'level51':['-level','5.1'],'slices4':['-slices','4'],'lowpower':['-low_power','1'],'cbr':['-rc_mode','CBR','-b:v','20M','-maxrate','20M','-bufsize','20M'],'vbr':['-rc_mode','VBR','-b:v','20M','-maxrate','20M','-bufsize','20M'],'height768':[],'height832':[]}
+for name,opts in variants.items():
+    folder=root/name
+    if folder.exists():continue
+    folder.mkdir();encoded=folder/'encoded.mkv';command=original[:-1]+opts+[str(encoded)]
+    trialmeta=dict(meta)
+    if name.startswith('height'):
+        height=int(name[6:]);trialmeta['height']=height
+        command[command.index('-vf')+1]=('crop' if height<800 else 'pad')+f'=1280:{height},format=nv12,hwupload'
+    result=subprocess.run(command,capture_output=True,text=True)
+    (folder/'encode.log').write_text(result.stderr)
+    row=dict(command=command,returncode=result.returncode)
+    if result.returncode==0:
+        raw=folder/'stream.hevc';f.elementary(encoded,'hevc',raw);frames=f.annex_frames(raw)
+        fixture=folder/'stream.bin';f.write_fixture(fixture,'video/hevc',trialmeta,f.config_for(frames[0],'hevc'),frames)
+        row['sha256']=hashlib.sha256(fixture.read_bytes()).hexdigest()
+    (folder/'metadata.json').write_text(json.dumps(row,indent=2)+'\n')
+    print(name,result.returncode,flush=True)

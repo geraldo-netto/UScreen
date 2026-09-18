@@ -1,0 +1,40 @@
+from pathlib import Path
+import subprocess,time,json,hashlib
+ADB=['adb','-s','8002RH1010011900'];PKG='com.uscreen.decoderbench.candidate'
+OUT=Path('/tmp/uscreen-t422-feature-results');OUT.mkdir()
+def call(*args,check=True):
+    return subprocess.run(ADB+list(args),capture_output=True,text=True,timeout=30,check=check).stdout.strip()
+def trial(name,fixture,profile):
+    folder=OUT/name;folder.mkdir()
+    digest=hashlib.sha256(fixture.read_bytes()).hexdigest()
+    with fixture.open('rb') as stream:
+        subprocess.run(ADB+['shell','-T','run-as',PKG,'tee','files/stream.bin'],stdin=stream,stdout=subprocess.DEVNULL,check=True,timeout=30)
+    assert call('shell','run-as',PKG,'sha256sum','files/stream.bin').split()[0]==digest
+    call('shell','run-as',PKG,'rm','-f','files/result.json')
+    start=time.time(); launch=call('shell','am','start','-S','-W','-n',PKG+'/com.uscreen.benchmark.MainActivity','--ez','run','true','--es','profile',profile,'--ei','rate','60','--ei','seconds','4','--ei','warmup','1')
+    assert 'Status: ok' in launch
+    pid=call('shell','pidof',PKG,check=False)
+    result=None
+    for _ in range(30):
+        raw=call('exec-out','run-as',PKG,'cat','files/result.json',check=False)
+        try:result=json.loads(raw);break
+        except json.JSONDecodeError:time.sleep(1)
+    if result is None:raise RuntimeError('No benchmark result '+name)
+    result.update(case=name,requested_profile=profile,source_fixture=str(fixture),source_sha256=digest,started_utc=start,finished_utc=time.time())
+    (folder/'result.json').write_text(json.dumps(result,indent=2)+'\n')
+    if pid.isdigit():
+        log=call('logcat','-d','--pid',pid,'-v','threadtime','*:V')
+        (folder/'android.log').write_text('\n'.join(s for s in log.splitlines() if any(t in s for t in ['UScreenDecoderBench','MediaCodec','CCodec','Codec2Client','AndroidRuntime','hevc.decoder']))+'\n')
+    print(name,'complete=',result.get('completed'),'rendered=',result.get('stats',{}).get('rendered'),'error=',result.get('error','')[:130],flush=True)
+    if result.get('completed') is False and result.get('stats',{}).get('invalidations',0)==0:
+        raise RuntimeError('Foreground/surface interruption; trial is not codec evidence')
+while not Path('/tmp/uscreen-t395-results/live/preferences.json').exists():time.sleep(2)
+apk=Path('/tmp/uscreen-t422-replay-controls/app/build/outputs/apk/debug/app-debug.apk')
+call('install','-r',str(apk))
+(OUT/'metadata.json').write_text(json.dumps(dict(apk_sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),fingerprint=call('shell','getprop','ro.build.fingerprint'),source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()),indent=2)+'\n')
+try:
+    for folder in sorted(Path('/tmp/uscreen-t422-features').iterdir()):
+        if folder.is_dir() and (folder/'stream.bin').exists():trial(folder.name,folder/'stream.bin','legacy')
+finally:
+    call('shell','am','force-stop',PKG)
+    call('shell','am','start','-n','com.uscreen/.MainActivity')

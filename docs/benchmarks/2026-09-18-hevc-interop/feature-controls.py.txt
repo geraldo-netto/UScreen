@@ -1,0 +1,21 @@
+from pathlib import Path
+import json,subprocess,importlib.util
+spec=importlib.util.spec_from_file_location('fixtures',Path('scripts/benchmarks/codec-fixtures.py'));f=importlib.util.module_from_spec(spec);spec.loader.exec_module(f)
+root=Path('/tmp/uscreen-t422-features');root.mkdir();meta=json.loads(Path('/tmp/uscreen-t400-corpus/metadata.json').read_text())
+source=next(Path('/tmp/uscreen-t400-matched').glob('motion-libx265-*/result.json'))
+command=json.loads(source.read_text())['command']
+variants={'ctu64':['ctu=64','min-cu-size=8'],'transform4':['tu-inter-depth=4','tu-intra-depth=4'],'transformskip':['tskip=1'],'amp-sao':['amp=1','sao=1'],'no-temporal':['temporal-mvp=0','strong-intra-smoothing=0'],'no-wpp':['wpp=0'],'combined':['ctu=64','min-cu-size=8','tu-inter-depth=4','tu-intra-depth=4','tskip=1','amp=1','sao=1','temporal-mvp=0','strong-intra-smoothing=0','wpp=0']}
+for name,params in variants.items():
+    folder=root/name;folder.mkdir();target=folder/'encoded.mkv';cmd=command[:-1]+[str(target)]
+    index=cmd.index('-x265-params')+1;cmd[index]+=':'+':'.join(params)
+    result=subprocess.run(cmd,capture_output=True,text=True);(folder/'encode.log').write_text(result.stderr)
+    row=dict(command=cmd,returncode=result.returncode)
+    if result.returncode==0:
+        raw=folder/'stream.hevc';f.elementary(target,'hevc',raw);frames=f.annex_frames(raw)
+        f.write_fixture(folder/'stream.bin','video/hevc',meta,f.config_for(frames[0],'hevc'),frames)
+    (folder/'metadata.json').write_text(json.dumps(row,indent=2)+'\n');print(name,result.returncode,flush=True)
+# Remove optional AUD/SEI using only a documented stock bitstream filter.
+folder=root/'vaapi-no-aud-sei';folder.mkdir();raw=folder/'stream.hevc'
+cmd=['ffmpeg','-v','error','-i','/tmp/uscreen-t400-fixtures/motion-hevc_vaapi.hevc','-c:v','copy','-bsf:v','filter_units=remove_types=35|39|40','-f','hevc',str(raw)]
+subprocess.run(cmd,check=True);frames=f.annex_frames(raw);f.write_fixture(folder/'stream.bin','video/hevc',meta,f.config_for(frames[0],'hevc'),frames)
+(folder/'metadata.json').write_text(json.dumps(dict(command=cmd),indent=2)+'\n')
