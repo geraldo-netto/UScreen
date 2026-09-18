@@ -187,3 +187,17 @@ be present and empty. Missing diagnostics, decode errors or stale corpus results
 require a fresh measurement. Legacy warning-level logs containing warnings are
 also rejected conservatively; rerun with the current strict decoder to establish
 whether the input is clean. Verified existing caches remain reusable.
+
+T469 adds shared content validation in `codec_artifacts.py`. Host encoding and
+paced replay verify the raw corpus size and SHA-256 before starting and again
+before accepting results. Cache reuse and decoder-fixture export also verify
+the encoded file's size/hash, codec selection, dimensions, frame count and
+reference format (including FPS). Fixture export checks that its copied result
+still matches the retained `result.json`, then verifies the encoded source again
+after extraction. Missing or changed artifacts require a fresh measurement;
+hashing the replacement file does not establish the old quality result.
+
+New results retain explicit reference-format provenance. Historical results can
+use the original retained FFmpeg input command for that format check, alongside
+their actual files and clean decode logs. Validation never rewrites historical
+metadata or retrospectively establishes physical display performance.

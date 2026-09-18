@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """T400: stock encoder throughput/quality on pinned capture-format NV12 files."""
 import argparse
-import hashlib
+import importlib.util
 import json
 import math
 import mmap
@@ -11,6 +11,10 @@ import subprocess
 import time
 
 ENCODERS = ['h264_vaapi', 'hevc_vaapi', 'libx264', 'libx265', 'libvpx-vp9', 'libaom-av1']
+
+SPEC = importlib.util.spec_from_file_location('codec_artifacts', Path(__file__).with_name('codec_artifacts.py'))
+ARTIFACTS = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(ARTIFACTS)
 
 
 def codec_options(encoder, quality):
@@ -108,16 +112,21 @@ def inspect(output, folder, source, meta):
 
 
 def trial(args, meta, scene, encoder, quantizer):
+    source = ARTIFACTS.raw(args.corpus, meta, scene)
     folder = args.output / f'{scene["scene"]}-{encoder}-q{quantizer}'
     folder.mkdir()
     output = folder / 'encoded.mkv'
-    source = args.corpus / scene['path']
     warm(source)
     result = encode(command_for(args, meta, scene, encoder, quantizer, output), folder)
-    result.update(scene=scene['scene'], encoder=encoder, quality=quantizer, reference_sha256=scene['sha256'])
+    result.update(scene=scene['scene'], encoder=encoder, quality=quantizer, reference_sha256=scene['sha256'],
+                  reference_format=ARTIFACTS.reference_format(meta))
     if result['returncode'] == 0:
+        encoded_hash = ARTIFACTS.digest(output)
+        encoded_size = output.stat().st_size
         result.update(inspect(output, folder, source, meta))
-        result.update(encoded_bytes=output.stat().st_size, sha256=hashlib.sha256(output.read_bytes()).hexdigest(),
+        ARTIFACTS.raw(args.corpus, meta, scene)
+        ARTIFACTS.verify_file(output, encoded_hash, encoded_size)
+        result.update(encoded_bytes=encoded_size, sha256=encoded_hash,
                       mbps=output.stat().st_size * 8 * meta['fps'] / meta['frames'] / 1e6,
                       fps_including_startup=meta['frames'] / result['wall_seconds'])
     (folder / 'result.json').write_text(json.dumps(result, indent=2) + '\n')

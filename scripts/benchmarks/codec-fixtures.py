@@ -2,6 +2,7 @@
 """T400: preserve selected encoded access units in versioned decoder fixtures."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -9,6 +10,10 @@ import struct
 import subprocess
 
 MIMES = dict(h264='video/avc', hevc='video/hevc', vp9='video/x-vnd.on2.vp9', av1='video/av01')
+
+SPEC = importlib.util.spec_from_file_location('codec_artifacts', Path(__file__).with_name('codec_artifacts.py'))
+ARTIFACTS = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(ARTIFACTS)
 
 
 def elementary(source, codec, target):
@@ -88,12 +93,12 @@ def main():
     meta = json.loads((args.corpus / 'metadata.json').read_text())
     results = []
     for selected in json.loads(args.selection.read_text())['selections']:
-        row = selected['selection']['result']
-        source = Path(selected['selection']['path']).with_name('encoded.mkv')
+        row, source = ARTIFACTS.selection(selected, args.corpus, meta)
         codec = row['stream']['codec_name']
         base = args.output / f'{row["scene"]}-{row["encoder"]}'
         raw = base.with_suffix('.' + (codec if codec in ['h264', 'hevc'] else 'ivf'))
         command = elementary(source, codec, raw)
+        ARTIFACTS.verify_file(source, row['sha256'], row['encoded_bytes'])
         frames = annex_frames(raw) if codec in ['h264', 'hevc'] else ivf_frames(raw)
         fixture = base.with_suffix('.bin')
         config = config_for(frames[0], codec)

@@ -149,6 +149,8 @@ def replay(command, source, meta, folder):
 
 
 def trial(args, meta, scene, selected, number):
+    source = HOST.ARTIFACTS.raw(args.corpus, meta, scene)
+    HOST.ARTIFACTS.selection(selected, args.corpus, meta)
     encoder = selected['encoder']
     quality = selected['selected_quantizer']
     folder = args.output / f'{scene["scene"]}-{encoder}-{number}'
@@ -158,11 +160,12 @@ def trial(args, meta, scene, selected, number):
     command = command[:-2] + ['-flush_packets', '1', '-f', 'framecrc', 'pipe:1']
     if args.async_depth is not None and encoder.endswith('_vaapi'):
         command[-1:-1] = ['-async_depth', str(args.async_depth)]
-    source = args.corpus / scene['path']
     HOST.warm(source)
     result = replay(command, source, meta, folder)
+    HOST.ARTIFACTS.raw(args.corpus, meta, scene)
     result.update(command=command, scene=scene['scene'], encoder=encoder, quality=quality, trial=number,
-                  reference_sha256=scene['sha256'], warmup_frames=meta['fps'])
+                  reference_sha256=scene['sha256'], reference_format=HOST.ARTIFACTS.reference_format(meta),
+                  warmup_frames=meta['fps'])
     expected = list(range(meta['frames']))
     if [packet['pts'] for packet in result['packets']] != expected:
         raise ValueError('framecrc timestamps/count/order do not match input frame indices')

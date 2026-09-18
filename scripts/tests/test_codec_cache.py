@@ -1,5 +1,6 @@
 """T462: cached quality results need retained, matching decode evidence."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -18,14 +19,25 @@ class CodecCacheTests(unittest.TestCase):
         root = Path(directory)
         folder = root / 'sweep/static-h264_vaapi-q18'
         folder.mkdir(parents=True)
-        row = dict(returncode=0, reference_sha256='reference-a', decoded_frames=240,
+        pixels = bytes(4 * 4 * 3 // 2 * 240)
+        source = root / 'corpus'
+        source.mkdir()
+        (source / 'static.nv12').write_bytes(pixels)
+        scene = dict(scene='static', path='static.nv12', sha256=hashlib.sha256(pixels).hexdigest(), bytes=len(pixels))
+        meta = dict(width=4, height=4, frames=240, fps=60, pixel_format='nv12')
+        encoded = b'cache fixture'
+        (folder / 'encoded.mkv').write_bytes(encoded)
+        row = dict(returncode=0, scene='static', encoder='h264_vaapi', quality=18,
+                   reference_sha256=scene['sha256'], decoded_frames=240, reference_format=meta.copy(),
+                   encoded_bytes=len(encoded), sha256=hashlib.sha256(encoded).hexdigest(),
+                   stream=dict(width=4, height=4),
                    psnr_db={'all': 40.0, 'luma': 40.0, 'text_crop': 40.0})
         row.update(changes)
         (folder / 'result.json').write_text(json.dumps(row))
         if diagnostics is not None:
             (folder / 'decode.log').write_text(diagnostics)
-        args = SimpleNamespace(sweep=root / 'sweep', output=root / 'output')
-        return args, {'frames': 240}, {'scene': 'static', 'sha256': 'reference-a'}, row
+        args = SimpleNamespace(sweep=root / 'sweep', output=root / 'output', corpus=source)
+        return args, meta, scene, row
 
     def test_t462_bad_or_missing_decode_evidence_rejects_cached_metrics(self):
         for diagnostics in ('cu_qp_delta 99 is outside the valid range\n', None):
