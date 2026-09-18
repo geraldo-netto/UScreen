@@ -46,7 +46,7 @@ fn hevc_main_tier(bytes: &[u8]) -> bool {
     seen
 }
 
-fn sample(codec: Codec, width: u32, height: u32, frame: &VideoPacket) -> Vec<u8> {
+pub(super) fn sample(codec: Codec, width: u32, height: u32, frame: &VideoPacket) -> Vec<u8> {
     let mut bytes = if codec.framed() {
         let mut header = b"DKIF\0\0\x20\0".to_vec();
         header.extend_from_slice(if codec == Codec::Vp9 {

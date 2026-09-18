@@ -26,18 +26,33 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
     }
     private fun execute(holder: SurfaceHolder) {
         val result = try {
-            val profile = intent.getStringExtra("profile") ?: "legacy"
-            val seconds = intent.getIntExtra("seconds", 30).coerceIn(1, 600)
-            val warmup = intent.getIntExtra("warmup", 5).coerceIn(0, 60)
-            val rate = intent.getIntExtra("rate", 60).coerceIn(1, 90)
-            val burst = intent.getIntExtra("burst", 1).coerceIn(1, 32)
-            DecoderReplay(holder.surface, profile, active, burst).run(ReplayClip(File(filesDir, "stream.bin")), rate, seconds, warmup)
+            if (intent.hasExtra("usb_port")) UsbReplay(holder.surface, active).run(intent.getIntExtra("usb_port", 0))
+            else replay(holder)
         } catch (error: Exception) { JSONObject().put("error", error.stackTraceToString()) }
         result.put("display_hz", windowManager.defaultDisplay.refreshRate)
         File(filesDir, "result.json").writeText(result.toString(2))
         runOnUiThread { finish() }
     }
+    private fun replay(holder: SurfaceHolder): JSONObject {
+            val profile = intent.getStringExtra("profile") ?: "legacy"
+            val seconds = intent.getIntExtra("seconds", 30).coerceIn(1, 600)
+            val warmup = intent.getIntExtra("warmup", 5).coerceIn(0, 60)
+            val rate = intent.getIntExtra("rate", 60).coerceIn(1, 90)
+            val burst = intent.getIntExtra("burst", 1).coerceIn(1, 32)
+            val selection = intent.getStringExtra("selection")?.let {
+                JSONObject(String(android.util.Base64.decode(it, android.util.Base64.DEFAULT), Charsets.UTF_8))
+            }
+            return DecoderReplay(holder.surface, profile, active, burst, selection).run(ReplayClip(File(filesDir, "stream.bin")), rate, seconds, warmup)
+    }
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
     override fun surfaceDestroyed(holder: SurfaceHolder) { active.set(false) }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && worker != null) active.set(false)
+    }
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) active.set(false)
+        return super.dispatchTouchEvent(event)
+    }
     override fun onPause() { active.set(false); super.onPause() }
 }

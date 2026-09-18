@@ -10,6 +10,8 @@ mod placement;
 pub(crate) mod probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod probe_format;
+#[cfg(not(feature = "inproc-encoder"))]
+mod probe_quality;
 mod process;
 
 use crate::media::CodecConfig;

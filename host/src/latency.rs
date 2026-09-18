@@ -25,6 +25,15 @@ const MAX_TRACKED: usize = 256;
 /// Samples kept for the percentile report. One report covers ~5s.
 const MAX_SAMPLES: usize = 1024;
 
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+pub(crate) struct RenderSample {
+    pub ordinal: u64,
+    pub output: u64,
+    pub at: tokio::time::Instant,
+    pub micros: u32,
+}
+
 #[derive(Default)]
 struct Inner {
     /// (seq, time the complete access unit became ready for broadcast), oldest first.
@@ -51,6 +60,7 @@ pub struct LatencyTracker {
     inner: Arc<Mutex<Inner>>,
     next_sequence: Arc<AtomicU32>,
     activity: tokio::sync::watch::Sender<()>,
+    interaction: tokio::sync::watch::Sender<Option<tokio::time::Instant>>,
 }
 
 impl Default for LatencyTracker {
@@ -59,6 +69,7 @@ impl Default for LatencyTracker {
             inner: Default::default(),
             next_sequence: Default::default(),
             activity: tokio::sync::watch::channel(()).0,
+            interaction: tokio::sync::watch::channel(None).0,
         }
     }
 }
@@ -89,6 +100,7 @@ pub(crate) struct EncoderEvidence {
     encoded: std::sync::atomic::AtomicU64,
     encoded_at_ack: std::sync::atomic::AtomicU64,
     active: std::sync::atomic::AtomicBool,
+    samples: Mutex<VecDeque<RenderSample>>,
 }
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
 impl EncoderEvidence {
@@ -105,6 +117,32 @@ impl EncoderEvidence {
     pub fn rendered(&self) -> u64 {
         self.rendered.load(Ordering::Acquire)
     }
+
+    pub fn samples_after(&self, ordinal: u64) -> Vec<RenderSample> {
+        self.samples
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|sample| sample.ordinal > ordinal)
+            .cloned()
+            .collect()
+    }
+
+    fn acknowledge(&self, micros: u32) {
+        let output = self.encoded();
+        self.encoded_at_ack.store(output, Ordering::Relaxed);
+        let ordinal = self.rendered.fetch_add(1, Ordering::Release) + 1;
+        let mut samples = self.samples.lock().unwrap();
+        samples.push_back(RenderSample {
+            ordinal,
+            output,
+            at: tokio::time::Instant::now(),
+            micros,
+        });
+        if samples.len() > MAX_TRACKED {
+            samples.pop_front();
+        }
+    }
 }
 
 impl LatencyTracker {
@@ -115,6 +153,18 @@ impl LatencyTracker {
     /// Shared by every encoder generation in this daemon instance.
     pub fn next_sequence(&self) -> u32 {
         self.next_sequence.fetch_add(1, Ordering::Relaxed)
+    }
+
+    pub fn note_interaction(&self) {
+        self.interaction
+            .send_replace(Some(tokio::time::Instant::now()));
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn interaction_updates(
+        &self,
+    ) -> tokio::sync::watch::Receiver<Option<tokio::time::Instant>> {
+        self.interaction.subscribe()
     }
 
     #[cfg(any(test, feature = "inproc-encoder"))]
@@ -144,6 +194,7 @@ impl LatencyTracker {
             encoded: Default::default(),
             encoded_at_ack: Default::default(),
             active: std::sync::atomic::AtomicBool::new(true),
+            samples: Default::default(),
         });
         state.encoder = Some(evidence.clone());
         drop(state);
@@ -260,13 +311,10 @@ impl Inner {
         {
             return None;
         }
-        if let Some(encoder) = encoder {
-            encoder
-                .encoded_at_ack
-                .store(encoder.encoded(), Ordering::Relaxed);
-            encoder.rendered.fetch_add(1, Ordering::Release);
-        }
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
+        if let Some(encoder) = encoder {
+            encoder.acknowledge(micros);
+        }
         self.sent.drain(..=pos);
         if self.sent.is_empty() {
             self.discontinuous = false;
@@ -354,6 +402,26 @@ fn percentile(values: &[u32], p: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t479_observation_windows_are_bounded_and_never_mix_generations() {
+        let tracker = LatencyTracker::new();
+        let old = tracker.encoder_started("libx264", (640, 480, 60, 20000, 18));
+        tracker.on_encoded_for(0, &old);
+        let current = tracker.encoder_started("libx264", old.format);
+        tracker.on_rendered(0, 100);
+        assert!(current.samples_after(0).is_empty());
+        for seq in 1..=300 {
+            tracker.on_encoded_for(seq, &current);
+            tracker.on_rendered(seq, 100);
+            tracker.on_rendered(seq, 100); // A duplicate must not become a sample.
+        }
+        let samples = current.samples_after(0);
+        assert_eq!(samples.len(), MAX_TRACKED);
+        assert_eq!(samples.last().unwrap().ordinal, 300);
+        assert_eq!(current.samples_after(297).len(), 3);
+        assert_eq!(old.samples_after(0).len(), 1);
+    }
 
     #[derive(Clone)]
     struct LogBuffer(Arc<Mutex<Vec<u8>>>);

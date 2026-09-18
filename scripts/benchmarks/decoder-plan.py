@@ -68,7 +68,7 @@ def run(args):
     for item in plan:
         fixture = (args.plan.parent / item['fixture']).resolve()
         trial = SimpleNamespace(serial=args.serial, output=args.output, seconds=item['seconds'], warmup=item['warmup'],
-                                burst=item.get('burst', 1))
+                                burst=item.get('burst', 1), selection=item.get('selection'))
         setattr(trial, item['scene'], fixture)
         DEVICE.trial(trial, variant, item['profile'], item['scene'], item['rate'], item['trial'])
     DEVICE.capture(args.serial, 'shell', 'am', 'start', '-n', 'com.uscreen/.MainActivity')

@@ -10,7 +10,7 @@ import java.util.concurrent.locks.LockSupport
 import org.json.JSONObject
 
 internal class DecoderReplay(private val surface: Surface, private val profile: String, private val active: AtomicBoolean,
-                             private val burst: Int = 1) {
+                             private val burst: Int = 1, private val selection: JSONObject? = null) {
     private val stats = ReplayStats()
     private val timings = FrameTiming()
     private val result = JSONObject()
@@ -29,6 +29,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
             configure(clip)
             if (clip.config.isNotEmpty()) feed(clip.config, true)
             phase(clip, rate, warmup)
+            result.put("startup_trace", BenchMetrics.trace(1, sequence.toInt()))
             result.put("before", ReplayStats.process()).put("dequeues_before", BenchMetrics.snapshot())
             result.put("discarded_outputs_before", discardedOutputs(decoder))
             val first = sequence.toInt()
@@ -55,9 +56,12 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
     }
 
     private fun configure(clip: ReplayClip) {
+        val started = System.nanoTime()
         applyProfile(decoder, profile) // Generated bridge: legacy source lacks profile selection.
         observeReplayCodec(decoder) { codec, mime -> result.put("codec", inventory(codec, mime, clip)) }
-        check(decoder.setupCodec(surface, DecoderFormat(clip.mime, clip.width, clip.height, clip.fps)))
+        check(decoder.setupCodec(surface, replayFormat(clip, selection)))
+        result.put("setup_us", (System.nanoTime() - started) / 1000)
+            .put("selection", selection).put("selection_receipt", replayReceipt(decoder))
         input = createReplayInput(decoder, profile, active::get)
     }
 

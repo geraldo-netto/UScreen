@@ -107,20 +107,25 @@ impl DecoderCapabilities {
 
     /// Rich support requires an actual encoder profile; unknown does not grant it.
     pub fn choose(&self, stream: &StreamProfile, standard_hints: bool) -> Option<DecoderChoice> {
+        self.choices(stream, standard_hints).into_iter().next()
+    }
+
+    /// Compatible alternatives in platform order, with hardware advertised first.
+    pub fn choices(&self, stream: &StreamProfile, standard_hints: bool) -> Vec<DecoderChoice> {
         if self.protocol != 2 || !self.valid() || !stream.valid() {
-            return None;
+            return Vec::new();
         }
-        let decoder = self
-            .details
-            .iter()
-            .filter(|d| d.supports(stream))
-            .min_by_key(|d| d.hardware != Some(true))?;
-        Some(DecoderChoice {
-            name: decoder.name.clone(),
-            stream: stream.clone(),
-            low_latency: standard_hints && decoder.low_latency == Some(true),
-            operating_rate: decoder.operating_rate.filter(|_| standard_hints),
-        })
+        let mut decoders: Vec<_> = self.details.iter().filter(|d| d.supports(stream)).collect();
+        decoders.sort_by_key(|d| d.hardware != Some(true));
+        decoders
+            .into_iter()
+            .map(|decoder| DecoderChoice {
+                name: decoder.name.clone(),
+                stream: stream.clone(),
+                low_latency: standard_hints && decoder.low_latency == Some(true),
+                operating_rate: decoder.operating_rate.filter(|_| standard_hints),
+            })
+            .collect()
     }
 }
 

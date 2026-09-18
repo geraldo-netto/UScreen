@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run separate baseline/candidate decoder APKs; never replace the UScreen APK."""
 import argparse
+import base64
 from datetime import datetime, timezone
 import hashlib
 import itertools
@@ -54,6 +55,14 @@ def logs(args, package, folder):
                                                    'UScreenDecoderBench:I', 'AndroidRuntime:E'))
 
 
+def selection_args(args):
+    selection = getattr(args, 'selection', None)
+    if selection is None:
+        return []
+    value = base64.b64encode(json.dumps(selection).encode()).decode()
+    return ['--es', 'selection', value]
+
+
 def trial(args, variant, profile, scene, rate, number):
     folder = args.output / f'{scene}-{rate}-{number}-{variant}-{profile}'
     folder.mkdir()
@@ -65,7 +74,7 @@ def trial(args, variant, profile, scene, rate, number):
     command = capture(args.serial, 'shell', 'am', 'start', '-S', '-W', '-n', f'{package}/com.uscreen.benchmark.MainActivity',
                       '--ez', 'run', 'true', '--es', 'profile', profile, '--ei', 'rate', str(rate),
                       '--ei', 'seconds', str(args.seconds), '--ei', 'warmup', str(args.warmup),
-                      '--ei', 'burst', str(getattr(args, 'burst', 1)))
+                      '--ei', 'burst', str(getattr(args, 'burst', 1)), *selection_args(args))
     (folder / 'launch.txt').write_text(command)
     if 'Status: ok' not in command:
         raise RuntimeError(f'activity launch failed: {command}')
@@ -74,6 +83,7 @@ def trial(args, variant, profile, scene, rate, number):
                   host_finished_utc=datetime.now(timezone.utc).isoformat())
     (folder / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
     (folder / 'battery-after.txt').write_text(capture(args.serial, 'shell', 'dumpsys', 'battery'))
+    (folder / 'thermal-after.txt').write_text(capture(args.serial, 'shell', 'dumpsys', 'thermalservice'))
     logs(args, package, folder)
     if not result.get('completed'):
         raise RuntimeError(f'incomplete decoder trial; inspect {folder}')

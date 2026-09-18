@@ -1,8 +1,8 @@
 # Media capability negotiation and selection research
 
 T477, 2026-09-18. This document records the research and implementation contract
-for T478/T479. The T478 report/selection contract is implemented; T479's measurement
-and ranking gate below remains follow-up work. See
+for T478/T479. Both the richer report/selection contract and bounded measured
+ranking are implemented. See the [T479 evidence and limits](benchmarks/2026-09-18-profile-selection.md) and
 [video codecs](video-codecs.md) for the running protocol. Windows remains a
 [planned host port](windows-port.md).
 
@@ -12,8 +12,9 @@ The current Android `DecoderCapabilities` report identifies codec families and
 whether a compatible decoder advertises hardware acceleration for the negotiated
 width, height and FPS. `ControlSession` collects it on its IO scope, serializes
 inventory queries and rejects completion after socket/format retirement. The
-host separately probes stock encoders, ranks their output cadence and requires
-three new render acknowledgements. T468 aligns decoder creation with the
+host separately probes stock encoders. Current rich peers compare bounded live
+ACK windows after fidelity/capacity screening; legacy peers use output cadence.
+Activation requires three new render acknowledgements. T468 aligns decoder creation with the
 format-compatible inventory; T465 monitors failures after initial verification.
 
 Richer announcements can reject impossible combinations before a disruptive
@@ -124,15 +125,23 @@ Do not sum its percentiles with Android replay percentiles. The host's live
 packet-ready-to-render-ACK timer includes delivery and the return path but omits
 capture/encoding. Render callbacks are not optical measurements.
 
-There is no matched full-path comparison of the current automatic policy and
-the proposed capability-informed policy. Existing short power snapshots and the
+At the T477 research snapshot there was no matched combined-path comparison.
+[T479](benchmarks/2026-09-18-profile-selection.md) adds 48 negotiated decoder
+replays and 24 raw-write→encode→USB→render-ACK trials with 48 startup/restart
+phases, preserving the distinction from EVDI capture and optical presentation.
+Existing short power snapshots and the
 [interrupted sustained power matrix](benchmarks/2026-09-18-power-validation.md)
 do not establish battery savings; the gauge advances in coarse 9.99 mAh steps.
-Startup/recovery regressions establish lifecycle behavior, not physical timing.
-The research therefore supports richer admission and further measurement, not
-an unqualified performance claim or automatic promotion based on advertising.
+T479 reports measured setup and fresh-stream timing separately from the
+permanent lifecycle regressions. Its short power/thermal observations still do
+not establish a battery winner. Advertising alone does not promote a profile.
 
 ## T479 measurement and ranking gate
+
+The following is the research contract; [video codecs](video-codecs.md#automatic-selection)
+describes the implemented budgets, quality gate, noise thresholds and
+generation/receipt checks. The [measurement report](benchmarks/2026-09-18-profile-selection.md)
+records which conditions were exercised and which evidence remains unknown.
 
 Compare the current policy and compatible candidates on this tablet only. Use
 matched motion, text/pen, sparse and recovery workloads, fixed dimensions/FPS,

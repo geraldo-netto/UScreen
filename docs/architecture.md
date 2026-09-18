@@ -31,8 +31,10 @@ from the existing implementation.
    and virtual display stay attached; delayed reports for old inodes are
    ignored. The target FPS is not a guarantee of capture throughput.
 3. **Encode.** The default FFmpeg child uses NVENC, VAAPI, software libx264, libvpx VP9 or libaom AV1.
-   Automatic selection probes compatible CLI profiles off the capture path,
-   then validates startup render acknowledgements; explicit choices remain.
+   Automatic selection probes compatible CLI profiles off the capture path.
+   Current peers add bounded live render-ACK comparisons, a synthetic fidelity
+   guard and exact decoder configuration receipts before activation/recovery;
+   explicit choices remain. Capture/encoding time is outside that live ACK metric.
    VP9/AV1 framing, profiles and peer checks are described in [video codecs](video-codecs.md).
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
    CRF with VBV limits. VAAPI CQP is intentionally uncapped; the Linux bitrate control is disabled for explicit VAAPI choices.

@@ -604,6 +604,7 @@ fn handle_event(
             action,
             slot,
         } => {
+            latency.note_interaction();
             uinput.touch((x, y, pressure), action, slot);
         }
         InputEvent::Pen {
@@ -616,6 +617,7 @@ fn handle_event(
             button,
             action,
         } => {
+            latency.note_interaction();
             uinput.pen(
                 PenSample {
                     position: (x, y, pressure),

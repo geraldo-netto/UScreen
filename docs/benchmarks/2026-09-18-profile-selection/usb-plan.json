@@ -1,0 +1,506 @@
+[
+  {
+    "encoder": "h264_vaapi",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "libx264",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "libx264",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "libx264",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "libx264",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 0
+  },
+  {
+    "encoder": "libx264",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "motion",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "libx264",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "text",
+    "rate": 5,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "libx264",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "text",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "libx264",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi_baseline",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  },
+  {
+    "encoder": "h264_vaapi",
+    "scene": "pen",
+    "rate": 60,
+    "seconds": 4,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    "repeat": 1
+  }
+]

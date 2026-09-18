@@ -117,6 +117,23 @@ internal fun observeReplayCodec(decoder: DecoderSession, observe: (android.media
 '''.replace('MIME', mime)
 
 
+def selection_bridge(directory):
+    rich = (directory / 'originals/DecoderSelection.kt').exists()
+    expression = 'base.copy(selection = DecoderSelection.read(selection))' if rich else 'error("Revision lacks rich negotiation")'
+    receipt = 'decoder.configuredSelectionReceipt' if 'configuredSelectionReceipt' in (directory / 'originals/DecoderSession.kt').read_text() else 'null'
+    return '''
+internal fun replayFormat(clip: ReplayClip, selection: org.json.JSONObject?): DecoderFormat {
+    return requestFormat(clip.mime, clip.width, clip.height, clip.fps, selection)
+}
+internal fun requestFormat(mime: String, width: Int, height: Int, fps: Int, selection: org.json.JSONObject?): DecoderFormat {
+    val base = DecoderFormat(mime, width, height, fps)
+    if (selection == null) return base
+    return EXPRESSION
+}
+internal fun replayReceipt(decoder: DecoderSession): String? = RECEIPT
+'''.replace('EXPRESSION', expression).replace('RECEIPT', receipt)
+
+
 def prepare(args):
     directory = args.directory.resolve()
     directory.mkdir()
@@ -134,6 +151,7 @@ def prepare(args):
         bridge = bridge.replace('"sync-normal" ->', '"render-latest" -> DecoderProfile(renderLatest = true)\n        "sync-normal" ->')
     bridge += '\ninternal fun discardedOutputs(decoder: DecoderSession): Long = ' + ('decoder.discardedOutputs' if latest else '0L') + '\n'
     bridge += codec_observer(directory)
+    bridge += selection_bridge(directory)
     (directory / 'app/src/main/java/ProfileBridge.kt').write_text(bridge)
     return directory
 

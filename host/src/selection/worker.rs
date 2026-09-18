@@ -105,7 +105,39 @@ async fn optimize(
     snapshot: &EncoderSettings,
     latency: &LatencyTracker,
 ) {
-    let candidates = calibrate(base, snapshot).await;
+    let rich = snapshot.decoders.as_ref().is_some_and(|d| d.protocol == 2);
+    let mut input = latency.interaction_updates();
+    if rich && !super::trial::quiet(&mut input).await {
+        return;
+    }
+    let work = async {
+        let _permit = tokio::time::timeout(Duration::from_secs(3), ADMISSION.acquire())
+            .await
+            .ok()?
+            .ok()?;
+        let candidates = calibrate(base, snapshot).await;
+        Some(if rich {
+            measured::benchmark(settings, snapshot, latency, candidates).await
+        } else {
+            candidates
+        })
+    };
+    let candidates = if rich {
+        super::trial::uninterrupted(&mut input, work)
+            .await
+            .flatten()
+    } else {
+        work.await
+    };
+    let Some(candidates) = candidates else {
+        publish(
+            settings,
+            &Key::new(snapshot),
+            fallback_encoder(snapshot),
+            "Calibration interrupted; restored fallback",
+        );
+        return;
+    };
     supervise(settings, snapshot, latency, candidates).await;
 }
 
@@ -150,9 +182,9 @@ async fn choose<F: Future<Output = bool>>(
 ) -> Option<(String, Vec<Candidate>)> {
     let mut candidates = candidates.into_iter();
     while let Some(candidate) = candidates.next() {
-        let reason = format!("Host probe: {:.1} FPS, packet-interval p95 {:.2} ms; {} decoder advertised; awaiting render ACKs",
+        let reason = measured::reason(&candidate).unwrap_or_else(|| format!("Host probe: {:.1} FPS, packet-interval p95 {:.2} ms; {} decoder advertised; awaiting render ACKs",
             candidate.measurement.fps, candidate.measurement.p95_us as f64 / 1000.0,
-            if candidate.hardware { "hardware" } else { "software/unknown" });
+            if candidate.hardware { "hardware" } else { "software/unknown" }));
         if !publish_choice(
             settings,
             key,
@@ -165,7 +197,11 @@ async fn choose<F: Future<Output = bool>>(
         if verify(candidate.measurement.encoder.clone()).await {
             let verified = reason.replace(
                 "awaiting render ACKs",
-                "render ACKs verified; decoder speed not benchmarked",
+                if candidate.observation.is_some() {
+                    "render ACKs reverified; best tested in this session"
+                } else {
+                    "render ACKs verified; decoder speed not benchmarked"
+                },
             );
             settings.send_if_modified(|current| {
                 if !key.matches(current) {
@@ -266,23 +302,29 @@ fn matches_evidence(
     })
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Candidate {
     measurement: Measurement,
     hardware: bool,
     decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    observation: Option<super::trial::Observation>,
 }
 
 async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Candidate> {
-    let _permit = ADMISSION.acquire().await.unwrap();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let mut candidates = Vec::new();
-    for encoder in uscreen_config::encoding::ENCODERS {
+    let mut encoders = uscreen_config::encoding::ENCODERS;
+    encoders.sort_by_key(|encoder| probe_order(encoder.name));
+    for encoder in encoders {
         let codec = crate::media::Codec::from_encoder(encoder.name);
         if !snapshot.decoder_supports(codec) {
             continue;
         }
         let config = probe_config(base, snapshot, encoder.name);
-        match probe::measure(&config).await {
+        let Ok(result) = tokio::time::timeout_at(deadline, probe::measure(&config)).await else {
+            break;
+        };
+        match result {
             Ok(measurement) => {
                 if let Some(candidate) = compatible_candidate(snapshot, measurement, base.ten_bit) {
                     candidates.push(candidate);
@@ -295,6 +337,15 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
     }
     candidates.sort_by(|a, b| rank(a, b, snapshot.fps));
     candidates
+}
+
+fn probe_order(encoder: &str) -> u8 {
+    match encoder {
+        "libx264" => 0,
+        "h264_vaapi_baseline" => 1,
+        "h264_vaapi" => 2,
+        _ => 3,
+    }
 }
 
 fn compatible_candidate(
@@ -322,6 +373,7 @@ fn compatible_candidate(
         measurement,
         hardware,
         decoder,
+        observation: None,
     })
 }
 
@@ -365,6 +417,7 @@ fn rank(a: &Candidate, b: &Candidate, fps: u32) -> Ordering {
         .then_with(|| a.measurement.encoder.cmp(&b.measurement.encoder))
 }
 
+mod measured;
 #[cfg(test)]
 mod tests;
 

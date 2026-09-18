@@ -1,0 +1,1106 @@
+[
+  {
+    "scene": "motion-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 0,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "motion-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/motion-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 5,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-constrained-baseline-cavlc-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-constrained_baseline-cavlc/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-omx-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-plain",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  },
+  {
+    "scene": "text-high-cabac-c2-hinted",
+    "fixture": "/tmp/uscreen-t400-profiles/text-high-cabac/stream.bin",
+    "profile": "legacy",
+    "rate": 60,
+    "trial": 1,
+    "seconds": 6,
+    "warmup": 2,
+    "selection": {
+      "decoder_protocol": 2,
+      "decoder_selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    }
+  }
+]

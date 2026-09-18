@@ -1,7 +1,7 @@
 use super::*;
 use crate::media::DecoderCapabilities;
 
-fn settings() -> EncoderSettings {
+pub(super) fn settings() -> EncoderSettings {
     EncoderSettings {
         encoder: "auto".into(),
         fps: 60,
@@ -26,16 +26,18 @@ fn settings() -> EncoderSettings {
         }),
     }
 }
-fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
+pub(super) fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
     Candidate {
         hardware,
         decoder: None,
+        observation: None,
         measurement: Measurement {
             encoder: name.into(),
             fps,
             p95_us: p95,
             first_us: 1,
             stream: None,
+            quality_db: Some(40.0),
         },
     }
 }

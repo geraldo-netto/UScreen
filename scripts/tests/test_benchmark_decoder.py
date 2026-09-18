@@ -1,5 +1,6 @@
 """T386: benchmark provenance must describe the trials actually requested."""
 import importlib.util
+import base64
 import json
 from pathlib import Path
 import tempfile
@@ -15,6 +16,13 @@ SPEC.loader.exec_module(BENCH)
 
 
 class DecoderBenchmarkTests(unittest.TestCase):
+    def test_t479_selection_reaches_replay_as_exact_bounded_request(self):
+        selection = json.loads((PATH.parents[2] / 'testdata/decoder-selection.json').read_text())
+        args = BENCH.selection_args(SimpleNamespace(selection=selection))
+        self.assertEqual(args[:2], ['--es', 'selection'])
+        self.assertEqual(json.loads(base64.b64decode(args[2])), selection)
+        self.assertEqual(BENCH.selection_args(SimpleNamespace()), [])
+
     def test_t460_replay_can_remain_visible_over_the_same_keyguard_as_uscreen(self):
         path = PATH.with_name('decoder-project.py')
         spec = importlib.util.spec_from_file_location('decoder_project', path)

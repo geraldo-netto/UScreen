@@ -1,0 +1,2494 @@
+{
+  "decoder_trials": [
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 273.855,
+      "feed_to_release_ms": {
+        "p50": 11.1565,
+        "p95": 12.207192,
+        "p99": 12.830538
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 230.744,
+      "feed_to_release_ms": {
+        "p50": 11.111038,
+        "p95": 12.161192,
+        "p99": 12.768577
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 251.318,
+      "feed_to_release_ms": {
+        "p50": 11.034385,
+        "p95": 12.096385,
+        "p99": 12.423808
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 223.095,
+      "feed_to_release_ms": {
+        "p50": 11.051308,
+        "p95": 12.164884,
+        "p99": 12.536385
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 228.801,
+      "feed_to_release_ms": {
+        "p50": 10.790654,
+        "p95": 11.727231,
+        "p99": 12.063577
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 248.027,
+      "feed_to_release_ms": {
+        "p50": 10.892539,
+        "p95": 11.843116,
+        "p99": 12.059116
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 255.159,
+      "feed_to_release_ms": {
+        "p50": 11.03977,
+        "p95": 12.250692,
+        "p99": 12.690193
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 260.5,
+      "feed_to_release_ms": {
+        "p50": 11.007615,
+        "p95": 12.123615,
+        "p99": 12.619731
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 253.266,
+      "feed_to_release_ms": {
+        "p50": 27.588308,
+        "p95": 28.750269,
+        "p99": 28.993308
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 241.297,
+      "feed_to_release_ms": {
+        "p50": 27.606461,
+        "p95": 28.831846,
+        "p99": 29.518154
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 244.63,
+      "feed_to_release_ms": {
+        "p50": 27.619693,
+        "p95": 28.582693,
+        "p99": 29.303499
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 253.624,
+      "feed_to_release_ms": {
+        "p50": 27.547462,
+        "p95": 28.608731,
+        "p99": 29.000269
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 237.881,
+      "feed_to_release_ms": {
+        "p50": 27.817,
+        "p95": 29.169615,
+        "p99": 29.561038
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 233.177,
+      "feed_to_release_ms": {
+        "p50": 27.651539,
+        "p95": 28.750193,
+        "p99": 29.185039
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 234.08,
+      "feed_to_release_ms": {
+        "p50": 27.882038,
+        "p95": 28.950077,
+        "p99": 29.592731
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 274.923,
+      "feed_to_release_ms": {
+        "p50": 27.765193,
+        "p95": 28.820846,
+        "p99": 29.467038
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 285.224,
+      "feed_to_release_ms": {
+        "p50": 12.854424,
+        "p95": 13.665769,
+        "p99": 13.891116
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 239.19,
+      "feed_to_release_ms": {
+        "p50": 13.016153,
+        "p95": 14.205885,
+        "p99": 14.616
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 238.003,
+      "feed_to_release_ms": {
+        "p50": 11.563192,
+        "p95": 12.770769,
+        "p99": 13.6915
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 244.595,
+      "feed_to_release_ms": {
+        "p50": 11.671192,
+        "p95": 12.978615,
+        "p99": 13.307346
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 226.015,
+      "feed_to_release_ms": {
+        "p50": 12.982577,
+        "p95": 14.339424,
+        "p99": 14.889462
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 232.424,
+      "feed_to_release_ms": {
+        "p50": 13.105692,
+        "p95": 14.168269,
+        "p99": 14.486692
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 244.188,
+      "feed_to_release_ms": {
+        "p50": 11.625038,
+        "p95": 12.748039,
+        "p99": 13.108923
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 241.77,
+      "feed_to_release_ms": {
+        "p50": 11.697193,
+        "p95": 12.768154,
+        "p99": 13.160077
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 227.346,
+      "feed_to_release_ms": {
+        "p50": 13.280577,
+        "p95": 14.536461,
+        "p99": 14.939846
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 246.53,
+      "feed_to_release_ms": {
+        "p50": 12.844731,
+        "p95": 14.120385,
+        "p99": 14.167577
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 257.492,
+      "feed_to_release_ms": {
+        "p50": 11.707116,
+        "p95": 12.834847,
+        "p99": 13.521808
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 279.216,
+      "feed_to_release_ms": {
+        "p50": 11.629115,
+        "p95": 12.853769,
+        "p99": 13.239
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 246.365,
+      "feed_to_release_ms": {
+        "p50": 12.291307,
+        "p95": 14.051846,
+        "p99": 14.3505
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 30,
+      "setup_ms": 316.389,
+      "feed_to_release_ms": {
+        "p50": 12.979577,
+        "p95": 14.222461,
+        "p99": 14.707808
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 235.24,
+      "feed_to_release_ms": {
+        "p50": 11.493193,
+        "p95": 12.701308,
+        "p99": 13.124269
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 360,
+      "setup_ms": 240.719,
+      "feed_to_release_ms": {
+        "p50": 11.827308,
+        "p95": 12.98223,
+        "p99": 13.346193
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "constrained-baseline",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 307.413,
+      "feed_to_release_ms": {
+        "p50": 213.079423,
+        "p95": 214.031961,
+        "p99": 214.655615
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 269.121,
+      "feed_to_release_ms": {
+        "p50": 213.570077,
+        "p95": 214.613961,
+        "p99": 214.708654
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 308.108,
+      "feed_to_release_ms": {
+        "p50": 28.2345,
+        "p95": 29.338961,
+        "p99": 29.698115
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 236.844,
+      "feed_to_release_ms": {
+        "p50": 28.539808,
+        "p95": 29.821154,
+        "p99": 30.413076
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 240.325,
+      "feed_to_release_ms": {
+        "p50": 213.118384,
+        "p95": 213.973961,
+        "p99": 214.032269
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 251.162,
+      "feed_to_release_ms": {
+        "p50": 213.509577,
+        "p95": 214.84573,
+        "p99": 215.470462
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 231.57,
+      "feed_to_release_ms": {
+        "p50": 28.378577,
+        "p95": 29.427846,
+        "p99": 29.823462
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 229.375,
+      "feed_to_release_ms": {
+        "p50": 28.491692,
+        "p95": 29.803654,
+        "p99": 30.444077
+      },
+      "selection": {
+        "name": "c2.unisoc.avc.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 270.499,
+      "feed_to_release_ms": {
+        "p50": 213.076346,
+        "p95": 214.234769,
+        "p99": 214.583346
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 266.123,
+      "feed_to_release_ms": {
+        "p50": 212.867654,
+        "p95": 214.085731,
+        "p99": 214.563423
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 219.6,
+      "feed_to_release_ms": {
+        "p50": 28.5025,
+        "p95": 29.739115,
+        "p99": 30.183807
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 217.844,
+      "feed_to_release_ms": {
+        "p50": 28.190115,
+        "p95": 29.21173,
+        "p99": 29.764384
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": 120
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 5,
+      "trial": 0,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 226.414,
+      "feed_to_release_ms": {
+        "p50": 213.531077,
+        "p95": 214.931192,
+        "p99": 215.436385
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 5,
+      "trial": 1,
+      "sent": 30,
+      "rendered": 29,
+      "setup_ms": 249.89,
+      "feed_to_release_ms": {
+        "p50": 212.658961,
+        "p95": 213.72,
+        "p99": 213.870846
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 60,
+      "trial": 0,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 238.497,
+      "feed_to_release_ms": {
+        "p50": 28.637577,
+        "p95": 29.611769,
+        "p99": 30.107077
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 60,
+      "trial": 1,
+      "sent": 360,
+      "rendered": 359,
+      "setup_ms": 230.439,
+      "feed_to_release_ms": {
+        "p50": 28.497192,
+        "p95": 29.69127,
+        "p99": 30.278307
+      },
+      "selection": {
+        "name": "OMX.sprd.h264.decoder",
+        "stream": {
+          "codec": "h264",
+          "profile": "high",
+          "level": 40,
+          "depth": 8
+        },
+        "low_latency": false,
+        "operating_rate": null
+      }
+    }
+  ],
+  "usb_phases": [
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 35.703161,
+        "p95": 38.803909,
+        "p99": 41.952028
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 31.955808,
+        "p95": 35.362469,
+        "p99": 37.013564
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 140.930911,
+      "trial": "trial-000",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 222.521
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 35.726896,
+        "p95": 37.935343,
+        "p99": 41.71551
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.053238,
+        "p95": 34.949178,
+        "p99": 38.128217
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 135.570688,
+      "trial": "trial-000",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 54.705
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.852659,
+        "p95": 22.598428,
+        "p99": 23.29508
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.283592,
+        "p95": 18.837469,
+        "p99": 19.823332
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 131.947717,
+      "trial": "trial-001",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 230.023
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.976569,
+        "p95": 21.500677,
+        "p99": 24.3823
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.965836,
+        "p95": 18.501326,
+        "p99": 21.434289
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 133.130694,
+      "trial": "trial-001",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 60.256
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.723577,
+        "p95": 22.270211,
+        "p99": 23.339086
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.591519,
+        "p95": 20.119958,
+        "p99": 21.349303
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 90.963347,
+      "trial": "trial-002",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 232.687
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.57483,
+        "p95": 22.857892,
+        "p99": 25.343035
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 17.711955,
+        "p95": 21.031577,
+        "p99": 23.367922
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 97.10654,
+      "trial": "trial-002",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 55.198
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 222.371818,
+        "p95": 226.729736,
+        "p99": 228.162417
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.146369,
+        "p95": 223.483846,
+        "p99": 225.179297
+      },
+      "samples": 14,
+      "first_write_to_ack_ms": 225.776346,
+      "trial": "trial-003",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 209.804
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 223.363242,
+        "p95": 225.808217,
+        "p99": 227.371431
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.777183,
+        "p95": 222.776404,
+        "p99": 223.563851
+      },
+      "samples": 14,
+      "first_write_to_ack_ms": 224.298277,
+      "trial": "trial-003",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 46.191
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.1715,
+        "p95": 26.358856,
+        "p99": 28.261299
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 18.724239,
+        "p95": 22.487462,
+        "p99": 24.208213
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 130.881849,
+      "trial": "trial-004",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 230.858
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.046818,
+        "p95": 24.687533,
+        "p99": 25.685198
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 20.068067,
+        "p95": 21.425561,
+        "p99": 22.337972
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 133.64412,
+      "trial": "trial-004",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 48.977
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.962975,
+        "p95": 26.739414,
+        "p99": 27.430295
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 20.350685,
+        "p95": 24.766576,
+        "p99": 24.793849
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 96.171325,
+      "trial": "trial-005",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 5,
+      "setup_ms": 214.404
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.345598,
+        "p95": 27.090306,
+        "p99": 29.086831
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 21.565534,
+        "p95": 25.613009,
+        "p99": 27.152627
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 95.106037,
+      "trial": "trial-005",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 5,
+      "setup_ms": 55.485
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 35.906286,
+        "p95": 38.487865,
+        "p99": 39.26827
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 32.515234,
+        "p95": 35.144878,
+        "p99": 35.709463
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 137.832048,
+      "trial": "trial-006",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 238.734
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 36.821632,
+        "p95": 39.761217,
+        "p99": 40.505381
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.595501,
+        "p95": 36.554093,
+        "p99": 37.524246
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 139.670717,
+      "trial": "trial-006",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 54.588
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 20.802433,
+        "p95": 23.497103,
+        "p99": 26.503867
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.818781,
+        "p95": 19.442233,
+        "p99": 21.037158
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 129.212069,
+      "trial": "trial-007",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 219.138
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.340816,
+        "p95": 22.845758,
+        "p99": 29.867936
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.152708,
+        "p95": 19.116721,
+        "p99": 21.769109
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 148.191053,
+      "trial": "trial-007",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 58.344
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 17.94632,
+        "p95": 21.443136,
+        "p99": 22.564642
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.244216,
+        "p95": 19.718178,
+        "p99": 20.958224
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 100.814506,
+      "trial": "trial-008",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 218.506
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.355584,
+        "p95": 22.423248,
+        "p99": 29.425758
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.507597,
+        "p95": 20.04855,
+        "p99": 27.773782
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 98.242976,
+      "trial": "trial-008",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 61.227
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 36.385926,
+        "p95": 39.035729,
+        "p99": 42.350442
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.041194,
+        "p95": 35.765191,
+        "p99": 38.553724
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 148.694389,
+      "trial": "trial-009",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 212.786
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 36.8773,
+        "p95": 39.7575,
+        "p99": 43.197777
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.366176,
+        "p95": 36.285672,
+        "p99": 39.289111
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 135.322728,
+      "trial": "trial-009",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 45.025
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 20.251854,
+        "p95": 22.405003,
+        "p99": 24.04743
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.346134,
+        "p95": 18.66263,
+        "p99": 20.095661
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 139.610971,
+      "trial": "trial-010",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 228.697
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.878439,
+        "p95": 22.790652,
+        "p99": 28.980674
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.631047,
+        "p95": 19.72395,
+        "p99": 25.868194
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 144.691341,
+      "trial": "trial-010",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 54.176
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.792943,
+        "p95": 23.236677,
+        "p99": 29.649212
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.688869,
+        "p95": 20.594429,
+        "p99": 27.301756
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 143.492064,
+      "trial": "trial-011",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 220.539
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 17.821437,
+        "p95": 21.579751,
+        "p99": 22.520888
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.27719,
+        "p95": 19.902095,
+        "p99": 20.499004
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 105.514849,
+      "trial": "trial-011",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 51.237
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.878238,
+        "p95": 22.895645,
+        "p99": 25.954712
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.788312,
+        "p95": 20.919189,
+        "p99": 23.695417
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 114.866599,
+      "trial": "trial-012",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 235.956
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.074329,
+        "p95": 23.286814,
+        "p99": 25.234404
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 17.333501,
+        "p95": 21.641912,
+        "p99": 23.649939
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 95.131027,
+      "trial": "trial-012",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 57.681
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.989975,
+        "p95": 22.222148,
+        "p99": 23.366789
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.361653,
+        "p95": 17.995124,
+        "p99": 19.709792
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 132.873977,
+      "trial": "trial-013",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 253.024
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.091272,
+        "p95": 22.280141,
+        "p99": 24.945704
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.879408,
+        "p95": 18.412213,
+        "p99": 21.802694
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 136.687878,
+      "trial": "trial-013",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 50.803
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 35.749812,
+        "p95": 39.166803,
+        "p99": 41.88569
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 32.40473,
+        "p95": 35.96523,
+        "p99": 37.786775
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 133.03572,
+      "trial": "trial-014",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 230.621
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 36.208463,
+        "p95": 39.016262,
+        "p99": 40.269664
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 32.957713,
+        "p95": 35.128497,
+        "p99": 37.329137
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 131.277037,
+      "trial": "trial-014",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 50.731
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.651972,
+        "p95": 26.016963,
+        "p99": 44.207606
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 20.272334,
+        "p95": 24.293338,
+        "p99": 42.436018
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 87.849455,
+      "trial": "trial-015",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 5,
+      "setup_ms": 206.122
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.930894,
+        "p95": 25.229524,
+        "p99": 29.745038
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 21.128246,
+        "p95": 23.475841,
+        "p99": 26.527123
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 93.752803,
+      "trial": "trial-015",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 5,
+      "setup_ms": 52.018
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 24.043072,
+        "p95": 29.136747,
+        "p99": 35.832422
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.870193,
+        "p95": 26.159489,
+        "p99": 32.669494
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 126.771103,
+      "trial": "trial-016",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 221.415
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.056798,
+        "p95": 26.580166,
+        "p99": 28.546101
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.490587,
+        "p95": 23.349085,
+        "p99": 25.25293
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 142.230055,
+      "trial": "trial-016",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 49.935
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 221.965964,
+        "p95": 226.190032,
+        "p99": 230.44518
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.239102,
+        "p95": 223.537173,
+        "p99": 227.645627
+      },
+      "samples": 14,
+      "first_write_to_ack_ms": 219.370566,
+      "trial": "trial-017",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 211.435
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 222.415105,
+        "p95": 225.508138,
+        "p99": 227.558478
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.166121,
+        "p95": 222.354979,
+        "p99": 224.917493
+      },
+      "samples": 14,
+      "first_write_to_ack_ms": 228.633223,
+      "trial": "trial-017",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 53.229
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 17.904999,
+        "p95": 21.536026,
+        "p99": 26.96399
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.268573,
+        "p95": 19.977992,
+        "p99": 25.615944
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 93.345211,
+      "trial": "trial-018",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 227.307
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 17.853039,
+        "p95": 21.33174,
+        "p99": 24.862442
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.126968,
+        "p95": 19.823834,
+        "p99": 23.098007
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 87.856499,
+      "trial": "trial-018",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 54.912
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.709831,
+        "p95": 21.70782,
+        "p99": 24.173335
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.778182,
+        "p95": 18.698289,
+        "p99": 21.149867
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 121.166386,
+      "trial": "trial-019",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 234.112
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.980959,
+        "p95": 23.255143,
+        "p99": 24.654398
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.326165,
+        "p95": 19.076633,
+        "p99": 19.885503
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 135.343801,
+      "trial": "trial-019",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 59.546
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 36.575034,
+        "p95": 39.846784,
+        "p99": 51.273871
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.261272,
+        "p95": 35.582608,
+        "p99": 43.929267
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 134.460977,
+      "trial": "trial-020",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 233.455
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 37.110432,
+        "p95": 39.769092,
+        "p99": 41.23586
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 33.599408,
+        "p95": 36.203402,
+        "p99": 37.753982
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 136.326509,
+      "trial": "trial-020",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 59.533
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.275579,
+        "p95": 21.999156,
+        "p99": 26.653959
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.183539,
+        "p95": 19.697599,
+        "p99": 24.695147
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 94.5348,
+      "trial": "trial-021",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 223.853
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.914158,
+        "p95": 22.164025,
+        "p99": 23.301052
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.606109,
+        "p95": 19.964627,
+        "p99": 20.948717
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 100.23321,
+      "trial": "trial-021",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "libx264",
+      "rate": 60,
+      "setup_ms": 53.511
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.325586,
+        "p95": 22.218751,
+        "p99": 25.388634
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.151697,
+        "p95": 18.429949,
+        "p99": 22.078971
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 136.83732,
+      "trial": "trial-022",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 265.997
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 17.612091,
+        "p95": 22.240023,
+        "p99": 23.654829
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 13.449923,
+        "p95": 18.309284,
+        "p99": 19.726385
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 138.610541,
+      "trial": "trial-022",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 56.701
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 32.602614,
+        "p95": 36.803126,
+        "p99": 39.081207
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 29.437101,
+        "p95": 33.45065,
+        "p99": 35.144347
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 148.810818,
+      "trial": "trial-023",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 271.677
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 32.512149,
+        "p95": 35.609761,
+        "p99": 37.863465
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 29.523889,
+        "p95": 32.644586,
+        "p99": 35.153726
+      },
+      "samples": 179,
+      "first_write_to_ack_ms": 133.938324,
+      "trial": "trial-023",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi",
+      "rate": 60,
+      "setup_ms": 43.962
+    }
+  ],
+  "decoder_summary": [
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.133769000000001,
+        "p95": 12.184192,
+        "p99": 12.7995575
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.0428465,
+        "p95": 12.1306345,
+        "p99": 12.480096499999998
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 10.8415965,
+        "p95": 11.785173499999999,
+        "p99": 12.061346499999999
+      }
+    },
+    {
+      "scene": "motion-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.0236925,
+        "p95": 12.1871535,
+        "p99": 12.654962000000001
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 27.5973845,
+        "p95": 28.7910575,
+        "p99": 29.255730999999997
+      }
+    },
+    {
+      "scene": "motion-high-cabac-c2-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 27.5835775,
+        "p95": 28.595712,
+        "p99": 29.151884
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 27.7342695,
+        "p95": 28.959904,
+        "p99": 29.3730385
+      }
+    },
+    {
+      "scene": "motion-high-cabac-omx-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 27.823615500000002,
+        "p95": 28.885461499999998,
+        "p99": 29.5298845
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 12.935288499999999,
+        "p95": 13.935827,
+        "p99": 14.253558
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.617192,
+        "p95": 12.874692,
+        "p99": 13.499423
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 13.044134499999998,
+        "p95": 14.2538465,
+        "p99": 14.688077
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-c2-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.661115500000001,
+        "p95": 12.7580965,
+        "p99": 13.1345
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 13.062653999999998,
+        "p95": 14.328423,
+        "p99": 14.553711499999999
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.668115499999999,
+        "p95": 12.844308,
+        "p99": 13.380404
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 12.635442000000001,
+        "p95": 14.1371535,
+        "p99": 14.529154
+      }
+    },
+    {
+      "scene": "text-constrained-baseline-cavlc-omx-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 11.6602505,
+        "p95": 12.841769,
+        "p99": 13.235230999999999
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 213.32475,
+        "p95": 214.322961,
+        "p99": 214.68213450000002
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 28.387154000000002,
+        "p95": 29.580057500000002,
+        "p99": 30.055595500000003
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 213.3139805,
+        "p95": 214.40984550000002,
+        "p99": 214.75136550000002
+      }
+    },
+    {
+      "scene": "text-high-cabac-c2-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 28.4351345,
+        "p95": 29.61575,
+        "p99": 30.1337695
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 212.97199999999998,
+        "p95": 214.16025000000002,
+        "p99": 214.5733845
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-hinted",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 28.3463075,
+        "p95": 29.4754225,
+        "p99": 29.9740955
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 5,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 213.095019,
+        "p95": 214.32559600000002,
+        "p99": 214.6536155
+      }
+    },
+    {
+      "scene": "text-high-cabac-omx-plain",
+      "rate": 60,
+      "runs": 2,
+      "median_run_percentiles": {
+        "p50": 28.5673845,
+        "p95": 29.6515195,
+        "p99": 30.192692
+      }
+    }
+  ],
+  "usb_summary": [
+    {
+      "scene": "motion",
+      "rate": 60,
+      "encoder": "h264_vaapi",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 35.738354,
+        "p95": 38.910085499999994,
+        "p99": 41.8006
+      }
+    },
+    {
+      "scene": "motion",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.040623500000002,
+        "p95": 22.251144500000002,
+        "p99": 23.8745445
+      }
+    },
+    {
+      "scene": "motion",
+      "rate": 60,
+      "encoder": "libx264",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 18.9762835,
+        "p95": 22.876768499999997,
+        "p99": 25.2887195
+      }
+    },
+    {
+      "scene": "pen",
+      "rate": 60,
+      "encoder": "h264_vaapi",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 34.49427,
+        "p95": 37.9194275,
+        "p99": 40.7158245
+      }
+    },
+    {
+      "scene": "pen",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.6020125,
+        "p95": 22.322513,
+        "p99": 24.718032
+      }
+    },
+    {
+      "scene": "pen",
+      "rate": 60,
+      "encoder": "libx264",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 18.534261,
+        "p95": 22.081590499999997,
+        "p99": 24.9775055
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 5,
+      "encoder": "h264_vaapi",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 222.3934615,
+        "p95": 225.9991245,
+        "p99": 227.86044750000002
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 5,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 23.051808,
+        "p95": 26.469510999999997,
+        "p99": 28.4037
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 5,
+      "encoder": "libx264",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 22.946934499999998,
+        "p95": 26.3781885,
+        "p99": 29.4159345
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 60,
+      "encoder": "h264_vaapi",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 36.698333000000005,
+        "p95": 39.7651545,
+        "p99": 40.8706205
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.6608875,
+        "p95": 23.0504505,
+        "p99": 25.5791325
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 60,
+      "encoder": "libx264",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 17.925659500000002,
+        "p95": 21.489581,
+        "p99": 25.913216
+      }
+    }
+  ]
+}

@@ -95,8 +95,9 @@ Neither the request nor the probe metadata claims the live decoder honored a
 hint; fresh render acknowledgements remain required. This does not alter saved
 encoder choices, brightness or display refresh defaults.
 
-The [negotiation research](media-negotiation.md) records evidence boundaries and
-the separate T479 measurement/ranking work. The schema lives in the shared Rust
+The [negotiation research](media-negotiation.md) records evidence boundaries;
+[T479 measurements](benchmarks/2026-09-18-profile-selection.md) describe the
+implemented ranking and its limits. The schema lives in the shared Rust
 crate without Linux dependencies; Windows still needs its planned host adapter.
 
 ## Automatic selection
@@ -127,20 +128,51 @@ Each isolated process receives 65 deterministic NV12 frames with mixed spatial
 detail and a moving stripe. Rawvideo probe size is bounded to 32 bytes, and the
 first eight completed packets are excluded from cadence statistics. The worker
 records first output, subsequent packet-interval p95 and achieved packet rate.
+Stock FFmpeg also decodes the first probe keyframe and compares its NV12 bytes
+with the deterministic input to obtain a PSNR screening score. This is one
+synthetic frame, not a perceptual quality guarantee for the user's desktop.
 A missing encoder, unusable GPU, invalid output, excessive loss or eight-second
-deadline rejects that candidate. Probes are serialized across tablet sessions;
+deadline rejects that candidate. The host probe pass has a 30-second budget and
+retains completed results if it expires. It tries libx264 and the two VAAPI H.264
+profiles first. Probes/live comparisons are serialized across tablet sessions;
 they create no EVDI display or capture FIFO. The current stream continues during
 these offline probes, although resource contention can affect performance.
 
-Candidates that reach the requested FPS rank before those that do not. Within
-that class, an advertised hardware decoder ranks before software/unknown, then
-lower packet-interval p95 and first-output time break ties. This is a host
-throughput/cadence heuristic: batching affects packet intervals, the synthetic
-workload is not every desktop, and first output is not production startup time.
-It does **not** benchmark Android decoder speed, sustained thermal performance,
-image quality, or capture-to-display latency. Quantizer values are not equivalent
-across codecs. Automatic mode attempts a performant compatible choice; it does
-not claim a universally fastest codec or infer a UI gain from a newer format.
+Version 1 peers retain the host-capacity heuristic: requested FPS first, then
+advertised hardware decoder, packet-interval p95 and first output. Version 2
+adds bounded live comparisons:
+
+- Admit only candidates meeting target host-probe FPS and a first-frame PSNR
+  no more than 0.5 dB below the measured libx264 reference. Unknown fidelity or
+  a missing reference retains fallback. Keep at most four encoder candidates,
+  prioritizing libx264 and the low-latency VAAPI H.264 profile, then the host
+  ranking. Explore up to two variants of the measured winner: supported hints
+  disabled and the next compatible named decoder.
+- Each trial gets at most six seconds. Ignore its first three ACKs; require at
+  least 12 more samples spanning two seconds and at least 90% ACK coverage
+  relative to produced output. Keep at most 256 samples per encoder generation.
+  Sparse streams are allowed; too little activity produces no speed result.
+- Compare packet-ready→render-ACK p95, keeping ACK rates within 0.8–1.25×.
+  A latency replacement must improve p95 by more than both 2 ms and 10%, without
+  worsening p99 by more than 2 ms or request→first-fresh-ACK time by more than
+  two seconds. If p95 differs by at most 2 ms, prefer a first-frame fidelity gain
+  of at least 1 dB under the same tail/startup/rate guards. Otherwise retain the
+  incumbent. These are conservative policy thresholds, not confidence intervals.
+- Bound live measurement to 36 seconds, including failed trials. Wait at most
+  ten seconds for a two-second gap since tablet touch/pen input; new tablet input
+  cancels calibration. Admission to the shared worker has a three-second deadline.
+  Foreground/display loss, settings/peer changes and shutdown also cancel it.
+  Cancellation restores fallback and does not repeatedly interrupt the same epoch.
+
+The live timer includes transport, decoder/callback scheduling and return ACKs;
+it excludes capture and encoding. Host probes screen capacity and synthetic
+fidelity separately. No synthetic workload is injected into the live desktop,
+and comparable ACK rates do not prove identical content. Host keyboard/mouse
+idle time is not observed by the tablet-input guard. Neither this short sample
+nor a decoder advertisement establishes sustained power, thermal performance or
+optical display latency. Quantizer values are not equivalent across codecs.
+The result is the best tested compatible choice under these guards, not a
+universal winner or an inference that a newer codec improves UI performance.
 
 The selected candidate then needs three fresh render acknowledgements within
 six seconds. Matching encoder identity, dimensions/rate/quality and the complete
@@ -166,7 +198,8 @@ late acknowledgements from retired encoders cannot clear a replacement's window.
 Idle content alone is not a failure. These thresholds are a bounded recovery
 policy, not a latency or throughput benchmark.
 
-Each candidate is attempted at most once in the current selection cycle. Exhaustion
+Each measured combination is calibrated once, then reverified for activation.
+Recovery advances through the remaining successful combinations once. Exhaustion
 keeps H.264 without claiming it has rendered successfully, and does not repeatedly
 cycle through known failures. A settings/peer change permits fresh calibration;
 backgrounding and shutdown cancel monitoring and pending recovery. Explicit
