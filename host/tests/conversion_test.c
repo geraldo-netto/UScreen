@@ -85,6 +85,7 @@ static void conversion_matrix(void) {
 }
 
 static void expected_damage(unsigned char *mask, int y0, int y1, int scale) {
+    if (y0 == y1) return;
     if (y1 < y0) { int swap = y0; y0 = y1; y1 = swap; }
     int first = y0 / (2 * scale), end = (y1 + 2 * scale - 1) / (2 * scale);
     for (int cy = 0; cy < 65; cy++) {
@@ -122,7 +123,7 @@ static void extreme_damage_case(int first, int end, int scale, int all) {
     frames.chroma_rows = 65; frames.dirty_bytes = 9;
     frame_exchange_damage(&frames, first, end, scale);
     for (int i = 0; i < 3; i++)
-        assert(memcmp(masks[i], expected, sizeof(expected)) == 0 && "T452: extreme damage lost rows or changed canaries");
+        assert(memcmp(masks[i], expected, sizeof(expected)) == 0 && "T452/T454: clipped damage or canaries changed");
     pthread_mutex_destroy(&frames.mutex);
 }
 
@@ -134,6 +135,12 @@ static void extreme_damage(void) {
     for (int scale = 1; scale <= 4; scale++)
         for (size_t n = 0; n < sizeof(ranges) / sizeof(ranges[0]); n++)
             extreme_damage_case(ranges[n][0], ranges[n][1], scale, ranges[n][2]);
+}
+
+static void empty_damage(void) {
+    for (int scale = 1; scale <= 4; scale++)
+        for (int row = -8; row < 65 * 8 + 8; row++)
+            extreme_damage_case(row, row, scale, 0);
 }
 
 static void sparse_dispatch(void) {
@@ -193,6 +200,7 @@ static void density_dispatch(void) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     if (strcmp(argv[1], "damage-extreme") == 0) extreme_damage();
+    else if (strcmp(argv[1], "damage-empty") == 0) empty_damage();
     else if (strcmp(argv[1], "density") == 0) density_dispatch();
     else if (strcmp(argv[1], "dispatch") == 0) sparse_dispatch();
     else if (strcmp(argv[1], "large") == 0) large_pool();

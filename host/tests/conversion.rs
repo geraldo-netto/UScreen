@@ -53,6 +53,11 @@ fn t452_extreme_damage_endpoints_clip_without_overflow() {
 }
 
 #[test]
+fn t454_empty_damage_intervals_preserve_all_histories() {
+    run("damage-empty");
+}
+
+#[test]
 fn t383_large_pool_supports_128_workers_and_joins_them() {
     run("large");
 }

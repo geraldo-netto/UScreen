@@ -36,6 +36,7 @@ static void mark_range(unsigned char *mask, int first, int end) {
 
 void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) {
     if (!frames->dirty_fill || frames->chroma_rows <= 0) return;
+    if (y0 == y1) return; /* Empty half-open intervals contain no dirty row. */
     if (y1 < y0) { int t = y0; y0 = y1; y1 = t; }
     /* Source rows map onto output chroma rows through the scale: one
        chroma row covers 2*scale source rows. */
