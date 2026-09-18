@@ -384,7 +384,7 @@
     <b>uscreen::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
     <b>uscreen::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
   </div>
-  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt retains historical log labels: “encode→display” includes the return acknowledgement; “wire” also includes host queueing. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
+  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt preserves historical output: “encode→display” includes the return acknowledgement. The legacy “wire ~6.2 ms” subtracts independent medians and is an invalid decomposition, not a measurement of transport or queueing; current logs omit it. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
 </section>
 
 <section id="compare">

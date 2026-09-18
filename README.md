@@ -114,9 +114,9 @@ of the tablet's render acknowledgement; capture and encoding are excluded:
 | HEVC, NVENC | 15–18 ms | 20–23 ms |
 | Wi-Fi fallback (H.264) | 22.8 ms | 78.6 ms, worst frames in seconds |
 
-The tablet reported ~15 ms from frame arrival to render callback. The remaining
-5–7 ms includes host queueing and both transport directions. Method, CPU figures
-and measurement limits in
+The tablet separately reported ~15 ms from frame arrival to render callback.
+Subtracting independent medians does not measure transport or queueing time.
+Method, CPU figures and measurement limits in
 [docs/benchmarks.md](docs/benchmarks.md).
 
 ## Compared with the alternatives

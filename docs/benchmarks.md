@@ -105,9 +105,10 @@ The tablet's **arrival→render-callback (tablet clock)** value covers complete-
 arrival to execution of its render callback. Each interval reports its own
 sample count; missing tablet durations can give them different populations.
 Historical logs call these intervals **encode→display** and **decode+render**.
-Their legacy **wire** estimate subtracts independent medians, including host
-queueing and the reverse acknowledgement path. T457 removes this estimate:
-it is not measured network latency or an exact per-frame decomposition.
+Their legacy **wire** estimate subtracts independent medians. That subtraction
+does not isolate transport, host queueing or acknowledgement time. T457 removes
+this invalid decomposition; no replacement component can be reconstructed
+without the missing paired historical samples.
 Benchmark readers accept both the current and historical labels.
 
 Capture, encoding, and time already spent assembling an access unit are outside
@@ -126,9 +127,10 @@ do not add up to a measured total display latency.
 | HEVC (NVENC) | 15–18 ms | 20–23 ms | lower reported latency on this tablet; not a universal codec advantage |
 | HEVC Main10 (10-bit) | 16–17 ms | 19–22 ms | similar reported range to 8-bit HEVC |
 
-Of the ~22 ms H.264 figure, the tablet reported about 15 ms from frame
-arrival to render callback; the remaining 5–7 ms includes both transport
-directions and host queueing. Encoding time was outside this measurement.
+Alongside the ~22 ms H.264 host-clock figure, the tablet separately reported
+about 15 ms from frame arrival to render callback. These independent summaries
+do not establish a remaining 5–7 ms transport/queueing component. Encoding time
+was outside the host measurement.
 On this hardware, `stream_scale = 2` (a quarter of the pixels) brought the
 reported p50 from 22 ms to 16 ms at the cost of softer text.
 
@@ -195,8 +197,8 @@ need implementation and measurement.
   measured packet-to-ack interval; total display latency was not measured.
 - The historical 90 fps/quality-12 setup is not the fork default: host FPS is
   60, quality is 18, and the app now requests a 60 Hz display mode by default.
-- The wire estimate includes both directions of adb/USB and host queueing;
-  subtracting independent percentiles cannot isolate individual stages.
+- The legacy wire estimate is an invalid decomposition: subtracting independent
+  percentiles cannot isolate transport, host queueing or any other stage.
 - "Windows with p95 < 60 ms" is a coarse stutter indicator, not a standard.
 - No measurement yet of AMD/Intel VAAPI encoders or of libx264.
 
