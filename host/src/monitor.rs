@@ -599,7 +599,7 @@ mod tests {
         state.stop().await;
     }
 
-    fn fixture() -> Monitor {
+    pub(super) fn fixture() -> Monitor {
         let (tablet, extra, _stop) = crate::discovery_tests::monitor_inputs(2, (18000, 18001));
         Monitor::new(Config {
             ports: (18000, 18001),
@@ -657,3 +657,7 @@ mod tests {
 #[cfg(test)]
 #[path = "monitor_test_support.rs"]
 pub(crate) mod test_support;
+
+#[cfg(test)]
+#[path = "monitor/probe_tests.rs"]
+mod probe_tests;

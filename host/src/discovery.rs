@@ -12,7 +12,7 @@ struct Observation {
 struct Probe {
     epoch: u64,
     identity: Option<String>,
-    eligible: bool,
+    eligible: Option<bool>,
 }
 
 pub(crate) struct Discovery {
@@ -85,7 +85,9 @@ impl Discovery {
             return None;
         }
         observation.identity = result.identity.clone();
-        observation.eligible = result.eligible;
+        if let Some(eligible) = result.eligible {
+            observation.eligible = eligible;
+        }
         Some((serial, result.identity))
     }
 
@@ -101,7 +103,7 @@ async fn probe(serial: String, adb: String, epoch: u64, known: Option<String>) -
             .await
             .map(|(_, identity)| identity),
     };
-    let eligible = crate::app_installed_with(&serial, &adb).await;
+    let eligible = crate::app_presence_with(&serial, &adb).await;
     Probe {
         epoch,
         identity,

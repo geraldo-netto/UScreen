@@ -214,6 +214,13 @@ on WebAssembly; this does not make the daemon or GUI Windows-compatible.
   reconnect address is reread from disk for each attempt.
 
 The ADB monitor (`monitor.rs`) consumes device results independently. Discovery
+keeps the last confirmed package eligibility while a transport remains in the
+inventory. Failed or malformed `pm path` results mean unknown, so they cannot
+replace an attached tablet or admit an unverified new one (T413). A successful
+package-path response confirms presence; an empty normal absence response
+confirms removal. This follows Android's
+[package-path command](https://android.googlesource.com/platform/frameworks/base/+/main/services/core/java/com/android/server/pm/PackageManagerShellCommand.java).
+Discovery
 owns up to four concurrent identity/package probe sequences; device mutation
 jobs own up to four forwarding/launch/recovery sequences, with one mutation
 owner per transport. The two reverse routes and app launch stay ordered within

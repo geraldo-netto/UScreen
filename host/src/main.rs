@@ -2500,18 +2500,37 @@ fn select_device_transports(
 /// Filter once before assigning any display slot. Explicit test serials do
 /// not need a real ADB package manager.
 async fn app_installed_with(serial: &str, adb: &str) -> bool {
-    is_fake_serial(serial)
-        || tokio::process::Command::new(adb)
-            .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
-            .output_bounded()
-            .await
-            .map(|out| {
-                out.status.success()
-                    && String::from_utf8_lossy(&out.stdout)
-                        .lines()
-                        .any(|line| line.starts_with("package:"))
-            })
-            .unwrap_or(false)
+    app_presence_with(serial, adb).await == Some(true)
+}
+
+/// Unknown package observations preserve existing assignments (T413), but
+/// cannot admit a newly discovered transport without a successful probe.
+async fn app_presence_with(serial: &str, adb: &str) -> Option<bool> {
+    if is_fake_serial(serial) {
+        return Some(true);
+    }
+    let out = tokio::process::Command::new(adb)
+        .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
+        .output_bounded()
+        .await
+        .ok()?;
+    package_presence(&out)
+}
+
+fn package_presence(out: &std::process::Output) -> Option<bool> {
+    if !out.stderr.is_empty() {
+        return None;
+    }
+    let text = std::str::from_utf8(&out.stdout).ok()?.trim();
+    // Android PackageManagerShellCommand.displayPackageFilePath returns 1
+    // with empty output when absent. Older adapters also return 0/empty.
+    if text.is_empty() && matches!(out.status.code(), Some(0 | 1)) {
+        return Some(false);
+    }
+    if out.status.success() && text.lines().all(|line| line.starts_with("package:/")) {
+        return Some(true);
+    }
+    None
 }
 
 async fn app_devices_with(devices: &[String], adb: &str) -> Vec<String> {
