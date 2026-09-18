@@ -834,28 +834,22 @@ async fn check_tablet_colour_mode(r: &mut Report, serial: Option<&str>) {
 }
 
 async fn check_tablet_refresh_rate(r: &mut Report, serial: Option<&str>) {
-    // Samsung's "Motion smoothness" setting. On "Standard" the panel only
-    // offers apps its 60 Hz modes, so the app's request for the fastest one
-    // gets 60 and every frame waits an average of 8 ms for vsync instead of
-    // 4. Seen on a Tab S9 Ultra: the app asked for the best mode and was
-    // handed 60 Hz until this was switched to Adaptive.
     if let Some(v) = tablet_setting("adb", serial, "secure", "refresh_rate_mode").await {
-        let v = v.trim().to_string();
-        if v == "0" {
-            r.line(
-                Level::Warn,
-                "tablet refresh rate",
-                "Motion smoothness is Standard — the panel is held at 60 Hz",
-            );
-            r.hint("tablet: Settings → Display → Motion smoothness → Adaptive (120 Hz)");
-        } else if !v.is_empty() && v != "null" {
-            r.line(
-                Level::Ok,
-                "tablet refresh rate",
-                "Motion smoothness: adaptive",
-            );
-        }
+        report_tablet_refresh_rate(r, v.trim());
     }
+}
+
+fn report_tablet_refresh_rate(r: &mut Report, value: &str) {
+    if value.is_empty() || value == "null" {
+        return;
+    }
+    let detail = if value == "0" {
+        "system setting Standard (60 Hz on Samsung)".into()
+    } else {
+        format!("system refresh_rate_mode={value}; effective panel rate not measured")
+    };
+    r.line(Level::Ok, "tablet refresh setting", &detail);
+    r.hint("UScreen has its own app-only refresh preference (default 60 Hz); Android may choose a different effective display mode.");
 }
 
 async fn check_desktop_colour_profiles(r: &mut Report) {
@@ -1613,6 +1607,26 @@ mod tests {
                     .any(|message| message == "available instead: h264_vaapi, libx264"));
             }
         }
+    }
+
+    #[test]
+    fn t440_system_refresh_setting_is_separate_from_app_preference() {
+        let mut report = Report::new();
+        report_tablet_refresh_rate(&mut report, "0");
+        assert_eq!(
+            (report.warnings, report.failures),
+            (0, 0),
+            "T440: default-compatible 60 Hz is not a fault"
+        );
+        let text = report.messages.borrow().join("\n");
+        assert!(
+            text.contains("60 Hz") && text.contains("UScreen"),
+            "T440: {text}"
+        );
+        assert!(
+            !text.contains("Adaptive (120 Hz)"),
+            "T440: unsolicited faster-panel recommendation: {text}"
+        );
     }
 
     #[test]
