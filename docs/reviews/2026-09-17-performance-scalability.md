@@ -50,9 +50,17 @@ affinity-aware capacity up to 128 participants and dispatch based on dirty work.
 See the [conversion replay](../benchmarks/2026-09-17-conversion.md) for results,
 including scalar comparisons and cases that did not improve. Independent pools
 still do not implement a global host CPU-time quota; encoder/compositor load,
-cgroup quotas and NUMA need system-level measurements.
+cgroup quotas and NUMA affect results on a particular system. Larger-system
+tuning and measurements are optional user-run work.
 
-## T382: measurement plan
+## T382: measurement plan (closed as wont_fix)
+
+The broader campaign below is retained as a research proposal. Maintainer
+testing with multiple physical tablets or a large/NUMA machine is outside the
+current scope; T382 is closed as `wont_fix` for now. Existing single-tablet
+measurements and functional coverage through 128 participants remain valid
+within their recorded limits. Provide configurable options and documented
+tradeoffs; users decide which settings and additional measurements suit them.
 
 Record commit, build profile/features, compiler and dependency versions, kernel,
 EVDI/compositor, GPU/driver/encoder, host CPU availability, Android model/API,
@@ -241,7 +249,7 @@ product decision; this research does not authorize them. See
 
 ## Execution order and completion criteria
 
-1. Establish T382 traces/replay workloads and resolve correctness blockers that
+1. Use existing single-tablet traces/replay workloads and resolve correctness blockers that
    invalidate measurements: T226 framing, T247 control authentication and T339
    fallback where relevant. Use isolated environments for the T222 desktop crash.
 2. Measure lower-risk candidates: packetizer allocations, blocking persistence,

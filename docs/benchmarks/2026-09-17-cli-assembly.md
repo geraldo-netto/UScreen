@@ -110,7 +110,8 @@ or peak RSS; counters omit allocator-internal relocation.
 These results establish local parser-stage costs only. Encoding, USB/ADB,
 Android decoding, Surface presentation and battery use are outside timing.
 Small differences on this shared workstation need broader validation; no
-end-to-end latency or battery gain is claimed. T382 retains physical comparison.
+end-to-end latency or battery gain is claimed. The broader physical comparison
+proposed under T382 is now closed as `wont_fix` for the current scope.
 
 ## Validation and method
 

@@ -174,8 +174,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   cost of softer text; other devices differ.
 - **Several tablets** — `max_tablets` supports 1–4 slots. Historical testing
   used one physical tablet plus a simulated client. Automated tests cover
-  independent slots and busy-card fallback; multiple physical tablets still
-  need validation.
+  independent slots and busy-card fallback. Multiple physical tablets have not
+  been validated; maintainer testing of that setup is outside the current scope (T382).
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
   default; turn off what you do not use (on Cinnamon/GNOME under X11 a

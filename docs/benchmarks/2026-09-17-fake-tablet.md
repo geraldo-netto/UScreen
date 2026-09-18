@@ -78,5 +78,6 @@ runtime-path, WebSocket and elapsed-time regressions remain.
 The wire-compatible `rendered` message still uses synthetic `decode_us=1000`.
 It acknowledges complete receipt only: the fake client neither decodes nor
 renders. Its console output and replay metadata now say so explicitly. Use this
-client for T390/T391 resource/fairness experiments, retaining T382's physical
-measurement requirements and the original USB tablet baseline separately.
+client for T390/T391 resource/fairness experiments, keeping synthetic observations
+separate from the original USB tablet baseline. The broader T382 campaign is
+closed as `wont_fix` for now; synthetic ACKs remain evidence of receipt only.

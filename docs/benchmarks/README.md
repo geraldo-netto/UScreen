@@ -159,8 +159,11 @@ rate policy, app brightness, observed refresh, USB route, charging source and AP
 variant. Check process continuity, foreground state, temperature and background
 load. Repeat runs and report variability; a later run on a different charging
 port is a separate power experiment. Small changes below gauge/timing variation
-are inconclusive. The full T382 multi-device/stage-trace matrix remains separate
-from this single-tablet baseline.
+are inconclusive. The broader T382 campaign is closed as `wont_fix` for now;
+maintainer multi-tablet testing and large/NUMA-machine measurements are outside
+the current scope. Existing single-tablet results and automated coverage remain
+scoped to their recorded evidence. Users may tune the supported options and
+measure their own setups.
 
 The isolated decoder and static power-control APKs use the same
 `showWhenLocked`/`turnScreenOn` Activity flags as UScreen (T460). Their own test

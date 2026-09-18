@@ -243,7 +243,8 @@ The battery gauge advances in roughly 9.99 mAh steps; one 35-second phase cannot
 rank these profiles by power. USB charging state and net battery trend do not
 isolate decoder energy. T388 requires longer matched controls. API 27/34 unit
 coverage and one API 36 hardware decoder do not justify a device-wide default
-switch. T382 retains broader hardware/API and multi-tablet measurements.
+switch. The broader hardware/API and multi-tablet campaign proposed under
+T382 is closed as `wont_fix` for now.
 
 ## Reproduction and retained evidence
 
@@ -281,7 +282,7 @@ partial result. Fixture regeneration commands and stock FFmpeg version are in ea
 raw archive; regeneration with another FFmpeg build may yield different bytes.
 
 The selected outcome is the lifetime correction plus optional measured profiles,
-with synchronous legacy operation still the default. Broader hardware validation,
-longer power controls, transport-copy experiments and presentation-timestamp work
-remain tracked by T382, T388, T403 and T414 respectively. T417 tracks a future
-Android profile/capability UI.
+with synchronous legacy operation still the default. The broader T382 hardware
+validation campaign is closed as `wont_fix` for now. Longer power controls,
+transport-copy experiments and presentation-timestamp work are tracked by T388,
+T403 and T414 respectively. T417 tracks a future Android profile/capability UI.

@@ -127,5 +127,6 @@ controller and FIFO recovery regressions remain in the normal suites.
 
 Pre-publication parser/encoder assembly remains outside admission accounting;
 T407 explicitly includes bounds for unfinished NALs/access units/CSD. Larger
-physical multi-tablet, Android and sustained power experiments remain T382's
-separate work. These results do not justify raising the four-tablet limit.
+physical comparisons were proposed separately under T382, now closed as
+`wont_fix` for the current scope; T388 still tracks sustained power validation.
+These results do not justify raising the four-tablet limit.

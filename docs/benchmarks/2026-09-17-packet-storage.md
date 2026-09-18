@@ -142,4 +142,5 @@ The test output embeds `T402_BOUNDARY` or `T402_REPLAY` followed by JSON; the
 marker may share a line with the test harness label. The
 [artifact directory](2026-09-17-packet-storage/) preserves all trial rows,
 source hashes, preliminary snapshots, validation logs and SHA256SUMS. The
-physical comparison after the broader optimization batch remains T382 work.
+broader physical comparison was proposed under T382, now closed as `wont_fix`
+for the current scope. These retained measurements do not establish that comparison.

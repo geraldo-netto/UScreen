@@ -122,8 +122,11 @@ Affinity is a CPU eligibility set, not a cgroup CPU-time quota. Pools remain
 independent per helper; subtracting two does not reserve two cores globally.
 The work threshold limits waste for small surfaces, but it is not a global
 multi-tablet CPU scheduler. Keep encoder/compositor work in physical system
-measurements before selecting a shared hard quota. NUMA placement, memory
-bandwidth and sustained 128-core measurements remain part of T382.
+measurements before selecting a shared hard quota. T382 is closed as `wont_fix`
+for now: maintainer multi-tablet testing and a larger/NUMA-machine campaign
+are outside the current scope. Users needing larger systems can tune affinity, NUMA
+placement and cgroup limits and measure performance on their own hardware.
+The supported 128-participant ceiling and its correctness coverage remain.
 
 Performance controls should offer sensible defaults and explain their tradeoffs;
 users decide which settings are worthwhile on their systems. Measurements guide

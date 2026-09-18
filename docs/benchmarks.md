@@ -237,7 +237,9 @@ count/time applies to the entire test JVM. The sample-age distribution was
 constructed at 12, 8, 4 and 0 ms; it validates measurement plumbing and is not an
 observed tablet-input latency distribution. These single-run figures establish
 neither an Android ART baseline nor a performance improvement. Physical device,
-network, thermal and multi-tablet baselines remain tracked in T382/T388.
+network and thermal validation remains scoped to T388. The broader T382
+campaign is closed as `wont_fix`; maintainer multi-tablet testing is outside
+the current scope.
 
 Runtime `ControlStatisticsSnapshot` summaries in `UScreenTouch` logcat provide
 accepted/refused counts, current/peak queue bytes and sample-age count/sum/max.
@@ -320,4 +322,4 @@ git archive 5bbeb5b | tar -x -C "$baseline_dir"
 Use the recorded toolchain and compare source hashes before comparing results.
 `T384_PROFILE` lines contain the raw JSON. Three samples on a shared workstation
 support this local comparison; broader hardware, power and multi-tablet claims
-still require the T382 measurements.
+are not established. The broader T382 campaign is closed as `wont_fix` for now.

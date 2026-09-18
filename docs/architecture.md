@@ -346,7 +346,8 @@ together: an older APK without the receiver cannot consume this recovery path;
 the explicit launch gate remains compatible. Tokens travel on ADB shell stdin,
 never in the local ADB process arguments. Fake-ADB and API 27/34 lifecycle tests
 cover delivery, permission declarations, active rotation and background resume;
-physical replay on the disconnected tablet remains part of T382 validation.
+physical replay is not established by those fixtures. The broader T382
+validation campaign is closed as `wont_fix` for now.
 
 ### Video TCP
 

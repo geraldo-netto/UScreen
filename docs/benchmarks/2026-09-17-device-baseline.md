@@ -181,7 +181,8 @@ state text can say “charging” while the charge counter falls. Gauge quantiza
 and short phase intervals limit comparisons between workloads; preserve the
 longer whole-run trend as well as the individual trial endpoints.
 
-T382 remains open for complete stage traces, input latency, release/device
-coverage and 1/2/4-tablet scaling. T386/T388/T399 retain the decoder, power and
-frame-admission experiments. Implementations need their permanent regressions
+The broader T382 campaign is closed as `wont_fix` for now; maintainer
+multi-tablet testing and large/NUMA-host measurements are outside the current
+scope. This preserves the measurement limits identified above. T386/T388/T399
+record the separate decoder, power and frame-admission work. Implementations need their permanent regressions
 and a repeat of this baseline before any gain is claimed.

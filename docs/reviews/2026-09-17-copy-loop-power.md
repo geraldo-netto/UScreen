@@ -101,7 +101,7 @@ See [Linux MSG_ZEROCOPY, including loopback limitations](https://docs.kernel.org
 
 | Item | Evidence | Comparison and correctness gate |
 | --- | --- | --- |
-| T383 | The reviewed baseline revisited chroma rows for overlapping rectangles and woke every worker. Its portable C native loop already received compiler vectorization. | [Implemented and measured](../benchmarks/2026-09-17-conversion.md): byte-range masks, work-sensitive dispatch up to 128 participants and specialized scale kernels; exact rounding and all three dirty histories are retained. Gains and tradeoffs are recorded separately from hardware scaling still requiring T382. |
+| T383 | The reviewed baseline revisited chroma rows for overlapping rectangles and woke every worker. Its portable C native loop already received compiler vectorization. | [Implemented and measured](../benchmarks/2026-09-17-conversion.md): byte-range masks, work-sensitive dispatch up to 128 participants and specialized scale kernels; exact rounding and all three dirty histories are retained. T382 is closed as wont_fix for now; maintainer multi-tablet testing is outside the current scope, and larger-system tuning and measurements are optional user-run work. |
 | T391 | `ClientPlayback::drain_batch` starts a new Vec for every batch and drains its prefix. | Reusable bounded storage or in-place selection; preserve every generation/config/keyframe decision and measure backing memory retention. |
 | T404 | The reviewed Android timing history and Rust ACK deque used linear searches; reports discarded vector capacity. | Implemented guarded decoder epochs, validated lookup cache with collision fallback, contiguous host lookup and report-storage reuse. Permanent race/epoch/order tests and the [measured tradeoffs](../benchmarks/2026-09-17-timing.md) document the result; no end-to-end latency or power gain is claimed. |
 | T405 | The reviewed source used 2/5 ms FIFO sleeps, 100 ms shutdown/config checks, a 4 ms capture wait cap and per-frame idle writer waits. | Implemented readiness/cancellation notifications, retained codec headers, optimistic native writes and exact work/keepalive deadlines. The [readiness report](../benchmarks/2026-09-17-readiness.md) records byte-checked 1/2/4-session replays, fallback limits and permanent stop/reopen/quarantine coverage; no pipe-default or io_uring backend change. |
@@ -180,7 +180,7 @@ defaults and normal settings when using another app. Success requires a
 repeatable sustained power improvement with explicit quality and latency
 tradeoffs, correct lock/lifecycle behavior and no reconnect oscillation.
 
-Start with T382 measurements and T408 harness reliability, then compare the
+Start with existing single-tablet measurements and T408 harness reliability, then compare the
 local copy/loop candidates independently. T376/T380/T386 ownership work supports
 larger buffer/backend experiments. All behavioral fixes still require a
 permanent regression demonstrated failing before the fix and passing afterward;
