@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod pipe_settings;
 mod settings;
 mod status_poll;
 mod status_worker;
@@ -57,6 +58,8 @@ struct Status {
     adb_ok: bool,
     autostart: bool,
     uinput_ok: bool,
+    pipe_capacities: Vec<(u32, Option<u32>)>,
+    pipe_ceiling: Option<u32>,
 }
 
 fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
@@ -469,7 +472,8 @@ impl App {
         if self.busy() {
             return;
         }
-        let restart = restart.then(|| Box::new(restart_daemon) as settings::Restart);
+        let restart = (restart && self.cfg.requires_restart_from(&self.saved_cfg))
+            .then(|| Box::new(restart_daemon) as settings::Restart);
         self.save = Some(settings::PendingSave::start(
             self.store.clone(),
             self.cfg.clone(),
@@ -602,11 +606,8 @@ impl App {
             ui.add_space(8.0);
             let dirty = self.cfg != self.saved_cfg;
             ui.horizontal(|ui| {
-                let label = if status.daemon_running {
-                    "Apply & restart"
-                } else {
-                    "Save"
-                };
+                let label =
+                    settings::apply_label(status.daemon_running, &self.cfg, &self.saved_cfg);
                 if ui
                     .add_enabled(dirty && !self.busy(), egui::Button::new(label))
                     .clicked()
@@ -1117,6 +1118,8 @@ impl App {
         self.setting_colour_depth(ui);
         self.setting_resolution(ui);
         self.setting_stream_detail(ui);
+        let status = self.status.lock().unwrap().clone();
+        pipe_settings::show(ui, &mut self.cfg.pipe_capacity_mib, &status);
     }
 
     fn show_display_settings(&mut self, ui: &mut egui::Ui) {
@@ -1301,6 +1304,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn t415_linux_video_settings_show_pipe_capacity() {
+        let mut app = settings_test_app(Tab::Video);
+        let ctx = egui::Context::default();
+        let output = ctx.run(egui::RawInput::default(), |ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                egui::Grid::new("pipe-regression").show(ui, |ui| app.show_video_settings(ui));
+            });
+        });
+        let mut text = Vec::new();
+        for shape in output.shapes {
+            collect_text_rects(&shape.shape, &mut text);
+        }
+        assert!(
+            text.iter().any(|(label, _)| label == "Capture pipe buffer"),
+            "T415: {text:?}"
+        );
+    }
+
     fn settings_test_app(tab: Tab) -> App {
         let saved_cfg = FileConfig::default();
         let cfg = FileConfig {
@@ -1444,10 +1466,11 @@ mod tests {
         assert_eq!(app.saved_cfg, app.cfg);
     }
 
-    fn encoder_test_frame(
+    fn settings_test_frame(
         app: &mut App,
         ctx: &egui::Context,
         events: Vec<egui::Event>,
+        mut render: impl FnMut(&mut App, &mut egui::Ui),
     ) -> Vec<(String, egui::Rect)> {
         let output = ctx.run(
             egui::RawInput {
@@ -1461,8 +1484,7 @@ mod tests {
             |ctx| {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     egui::Grid::new("encoder-test").show(ui, |ui| {
-                        app.setting_encoder(ui);
-                        app.setting_colour_depth(ui);
+                        render(app, ui);
                     });
                 });
             },
@@ -1472,6 +1494,28 @@ mod tests {
             collect_text_rects(&shape.shape, &mut text);
         }
         text
+    }
+
+    fn encoder_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            app.setting_encoder(ui);
+            app.setting_colour_depth(ui);
+        })
+    }
+
+    fn pipe_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            let status = app.status.lock().unwrap().clone();
+            pipe_settings::show(ui, &mut app.cfg.pipe_capacity_mib, &status);
+        })
     }
 
     fn collect_text_rects(shape: &egui::Shape, text: &mut Vec<(String, egui::Rect)>) {
@@ -1489,8 +1533,11 @@ mod tests {
         }
     }
 
-    fn click_encoder_text(app: &mut App, ctx: &egui::Context, label: &str) {
-        let text = encoder_test_frame(app, ctx, Vec::new());
+    type SettingsFrame =
+        fn(&mut App, &egui::Context, Vec<egui::Event>) -> Vec<(String, egui::Rect)>;
+
+    fn click_settings_text(app: &mut App, ctx: &egui::Context, label: &str, frame: SettingsFrame) {
+        let text = frame(app, ctx, Vec::new());
         let pos = text
             .iter()
             .find(|(value, _)| value == label)
@@ -1498,7 +1545,7 @@ mod tests {
             .1
             .center();
         for pressed in [true, false] {
-            encoder_test_frame(
+            frame(
                 app,
                 ctx,
                 vec![
@@ -1510,6 +1557,54 @@ mod tests {
                         modifiers: egui::Modifiers::NONE,
                     },
                 ],
+            );
+        }
+    }
+
+    fn click_encoder_text(app: &mut App, ctx: &egui::Context, label: &str) {
+        click_settings_text(app, ctx, label, encoder_test_frame);
+    }
+
+    #[test]
+    fn t415_dropdown_has_exact_choices_and_shows_effective_per_tablet_capacity() {
+        let mut app = settings_test_app(Tab::Video);
+        app.cfg = app.saved_cfg.clone();
+        {
+            let mut status = app.status.lock().unwrap();
+            status.pipe_capacities = vec![(0, Some(1048576)), (1, Some(65536))];
+            status.pipe_ceiling = Some(1048576);
+        }
+        let ctx = egui::Context::default();
+        for mib in [2, 4, 8, 1] {
+            let current = format!("{} MiB", app.cfg.pipe_capacity_mib);
+            click_settings_text(&mut app, &ctx, &current, pipe_test_frame);
+            let text = pipe_test_frame(&mut app, &ctx, vec![]);
+            for label in ["1 MiB", "2 MiB", "4 MiB", "8 MiB"] {
+                assert!(
+                    text.iter().any(|(value, _)| value == label),
+                    "T415: {text:?}"
+                );
+            }
+            assert!(!text.iter().any(|(value, _)| value == "16 MiB"));
+            click_settings_text(&mut app, &ctx, &format!("{mib} MiB"), pipe_test_frame);
+            assert_eq!(app.cfg.pipe_capacity_mib, mib);
+            assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
+        }
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "How to allow larger pipes in Linux",
+            pipe_test_frame,
+        );
+        let text = pipe_test_frame(&mut app, &ctx, vec![]);
+        for expected in [
+            "Tablet 1 effective capacity: 1 MiB",
+            "Tablet 2 effective capacity: 64 KiB",
+            "sudo sysctl -w fs.pipe-max-size=8388608",
+        ] {
+            assert!(
+                text.iter().any(|(value, _)| value == expected),
+                "T415: {text:?}"
             );
         }
     }

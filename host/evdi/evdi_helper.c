@@ -236,6 +236,7 @@ static int set_numeric_option(const char *name, const char *value) {
 static int set_helper_option(helper_options_t *options, const char *name, const char *value) {
     if (strcmp(name, "--edid") == 0) options->edid_path = value;
     else if (strcmp(name, "--capture-fifo") == 0) options->fifo_path = value;
+    else if (strcmp(name, "--pipe-size-file") == 0) g_fifo.capacity_path = value;
     else return set_numeric_option(name, value);
     return 1;
 }
@@ -391,7 +392,7 @@ int main(int argc, char *argv[]) {
     const char *fifo_path = options.fifo_path;
 
     if (!edid_path) {
-        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>] [--pipe-size-file <path>]\n", argv[0]);
         return 1;
     }
 

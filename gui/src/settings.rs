@@ -3,16 +3,36 @@
 use std::thread::JoinHandle;
 use uscreen_config::{model::FileConfig, storage::ConfigStore};
 
+pub type PipeApply = Box<dyn FnOnce(u32) -> Result<(), String> + Send>;
+
 pub type Restart = Box<dyn FnOnce() -> Result<(), String> + Send>;
+
+pub fn apply_label(running: bool, edited: &FileConfig, previous: &FileConfig) -> &'static str {
+    if !running {
+        "Save"
+    } else if edited.requires_restart_from(previous) {
+        "Apply & restart"
+    } else {
+        "Apply"
+    }
+}
 
 pub struct Saved {
     pub config: FileConfig,
     pub restart: Option<Result<(), String>>,
+    pub pipe: Option<Result<(), String>>,
 }
 
 impl Saved {
     pub fn message(&self) -> String {
+        if let Some(Err(error)) = &self.pipe {
+            return format!("Settings saved — pipe request failed: {error}");
+        }
         match &self.restart {
+            None if self.pipe.is_some() => {
+                "Settings saved — pipe size requested; see effective capacity below the selector"
+                    .into()
+            }
             None => "Settings saved".into(),
             Some(Ok(())) => "Settings saved — daemon restarted".into(),
             Some(Err(error)) => format!("Settings saved — restart failed: {error}"),
@@ -37,14 +57,36 @@ impl PendingSave {
         baseline: FileConfig,
         restart: Option<Restart>,
     ) -> Self {
+        Self::start_with_pipe(
+            store,
+            submitted,
+            baseline,
+            restart,
+            Box::new(|mib| uscreen_config::linux::pipe::publish(mib).map_err(|e| e.to_string())),
+        )
+    }
+
+    fn start_with_pipe(
+        store: ConfigStore,
+        submitted: FileConfig,
+        baseline: FileConfig,
+        restart: Option<Restart>,
+        apply_pipe: PipeApply,
+    ) -> Self {
         let edited = submitted.clone();
         let worker = std::thread::spawn(move || {
             let config = store
                 .save_edits(&edited, &baseline)
                 .map_err(|error| format!("Save failed: {error}"))?;
+            let pipe = (config.pipe_capacity_mib != baseline.pipe_capacity_mib)
+                .then(|| apply_pipe(config.pipe_capacity_mib));
             // Exactly one restart, only after the transaction has committed.
             let restart = restart.map(|action| action());
-            Ok(Saved { config, restart })
+            Ok(Saved {
+                config,
+                restart,
+                pipe,
+            })
         });
         Self { submitted, worker }
     }
@@ -67,6 +109,69 @@ mod tests {
         atomic::{AtomicUsize, Ordering},
         Arc,
     };
+
+    #[test]
+    fn t415_live_pipe_save_persists_then_publishes_without_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let mut baseline = FileConfig::default();
+        for mib in [2, 4, 8, 1] {
+            let edited = FileConfig {
+                pipe_capacity_mib: mib,
+                ..baseline.clone()
+            };
+            assert!(!edited.requires_restart_from(&baseline));
+            assert_eq!(apply_label(true, &edited, &baseline), "Apply");
+            let reader = store.clone();
+            let path = dir.path().join("request");
+            let request = path.clone();
+            let publish: PipeApply = Box::new(move |value| {
+                assert_eq!(
+                    reader.load().pipe_capacity_mib,
+                    value,
+                    "T415: publish follows commit"
+                );
+                uscreen_config::linux::pipe::publish_at(&request, value).map_err(|e| e.to_string())
+            });
+            let saved =
+                PendingSave::start_with_pipe(store.clone(), edited, baseline, None, publish)
+                    .finish()
+                    .unwrap();
+            assert!(saved.restart.is_none());
+            assert!(saved.pipe.unwrap().is_ok());
+            assert_eq!(std::fs::read_to_string(path).unwrap(), format!("{mib}\n"));
+            baseline = saved.config;
+        }
+        let mixed = FileConfig {
+            fps: 30,
+            pipe_capacity_mib: 8,
+            ..baseline.clone()
+        };
+        assert!(mixed.requires_restart_from(&baseline));
+        assert_eq!(apply_label(true, &mixed, &baseline), "Apply & restart");
+    }
+
+    #[test]
+    fn t415_publish_failure_does_not_lose_saved_preferences() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let baseline = FileConfig::default();
+        let edited = FileConfig {
+            pipe_capacity_mib: 8,
+            ..baseline.clone()
+        };
+        let saved = PendingSave::start_with_pipe(
+            store.clone(),
+            edited,
+            baseline,
+            None,
+            Box::new(|_| Err("runtime unavailable".into())),
+        )
+        .finish()
+        .unwrap();
+        assert_eq!(store.load().pipe_capacity_mib, 8);
+        assert!(saved.message().contains("pipe request failed"));
+    }
 
     #[test]
     fn t378_restart_runs_once_after_commit_and_never_after_save_failure() {

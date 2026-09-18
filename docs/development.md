@@ -217,6 +217,7 @@ them. See the README for config paths and the app gear-menu controls.
 | `fps` / `bitrate` / `quality` | 60 / 20000 kbps / 18 | Accepted ranges 10–90 / 1000–60000 / 12–32; encoder-specific rate control |
 | `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
 | `stream_scale` | 1 | Integer 1–4; divides stream dimensions, not capture dimensions |
+| `pipe_capacity_mib` | 1 | Linux raw capture pipe request per tablet: 1, 2, 4 or 8 MiB; [live apply, kernel limits and actual capacity](pipe-buffer.md) |
 | `position` / `pen_only` | `right` / false | Placement / graphics-tablet mode |
 | `ten_bit` | false | HEVC FFmpeg path only; not HDR |
 | `max_tablets` | 1 | Up to four slots; EVDI capacity required |

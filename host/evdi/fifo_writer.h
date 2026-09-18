@@ -9,6 +9,9 @@
  * publishes generation and running; their addresses outlive this context. */
 typedef struct {
     const char *path;
+    const char *capacity_path;
+    long long capacity_checked_ms;
+    int capacity_requested, capacity_effective, capacity_error;
     int fd, retired_fd, retired;
     dev_t retired_device;
     ino_t retired_inode;

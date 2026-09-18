@@ -195,6 +195,10 @@ impl HelperProcess {
             self.mode_tx.clone(),
             self.stream_tx.clone(),
             self.fifo_reset_tx.clone(),
+            uscreen_config::linux::pipe::ReportFile::new(
+                fifo,
+                child.id().context("helper has no PID")?,
+            )?,
         )));
         self.child = Some(child);
         Ok(())
@@ -225,6 +229,8 @@ impl HelperProcess {
         }
 
         cmd.arg("--capture-fifo").arg(fifo);
+        cmd.arg("--pipe-size-file")
+            .arg(uscreen_config::linux::pipe::request_path()?);
         if let Some(card) = config.card {
             cmd.args(["--card", &card.to_string()]);
         } else if let Some(previous) = self.card {
@@ -266,8 +272,12 @@ impl HelperProcess {
         mode_tx: watch::Sender<Option<DetectedMode>>,
         stream_tx: watch::Sender<Option<(u32, u32)>>,
         fifo_reset_tx: watch::Sender<Option<fifo::Identity>>,
+        pipe_report: uscreen_config::linux::pipe::ReportFile,
     ) {
         while let Ok(Some(line)) = lines.next_line().await {
+            if let Err(error) = pipe_report.observe(&line) {
+                warn!(%error, "Cannot update capture pipe status");
+            }
             if let Some(retired) = fifo::Identity::from_reset_line(&line) {
                 let _ = fifo_reset_tx.send(Some(retired));
             } else {

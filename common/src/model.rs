@@ -58,6 +58,16 @@ pub fn supported_encoder(name: &str) -> bool {
     name == "auto" || crate::encoding::find(name).is_some()
 }
 
+pub const PIPE_CAPACITIES_MIB: [u32; 4] = [1, 2, 4, 8];
+
+pub fn validated_pipe_capacity(value: u32) -> u32 {
+    if PIPE_CAPACITIES_MIB.contains(&value) {
+        value
+    } else {
+        1
+    }
+}
+
 /// Persistent settings, shared by the CLI daemon, the GUI and the tablet app
 /// (which pushes changes over the input WebSocket).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -81,6 +91,8 @@ pub struct FileConfig {
     /// reduce decoder work at the cost of sharpness; the effect depends on
     /// the tablet. Scaling happens after capture, so it does not shrink the grab.
     pub stream_scale: u32,
+    /// Linux raw capture pipe request, per active tablet. Kernel limits may reduce it.
+    pub pipe_capacity_mib: u32,
     /// Use the tablet as a graphics tablet for the laptop's own screen rather
     /// than as a second display: no capture, no encoding, nothing streamed —
     /// the pen and touch simply drive the screen you are already looking at.
@@ -147,6 +159,7 @@ impl Default for FileConfig {
             height: 1848,
             quality: DEFAULT_QUALITY,
             stream_scale: 1,
+            pipe_capacity_mib: 1,
             pen_only: false,
             position: "right".into(),
             ten_bit: false,
@@ -202,6 +215,13 @@ impl Position {
 }
 
 impl FileConfig {
+    /// Pipe-only edits are consumed by the existing helper at frame boundaries.
+    pub fn requires_restart_from(&self, previous: &Self) -> bool {
+        let mut without_pipe_edit = self.clone();
+        without_pipe_edit.pipe_capacity_mib = previous.pipe_capacity_mib;
+        without_pipe_edit != *previous
+    }
+
     /// Merge only fields edited since the GUI opened into the latest disk
     /// snapshot. Future schema fields participate without a second field list.
     pub fn merge_edits(&self, baseline: &Self, latest: Self) -> Result<Self> {
@@ -248,6 +268,7 @@ impl FileConfig {
 
         self.quality = self.quality.clamp(MIN_QUALITY, MAX_QUALITY);
         self.stream_scale = self.stream_scale.clamp(1, 4);
+        self.pipe_capacity_mib = validated_pipe_capacity(self.pipe_capacity_mib);
         self.max_tablets = self.max_tablets.clamp(1, 4);
         self.width = self.width.clamp(640, MAX_DIMENSION);
         self.height = self.height.clamp(480, MAX_DIMENSION);
@@ -266,6 +287,25 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t415_pipe_capacity_round_trips_and_invalid_values_fall_back() {
+        for (value, expected) in [(1, 1), (2, 2), (4, 4), (8, 8), (0, 1), (3, 1), (16, 1)] {
+            let mut config: FileConfig =
+                toml::from_str(&format!("pipe_capacity_mib = {value}")).unwrap();
+            config.sanitize();
+            let saved = toml::Value::try_from(config).unwrap();
+            assert_eq!(
+                saved
+                    .get("pipe_capacity_mib")
+                    .and_then(toml::Value::as_integer),
+                Some(expected),
+                "T415: {value}"
+            );
+        }
+        let defaults = toml::Value::try_from(FileConfig::default()).unwrap();
+        assert_eq!(defaults["pipe_capacity_mib"].as_integer(), Some(1));
+    }
 
     #[test]
     fn t434_auto_is_default_but_explicit_choices_survive() {

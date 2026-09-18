@@ -101,6 +101,16 @@ workers divide dirty rows equally. Every buffer retains its own stale-row
 history. This is a per-helper work budget, not a global CPU-time quota; the
 [conversion measurements](benchmarks/2026-09-17-conversion.md) document thread,
 vectorization and multi-session tradeoffs.
+The Linux-only `pipe_capacity_mib` preference is published atomically in the
+private runtime directory after startup/configuration save. The FIFO writer
+checks it on open and at most once per second between complete writes. Linux
+refusals retain queued bytes and are retried; T226 inode retirement remains
+independent. The helper reports `F_GETPIPE_SZ` over its existing stdout channel; the host
+publishes a private status snapshot bound to the helper process and FIFO inode.
+GUI status never opens the FIFO, so it cannot wake an encoder waiting for its
+writer or interfere with frame/EOF delivery.
+See [pipe capacity](pipe-buffer.md) for settings and host-limit instructions.
+
 `frame_exchange.c` owns three NV12 buffers with matching dirty-row histories.
 Publishing swaps pointers; the writer claims an immutable lease containing the
 pointer, size, generation and capture timestamp. That lease spans pacing and

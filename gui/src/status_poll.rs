@@ -54,6 +54,16 @@ impl Source for Platform {
             .ok()
             .and_then(|dir| runtime::load_sessions(&dir.join("sessions.json")))
             .unwrap_or_default();
+        status.pipe_ceiling = uscreen_config::linux::pipe::ceiling_bytes();
+        status.pipe_capacities = sessions
+            .iter()
+            .map(|session| {
+                let capacity = runtime::fifo_path_for(session.instance)
+                    .ok()
+                    .and_then(|path| uscreen_config::linux::pipe::effective_bytes(&path));
+                (session.instance, capacity)
+            })
+            .collect();
         query_tablets(&mut status, sessions, capabilities.adb, || {
             Command::new("adb")
                 .args(["devices", "-l"])

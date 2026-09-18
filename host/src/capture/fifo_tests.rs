@@ -146,6 +146,27 @@ fn assert_fresh_frame(decoded: &[u8]) {
     );
 }
 
+// T415: the same helper must consume a new request after T226 inode recovery.
+async fn wait_pipe_request(mib: u32) {
+    let path = fifo_path_for(0).unwrap().with_extension("pipe-status");
+    tokio::time::timeout(std::time::Duration::from_secs(4), async {
+        loop {
+            let status = std::fs::read(&path)
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok());
+            if status.is_some_and(|value| {
+                value["requested"].as_u64() == Some(u64::from(mib) * 1048576)
+                    && value["effective"].as_u64().unwrap_or(0) > 0
+            }) {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("T415: helper did not report the current request after FIFO recovery");
+}
+
 #[tokio::test]
 async fn t226_partial_frame_recovers_without_display_hotplug() {
     if isolated_fixture() {
@@ -164,6 +185,7 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
         quality: 20,
         ..Default::default()
     });
+    uscreen_config::linux::pipe::publish(2).unwrap();
     manager.start_helper().await.unwrap();
     let old_reader = std::fs::OpenOptions::new()
         .read(true)
@@ -182,7 +204,10 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
     });
     let packet = tokio::time::timeout(std::time::Duration::from_secs(10), rx.recv()).await;
     let packet = packet.expect("T226: no recovery frame").unwrap();
+    wait_pipe_request(2).await;
+    uscreen_config::linux::pipe::publish(4).unwrap();
     let second = live_recovery(&root, &packet, &mut rx).await;
+    wait_pipe_request(4).await;
     stop.send(true).unwrap();
     tokio::time::timeout(std::time::Duration::from_secs(4), session)
         .await

@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <sched.h>
+#include <fcntl.h>
+#include <stdarg.h>
+static int mock_fcntl(int, int, ...);
+#define fcntl mock_fcntl
 static DIR *mock_opendir(const char *);
 static int mock_pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
 static long mock_sysconf(int);
@@ -48,8 +52,26 @@ static int mock_pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, cons
 #undef clock_gettime
 #undef pthread_cond_timedwait
 #undef opendir
+#undef fcntl
 #include <assert.h>
 #include <sys/wait.h>
+
+static int pipe_request_seen, pipe_divisor = 1, pipe_deny, pipe_default_attempt;
+static int mock_fcntl(int fd, int command, ...) {
+    if (command == F_GETPIPE_SZ || command == F_GETFL || command == F_GETFD)
+        return fcntl(fd, command);
+    va_list args;
+    va_start(args, command);
+    int value = va_arg(args, int);
+    va_end(args);
+    if (command == F_SETPIPE_SZ) {
+        pipe_request_seen = value;
+        if (value == 1048576) pipe_default_attempt++;
+        if (pipe_deny) { errno = EPERM; return -1; }
+        value /= pipe_divisor;
+    }
+    return fcntl(fd, command, value);
+}
 
 static long long now_ms(void) {
     struct timespec ts;
@@ -1158,6 +1180,92 @@ static int t226_command(int argc, char **argv, const char *root) {
     return 0;
 }
 
+static void t415_request(const char *path, const char *text) {
+    FILE *file = fopen(path, "w");
+    assert(file);
+    assert(fputs(text, file) >= 0);
+    assert(fclose(file) == 0);
+}
+
+static void test_t415_open(void) {
+    char root[] = "/tmp/uscreen-t415-XXXXXX", fifo[256], request[256];
+    assert(mkdtemp(root));
+    snprintf(fifo, sizeof(fifo), "%s/frames", root);
+    snprintf(request, sizeof(request), "%s/request", root);
+    char *args[] = {"helper", "--pipe-size-file", request};
+    parse_helper_options(3, args);
+    assert(mkfifo(fifo, 0600) == 0);
+    int reader = open(fifo, O_RDONLY | O_NONBLOCK);
+    assert(reader >= 0);
+    g_fifo.path = fifo;
+    const char *values[] = {"2\n", "4\n", "8\n", "1\n", "3\n", "0\n", "16\n", "8junk\n"};
+    const int expected[] = {2, 4, 8, 1, 1, 1, 1, 1};
+    for (unsigned i = 0; i < sizeof(expected)/sizeof(expected[0]); i++) {
+        t415_request(request, values[i]);
+        int previous_default_attempts = pipe_default_attempt;
+        int before_capacity = fcntl(reader, F_GETPIPE_SZ);
+        g_fifo.fd = fifo_writer_open(&g_fifo);
+        assert(g_fifo.fd >= 0 && "T415: refusal must retain a usable pipe");
+        if (before_capacity < 1048576)
+            assert(pipe_default_attempt > previous_default_attempts && "T415: establish the old 1 MiB fallback before a larger request");
+        assert(pipe_request_seen == expected[i] * 1048576 && "T415: respect persisted capacity on every open");
+        assert(fcntl(g_fifo.fd, F_GETPIPE_SZ) > 0);
+        fifo_writer_close(&g_fifo);
+    }
+    close(reader);
+    unlink(request); unlink(fifo); rmdir(root);
+}
+
+/* Scale only resize syscall arguments so an unprivileged CI process can
+ * exercise real Linux EBUSY/rounding below a 1 MiB system ceiling. Bytes and
+ * open/write/read/resize behavior remain real; production requests stay MiB. */
+static void test_t415_live(void) {
+    char root[] = "/tmp/uscreen-t415-live-XXXXXX", path[256];
+    assert(mkdtemp(root));
+    snprintf(path, sizeof(path), "%s/request", root);
+    int ends[2]; assert(pipe(ends) == 0);
+    g_fifo.fd = ends[1]; g_fifo.capacity_path = path;
+    pipe_divisor = 256;
+    t415_request(path, "2\n");
+    update_capacity(&g_fifo, ends[1], 1);
+    assert(g_fifo.capacity_effective == 8192);
+    unsigned char input[6000], output[6001]; memset(input, 0x42, sizeof(input));
+    assert(write(ends[1], input, sizeof(input)) == sizeof(input));
+    t415_request(path, "1\n");
+    mock_monotonic_ms = g_fifo.capacity_checked_ms + 1000;
+    assert(fifo_writer_write(&g_fifo, (unsigned char*)"!", 1, g_frames.generation) == 0);
+    assert(g_fifo.capacity_error == EBUSY && g_fifo.capacity_effective == 8192);
+    assert(read(ends[0], output, sizeof(output)) == sizeof(output));
+    assert(memcmp(input, output, sizeof(input)) == 0 && output[6000] == '!');
+    mock_monotonic_ms += 1000;
+    assert(fifo_writer_write(&g_fifo, (unsigned char*)"x", 1, g_frames.generation) == 0);
+    assert(g_fifo.capacity_error == 0 && g_fifo.capacity_effective == 4096);
+    assert(read(ends[0], output, 1) == 1 && output[0] == 'x');
+    t415_request(path, "8\n"); pipe_deny = 1; mock_monotonic_ms += 1000;
+    assert(fifo_writer_write(&g_fifo, (unsigned char*)"y", 1, g_frames.generation) == 0);
+    assert(g_fifo.capacity_error == EPERM && g_fifo.capacity_effective == 4096);
+    assert(read(ends[0], output, 1) == 1 && output[0] == 'y');
+    pipe_deny = 0; mock_monotonic_ms += 1000;
+    assert(fifo_writer_write(&g_fifo, (unsigned char*)"z", 1, g_frames.generation) == 0);
+    assert(g_fifo.capacity_error == 0 && g_fifo.capacity_effective == 32768);
+    assert(read(ends[0], output, 1) == 1 && output[0] == 'z');
+    fifo_writer_close(&g_fifo); close(ends[0]); unlink(path); rmdir(root);
+}
+
+static void test_t415_rounding(void) {
+    char request[] = "/tmp/uscreen-t415-request-XXXXXX";
+    int file = mkstemp(request); assert(file >= 0); close(file);
+    t415_request(request, "2\n");
+    int ends[2]; assert(pipe(ends) == 0);
+    g_fifo.capacity_path = request;
+    pipe_divisor = 300;
+    update_capacity(&g_fifo, ends[1], 1);
+    assert(pipe_request_seen == 2097152);
+    assert(g_fifo.capacity_effective == fcntl(ends[1], F_GETPIPE_SZ));
+    assert(g_fifo.capacity_effective >= 2097152 / 300);
+    close(ends[0]); close(ends[1]); unlink(request);
+}
+
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
     if (fifo_fixture) return t226_command(argc, argv, fifo_fixture);
@@ -1165,6 +1273,9 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T415-open", test_t415_open},
+        {"T415-live", test_t415_live},
+        {"T415-rounding", test_t415_rounding},
         {"T405-fifo", test_t405_writable_fifo},
         {"T405-capture", test_t405_capture_deadline},
         {"T405-writer", test_t405_idle_writer},

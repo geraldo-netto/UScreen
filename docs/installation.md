@@ -159,3 +159,11 @@ change other apps' system display settings. Stream FPS is a separate control.
 
 System changes and removal instructions are in [SECURITY.md](../SECURITY.md).
 For failures, use [troubleshooting.md](troubleshooting.md) before repeating setup.
+
+## Capture pipe capacity
+
+Linux **Video → Capture pipe buffer** offers 1, 2, 4 and 8 MiB, with 1 MiB as
+the default. Pipe-only edits apply without restarting the display. The GUI shows
+the actual capacity and includes copyable instructions for raising the kernel's
+limit. See [capture pipe configuration](pipe-buffer.md) for temporary/persistent
+commands, rollback and the latency tradeoff.

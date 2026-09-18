@@ -260,3 +260,18 @@ fn t405_idle_writer_waits_for_keepalive_deadline() {
 fn t405_writable_fifo_avoids_redundant_poll() {
     Harness::build("T405-fifo").run("T405-fifo");
 }
+
+#[test]
+fn t415_requested_pipe_sizes_survive_reopen_and_refusal() {
+    Harness::build("T415-open").run("T415-open");
+}
+
+#[test]
+fn t415_live_resize_keeps_queued_frames_and_retries_busy_or_denied_requests() {
+    Harness::build("T415-live").run("T415-live");
+}
+
+#[test]
+fn t415_report_uses_actual_rounded_kernel_capacity() {
+    Harness::build("T415-rounding").run("T415-rounding");
+}

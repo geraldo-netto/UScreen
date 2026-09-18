@@ -2,6 +2,7 @@
 pub mod autostart;
 pub mod cli;
 pub mod daemon;
+pub mod pipe;
 pub mod processes;
 pub mod programs;
 pub mod runtime;
