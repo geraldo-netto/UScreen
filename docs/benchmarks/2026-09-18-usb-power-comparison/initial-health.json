@@ -1,0 +1,28 @@
+{
+  "utc": 1789760974.2680275,
+  "preferences": {
+    "display_refresh_rate": "60.0",
+    "battery_saver": "true",
+    "bitrate_kbps": "20000",
+    "show_stats": "false",
+    "fps": "60",
+    "has_user_settings": "true",
+    "thanked_once": "true"
+  },
+  "foreground": "topResumedActivity=ActivityRecord{245315784 u0 com.uscreen/.MainActivity t427 d0}",
+  "locks": {
+    "wake": [],
+    "wifi": [],
+    "service": [
+      "* ServiceRecord{2dfc2e2 u0 com.uscreen/.StreamingService c:com.uscreen}",
+      "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)"
+    ]
+  },
+  "host_processes": {
+    "uscreen": "149897",
+    "evdi_helper": "651015",
+    "ffmpeg": "651155",
+    "cinnamon": "1897918",
+    "Xorg": "1897166"
+  }
+}

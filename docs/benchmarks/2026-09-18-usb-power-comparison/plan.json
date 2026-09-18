@@ -1,0 +1,40 @@
+{
+  "seconds": 300,
+  "warmup": 30,
+  "cases": [
+    [
+      "static",
+      false
+    ],
+    [
+      "static",
+      true
+    ],
+    [
+      "motion",
+      true
+    ],
+    [
+      "motion",
+      false
+    ],
+    [
+      "motion",
+      false
+    ],
+    [
+      "motion",
+      true
+    ],
+    [
+      "static",
+      true
+    ],
+    [
+      "static",
+      false
+    ]
+  ],
+  "control_seconds": 600,
+  "smoke": false
+}

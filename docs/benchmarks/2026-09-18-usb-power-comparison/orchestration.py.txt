@@ -1,0 +1,223 @@
+"""T388 USB comparison orchestration; preserve current installed processes/settings."""
+from pathlib import Path
+from contextlib import ExitStack
+from types import SimpleNamespace
+import dbus, hashlib, importlib.util, json, os, re, subprocess, sys, threading, time
+import xml.etree.ElementTree as ET
+sys.path.insert(0, str(Path('scripts/benchmarks').resolve()))
+from observe import Sampler, command, process_stat
+from workload import Workload
+from android_session import AndroidSessionMonitor
+from summarize import summarize, load_lines, visibility_integrity, phase_summary
+from observation_integrity import covered, identity_problem
+spec = importlib.util.spec_from_file_location('baseline', Path('scripts/benchmarks/run-baseline.py'))
+baseline = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(baseline)
+ADB = ['adb', '-s', '8002RH1010011900']
+ROOT = Path(sys.argv[1]); ROOT.mkdir()
+SMOKE = '--smoke' in sys.argv
+GEOMETRY = '1280x800+3840+0'; APP = 'com.uscreen'; CONTROL = 'com.uscreen.powercontrol'
+
+
+def adb(*args):
+    return subprocess.check_output(ADB + list(args), text=True, timeout=30).strip()
+
+
+def preferences():
+    root = ET.fromstring(adb('exec-out', 'run-as', APP, 'cat', 'shared_prefs/uscreen.xml'))
+    return {node.get('name'): node.get('value', node.text) for node in root
+            if 'token' not in node.get('name', '').lower()}
+
+
+def nodes():
+    adb('shell', 'uiautomator', 'dump', '/sdcard/uscreen-t388.xml')
+    return list(ET.fromstring(adb('shell', 'cat', '/sdcard/uscreen-t388.xml')).iter('node'))
+
+
+def tap(node):
+    x, y, r, b = map(int, re.findall(r'\d+', node.get('bounds')))
+    adb('shell', 'input', 'tap', str((x+r)//2), str((y+b)//2))
+
+
+def foreground():
+    text = adb('shell', 'dumpsys', 'activity', 'activities')
+    return next((line.strip() for line in text.splitlines() if 'topResumedActivity=' in line), 'unknown')
+
+
+def saver(value):
+    if APP + '/' not in foreground():
+        raise RuntimeError('UScreen is not foreground; refusing to steal focus')
+    if preferences().get('battery_saver', 'false') == str(value).lower():
+        return
+    tap(next(n for n in nodes() if n.get('text') == '⚙'))
+    for _ in range(6):
+        switch = next((n for n in nodes() if n.get('content-desc') == 'Battery saver'), None)
+        if switch is not None:
+            if (switch.get('checked') == 'true') != value:
+                tap(switch)
+            adb('shell', 'input', 'keyevent', '4')
+            assert preferences().get('battery_saver', 'false') == str(value).lower()
+            return
+        adb('shell', 'input', 'swipe', '1000', '710', '1000', '280', '450')
+    raise RuntimeError('Battery saver control not found')
+
+
+def locks():
+    power = adb('shell', 'dumpsys', 'power'); wifi = adb('shell', 'dumpsys', 'wifi')
+    services = adb('shell', 'dumpsys', 'activity', 'services', APP)
+    return dict(wake=[s.strip() for s in power.splitlines() if 'PARTIAL_WAKE_LOCK' in s and 'UScreen::' in s],
+                wifi=[s.strip() for s in wifi.splitlines() if 'WifiLock{UScreen::' in s],
+                service=[s.strip() for s in services.splitlines() if 'isForeground=' in s or 'ServiceRecord{' in s])
+
+
+class TabletGuard:
+    def __init__(self, folder, expected):
+        self.expected = expected
+        self.stop = threading.Event(); self.problem = None; self.checked = 0
+        self.file = (folder / 'tablet-guard.jsonl').open('w')
+        self.thread = threading.Thread(target=self.run)
+    def sample(self, count):
+        top = foreground(); prefs = preferences()
+        row = dict(utc=time.time(), monotonic=time.monotonic(), foreground=top, preferences=prefs)
+        if self.expected + '/' not in top: self.problem = 'tablet foreground changed'
+        if prefs != self.expected_prefs: self.problem = 'tablet preferences changed'
+        if count % 6 == 0: row['power'] = locks()
+        self.checked = time.monotonic(); self.file.write(json.dumps(row)+'\n'); self.file.flush()
+    def run(self):
+        count = 0
+        try:
+            while not self.stop.is_set():
+                self.sample(count); count += 1
+                if self.problem: return
+                self.stop.wait(5)
+        except Exception as error: self.problem = 'tablet observation failed: '+str(error)
+    def start(self):
+        self.expected_prefs = preferences(); self.sample(0); self.thread.start()
+    def close(self):
+        self.stop.set(); self.thread.join(timeout=45); self.file.close()
+
+
+class CheckedWorkload(Workload):
+    tablet = None
+    def check_visibility(self):
+        guard = type(self).tablet
+        failure = guard.problem or ('tablet observation stale' if time.monotonic()-guard.checked > 35 else None)
+        if failure: self.invalidate(failure); return False
+        return super().check_visibility()
+baseline.Workload = CheckedWorkload
+
+
+def control_snapshot(serial):
+    query = ('p=$(pidof com.uscreen); test -n "$p" || exit 1; '
+             'printf "USCREEN_STAT "; run-as com.uscreen cat /proc/$p/stat || exit 1; '
+             'dumpsys window displays; dumpsys window policy')
+    result = subprocess.run(['adb', '-s', serial, 'shell', query], capture_output=True, text=True, timeout=2)
+    if result.returncode: raise ValueError('Control session query failed')
+    raw = next(line[len('USCREEN_STAT '):] for line in result.stdout.splitlines() if line.startswith('USCREEN_STAT '))
+    process = process_stat(raw, 1)
+    focus = re.findall(r'mCurrentFocus=Window\{[^\n}]*\s([\w.]+)/[\w.$]+\}', result.stdout)
+    if focus != [CONTROL]: raise ValueError('Static control app is not foreground')
+    if re.search(r'(?:mShowingLockscreen|mKeyguardShowing|isKeyguardShowing)\s*=\s*true', result.stdout):
+        raise ValueError('Tablet keyguard is showing')
+    return dict(pid=process['pid'], start_ticks=process['start_ticks'], foreground=True,
+                foreground_package=CONTROL, observed_background_package=APP)
+
+
+def control_summary(folder, meta):
+    phases = load_lines(folder, 'phases.jsonl'); samples = load_lines(folder, 'samples.jsonl')
+    health = load_lines(folder, 'android-session.jsonl'); guards = load_lines(folder, 'tablet-guard.jsonl')
+    complete, guarded, reasons = visibility_integrity(folder, meta, phases)
+    report = json.loads((folder/'observer.json').read_text()); reasons += report['errors']
+    if not report['complete']: reasons.append('Observers incomplete')
+    problem = identity_problem(health, meta['android_pid'])
+    if problem: reasons.append(problem)
+    if any(r.get('foreground_package') != CONTROL for r in health): reasons.append('Control not foreground')
+    if any(g['preferences'] != meta['preferences'] for g in guards): reasons.append('Preferences changed')
+    if any(p['power']['wake'] or p['power']['wifi'] or any('isForeground=true' in s for s in p['power']['service']) for p in guards if 'power' in p):
+        reasons.append('UScreen remained foreground/held extra locks in control')
+    results = []
+    for start, end in zip(phases, phases[1:]):
+        if not start.get('measured'): continue
+        if not covered(health, start['utc'], end['utc'], 4): reasons.append('Control health gap')
+        if not covered(samples, start['utc'], end['utc'], 30): reasons.append('Control sample gap')
+        results.append(phase_summary(start, end['utc'], samples, [], meta))
+    return dict(complete=complete and not reasons, invalid_reasons=reasons, phases=results,
+                visibility='invalid' if reasons else 'verified', observation='invalid' if reasons else 'verified',
+                semantics='Streaming-off control: foreground is the static control app; UScreen process remains backgrounded. No decoder/log receipt requirement or latency claim when streaming is stopped.')
+
+
+def measure(name, kind, saving, trial, seconds, warmup, control=False):
+    folder = ROOT/name; folder.mkdir()
+    args = SimpleNamespace(serial=ADB[2], output=folder, geometry=GEOMETRY, seconds=seconds, warmup=warmup)
+    meta = baseline.metadata(args, baseline.ensure_target(GEOMETRY))
+    meta['plan'] = [dict(trial=trial, kind=kind, measured=False, seconds=warmup),dict(trial=trial, kind=kind, measured=True, seconds=seconds)]
+    meta.update(profile='streaming-off' if control else ('saver' if saving else 'normal'), preferences=preferences(),
+                runtime_source='52fcd75', android_source='bdaa17a', pipe_capacity_mib=4, encoder='h264_vaapi_baseline',
+                smoke=SMOKE, expected_foreground=CONTROL if control else APP)
+    (folder/'metadata.json').write_text(json.dumps(meta, indent=2)+'\n')
+    state, stop = {}, threading.Event()
+    with ExitStack() as resources:
+        observers = {}; resources.callback(baseline.observer_report, folder, observers)
+        guard = TabletGuard(folder, CONTROL if control else APP); resources.callback(guard.close); guard.start()
+        CheckedWorkload.tablet = guard
+        logs = baseline.start_logs(args, meta); observers['logs'] = logs; resources.callback(baseline.retire_logs, logs)
+        extras = [(os.getpid(), 'benchmark-workload-and-observer')]
+        for role in ('cinnamon', 'Xorg'):
+            extras.extend((int(pid), role) for pid in command(['pgrep', '-x', role])[1].split())
+        sampler = Sampler(args.serial, folder, state, stop, extras, android_page_size=meta['android_page_size'])
+        observers['sampler'] = sampler
+        thread = threading.Thread(target=sampler.run); resources.callback(baseline.retire_sampler, sampler, thread, stop)
+        if control:
+            baseline.AndroidSessionMonitor = lambda serial, pid, path: AndroidSessionMonitor(serial, pid, path, probe=control_snapshot)
+        else: baseline.AndroidSessionMonitor = AndroidSessionMonitor
+        baseline.run_workload(args, meta, state, thread, resources, observers)
+    result = control_summary(folder, meta) if control else summarize(folder)
+    (folder/'summary.json').write_text(json.dumps(result, indent=2)+'\n')
+    if not result['complete']: raise RuntimeError('Invalid measurement '+name+': '+str(result['invalid_reasons']))
+    print('FINISHED', name, flush=True)
+
+
+def health():
+    return dict(utc=time.time(), preferences=preferences(), foreground=foreground(), locks=locks(),
+                host_processes={name: command(['pgrep', '-x', name])[1] for name in ('uscreen','evdi_helper','ffmpeg','cinnamon','Xorg')})
+
+
+def provenance():
+    source = json.loads(Path('docs/reviews/2026-09-18-low-latency-live/setup.json').read_text())
+    for name in ('uscreen','evdi_helper'):
+        assert hashlib.sha256((Path.home()/'.local/bin'/name).read_bytes()).hexdigest() == source['installed_sha256'][name]
+    apk = adb('shell','pm','path',APP).removeprefix('package:')
+    assert adb('shell','sha256sum',apk).split()[0] == source['installed_sha256']['android_apk']
+    source['comparison_utc'] = time.time(); source['comparison_checkout'] = command(['git','rev-parse','HEAD'])[1]
+    source['comparison_scope'] = 'Current installed optimized setup, not redeployment of newer checkout; no EVDI reattachment.'
+    (ROOT/'deployment.json').write_text(json.dumps(source,indent=2)+'\n')
+    (ROOT/'initial-health.json').write_text(json.dumps(health(),indent=2)+'\n')
+
+
+def main():
+    provenance()
+    original = preferences(); (ROOT/'original-preferences.json').write_text(json.dumps(original,indent=2)+'\n')
+    manager = dbus.Interface(dbus.SessionBus().get_object('org.gnome.SessionManager','/org/gnome/SessionManager'),'org.gnome.SessionManager')
+    cookie = manager.Inhibit('UScreen USB battery benchmark',0,'Matched visible workload measurements',8)
+    plan = [('static',False),('static',True),('motion',True),('motion',False),('motion',False),('motion',True),('static',True),('static',False)]
+    if SMOKE: plan = [('static',False),('motion',True)]
+    seconds,warmup = (15,5) if SMOKE else (300,30)
+    (ROOT/'plan.json').write_text(json.dumps(dict(seconds=seconds,warmup=warmup,cases=plan,control_seconds=15 if SMOKE else 600,smoke=SMOKE),indent=2)+'\n')
+    try:
+        for index,(kind,saving) in enumerate(plan):
+            saver(saving)
+            name=f'{index+1:02d}-'+('saver-' if saving else 'normal-')+kind
+            print('START',name,flush=True); measure(name,kind,saving,index//4+1,seconds,warmup)
+        saver(original.get('battery_saver','false')=='true')
+        adb('shell','am','start','-W','-n',CONTROL+'/com.uscreen.benchmark.MainActivity'); time.sleep(2)
+        print('START streaming-off control',flush=True)
+        measure('09-streaming-off','static',False,3,15 if SMOKE else 600,5 if SMOKE else 60,True)
+    finally:
+        try:
+            if CONTROL+'/' in foreground(): adb('shell','am','start','-n',APP+'/.MainActivity'); time.sleep(2)
+            if APP+'/' in foreground(): saver(original.get('battery_saver','false')=='true')
+            (ROOT/'final-preferences.json').write_text(json.dumps(preferences(),indent=2)+'\n')
+            (ROOT/'final-health.json').write_text(json.dumps(health(),indent=2)+'\n')
+        finally: manager.Uninhibit(cookie)
+
+main()

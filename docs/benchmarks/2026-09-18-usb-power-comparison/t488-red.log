@@ -1,0 +1,19 @@
+E
+======================================================================
+ERROR: test_t488_query_reads_focus_from_android_display_dump (test_benchmark_observation.AndroidFocusSectionTests.test_t488_query_reads_focus_from_android_display_dump)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_benchmark_observation.py", line 189, in test_t488_query_reads_focus_from_android_display_dump
+    result = snapshot('tablet')
+             ^^^^^^^^^^^^^^^^^^
+  File "/backups/disk2/projects/uscreen/scripts/benchmarks/android_session.py", line 32, in snapshot
+    return parse_snapshot(result.stdout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/backups/disk2/projects/uscreen/scripts/benchmarks/android_session.py", line 22, in parse_snapshot
+    raise ValueError('UScreen is not the verified foreground tablet window')
+ValueError: UScreen is not the verified foreground tablet window
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)

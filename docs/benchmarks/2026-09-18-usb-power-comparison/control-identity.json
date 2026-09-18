@@ -1,0 +1,6 @@
+{
+  "package": "com.uscreen.powercontrol",
+  "installed_apk_sha256": "f08ef4e1cbdb12236cab7ea80f73fc14411c61f04cae95bb012879b49b6ef90f",
+  "source": "scripts/benchmarks/android-power/MainActivity.kt",
+  "purpose": "same static image, 50% brightness, 60 Hz with UScreen backgrounded"
+}
