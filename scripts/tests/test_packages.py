@@ -10,6 +10,49 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 class PackageTest(unittest.TestCase):
+    def test_t428_portable_build_rejects_unverified_evdi_cache(self):
+        from test_notices import NoticeTest
+        for mode in ['wrong', 'dirty', 'probe-error', 'missing', 'valid']:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-evdi-cache-') as tmp:
+                root = Path(tmp)
+                NoticeTest().copy_sources(root)
+                self.portable_fixture(root)
+                git = root / 'bin/git'
+                git.write_text('''#!/bin/bash
+if [ "$1" = clone ]; then
+    mkdir -p target-deb12/evdi-src/library
+    printf fixture > target-deb12/evdi-src/library/libevdi.so.1.15.0
+    touch clone-called
+    exit 0
+fi
+case " $* " in
+    *" rev-parse HEAD "*)
+        if [ "$USCREEN_TEST_CACHE" = wrong ]; then echo wrong; else echo "$USCREEN_TEST_REVISION"; fi ;;
+    *" status "*)
+        [ "$USCREEN_TEST_CACHE" != probe-error ] || exit 42
+        [ "$USCREEN_TEST_CACHE" != dirty ] || echo ' M library/evdi_lib.c' ;;
+    *) exit 1 ;;
+esac
+exit 0
+''')
+                git.chmod(0o755)
+                if mode == 'missing':
+                    shutil.rmtree(root / 'target-deb12/evdi-src')
+                build = (REPO / 'scripts/build-release.sh').read_text()
+                import re
+                revision = re.search(r'^EVDI_COMMIT="([0-9a-f]+)"$', build, re.M)
+                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'),
+                           USCREEN_TEST_CACHE=mode, USCREEN_TEST_REVISION=revision[1] if revision else 'expected')
+                result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root, env=env,
+                                        capture_output=True, text=True, timeout=20)
+                if mode in ['wrong', 'dirty', 'probe-error']:
+                    self.assertNotEqual(result.returncode, 0, 'T428: unverified cache was accepted')
+                    self.assertIn('EVDI source', result.stdout + result.stderr)
+                    self.assertFalse((root / 'target-deb12/.build-ok').exists())
+                else:
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual((root / 'clone-called').exists(), mode == 'missing')
+
     def test_t101_container_and_rpmbuild_failures_reject_stale_assets(self):
         for mode in ['container', 'rpm', 'success']:
             with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-packages-') as tmp:
@@ -73,6 +116,7 @@ class PackageTest(unittest.TestCase):
     def portable_fixture(self, root):
         files = {
             'bin/distrobox': '#!/bin/bash\nshift 3; shift 2; exec bash -c "$@"\n',
+            'bin/git': '#!/bin/sh\ncase " $* " in *" rev-parse HEAD "*) echo 2713cd41932f2bd8697953a205862a68a966b5ba;; *" status "*) exit 0;; *) exit 1;; esac\n',
             'bin/objdump': '#!/bin/sh\necho GLIBC_2.36\n',
             'bin/readelf': '#!/bin/sh\ncat << EOF\n(RUNPATH) Library runpath: [\\$ORIGIN]\n(NEEDED) Shared library: [libevdi.so.1]\nEOF\n',
             'android/gradlew': '#!/bin/sh\nexit 0\n',

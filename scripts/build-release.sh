@@ -12,6 +12,8 @@ cd "$(dirname "$0")/.."
 CONTAINER="${USCREEN_BUILD_CONTAINER:-uscreen-build}"
 VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
 EVDI_TAG="v1.15.0"
+# Immutable upstream revision: validate cached and freshly cloned source alike.
+EVDI_COMMIT="2713cd41932f2bd8697953a205862a68a966b5ba"
 
 # Verify completion even when distrobox does not propagate failure.
 rm -f target-deb12/.build-ok
@@ -25,11 +27,23 @@ distrobox enter "$CONTAINER" -- bash -lc '
 
   # Keep LGPL libevdi replaceable beside the helper, located via $ORIGIN.
   [ -d target-deb12/evdi-src ] || git clone -q --depth 1 --branch "$2" https://github.com/DisplayLink/evdi target-deb12/evdi-src
+  [ "$(git -C target-deb12/evdi-src rev-parse HEAD)" = "$3" ] || {
+    echo "EVDI source revision differs from the pinned release; inspect target-deb12/evdi-src and move it aside before retrying" >&2
+    exit 1
+  }
+  evdi_changes=$(git -C target-deb12/evdi-src status --porcelain --untracked-files=normal) || {
+    echo "EVDI source status could not be verified" >&2
+    exit 1
+  }
+  [ -z "$evdi_changes" ] || {
+    echo "EVDI source has local changes; preserve them and use a clean checkout before retrying" >&2
+    exit 1
+  }
   make -s -C target-deb12/evdi-src/library >/dev/null
   gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c \
       -Ltarget-deb12/evdi-src/library -levdi -lpthread "-Wl,-rpath,\$ORIGIN"
   touch target-deb12/.build-ok
-' uscreen-release "$PWD" "$EVDI_TAG"
+' uscreen-release "$PWD" "$EVDI_TAG" "$EVDI_COMMIT"
 [ -f target-deb12/.build-ok ] || { echo "!! build inside $CONTAINER failed"; exit 1; }
 
 # Same layout as `make dist-local`, from the portable binaries.
