@@ -306,9 +306,9 @@ internal class ControlSession(
     }
 
     /**
-     * Tell the host that frame [seq] is on screen. The host started the clock
-     * when it emitted that encoded frame. The round trip measures packet send
-     * through render acknowledgement, excluding capture and encoding, without
+     * Acknowledge the render callback for frame [seq]. The host starts timing
+     * when the encoded packet is ready. Its interval includes host queueing,
+     * delivery, callback scheduling and the return path, excluding capture and encoding, without
      * either side needing a shared time base.
      */
     fun sendRendered(seq: Int, decodeUs: Int) {
@@ -319,8 +319,9 @@ internal class ControlSession(
             // signed, so it wraps negative after ~2^31 frames (~1 year at
             // 60 fps, but free to get right).
             put("seq", seq.toLong() and 0xFFFFFFFFL)
-            // How much of the round trip was spent here (arrival → on screen).
-            // The host subtracts it to see what the wire actually costs.
+            // Complete packet arrival → render callback execution on this device.
+            // The host subtracts independent medians as a rough residual estimate;
+            // it includes host queueing and the ACK path, not just wire transit.
             if (decodeUs >= 0) put("decode_us", decodeUs)
         }
         sendWhenConnected(msg)
