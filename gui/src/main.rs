@@ -1030,11 +1030,8 @@ impl App {
                 &mut self.cfg.input_pen,
                 "Pen tablet (stylus, pressure, tilt)",
             );
-            // The pointer exists only to serve the pen; a greyed-out
-            // box must not keep a value the daemon would act on.
-            if !self.cfg.input_pen {
-                self.cfg.input_pointer = false;
-            }
+            // Preserve the dormant preference. The daemon creates a pointer
+            // only when both pen and pointer are enabled.
             ui.add_enabled(
                 self.cfg.input_pen,
                 egui::Checkbox::new(
@@ -1494,6 +1491,92 @@ mod tests {
             collect_text_rects(&shape.shape, &mut text);
         }
         text
+    }
+
+    fn input_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            app.setting_mode(ui);
+            app.setting_input_devices(ui);
+        })
+    }
+
+    fn window_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        let output = ctx.run(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(700.0, 900.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ctx| app.show_window(ctx),
+        );
+        let mut text = Vec::new();
+        for shape in output.shapes {
+            collect_text_rects(&shape.shape, &mut text);
+        }
+        text
+    }
+
+    #[test]
+    fn t344_idle_input_settings_preserve_dormant_pointer_preference() {
+        for pointer in [false, true] {
+            let mut app = settings_test_app(Tab::Display);
+            app.cfg.input_pen = false;
+            app.cfg.input_pointer = pointer;
+            app.saved_cfg = app.cfg.clone();
+            input_test_frame(&mut app, &egui::Context::default(), Vec::new());
+            assert_eq!(
+                app.cfg, app.saved_cfg,
+                "T344: displaying settings is not an edit"
+            );
+        }
+    }
+
+    #[test]
+    fn t344_pen_toggle_save_reload_and_discard_preserve_pointer() {
+        let root = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Display);
+        app.store = ConfigStore::new(root.path().join("config.toml"));
+        app.saved_cfg = app.cfg.clone();
+        let ctx = egui::Context::default();
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Pen tablet (stylus, pressure, tilt)",
+            input_test_frame,
+        );
+        assert!(!app.cfg.input_pen);
+        assert!(
+            app.cfg.input_pointer,
+            "T344: disabling pen must retain preference"
+        );
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.message, "Settings saved");
+        assert!(!app.store.load().input_pen);
+        assert!(app.store.load().input_pointer);
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Pen tablet (stylus, pressure, tilt)",
+            input_test_frame,
+        );
+        assert!(app.cfg.input_pen);
+        assert!(app.cfg.input_pointer);
+        click_settings_text(&mut app, &ctx, "Discard", window_test_frame);
+        assert_eq!(app.cfg, app.saved_cfg);
+        assert!(!app.cfg.input_pen);
+        assert!(app.cfg.input_pointer);
     }
 
     fn encoder_test_frame(

@@ -179,7 +179,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
   default; turn off what you do not use (on Cinnamon/GNOME under X11 a
-  touchscreen device can hide the mouse cursor).
+  touchscreen device can hide the mouse cursor). The pointer requires Pen;
+  disabling Pen preserves the pointer preference for when Pen is enabled again.
 - **Wi-Fi** — `uscreen wifi` once, with the cable in: it switches the tablet
   over, remembers the address and reconnects to it by itself whenever the
   cable is out. `uscreen wifi --off` forgets the address and disconnects; it
