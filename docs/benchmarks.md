@@ -96,15 +96,19 @@ The daemon starts a host-clock timer when a complete encoded access unit is
 ready for broadcast, after encoding and CLI packetizer buffering. The app
 returns its sequence number after Android's `onFrameRendered` callback runs;
 the timer stops when the host receives that acknowledgement over the input
-socket. The legacy log label **encode→display** therefore measures **encoded
+socket. The current log label **packet-ready→render-ACK (host clock)** measures **encoded
 packet ready → render acknowledgement received**, including forward queueing,
 transport, decoding/rendering, callback scheduling and the return message.
 It is not a camera measurement of pixels becoming visible.
 
-The tablet's **decode+render** value covers complete-frame arrival to execution
-of its render callback. The legacy **wire** estimate subtracts its median from
-the host median; it includes host queueing and the reverse acknowledgement path,
-and is not an isolated USB-hop measurement or an exact per-frame decomposition.
+The tablet's **arrival→render-callback (tablet clock)** value covers complete-frame
+arrival to execution of its render callback. Each interval reports its own
+sample count; missing tablet durations can give them different populations.
+Historical logs call these intervals **encode→display** and **decode+render**.
+Their legacy **wire** estimate subtracts independent medians, including host
+queueing and the reverse acknowledgement path. T457 removes this estimate:
+it is not measured network latency or an exact per-frame decomposition.
+Benchmark readers accept both the current and historical labels.
 
 Capture, encoding, and time already spent assembling an access unit are outside
 that host timer. The helper's separate `capture→fifo` timer begins after
@@ -199,7 +203,7 @@ need implementation and measurement.
 Reports with other hardware are welcome as
 [compatibility issues](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml);
 include the exact commit, hardware, encoder/settings, workload and several
-`Latency encode→display` log lines. The log label alone does not describe a
+`Latency packet-ready→render-ACK` log lines. The log label alone does not describe a
 reproducible benchmark.
 
 

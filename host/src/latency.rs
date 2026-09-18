@@ -3,7 +3,7 @@
 //! The timer starts when a complete access unit is ready for broadcast, after
 //! encoding and packetizer buffering. It ends when the tablet's render-callback
 //! acknowledgement reaches the host, so it includes the reverse message path
-//! and callback scheduling. The legacy log label is `encode→display`.
+//! and callback scheduling. This is not optical display latency.
 //!
 //! The helper's separate capture→FIFO timer starts after the EVDI grab. Neither
 //! metric covers the compositor wait, grab, encoding, or packetizer assembly;
@@ -34,9 +34,9 @@ struct Inner {
     discontinuous: bool,
     /// Round-trip latencies in microseconds, for the current report window.
     samples: Vec<u32>,
-    /// Of that round trip, the part the tablet spent decoding and rendering.
-    /// The remainder also includes host queueing and the return message path;
-    /// subtracting independent medians is only a rough transport estimate.
+    /// Complete-frame arrival to render-callback execution on the tablet clock.
+    /// Missing tablet durations can produce a different sample population;
+    /// independent percentiles cannot be subtracted to measure network latency.
     decode_samples: Vec<u32>,
     spare_samples: Vec<u32>,
     spare_decode_samples: Vec<u32>,
@@ -230,25 +230,23 @@ impl Report {
             return;
         }
         self.samples.sort_unstable();
-        let total_p50 = percentile(&self.samples, 0.50);
         info!(
-            "Latency encode→display: p50 {:.1}ms  p95 {:.1}ms  max {:.1}ms  ({} samples, {} in flight, {} aged out)",
-            total_p50, percentile(&self.samples, 0.95), percentile(&self.samples, 1.0),
+            "Latency packet-ready→render-ACK (host clock): p50 {:.1}ms  p95 {:.1}ms  max {:.1}ms  ({} samples, {} in flight, {} aged out)",
+            percentile(&self.samples, 0.50), percentile(&self.samples, 0.95), percentile(&self.samples, 1.0),
             self.samples.len(), self.inflight, self.lost
         );
-        self.log_decode(total_p50);
+        self.log_decode();
     }
-    fn log_decode(&mut self, total_p50: f64) {
+    fn log_decode(&mut self) {
         if self.decode_samples.is_empty() {
             return;
         }
         self.decode_samples.sort_unstable();
-        let decode_p50 = percentile(&self.decode_samples, 0.50);
         info!(
-            "  of which tablet decode+render p50 {:.1}ms  p95 {:.1}ms  → wire ~{:.1}ms",
-            decode_p50,
+            "Latency tablet arrival→render-callback (tablet clock): p50 {:.1}ms  p95 {:.1}ms  ({} samples)",
+            percentile(&self.decode_samples, 0.50),
             percentile(&self.decode_samples, 0.95),
-            (total_p50 - decode_p50).max(0.0)
+            self.decode_samples.len()
         );
     }
 }
@@ -260,6 +258,45 @@ fn percentile(values: &[u32], p: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[derive(Clone)]
+    struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+
+    impl std::io::Write for LogBuffer {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn t457_reports_separate_clock_intervals_without_subtracting_percentiles() {
+        let buffer = LogBuffer(Arc::new(Mutex::new(Vec::new())));
+        let writer = buffer.clone();
+        let subscriber = tracing_subscriber::fmt()
+            .without_time()
+            .with_ansi(false)
+            .with_writer(move || writer.clone())
+            .finish();
+        let mut report = Report {
+            samples: vec![90_000, 10_000, 20_000],
+            decode_samples: vec![30_000, 5_000],
+            lost: 2,
+            inflight: 1,
+        };
+        tracing::subscriber::with_default(subscriber, || report.log());
+        let output = String::from_utf8(buffer.0.lock().unwrap().clone()).unwrap();
+        assert!(output.contains("Latency packet-ready→render-ACK (host clock): p50 20.0ms  p95 90.0ms  max 90.0ms  (3 samples, 1 in flight, 2 aged out)"), "T457: {output}");
+        assert!(output.contains("Latency tablet arrival→render-callback (tablet clock): p50 30.0ms  p95 30.0ms  (2 samples)"), "T457: {output}");
+        assert!(!output.contains("wire"), "T457: no inferred network metric");
+        assert!(
+            !output.contains("encode→display"),
+            "T457: exclude unmeasured stages"
+        );
+    }
 
     #[test]
     fn t228_retired_ack_cannot_consume_new_generation() {

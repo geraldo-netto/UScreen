@@ -85,8 +85,8 @@ def battery_summary(samples):
 
 
 PATTERNS = {
-    'packet_ready_to_ack_window': r'Latency encode→display: p50 ([\d.]+)ms\s+p95 ([\d.]+)ms\s+max ([\d.]+)ms\s+\((\d+) samples',
-    'tablet_arrival_to_callback_window': r'of which tablet decode\+render p50 ([\d.]+)ms\s+p95 ([\d.]+)ms',
+    'packet_ready_to_ack_window': r'Latency (?:encode→display|packet-ready→render-ACK \(host clock\)): p50 ([\d.]+)ms\s+p95 ([\d.]+)ms\s+max ([\d.]+)ms\s+\((\d+) samples',
+    'tablet_arrival_to_callback_window': r'(?:of which tablet decode\+render|Latency tablet arrival→render-callback \(tablet clock\):) p50 ([\d.]+)ms\s+p95 ([\d.]+)ms',
     'capture_to_fifo_window': r'capture→fifo p50 ([\d.]+)ms p95 ([\d.]+)ms \((\d+) frames',
     'encoder_window': r'Encoder: (\d+) access units in ([\d.]+)s, [\d.]+ MB/s \(([\d.]+) kbps\)',
     'capture_cycle_window': r'cycle: request→ready avg ([\d.]+)ms \(\d+ waited, \d+ immediate\), grab avg ([\d.]+)ms',

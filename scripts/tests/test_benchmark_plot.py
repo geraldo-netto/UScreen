@@ -29,6 +29,12 @@ class PlotTests(unittest.TestCase):
         self.assertEqual(meta, self.meta)
         self.assertEqual((charge, cpu, latency), ([], [], []))
 
+    def test_t457_plot_accepts_current_and_historical_latency_labels(self):
+        rows = [dict(utc=60, message='Latency encode→display: p50 5ms  p95 6ms  max 7ms  (3 samples)'),
+                dict(utc=120, message='Latency packet-ready→render-ACK (host clock): p50 8ms  p95 9ms  max 10ms  (3 samples)')]
+        (self.folder / 'host-windows.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in rows))
+        self.assertEqual(PLOT.series(self.folder)[3], [(1, 5, 6), (2, 8, 9)])
+
     def render(self, rows):
         matplotlib = MagicMock()
         figure, axes = MagicMock(), [MagicMock() for _ in range(3)]

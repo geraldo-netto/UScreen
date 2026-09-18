@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 import re
 
-from summarize import host_cpu, load_lines, visibility_integrity
+from summarize import PATTERNS, host_cpu, load_lines, visibility_integrity
 
 
 def series(folder):
@@ -22,9 +22,9 @@ def series(folder):
            for before, after in zip(samples, samples[1:])]
     latency = []
     for row in logs:
-        match = re.search(r'Latency encode→display: p50 ([\d.]+)ms\s+p95 ([\d.]+)ms', row['message'])
+        match = re.search(PATTERNS['packet_ready_to_ack_window'], row['message'])
         if match:
-            latency.append(((row['utc'] - meta['start_utc']) / 60, *map(float, match.groups())))
+            latency.append(((row['utc'] - meta['start_utc']) / 60, *map(float, match.groups()[:2])))
     return meta, charge, cpu, latency
 
 

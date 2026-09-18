@@ -73,7 +73,7 @@ and obstacles. Documentation edits need link/metadata/format checks and any
 automated tests that consume the edited files. Do not publish, install on the
 working desktop or attach EVDI merely to validate documentation.
 
-Measure performance claims. Host `Latency encode→display` figures cover
+Measure performance claims. Host `Latency packet-ready→render-ACK` figures cover
 encoded-packet readiness to render-acknowledgement receipt; they exclude
 capture, encoding and packetizer assembly. Include workload, settings and
 hardware; see [benchmarks](docs/benchmarks.md#how-latency-is-measured).

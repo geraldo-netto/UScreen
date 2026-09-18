@@ -117,8 +117,12 @@ Cinnamon and Xorg, which are recorded separately. Android app CPU excludes
 separate codec/compositor/system processes. RSS includes shared pages; do not
 interpret summed RSS as unique physical memory.
 
-The host's `encode→display` label measures **encoded access unit ready → render
-acknowledgement received**. It excludes capture, encoding and packetizer assembly.
+The host's `packet-ready→render-ACK (host clock)` label measures **encoded access
+unit ready → render acknowledgement received**. It excludes capture, encoding
+and packetizer assembly. Historical `encode→display` logs describe the same
+interval; the summary and plot readers support both labels. The separate
+`tablet arrival→render-callback (tablet clock)` report replaces `decode+render`;
+the misleading difference-of-medians `wire` estimate is no longer logged.
 The Android timing ends when its render callback runs; callbacks can be delayed
 or batched, so it is not optical input-to-photon latency. See the
 [MediaCodec callback contract](https://developer.android.com/reference/android/media/MediaCodec.OnFrameRenderedListener).

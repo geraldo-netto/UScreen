@@ -13,6 +13,14 @@ from summarize import battery_summary, cpu_delta, load_lines, window_values
 
 
 class BaselineMeasurementTests(unittest.TestCase):
+    def test_t457_current_and_historical_labels_have_identical_boundaries(self):
+        historical = [dict(message='Latency encode→display: p50 20ms  p95 90ms  max 90ms  (3 samples'),
+                      dict(message='of which tablet decode+render p50 30ms  p95 30ms → wire ~0ms')]
+        current = [dict(message='Latency packet-ready→render-ACK (host clock): p50 20ms  p95 90ms  max 90ms  (3 samples'),
+                   dict(message='Latency tablet arrival→render-callback (tablet clock): p50 30ms  p95 30ms  (2 samples)')]
+        self.assertEqual(window_values(current), window_values(historical))
+        self.assertEqual(len(window_values(current)), 2)
+
     def test_t410_journal_byte_array_messages_are_retained(self):
         message = '\x1b[32mINFO\x1b[0m Latency encode→display: p50 5ms'
         entries = [{'__REALTIME_TIMESTAMP': '123456789', 'MESSAGE': message},
