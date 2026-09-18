@@ -102,7 +102,12 @@ history. This is a per-helper work budget, not a global CPU-time quota; the
 [conversion measurements](benchmarks/2026-09-17-conversion.md) document thread,
 vectorization and multi-session tradeoffs.
 The Linux-only `pipe_capacity_mib` preference is published atomically in the
-private runtime directory after startup/configuration save. The FIFO writer
+private runtime directory after startup/configuration save. Saves retain the
+cross-process configuration lock through publication, and startup reads the
+latest preference under that same lock. Concurrent GUIs and startup cannot
+publish an older snapshot after a newer save. Publication failure preserves
+the saved preference and reports an error; a later startup can retry it. Any
+requested daemon restart happens after releasing the configuration lock. The FIFO writer
 checks it on open and at most once per second between complete writes. Linux
 refusals retain queued bytes and are retried; T226 inode retirement remains
 independent. The helper reports `F_GETPIPE_SZ` over its existing stdout channel; the host

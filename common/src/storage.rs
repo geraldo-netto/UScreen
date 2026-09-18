@@ -68,10 +68,32 @@ impl ConfigStore {
     }
 
     pub fn save_edits(&self, edited: &FileConfig, baseline: &FileConfig) -> Result<FileConfig> {
-        self.update(|latest| {
+        self.save_edits_then(edited, baseline, |_| ())
+            .map(|(config, ())| config)
+    }
+
+    /// Keep the cross-process lock through publication; release it before any
+    /// daemon restart. Publication may fail after commit, so retain both results.
+    pub fn save_edits_then<T>(
+        &self,
+        edited: &FileConfig,
+        baseline: &FileConfig,
+        publish: impl FnOnce(&FileConfig) -> T,
+    ) -> Result<(FileConfig, T)> {
+        let _lock = FileConfig::lock_at(&self.path)?;
+        let config = FileConfig::update_locked_at(&self.path, |latest| {
             *latest = edited.merge_edits(baseline, latest.clone())?;
             Ok(())
-        })
+        })?;
+        let result = publish(&config);
+        Ok((config, result))
+    }
+
+    /// Read and act on the current persisted snapshot under the same lock used
+    /// by saves. The callback must not recursively start a config transaction.
+    pub fn read_locked<T>(&self, action: impl FnOnce(&FileConfig) -> Result<T>) -> Result<T> {
+        let _lock = FileConfig::lock_at(&self.path)?;
+        action(&self.load())
     }
 }
 

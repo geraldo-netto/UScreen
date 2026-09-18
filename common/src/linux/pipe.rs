@@ -6,6 +6,15 @@ pub fn request_path() -> Result<std::path::PathBuf> {
     Ok(super::runtime::runtime_dir()?.join("pipe-capacity-mib"))
 }
 
+/// Startup must read the latest preference inside the publication transaction.
+pub fn publish_current() -> Result<()> {
+    publish_current_at(&crate::storage::ConfigStore::default(), &request_path()?)
+}
+
+pub fn publish_current_at(store: &crate::storage::ConfigStore, path: &Path) -> Result<()> {
+    store.read_locked(|config| publish_at(path, config.pipe_capacity_mib))
+}
+
 pub fn publish(mib: u32) -> Result<()> {
     publish_at(&request_path()?, mib)
 }
@@ -37,12 +46,95 @@ pub fn ceiling_bytes() -> Option<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{model::FileConfig, storage::ConfigStore};
     use std::fs::OpenOptions;
     use std::os::unix::fs::PermissionsExt;
     use std::os::{
         fd::AsRawFd,
         unix::fs::{MetadataExt, OpenOptionsExt},
     };
+
+    #[test]
+    fn t463_startup_reads_latest_preference_instead_of_old_snapshot() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let old = store.load();
+        let edited = FileConfig {
+            pipe_capacity_mib: 4,
+            ..old.clone()
+        };
+        store.save_edits(&edited, &old).unwrap();
+        let request = dir.path().join("request");
+        publish_current_at(&store, &request).unwrap();
+        assert_eq!(std::fs::read_to_string(request).unwrap(), "4\n");
+    }
+
+    #[test]
+    fn t463_save_waits_for_startup_publication_before_publishing_new_value() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let request = dir.path().join("request");
+        let startup_store = store.clone();
+        let startup_path = request.clone();
+        let (entered, waiting) = mpsc::channel();
+        let (release, paused) = mpsc::channel();
+        let startup = std::thread::spawn(move || {
+            startup_store.read_locked(|config| {
+                entered.send(()).unwrap();
+                paused.recv_timeout(Duration::from_secs(5)).unwrap();
+                publish_at(&startup_path, config.pipe_capacity_mib)
+            })
+        });
+        waiting.recv_timeout(Duration::from_secs(2)).unwrap();
+        let save_store = store.clone();
+        let save_path = request.clone();
+        let (published, completion) = mpsc::channel();
+        let save = std::thread::spawn(move || {
+            let baseline = FileConfig::default();
+            let edited = FileConfig {
+                pipe_capacity_mib: 8,
+                ..baseline.clone()
+            };
+            save_store
+                .save_edits_then(&edited, &baseline, |config| {
+                    publish_at(&save_path, config.pipe_capacity_mib).unwrap();
+                    published.send(()).unwrap();
+                })
+                .unwrap();
+        });
+        let overtook = completion.recv_timeout(Duration::from_millis(250)).is_ok();
+        release.send(()).unwrap();
+        startup.join().unwrap().unwrap();
+        save.join().unwrap();
+        assert!(!overtook, "T463: save overtook startup publication");
+        assert_eq!(store.load().pipe_capacity_mib, 8);
+        assert_eq!(std::fs::read_to_string(request).unwrap(), "8\n");
+    }
+
+    #[test]
+    fn t463_failed_publication_keeps_preference_for_startup_retry() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let baseline = store.load();
+        let edited = FileConfig {
+            pipe_capacity_mib: 2,
+            ..baseline.clone()
+        };
+        let request = dir.path().join("missing/request");
+        let (saved, publication) = store
+            .save_edits_then(&edited, &baseline, |config| {
+                publish_at(&request, config.pipe_capacity_mib)
+            })
+            .unwrap();
+        assert!(publication.is_err());
+        assert_eq!(saved.pipe_capacity_mib, 2);
+        assert_eq!(store.load(), saved);
+        std::fs::create_dir(request.parent().unwrap()).unwrap();
+        publish_current_at(&store, &request).unwrap();
+        assert_eq!(std::fs::read_to_string(request).unwrap(), "2\n");
+    }
 
     #[test]
     fn t415_status_does_not_wake_a_reader_waiting_for_the_capture_writer() {

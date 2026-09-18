@@ -1436,7 +1436,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     std::fs::write(&pid_path, pid.to_string())?;
 
     heal_config(&file_cfg);
-    uscreen_config::linux::pipe::publish(file_cfg.pipe_capacity_mib)?;
+    uscreen_config::linux::pipe::publish_current()?;
     let encoder = effective.encoder.clone();
     let fps = effective.fps;
     let bitrate = effective.bitrate;

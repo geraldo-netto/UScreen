@@ -75,11 +75,12 @@ impl PendingSave {
     ) -> Self {
         let edited = submitted.clone();
         let worker = std::thread::spawn(move || {
-            let config = store
-                .save_edits(&edited, &baseline)
+            let (config, pipe) = store
+                .save_edits_then(&edited, &baseline, |config| {
+                    (config.pipe_capacity_mib != baseline.pipe_capacity_mib)
+                        .then(|| apply_pipe(config.pipe_capacity_mib))
+                })
                 .map_err(|error| format!("Save failed: {error}"))?;
-            let pipe = (config.pipe_capacity_mib != baseline.pipe_capacity_mib)
-                .then(|| apply_pipe(config.pipe_capacity_mib));
             // Exactly one restart, only after the transaction has committed.
             let restart = restart.map(|action| action());
             Ok(Saved {
@@ -197,6 +198,63 @@ mod tests {
         assert!(result.is_err(), "T332: invalid display mode accepted");
         assert_eq!(count.load(std::sync::atomic::Ordering::SeqCst), 0);
         assert_eq!(store.load(), saved);
+    }
+
+    #[test]
+    fn t463_concurrent_saves_cannot_publish_older_pipe_request_last() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let baseline = FileConfig::default();
+        let request = dir.path().join("request");
+        let first_path = request.clone();
+        let (entered, waiting) = mpsc::channel();
+        let (release, paused) = mpsc::channel();
+        let first = PendingSave::start_with_pipe(
+            store.clone(),
+            FileConfig {
+                pipe_capacity_mib: 2,
+                ..baseline.clone()
+            },
+            baseline.clone(),
+            None,
+            Box::new(move |mib| {
+                entered.send(()).unwrap();
+                paused.recv_timeout(Duration::from_secs(5)).unwrap();
+                uscreen_config::linux::pipe::publish_at(&first_path, mib).map_err(|e| e.to_string())
+            }),
+        );
+        waiting.recv_timeout(Duration::from_secs(2)).unwrap();
+        let second_path = request.clone();
+        let (published, completion) = mpsc::channel();
+        let second = PendingSave::start_with_pipe(
+            store.clone(),
+            FileConfig {
+                pipe_capacity_mib: 4,
+                ..baseline.clone()
+            },
+            baseline,
+            None,
+            Box::new(move |mib| {
+                uscreen_config::linux::pipe::publish_at(&second_path, mib)
+                    .map_err(|e| e.to_string())?;
+                published.send(()).unwrap();
+                Ok(())
+            }),
+        );
+        // The original implementation lets the newer request overtake the paused
+        // older publisher. A serialized publisher must wait until it is released.
+        let _ = completion.recv_timeout(Duration::from_millis(250));
+        release.send(()).unwrap();
+        assert!(first.finish().unwrap().pipe.unwrap().is_ok());
+        assert!(second.finish().unwrap().pipe.unwrap().is_ok());
+        assert_eq!(store.load().pipe_capacity_mib, 4);
+        assert_eq!(
+            std::fs::read_to_string(request).unwrap(),
+            "4\n",
+            "T463: old request overwrote newer save"
+        );
     }
 
     #[test]
