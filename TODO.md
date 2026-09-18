@@ -4,7 +4,6 @@
 
 | id | status | severity | effort | description |
 | --- | --- | --- | --- | --- |
-| T486 | open | low | small | Align `host/src/input/wire.rs` render-event comments with the measured contract: `Rendered` currently says the tablet has put a frame on screen, while `DecoderSession::notifyRendered`, `latency.rs` and `docs/video-codecs.md` measure render-callback execution/ACK receipt without optical presentation proof. Describe `decode_us` as complete-frame arrival to callback execution, retain the distinct clock boundaries and do not imply independent percentiles can be subtracted for transport latency. Documentation-only correction; no artificial regression test. |
 
 ## Other items
 

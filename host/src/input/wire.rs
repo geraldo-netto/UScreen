@@ -62,15 +62,15 @@ pub enum InputEvent {
     /// tablet this daemon launched, not some other process on the loopback.
     #[serde(rename = "auth")]
     Auth { token: String },
-    /// The tablet has this frame on screen. Closes the latency measurement
-    /// loop — the host times encoded-packet readiness through acknowledgement
-    /// receipt on its own clock, without clock agreement between devices.
+    /// Android executed a render callback for this frame. The host times
+    /// encoded-packet readiness through ACK receipt on its own clock;
+    /// neither event proves optical presentation or requires clock agreement.
     #[serde(rename = "rendered")]
     Rendered {
         seq: u32,
-        /// Microseconds the tablet spent between receiving the frame and
-        /// putting it on screen. Subtracting it leaves host queueing, delivery,
-        /// and acknowledgement return time; it is not a pure transport measure.
+        /// Complete-frame arrival to render-callback execution in microseconds
+        /// on the tablet clock. Independent host/tablet percentiles cannot be
+        /// subtracted to obtain transport latency.
         #[serde(default)]
         decode_us: i64,
         /// Configuration receipt from the decoder which actually rendered this sequence.
