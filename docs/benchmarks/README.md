@@ -75,7 +75,9 @@ ordinary performance results and places any calculated observations under
 `invalid_data` for diagnosis. Older datasets remain readable with visibility
 explicitly `unverified`; they are not retroactively certified. Use a new directory
 for every retry and exclude invalid/unverified runs from controlled comparisons.
-The timeline plotter refuses invalid runs as well.
+The timeline plotter refuses invalid runs as well. Missing battery, CPU or latency
+traces are labelled “No observations”; available traces remain plotted. Its title
+uses recorded geometry and visibility status and does not invent encoder/FPS facts.
 
 ## What is recorded
 

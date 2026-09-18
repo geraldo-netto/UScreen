@@ -2,6 +2,7 @@
 """Plot the T382 raw timeline; requires matplotlib, no display interaction."""
 import argparse
 import json
+import math
 from pathlib import Path
 import re
 
@@ -13,7 +14,7 @@ def series(folder):
     samples = load_lines(folder, 'samples.jsonl')
     logs = load_lines(folder, 'host-windows.jsonl')
     battery = [row for row in samples if row.get('battery', {}).get('Charge counter')]
-    first_charge = int(battery[0]['battery']['Charge counter'])
+    first_charge = int(battery[0]['battery']['Charge counter']) if battery else 0
     charge = [((row['utc'] - meta['start_utc']) / 60,
                (int(row['battery']['Charge counter']) - first_charge) / 1000) for row in battery]
     cpu = [((after['utc'] - meta['start_utc']) / 60,
@@ -36,10 +37,38 @@ def shade(axes, phases, start):
                          color=color, alpha=alpha, linewidth=0)
 
 
+def missing(axis):
+    axis.text(0.5, 0.5, 'No observations', ha='center', va='center', transform=axis.transAxes)
+
+
+def draw_traces(axes, charge, cpu, latency):
+    if charge:
+        axes[0].step(*zip(*charge), where='post', color='#8f3c68', linewidth=1.5)
+    else:
+        missing(axes[0])
+    axes[0].set_ylabel('Battery charge change (mAh)')
+    if any(math.isfinite(row[1]) for row in cpu):
+        axes[1].plot(*zip(*cpu), color='#25643d', linewidth=1)
+    else:
+        missing(axes[1])
+    axes[1].set_ylabel('Host pipeline CPU (%)\n100% = one core')
+    if latency:
+        times, p50, p95 = zip(*latency)
+        axes[2].plot(times, p50, label='Window p50', linewidth=1)
+        axes[2].plot(times, p95, label='Window p95', linewidth=1)
+        axes[2].legend(loc='upper right')
+    else:
+        missing(axes[2])
+    axes[2].set_ylabel('Packet ready → ACK (ms)')
+    axes[2].set_xlabel('Elapsed minutes; blue = motion, gray = static; pale = warm-up')
+    for axis in axes:
+        axis.grid(axis='y', alpha=0.25)
+
+
 def plot(folder, output):
     metadata = json.loads((folder / 'metadata.json').read_text())
     phases = load_lines(folder, 'phases.jsonl')
-    _, _, reasons = visibility_integrity(folder, metadata, phases)
+    _, guarded, reasons = visibility_integrity(folder, metadata, phases)
     if reasons:
         raise ValueError('Cannot plot invalid baseline: ' + '; '.join(reasons))
     import matplotlib
@@ -48,22 +77,15 @@ def plot(folder, output):
 
     meta, charge, cpu, latency = series(folder)
     fig, axes = plt.subplots(3, 1, figsize=(11, 8), sharex=True, constrained_layout=True)
-    shade(axes, phases, meta['start_utc'])
-    axes[0].step(*zip(*charge), where='post', color='#8f3c68', linewidth=1.5)
-    axes[0].set_ylabel('Battery charge change (mAh)')
-    axes[1].plot(*zip(*cpu), color='#25643d', linewidth=1)
-    axes[1].set_ylabel('Host pipeline CPU (%)\n100% = one core')
-    times, p50, p95 = zip(*latency)
-    axes[2].plot(times, p50, label='Window p50', linewidth=1)
-    axes[2].plot(times, p95, label='Window p95', linewidth=1)
-    axes[2].set_ylabel('Packet ready → ACK (ms)')
-    axes[2].set_xlabel('Elapsed minutes; blue = motion, gray = static; pale = warm-up')
-    axes[2].legend(loc='upper right')
-    for axis in axes:
-        axis.grid(axis='y', alpha=0.25)
-    fig.suptitle(f'UScreen {meta["source_commit"][:7]} — one USB tablet, H.264 VAAPI 1280×800 / 60 fps target')
-    fig.savefig(output, dpi=160)
-    plt.close(fig)
+    try:
+        shade(axes, phases, meta['start_utc'])
+        draw_traces(axes, charge, cpu, latency)
+        visibility = 'verified' if guarded else 'unverified'
+        fig.suptitle(f'UScreen {meta["source_commit"][:7]} — {meta.get("geometry", "geometry unrecorded")} '
+                     f'— visibility {visibility}')
+        fig.savefig(output, dpi=160)
+    finally:
+        plt.close(fig)
 
 
 if __name__ == '__main__':
