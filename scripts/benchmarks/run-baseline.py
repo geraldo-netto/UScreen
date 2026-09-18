@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """T382: measure installed UScreen; never install, reconfigure or attach EVDI."""
 import argparse
+from contextlib import ExitStack
 import hashlib
 import json
 import os
@@ -57,10 +58,16 @@ def metadata(args, monitors):
 def start_logs(args, meta):
     host_pattern = re.compile(r'Latency |of which tablet|Encoder: \d|evdi-helper.*(grabs/s|cycle:|capture|Incomplete|Mode:)|FIFO_RESET|Client lagged|Capture manager failed')
     android_pattern = re.compile(r'on-device split:|Control statistics:|Codec configured|Decoder stuck|Decoder took|Output thread:')
-    return [filtered_logs(['journalctl', '--user', '-u', 'uscreen', '-f', '-n', '0', '-o', 'json'],
-                          args.output / 'host-windows.jsonl', host_pattern, True),
-            filtered_logs(['adb', '-s', args.serial, 'logcat', f'--pid={meta["android_pid"]}',
-                           '-v', 'epoch', '-T', '1'], args.output / 'android.log', android_pattern)]
+    logs = []
+    try:
+        logs.append(filtered_logs(['journalctl', '--user', '-u', 'uscreen', '-f', '-n', '0', '-o', 'json'],
+                                  args.output / 'host-windows.jsonl', host_pattern, True))
+        logs.append(filtered_logs(['adb', '-s', args.serial, 'logcat', f'--pid={meta["android_pid"]}',
+                                   '-v', 'epoch', '-T', '1'], args.output / 'android.log', android_pattern))
+    except BaseException:
+        retire_logs(logs)
+        raise
+    return logs
 
 
 def retire_logs(logs):
@@ -74,6 +81,29 @@ def retire_logs(logs):
         thread.join(timeout=3)
 
 
+def retire_sampler(sampler, thread, stop):
+    stop.set()
+    if thread.ident is not None:
+        thread.join(timeout=45)
+    if not thread.is_alive():
+        sampler.file.close()
+
+
+def run_workload(args, meta, state, thread, resources):
+    events = resources.enter_context((args.output / 'phases.jsonl').open('w'))
+
+    def event(value):
+        events.write(json.dumps(dict(utc=time.time(), monotonic=time.monotonic(), **value)) + '\n')
+        events.flush()
+        print(json.dumps(value), flush=True)
+
+    work = Workload(args.geometry, meta['plan'], state, event)
+    previous = signal.signal(signal.SIGTERM, lambda *_: work.root.destroy())
+    resources.callback(signal.signal, signal.SIGTERM, previous)
+    thread.start()
+    work.run()
+
+
 def main():
     args = arguments()
     monitors = ensure_target(args.geometry)
@@ -81,26 +111,16 @@ def main():
     meta = metadata(args, monitors)
     (args.output / 'metadata.json').write_text(json.dumps(meta, indent=2) + '\n')
     state, stop = {}, threading.Event()
-    logs = start_logs(args, meta)
-    extra = [(os.getpid(), 'benchmark-workload-and-observer')]
-    for name in ['cinnamon', 'Xorg']:
-        extra.extend((int(pid), name) for pid in command(['pgrep', '-x', name])[1].split())
-    sampler = Sampler(args.serial, args.output, state, stop, extra)
-    thread = threading.Thread(target=sampler.run)
-    with (args.output / 'phases.jsonl').open('w') as events:
-        def event(value):
-            events.write(json.dumps(dict(utc=time.time(), monotonic=time.monotonic(), **value)) + '\n')
-            events.flush()
-            print(json.dumps(value), flush=True)
-        work = Workload(args.geometry, meta['plan'], state, event)
-        signal.signal(signal.SIGTERM, lambda *_: work.root.destroy())
-        thread.start()
-        try:
-            work.run()
-        finally:
-            stop.set()
-            thread.join(timeout=45)
-            retire_logs(logs)
+    with ExitStack() as resources:
+        logs = start_logs(args, meta)
+        resources.callback(retire_logs, logs)
+        extra = [(os.getpid(), 'benchmark-workload-and-observer')]
+        for name in ['cinnamon', 'Xorg']:
+            extra.extend((int(pid), name) for pid in command(['pgrep', '-x', name])[1].split())
+        sampler = Sampler(args.serial, args.output, state, stop, extra)
+        thread = threading.Thread(target=sampler.run)
+        resources.callback(retire_sampler, sampler, thread, stop)
+        run_workload(args, meta, state, thread, resources)
 
 
 if __name__ == '__main__':

@@ -3,7 +3,9 @@ import importlib.util
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
+import tempfile
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'benchmarks'
 sys.path.insert(0, str(SCRIPTS))
@@ -13,6 +15,33 @@ SPEC.loader.exec_module(BASELINE)
 
 
 class BenchmarkTargetTests(unittest.TestCase):
+    def test_t441_partial_logger_startup_retires_previous_child(self):
+        args = SimpleNamespace(output=Path('/unused-t441'), serial='fixture')
+        first = ('first-collector', 'first-reader')
+        with patch.object(BASELINE, 'filtered_logs', side_effect=[first, RuntimeError('second logger failed')]), \
+             patch.object(BASELINE, 'retire_logs') as retire:
+            with self.assertRaisesRegex(RuntimeError, 'second logger failed'):
+                BASELINE.start_logs(args, {'android_pid': 123})
+            retire.assert_called_once_with([first])
+
+    def test_t441_startup_failure_retires_log_collectors_and_sampler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(output=Path(directory) / 'raw', geometry='1280x800+0+0', serial='fixture')
+            sampler = MagicMock()
+            logs = [('collector', 'reader')]
+            with patch.object(BASELINE, 'arguments', return_value=args), \
+                 patch.object(BASELINE, 'ensure_target', return_value='monitor'), \
+                 patch.object(BASELINE, 'metadata', return_value={'plan': []}), \
+                 patch.object(BASELINE, 'command', return_value=(0, '', '')), \
+                 patch.object(BASELINE, 'start_logs', return_value=logs), \
+                 patch.object(BASELINE, 'Sampler', return_value=sampler), \
+                 patch.object(BASELINE, 'Workload', side_effect=RuntimeError('unavailable display')), \
+                 patch.object(BASELINE, 'retire_logs') as retire:
+                with self.assertRaisesRegex(RuntimeError, 'unavailable display'):
+                    BASELINE.main()
+                retire.assert_called_once_with(logs)
+                sampler.file.close.assert_called_once()
+
     def test_t411_requires_complete_monitor_geometry(self):
         cases = [
             ('wrong height', '1280x800+3840+0', '1280/339x720/190+3840+0'),
