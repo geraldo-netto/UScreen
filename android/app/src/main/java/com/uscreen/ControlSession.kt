@@ -349,8 +349,8 @@ internal class ControlSession(
             // 60 fps, but free to get right).
             put("seq", seq.toLong() and 0xFFFFFFFFL)
             // Complete packet arrival → render callback execution on this device.
-            // The host subtracts independent medians as a rough residual estimate;
-            // it includes host queueing and the ACK path, not just wire transit.
+            // Reported separately from the host's packet-ready → ACK interval.
+            // Their independent medians do not establish a transport duration.
             if (decodeUs >= 0) put("decode_us", decodeUs)
         }
         sendWhenConnected(msg)
