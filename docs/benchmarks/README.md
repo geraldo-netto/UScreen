@@ -173,3 +173,9 @@ counts alone do not establish valid decoding. The permanent regression uses an
 unaltered corrupt HEVC fixture from the T422 stock-encoder experiments, with a
 clean access unit as its positive control. Historical measurements must be
 checked against their retained decode logs before making quality claims.
+`codec-match.py` also validates cached measurements (T462): the reference hash
+and decoded frame count must match the requested corpus, and `decode.log` must
+be present and empty. Missing diagnostics, decode errors or stale corpus results
+require a fresh measurement. Legacy warning-level logs containing warnings are
+also rejected conservatively; rerun with the current strict decoder to establish
+whether the input is clean. Verified existing caches remain reusable.

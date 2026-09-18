@@ -19,6 +19,17 @@ def acceptable(row, reference, tolerance):
     return True
 
 
+def validate_measurement(row, result, meta, scene):
+    # T462: legacy cached encoder success does not establish clean decoding.
+    diagnostics = result.with_name('decode.log')
+    clean_decode = diagnostics.is_file() and not diagnostics.read_text().strip()
+    matching_source = row.get('reference_sha256') == scene['sha256']
+    complete_decode = row.get('decoded_frames') == meta['frames']
+    if not (clean_decode and matching_source and complete_decode):
+        raise ValueError(f'Unverified codec cache {result}; run a fresh measurement '
+                         'with matching corpus metadata and retain decode.log')
+
+
 def measure(args, meta, scene, encoder, quantizer):
     name = f'{scene["scene"]}-{encoder}-q{quantizer}'
     original = args.sweep / name / 'result.json'
@@ -28,6 +39,7 @@ def measure(args, meta, scene, encoder, quantizer):
     row = json.loads(result.read_text())
     if row['returncode'] != 0:
         raise RuntimeError(f'encoder failed: {result}')
+    validate_measurement(row, result, meta, scene)
     return row, str(result)
 
 
