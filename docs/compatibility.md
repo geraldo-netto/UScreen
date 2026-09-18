@@ -61,13 +61,15 @@ The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/b
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).
 - The optional in-process build supports libx264/NVENC and explicitly rejects
   VAAPI configurations. Use the default FFmpeg subprocess build for VAAPI.
-- **T318:** stylus hover/button transitions need correction.
-- **T330:** a busy enumerated EVDI card can block a slot despite another free card.
 - **T332:** accepted dimensions/FPS can exceed the EDID pixel-clock limit;
   3840×2160 at 90 fps is one example. Lowering FPS can produce a valid mode.
 
 Up to four slots can be configured. Historical multi-tablet validation used
-one physical tablet plus a simulated client, not four physical displays.
+one physical tablet plus a simulated client. Automated tests cover busy-card
+fallback, independent slot ownership and one/two/four simulated tablets; these
+do not establish compatibility with four physical displays. Stylus tilt units
+and hover/button transitions have permanent regression coverage, while
+physical stylus behavior still depends on the device and desktop mapping.
 
 ## Not supported
 

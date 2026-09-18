@@ -45,8 +45,9 @@ adbd to USB mode.
 **Does UScreen support Samsung S Pen pressure and tilt?**
 Yes: pressure, tilt, the eraser end and the stylus button are all forwarded
 to Linux as a real graphics-tablet device, so Krita, GIMP, Blender and the
-rest see it as a tablet. Tilt-axis scaling and hover/button state have known
-limitations (T287/T318); consult the linked [compatibility guide](compatibility.md).
+rest see it as a tablet. Angular tilt units and hover/button state across tip
+lift have automated regression coverage; physical-device reports remain
+important. Consult the [compatibility guide](compatibility.md).
 
 **Does UScreen extend the desktop or only mirror the screen?**
 It extends. There is also a "graphics tablet" mode in which nothing is
@@ -96,8 +97,9 @@ see [measurement boundaries](benchmarks.md#how-latency-is-measured).
 
 **Can I use two tablets?**
 The configuration supports 1–4 slots. Historical validation used one real
-tablet plus a simulated client; card allocation still has a known limitation
-(T330). Reports with multiple physical tablets are welcome.
+tablet plus a simulated client. The current allocator leases a free EVDI card
+and skips busy cards; automated tests cover independent slots and fallback.
+Reports with multiple physical tablets are welcome.
 
 **How do I uninstall UScreen completely?**
 Instructions for package and source installs, custom paths and residual

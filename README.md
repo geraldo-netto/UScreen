@@ -37,7 +37,7 @@ before setup. Packaging recipes target several Linux distribution families.
 - **Pen that works like a tablet.** Pressure, tilt, eraser and button arrive
   in Linux as a graphics-tablet device — Krita, GIMP and Blender see a tablet.
   Graphics-tablet mode uses the pen on a host screen without a streamed-video
-  path. Input latency and the current T247 overlay issue remain.
+  path. Input latency still depends on the device and desktop.
 - **Historical upstream measurements.** About 22 ms median from encoded packet
   readiness to render acknowledgement over USB with
   H.264, 15–18 ms with HEVC, on the reference hardware — the
@@ -149,8 +149,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 
 - **Graphics tablet mode** — flip *Graphics tablet* on the tablet: nothing is
   streamed and the pen drives your own screen. Input latency remains. Switch back
-  the same way. A current greeting mismatch can leave its reconnect overlay
-  visible (T247); see [known limitations](docs/compatibility.md#current-fork-limitations).
+  the same way. The connection overlay clears after the authenticated control
+  greeting; it returns when the control connection is lost.
 - **Tablet display** — brightness defaults to 50%, and the app requests 60 Hz.
   Adjust either in the gear menu; preferences persist and affect UScreen only.
   Other apps retain normal system settings. Refresh selection uses the closest
@@ -171,8 +171,9 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   historical ~6 ms lower packet-to-ack median on the reference tablet, at the
   cost of softer text; other devices differ.
 - **Several tablets** — `max_tablets` supports 1–4 slots. Historical testing
-  used one physical tablet plus a simulated client; card-allocation limitations
-  remain (T330).
+  used one physical tablet plus a simulated client. Automated tests cover
+  independent slots and busy-card fallback; multiple physical tablets still
+  need validation.
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
   default; turn off what you do not use (on Cinnamon/GNOME under X11 a
@@ -181,8 +182,8 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   over, remembers the address and reconnects to it by itself whenever the
   cable is out. `uscreen wifi --off` forgets the address and disconnects; it
   does not disable the tablet's network adb listener. See [SECURITY.md](SECURITY.md).
-  USB preference works for recognized transports; mDNS wireless identifiers
-  have a known classification bug (T278). See [benchmarks](docs/benchmarks.md)
+  USB preference also recognizes network ADB endpoints and mDNS wireless
+  identifiers. See [benchmarks](docs/benchmarks.md)
   for historical Wi-Fi results.
 - **Battery saver** — an opt-in Android setting that preserves brightness,
   refresh rate and stream settings. It releases unnecessary CPU/Wi-Fi locks on
@@ -202,8 +203,9 @@ is an optional fallback.
 display settings. Graphics-tablet mode is a separate, non-display mode.
 
 **Does S Pen pressure and tilt work?** Yes, plus eraser and button, as a
-proper tablet device. Tilt scaling and hover/button transitions have known
-limitations (T287/T318); see [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
+proper tablet device. Automated coverage checks angular tilt units and
+hover/button state across tip lift. Physical behavior depends on the tablet,
+application and desktop mapping; see [compatibility](docs/compatibility.md).
 
 **Does it work on Bazzite / KDE Wayland?** That is the historical upstream reference setup.
 X11 desktops get automatic input mapping with `xinput` and `xrandr`; place
