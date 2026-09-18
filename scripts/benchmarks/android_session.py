@@ -8,7 +8,7 @@ from observe import process_stat
 
 QUERY = ('p=$(pidof com.uscreen); test -n "$p" || exit 1; '
          'printf "USCREEN_STAT "; run-as com.uscreen cat /proc/$p/stat || exit 1; '
-         'dumpsys window windows; dumpsys window policy')
+         'dumpsys window displays; dumpsys window policy')
 
 
 def parse_snapshot(output):

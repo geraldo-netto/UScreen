@@ -169,6 +169,27 @@ STAT = '123 (app) S 1 1 0 0 -1 0 0 0 0 0 200 50 0 0 20 0 3 0 900 1000000 12'
 FOREGROUND = 'USCREEN_STAT ' + STAT + '\nmCurrentFocus=Window{abc u0 com.uscreen/com.uscreen.MainActivity}\nmShowingLockscreen=false\n'
 
 
+class AndroidFocusSectionTests(unittest.TestCase):
+    def test_t488_query_reads_focus_from_android_display_dump(self):
+        # Android 16 device evidence: `windows` enumerates app windows but
+        # `displays` owns mCurrentFocus. A visible window alone is insufficient.
+        windows = 'Window #10 Window{abc u0 com.uscreen/com.uscreen.MainActivity}\n'
+        displays = 'mCurrentFocus=Window{abc u0 com.uscreen/com.uscreen.MainActivity}\n'
+
+        def shell(arguments, **kwargs):
+            query = arguments[-1]
+            sections = {'dumpsys window windows': windows,
+                        'dumpsys window displays': displays,
+                        'dumpsys window policy': 'mShowingLockscreen=false\n'}
+            output = 'USCREEN_STAT ' + STAT + '\n'
+            output += ''.join(text for command, text in sections.items() if command in query)
+            return SimpleNamespace(returncode=0, stdout=output)
+
+        with patch('android_session.subprocess.run', side_effect=shell):
+            result = snapshot('tablet')
+        self.assertTrue(result['foreground'])
+
+
 class TabletSessionTests(unittest.TestCase):
     def test_t470_fake_adb_accepts_foreground_and_uses_bounded_read_only_query(self):
         def run(args, **kwargs):
