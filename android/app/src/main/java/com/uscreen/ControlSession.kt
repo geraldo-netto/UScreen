@@ -107,8 +107,8 @@ internal class ControlSession(
         override fun onMessage(webSocket: WebSocket, text: String) {
             synchronized(lock) {
                 if (isStale(webSocket)) return
-                // The host greets with its mode; everything else it might say is
-                // ignored, this channel is otherwise ours to talk on.
+                // The host reports live stream/input metadata, requests decoder
+                // capabilities and can reject unsupported settings changes.
                 try {
                     val o = JSONObject(text)
                     if (o.optString("status") == "settings_rejected") {

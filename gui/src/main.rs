@@ -887,9 +887,8 @@ impl App {
 
     fn setting_frame_rate(&mut self, ui: &mut egui::Ui) {
         ui.label("Frame rate");
-        // 120 is not offered: EDID 1.4 stores the pixel clock in 16
-        // bits and 2960x1848@120 overflows it, so the virtual mode
-        // is capped at 90 Hz.
+        // UScreen supports at most 90 FPS. Validation also checks the
+        // selected resolution/FPS against the generated EDID clock limit.
         egui::ComboBox::from_id_salt("fps")
             .selected_text(format!("{} fps", self.cfg.fps))
             .show_ui(ui, |ui| {

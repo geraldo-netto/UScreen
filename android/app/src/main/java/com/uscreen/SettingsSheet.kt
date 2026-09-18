@@ -176,8 +176,8 @@ private fun StreamControls(bitrateMbps: Float, fpsChoice: Int, onBitrateChange: 
     Text("Frame rate", fontSize = 14.sp, color = Color(0xFFB0B0C0))
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        // 120 is not offered: the generated EDID caps the virtual mode
-        // at 90 Hz, so anything above would be duplicate frames.
+        // UScreen supports at most 90 FPS. The host also validates the
+        // selected resolution/FPS against the generated EDID clock limit.
         listOf(30, 60, 90).forEach { f ->
             FilterChip(
                 selected = fpsChoice == f,
