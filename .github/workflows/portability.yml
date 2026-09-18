@@ -2,9 +2,7 @@ name: Linux package portability
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
