@@ -108,7 +108,8 @@ establish unique memory usage nor demonstrate a leak.
   initial comparison workload.
 - **T259:** roughly 29 Mb/s motion output exceeds the configured 20 Mb/s value,
   supplying physical-driver evidence for the already documented CQP ceiling
-  limitation. A bounded-versus-explicitly-uncapped policy is still undecided.
+  limitation. The policy was undecided during this baseline; T259 subsequently
+  exposed the existing uncapped policy in settings without changing rate control.
 - **T382:** one tablet, partial-path log windows and net battery counters do not
   complete the end-to-end, input-latency or multi-device measurement matrix.
 

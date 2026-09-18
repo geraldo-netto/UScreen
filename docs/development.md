@@ -271,9 +271,14 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
   resolution and content. No general laptop FPS limit has been measured here.
 
 `quality` selects NVENC CQ, VAAPI QP or x264 CRF. NVENC VBR and x264 VBV
-use the bitrate limit; **VAAPI CQP does not enforce it**. The desired bounded
-VAAPI policy/UI remains unresolved (T259). Do not interpret the configured
-bitrate as measured throughput. Static scenes may use much less bandwidth.
+use the bitrate limit; **VAAPI CQP is intentionally uncapped**. For explicit
+VAAPI selections the Linux bitrate control is disabled, with its saved value
+retained for other encoders. Adjust Quality to change VAAPI quality and bandwidth.
+Auto keeps the control editable and warns that VAAPI may ignore it. Android
+shows the same encoder limitation; its saved bitrate remains available when the
+host selects another backend. This policy does not change the encoder options
+or add a bounded VAAPI mode. Do not interpret the configured bitrate as measured
+throughput. Static scenes may use much less bandwidth.
 
 Automatic selection and its measurement limits are described in
 [video codecs](video-codecs.md#automatic-selection).
@@ -326,7 +331,7 @@ without maintaining or requiring FFmpeg patches.
 nominal GOP, maximum-rate value and buffer sizing. NVENC uses a one-frame buffer;
 libx264 uses two frames; both keep the existing 200-kbit minimum and integer
 kilobit rounding. VAAPI retains CQP and its existing maxrate argument, which does
-not establish a rate ceiling (T259).
+not establish a rate ceiling.
 
 The CLI adapter adds command syntax, periodic wall-clock IDRs, explicit
 `scenecut=0` for x264, VAAPI upload filters and optional HEVC depth conversion.

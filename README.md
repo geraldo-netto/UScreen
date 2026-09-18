@@ -169,6 +169,11 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   selections stay unchanged; see [codec measurements](docs/benchmarks/2026-09-18-codecs.md).
   `ten_bit` requests HEVC Main10 on the FFmpeg path; capture is still 8-bit,
   and this does not enable HDR or guarantee less banding on every scene.
+- **Bitrate and quality** — VAAPI uses uncapped constant quality (CQP). Its
+  bitrate control is disabled on Linux; adjust **Quality** instead. The saved
+  bitrate remains available for other encoders. **Auto** may select VAAPI and
+  therefore may not enforce the configured bitrate. Android explains this
+  limitation in its settings too; the value is not measured throughput.
 - **Stream scale** — `stream_scale = 2` sends a quarter of the pixels for a
   historical ~6 ms lower packet-to-ack median on the reference tablet, at the
   cost of softer text; other devices differ.

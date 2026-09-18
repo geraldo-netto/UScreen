@@ -25,7 +25,8 @@ VP9 uses 8-bit 4:2:0 profile 0. The libvpx profile selects realtime operation,
 CPU-used 8, row threading, no lookahead and no alternate-reference generation.
 Its CRF quality target is combined with the configured bitrate target/maxrate;
 quality numbers are not visually equivalent across codecs. VAAPI uses CQP and
-retains the known uncapped-bitrate limitation described in T259.
+is intentionally uncapped; the Linux UI disables its bitrate control and
+retains that preference for other encoders. See [rate-control policy](development.md#encoder-tuning).
 
 AV1 uses Main profile, 8-bit 4:2:0. The libaom profile selects realtime usage,
 CPU-used 8, row threading, zero lookahead and no alternate-reference generation;

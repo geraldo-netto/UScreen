@@ -166,8 +166,8 @@ private fun StreamControls(bitrateMbps: Float, fpsChoice: Int, onBitrateChange: 
         colors = SliderDefaults.colors(thumbColor = Accent, activeTrackColor = Accent)
     )
     Text(
-        "20 Mbps is plenty for text and UI. Going higher does not look sharper once " +
-            "the USB link is saturated — it only adds delay.",
+        "This setting depends on the host encoder. VAAPI constant quality (CQP) has no bitrate cap; " +
+            "adjust Quality in the Linux app instead. Auto may select VAAPI.",
         fontSize = 11.sp,
         color = Color(0xFF6A6A7E)
     )

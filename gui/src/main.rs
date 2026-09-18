@@ -864,14 +864,23 @@ impl App {
     }
 
     fn setting_bitrate(&mut self, ui: &mut egui::Ui) {
-        ui.label("Bitrate ceiling");
+        let uncapped = uscreen_config::encoding::find(&self.cfg.encoder)
+            .is_some_and(|encoder| encoder.backend == uscreen_config::encoding::Backend::Vaapi);
+        let explanation = if uncapped {
+            "Unused with VAAPI: constant quality (CQP) has no bitrate cap. Adjust Quality above."
+        } else if self.cfg.encoder == "auto" {
+            "Auto may select VAAPI, which ignores this limit. Other encoders use their own rate control."
+        } else {
+            "Encoder rate-control setting; actual output depends on quality and content."
+        };
+        ui.label(if uncapped {
+            "Bitrate (unused)"
+        } else {
+            "Bitrate"
+        });
         ui.vertical(|ui| {
-            bitrate_slider(ui, &mut self.cfg.bitrate);
-            ui.label(
-                egui::RichText::new("Only a cap for bursts — a desktop streams well below it")
-                    .weak()
-                    .size(11.0),
-            );
+            ui.add_enabled_ui(!uncapped, |ui| bitrate_slider(ui, &mut self.cfg.bitrate));
+            ui.label(egui::RichText::new(explanation).weak().size(11.0));
         });
         ui.end_row();
     }
@@ -2514,6 +2523,70 @@ esac"#
         }
         let output = daemon_command(&bin, "stop", false).output().unwrap();
         assert_eq!(output.stdout, b"direct\n");
+    }
+
+    fn bitrate_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| app.setting_bitrate(ui))
+    }
+
+    fn drag_bitrate_value(app: &mut App, ctx: &egui::Context) {
+        bitrate_test_frame(app, ctx, Vec::new());
+        let text = bitrate_test_frame(app, ctx, Vec::new());
+        let position = text
+            .iter()
+            .find(|(s, _)| s == "20.0 Mbps")
+            .unwrap_or_else(|| panic!("T259: missing bitrate value: {text:?}"))
+            .1
+            .center();
+        let end = position + egui::vec2(40.0, 0.0);
+        let button = |pos, pressed| egui::Event::PointerButton {
+            pos,
+            pressed,
+            button: egui::PointerButton::Primary,
+            modifiers: egui::Modifiers::NONE,
+        };
+        bitrate_test_frame(
+            app,
+            ctx,
+            vec![egui::Event::PointerMoved(position), button(position, true)],
+        );
+        bitrate_test_frame(app, ctx, vec![egui::Event::PointerMoved(end)]);
+        bitrate_test_frame(app, ctx, vec![button(end, false)]);
+    }
+
+    #[test]
+    fn t259_vaapi_bitrate_is_dormant_and_other_backends_restore_editing() {
+        let mut app = settings_test_app(Tab::Video);
+        for name in [
+            "h264_vaapi",
+            "h264_vaapi_baseline",
+            "hevc_vaapi",
+            "vp9_vaapi",
+            "av1_vaapi",
+            "vaapih264enc",
+        ] {
+            app.cfg.encoder = name.into();
+            app.cfg.bitrate = 20_000;
+            drag_bitrate_value(&mut app, &egui::Context::default());
+            assert_eq!(
+                app.cfg.bitrate, 20_000,
+                "T259: {name} control must be disabled"
+            );
+        }
+        for name in ["libx264", "h264_nvenc", "libvpx-vp9", "libaom-av1", "auto"] {
+            app.cfg.encoder = name.into();
+            assert_eq!(
+                app.cfg.bitrate, 20_000,
+                "T259: preserve preference across encoder changes"
+            );
+            drag_bitrate_value(&mut app, &egui::Context::default());
+            assert_ne!(app.cfg.bitrate, 20_000, "T259: {name} must allow edits");
+            app.cfg.bitrate = 20_000;
+        }
     }
 
     #[test]

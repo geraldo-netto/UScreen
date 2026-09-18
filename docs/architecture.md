@@ -35,7 +35,7 @@ from the existing implementation.
    then validates startup render acknowledgements; explicit choices remain.
    VP9/AV1 framing, profiles and peer checks are described in [video codecs](video-codecs.md).
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
-   CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
+   CRF with VBV limits. VAAPI CQP is intentionally uncapped; the Linux bitrate control is disabled for explicit VAAPI choices.
    VAAPI requests async depth one only when stock encoder help advertises it.
    The explicit `h264_vaapi_baseline` choice maps to stock H.264 VAAPI with
    Constrained Baseline/CAVLC; existing selections retain their profile policy.
