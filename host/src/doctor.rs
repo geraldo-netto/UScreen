@@ -10,8 +10,10 @@
 
 use crate::config::{self, FileConfig, MAX_BITRATE_KBPS, MAX_FPS, MIN_BITRATE_KBPS, MIN_FPS};
 use crate::runtime::fifo_path_for;
+mod codecs;
 use crate::vdisplay;
 use anyhow::Result;
+use codecs::{report_codec, report_live_encoder};
 use std::path::Path;
 use uscreen_config::adb::{transport_of, Transport};
 use uscreen_config::commands::AsyncCommandExt;
@@ -223,11 +225,18 @@ fn report_encoder_availability(r: &mut Report, cfg: &FileConfig, list: &str) {
         list.lines()
             .any(|l| l.split_whitespace().any(|t| t == name))
     };
+    if cfg.encoder == "auto" {
+        report_auto_encoder(r, has("libx264"));
+        return;
+    }
     if has(config::ffmpeg_encoder_name(&cfg.encoder)) {
         r.line(
             Level::Ok,
             "configured encoder",
-            &format!("{} available", cfg.encoder),
+            &format!(
+                "{} available in FFmpeg inventory; execution not verified",
+                cfg.encoder
+            ),
         );
     } else {
         r.line(
@@ -241,6 +250,16 @@ fn report_encoder_availability(r: &mut Report, cfg: &FileConfig, list: &str) {
             .collect();
         r.hint(&format!("available instead: {}", alternatives.join(", ")));
     }
+}
+
+fn report_auto_encoder(r: &mut Report, fallback: bool) {
+    let level = if fallback { Level::Ok } else { Level::Fail };
+    let detail = if fallback {
+        "auto policy; libx264 fallback listed, candidates require runtime probes"
+    } else {
+        "auto policy requires libx264 fallback, which is not listed in FFmpeg"
+    };
+    r.line(level, "configured encoder", detail);
 }
 
 /// Check daemon ownership and per-slot process counts. Each tablet slot has its
@@ -490,12 +509,16 @@ async fn check_tablet_session(
             "com.uscreen/.CodecReportReceiver",
             "-a",
             "com.uscreen.DECODER_CAPABILITIES",
+            "--ei",
+            "uscreen_codecs_version",
+            "2",
         ])
         .output_bounded()
         .await
         .ok()
         .filter(|output| output.status.success())
         .map(|output| String::from_utf8_lossy(&output.stdout).into_owned());
+    report_live_encoder(r, cfg, session.instance).await;
     report_codec(r, cfg, codec_output.as_deref());
 
     let mut pm_args: Vec<&str> = vec!["-s", &session.serial];
@@ -511,77 +534,6 @@ async fn check_tablet_session(
                 session.serial
             ));
         }
-    }
-}
-
-fn report_codec(r: &mut Report, cfg: &FileConfig, out: Option<&str>) {
-    let report = codec_inventory_text(out);
-    let entries: Vec<_> = report.unwrap_or("").split(',').collect();
-    let valid = entries.iter().all(|entry| {
-        matches!(
-            *entry,
-            "hw8" | "hw10" | "sw8" | "sw10" | "unknown8" | "unknown10"
-        )
-    });
-    let hevc = cfg.encoder.contains("hevc");
-    if report == Some("none") {
-        r.line(
-            if hevc { Level::Fail } else { Level::Ok },
-            "tablet codec",
-            "no HEVC decoder reported by MediaCodecList",
-        );
-    } else if !valid {
-        r.line(
-            Level::Warn,
-            "tablet codec",
-            "HEVC capability unknown (no valid decoder inventory)",
-        );
-        r.hint("install the current tablet APK, then rerun doctor; host encoder selection does not prove tablet support");
-    } else if hevc && cfg.ten_bit && !entries.iter().any(|entry| entry.ends_with("10")) {
-        r.line(
-            Level::Fail,
-            "tablet codec",
-            "HEVC Main10 not reported; 10-bit host stream is unsupported by this inventory",
-        );
-    } else {
-        report_usable_decoders(r, cfg, &entries);
-    }
-}
-
-fn codec_inventory_text(out: Option<&str>) -> Option<&str> {
-    out.and_then(|text| text.split_once("USCREEN_CODECS_V1:").map(|(_, tail)| tail))
-        .map(|tail| tail.split(['"', '\r', '\n']).next().unwrap_or("").trim())
-}
-
-fn decoder_matches_stream(entry: &str, cfg: &FileConfig) -> bool {
-    !cfg.encoder.contains("hevc") || !cfg.ten_bit || entry.ends_with("10")
-}
-
-fn report_usable_decoders(r: &mut Report, cfg: &FileConfig, entries: &[&str]) {
-    let usable: Vec<_> = entries
-        .iter()
-        .copied()
-        .filter(|entry| decoder_matches_stream(entry, cfg))
-        .collect();
-    if usable.iter().any(|entry| entry.starts_with("hw")) {
-        let detail = if usable.contains(&"hw10") {
-            "hardware HEVC Main10 reported by Android"
-        } else {
-            "hardware HEVC reported by Android (8-bit)"
-        };
-        r.line(Level::Ok, "tablet codec", detail);
-    } else if usable.iter().any(|entry| entry.starts_with("unknown")) {
-        r.line(
-            Level::Warn,
-            "tablet codec",
-            "HEVC decoder reported; acceleration unknown",
-        );
-    } else {
-        r.line(
-            Level::Warn,
-            "tablet codec",
-            "HEVC software decoder only; real-time performance is not guaranteed",
-        );
     }
 }
 
@@ -1754,6 +1706,62 @@ mod tests {
             "diagnostics must retain raw values before runtime clamps"
         );
         assert_eq!(report.failures, 0);
+    }
+
+    #[test]
+    fn t438_codec_report_follows_requested_family_and_legacy_scope() {
+        for (encoder, name, inventory, failures, warning) in [
+            (
+                "libvpx-vp9",
+                "VP9",
+                "USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=none;av1=sw",
+                1,
+                false,
+            ),
+            (
+                "libaom-av1",
+                "AV1",
+                "USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw",
+                0,
+                true,
+            ),
+            ("libvpx-vp9", "VP9", "USCREEN_CODECS_V1:hw10", 0, true),
+        ] {
+            let cfg = FileConfig {
+                encoder: encoder.into(),
+                ..Default::default()
+            };
+            let mut report = Report::new();
+            report_codec(&mut report, &cfg, Some(inventory));
+            let text = report.messages.borrow().join("\n");
+            assert!(text.contains(name), "T438: wrong codec: {text}");
+            assert!(
+                !text.contains("HEVC"),
+                "T438: unrelated legacy HEVC claimed: {text}"
+            );
+            assert_eq!(report.failures, failures);
+            assert_eq!(report.warnings > 0, warning);
+            assert!(text.contains("not a decode test"));
+        }
+    }
+
+    #[test]
+    fn t438_auto_is_a_policy_not_a_missing_ffmpeg_encoder() {
+        let cfg = FileConfig {
+            encoder: "auto".into(),
+            ..Default::default()
+        };
+        let mut report = Report::new();
+        report_encoder_availability(
+            &mut report,
+            &cfg,
+            " V..... libx264 H.264\n V..... libaom-av1 AV1",
+        );
+        assert_eq!(
+            report.failures, 0,
+            "T438: auto was treated as a literal encoder"
+        );
+        assert!(report.messages.borrow().join("\n").contains("libx264"));
     }
 
     #[test]

@@ -170,3 +170,29 @@ they do not establish that a physical device implements an AV1 decoder.
 The earlier [codec comparison](benchmarks/2026-09-18-codecs.md) remains historical
 encoder/decoder evidence. Production VP9/AV1 support does not establish a new UI
 latency, battery or quality improvement without matched live measurements.
+
+## Doctor inventory
+
+`uscreen doctor` treats `auto` as a selection policy and checks the required
+`libx264` fallback separately from encoder wrappers. It reports the configured
+preference alongside an encoder observed on the selected session's owned FIFO,
+when a single recognized FFmpeg child can be identified. An absent, ambiguous
+or in-process encoder remains unknown; diagnostics do not claim that a running
+process has produced successful decoded frames. Doctor never claims the tablet's
+control socket to inspect the selection.
+
+The shell-protected Android inventory receiver accepts the integer extra
+`uscreen_codecs_version=2`. Its response is a bounded-family text inventory:
+
+```text
+USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw
+```
+
+Each field can contain comma-separated implementations. `none` means none was
+listed, `unknown` means the query failed, and `unclassified` means a decoder was
+listed without a known acceleration class. HEVC retains its `hw8`/`hw10`, `sw8`/
+`sw10`, `unknown8`/`unknown10` profile entries. This is general inventory, not an
+exact-resolution decoder trial. Unsupported optional codecs do not fail automatic
+mode; missing required H.264 support does. Without the extra, the receiver keeps
+its HEVC-only `USCREEN_CODECS_V1` response for older hosts. New hosts never use a
+legacy HEVC result to infer VP9, AV1 or H.264 support.

@@ -40,6 +40,15 @@ class CodecReportTest {
         assertEquals("USCREEN_CODECS_V1:unknown", decoderReport { throw IllegalStateException("unavailable") })
     }
 
+    @Test fun t438_version_two_inventory_distinguishes_codec_families() {
+        val hardware = codec("vendor.hevc", false, true)
+        val report = decoderReport(version = 2) { arrayOf(hardware) }
+        val acceleration = if (Build.VERSION.SDK_INT >= 29) "hw10" else "unknown10"
+        assertEquals("USCREEN_CODECS_V2:h264=none;hevc=$acceleration;vp9=none;av1=none", report)
+        assertEquals("USCREEN_CODECS_V2:h264=unknown;hevc=unknown;vp9=unknown;av1=unknown",
+            decoderReport(version = 2) { throw IllegalStateException("unavailable") })
+    }
+
     @Test fun t098_inventoryReceiverRequiresShellDumpPermission() {
         val context = RuntimeEnvironment.getApplication()
         val receiver = context.packageManager.getReceiverInfo(ComponentName(context, CodecReportReceiver::class.java), 0)

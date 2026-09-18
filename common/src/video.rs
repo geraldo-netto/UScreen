@@ -8,6 +8,16 @@ pub enum Codec {
 }
 
 impl Codec {
+    pub const ALL: [Self; 4] = [Self::H264, Self::Hevc, Self::Vp9, Self::Av1];
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::H264 => "H.264",
+            Self::Hevc => "HEVC",
+            Self::Vp9 => "VP9",
+            Self::Av1 => "AV1",
+        }
+    }
+
     pub fn from_encoder(name: &str) -> Self {
         match name {
             "libaom-av1" | "av1_nvenc" | "av1_vaapi" => Self::Av1,
