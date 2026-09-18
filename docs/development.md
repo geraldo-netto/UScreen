@@ -231,8 +231,14 @@ toggle combinations; saving or starting with an incompatible file or `--pen-only
 fails with an explanation before restarting or allocating display resources.
 Existing invalid files remain editable: enable Pen or disable graphics-tablet mode.
 
-Independent width/height/FPS limits do not guarantee a valid EDID combination
-(T332). The GUI offers all registered encoder/profile choices, including HEVC VAAPI;
+Resolution and FPS are validated together against the generated EDID's
+655.35 MHz pixel-clock limit. Invalid combinations, such as 3840×2160 at 90 FPS,
+are rejected before saving, starting capture or replacing a working stream.
+The GUI explains invalid drafts before Apply; rejected Android requests restore
+the host's confirmed FPS/bitrate and show the reason. Lower the resolution or FPS
+and apply again. This checks representable timings, not compositor compatibility
+(the low-clock compatibility question remains T321).
+The GUI offers all registered encoder/profile choices, including HEVC VAAPI;
 10-bit controls are enabled for HEVC. The render-node path remains a config setting.
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only
 in the app and do not set the host stream rate or other apps' display settings.

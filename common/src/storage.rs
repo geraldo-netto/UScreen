@@ -1,5 +1,5 @@
 //! Filesystem adapter for transactional configuration persistence.
-use crate::model::{slot_ports, FileConfig};
+use crate::model::FileConfig;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
@@ -150,8 +150,7 @@ impl FileConfig {
     }
 
     fn write_at(&self, path: &Path) -> Result<()> {
-        self.validate_input_mode()?;
-        slot_ports(self.video_port, self.input_port, self.max_tablets)?;
+        self.validate()?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -192,6 +191,32 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t332_invalid_joint_mode_save_preserves_last_valid_configuration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        let store = ConfigStore::new(path.clone());
+        let saved = store
+            .update(|cfg| {
+                cfg.width = 3840;
+                cfg.height = 2160;
+                cfg.fps = 60;
+                Ok(())
+            })
+            .unwrap();
+        let previous = std::fs::read(&path).unwrap();
+        let invalid = FileConfig {
+            fps: 90,
+            ..saved.clone()
+        };
+        assert!(
+            store.save_edits(&invalid, &saved).is_err(),
+            "T332: invalid clock was saved"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), previous);
+        assert_eq!(store.load(), saved);
+    }
 
     #[test]
     fn t288_invalid_pen_mode_save_preserves_previous_file() {

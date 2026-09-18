@@ -34,6 +34,31 @@ class DecoderNegotiationTest {
         override fun setTouchEnabled(enabled: Boolean) {}
         override fun setPenEnabled(enabled: Boolean) {}
     }
+    @Test fun t332_lateRejectionCannotReplaceANewerRequest() {
+        lateinit var socket: Socket
+        val control = ControlSession(Any(), Input, WebSocket.Factory { _, listener ->
+            Socket(listener).also { socket = it }
+        })
+        var rejected = 0
+        var reportedFps = 0
+        control.onSettingsRejected = { rejected++ }
+        control.onFpsKnown = { reportedFps = it }
+        try {
+            control.connect(); socket.open()
+            control.sendConfig(25000, 90)
+            control.sendConfig(15000, 30)
+            val reply = JSONObject(javaClass.getResource("/settings-rejected.json")!!.readText())
+                .put("requested", JSONObject().put("bitrate", 25000).put("fps", 90))
+            socket.listener.onMessage(socket, reply.toString())
+            assertEquals("T332: old rejection replaced newer edit", 0, rejected)
+            assertEquals(0, reportedFps)
+            control.disconnect(); control.connect(); socket.open()
+            val resent = JSONObject(socket.sent.last())
+            assertEquals(15000, resent.getInt("bitrate"))
+            assertEquals(30, resent.getInt("fps"))
+        } finally { control.disconnect() }
+    }
+
     @Test fun t276_sharedScaledGreetingUsesEncodedDimensionsForCapabilities() {
         lateinit var socket: Socket
         val requested = java.util.concurrent.LinkedBlockingQueue<Triple<Int, Int, Int>>()

@@ -600,16 +600,27 @@ impl App {
         }
     }
 
+    fn show_validation_error(&self, ui: &mut egui::Ui) -> bool {
+        match self.cfg.validate() {
+            Ok(()) => true,
+            Err(error) => {
+                ui.label(egui::RichText::new(error.to_string()).color(egui::Color32::LIGHT_RED));
+                false
+            }
+        }
+    }
+
     fn show_footer(&mut self, ctx: &egui::Context, status: &Status) {
         // Keep one shared action row below every tab, visible while settings scroll.
         egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
             ui.add_space(8.0);
             let dirty = self.cfg != self.saved_cfg;
+            let valid = self.show_validation_error(ui);
             ui.horizontal(|ui| {
                 let label =
                     settings::apply_label(status.daemon_running, &self.cfg, &self.saved_cfg);
                 if ui
-                    .add_enabled(dirty && !self.busy(), egui::Button::new(label))
+                    .add_enabled(dirty && valid && !self.busy(), egui::Button::new(label))
                     .clicked()
                 {
                     self.apply(status.daemon_running);
@@ -1542,6 +1553,26 @@ mod tests {
             collect_text_rects(&shape.shape, &mut text);
         }
         text
+    }
+
+    #[test]
+    fn t332_invalid_display_draft_explains_error_before_save() {
+        let mut app = settings_test_app(Tab::Video);
+        app.status.lock().unwrap().daemon_running = false;
+        app.cfg.width = 3840;
+        app.cfg.height = 2160;
+        app.cfg.fps = 90;
+        let ctx = egui::Context::default();
+        let text = window_test_frame(&mut app, &ctx, Vec::new());
+        assert!(
+            text.iter().any(|(text, _)| text.contains("655.35 MHz")),
+            "T332: {text:?}"
+        );
+        click_settings_text(&mut app, &ctx, "Save", window_test_frame);
+        assert!(
+            app.save.is_none(),
+            "T332: invalid draft must not start saving"
+        );
     }
 
     #[test]

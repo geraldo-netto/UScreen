@@ -32,18 +32,7 @@ pub fn make_edid_sized(
     width_mm: u32,
     height_mm: u32,
 ) -> Result<Vec<u8>> {
-    anyhow::ensure!(
-        (1..=4095).contains(&width) && (1..=4095).contains(&height),
-        "EDID active dimensions must fit 12 bits: {}x{}",
-        width,
-        height
-    );
-    anyhow::ensure!(
-        (uscreen_config::MIN_FPS..=uscreen_config::MAX_FPS).contains(&refresh),
-        "EDID refresh must be within {}..={} Hz",
-        uscreen_config::MIN_FPS,
-        uscreen_config::MAX_FPS
-    );
+    let pixel_clock_10khz = uscreen_config::display::pixel_clock_10khz(width, height, refresh)?;
     anyhow::ensure!(
         (1..=4095).contains(&width_mm) && (1..=4095).contains(&height_mm),
         "EDID physical dimensions must fit 12 bits and be positive"
@@ -86,22 +75,13 @@ pub fn make_edid_sized(
     // Custom fixed-porch timings; these do not implement the CVT-RB formulas.
     let h_active = width;
     let v_active = height;
-    let (h_front, h_sync, h_back) = (48u32, 32u32, 80u32);
+    let (h_front, h_sync, h_back) = uscreen_config::display::H_PORCHES;
     let h_blank = h_front + h_sync + h_back;
-    let (v_front, v_sync, v_back) = (3u32, 10u32, 25u32);
+    let (v_front, v_sync, v_back) = uscreen_config::display::V_PORCHES;
     let v_blank = v_front + v_sync + v_back;
 
     let h_total = h_active + h_blank;
     let v_total = v_active + v_blank;
-    let pixel_clock = (h_total as u64 * v_total as u64 * refresh as u64 + 5000) / 10000;
-    anyhow::ensure!(
-        pixel_clock > 0 && pixel_clock <= u16::MAX as u64,
-        "EDID pixel clock for {}x{}@{} exceeds 655.35 MHz; lower the resolution or refresh rate",
-        width,
-        height,
-        refresh
-    );
-    let pixel_clock_10khz = pixel_clock as u16;
 
     let h_image = width_mm;
     let v_image = height_mm;
@@ -359,6 +339,37 @@ mod tests {
             .unwrap()
             .status;
         status.success().then(|| std::fs::read(output).unwrap())
+    }
+
+    #[test]
+    fn t332_shared_mode_validation_agrees_with_both_generators_at_clock_boundary() {
+        for (width, height, fps, valid) in [
+            (3840, 2160, 60, true),
+            (3840, 2160, 74, true),
+            (3840, 2160, 75, false),
+            (3840, 2160, 90, false),
+            (4095, 4095, 60, false),
+            (640, 480, 10, true),
+        ] {
+            let config = uscreen_config::FileConfig {
+                width,
+                height,
+                fps,
+                ..Default::default()
+            };
+            let rust = make_edid_sized(width, height, fps, 310, 194);
+            let python = python_edid(width, height, fps, 310, 194);
+            assert_eq!(
+                config.validate().is_ok(),
+                valid,
+                "T332: {width}x{height}@{fps}"
+            );
+            assert_eq!(rust.is_ok(), valid);
+            assert_eq!(python.is_some(), valid);
+            if valid {
+                assert_eq!(rust.unwrap(), python.unwrap());
+            }
+        }
     }
 
     #[test]

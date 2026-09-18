@@ -31,10 +31,10 @@ internal fun SettingsSheet(
     displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
     onSettingsEvent: (SettingsEvent) -> Unit = {},
 ) {
-    var bitrateMbps by remember {
+    var bitrateMbps by remember(settings.bitrateKbps) {
         mutableStateOf(settings.bitrateKbps / 1000f)
     }
-    var fpsChoice by remember { mutableStateOf(settings.fps) }
+    var fpsChoice by remember(settings.fps) { mutableStateOf(settings.fps) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -51,6 +51,7 @@ internal fun SettingsSheet(
             Spacer(Modifier.height(20.dp))
 
             UpdateNotice(updateAvailable, onOpenUpdate)
+            settings.streamError?.let { Text("Settings rejected: $it", color = MaterialTheme.colorScheme.error) }
 
             DisplayControls(settings, displayRefreshRates, onSettingsEvent)
             Spacer(Modifier.height(20.dp))

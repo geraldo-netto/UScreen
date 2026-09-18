@@ -35,6 +35,7 @@ internal data class SettingsValues(
     val showStats: Boolean = false,
     val checkUpdates: Boolean = true,
     val batterySaver: Boolean = false,
+    val streamError: String? = null,
 ) {
     companion object {
         fun read(prefs: Prefs) = SettingsValues(prefs.bitrateKbps, prefs.fps, prefs.brightnessPercent,
@@ -83,7 +84,7 @@ internal class SessionCoordinator(
 
     fun handle(event: SettingsEvent) {
         when (event) {
-            is SettingsEvent.Stream -> applyStreamSettings(prefs, touchCapture, videoReceiver, event.bitrate, event.fps)
+            is SettingsEvent.Stream -> requestStreamSettings(event)
             is SettingsEvent.Mode -> touchCapture?.sendMode(event.penOnly)
             is SettingsEvent.Orientation -> prefs.orientation = event.value
             is SettingsEvent.Brightness -> prefs.brightnessPercent = event.value
@@ -92,7 +93,12 @@ internal class SessionCoordinator(
             is SettingsEvent.BatterySaver -> prefs.batterySaver = event.value
             is SettingsEvent.CheckUpdates -> prefs.checkUpdates = event.value
         }
-        settings = SettingsValues.read(prefs)
+        settings = SettingsValues.read(prefs).copy(streamError = settings.streamError)
+    }
+
+    private fun requestStreamSettings(event: SettingsEvent.Stream) {
+        settings = settings.copy(streamError = null)
+        applyStreamSettings(prefs, touchCapture, videoReceiver, event.bitrate, event.fps)
     }
 
     fun dismissThanks() { showThanks = false }
@@ -148,9 +154,7 @@ internal class SessionCoordinator(
             }
         }
         videoReceiver?.streamFps = prefs.fps
-        touchCapture?.onFpsKnown = { fps ->
-            withCurrentControl { videoReceiver?.streamFps = fps }
-        }
+        connectSettingsCallbacks()
         touchCapture?.onCodecKnown = { codec ->
             withCurrentControl {
                 val mime = VideoCodec.types[codec]
@@ -176,6 +180,26 @@ internal class SessionCoordinator(
             }
         }
 
+    }
+
+    private fun connectSettingsCallbacks() {
+        touchCapture?.onFpsKnown = { fps ->
+            withCurrentControl { videoReceiver?.streamFps = fps }
+        }
+        touchCapture?.onSettingsRejected = { rejected ->
+            withCurrentControl {
+                if (touchCapture?.settingsGeneration == rejected.requestGeneration) {
+                    restoreStreamSettings(rejected.reason, rejected.bitrate, rejected.fps)
+                }
+            }
+        }
+    }
+
+    private fun restoreStreamSettings(reason: String, bitrate: Int, fps: Int) {
+        prefs.bitrateKbps = bitrate
+        prefs.fps = fps
+        videoReceiver?.streamFps = fps
+        settings = SettingsValues.read(prefs).copy(streamError = reason)
     }
 
     // A greeting can already be queued on the UI thread when onStop or a

@@ -62,6 +62,10 @@ internal fun UScreenMain(
     var showSettings by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    LaunchedEffect(settings.streamError) {
+        if (settings.streamError != null) showSettings = true
+    }
+
     LaunchedEffect(presentation, isConnected, settings.showStats) {
         while (isConnected && settings.showStats) {
             presentation?.sample()

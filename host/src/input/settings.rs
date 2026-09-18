@@ -12,11 +12,17 @@ pub(super) trait SettingsSink: Sync {
     fn decoders(&self, capabilities: crate::media::DecoderCapabilities);
 }
 
+struct SettingsRejection {
+    reason: String,
+    requested: Option<serde_json::Value>,
+}
+
 pub(super) struct SessionSettings<'a> {
     settings: &'a Option<watch::Sender<EncoderSettings>>,
     mode: &'a watch::Sender<bool>,
     pen_enabled: bool,
     auto_resolution: fn() -> bool,
+    rejection: std::sync::Mutex<Option<SettingsRejection>>,
 }
 
 impl<'a> SessionSettings<'a> {
@@ -31,11 +37,24 @@ impl<'a> SessionSettings<'a> {
             pen_enabled,
             // Preserve live persistent-policy reads on resolution messages.
             auto_resolution: || crate::config::FileConfig::load().auto_resolution,
+            rejection: Default::default(),
         }
     }
 }
 
 impl SessionSettings<'_> {
+    pub(super) fn rejection_reply(&self) -> Option<String> {
+        let rejected = self.rejection.lock().unwrap().take()?;
+        let current = self.settings.as_ref()?.borrow();
+        let mut reply = serde_json::json!({
+            "status": "settings_rejected", "error": rejected.reason,
+            "fps": current.fps, "bitrate": current.bitrate,
+        });
+        if let Some(requested) = rejected.requested {
+            reply["requested"] = requested;
+        }
+        Some(reply.to_string())
+    }
     pub(super) fn sender(&self) -> Option<watch::Sender<EncoderSettings>> {
         self.settings.clone()
     }
@@ -48,10 +67,20 @@ impl SessionSettings<'_> {
 
 impl SettingsSink for SessionSettings<'_> {
     fn resolution(&self, pixels: (u32, u32), millimetres: (u32, u32)) {
-        apply_tablet_resolution(self.settings, pixels, millimetres, (self.auto_resolution)());
+        let rejection =
+            apply_tablet_resolution(self.settings, pixels, millimetres, (self.auto_resolution)());
+        *self.rejection.lock().unwrap() = rejection.map(|reason| SettingsRejection {
+            reason,
+            requested: None,
+        });
     }
     fn configure(&self, bitrate: Option<u32>, fps: Option<u32>, encoder: Option<String>) {
-        apply_tablet_config(self.settings, bitrate, fps, encoder);
+        let requested = serde_json::json!({ "bitrate": bitrate, "fps": fps, "encoder": encoder });
+        let rejection = apply_tablet_config(self.settings, bitrate, fps, encoder);
+        *self.rejection.lock().unwrap() = rejection.map(|reason| SettingsRejection {
+            reason,
+            requested: Some(requested),
+        });
     }
     fn decoders(&self, capabilities: crate::media::DecoderCapabilities) {
         let Some(tx) = self.settings else {
@@ -90,20 +119,23 @@ pub(super) fn apply_tablet_resolution(
     pixels: (u32, u32),
     millimetres: (u32, u32),
     auto_resolution: bool,
-) {
-    let (width, height) = pixels;
-    let (width_mm, height_mm) = millimetres;
+) -> Option<String> {
     info!(
         "Tablet reports native resolution: {}x{} ({}x{} mm)",
-        width, height, width_mm, height_mm
+        pixels.0, pixels.1, millimetres.0, millimetres.1
     );
-    let Some(tx) = settings_tx else { return };
+    let tx = settings_tx.as_ref()?;
+    let mut rejection = None;
     tx.send_if_modified(|current| {
         let Some(new) = negotiated_geometry(current, pixels, millimetres, auto_resolution) else {
+            rejection = Some(
+                "Unsupported display resolution/FPS combination; current settings retained".into(),
+            );
             return false;
         };
         replace_if_changed(current, new)
     });
+    rejection
 }
 
 pub(crate) fn negotiated_geometry(
@@ -130,6 +162,12 @@ pub(crate) fn negotiated_geometry(
         );
         return None;
     }
+    if let Err(error) =
+        uscreen_config::display::pixel_clock_10khz(selected.0, selected.1, current.fps)
+    {
+        warn!("Ignoring unsupported display mode: {error}");
+        return None;
+    }
     let mut settings = current.clone();
     (settings.width, settings.height) = selected;
     (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
@@ -142,10 +180,10 @@ pub(super) fn apply_tablet_config(
     bitrate: Option<u32>,
     fps: Option<u32>,
     encoder: Option<String>,
-) {
+) -> Option<String> {
     let Some(tx) = settings_tx else {
         warn!("Received config from tablet but live settings are disabled");
-        return;
+        return None;
     };
     // Normalize before locking: logging must not open a read/modify/write gap.
     let bitrate = bitrate.map(clamp_bitrate);
@@ -157,16 +195,24 @@ pub(super) fn apply_tablet_config(
             false
         }
     });
+    let mut rejection = None;
     let changed = tx.send_if_modified(|current| {
         let mut new = current.clone();
         new.bitrate = bitrate.unwrap_or(current.bitrate);
         new.fps = fps.unwrap_or(current.fps);
         new.encoder = encoder.unwrap_or_else(|| current.encoder.clone());
+        if let Err(error) =
+            uscreen_config::display::pixel_clock_10khz(new.width, new.height, new.fps)
+        {
+            rejection = Some(error.to_string());
+            return false;
+        }
         replace_if_changed(current, new)
     });
     if changed {
         log_settings(tx);
     }
+    rejection
 }
 
 fn log_settings(tx: &watch::Sender<EncoderSettings>) {

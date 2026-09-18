@@ -1,0 +1,11 @@
+{
+  "status": "settings_rejected",
+  "error": "EDID pixel clock for 3840x2160@90 exceeds 655.35 MHz; lower the resolution or refresh rate",
+  "fps": 60,
+  "bitrate": 20000,
+  "requested": {
+    "bitrate": 25000,
+    "fps": 90,
+    "encoder": null
+  }
+}

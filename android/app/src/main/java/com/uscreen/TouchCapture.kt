@@ -31,6 +31,11 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
         get() = control.onFpsKnown
         set(value) { control.onFpsKnown = value }
 
+    internal val settingsGeneration get() = control.settingsGeneration
+    internal var onSettingsRejected: ((RejectedStreamSettings) -> Unit)?
+        get() = control.onSettingsRejected
+        set(value) { control.onSettingsRejected = value }
+
     fun setNativeResolution(width: Int, height: Int, widthMm: Int = 0, heightMm: Int = 0) =
         control.setNativeResolution(width, height, widthMm, heightMm)
     fun connect() = control.connect()

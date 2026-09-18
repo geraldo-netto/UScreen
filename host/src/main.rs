@@ -130,6 +130,35 @@ mod cli_tests {
     }
 
     #[tokio::test]
+    async fn t332_start_rejects_cli_and_saved_invalid_modes_before_resources() {
+        use super::*;
+        if isolated_config_test(
+            "cli_tests::t332_start_rejects_cli_and_saved_invalid_modes_before_resources",
+        ) {
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        std::env::set_var("XDG_RUNTIME_DIR", dir.path());
+        let path = config::config_path();
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        for saved_fps in [60, 90] {
+            std::fs::write(
+                &path,
+                format!("width = 3840\nheight = 2160\nfps = {saved_fps}\n"),
+            )
+            .unwrap();
+            let mut cli =
+                Cli::try_parse_from(["uscreen", "--helper", "/nonexistent-t332-helper"]).unwrap();
+            if saved_fps == 60 {
+                cli.fps = Some(90);
+            }
+            let error = run_daemon(cli).await.unwrap_err().to_string();
+            assert!(error.contains("655.35 MHz"), "T332: {error}");
+            assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+        }
+    }
+
+    #[tokio::test]
     async fn t288_start_rejects_cli_and_saved_pen_mode_before_resources() {
         use super::*;
         if isolated_config_test(
@@ -1390,13 +1419,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Validate the complete effective range before claiming resources.
     let file_cfg = config::FileConfig::load();
     let effective = effective_config(&cli, &file_cfg);
-    effective.validate_input_mode()?;
+    effective.validate()?;
     config::validate_encoder_for_build(&effective.encoder)?;
-    config::slot_ports(
-        effective.video_port,
-        effective.input_port,
-        effective.max_tablets,
-    )?;
 
     runtime::runtime_dir().context("validate private runtime directory")?;
     let helper_path = find_helper(cli.helper.as_deref())?;

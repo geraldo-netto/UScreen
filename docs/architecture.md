@@ -414,6 +414,15 @@ stream scaling. They share the same settings snapshot as FPS, codec and encoded
 dimensions, including after negotiation and reconnect. Before negotiation the
 configured geometry is used; without shared settings, startup input dimensions
 remain the fallback. These requested sizes do not confirm display attachment.
+An invalid resolution/FPS update leaves the settings watch unchanged, so it
+cannot retire the working capture session. The requesting control socket receives
+`status: "settings_rejected"`, an `error` string and the current `fps`/`bitrate`.
+Rejected config replies also echo the submitted fields in `requested`; Android
+ignores replies superseded by newer requests and checks queued UI callbacks
+against the current request and connection generation. A matching rejection
+restores confirmed preferences, corrects reconnect parameters and shows the
+reason in the settings sheet. Older clients may ignore this added status.
+
 The Android client marks its control connection authenticated only after
 `status: "connected"` from the current socket. Disconnects clear that state;
 callbacks from replaced sockets cannot restore it. Rust serialization and

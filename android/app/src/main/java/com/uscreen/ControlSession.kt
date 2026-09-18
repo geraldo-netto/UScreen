@@ -23,6 +23,8 @@ internal interface ControlInputState {
     fun setPenEnabled(enabled: Boolean)
 }
 
+internal data class RejectedStreamSettings(val reason: String, val bitrate: Int, val fps: Int, val requestGeneration: Long)
+
 /** Owns authentication, host metadata and socket lifetime; never interprets MotionEvents. */
 internal class ControlSession(
     private val lock: Any,
@@ -57,6 +59,9 @@ internal class ControlSession(
     var onModeKnown: ((penOnly: Boolean) -> Unit)? = null
     var onCodecKnown: ((codec: String) -> Unit)? = null
     var onFpsKnown: ((fps: Int) -> Unit)? = null
+    var onSettingsRejected: ((RejectedStreamSettings) -> Unit)? = null
+    @Volatile var settingsGeneration = 0L
+        private set
 
     /// Session token from the host, delivered as an intent extra when the
     /// daemon launches us over adb. Must be the first thing sent on the
@@ -106,6 +111,10 @@ internal class ControlSession(
                 // ignored, this channel is otherwise ours to talk on.
                 try {
                     val o = JSONObject(text)
+                    if (o.optString("status") == "settings_rejected") {
+                        applySettingsRejection(o)
+                        return
+                    }
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
                     requestDecoderCapabilities(webSocket, o)
@@ -229,6 +238,25 @@ internal class ControlSession(
         }
     }
 
+    private fun matchesPendingConfig(requested: JSONObject): Boolean {
+        val pending = pendingConfig ?: return false
+        return listOf("fps", "bitrate").all { field ->
+            requested.isNull(field) || requested.optInt(field) == pending.optInt(field)
+        }
+    }
+
+    private fun applySettingsRejection(message: JSONObject) {
+        val requested = message.optJSONObject("requested")
+        if (requested != null && !matchesPendingConfig(requested)) return
+        val fps = message.optInt("fps")
+        val bitrate = message.optInt("bitrate")
+        if (fps !in 10..90 || bitrate !in 1000..60000) return
+        // Reconnect must resend confirmed settings rather than the rejected request.
+        pendingConfig?.put("fps", fps)?.put("bitrate", bitrate)
+        onSettingsRejected?.invoke(RejectedStreamSettings(
+            message.optString("error", "Unsupported stream settings"), bitrate, fps, settingsGeneration))
+    }
+
     private fun applyDecoderGreeting(o: JSONObject) {
         if (o.has("fps")) {
             val fps = o.getInt("fps")
@@ -296,6 +324,7 @@ internal class ControlSession(
      * also remembered here and re-sent on every reconnect.
      */
     fun sendConfig(bitrateKbps: Int, fps: Int): Unit = synchronized(lock) {
+        settingsGeneration++
         val msg = JSONObject().apply {
             put("type", "config")
             put("bitrate", bitrateKbps)

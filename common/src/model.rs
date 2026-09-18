@@ -215,6 +215,13 @@ impl Position {
 }
 
 impl FileConfig {
+    pub fn validate(&self) -> Result<()> {
+        self.validate_input_mode()?;
+        crate::display::pixel_clock_10khz(self.width, self.height, self.fps)?;
+        slot_ports(self.video_port, self.input_port, self.max_tablets)?;
+        Ok(())
+    }
+
     pub fn validate_input_mode(&self) -> Result<()> {
         anyhow::ensure!(
             !self.pen_only || self.input_pen,

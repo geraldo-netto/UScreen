@@ -111,6 +111,35 @@ mod tests {
     };
 
     #[test]
+    fn t332_invalid_display_mode_cannot_save_or_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(dir.path().join("config.toml"));
+        let saved = store
+            .update(|cfg| {
+                cfg.width = 3840;
+                cfg.height = 2160;
+                cfg.fps = 60;
+                Ok(())
+            })
+            .unwrap();
+        let edited = FileConfig {
+            fps: 90,
+            ..saved.clone()
+        };
+        let count = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls = count.clone();
+        let restart: Restart = Box::new(move || {
+            calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(())
+        });
+        let result =
+            PendingSave::start(store.clone(), edited, saved.clone(), Some(restart)).finish();
+        assert!(result.is_err(), "T332: invalid display mode accepted");
+        assert_eq!(count.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(store.load(), saved);
+    }
+
+    #[test]
     fn t415_live_pipe_save_persists_then_publishes_without_restart() {
         let dir = tempfile::tempdir().unwrap();
         let store = ConfigStore::new(dir.path().join("config.toml"));

@@ -22,6 +22,76 @@ import org.robolectric.annotation.LooperMode
 class SettingsLayoutTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun t332_newRequestBeforeUiCallbackCaptureStillWins() {
+        lateinit var listener: WebSocketListener
+        val socket = Socket()
+        val capture = TouchCapture(WebSocket.Factory { _, created -> listener = created; socket })
+        val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication())
+        val session = SessionCoordinator(prefs, { it() }, null, capture)
+        val callback = capture.onSettingsRejected!!
+        capture.onSettingsRejected = { rejected ->
+            session.handle(SettingsEvent.Stream(15000, 30))
+            callback(rejected)
+        }
+        try {
+            session.start()
+            listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+                .code(101).message("test").build())
+            session.handle(SettingsEvent.Stream(25000, 90))
+            listener.onMessage(socket, javaClass.getResource("/settings-rejected.json")!!.readText())
+            assertEquals("T332: response ownership must come from the control request", 30, prefs.fps)
+            assertEquals(15000, prefs.bitrateKbps)
+        } finally { session.stop() }
+    }
+
+    @Test fun t332_queuedRejectionCannotRollBackANewerUiEdit() {
+        lateinit var listener: WebSocketListener
+        val socket = Socket()
+        val capture = TouchCapture(WebSocket.Factory { _, created -> listener = created; socket })
+        val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication())
+        val pending = mutableListOf<() -> Unit>()
+        val receiver = VideoReceiver { error("T332 must not open video") }
+        val session = SessionCoordinator(prefs, { pending.add(it) }, receiver, capture)
+        try {
+            session.start()
+            listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+                .code(101).message("test").build())
+            session.handle(SettingsEvent.Stream(25000, 90))
+            listener.onMessage(socket, javaClass.getResource("/settings-rejected.json")!!.readText())
+            session.handle(SettingsEvent.Stream(15000, 30))
+            pending.toList().forEach { it() }
+            assertEquals("T332: queued rejection replaced newer UI edit", 30, prefs.fps)
+            assertEquals(15000, prefs.bitrateKbps)
+            assertEquals(30, receiver.streamFps)
+        } finally { session.stop() }
+    }
+
+    @Test fun t332_rejectedStreamSettingsRestoreConfirmedValuesAndShowReason() {
+        lateinit var listener: WebSocketListener
+        val socket = Socket()
+        val capture = TouchCapture(WebSocket.Factory { _, created -> listener = created; socket })
+        val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication())
+        prefs.fps = 60; prefs.bitrateKbps = 20000
+        val session = SessionCoordinator(prefs, { it() }, null, capture)
+        compose.setContent { UScreenTheme {
+            SettingsSheet(session.settings, null, {}, false, {}, onSettingsEvent = session::handle)
+        } }
+        try {
+            compose.runOnIdle {
+                session.start()
+                listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+                    .code(101).message("test").build())
+                session.handle(SettingsEvent.Stream(25000, 90))
+                listener.onMessage(socket, javaClass.getResource("/settings-rejected.json")!!.readText())
+                assertEquals("T332: rejected FPS was retained", 60, prefs.fps)
+                assertEquals(20000, prefs.bitrateKbps)
+                assertEquals(60, session.settings.fps)
+            }
+            compose.onNodeWithText("Settings rejected:", substring = true).performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Bitrate: 20 Mbps").performScrollTo().assertIsDisplayed()
+        } finally { session.stop() }
+    }
+
     @Test fun t377_recompositionAndLocalSettingsPreserveReceiverOwnership() {
         val receiver = VideoReceiver { error("T377 must not open a socket") }
         val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication())

@@ -411,26 +411,51 @@ async fn serve_controller(
             }
         };
 
-        match msg {
-            Ok(Message::Text(text)) => {
-                if !dispatch.text(&text) {
-                    break;
-                }
-            }
-            Ok(Message::Close(_)) | Err(_) => break,
-            Ok(Message::Ping(data)) => {
-                if !send_controller_message(&mut ws_sender, Message::Pong(data), &mut ownership)
-                    .await
-                    .unwrap_or(false)
-                {
-                    break;
-                }
-            }
-            _ => {}
+        if !handle_controller_message(msg, &dispatch, &settings, &mut ws_sender, &mut ownership)
+            .await?
+        {
+            break;
         }
     }
 
     Ok(())
+}
+
+async fn handle_controller_message(
+    message: std::result::Result<Message, tokio_tungstenite::tungstenite::Error>,
+    dispatch: &ControllerDispatch<'_>,
+    settings: &SessionSettings<'_>,
+    sender: &mut futures_util::stream::SplitSink<InputSocket, Message>,
+    ownership: &mut watch::Receiver<u64>,
+) -> Result<bool> {
+    match message {
+        Ok(Message::Text(text)) => {
+            if !dispatch.text(&text) {
+                return Ok(false);
+            }
+            send_settings_rejection(settings, sender, ownership).await
+        }
+        Ok(Message::Close(_)) | Err(_) => Ok(false),
+        Ok(Message::Ping(data)) => {
+            Ok(
+                send_controller_message(sender, Message::Pong(data), ownership)
+                    .await
+                    .unwrap_or(false),
+            )
+        }
+        _ => Ok(true),
+    }
+}
+
+async fn send_settings_rejection(
+    settings: &SessionSettings<'_>,
+    sender: &mut futures_util::stream::SplitSink<InputSocket, Message>,
+    ownership: &mut watch::Receiver<u64>,
+) -> Result<bool> {
+    match settings.rejection_reply() {
+        Some(reply) => send_controller_message(sender, Message::Text(reply), ownership).await,
+        None => Ok(true),
+    }
 }
 
 fn claim_controller(
@@ -1782,6 +1807,49 @@ fi
     }
 
     #[test]
+    fn t332_invalid_fps_or_geometry_never_retires_working_settings() {
+        let mut initial = settings("libx264");
+        initial.width = 3840;
+        initial.height = 2160;
+        let (tx, rx) = watch::channel(initial.clone());
+        let source = Some(tx.clone());
+        settings::apply_tablet_config(&source, Some(25_000), Some(90), None);
+        assert_eq!(
+            *tx.borrow(),
+            initial,
+            "T332: reject the whole incompatible command"
+        );
+        assert!(
+            !rx.has_changed().unwrap(),
+            "T332: invalid FPS must not restart capture"
+        );
+        settings::apply_tablet_resolution(&source, (4095, 4095), (300, 190), true);
+        assert_eq!(
+            *tx.borrow(),
+            initial,
+            "T332: invalid geometry must preserve the stream"
+        );
+        assert!(!rx.has_changed().unwrap());
+        let reply = InputConfig::default().response("mode", false, &source);
+        assert_eq!(
+            (reply.width, reply.height, reply.fps),
+            (3840, 2160, Some(60))
+        );
+    }
+
+    #[test]
+    fn t332_manual_geometry_validates_selected_dimensions_at_current_fps() {
+        let mut current = settings("libx264");
+        current.fps = 90;
+        assert!(negotiated_geometry(&current, (3840, 2160), (300, 190), true).is_none());
+        let manual = negotiated_geometry(&current, (3840, 2160), (300, 190), false).unwrap();
+        assert_eq!((manual.width, manual.height), (1920, 1080));
+        current.width = 3840;
+        current.height = 2160;
+        assert!(negotiated_geometry(&current, (1920, 1080), (300, 190), false).is_none());
+    }
+
+    #[test]
     fn t276_replies_follow_geometry_and_scale_across_reconnect() {
         let cfg = InputConfig::default();
         let (tx, _rx) = watch::channel(settings("h264_nvenc"));
@@ -2119,6 +2187,35 @@ fi
             response(&mut client).await["codec"],
             "h264",
             "T432: stale capability must not authorize changed rate"
+        );
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn t332_rejected_command_returns_current_settings_without_restart() {
+        let (mut client, tx, task) = connection("libx264").await;
+        response(&mut client).await;
+        tx.send_modify(|s| {
+            s.width = 3840;
+            s.height = 2160;
+        });
+        response(&mut client).await;
+        let mut unchanged = tx.subscribe();
+        unchanged.borrow_and_update();
+        client
+            .send(Message::Text(
+                r#"{"type":"config","fps":90,"bitrate":25000}"#.into(),
+            ))
+            .await
+            .unwrap();
+        let reply = response(&mut client).await;
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../testdata/settings-rejected.json")).unwrap();
+        assert_eq!(reply, fixture, "T332");
+        assert!(
+            !unchanged.has_changed().unwrap(),
+            "T332: rejection restarted capture"
         );
         client.close(None).await.unwrap();
         task.await.unwrap().unwrap();
