@@ -104,7 +104,9 @@ class Prefs(context: Context) {
 
     /**
      * Whether to ask GitHub for a newer release on an Activity instance
-     * starting (at most once per instance). The host has `check_updates`
+     * starting (at most one completed check per instance unless re-enabled).
+     * Stopping cancels an unfinished check; starting can retry it.
+     * The host has `check_updates`
      * for the daemon and GUI; this is the
      * tablet's own switch, so the app can be kept fully offline too.
      */

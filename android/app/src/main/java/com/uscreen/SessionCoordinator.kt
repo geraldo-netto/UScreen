@@ -60,12 +60,13 @@ internal class SessionCoordinator(
     private val dispatchUi: (() -> Unit) -> Unit,
     private var videoReceiver: VideoReceiver? = VideoReceiver(),
     private var touchCapture: TouchCapture? = TouchCapture(),
+    releaseChecks: ReleaseChecks = UpdateCheck.requests,
 ) {
     var penOnlyMode by mutableStateOf(false); private set
     var showThanks by mutableStateOf(false); private set
     var updateAvailable by mutableStateOf<String?>(null); private set
     var settings by mutableStateOf(SettingsValues.read(prefs)); private set
-    private var updateChecked = false
+    private val updates = ReleaseCheckOwner(releaseChecks, { prefs.checkUpdates }, dispatchUi) { updateAvailable = it }
     private var started = false
     private var stopTokenObservation: (() -> Unit)? = null
     private var codecSupported = true
@@ -91,7 +92,10 @@ internal class SessionCoordinator(
             is SettingsEvent.RefreshRate -> prefs.displayRefreshRate = event.value
             is SettingsEvent.ShowStats -> prefs.showStats = event.value
             is SettingsEvent.BatterySaver -> prefs.batterySaver = event.value
-            is SettingsEvent.CheckUpdates -> prefs.checkUpdates = event.value
+            is SettingsEvent.CheckUpdates -> {
+                prefs.checkUpdates = event.value
+                updates.preferenceChanged()
+            }
         }
         settings = SettingsValues.read(prefs).copy(streamError = settings.streamError)
     }
@@ -116,6 +120,7 @@ internal class SessionCoordinator(
 
     fun start() {
         started = true
+        updates.start()
         stopTokenObservation?.invoke()
         stopTokenObservation = prefs.observeHostToken { if (started) applyToken(restart = true) }
         applyToken(restart = false)
@@ -124,19 +129,14 @@ internal class SessionCoordinator(
     }
     fun stop() {
         started = false
+        updates.stop()
         stopTokenObservation?.invoke()
         stopTokenObservation = null
         videoReceiver?.stop()
         touchCapture?.disconnect()
     }
     fun checkUpdate(currentVersion: () -> String) {
-        if (updateChecked || !prefs.checkUpdates) return
-        updateChecked = true
-        val version = currentVersion()
-        Thread {
-            val found = UpdateCheck.newerThan(version)
-            if (found != null) dispatchUi { updateAvailable = found }
-        }.start()
+        updates.check(currentVersion())
     }
 
     private fun connectStreamCallbacks() {

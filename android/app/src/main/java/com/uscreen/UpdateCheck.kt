@@ -1,10 +1,5 @@
 package com.uscreen
 
-import android.util.Log
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * "A newer release exists", and nothing more. Sideloaded apps cannot update
@@ -12,14 +7,10 @@ import java.util.concurrent.TimeUnit
  * the question and hands over the release page.
  */
 object UpdateCheck {
-    private const val TAG = "UScreenUpdate"
     const val RELEASES_PAGE = "https://github.com/geraldo-netto/UScreen/releases/latest"
     private const val API = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest"
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .build()
+    internal val requests: ReleaseChecks = HttpReleaseChecks(API)
 
     private data class Version(val core: List<Long>, val pre: List<String>)
     private val syntax = Regex("""(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?""")
@@ -54,21 +45,4 @@ object UpdateCheck {
         return a.size > b.size
     }
 
-    /** Blocking; call off the main thread. Returns the newer version or null. */
-    fun newerThan(current: String): String? {
-        return try {
-            val req = Request.Builder().url(API)
-                .header("Accept", "application/vnd.github+json")
-                .header("User-Agent", "uscreen-android/$current")
-                .build()
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) return null
-                val tag = JSONObject(resp.body?.string() ?: return null)
-                    .optString("tag_name")
-                if (isNewer(tag, current)) tag.trim().removePrefix("v") else null
-            }
-        } catch (e: Exception) {
-            Log.d(TAG, "update check skipped: ${e.message}"); null
-        }
-    }
 }
