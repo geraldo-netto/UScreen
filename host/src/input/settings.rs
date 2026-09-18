@@ -98,20 +98,11 @@ pub(super) fn apply_tablet_resolution(
         width, height, width_mm, height_mm
     );
     let Some(tx) = settings_tx else { return };
-    let Some(new) = negotiated_geometry(
-        &tx.borrow(),
-        (width, height),
-        (width_mm, height_mm),
-        auto_resolution,
-    ) else {
-        return;
-    };
     tx.send_if_modified(|current| {
-        if *current == new {
+        let Some(new) = negotiated_geometry(current, pixels, millimetres, auto_resolution) else {
             return false;
-        }
-        *current = new;
-        true
+        };
+        replace_if_changed(current, new)
     });
 }
 
@@ -156,36 +147,56 @@ pub(super) fn apply_tablet_config(
         warn!("Received config from tablet but live settings are disabled");
         return;
     };
-    let mut new = tx.borrow().clone();
-    if let Some(b) = bitrate {
-        // Clamped to the same ceiling the config file uses: an
-        // unclamped value here would be persisted and poison every
-        // later run, which is exactly how installs ended up pinned at
-        // 200 Mbps with seconds of queueing delay.
-        new.bitrate = b.clamp(
-            crate::config::MIN_BITRATE_KBPS,
-            crate::config::MAX_BITRATE_KBPS,
-        );
-        if new.bitrate != b {
-            warn!("Tablet asked for {} kbps — clamped to {}", b, new.bitrate);
+    // Normalize before locking: logging must not open a read/modify/write gap.
+    let bitrate = bitrate.map(clamp_bitrate);
+    let fps = fps.map(|f| f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS));
+    let encoder = encoder.filter(|e| match crate::config::validate_encoder_for_build(e) {
+        Ok(()) => true,
+        Err(error) => {
+            warn!("Ignoring unsupported encoder from tablet: {e}: {error}");
+            false
         }
+    });
+    let changed = tx.send_if_modified(|current| {
+        let mut new = current.clone();
+        new.bitrate = bitrate.unwrap_or(current.bitrate);
+        new.fps = fps.unwrap_or(current.fps);
+        new.encoder = encoder.unwrap_or_else(|| current.encoder.clone());
+        replace_if_changed(current, new)
+    });
+    if changed {
+        log_settings(tx);
     }
-    if let Some(f) = fps {
-        new.fps = f.clamp(crate::config::MIN_FPS, crate::config::MAX_FPS);
-    }
-    if let Some(e) = encoder {
-        match crate::config::validate_encoder_for_build(&e) {
-            Ok(()) => new.encoder = e,
-            Err(error) => warn!("Ignoring unsupported encoder from tablet: {e}: {error}"),
-        }
-    }
-    if *tx.borrow() != new {
-        info!(
-            "Tablet pushed settings: encoder={} {}kbps @{}fps",
-            new.encoder, new.bitrate, new.fps
+}
+
+fn log_settings(tx: &watch::Sender<EncoderSettings>) {
+    let current = tx.borrow().clone();
+    info!(
+        "Live settings after tablet update: encoder={} {}kbps @{}fps",
+        current.encoder, current.bitrate, current.fps
+    );
+}
+
+fn clamp_bitrate(requested: u32) -> u32 {
+    let clamped = requested.clamp(
+        crate::config::MIN_BITRATE_KBPS,
+        crate::config::MAX_BITRATE_KBPS,
+    );
+    if clamped != requested {
+        warn!(
+            "Tablet asked for {} kbps — clamped to {}",
+            requested, clamped
         );
-        let _ = tx.send(new);
     }
+    clamped
+}
+
+fn replace_if_changed(current: &mut EncoderSettings, new: EncoderSettings) -> bool {
+    if *current == new {
+        return false;
+    }
+    *current = new;
+    true
 }
 
 pub(super) fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, pen_enabled: bool) {

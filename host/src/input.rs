@@ -1691,6 +1691,96 @@ fi
         }
     }
 
+    #[cfg(not(feature = "inproc-encoder"))]
+    struct T472Publisher {
+        tx: watch::Sender<EncoderSettings>,
+        observed: std::sync::Arc<std::sync::Mutex<watch::Receiver<EncoderSettings>>>,
+        fired: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for T472Publisher {
+        fn on_event(&self, _: &tracing::Event<'_>, _: tracing_subscriber::layer::Context<'_, S>) {
+            if self.fired.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                return;
+            }
+            self.tx.send_modify(|current| {
+                current.decoder_epoch += 1;
+                current.selection = Some(crate::selection::Selected {
+                    key: crate::selection::Key::new(current),
+                    encoder: "h264_vaapi".into(),
+                    reason: "T472 concurrent selector".into(),
+                    verified: true,
+                });
+            });
+            self.observed.lock().unwrap().borrow_and_update();
+        }
+    }
+
+    #[cfg(not(feature = "inproc-encoder"))]
+    #[test]
+    fn t472_clamped_config_preserves_concurrent_selection_without_restart() {
+        use tracing_subscriber::prelude::*;
+        let mut initial = settings("auto");
+        initial.bitrate = crate::config::MAX_BITRATE_KBPS;
+        let (tx, rx) = watch::channel(initial);
+        let observed = std::sync::Arc::new(std::sync::Mutex::new(rx));
+        let fired = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let subscriber = tracing_subscriber::registry().with(T472Publisher {
+            tx: tx.clone(),
+            observed: observed.clone(),
+            fired: fired.clone(),
+        });
+        // Clamp logging gives a deterministic concurrent publication at the old
+        // read/modify/write gap; the fixed path normalizes before taking the lock.
+        tracing::subscriber::with_default(subscriber, || {
+            settings::apply_tablet_config(&Some(tx.clone()), Some(u32::MAX), None, None);
+        });
+        assert!(fired.load(std::sync::atomic::Ordering::SeqCst));
+        let current = tx.borrow();
+        assert_eq!(
+            current.effective_encoder(),
+            "h264_vaapi",
+            "T472: lost selector publication"
+        );
+        assert_eq!(current.decoder_epoch, 1);
+        assert!(
+            !observed.lock().unwrap().has_changed().unwrap(),
+            "T472: duplicate config restarted stream"
+        );
+    }
+
+    #[test]
+    fn t472_repeated_geometry_and_config_retain_unrelated_state() {
+        let mut initial = settings("libx264");
+        initial.decoder_epoch = 7;
+        initial.decoders = Some(crate::media::DecoderCapabilities {
+            protocol: 1,
+            width: 1920,
+            height: 1080,
+            fps: 60,
+            codecs: vec!["h264".into()],
+            hardware: vec![],
+        });
+        let (tx, mut rx) = watch::channel(initial.clone());
+        let source = Some(tx.clone());
+        settings::apply_tablet_resolution(&source, (1920, 1080), (310, 194), true);
+        settings::apply_tablet_config(&source, Some(20_000), Some(60), None);
+        assert!(!rx.has_changed().unwrap());
+        settings::apply_tablet_config(&source, Some(25_000), None, None);
+        rx.borrow_and_update();
+        settings::apply_tablet_resolution(&source, (1280, 800), (220, 138), true);
+        let updated = rx.borrow_and_update().clone();
+        assert_eq!(
+            (updated.width, updated.height, updated.bitrate),
+            (1280, 800, 25_000)
+        );
+        assert_eq!(updated.decoder_epoch, initial.decoder_epoch);
+        assert_eq!(updated.decoders, initial.decoders);
+        settings::apply_tablet_resolution(&source, (1280, 800), (220, 138), true);
+        assert!(!rx.has_changed().unwrap());
+    }
+
     #[test]
     fn t276_replies_follow_geometry_and_scale_across_reconnect() {
         let cfg = InputConfig::default();
