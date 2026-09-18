@@ -419,7 +419,9 @@ mod encoder_policy_tests {
 
     fn cli_pairs(args: &[String]) -> BTreeMap<&str, &str> {
         let pairs = args
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|p| (p[0].as_str(), p[1].as_str()))
             .collect::<BTreeMap<_, _>>();
         assert_eq!(
