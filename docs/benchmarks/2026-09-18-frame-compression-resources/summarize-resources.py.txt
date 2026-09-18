@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Recompute T419's live observation; CPU percentages use one core = 100%."""
+import argparse
+import json
+from pathlib import Path
+import re
+import statistics
+
+
+def distribution(values):
+    return dict(min=min(values), median=statistics.median(values), max=max(values))
+
+
+def memory(raw):
+    totals = re.search(r'TOTAL PSS:\s+(\d+)\s+TOTAL RSS:\s+(\d+)\s+TOTAL SWAP PSS:\s+(\d+)', raw)
+    if totals is None:
+        raise ValueError('memory totals absent')
+    values = dict(zip(('reported_total_pss_kib', 'reported_total_rss_kib', 'swap_pss_kib'),
+                      map(int, totals.groups())))
+    for name in ('Java Heap', 'Native Heap', 'Graphics'):
+        found = re.search(r'^\s*' + name + r':\s+(\d+)', raw, re.MULTILINE)
+        if found is None:
+            raise ValueError('missing memory summary category: ' + name)
+        values[name] = int(found[1])
+    return values
+
+
+def cpu_interval(first, last, hz):
+    if (first['pid'], first['start_ticks']) != (last['pid'], last['start_ticks']):
+        raise ValueError('process identity changed')
+    elapsed = (last['monotonic_ns'] - first['monotonic_ns']) / 1e9
+    ticks = last['cpu_ticks'] - first['cpu_ticks']
+    if elapsed <= 0 or ticks < 0:
+        raise ValueError('invalid observation interval')
+    return dict(seconds=elapsed, cpu_seconds=ticks / hz,
+                cpu_percent_one_core=100 * ticks / hz / elapsed)
+
+
+def summarize_role(folder, samples, role, meta):
+    rows = [sample['processes'][role] for sample in samples]
+    intervals = [cpu_interval(a, b, meta['clock_ticks']) for a, b in zip(rows, rows[1:])]
+    return dict(overall=cpu_interval(rows[0], rows[-1], meta['clock_ticks']),
+                interval_cpu_percent_one_core=distribution([row['cpu_percent_one_core'] for row in intervals]),
+                sampled_proc_rss_mib=distribution([row['rss_bytes'] / 1048576 for row in rows]),
+                threads=distribution([row['threads'] for row in rows]),
+                memory_before=memory((folder / f'meminfo-before-{role}.txt').read_text()),
+                memory_after=memory((folder / f'meminfo-after-{role}.txt').read_text()))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('folder', type=Path)
+    args = parser.parse_args()
+    samples = [json.loads(line) for line in (args.folder / 'samples.jsonl').read_text().splitlines()]
+    meta = json.loads((args.folder / 'metadata.json').read_text())
+    if len(samples) != 13:
+        raise ValueError('incomplete observation; keep raw evidence without completed summary')
+    result = dict(samples=len(samples),
+                  collection_ms=distribution([row['collection_ns'] / 1e6 for row in samples]),
+                  roles={role: summarize_role(args.folder, samples, role, meta)
+                         for role in samples[0]['processes']})
+    (args.folder / 'summary.json').write_text(json.dumps(result, indent=2) + '\n')
+    for role, value in result['roles'].items():
+        print(role, f"{value['overall']['cpu_percent_one_core']:.2f}% of one core",
+              'PSS MiB', value['memory_before']['reported_total_pss_kib'] / 1024,
+              value['memory_after']['reported_total_pss_kib'] / 1024)
+
+
+if __name__ == '__main__':
+    main()

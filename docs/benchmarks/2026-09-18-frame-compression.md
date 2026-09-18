@@ -6,6 +6,11 @@ does not establish an Android battery or capture-to-display improvement.
 The remaining Android reconstruction, GPU upload, presentation, recovery and
 power work stays open as T419.
 
+The [tablet resource follow-up](2026-09-18-frame-compression-resources.md) records
+current app/codec/compositor CPU and memory observations and defines the next
+controlled experiment, including buffer reuse, allocation peaks and memory
+traffic. Its live-session observation does not compare compression candidates.
+
 ## Scope and comparable inputs
 
 The host is the existing Ryzen 9 7945HX workstation. Inputs are the original

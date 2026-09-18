@@ -1,0 +1,276 @@
+{
+  "samples": 13,
+  "collection_ms": {
+    "min": 391.322183,
+    "median": 507.823836,
+    "max": 541.002668
+  },
+  "roles": {
+    "app": {
+      "overall": {
+        "seconds": 60.032418579,
+        "cpu_seconds": 37.73,
+        "cpu_percent_one_core": 62.849375209411214
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 61.22490036050314,
+        "median": 63.0094482745742,
+        "max": 63.88705654939465
+      },
+      "sampled_proc_rss_mib": {
+        "min": 201.8828125,
+        "median": 206.66015625,
+        "max": 224.51171875
+      },
+      "threads": {
+        "min": 59,
+        "median": 59,
+        "max": 59
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 111138,
+        "reported_total_rss_kib": 233962,
+        "swap_pss_kib": 322,
+        "Java Heap": 31100,
+        "Native Heap": 13696,
+        "Graphics": 13946
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 96122,
+        "reported_total_rss_kib": 218946,
+        "swap_pss_kib": 322,
+        "Java Heap": 16068,
+        "Native Heap": 13724,
+        "Graphics": 13946
+      }
+    },
+    "vendor_codec": {
+      "overall": {
+        "seconds": 60.047014823,
+        "cpu_seconds": 11.2,
+        "cpu_percent_one_core": 18.652051285170682
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 17.921739270099675,
+        "median": 18.6816587962534,
+        "max": 19.242281122036292
+      },
+      "sampled_proc_rss_mib": {
+        "min": 7.27734375,
+        "median": 7.27734375,
+        "max": 7.27734375
+      },
+      "threads": {
+        "min": 15,
+        "median": 15,
+        "max": 15
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 7610,
+        "reported_total_rss_kib": 7748,
+        "swap_pss_kib": 2016,
+        "Java Heap": 0,
+        "Native Heap": 2204,
+        "Graphics": 0
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 7610,
+        "reported_total_rss_kib": 7748,
+        "swap_pss_kib": 2016,
+        "Java Heap": 0,
+        "Native Heap": 2204,
+        "Graphics": 0
+      }
+    },
+    "codec": {
+      "overall": {
+        "seconds": 60.064193525,
+        "cpu_seconds": 0.0,
+        "cpu_percent_one_core": 0.0
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.0
+      },
+      "sampled_proc_rss_mib": {
+        "min": 1.15625,
+        "median": 1.15625,
+        "max": 1.15625
+      },
+      "threads": {
+        "min": 3,
+        "median": 3,
+        "max": 3
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 2012,
+        "reported_total_rss_kib": 1620,
+        "swap_pss_kib": 1824,
+        "Java Heap": 0,
+        "Native Heap": 0,
+        "Graphics": 0
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 2012,
+        "reported_total_rss_kib": 1620,
+        "swap_pss_kib": 1824,
+        "Java Heap": 0,
+        "Native Heap": 0,
+        "Graphics": 0
+      }
+    },
+    "software_codec": {
+      "overall": {
+        "seconds": 60.08120922,
+        "cpu_seconds": 0.0,
+        "cpu_percent_one_core": 0.0
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.0
+      },
+      "sampled_proc_rss_mib": {
+        "min": 11.9609375,
+        "median": 11.9609375,
+        "max": 11.9609375
+      },
+      "threads": {
+        "min": 14,
+        "median": 14,
+        "max": 14
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 9838,
+        "reported_total_rss_kib": 12844,
+        "swap_pss_kib": 5464,
+        "Java Heap": 0,
+        "Native Heap": 656,
+        "Graphics": 0
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 9838,
+        "reported_total_rss_kib": 12844,
+        "swap_pss_kib": 5464,
+        "Java Heap": 0,
+        "Native Heap": 656,
+        "Graphics": 0
+      }
+    },
+    "surfaceflinger": {
+      "overall": {
+        "seconds": 60.099405151,
+        "cpu_seconds": 10.43,
+        "cpu_percent_one_core": 17.35458108744102
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 15.496335626494027,
+        "median": 17.61257360390698,
+        "max": 18.19500382780755
+      },
+      "sampled_proc_rss_mib": {
+        "min": 41.14453125,
+        "median": 41.14453125,
+        "max": 41.14453125
+      },
+      "threads": {
+        "min": 34,
+        "median": 34,
+        "max": 34
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 90915,
+        "reported_total_rss_kib": 70211,
+        "swap_pss_kib": 38568,
+        "Java Heap": 0,
+        "Native Heap": 11620,
+        "Graphics": 32159
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 90939,
+        "reported_total_rss_kib": 70235,
+        "swap_pss_kib": 38568,
+        "Java Heap": 0,
+        "Native Heap": 11644,
+        "Graphics": 32159
+      }
+    },
+    "composer": {
+      "overall": {
+        "seconds": 60.118691128,
+        "cpu_seconds": 8.18,
+        "cpu_percent_one_core": 13.606417316344738
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 11.586756309729765,
+        "median": 13.837877299979974,
+        "max": 14.418029561573976
+      },
+      "sampled_proc_rss_mib": {
+        "min": 14.484375,
+        "median": 14.484375,
+        "max": 14.484375
+      },
+      "threads": {
+        "min": 18,
+        "median": 18,
+        "max": 18
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 45460,
+        "reported_total_rss_kib": 44267,
+        "swap_pss_kib": 12812,
+        "Java Heap": 0,
+        "Native Heap": 432,
+        "Graphics": 30147
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 45460,
+        "reported_total_rss_kib": 44267,
+        "swap_pss_kib": 12812,
+        "Java Heap": 0,
+        "Native Heap": 432,
+        "Graphics": 30147
+      }
+    },
+    "allocator": {
+      "overall": {
+        "seconds": 60.130936544,
+        "cpu_seconds": 0.0,
+        "cpu_percent_one_core": 0.0
+      },
+      "interval_cpu_percent_one_core": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.0
+      },
+      "sampled_proc_rss_mib": {
+        "min": 5.125,
+        "median": 5.125,
+        "max": 5.125
+      },
+      "threads": {
+        "min": 4,
+        "median": 4,
+        "max": 4
+      },
+      "memory_before": {
+        "reported_total_pss_kib": 1832,
+        "reported_total_rss_kib": 5248,
+        "swap_pss_kib": 1196,
+        "Java Heap": 0,
+        "Native Heap": 148,
+        "Graphics": 0
+      },
+      "memory_after": {
+        "reported_total_pss_kib": 1832,
+        "reported_total_rss_kib": 5248,
+        "swap_pss_kib": 1196,
+        "Java Heap": 0,
+        "Native Heap": 148,
+        "Graphics": 0
+      }
+    }
+  }
+}
