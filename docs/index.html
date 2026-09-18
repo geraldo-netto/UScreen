@@ -49,7 +49,7 @@
     "S Pen pressure, tilt, eraser and stylus button as a Linux graphics tablet",
     "Direct USB connection over adb, Wi-Fi as a fallback",
     "Graphics-tablet mode without a streamed-video path",
-    "NVENC/VAAPI hardware encoding or libx264 software encoding; MediaCodec decoding",
+    "Automatic compatible encoder selection; H.264, HEVC, VP9 and AV1 through stock FFmpeg; MediaCodec decoding",
     "Measured 22 ms median encoded-packet-to-render-acknowledgement latency over USB",
     "Packaging recipes for Debian/Ubuntu, Fedora/openSUSE, Arch and compatible Linux systems",
     "One to four configurable tablet slots; physical multi-tablet coverage remains limited",
@@ -332,10 +332,10 @@
   <div class="facts">
     <article><h3>Extended display through EVDI</h3><p>A virtual output with the tablet's own resolution and physical size. It appears in Display settings; you drag windows onto it; KDE places it next to your real screens for you.</p></article>
     <article><h3>S Pen as a tablet device</h3><p>Pressure, tilt, eraser end and the stylus button arrive in Linux as a real graphics-tablet device, mapped to the right screen. Krita, GIMP and Blender see a tablet, not a mouse.</p></article>
-    <article><h3>Graphics-tablet mode</h3><p>Graphics-tablet mode uses a host screen without a streamed-video path. Input latency remains, and a known status-message mismatch can leave its reconnect overlay visible.</p></article>
+    <article><h3>Graphics-tablet mode</h3><p>Graphics-tablet mode uses a host screen without a streamed-video path. Input latency remains; the app tracks the authenticated control connection independently of video.</p></article>
     <article><h3>Connection automation</h3><p>A configured user service can start with the desktop. The daemon watches adb, launches the app by default and negotiates geometry. Autostart, mapping and EVDI support depend on the desktop; diagnostics do not replace compatibility testing.</p></article>
-    <article><h3>Encoder choices</h3><p>NVENC or VAAPI on the default FFmpeg host path, MediaCodec decoding on the tablet, H.264 by default, HEVC and 10-bit optional. In-process VAAPI is currently incomplete. libx264 is a software fallback. The reported packet-to-ack timings exclude encoding and capture.</p></article>
-    <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener; existing runtime-directory validation remains a known limitation. See the security guide for trust boundaries.</p></article>
+    <article><h3>Encoder choices</h3><p>New configurations use automatic selection with tablet capability checks, host probes and render-ack validation; saved explicit choices remain unchanged. The stock FFmpeg path supports H.264, HEVC, VP9 and AV1 through available NVENC, VAAPI or software encoders. libx264 provides the compatibility fallback, and HEVC supports optional 10-bit output. The optional in-process build rejects VAAPI, VP9 and AV1. See <a href="video-codecs.md">codec support and measurement limits</a>; the reported packet-to-ack timings exclude encoding and capture.</p></article>
+    <article><h3>Local transport</h3><p>Loopback-only host ports and session authentication enabled by default. No application telemetry or account. Wi-Fi setup opens the tablet’s adb network listener. Runtime paths require an owned, private directory; unsafe existing paths are rejected. See the security guide for trust boundaries.</p></article>
   </div>
 </section>
 
@@ -404,7 +404,7 @@
     </tbody>
   </table>
   </div>
-  <p>UScreen supports NVENC and VAAPI hardware encoding and a software libx264 fallback. Consult each project's documentation for current encoder, stylus and licensing details.</p>
+  <p>UScreen supports available NVENC/VAAPI hardware encoders and libx264, libvpx VP9 and libaom AV1 software encoders through stock FFmpeg, subject to tablet compatibility. Consult each project's documentation for current encoder, stylus and licensing details.</p>
 </section>
 
 <section id="faq">

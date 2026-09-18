@@ -397,7 +397,7 @@ required. A representative host greeting is valid JSON:
 The server sends `status: "mode"` for subsequent mode/settings notifications.
 `video_width` and `video_height` describe the requested encoded dimensions for
 [decoder capability negotiation](video-codecs.md#negotiation).
-`codec` is `h264`, `hevc` or `vp9`; FPS is omitted if no shared settings source exists.
+`codec` is `h264`, `hevc`, `vp9` or `av1`; FPS is omitted if no shared settings source exists.
 Width/height currently come from startup input configuration and can be stale
 after geometry negotiation (T276); they are not reliable current-stream dimensions.
 The Android client marks its control connection authenticated only after
