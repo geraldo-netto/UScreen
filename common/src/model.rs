@@ -215,6 +215,13 @@ impl Position {
 }
 
 impl FileConfig {
+    pub fn validate_input_mode(&self) -> Result<()> {
+        anyhow::ensure!(
+            !self.pen_only || self.input_pen,
+            "Graphics-tablet mode requires Pen. Enable Pen or use second-screen mode."
+        );
+        Ok(())
+    }
     /// Pipe-only edits are consumed by the existing helper at frame boundaries.
     pub fn requires_restart_from(&self, previous: &Self) -> bool {
         let mut without_pipe_edit = self.clone();

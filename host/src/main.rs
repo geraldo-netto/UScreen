@@ -99,6 +99,7 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
         stream_scale: cli.stream_scale.unwrap_or(saved.stream_scale),
         video_port: cli.video_port.unwrap_or(saved.video_port),
         input_port: cli.input_port.unwrap_or(saved.input_port),
+        pen_only: cli.pen_only || saved.pen_only,
         ..saved.clone()
     };
     effective.sanitize();
@@ -126,6 +127,33 @@ mod cli_tests {
             String::from_utf8_lossy(&output.stderr)
         );
         true
+    }
+
+    #[tokio::test]
+    async fn t288_start_rejects_cli_and_saved_pen_mode_before_resources() {
+        use super::*;
+        if isolated_config_test(
+            "cli_tests::t288_start_rejects_cli_and_saved_pen_mode_before_resources",
+        ) {
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        std::env::set_var("XDG_RUNTIME_DIR", dir.path());
+        let path = config::config_path();
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        for saved_mode in [false, true] {
+            std::fs::write(
+                &path,
+                format!("input_pen = false\npen_only = {saved_mode}\n"),
+            )
+            .unwrap();
+            let mut cli =
+                Cli::try_parse_from(["uscreen", "--helper", "/nonexistent-t288-helper"]).unwrap();
+            cli.pen_only = !saved_mode;
+            let error = run_daemon(cli).await.unwrap_err().to_string();
+            assert!(error.contains("requires Pen"), "T288: {error}");
+            assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+        }
     }
 
     #[cfg(feature = "inproc-encoder")]
@@ -1362,6 +1390,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Validate the complete effective range before claiming resources.
     let file_cfg = config::FileConfig::load();
     let effective = effective_config(&cli, &file_cfg);
+    effective.validate_input_mode()?;
     config::validate_encoder_for_build(&effective.encoder)?;
     config::slot_ports(
         effective.video_port,
@@ -1393,7 +1422,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let input_port = effective.input_port;
     let quality = effective.quality;
     let stream_scale = effective.stream_scale;
-    let pen_only = initial_pen_only(cli.pen_only, &file_cfg);
+    let pen_only = effective.pen_only;
 
     let cap_config = slot_capture_config(
         capture::CaptureConfig {
@@ -1649,16 +1678,6 @@ fn heal_config(file_cfg: &config::FileConfig) {
             Err(e) => warn!("Could not rewrite the config file: {}", e),
         }
     }
-}
-
-fn initial_pen_only(requested: bool, file_cfg: &config::FileConfig) -> bool {
-    let mut pen_only = requested || file_cfg.pen_only;
-    if pen_only && !file_cfg.input_pen {
-        warn!("Pen-only mode needs the pen device, but input_pen is off in config.toml — starting as a second screen");
-        pen_only = false;
-    }
-
-    pen_only
 }
 
 fn create_session_token(required: bool) -> Result<Option<String>> {

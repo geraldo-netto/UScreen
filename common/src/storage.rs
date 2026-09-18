@@ -150,6 +150,7 @@ impl FileConfig {
     }
 
     fn write_at(&self, path: &Path) -> Result<()> {
+        self.validate_input_mode()?;
         slot_ports(self.video_port, self.input_port, self.max_tablets)?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -191,6 +192,39 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t288_invalid_pen_mode_save_preserves_previous_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        let store = ConfigStore::new(path.clone());
+        let saved = store
+            .update(|cfg| {
+                cfg.input_pen = false;
+                Ok(())
+            })
+            .unwrap();
+        let previous = std::fs::read(&path).unwrap();
+        let invalid = FileConfig {
+            pen_only: true,
+            ..saved.clone()
+        };
+        assert!(
+            store.save_edits(&invalid, &saved).is_err(),
+            "T288: incompatible save must fail"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), previous);
+        for pen_only in [false, true] {
+            let valid = store
+                .update(|cfg| {
+                    cfg.input_pen = true;
+                    cfg.pen_only = pen_only;
+                    Ok(())
+                })
+                .unwrap();
+            assert_eq!(store.load(), valid);
+        }
+    }
 
     #[test]
     fn t264_position_aliases_round_trip_as_one_canonical_choice() {

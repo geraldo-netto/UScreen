@@ -1002,9 +1002,20 @@ impl App {
     fn setting_mode(&mut self, ui: &mut egui::Ui) {
         ui.label("Mode");
         ui.vertical(|ui| {
-            ui.checkbox(
-                &mut self.cfg.pen_only,
-                "Graphics tablet instead of a second screen",
+            ui.set_min_width(250.0);
+            ui.add_enabled(
+                self.cfg.input_pen || self.cfg.pen_only,
+                egui::Checkbox::new(
+                    &mut self.cfg.pen_only,
+                    "Graphics tablet instead of a second screen",
+                ),
+            );
+            ui.label(
+                egui::RichText::new(
+                    "This mode requires Pen. Disable this mode before disabling Pen.",
+                )
+                .weak()
+                .size(11.0),
             );
             ui.label(
                 egui::RichText::new(
@@ -1026,9 +1037,12 @@ impl App {
                 &mut self.cfg.input_touch,
                 "Touchscreen (taps on the tablet)",
             );
-            ui.checkbox(
-                &mut self.cfg.input_pen,
-                "Pen tablet (stylus, pressure, tilt)",
+            ui.add_enabled(
+                !self.cfg.pen_only || !self.cfg.input_pen,
+                egui::Checkbox::new(
+                    &mut self.cfg.input_pen,
+                    "Pen tablet (stylus, pressure, tilt)",
+                ),
             );
             // Preserve the dormant preference. The daemon creates a pointer
             // only when both pen and pointer are enabled.
@@ -1498,10 +1512,13 @@ mod tests {
         ctx: &egui::Context,
         events: Vec<egui::Event>,
     ) -> Vec<(String, egui::Rect)> {
-        settings_test_frame(app, ctx, events, |app, ui| {
+        let render = |app: &mut App, ui: &mut egui::Ui| {
             app.setting_mode(ui);
             app.setting_input_devices(ui);
-        })
+        };
+        // Let egui settle the grid's remembered column widths before clicking.
+        settings_test_frame(app, ctx, Vec::new(), render);
+        settings_test_frame(app, ctx, events, render)
     }
 
     fn window_test_frame(
@@ -1525,6 +1542,65 @@ mod tests {
             collect_text_rects(&shape.shape, &mut text);
         }
         text
+    }
+
+    #[test]
+    fn t288_pen_mode_dependency_holds_in_both_toggle_orders() {
+        let mut app = settings_test_app(Tab::Display);
+        let ctx = egui::Context::default();
+        let pen = "Pen tablet (stylus, pressure, tilt)";
+        let mode = "Graphics tablet instead of a second screen";
+        click_settings_text(&mut app, &ctx, pen, input_test_frame);
+        assert!(!app.cfg.input_pen);
+        click_settings_text(&mut app, &ctx, mode, input_test_frame);
+        assert!(!app.cfg.pen_only, "T288: mode needs a pen");
+        click_settings_text(&mut app, &ctx, pen, input_test_frame);
+        click_settings_text(&mut app, &ctx, mode, input_test_frame);
+        assert!(app.cfg.pen_only);
+        click_settings_text(&mut app, &ctx, pen, input_test_frame);
+        assert!(
+            app.cfg.input_pen,
+            "T288: leave mode before disabling its pen"
+        );
+        click_settings_text(&mut app, &ctx, mode, input_test_frame);
+        click_settings_text(&mut app, &ctx, pen, input_test_frame);
+        assert!(!app.cfg.input_pen);
+    }
+
+    #[test]
+    fn t288_old_invalid_file_stays_visible_until_user_repairs_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(&path, "pen_only = true\ninput_pen = false\n").unwrap();
+        let mut app = settings_test_app(Tab::Display);
+        app.store = ConfigStore::new(path.clone());
+        app.cfg = app.store.load();
+        app.saved_cfg = app.cfg.clone();
+        let ctx = egui::Context::default();
+        let text = input_test_frame(&mut app, &ctx, Vec::new());
+        assert_eq!(
+            app.cfg, app.saved_cfg,
+            "T288: do not silently change an invalid file"
+        );
+        assert!(text.iter().any(|(text, _)| text.contains("requires Pen")));
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert!(app.message.contains("requires Pen"), "{}", app.message);
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            "pen_only = true\ninput_pen = false\n"
+        );
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Graphics tablet instead of a second screen",
+            input_test_frame,
+        );
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.message, "Settings saved");
+        assert!(!app.store.load().pen_only);
+        assert!(!app.store.load().input_pen);
     }
 
     #[test]

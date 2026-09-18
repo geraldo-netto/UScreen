@@ -226,6 +226,11 @@ them. See the README for config paths and the app gear-menu controls.
 | `require_token` / `check_updates` / `auto_launch_app` | true / true / true | Keep authentication enabled; update checks are optional |
 | `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
 
+Graphics-tablet mode requires `input_pen = true`. The GUI prevents incompatible
+toggle combinations; saving or starting with an incompatible file or `--pen-only`
+fails with an explanation before restarting or allocating display resources.
+Existing invalid files remain editable: enable Pen or disable graphics-tablet mode.
+
 Independent width/height/FPS limits do not guarantee a valid EDID combination
 (T332). The GUI offers all registered encoder/profile choices, including HEVC VAAPI;
 10-bit controls are enabled for HEVC. The render-node path remains a config setting.
