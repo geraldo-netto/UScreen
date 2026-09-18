@@ -30,8 +30,8 @@ from the existing implementation.
    it closes when the helper opens the replacement FIFO or shuts down. The helper
    and virtual display stay attached; delayed reports for old inodes are
    ignored. The target FPS is not a guarantee of capture throughput.
-3. **Encode.** The default FFmpeg child uses NVENC, VAAPI, software libx264 or libvpx VP9.
-   VP9 framing, profiles and peer checks are described in [video codecs](video-codecs.md).
+3. **Encode.** The default FFmpeg child uses NVENC, VAAPI, software libx264, libvpx VP9 or libaom AV1.
+   VP9/AV1 framing, profiles and peer checks are described in [video codecs](video-codecs.md).
    NVENC uses VBR/constant-quality targeting, VAAPI uses CQP, and libx264 uses
    CRF with VBV limits. The configured bitrate is not a VAAPI ceiling (T259).
    VAAPI requests async depth one only when stock encoder help advertises it.
@@ -40,7 +40,7 @@ from the existing implementation.
    See the [codec measurements](benchmarks/2026-09-18-codecs.md).
    B-frames/lookahead are disabled on the low-latency paths. An optional
    in-process libavcodec encoder avoids the child process; it does not support
-   `ten_bit`. The optional build rejects VAAPI and VP9 before capture setup and rejects
+   `ten_bit`. The optional build rejects VAAPI, VP9 and AV1 before capture setup and rejects
    live tablet requests to select them; both use the default FFmpeg child path.
 4. **Keyframes and delivery.** The FFmpeg CLI requests a random-access keyframe each second of
    capture wall-clock time, including the five-fps idle floor. Actual recovery
@@ -147,7 +147,7 @@ encoded output. `capture::placement` handles desktop placement, while
 `capture::process` provides bounded termination and validated orphan retirement.
 The `media` module owns codec, packet, generation and live-settings contracts,
 so streaming, input and encoding do not depend on capture management.
-`ivf` reads bounded VP9 packets and classifies random-access headers.
+`ivf` reads bounded VP9/AV1 packets and classifies random-access headers.
 `annex_b` assembles H.264/HEVC access units using `encoder_io`'s shared NAL scanner.
 It reads into owned spare capacity and reclaims consumed input by offset;
 the incremental cursor avoids rescanning retained payloads. Borrowed complete
@@ -324,7 +324,7 @@ The server sends:
 | --- | --- |
 | Packet length | Four-byte unsigned big-endian integer; excludes these four bytes, includes type and all payload bytes |
 | Packet type | One byte: 0 for codec configuration, 1 for frame |
-| Type 0 payload | H.264/HEVC Annex B parameter sets, or the [VP9 configuration envelope](video-codecs.md#framing) |
+| Type 0 payload | H.264/HEVC Annex B parameter sets, or the [VP9/AV1 configuration envelope](video-codecs.md#framing) |
 | Type 1 payload | Four-byte unsigned big-endian sequence number, then encoded access-unit bytes |
 
 The codec is announced on the input/control connection; there is no separate

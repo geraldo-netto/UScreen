@@ -15,7 +15,10 @@ fn append_packet(data: &mut Vec<u8>, payload: &[u8], seq: u32) {
     data.extend_from_slice(payload);
 }
 async fn packets(data: &[u8]) -> Result<Vec<VideoPacket>> {
-    let mut parser = IvfPacketizer::new(Codec::Vp9, Default::default());
+    packets_for(Codec::Vp9, data).await
+}
+async fn packets_for(codec: Codec, data: &[u8]) -> Result<Vec<VideoPacket>> {
+    let mut parser = IvfPacketizer::new(codec, Default::default());
     let mut input = data;
     let mut packets = Vec::new();
     loop {
@@ -25,6 +28,96 @@ async fn packets(data: &[u8]) -> Result<Vec<VideoPacket>> {
             return Ok(packets);
         }
     }
+}
+
+#[tokio::test]
+async fn t433_stock_av1_preserves_decode_hashes_and_late_join_points() {
+    let profile = uscreen_config::encoding::Profile::new("libaom-av1", 30, 20000, 18).unwrap();
+    let encoded = std::process::Command::new("ffmpeg")
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=64x64:rate=30",
+            "-frames:v",
+            "6",
+            "-c:v",
+            "libaom-av1",
+        ])
+        .args(
+            profile
+                .cli_options(false)
+                .into_iter()
+                .flat_map(|(key, value)| [key, value]),
+        )
+        .args(["-g", "3", "-f", "ivf", "pipe:1"])
+        .output()
+        .expect("T433: stock ffmpeg required");
+    assert!(
+        encoded.status.success(),
+        "{}",
+        String::from_utf8_lossy(&encoded.stderr)
+    );
+    let frames = packets_for(Codec::Av1, &encoded.stdout).await.unwrap();
+    assert_eq!(frames.len(), 6);
+    assert_eq!(
+        frames.iter().map(|f| f.is_idr).collect::<Vec<_>>(),
+        [true, false, false, true, false, false]
+    );
+    assert_eq!(
+        frames[0].codec_config.as_ref().unwrap().as_ref(),
+        b"USC1\x04\0\0\0\x40\0\0\0\x40"
+    );
+    let reference = frame_hashes(&encoded.stdout);
+    assert_eq!(reference.len(), 6);
+    assert_eq!(frame_hashes(&av1_ivf(&frames)), reference);
+    let joined = av1_ivf(&frames[3..]);
+    assert_eq!(frame_hashes(&joined), reference[3..]);
+    assert!(packets_for(Codec::Av1, &joined).await.unwrap()[0].is_idr);
+    assert!(packets_for(Codec::Vp9, &encoded.stdout).await.is_err());
+    for missing in 1..=12 {
+        assert!(packets_for(
+            Codec::Av1,
+            &encoded.stdout[..encoded.stdout.len() - missing]
+        )
+        .await
+        .is_err());
+    }
+}
+
+fn av1_ivf(frames: &[VideoPacket]) -> Vec<u8> {
+    let mut data = header();
+    data[8..12].copy_from_slice(b"AV01");
+    data[24..28].copy_from_slice(&(frames.len() as u32).to_le_bytes());
+    for (index, frame) in frames.iter().enumerate() {
+        append_packet(&mut data, &frame.data, index as u32);
+    }
+    data
+}
+
+fn frame_hashes(data: &[u8]) -> Vec<String> {
+    use std::io::Write;
+    let mut file = tempfile::NamedTempFile::new().unwrap();
+    file.write_all(data).unwrap();
+    let decoded = std::process::Command::new("ffmpeg")
+        .args(["-hide_banner", "-loglevel", "error", "-i"])
+        .arg(file.path())
+        .args(["-f", "framemd5", "pipe:1"])
+        .output()
+        .unwrap();
+    assert!(
+        decoded.status.success(),
+        "{}",
+        String::from_utf8_lossy(&decoded.stderr)
+    );
+    String::from_utf8_lossy(&decoded.stdout)
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .map(|line| line.rsplit(',').next().unwrap().trim().to_string())
+        .collect()
 }
 #[tokio::test]
 async fn t432_ivf_preserves_packet_flags_configuration_and_retirement() {

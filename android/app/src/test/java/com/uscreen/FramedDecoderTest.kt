@@ -22,11 +22,17 @@ class FramedDecoderTest {
         return type.getDeclaredConstructor(VideoReceiver::class.java, Long::class.javaPrimitiveType)
             .apply { isAccessible = true }.newInstance(receiver, generation) as VideoPacketSink
     }
-    @Suppress("UNCHECKED_CAST")
     @Test fun t432_wireConfigurationCreatesDecoderAtEncodedDimensionsAndRejectsRetiredRun() {
+        configurationCreatesDecoder("video/x-vnd.on2.vp9", 3)
+    }
+    @Test fun t433_wireConfigurationCreatesAv1DecoderAtEncodedDimensionsAndRejectsRetiredRun() {
+        configurationCreatesDecoder("video/av01", 4)
+    }
+    @Suppress("UNCHECKED_CAST")
+    private fun configurationCreatesDecoder(mime: String, id: Byte) {
         StartupCodecShadow.stage = ""
         val receiver = VideoReceiver()
-        receiver.mimeType = "video/x-vnd.on2.vp9"
+        receiver.mimeType = mime
         receiver.formatWidth = 1280
         receiver.formatHeight = 800
         val surface = Surface(SurfaceTexture(1))
@@ -38,7 +44,7 @@ class FramedDecoderTest {
             formats.add(parameters)
             MediaCodec.createDecoderByType(parameters.mimeType)
         }
-        val configuration = ByteBuffer.allocate(13).putInt(0x55534331).put(3).putInt(640).putInt(400).array()
+        val configuration = ByteBuffer.allocate(13).putInt(0x55534331).put(id).putInt(640).putInt(400).array()
         try {
             assertThrows(IllegalStateException::class.java) { packets(receiver, 1).configuration(configuration, 0, 13) }
             assertTrue(formats.isEmpty())

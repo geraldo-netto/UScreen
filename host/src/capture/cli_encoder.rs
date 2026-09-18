@@ -644,8 +644,17 @@ mod framed_tests {
 
     #[tokio::test]
     async fn t432_stock_cli_emits_sparse_vp9_without_next_frame_or_eof() {
+        sparse_frames("libvpx-vp9").await;
+    }
+
+    #[tokio::test]
+    async fn t433_stock_cli_emits_sparse_av1_without_next_frame_or_eof() {
+        sparse_frames("libaom-av1").await;
+    }
+
+    async fn sparse_frames(encoder: &str) {
         let config = CaptureConfig {
-            encoder: "libvpx-vp9".into(),
+            encoder: encoder.into(),
             fps: 60,
             instance: u32::MAX,
             ..Default::default()
@@ -670,7 +679,8 @@ mod framed_tests {
             .unwrap();
         let mut stdin = child.stdin.take().unwrap();
         let mut stdout = tokio::io::BufReader::new(child.stdout.take().unwrap());
-        let mut parser = crate::ivf::IvfPacketizer::new(Codec::Vp9, Default::default());
+        let mut parser =
+            crate::ivf::IvfPacketizer::new(Codec::from_encoder(encoder), Default::default());
         let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), async {
             // nobuffer consumes the initial rawvideo probe frame. Warm startup,
             // then every sparse input must produce output while stdin stays open.
@@ -686,7 +696,7 @@ mod framed_tests {
                 assert_eq!(
                     frame.len(),
                     1,
-                    "T432: sparse frame must not wait for its successor"
+                    "T432/T433: sparse frame must not wait for its successor"
                 );
             }
         })
@@ -695,7 +705,7 @@ mod framed_tests {
         child.wait().await.unwrap();
         assert!(
             outcome.is_ok(),
-            "T432: stock CLI retained a frame or failed to encode"
+            "T432/T433: stock CLI retained a frame or failed to encode"
         );
     }
 }

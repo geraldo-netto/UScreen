@@ -16,6 +16,23 @@ class VideoCodecTest {
     private fun header(width: Int = 640, private: ByteArray = byteArrayOf()): ByteArray =
         ByteBuffer.allocate(13 + private.size).putInt(0x55534331).put(3).putInt(width).putInt(400).put(private).array()
 
+    @Test fun t433_av1ConfigurationAndCapabilitiesAreDistinctFromVp9() {
+        val mime = "video/av01"
+        assertEquals(mime, VideoCodec.types["av1"])
+        assertTrue(VideoCodec.framed(mime))
+        val data = header().apply { this[4] = 4 }
+        val format = VideoCodec.configuration(data, 0, data.size, mime, 60)
+        assertEquals(mime, format.mimeType)
+        assertArrayEquals(byteArrayOf(), format.codecPrivate)
+        val report = DecoderCapabilities.describe(640, 400, 60) { type, _, _, _ -> type == mime }
+        assertEquals("[\"av1\"]", report.getJSONArray("codecs").toString())
+        val oldPeer = DecoderCapabilities.describe(640, 400, 60) { type, _, _, _ -> type == "video/avc" }
+        assertEquals("[\"h264\"]", oldPeer.getJSONArray("codecs").toString())
+        assertThrows(IllegalArgumentException::class.java) {
+            VideoCodec.configuration(header(), 0, 13, mime, 60)
+        }
+    }
+
     @Test fun t432_vp9ConfigurationIsMetadataNotAnEncodedAccessUnit() {
         val bytes = byteArrayOf(99) + header(private = byteArrayOf(1, 2)) + byteArrayOf(88)
         val parsed = VideoCodec.configuration(bytes, 1, bytes.size - 2, vp9, 60)

@@ -1913,25 +1913,34 @@ fi
 
     #[tokio::test]
     async fn t432_vp9_requires_current_peer_format_support() {
-        let (mut client, tx, task) = connection("libvpx-vp9").await;
+        framed_peer_support("libvpx-vp9", "vp9").await;
+    }
+
+    #[tokio::test]
+    async fn t433_av1_requires_current_peer_format_support() {
+        framed_peer_support("libaom-av1", "av1").await;
+    }
+
+    async fn framed_peer_support(encoder: &str, codec: &str) {
+        let (mut client, tx, task) = connection(encoder).await;
         let greeting = response(&mut client).await;
         assert_eq!(
             greeting["codec"], "h264",
             "T432: old/unknown peer needs fallback"
         );
         let caps = serde_json::json!({ "protocol": 1, "width": greeting["video_width"],
-            "height": greeting["video_height"], "fps": greeting["fps"], "codecs": ["vp9"] });
+            "height": greeting["video_height"], "fps": greeting["fps"], "codecs": [codec] });
         client
             .send(Message::Text(
                 serde_json::json!({"type":"decoders", "capabilities":caps}).to_string(),
             ))
             .await
             .unwrap();
-        assert_eq!(response(&mut client).await["codec"], "vp9");
+        assert_eq!(response(&mut client).await["codec"], codec);
         assert_eq!(
             tx.borrow().encoder,
-            "libvpx-vp9",
-            "T432: do not persist fallback over preference"
+            encoder,
+            "T432/T433: do not persist fallback over preference"
         );
         tx.send_modify(|settings| settings.fps = 30);
         assert_eq!(

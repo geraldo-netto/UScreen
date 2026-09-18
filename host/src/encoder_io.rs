@@ -117,7 +117,7 @@ pub(crate) fn annex_b_offsets(data: &[u8]) -> impl Iterator<Item = (usize, usize
 fn parameter_set_slot(header: u8, codec: Codec) -> Option<usize> {
     let (kind, types): (u8, &[u8]) = match codec {
         Codec::H264 => (header & 0x1f, &[7, 8]),
-        Codec::Vp9 => return None,
+        Codec::Vp9 | Codec::Av1 => return None,
         Codec::Hevc => ((header >> 1) & 0x3f, &[32, 33, 34]),
     };
     types.iter().position(|&candidate| candidate == kind)

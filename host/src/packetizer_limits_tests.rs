@@ -5,7 +5,7 @@ fn nal(codec: Codec, kind: u8, payload: usize) -> Vec<u8> {
     let mut data = vec![0, 0, 0, 1];
     match codec {
         Codec::H264 => data.push(kind),
-        Codec::Vp9 => unreachable!("Annex B fixture"),
+        Codec::Vp9 | Codec::Av1 => unreachable!("Annex B fixture"),
         Codec::Hevc => data.extend([kind << 1, 1]),
     }
     data.push(0x80);

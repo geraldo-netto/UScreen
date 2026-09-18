@@ -8,6 +8,7 @@ pub enum Backend {
     Vaapi,
     X264,
     Vpx,
+    Aom,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -18,7 +19,25 @@ pub struct Encoder {
     pub hevc: bool,
 }
 
-pub const ENCODERS: [Encoder; 8] = [
+pub const ENCODERS: [Encoder; 11] = [
+    Encoder {
+        name: "libaom-av1",
+        label: "Software AV1 (libaom)",
+        backend: Backend::Aom,
+        hevc: false,
+    },
+    Encoder {
+        name: "av1_nvenc",
+        label: "NVIDIA AV1 (NVENC)",
+        backend: Backend::Nvenc,
+        hevc: false,
+    },
+    Encoder {
+        name: "av1_vaapi",
+        label: "Intel / AMD AV1 (VAAPI)",
+        backend: Backend::Vaapi,
+        hevc: false,
+    },
     Encoder {
         name: "h264_nvenc",
         label: "NVIDIA H.264 (NVENC)",
@@ -96,7 +115,7 @@ impl Encoder {
         anyhow::ensure!(self.backend != Backend::Vaapi, INPROC_VAAPI_UNSUPPORTED);
         anyhow::ensure!(
             !crate::video::Codec::from_encoder(self.name).framed(),
-            "VP9 requires the stock FFmpeg CLI adapter; build without inproc-encoder"
+            "VP9/AV1 require the stock FFmpeg CLI adapter; build without inproc-encoder"
         );
         Ok(())
     }
@@ -119,7 +138,7 @@ impl Profile {
         let buffer_kbits = match encoder.backend {
             Backend::Nvenc => Some((bitrate_kbps / gop).max(200)),
             Backend::X264 => Some((bitrate_kbps * 2 / gop).max(200)),
-            Backend::Vaapi | Backend::Vpx => None,
+            Backend::Vaapi | Backend::Vpx | Backend::Aom => None,
         };
         Ok(Self {
             encoder,
@@ -148,6 +167,16 @@ impl Profile {
             ),
             Backend::Vaapi => (&[("rc_mode", "CQP")], "qp"),
             Backend::X264 => (&[("preset", "ultrafast"), ("tune", "zerolatency")], "crf"),
+            Backend::Aom => (
+                &[
+                    ("usage", "realtime"),
+                    ("cpu-used", "8"),
+                    ("lag-in-frames", "0"),
+                    ("auto-alt-ref", "0"),
+                    ("row-mt", "1"),
+                ],
+                "crf",
+            ),
             Backend::Vpx => (
                 &[
                     ("deadline", "realtime"),
@@ -180,7 +209,7 @@ impl Profile {
         if let Some(buffer) = self.buffer_kbits {
             options.push(("-bufsize".into(), format!("{buffer}k")));
         }
-        if self.encoder.backend == Backend::Vpx {
+        if matches!(self.encoder.backend, Backend::Vpx | Backend::Aom) {
             options.push(("-b:v".into(), format!("{}k", self.bitrate_kbps)));
         }
         self.cli_controls(ten_bit, &mut options);
@@ -192,12 +221,12 @@ impl Profile {
             Backend::Nvenc => &[("-bf", "0"), ("-b:v", "0")],
             // T400: request processing depth one when the CLI capability probe
             // confirms support; avoids a measured extra input interval.
-            Backend::Vaapi if self.encoder.name == "vp9_vaapi" => {
+            Backend::Vaapi if crate::video::Codec::from_encoder(self.encoder.name).framed() => {
                 &[("-bf", "0"), ("-async_depth", "1")]
             }
             Backend::Vaapi => &[("-bf", "0"), ("-idr_interval", "0"), ("-async_depth", "1")],
             Backend::X264 => &[("-x264-params", "scenecut=0")],
-            Backend::Vpx => &[("-pix_fmt", "yuv420p")],
+            Backend::Vpx | Backend::Aom => &[("-pix_fmt", "yuv420p")],
         };
         options.extend(
             controls
@@ -232,6 +261,19 @@ impl Profile {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t433_av1_profiles_use_framed_stock_cli_and_reject_inproc() {
+        for name in ["libaom-av1", "av1_nvenc", "av1_vaapi"] {
+            let profile = Profile::new(name, 60, 20000, 18).expect("T433: AV1 encoder missing");
+            let codec = crate::video::Codec::from_encoder(name);
+            assert_eq!(codec.wire_name(), "av1");
+            assert_eq!(codec.muxer(), "ivf");
+            assert!(codec.framed());
+            assert!(profile.inproc_options().is_err());
+            assert!(!profile.encoder.hevc);
+        }
+    }
 
     #[test]
     fn t400_low_latency_vaapi_is_distinct_from_stock_encoder_name() {

@@ -136,7 +136,7 @@ host/              Rust daemon
   src/main.rs        CLI, orchestration, adb monitor, per-tablet sessions
   src/media.rs       Shared codec, frame-generation and live-settings contracts
   src/annex_b.rs     Incremental H.264/HEVC access-unit assembly
-  src/ivf.rs         Bounded VP9 packet framing
+  src/ivf.rs         Bounded VP9/AV1 packet framing
   src/capture.rs     Capture supervision: settings, cancellation, retries
   src/capture/       Helper/FIFO, encoder, process and desktop adapters
   src/encoder.rs     optional in-process libavcodec encoder
@@ -252,6 +252,8 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
 - VP9: `libvpx-vp9` or `vp9_vaapi` on a GPU with encoding support. The CLI
   uses IVF framing and requires a current tablet capability report; see
   [codec compatibility and protocol](video-codecs.md).
+- AV1: `libaom-av1`, `av1_nvenc` or `av1_vaapi`, subject to actual encoder and
+  tablet support. Shares IVF framing and capability checks with VP9.
 - CPU H.264: `libx264`, `ultrafast`/`zerolatency`; throughput depends on CPU,
   resolution and content. No general laptop FPS limit has been measured here.
 
@@ -290,7 +292,7 @@ container can supply the build environment; the installed binary still needs
 ABI-compatible FFmpeg shared libraries at runtime. `ten_bit` is not available
 on this path. The default FFmpeg subprocess build needs no FFmpeg headers.
 The optional build rejects VAAPI selections (including the legacy
-`vaapih264enc` alias) and VP9 before daemon resources or capture helpers are
+`vaapih264enc` alias) and VP9/AV1 before daemon resources or capture helpers are
 created. Tablet requests cannot switch a running optional build to these encoders. This adapter
 has no hardware-frames context/render-node integration: use the default build
 for VAAPI, or select libx264/NVENC with the optional build. Compiling the feature
@@ -312,7 +314,7 @@ The CLI adapter adds command syntax, periodic wall-clock IDRs, explicit
 `scenecut=0` for x264, VAAPI upload filters and optional HEVC depth conversion.
 The in-process adapter sets bitrate/GOP/B-frame/color fields through the typed
 libavcodec context, passes buffer sizes in bits, and requests IDRs on frames.
-Its input remains 8-bit NV12; VAAPI and VP9 are rejected. Both adapters use BT.709
+Its input remains 8-bit NV12; VAAPI, VP9 and AV1 are rejected. Both adapters use BT.709
 limited-range input; CLI color tags stay before `-i` to avoid conversion.
 T373 boundary tests preserve these adapter differences, while the existing
 software encode/decode regressions verify color and rate behavior.
