@@ -39,6 +39,8 @@ use clap::Parser;
 mod discovery_tests;
 
 #[cfg(test)]
+use monitor::test_support::{deliver_extra_token, recover_assigned_apps};
+#[cfg(test)]
 use session::start_servers;
 use session::Runtime as ExtraSession;
 use std::path::PathBuf;
@@ -2052,51 +2054,6 @@ impl RelaunchBackoff {
         self.next = Some(now + self.delay);
         self.delay = (self.delay * 2).min(std::time::Duration::from_secs(600));
         true
-    }
-}
-
-#[cfg(test)]
-async fn deliver_extra_token(
-    requested: &str,
-    token: Option<&str>,
-    policies: &mut std::collections::HashMap<String, RelaunchBackoff>,
-    now: std::time::Instant,
-    adb: &str,
-) {
-    if !is_fake_serial(requested)
-        && policies
-            .get_mut(requested)
-            .is_some_and(|policy| policy.allow(now))
-    {
-        launch_app_using(requested, token, adb).await;
-    }
-}
-
-#[cfg(test)]
-async fn recover_assigned_apps(
-    assigned: &[String],
-    auto_launch: bool,
-    token: Option<&str>,
-    policies: &mut std::collections::HashMap<String, RelaunchBackoff>,
-    now: std::time::Instant,
-    adb: &str,
-) {
-    if !auto_launch {
-        return;
-    }
-    use futures_util::StreamExt;
-    let work: Vec<_> = assigned
-        .iter()
-        .filter(|serial| !is_fake_serial(serial))
-        .map(|serial| (serial.clone(), policies.remove(serial).unwrap_or_default()))
-        .collect();
-    let mut work = futures_util::stream::iter(
-        work.into_iter()
-            .map(|(serial, policy)| recover_app(serial, policy, token, now, adb)),
-    )
-    .buffer_unordered(4);
-    while let Some((serial, policy)) = work.next().await {
-        policies.insert(serial, policy);
     }
 }
 

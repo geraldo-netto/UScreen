@@ -120,7 +120,7 @@ impl Monitor {
         self.queue_inventory(recover);
         if recover {
             self.last_recovery = Instant::now();
-            self.recover_apps();
+            self.recover_apps(Instant::now());
         }
     }
 
@@ -413,7 +413,7 @@ impl Monitor {
         }
     }
 
-    fn recover_apps(&mut self) {
+    fn recover_apps(&mut self, now: Instant) {
         if !self.config.auto_launch {
             return;
         }
@@ -430,7 +430,7 @@ impl Monitor {
             let job_serial = serial.clone();
             self.mutations.schedule(serial, async move {
                 Mutation::Recovered(
-                    recover_app(job_serial, policy, token.as_deref(), Instant::now(), &adb)
+                    recover_app(job_serial, policy, token.as_deref(), now, &adb)
                         .await
                         .1,
                 )
@@ -470,14 +470,14 @@ impl Monitor {
         self.redeliver(serial);
     }
 
-    fn extra_token(&mut self, serial: String) {
+    fn extra_token(&mut self, serial: String, now: Instant) {
         if self.mutations.contains(&serial) {
             return;
         }
         if self
             .recovery
             .get_mut(&serial)
-            .is_some_and(|policy| policy.allow(Instant::now()))
+            .is_some_and(|policy| policy.allow(now))
         {
             self.redeliver(serial);
         }
@@ -543,7 +543,7 @@ async fn apply_event(state: &mut Monitor, event: Event) {
             state.retiring_slots.remove(&slot);
         }
         Event::PrimaryToken => state.primary_token(),
-        Event::ExtraToken(serial) => state.extra_token(serial),
+        Event::ExtraToken(serial) => state.extra_token(serial, Instant::now()),
         _ => {}
     }
 }
@@ -653,3 +653,7 @@ mod tests {
         state.stop().await;
     }
 }
+
+#[cfg(test)]
+#[path = "monitor_test_support.rs"]
+pub(crate) mod test_support;
