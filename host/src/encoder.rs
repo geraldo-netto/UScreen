@@ -277,7 +277,9 @@ mod tests {
                 };
                 let pairs = expected.split_whitespace().collect::<Vec<_>>();
                 let expected = pairs
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|p| (p[0], p[1]))
                     .collect::<BTreeMap<_, _>>();
                 assert_eq!(actual, expected, "T373: {name}, {fps}");
