@@ -8,6 +8,11 @@ Results are scoped to their recorded build, hardware and workload.
 The [2026-09-17 device baseline](2026-09-17-device-baseline.md) is the initial
 physical-tablet run for the next optimization comparison.
 
+The [2026-09-18 packet-framing comparison](2026-09-18-packet-framing.md) measures
+stock FFmpeg input-to-packet-ready delay on the host, including sparse input
+and one/two/four concurrent encoders. It is separate from the physical-tablet
+baseline's packet-ready-to-render-ACK observations.
+
 ## Repeating the device baseline
 
 Build/install both applications first. Keep the Linux release profile and the

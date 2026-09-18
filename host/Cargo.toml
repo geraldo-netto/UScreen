@@ -23,6 +23,7 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bytes = "1"
+simd-adler32 = "0.3"
 futures-util = { version = "0.3", features = ["sink"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tokio-tungstenite = "0.21"

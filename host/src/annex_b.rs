@@ -3,10 +3,14 @@ use crate::media::{Codec, EncoderGeneration, VideoPacket};
 use crate::media_storage::MediaBytes as Bytes;
 use crate::video_queue::{MAX_CONFIG_BYTES, MAX_FRAME_BYTES};
 use anyhow::{ensure, Result};
+#[cfg(test)]
 use bytes::BufMut;
+#[cfg(test)]
 use tokio::io::AsyncReadExt;
 
+#[cfg(test)]
 const READ_BYTES: usize = 512 * 1024;
+#[cfg(test)]
 const INPUT_BYTES: usize = MAX_FRAME_BYTES + READ_BYTES + 3;
 
 // Instrument explicit copies without changing the production hot path.
@@ -47,12 +51,16 @@ const NAL_TYPE_AUD: u8 = 9;
 const NAL_TYPE_SPS: u8 = 7;
 const NAL_TYPE_PPS: u8 = 8;
 pub(crate) struct AnnexBPacketizer {
+    #[cfg(test)]
     buffer: Vec<u8>,
     /// Consumed bytes stay in place until more read capacity is needed.
+    #[cfg(test)]
     consumed: usize,
     /// First unchecked prefix position; retain three bytes across chunk boundaries.
+    #[cfg(test)]
     scan_from: usize,
     /// Start of the retained, incomplete NAL (relative to buffer).
+    #[cfg(test)]
     nal_start: Option<usize>,
     pending_access_unit: Vec<u8>,
     pending_has_vcl: bool,
@@ -68,9 +76,13 @@ impl AnnexBPacketizer {
     pub(crate) fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
         assert!(!codec.framed(), "Framed codecs do not use Annex B");
         Self {
+            #[cfg(test)]
             buffer: Vec::new(),
+            #[cfg(test)]
             consumed: 0,
+            #[cfg(test)]
             scan_from: 0,
+            #[cfg(test)]
             nal_start: None,
             pending_access_unit: Vec::new(),
             pending_has_vcl: false,
@@ -83,8 +95,37 @@ impl AnnexBPacketizer {
         }
     }
 
+    /// T448: libavcodec supplied a complete encoded packet, whose size and
+    /// checksum the stock tee muxer preserved. Do not wait for the next picture.
+    pub(crate) fn complete_packet(&mut self, input: &[u8]) -> Result<Vec<VideoPacket>> {
+        ensure!(
+            input.len() <= MAX_FRAME_BYTES,
+            "Encoded packet exceeds limit"
+        );
+        ensure!(
+            crate::encoder_io::annex_b_prefix_len(input).is_some(),
+            "Expected Annex B packet"
+        );
+        let mut starts = crate::encoder_io::annex_b_offsets(input).peekable();
+        let mut out = Vec::new();
+        while let Some((start, header)) = starts.next() {
+            let end = starts.peek().map_or(input.len(), |&(start, _)| start);
+            ensure!(header < end, "Empty encoded NAL");
+            self.process_nal(&input[start..end], &mut out)?;
+            ensure!(out.len() <= 1, "Multiple pictures in one encoded packet");
+        }
+        // Configuration/prefix-only AVPackets may precede the picture. Keep
+        // their bounded metadata until its VCL arrives, just as streaming did.
+        if self.pending_has_vcl {
+            self.emit_pending_access_unit(&mut out);
+        }
+        ensure!(out.len() <= 1, "Multiple pictures in one encoded packet");
+        Ok(out)
+    }
+
     /// Read directly into owned spare capacity. No zero-filled scratch buffer
     /// or scratch-to-parser payload copy. Cancellation drops this generation.
+    #[cfg(test)]
     pub(crate) async fn read_from(
         &mut self,
         stdout: &mut (impl tokio::io::AsyncRead + Unpin),
@@ -124,6 +165,7 @@ impl AnnexBPacketizer {
         self.process_complete_nals(false).unwrap()
     }
 
+    #[cfg(test)]
     fn prepare_input(&mut self, bytes: usize) {
         let retained = self.buffer.len() - self.consumed;
         // Reclaim a large consumed span while its tail is still small. Waiting
@@ -145,6 +187,7 @@ impl AnnexBPacketizer {
         reserve_bounded(&mut self.buffer, bytes, INPUT_BYTES);
     }
 
+    #[cfg(test)]
     pub(crate) fn finish(&mut self) -> Result<Vec<VideoPacket>> {
         let mut out = self.process_complete_nals(true)?;
         self.emit_pending_access_unit(&mut out);
@@ -176,6 +219,7 @@ impl AnnexBPacketizer {
         }
     }
 
+    #[cfg(test)]
     fn process_complete_nals(&mut self, flush: bool) -> Result<Vec<VideoPacket>> {
         // Temporarily move the Vec so borrowed NALs can update assembly state.
         // Return its capacity without shifting the unconsumed tail each chunk.
@@ -204,6 +248,7 @@ impl AnnexBPacketizer {
         Ok(out)
     }
 
+    #[cfg(test)]
     fn scan_nals(&mut self, input: &[u8], out: &mut Vec<VideoPacket>) -> Result<()> {
         let offset = self.scan_from;
         #[cfg(test)]
@@ -227,6 +272,7 @@ impl AnnexBPacketizer {
         Ok(())
     }
 
+    #[cfg(test)]
     fn trailing_nal_starts_picture(&self) -> bool {
         let trailing = &self.buffer[self.consumed..];
         let Some(offset) = nal_header_offset(trailing, 0) else {
@@ -879,7 +925,7 @@ mod profile;
 
 #[cfg(test)]
 #[path = "packetizer_decode_tests.rs"]
-mod decode_tests;
+pub(crate) mod decode_tests;
 
 #[cfg(test)]
 #[path = "packetizer_read_profile.rs"]

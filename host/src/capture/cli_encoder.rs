@@ -4,11 +4,14 @@
 mod timestamp_tests;
 
 #[cfg(test)]
+#[path = "framing_profile.rs"]
+mod framing_profile;
+#[cfg(test)]
 #[path = "startup_packet_tests.rs"]
 mod startup_packet_tests;
 
 use super::{fifo_path_for, CaptureConfig};
-use crate::annex_b::AnnexBPacketizer;
+use crate::framed_annex_b::FramedAnnexB;
 use crate::media::Codec;
 use crate::media::CodecConfig;
 use anyhow::{Context, Result};
@@ -162,7 +165,24 @@ impl CliEncoder<'_> {
                     .map(std::ffi::OsString::from),
             );
         }
-        encoder_args.extend_from_slice(&["-f".into(), codec.muxer().into(), "pipe:1".into()]);
+        if codec.framed() {
+            encoder_args.extend_from_slice(&["-f".into(), "ivf".into(), "pipe:1".into()]);
+        } else {
+            // T448: tee visits the metadata slave first and flushes it before
+            // the data slave writes this SAME pipe. Keep use_fifo disabled.
+            // `data` preserves AVPacket bytes without an implicit bitstream filter.
+            encoder_args.extend(
+                [
+                    "-map",
+                    "0:v:0",
+                    "-f",
+                    "tee",
+                    crate::framed_annex_b::TEE_OUTPUT,
+                ]
+                .into_iter()
+                .map(std::ffi::OsString::from),
+            );
+        }
         Ok(encoder_args)
     }
 
@@ -227,7 +247,7 @@ pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &st
 }
 
 pub(super) enum Packetizer {
-    AnnexB(AnnexBPacketizer),
+    AnnexB(FramedAnnexB),
     Ivf(crate::ivf::IvfPacketizer),
 }
 impl Packetizer {
@@ -235,7 +255,7 @@ impl Packetizer {
         if codec.framed() {
             Self::Ivf(crate::ivf::IvfPacketizer::new(codec, latency))
         } else {
-            Self::AnnexB(AnnexBPacketizer::new(codec, latency))
+            Self::AnnexB(FramedAnnexB::new(codec, latency))
         }
     }
     fn codec_config(&self) -> Option<crate::media_storage::MediaBytes> {
@@ -246,7 +266,7 @@ impl Packetizer {
     }
     pub(super) async fn read_from(
         &mut self,
-        input: &mut (impl tokio::io::AsyncRead + Unpin),
+        input: &mut (impl tokio::io::AsyncBufRead + Unpin),
     ) -> Result<(usize, Vec<crate::media::VideoPacket>)> {
         match self {
             Self::AnnexB(p) => p.read_from(input).await,
@@ -389,11 +409,11 @@ mod tests {
     async fn t228_sequences_survive_encoder_restarts_before_ack() {
         let latency = crate::latency::LatencyTracker::new();
         let (tx, mut rx) = crate::video_queue::channel(8, Default::default());
-        let input = [
+        let packets = [
             vec![0, 0, 0, 1, 5, 0x80, 0x11],
             vec![0, 0, 0, 1, 1, 0x80, 0x22],
-        ]
-        .concat();
+        ];
+        let input = crate::framed_annex_b::tests::stream(Codec::H264, &packets);
         let mut sequences = Vec::new();
         for _ in 0..2 {
             read_loop(
@@ -468,7 +488,11 @@ mod encoder_policy_tests {
             assert_eq!(value("-vaapi_device"), Some("/dev/dri/renderD129"));
             assert_eq!(value("-vf"), Some("settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))',format=nv12,hwupload"));
             assert_eq!(value("-async_depth"), supported.then_some("1"));
-            assert_eq!(value("-f"), Some("h264"));
+            assert_eq!(value("-f"), Some("tee"));
+            assert_eq!(
+                args.last().copied(),
+                Some(crate::framed_annex_b::TEE_OUTPUT)
+            );
         }
     }
 
@@ -613,10 +637,17 @@ mod encoder_policy_tests {
                 );
                 let depth = ten_bit && encoder.starts_with("hevc");
                 let filter = expected_filter(encoder.ends_with("_vaapi"), depth);
-                let timing = "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))'";
+                let timing =
+                    "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))'";
                 let full = value("-vf").expect("T421: all codecs need monotonic timestamps");
-                let suffix = full.strip_prefix(timing).expect("T421: unexpected timing filter");
-                assert_eq!(suffix.strip_prefix(','), filter, "T373: {encoder}, {ten_bit}");
+                let suffix = full
+                    .strip_prefix(timing)
+                    .expect("T421: unexpected timing filter");
+                assert_eq!(
+                    suffix.strip_prefix(','),
+                    filter,
+                    "T373: {encoder}, {ten_bit}"
+                );
             }
         }
     }

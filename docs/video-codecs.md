@@ -17,9 +17,9 @@ picture while keeping stdin open: H.264 starts encoded output and VP9/AV1 emit
 their complete framed picture. Five-picture EOF tests retain all five pictures.
 An isolated H.264 VAAPI burst now retains
 [all 128 supplied pictures](reviews/2026-09-18-timestamps/startup-retained.json),
-compared with 127 under the earlier `nobuffer` options. H.264/HEVC Annex B
-publication still needs a following delimiter or EOF; T448 tracks that separate
-assembly delay. These checks do not measure physical tablet startup latency.
+compared with 127 under the earlier `nobuffer` options. T448 subsequently adds
+explicit H.264/HEVC packet boundaries, so publication also completes without a
+following picture or EOF. These checks do not measure physical tablet startup latency.
 
 VP9 uses 8-bit 4:2:0 profile 0. The libvpx profile selects realtime operation,
 CPU-used 8, row threading, no lookahead and no alternate-reference generation.
@@ -113,7 +113,19 @@ rank a different adapter.
 
 ## Framing
 
-The host consumes stock FFmpeg's
+For H.264/HEVC, stock FFmpeg's `tee` muxer writes a `framecrc` metadata line and
+then the unchanged encoded `data` packet to the same stdout pipe, synchronously
+in that order with `flush_packets=1` on both outputs. No FFmpeg patch, secondary
+metadata pipe or `use_fifo` worker is involved. The host validates bounded
+headers, codec, dimensions, strictly increasing DTS, packet length and the
+zero-seeded Adler-32 checksum before assembling that complete Annex B packet.
+Despite the muxer's name, the checksum is Adler-32; it detects framing/content
+errors and is not cryptographic authentication. Metadata flags do not establish
+random access: the NAL parser retains that responsibility. One read operation
+publishes at most one picture. Sparse input therefore does not wait for a
+following start code or EOF. See the [T448 measurements](benchmarks/2026-09-18-packet-framing.md).
+
+For VP9/AV1, the host consumes stock FFmpeg's
 [IVF output](https://ffmpeg.org/doxygen/7.0/ivfenc_8c_source.html): a 32-byte
 header followed by a 12-byte length/timestamp header per encoded packet. It
 checks the version, FourCC, dimensions and frame-size bound before allocating.

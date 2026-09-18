@@ -114,3 +114,40 @@ async fn t447_all_supplied_raw_pictures_survive_startup() {
         assert_eq!(received, 5, "T447: {encoder} discarded a probe picture");
     }
 }
+
+#[tokio::test]
+async fn t448_h264_publishes_each_sparse_picture_before_the_next_input() {
+    let mut child = command("libx264").spawn().unwrap();
+    let mut input = child.stdin.take().unwrap();
+    let mut output = tokio::io::BufReader::new(child.stdout.take().unwrap());
+    let mut parser = Packetizer::new(Codec::H264, Default::default());
+    for index in 0..3 {
+        input
+            .write_all(&vec![80 + index; 64 * 64 * 3 / 2])
+            .await
+            .unwrap();
+        let received = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                let (bytes, packets) = parser.read_from(&mut output).await.unwrap();
+                assert!(bytes > 0, "T448: encoder ended prematurely");
+                if !packets.is_empty() {
+                    break packets;
+                }
+            }
+        })
+        .await;
+        assert!(
+            received.is_ok(),
+            "T448: picture {index} waits for a successor or EOF"
+        );
+        let packets = received.unwrap();
+        assert_eq!(packets.len(), 1);
+        assert_eq!(packets[0].seq, u32::from(index));
+        assert!(packets[0].codec_config.is_some());
+        if index == 0 {
+            assert!(packets[0].is_idr);
+        }
+    }
+    child.kill().await.unwrap();
+    child.wait().await.unwrap();
+}

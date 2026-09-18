@@ -410,22 +410,21 @@ async fn t116_idle_stream_provides_regular_decodable_join_points() {
 }
 #[cfg(not(feature = "inproc-encoder"))]
 async fn collect_idle_join_points(
-    mut output: tokio::process::ChildStdout,
+    output: tokio::process::ChildStdout,
     started: Instant,
 ) -> Vec<(std::time::Duration, Bytes)> {
-    use tokio::io::AsyncReadExt;
-    let mut parser = crate::annex_b::AnnexBPacketizer::new(Codec::H264, Default::default());
+    let mut output = BufReader::new(output);
+    let mut parser = super::cli_encoder::Packetizer::new(Codec::H264, Default::default());
     let mut keyframes = Vec::new();
-    let mut buffer = [0; 16384];
     loop {
-        let n = output.read(&mut buffer).await.unwrap();
-        if n == 0 {
-            break;
-        }
-        for packet in parser.push(&buffer[..n]) {
+        let (n, packets) = parser.read_from(&mut output).await.unwrap();
+        for packet in packets {
             if packet.is_idr {
                 keyframes.push((started.elapsed(), packet.data));
             }
+        }
+        if n == 0 {
+            break;
         }
     }
     keyframes
@@ -600,7 +599,11 @@ async fn t055_hevc_vaapi_supports_eight_and_ten_bit_output() {
         manager.shutdown().await;
         result.unwrap();
         assert!(args.windows(2).any(|p| p == ["-c:v", "hevc_vaapi"]));
-        assert!(args.windows(2).any(|p| p == ["-f", "hevc"]));
+        assert!(args.windows(2).any(|p| p == ["-f", "tee"]));
+        assert_eq!(
+            args.last().map(String::as_str),
+            Some(crate::framed_annex_b::TEE_OUTPUT)
+        );
         let filters: Vec<_> = args
             .windows(2)
             .filter(|p| p[0] == "-vf")

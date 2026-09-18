@@ -14,9 +14,14 @@ fn nal(codec: Codec, kind: u8, payload: usize) -> Vec<u8> {
 }
 
 async fn rejected(codec: Codec, data: &[u8]) {
+    rejected_packets(codec, &[data.to_vec()]).await;
+}
+
+async fn rejected_packets(codec: Codec, packets: &[Vec<u8>]) {
+    let data = crate::framed_annex_b::tests::stream(codec, packets);
     let (tx, _rx) = crate::video_queue::channel(8, Default::default());
     let result = read_loop(
-        data,
+        data.as_slice(),
         tx,
         Default::default(),
         Default::default(),
@@ -24,7 +29,13 @@ async fn rejected(codec: Codec, data: &[u8]) {
         evidence(),
     )
     .await;
-    assert!(result.is_err(), "T407: oversized assembly was accepted");
+    let error = format!("{:#}", result.unwrap_err());
+    assert!(
+        error.contains("packet size")
+            || error.contains("configuration exceeds")
+            || error.contains("access unit exceeds"),
+        "T407: unexpected failure: {error}"
+    );
 }
 
 #[tokio::test]
@@ -44,31 +55,29 @@ async fn t407_prefix_only_access_unit_is_bounded() {
 
 #[tokio::test]
 async fn t407_combined_parameter_sets_are_bounded() {
-    let mut data = Vec::new();
-    for kind in [32, 33, 34] {
-        data.extend(nal(Codec::Hevc, kind, 3 * 1024 * 1024));
-    }
-    rejected(Codec::Hevc, &data).await;
+    let packets = [32, 33, 34].map(|kind| nal(Codec::Hevc, kind, 3 * 1024 * 1024));
+    rejected_packets(Codec::Hevc, &packets).await;
 }
 
 #[tokio::test]
 async fn t407_idr_with_prepended_configuration_obeys_wire_limit() {
     let mut data = nal(Codec::H264, 7, 4 * 1024 * 1024);
     data.extend(nal(Codec::H264, 8, 16));
-    data.extend(nal(Codec::H264, 5, 5 * 1024 * 1024));
-    rejected(Codec::H264, &data).await;
+    rejected_packets(Codec::H264, &[data, nal(Codec::H264, 5, 5 * 1024 * 1024)]).await;
 }
 
 #[test]
 fn t407_stdout_read_avoids_scratch_to_parser_payload_copy() {
     let data = nal(Codec::H264, 1, 1024).repeat(50);
+    let encoded =
+        crate::framed_annex_b::tests::stream(Codec::H264, &vec![nal(Codec::H264, 1, 1024); 50]);
     let rt = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
     let (tx, _rx) = crate::video_queue::channel(8, Default::default());
     let (result, counts) = crate::allocation_probe::measure(|| {
         rt.block_on(read_loop(
-            data.as_slice(),
+            encoded.as_slice(),
             tx,
             Default::default(),
             Default::default(),
@@ -98,10 +107,10 @@ async fn t407_cancellation_retires_queued_generation_with_partial_next_nal() {
         Codec::H264,
         evidence(),
     ));
-    writer
-        .write_all(&[0, 0, 0, 1, 5, 0x80, 0x55, 0, 0, 0, 1, 1, 0x80])
-        .await
-        .unwrap();
+    let mut encoded =
+        crate::framed_annex_b::tests::stream(Codec::H264, &[vec![0, 0, 0, 1, 5, 0x80, 0x55]]);
+    encoded.extend_from_slice(b"0, 1, 1, 0, 100, 0x00000000\n\0\0\0\x01\x01\x80");
+    writer.write_all(&encoded).await.unwrap();
     let packet = tokio::time::timeout(std::time::Duration::from_secs(2), receiver.recv())
         .await
         .unwrap()
@@ -118,9 +127,10 @@ async fn t407_exact_frame_limit_survives_eof_and_read_boundaries() {
     let maximum = crate::video_queue::MAX_FRAME_BYTES;
     let data = nal(Codec::H264, 1, maximum - 6);
     assert_eq!(data.len(), maximum);
+    let encoded = crate::framed_annex_b::tests::stream(Codec::H264, std::slice::from_ref(&data));
     let (tx, mut receiver) = crate::video_queue::channel(8, Default::default());
     read_loop(
-        data.as_slice(),
+        encoded.as_slice(),
         tx,
         Default::default(),
         Default::default(),

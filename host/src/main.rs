@@ -15,6 +15,8 @@ mod edid;
 mod encoder;
 #[cfg_attr(not(feature = "inproc-encoder"), allow(dead_code))]
 mod encoder_io;
+#[cfg(not(feature = "inproc-encoder"))]
+mod framed_annex_b;
 mod input;
 #[cfg(not(feature = "inproc-encoder"))]
 mod ivf;

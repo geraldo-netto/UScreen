@@ -150,17 +150,21 @@ encoded output. `capture::placement` handles desktop placement, while
 The `media` module owns codec, packet, generation and live-settings contracts,
 so streaming, input and encoding do not depend on capture management.
 `ivf` reads bounded VP9/AV1 packets and classifies random-access headers.
-`annex_b` assembles H.264/HEVC access units using `encoder_io`'s shared NAL scanner.
-It reads into owned spare capacity and reclaims consumed input by offset;
-the incremental cursor avoids rescanning retained payloads. Borrowed complete
-NALs copy into bounded contiguous access-unit storage. Keyframe configuration
+`framed_annex_b` reads stock FFmpeg tee/framecrc metadata followed by each exact
+H.264/HEVC encoded packet from the same pipe. It checks bounded stream metadata,
+length, codec, timestamp order and checksum before `annex_b` assembles the packet
+using `encoder_io`'s shared NAL scanner. No following picture is needed to flush
+the current one. Borrowed complete NALs copy into bounded contiguous access-unit
+storage. Keyframe configuration
 is inserted before large slices, avoiding a second picture copy at publication.
 Immutable `MediaBytes` preserve each queued packet's configuration and full
 backing-allocation identity. NAL, access-unit and combined-configuration bounds
 apply before queue admission. The [CLI assembly report](benchmarks/2026-09-17-cli-assembly.md)
 records the ownership limits, real H.264/HEVC decode checks and comparison with
-the committed T384 baseline; [T384's original replay](benchmarks.md#annex-b-packetizer-replay)
-remains available. `capture::fifo` coordinates replacement of a damaged
+the committed T384 baseline; its former unframed read path and
+[T384's original replay](benchmarks.md#annex-b-packetizer-replay) remain as test
+and benchmark comparisons. The [framed packet report](benchmarks/2026-09-18-packet-framing.md)
+measures the subsequent sparse-cadence improvement. `capture::fifo` coordinates replacement of a damaged
 raw-frame FIFO; it creates the replacement before unlinking the old inode,
 preventing inode reuse during recovery. Raw frames still have no in-band
 sequence, size or generation header; both processes must use this reset

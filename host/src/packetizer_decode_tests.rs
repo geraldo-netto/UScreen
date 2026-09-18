@@ -3,6 +3,10 @@ use super::*;
 use std::process::{Command, Stdio};
 
 fn encode(codec: Codec) -> Vec<u8> {
+    encode_output(codec, false)
+}
+
+pub(crate) fn encode_output(codec: Codec, framed: bool) -> Vec<u8> {
     let (name, flag, options) = match codec {
         Codec::H264 => ("libx264", "-x264-params", "keyint=4:scenecut=0:aud=1"),
         Codec::Vp9 | Codec::Av1 => unreachable!("Annex B fixture"),
@@ -12,32 +16,39 @@ fn encode(codec: Codec) -> Vec<u8> {
             "pools=none:frame-threads=1:keyint=4:scenecut=0:aud=1:log-level=error",
         ),
     };
-    let output = Command::new("ffmpeg")
-        .args([
-            "-v",
-            "error",
+    let mut command = Command::new("ffmpeg");
+    command.args([
+        "-v",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc2=size=64x48:rate=30",
+        "-frames:v",
+        "12",
+        "-threads",
+        "1",
+        "-c:v",
+        name,
+        "-preset",
+        "ultrafast",
+        "-tune",
+        "zerolatency",
+        flag,
+        options,
+    ]);
+    if framed {
+        command.args([
+            "-map",
+            "0:v:0",
             "-f",
-            "lavfi",
-            "-i",
-            "testsrc2=size=64x48:rate=30",
-            "-frames:v",
-            "12",
-            "-threads",
-            "1",
-            "-c:v",
-            name,
-            "-preset",
-            "ultrafast",
-            "-tune",
-            "zerolatency",
-            flag,
-            options,
-            "-f",
-            codec.muxer(),
-            "pipe:1",
-        ])
-        .output()
-        .unwrap();
+            "tee",
+            crate::framed_annex_b::TEE_OUTPUT,
+        ]);
+    } else {
+        command.args(["-f", codec.muxer(), "pipe:1"]);
+    }
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "T407 encoder: {}",
@@ -46,7 +57,7 @@ fn encode(codec: Codec) -> Vec<u8> {
     output.stdout
 }
 
-fn decode(codec: Codec, data: &[u8]) -> Vec<u8> {
+pub(crate) fn decode(codec: Codec, data: &[u8]) -> Vec<u8> {
     use std::io::Write;
     let mut child = Command::new("ffmpeg")
         .args([

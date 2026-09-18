@@ -135,7 +135,8 @@ records one/two/four-client copying and allocation measurements.
 host/              Rust daemon
   src/main.rs        CLI, orchestration, adb monitor, per-tablet sessions
   src/media.rs       Shared codec, frame-generation and live-settings contracts
-  src/annex_b.rs     Incremental H.264/HEVC access-unit assembly
+  src/annex_b.rs     Complete H.264/HEVC access-unit assembly; legacy replay tests
+  src/framed_annex_b.rs  Bounded stock tee/framecrc packet framing
   src/ivf.rs         Bounded VP9/AV1 packet framing
   src/capture.rs     Capture supervision: settings, cancellation, retries
   src/capture/       Helper/FIFO, encoder, process and desktop adapters

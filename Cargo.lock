@@ -3727,6 +3727,7 @@ dependencies = [
  "libc",
  "serde",
  "serde_json",
+ "simd-adler32",
  "tempfile",
  "tokio",
  "tokio-tungstenite",
