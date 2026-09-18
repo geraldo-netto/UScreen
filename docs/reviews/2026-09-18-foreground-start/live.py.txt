@@ -1,0 +1,41 @@
+import subprocess,time,json,os,xml.etree.ElementTree as E
+from pathlib import Path
+ADB=['adb','-s','8002RH1010011900'];PKG='com.uscreen'
+OUT=Path('/tmp/uscreen-t395-results/live');OUT.mkdir()
+def call(*args,check=True):
+    return subprocess.run(ADB+list(args),capture_output=True,text=True,timeout=30,check=check).stdout.strip()
+def prefs():
+    root=E.fromstring(call('exec-out','run-as',PKG,'cat','shared_prefs/uscreen.xml'))
+    return {n.get('name'):n.get('value',n.text) for n in root if n.get('name')!='host_token'}
+token=(Path('/run/user')/str(os.getuid())/'uscreen/token').read_text().strip()
+before=prefs()
+try:
+    for number in range(6):
+        case=['plain','simultaneous-token-activity','token-broadcast','home-resume','quick-home','relaunch'][number]
+        call('shell','am','force-stop',PKG)
+        start=time.time();launch=subprocess.Popen(ADB+['shell','am','start','-n',PKG+'/.MainActivity'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        if case=='simultaneous-token-activity': call('shell','am','start','-n',PKG+'/.TokenActivity','--es','token',token)
+        if case=='token-broadcast': call('shell','am','broadcast','-n',PKG+'/.TokenReceiver','--es','token',token)
+        launch.wait(timeout=20)
+        if case in ['home-resume','quick-home']:
+            call('shell','input','keyevent','3')
+            if case=='home-resume':call('shell','am','start','-n',PKG+'/.MainActivity')
+        if case=='relaunch':call('shell','am','start','-n',PKG+'/.MainActivity')
+        snapshots=[]
+        for sample in range(11):
+            service=call('shell','dumpsys','activity','services',PKG)
+            locks=call('shell','dumpsys','power')
+            snapshots.append(dict(elapsed=time.time()-start,pid=call('shell','pidof',PKG,check=False),service=[s.strip() for s in service.splitlines() if any(k in s for k in ['ServiceRecord{','isForeground=','fgRequired=','startRequested='])],wake=[s.strip() for s in locks.splitlines() if 'PARTIAL_WAKE_LOCK' in s and 'UScreen::' in s]))
+            time.sleep(1)
+        pids=sorted({s['pid'] for s in snapshots if s['pid'].isdigit()})
+        logs=[]
+        for pid in pids:
+            log=call('logcat','-d','--pid',pid,'-v','threadtime','*:V')
+            logs.extend(s for s in log.splitlines() if any(k in s for k in ['UScreenService','AndroidRuntime','ForegroundService','Codec configured','on-device split:']))
+        text='\n'.join(logs).replace(token,'[redacted]')
+        row=dict(case=case,number=number,started_utc=start,finished_utc=time.time(),snapshots=snapshots,timeout='ForegroundServiceDidNotStartInTimeException' in text)
+        (OUT/f'{number:02d}-{case}.json').write_text(json.dumps(row,indent=2)+'\n');(OUT/f'{number:02d}-{case}.log').write_text(text+'\n')
+        print(case,'timeout=',row['timeout'],'pids=',pids,flush=True)
+finally:
+    call('shell','am','start','-n',PKG+'/.MainActivity')
+    (OUT/'preferences.json').write_text(json.dumps(dict(before=before,after=prefs()),indent=2)+'\n')

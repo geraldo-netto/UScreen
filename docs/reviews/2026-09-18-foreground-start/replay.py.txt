@@ -1,0 +1,52 @@
+from pathlib import Path
+import subprocess,time,json,hashlib
+ADB=['adb','-s','8002RH1010011900'];PKG='com.uscreen.lifecycleprobe'
+OUT=Path('/tmp/uscreen-t395-results');OUT.mkdir()
+def call(*args,check=True):
+    return subprocess.run(ADB+list(args),capture_output=True,text=True,timeout=30,check=check).stdout.strip()
+def service():
+    text=call('shell','dumpsys','activity','services',PKG)
+    return [s.strip() for s in text.splitlines() if any(k in s for k in ['ServiceRecord{','isForeground=','fgRequired=','startRequested='])]
+def run(variant):
+    folder=OUT/variant;folder.mkdir()
+    apk=Path('/tmp/uscreen-t395-'+variant+'/android/app/build/outputs/apk/debug/app-debug.apk')
+    call('install','-r',str(apk))
+    (folder/'metadata.json').write_text(json.dumps(dict(apk_sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),revision=Path('/tmp/uscreen-t395-'+variant+'/revision.txt').read_text().strip(),package=PKG)))
+    for number in range(12):
+        case=['plain','simultaneous-token','token-first','quick-home','home-resume','rotation'][number%6]
+        call('shell','am','force-stop',PKG)
+        start=time.time()
+        a=['shell','am','start','-n',PKG+'/com.uscreen.MainActivity']
+        token=['shell','am','start','-n',PKG+'/com.uscreen.TokenActivity','--es','token','0'*64]
+        if case=='token-first': a=token
+        launch=subprocess.Popen(ADB+a,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        other=None
+        if case=='simultaneous-token':other=subprocess.Popen(ADB+token,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        launchout=launch.communicate(timeout=20)
+        if other: other.communicate(timeout=20)
+        if case in ['quick-home','home-resume']:
+            call('shell','input','keyevent','3')
+            if case=='home-resume': call(*a)
+        if case=='rotation':
+            call('shell','settings','put','system','accelerometer_rotation','0')
+            call('shell','settings','put','system','user_rotation','3')
+        snapshots=[]
+        for second in range(11):
+            snapshots.append(dict(elapsed=time.time()-start,pid=call('shell','pidof',PKG,check=False),service=service()))
+            time.sleep(1)
+        if case=='rotation': call('shell','settings','put','system','user_rotation','1')
+        pids=sorted({s['pid'] for s in snapshots if s['pid'].isdigit()})
+        log='\n'.join(call('logcat','-d','--pid',p,'-v','threadtime') for p in pids)
+        row=dict(case=case,number=number,started_utc=start,finished_utc=time.time(),launch=launchout,snapshots=snapshots,timeout='ForegroundServiceDidNotStartInTimeException' in log)
+        (folder/f'{number:02d}-{case}.json').write_text(json.dumps(row,indent=2)+'\n')
+        (folder/f'{number:02d}-{case}.log').write_text(log)
+        print(variant,number,case,'timeout=',row['timeout'],'pids=',pids,flush=True)
+rotation=call('shell','settings','get','system','user_rotation')
+auto=call('shell','settings','get','system','accelerometer_rotation')
+try:
+    run('old');run('current')
+finally:
+    call('shell','settings','put','system','user_rotation',rotation)
+    call('shell','settings','put','system','accelerometer_rotation',auto)
+    call('shell','am','force-stop',PKG)
+    call('shell','am','start','-n','com.uscreen/.MainActivity')

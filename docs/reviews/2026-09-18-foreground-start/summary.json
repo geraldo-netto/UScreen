@@ -1,0 +1,408 @@
+{
+  "old": [
+    {
+      "case": "plain",
+      "number": 0,
+      "timeout": false,
+      "pids": [
+        "20862"
+      ],
+      "first_observed_foreground_seconds": 2.411776065826416,
+      "last_service": [
+        "* ServiceRecord{6b663fc u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "simultaneous-token",
+      "number": 1,
+      "timeout": false,
+      "pids": [
+        "21150"
+      ],
+      "first_observed_foreground_seconds": 2.4451956748962402,
+      "last_service": [
+        "* ServiceRecord{b335858 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "token-first",
+      "number": 2,
+      "timeout": false,
+      "pids": [
+        "21356"
+      ],
+      "first_observed_foreground_seconds": 2.369323968887329,
+      "last_service": [
+        "* ServiceRecord{81b99bd u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "quick-home",
+      "number": 3,
+      "timeout": false,
+      "pids": [
+        "21556"
+      ],
+      "first_observed_foreground_seconds": null,
+      "last_service": []
+    },
+    {
+      "case": "home-resume",
+      "number": 4,
+      "timeout": false,
+      "pids": [
+        "21709"
+      ],
+      "first_observed_foreground_seconds": 2.796304225921631,
+      "last_service": [
+        "* ServiceRecord{9f57e98 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "rotation",
+      "number": 5,
+      "timeout": false,
+      "pids": [
+        "22050"
+      ],
+      "first_observed_foreground_seconds": 2.7259323596954346,
+      "last_service": [
+        "* ServiceRecord{dd349e0 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "plain",
+      "number": 6,
+      "timeout": false,
+      "pids": [
+        "22359"
+      ],
+      "first_observed_foreground_seconds": 2.401456117630005,
+      "last_service": [
+        "* ServiceRecord{4cad61d u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "simultaneous-token",
+      "number": 7,
+      "timeout": false,
+      "pids": [
+        "22559"
+      ],
+      "first_observed_foreground_seconds": 2.4384636878967285,
+      "last_service": [
+        "* ServiceRecord{7c1197b u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "token-first",
+      "number": 8,
+      "timeout": false,
+      "pids": [
+        "22745"
+      ],
+      "first_observed_foreground_seconds": 2.3971123695373535,
+      "last_service": [
+        "* ServiceRecord{e371c21 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "quick-home",
+      "number": 9,
+      "timeout": false,
+      "pids": [
+        "22928"
+      ],
+      "first_observed_foreground_seconds": null,
+      "last_service": []
+    },
+    {
+      "case": "home-resume",
+      "number": 10,
+      "timeout": false,
+      "pids": [
+        "23071"
+      ],
+      "first_observed_foreground_seconds": 2.7937161922454834,
+      "last_service": [
+        "* ServiceRecord{ea2f2a6 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    },
+    {
+      "case": "rotation",
+      "number": 11,
+      "timeout": false,
+      "pids": [
+        "23274"
+      ],
+      "first_observed_foreground_seconds": 2.599226951599121,
+      "last_service": [
+        "* ServiceRecord{22725d9 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1"
+      ]
+    }
+  ],
+  "current": [
+    {
+      "case": "plain",
+      "number": 0,
+      "timeout": false,
+      "pids": [
+        "23552"
+      ],
+      "first_observed_foreground_seconds": 2.4559507369995117,
+      "last_service": [
+        "* ServiceRecord{c174b2 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "simultaneous-token",
+      "number": 1,
+      "timeout": false,
+      "pids": [
+        "23758"
+      ],
+      "first_observed_foreground_seconds": 2.406359910964966,
+      "last_service": [
+        "* ServiceRecord{c5ed1a5 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "token-first",
+      "number": 2,
+      "timeout": false,
+      "pids": [
+        "23953"
+      ],
+      "first_observed_foreground_seconds": 2.3997621536254883,
+      "last_service": [
+        "* ServiceRecord{2fade5f u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "quick-home",
+      "number": 3,
+      "timeout": false,
+      "pids": [
+        "24136"
+      ],
+      "first_observed_foreground_seconds": null,
+      "last_service": []
+    },
+    {
+      "case": "home-resume",
+      "number": 4,
+      "timeout": false,
+      "pids": [
+        "24274"
+      ],
+      "first_observed_foreground_seconds": 1.6113910675048828,
+      "last_service": [
+        "* ServiceRecord{6586365 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "rotation",
+      "number": 5,
+      "timeout": false,
+      "pids": [
+        "24482"
+      ],
+      "first_observed_foreground_seconds": 1.5688881874084473,
+      "last_service": [
+        "* ServiceRecord{409da5c u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "plain",
+      "number": 6,
+      "timeout": false,
+      "pids": [
+        "24678"
+      ],
+      "first_observed_foreground_seconds": 2.3440520763397217,
+      "last_service": [
+        "* ServiceRecord{c6dd486 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "simultaneous-token",
+      "number": 7,
+      "timeout": false,
+      "pids": [
+        "24867"
+      ],
+      "first_observed_foreground_seconds": 2.4210541248321533,
+      "last_service": [
+        "* ServiceRecord{1b1af8a u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "token-first",
+      "number": 8,
+      "timeout": false,
+      "pids": [
+        "25054"
+      ],
+      "first_observed_foreground_seconds": 2.380964756011963,
+      "last_service": [
+        "* ServiceRecord{71226ab u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "quick-home",
+      "number": 9,
+      "timeout": false,
+      "pids": [
+        "25241"
+      ],
+      "first_observed_foreground_seconds": null,
+      "last_service": []
+    },
+    {
+      "case": "home-resume",
+      "number": 10,
+      "timeout": false,
+      "pids": [
+        "25440"
+      ],
+      "first_observed_foreground_seconds": 1.6534700393676758,
+      "last_service": [
+        "* ServiceRecord{900cb64 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    },
+    {
+      "case": "rotation",
+      "number": 11,
+      "timeout": false,
+      "pids": [
+        "25652"
+      ],
+      "first_observed_foreground_seconds": 2.5752289295196533,
+      "last_service": [
+        "* ServiceRecord{9baab85 u0 com.uscreen.lifecycleprobe/com.uscreen.StreamingService c:com.uscreen.lifecycleprobe}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2"
+      ]
+    }
+  ],
+  "live": [
+    {
+      "case": "plain",
+      "number": 0,
+      "timeout": false,
+      "pids": [
+        "26130"
+      ],
+      "first_observed_foreground_seconds": 1.7855591773986816,
+      "last_service": [
+        "* ServiceRecord{889179f u0 com.uscreen/.StreamingService c:com.uscreen}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=4"
+      ]
+    },
+    {
+      "case": "simultaneous-token-activity",
+      "number": 1,
+      "timeout": false,
+      "pids": [
+        "26461"
+      ],
+      "first_observed_foreground_seconds": 3.104016065597534,
+      "last_service": [
+        "* ServiceRecord{946be2c u0 com.uscreen/.StreamingService c:com.uscreen}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=4"
+      ]
+    },
+    {
+      "case": "token-broadcast",
+      "number": 2,
+      "timeout": false,
+      "pids": [
+        "26701"
+      ],
+      "first_observed_foreground_seconds": 2.6379356384277344,
+      "last_service": [
+        "* ServiceRecord{8a27b26 u0 com.uscreen/.StreamingService c:com.uscreen}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=4"
+      ]
+    },
+    {
+      "case": "home-resume",
+      "number": 3,
+      "timeout": false,
+      "pids": [
+        "26983"
+      ],
+      "first_observed_foreground_seconds": 1.897690773010254,
+      "last_service": [
+        "* ServiceRecord{c9db478 u0 com.uscreen/.StreamingService c:com.uscreen}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=4"
+      ]
+    },
+    {
+      "case": "quick-home",
+      "number": 4,
+      "timeout": false,
+      "pids": [
+        "27224"
+      ],
+      "first_observed_foreground_seconds": null,
+      "last_service": []
+    },
+    {
+      "case": "relaunch",
+      "number": 5,
+      "timeout": false,
+      "pids": [
+        "27400"
+      ],
+      "first_observed_foreground_seconds": 1.8174045085906982,
+      "last_service": [
+        "* ServiceRecord{394dc5c u0 com.uscreen/.StreamingService c:com.uscreen}",
+        "isForeground=true foregroundId=1 types=0x00000010 foregroundNoti=Notification(channel=uscreen_streaming shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|FOREGROUND_SERVICE color=0x00000000 vis=PRIVATE)",
+        "startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=4"
+      ]
+    }
+  ]
+}
