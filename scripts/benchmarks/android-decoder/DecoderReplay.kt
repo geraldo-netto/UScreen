@@ -21,6 +21,7 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
         override fun invalidated() { stats.invalidated(); active.set(false) }
     }, { ReceiverStatistics() })
     private var sequence = 1L
+    private var input: ReplayInput? = null
 
     fun run(clip: ReplayClip, rate: Int, seconds: Int, warmup: Int): JSONObject {
         try {
@@ -40,17 +41,19 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
             result.put("trace_columns", org.json.JSONArray(listOf("sequence", "feed_ns", "release_note_ns",
                 "notification_ns", "reported_render_ns", "ack_event_ns")))
             result.put("trace", BenchMetrics.trace(first, sequence.toInt()))
+            input?.let { result.put("input_transport", it.summary()) }
             return result.put("stats", stats.finish()).put("sent", sent).put("completed", active.get())
                 .put("profile", profile).put("seconds", seconds).put("warmup", warmup).put("send_fps", rate)
                 .put("width", clip.width).put("height", clip.height).put("stream_fps", clip.fps)
                 .put("fixture_sha256", clip.sha256).put("fingerprint", Build.FINGERPRINT).put("sdk", Build.VERSION.SDK_INT)
-        } finally { decoder.releaseCodec() }
+        } finally { decoder.releaseCodec(); input?.close() }
     }
 
     private fun configure(clip: ReplayClip) {
         applyProfile(decoder, profile) // Generated bridge: legacy source lacks profile selection.
         decoder.createCodec = { mime -> MediaCodec.createDecoderByType(mime).also { result.put("codec", inventory(it, mime, clip)) } }
         check(decoder.setupCodec(surface, DecoderFormat("video/avc", clip.width, clip.height, clip.fps)))
+        input = createReplayInput(decoder, profile, active::get)
     }
 
     private fun inventory(codec: MediaCodec, mime: String, clip: ReplayClip): JSONObject {
@@ -86,6 +89,9 @@ internal class DecoderReplay(private val surface: Surface, private val profile: 
     private fun feed(data: ByteArray, configuration: Boolean) {
         val codec = decoder.mediaCodec ?: error("Decoder retired")
         if (!configuration) BenchMetrics.arrived(sequence.toInt())
-        decoder.feedDecoder(codec, data, 0, data.size, configuration, if (configuration) 0 else sequence++)
+        val number = if (configuration) 0 else sequence++
+        val transport = input
+        if (transport == null) decoder.feedDecoder(codec, data, 0, data.size, configuration, number)
+        else transport.feed(data, configuration, number)
     }
 }

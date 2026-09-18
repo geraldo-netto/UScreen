@@ -204,7 +204,7 @@ internal class DecoderSession(
                 check(callbacks.offer(input) || inputOwner.retired) { "Decoder callback input queue stalled" }
                 return
             }
-            if (queueInput(inputOwner, input) && !isConfig) {
+            if (queueInput(inputOwner) { slot -> input.write(codec, slot) } && !isConfig) {
                 synchronized(monitor) {
                     if (mediaCodec === codec) checkOutputProgress()
                 }
@@ -214,12 +214,37 @@ internal class DecoderSession(
         }
     }
 
-    private fun queueInput(owner: CodecLifetime, input: DecoderInput): Boolean {
+    /** T403 experiment: a transport read borrows codec storage, outside the
+     * receiver monitor. Caller must close its reader when the session retires. */
+    fun feedDirect(codec: MediaCodec, info: DecoderInputInfo, fill: (java.nio.ByteBuffer) -> Unit): Boolean {
+        val (owner, epoch) = synchronized(monitor) {
+            if (callbackDecoder != null) return false
+            (ownerFor(codec) ?: return false) to timingEpoch
+        }
+        return try {
+            val queued = queueInput(owner) { index ->
+                queueCodecInput(codec, index, info) { buffer ->
+                    fill(buffer)
+                    check(!owner.retired) { "Codec retired during input read" }
+                    if (!info.configuration) timing.noteArrival(info.sequence.toInt(), epoch, System.nanoTime())
+                }
+            }
+            if (queued && !info.configuration) synchronized(monitor) {
+                if (mediaCodec === codec) checkOutputProgress()
+            }
+            queued
+        } catch (error: Exception) {
+            retireFailedOutput(codec, "Direct decoder input failed", error)
+            false
+        }
+    }
+
+    private fun queueInput(owner: CodecLifetime, submit: (Int) -> Unit): Boolean {
         repeat(10) {
             val queued = owner.use {
                 val index = owner.codec.dequeueInputBuffer(20_000)
                 if (index < 0 || owner.retired) false
-                else { input.write(owner.codec, index); true }
+                else { submit(index); true }
             } ?: return false
             if (queued) return true
             if (owner.retired) return false

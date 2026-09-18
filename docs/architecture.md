@@ -422,6 +422,17 @@ The normal-priority callback Handler is separate from the selectable synchronous
 output-thread priority. The [decoder replay](benchmarks/2026-09-18-decoder-profiles.md)
 records the measured tradeoffs and the limits of render-notification timing.
 
+T403 adds an experimental synchronous `ChannelPacketReader`/`feedDirect` path.
+It validates the wire prefix before borrowing a codec input slot, reads the
+payload into that slot outside the receiver monitor and queues only a complete
+payload. An absolute packet deadline and channel close bound transport reads;
+retirement keeps borrowed native storage alive until the reader returns. This
+path requires its caller to close the transport on retirement and is incompatible
+with the callback mailbox. `VideoReceiver` continues using reusable heap staging:
+the [socket-input replay](benchmarks/2026-09-18-decoder-input.md) found no useful
+latency improvement on the measured tablet. Direct buffers remove one application
+copy here; they do not establish kernel-to-decoder zero-copy.
+
 Android's `TouchCapture` is the Activity-facing facade. `ControlSession` owns
 socket generations, authentication, reconnects, host greetings and pending
 settings. `MotionTranslator` owns pointer slots and ordered Android samples;

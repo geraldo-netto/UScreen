@@ -12,6 +12,7 @@ import time
 VARIANTS = [('baseline', 'legacy'), ('candidate', 'legacy'), ('candidate', 'sync-normal'),
             ('candidate', 'callback-legacy'), ('candidate', 'callback-supported'),
             ('candidate', 'callback-supported1'), ('candidate', 'callback-unhinted')]
+INPUT_VARIANTS = [('candidate', 'socket-heap'), ('candidate', 'socket-direct')]
 
 
 def adb(serial, *command, **kwargs):
@@ -103,7 +104,7 @@ def main():
     parser.add_argument('--seconds', type=int, default=30)
     parser.add_argument('--warmup', type=int, default=5)
     parser.add_argument('--trials', type=int, default=3)
-    parser.add_argument('--variant', action='append', choices=[f'{variant}/{profile}' for variant, profile in VARIANTS])
+    parser.add_argument('--variant', action='append', choices=[f'{variant}/{profile}' for variant, profile in VARIANTS + INPUT_VARIANTS])
     args = parser.parse_args()
     if not 1 <= args.seconds <= 600 or not 0 <= args.warmup <= 60 or args.trials < 1:
         parser.error('invalid replay duration/trial count')

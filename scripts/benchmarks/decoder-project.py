@@ -11,8 +11,10 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
-          'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt']
+          'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
+          'ChannelPacketReader.kt', 'VideoPacketReader.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
 <activity android:name="com.uscreen.benchmark.MainActivity" android:exported="true"
  android:permission="android.permission.DUMP" android:screenOrientation="landscape" />
@@ -31,7 +33,7 @@ BRIDGE = '''package com.uscreen.benchmark
 import com.uscreen.*
 internal fun applyProfile(decoder: DecoderSession, name: String) {
     decoder.profile = when (name) {
-        "legacy" -> DecoderProfile()
+        "legacy", "socket-heap", "socket-direct" -> DecoderProfile()
         "sync-normal" -> DecoderProfile(renderPriority = Thread.NORM_PRIORITY)
         "callback-legacy" -> DecoderProfile(callbacks = true)
         "callback-supported" -> DecoderProfile(true, DecoderHints.SUPPORTED, 2, Thread.NORM_PRIORITY)
@@ -44,6 +46,19 @@ internal fun applyProfile(decoder: DecoderSession, name: String) {
 LEGACY_BRIDGE = '''package com.uscreen.benchmark
 import com.uscreen.DecoderSession
 internal fun applyProfile(decoder: DecoderSession, name: String) { require(name == "legacy") }
+'''
+SOCKET_BRIDGE = '''
+internal fun createReplayInput(decoder: DecoderSession, profile: String, active: () -> Boolean): ReplayInput? = when (profile) {
+    "socket-heap" -> SocketReplay(decoder, false, active)
+    "socket-direct" -> SocketReplay(decoder, true, active)
+    else -> null
+}
+'''
+NO_SOCKET_BRIDGE = '''
+internal fun createReplayInput(decoder: DecoderSession, profile: String, active: () -> Boolean): ReplayInput? {
+    require(!profile.startsWith("socket-")) { "Source revision has no direct input experiment" }
+    return null
+}
 '''
 
 
@@ -95,9 +110,13 @@ def prepare(args):
     (directory / 'app/build.gradle.kts').write_text(BUILD.replace('PACKAGE', args.package))
     (directory / 'app/src/main/AndroidManifest.xml').write_text(MANIFEST)
     profiles = shared_sources(directory, args.revision)
-    for path in (ROOT / 'scripts/benchmarks/android-decoder').glob('*.kt'):
+    direct_input = (directory / 'originals/ChannelPacketReader.kt').exists()
+    for path in (ROOT / 'scripts/benchmarks/android-decoder').rglob('*.kt'):
+        if path.name == 'SocketReplay.kt' and not direct_input:
+            continue
         shutil.copy2(path, directory / 'app/src/main/java' / path.name)
-    (directory / 'app/src/main/java/ProfileBridge.kt').write_text(BRIDGE if profiles else LEGACY_BRIDGE)
+    bridge = (BRIDGE if profiles else LEGACY_BRIDGE) + (SOCKET_BRIDGE if direct_input else NO_SOCKET_BRIDGE)
+    (directory / 'app/src/main/java/ProfileBridge.kt').write_text(bridge)
     return directory
 
 

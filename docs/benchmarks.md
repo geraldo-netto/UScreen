@@ -34,6 +34,11 @@ T386's bounded codec lifetime, Activity-recreation regression and 84 profile
 trials plus 36 correlated trace trials on the connected tablet. It preserves
 synchronous defaults and distinguishes native output from render notifications.
 
+The [Android socket-input replay](benchmarks/2026-09-18-decoder-input.md) compares
+reusable heap staging with direct reads into codec-owned input buffers. T403 keeps
+staging as the default and adds tested payload/cancellation contracts; it makes
+no kernel zero-copy or battery-saving claim.
+
 The [input batching replay](benchmarks/2026-09-17-input-batching.md) verifies
 native bytes and synchronization boundaries while reducing complete writes
 from 256 to 38 per recorded pen/touch/pointer sequence. It uses counting writers,
