@@ -225,17 +225,18 @@ class SettingsLayoutTest {
     }
 
     private fun registerBrowser(app: android.app.Application, intent: android.content.Intent) {
-        val activity = android.content.pm.ActivityInfo().apply {
-            packageName = "fixture.browser"
-            name = "BrowserActivity"
+        val component = android.content.ComponentName("fixture.browser", "BrowserActivity")
+        val packages = org.robolectric.Shadows.shadowOf(app.packageManager)
+        packages.addActivityIfNotPresent(component).apply {
             exported = true
-            applicationInfo = android.content.pm.ApplicationInfo().apply {
-                packageName = "fixture.browser"
-                enabled = true
-            }
+            enabled = true
+            applicationInfo.enabled = true
         }
-        org.robolectric.Shadows.shadowOf(app.packageManager).addResolveInfoForIntent(intent,
-            android.content.pm.ResolveInfo().apply { activityInfo = activity })
+        packages.addIntentFilterForActivity(component,
+            android.content.IntentFilter(checkNotNull(intent.action)).apply {
+                addCategory(android.content.Intent.CATEGORY_DEFAULT)
+                addDataScheme(checkNotNull(intent.scheme))
+            })
     }
 
     private val draw = "Draw here — it goes to the screen on your computer."
