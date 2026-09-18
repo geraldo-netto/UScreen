@@ -81,15 +81,13 @@ fn find_uscreen_bin_in(
     installed: PathBuf,
     path: &std::ffi::OsStr,
 ) -> Option<PathBuf> {
+    use uscreen_config::linux::programs::{find_in, is_executable};
     if let Some(sibling) = exe.and_then(|exe| exe.parent().map(|dir| dir.join("uscreen"))) {
-        if sibling.exists() {
+        if is_executable(&sibling) {
             return Some(sibling);
         }
     }
-    std::env::split_paths(path)
-        .map(|dir| dir.join("uscreen"))
-        .find(|p| p.is_file())
-        .or_else(|| installed.is_file().then_some(installed))
+    find_in("uscreen", path).or_else(|| is_executable(&installed).then_some(installed))
 }
 
 use uscreen_config::linux::programs::command_exists;
@@ -1185,6 +1183,51 @@ mod tests {
 
     mod lookup_fixture {
         include!("../../testdata/executable_lookup.rs");
+    }
+
+    #[test]
+    fn t427_daemon_lookup_skips_unusable_candidates() {
+        let root = tempfile::tempdir().unwrap();
+        let sibling = root.path().join("sibling");
+        let earlier = root.path().join("earlier");
+        let later = root.path().join("later");
+        for directory in [&sibling, &earlier, &later] {
+            std::fs::create_dir(directory).unwrap();
+        }
+        let valid = later.join("uscreen");
+        std::fs::write(&valid, "#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&valid, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let installed = root.path().join("installed");
+        std::os::unix::fs::symlink(&valid, &installed).unwrap();
+        let path = std::env::join_paths([&earlier, &later]).unwrap();
+        let exe = Some(sibling.join("uscreen-gui"));
+        std::fs::create_dir(sibling.join("uscreen")).unwrap();
+        std::fs::write(earlier.join("uscreen"), "not executable").unwrap();
+        assert_eq!(
+            find_uscreen_bin_in(exe.clone(), installed.clone(), &path),
+            Some(valid.clone())
+        );
+        std::fs::remove_dir(sibling.join("uscreen")).unwrap();
+        std::os::unix::fs::symlink(root.path().join("missing"), sibling.join("uscreen")).unwrap();
+        assert_eq!(
+            find_uscreen_bin_in(exe.clone(), installed.clone(), &path),
+            Some(valid.clone())
+        );
+        std::fs::remove_file(sibling.join("uscreen")).unwrap();
+        std::os::unix::fs::symlink(&valid, sibling.join("uscreen")).unwrap();
+        assert_eq!(
+            find_uscreen_bin_in(exe, installed.clone(), &path),
+            Some(sibling.join("uscreen"))
+        );
+        let path = std::env::join_paths([&earlier]).unwrap();
+        assert_eq!(
+            find_uscreen_bin_in(None, installed, &path),
+            Some(root.path().join("installed"))
+        );
+        assert_eq!(
+            find_uscreen_bin_in(None, earlier.join("uscreen"), &path),
+            None
+        );
     }
 
     #[test]
