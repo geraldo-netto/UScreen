@@ -561,6 +561,7 @@ impl CaptureRun {
         *self.shutdown_rx.borrow()
             || self.shutdown_rx.has_changed().is_err()
             || self.display_rx.has_changed().is_err()
+            || self.settings_rx.has_changed().is_err()
     }
 
     async fn pause(&mut self, milliseconds: u64) {
@@ -639,3 +640,7 @@ mod tests;
 #[cfg(test)]
 #[path = "capture/fifo_tests.rs"]
 mod fifo_tests;
+
+#[cfg(all(test, not(feature = "inproc-encoder")))]
+#[path = "capture/closed_settings_tests.rs"]
+mod closed_settings_tests;
