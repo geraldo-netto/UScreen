@@ -164,3 +164,12 @@ the tablet. Without those flags Android can pause the replay before codec setup,
 retire its Surface and produce misleading decoder errors. Switching to another
 app still cancels the replay. Discard incomplete trials and verify the observed
 refresh rate. This does not relax the unlocked **Linux desktop** requirement.
+
+Codec quality measurements use strict software decoding before comparing pixels
+(T461). `codec-host.py` retains error-level diagnostics in `decode.log` and
+rejects both a failed process and any decoder error, even if FFmpeg returns zero
+and produces the expected frame count through error concealment. Valid frame
+counts alone do not establish valid decoding. The permanent regression uses an
+unaltered corrupt HEVC fixture from the T422 stock-encoder experiments, with a
+clean access unit as its positive control. Historical measurements must be
+checked against their retained decode logs before making quality claims.

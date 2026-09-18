@@ -87,11 +87,17 @@ HEIGHT_CROP = 750
 
 def inspect(output, folder, source, meta):
     decoded = folder / 'decoded.nv12'
-    command = ['ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'warning', '-i', str(output),
+    command = ['ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error',
+               '-xerror', '-err_detect', 'explode', '-i', str(output),
                '-pix_fmt', 'nv12', '-f', 'rawvideo', '-y', str(decoded)]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=180, check=True)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=180)
         (folder / 'decode.log').write_text(result.stderr)
+        result.check_returncode()
+        # T461: some decoder errors still return zero with concealed or truncated
+        # output. Error-level diagnostics invalidate the quality measurement.
+        if result.stderr.strip():
+            raise ValueError(f'decoder errors; see {folder / "decode.log"}')
         measured = quality(source, decoded, meta)
         measured['decode_command'] = command
     finally:
