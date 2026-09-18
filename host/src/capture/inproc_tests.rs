@@ -1,10 +1,39 @@
 use super::*;
 use std::os::unix::ffi::OsStrExt;
 
+fn private_runtime_root() -> tempfile::TempDir {
+    use std::os::unix::fs::PermissionsExt;
+    tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o700))
+        .tempdir()
+        .unwrap()
+}
+
+#[test]
+fn t455_inprocess_runtime_fixtures_survive_shared_umask() {
+    for name in [
+        "capture::inproc_tests::t284_vaapi_is_rejected_before_fifo_or_helper_creation",
+        "capture::inproc_tests::t322_cancelled_inprocess_session_releases_fifo",
+    ] {
+        let output = std::process::Command::new("/bin/sh")
+            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t455"])
+            .arg(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T455: {name}: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
 #[tokio::test]
 async fn t284_vaapi_is_rejected_before_fifo_or_helper_creation() {
     if std::env::var_os("USCREEN_T284_CHILD").is_none() {
-        let root = tempfile::tempdir().unwrap();
+        let root = private_runtime_root();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
@@ -122,7 +151,7 @@ async fn cancel_waiting_encoder() -> (bool, bool) {
 fn t322_cancelled_inprocess_session_releases_fifo() {
     if std::env::var_os("USCREEN_T322_CHILD").is_none() {
         use uscreen_config::commands::SyncCommandExt;
-        let root = tempfile::tempdir().unwrap();
+        let root = private_runtime_root();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
