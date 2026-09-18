@@ -63,9 +63,9 @@ internal fun UScreenMain(
     val context = LocalContext.current
 
     LaunchedEffect(presentation, isConnected, settings.showStats) {
-        while (isConnected) {
-            delay(1000)
+        while (isConnected && settings.showStats) {
             presentation?.sample()
+            delay(1000)
         }
     }
 

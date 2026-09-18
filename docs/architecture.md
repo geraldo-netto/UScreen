@@ -387,7 +387,32 @@ VideoReceiver or TouchCapture. The settings sheet composes focused display,
 orientation, mode, stream and update sections. Draft bitrate/FPS changes still
 require Apply; local display controls apply immediately. Recomposition does not
 create/restart a session, and queued video/control callbacks retain their
-ordering and generation checks. Foreground-service lifecycle policy is unchanged.
+ordering and generation checks. Hidden statistics no longer start a one-second
+presentation sampling loop; visible statistics still update once per second.
+
+`StreamingPowerBinding` owns the Activity's power-state observer from start to
+stop. It combines authenticated control/route state, video readiness, acknowledged
+pen-only mode and the saved opt-in battery preference. Stops cancel observation
+before stopping the service, so retired Activities cannot restart it. Rejected
+service starts degrade without killing streaming. `StreamingService` promotes
+in `onCreate` and validates promotion on each update; rejection/destroy/null
+restart release all locks and cancel pending work. T395 still tracks the older
+cold-start timeout whose exact failing sequence remains unknown.
+
+Normal mode preserves its CPU and Wi-Fi locks. Battery mode relies on the visible
+Activity's existing screen-on flag, omitting the extra partial CPU lock. Active
+network or unknown-route sessions retain the Wi-Fi lock; confirmed USB releases
+it immediately. An inactive network/unknown session releases it after five seconds;
+repeated inactive updates do not extend that deadline, recovery cancels release,
+and Activity stop releases immediately. No brightness, refresh, FPS, scale, quality
+or decoder profile changes are implied by the battery switch.
+
+The monitor supplies actual ADB transport to each attachment generation. The
+accepted control lease snapshots that route into an optional `transport` greeting
+field (`usb` or `network`), independently of physical identity. Android resets it
+on connection retirement; old hosts or unknown values remain conservative. The
+loopback socket address and USB charging state never determine the route. Network
+ADB can use a medium other than Wi-Fi; this metadata does not identify the radio.
 
 Android's `VideoReceiver` coordinates run generations, Surface readiness and
 visible connection state. `VideoTransport` owns the socket from before blocking

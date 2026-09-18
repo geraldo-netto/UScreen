@@ -75,6 +75,9 @@ pub enum InputEvent {
 #[derive(Serialize)]
 pub struct InputResponse {
     pub status: String,
+    /// Accepted ADB route, independent of loopback addresses and charging.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transport: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fps: Option<u32>,
     pub width: u32,

@@ -49,6 +49,85 @@ class SettingsLayoutTest {
         } finally { receiver.stop() }
     }
 
+    @Test fun t388_battery_toggle_is_opt_in_persistent_and_preserves_display_and_stream() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        val prefs = Prefs(app)
+        val saved = app.getSharedPreferences("uscreen", android.content.Context.MODE_PRIVATE)
+        assertFalse(saved.getBoolean("battery_saver", false))
+        prefs.brightnessPercent = 75; prefs.displayRefreshRate = 120f
+        prefs.fps = 90; prefs.bitrateKbps = 40000
+        val session = SessionCoordinator(prefs, { it() }, null, null)
+        compose.setContent { UScreenTheme {
+            SettingsSheet(session.settings, null, {}, false, {}, onSettingsEvent = session::handle)
+        } }
+        val toggle = compose.onNodeWithContentDescription("Battery saver")
+        toggle.performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.runOnIdle {
+            assertTrue(saved.getBoolean("battery_saver", false))
+            val reloaded = SettingsValues.read(Prefs(app))
+            assertEquals(75, reloaded.brightness); assertEquals(120f, reloaded.refreshRate, 0f)
+            assertEquals(90, reloaded.fps); assertEquals(40000, reloaded.bitrateKbps)
+            assertFalse(prefs.hasUserSettings)
+        }
+        toggle.performClick().assertIsOff()
+        compose.runOnIdle { assertFalse(saved.getBoolean("battery_saver", true)) }
+    }
+
+    @Test fun t388_pen_only_power_requires_live_host_acknowledgement() {
+        lateinit var listener: WebSocketListener
+        val socket = Socket()
+        val capture = TouchCapture(WebSocket.Factory { _, value -> listener = value; socket })
+        val prefs = Prefs(org.robolectric.RuntimeEnvironment.getApplication()).apply { batterySaver = true }
+        val session = SessionCoordinator(prefs, { it() }, null, capture)
+        session.start()
+        try {
+            assertFalse(session.powerNow().active)
+            listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+                .code(101).message("Switching Protocols").build())
+            listener.onMessage(socket, """{"status":"connected","transport":"usb","pen_only":true}""")
+            assertEquals(StreamingPower(true, true, StreamTransport.USB), session.powerNow())
+            session.handle(SettingsEvent.BatterySaver(false))
+            assertEquals(StreamingPower(false, true, StreamTransport.USB), session.powerNow())
+            assertFalse(prefs.hasUserSettings)
+            session.stop()
+            assertFalse(session.powerNow().active)
+            assertEquals(StreamTransport.UNKNOWN, session.powerNow().transport)
+        } finally { session.stop() }
+    }
+
+    @Test fun t388_hidden_stats_do_not_schedule_presentation_samples() {
+        val receiver = VideoReceiver { error("T388: UI test must not connect") }
+        val presentation = StreamPresentation(receiver, null)
+        val field = VideoReceiver::class.java.getDeclaredField("statistics").apply { isAccessible = true }
+        val statistics = field.get(receiver) as ReceiverStatistics
+        repeat(60) { statistics.frameRendered() }
+        statistics.sample(System.nanoTime() + 1_000_000_000L)
+        assertTrue(statistics.fps > 0f)
+        val visible = androidx.compose.runtime.mutableStateOf(false)
+        compose.setContent { UScreenTheme {
+            UScreenMain({}, presentation = presentation, settings = SettingsValues(showStats = visible.value))
+        } }
+        compose.runOnIdle { receiver.onConnected!!.invoke(); org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle() }
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(2100)
+        compose.runOnIdle { assertEquals("T388: hidden stats still sampled", 0f, presentation.fps, 0f) }
+        compose.runOnIdle { assertTrue("T388: connection fixture retired", presentation.connected); visible.value = true }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(1100)
+        compose.runOnIdle { assertTrue("T388: visible stats stopped updating", presentation.fps > 0f) }
+        compose.runOnIdle { visible.value = false }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        val previous = presentation.fps
+        compose.runOnIdle { statistics.sample(System.nanoTime() + 2_000_000_000L) }
+        compose.mainClock.advanceTimeBy(2100)
+        compose.runOnIdle { assertEquals("T388: hiding stats did not cancel sampling", previous, presentation.fps, 0f) }
+    }
+
     @Test fun t349_displayDefaultsCanBeChangedWhileStreaming() = checkDisplayControls(false)
     @Test fun t349_displayDefaultsCanBeChangedInPenMode() = checkDisplayControls(true)
 

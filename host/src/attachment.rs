@@ -7,6 +7,7 @@ use tokio::sync::watch;
 struct State {
     identity: Option<String>,
     generation: u64,
+    transport: Option<uscreen_config::adb::Transport>,
 }
 struct Shared {
     state: Mutex<State>,
@@ -22,6 +23,7 @@ impl Attachment {
             state: Mutex::new(State {
                 identity: None,
                 generation: 0,
+                transport: None,
             }),
             presence: watch::channel(false).0,
             generation: watch::channel(0).0,
@@ -33,8 +35,17 @@ impl Attachment {
     /// arrive. Proven same-tablet migration retains geometry; replacement or
     /// absence invalidates it. Every handoff retires earlier control leases.
     pub fn begin(&self, identity: Option<String>) {
+        self.begin_with_transport(identity, None);
+    }
+
+    pub fn begin_with_transport(
+        &self,
+        identity: Option<String>,
+        transport: Option<uscreen_config::adb::Transport>,
+    ) {
         let mut state = self.0.state.lock().unwrap();
         let preserve = identity.is_some() && state.identity == identity;
+        state.transport = transport.filter(|_| identity.is_some());
         state.identity = identity;
         state.generation = state.generation.wrapping_add(1);
         if !preserve {
@@ -67,6 +78,7 @@ impl Attachment {
         Lease {
             attachment: self.clone(),
             generation: state.generation,
+            transport: state.transport,
             changed: self.0.generation.subscribe(),
         }
     }
@@ -75,9 +87,18 @@ impl Attachment {
 pub(crate) struct Lease {
     attachment: Attachment,
     generation: u64,
+    transport: Option<uscreen_config::adb::Transport>,
     changed: watch::Receiver<u64>,
 }
 impl Lease {
+    /// Immutable accepted route: never read a replacement tablet's transport.
+    pub fn transport(&self) -> Option<&'static str> {
+        self.transport.map(|route| match route {
+            uscreen_config::adb::Transport::Usb => "usb",
+            uscreen_config::adb::Transport::Network => "network",
+        })
+    }
+
     /// Serialize check and action with invalidation. An old socket cannot
     /// restore geometry or inject contacts after a new attachment begins.
     pub fn apply(&self, action: impl FnOnce()) -> bool {

@@ -344,7 +344,8 @@ async fn serve_controller(
         attachment,
     };
 
-    let resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
+    let mut resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
+    resp.transport = attachment.and_then(crate::attachment::Lease::transport);
 
     if !send_controller_message(
         &mut ws_sender,
@@ -1709,8 +1710,47 @@ fi
         assert_eq!(mixed, 0, "T346: greeting mixed codec and FPS revisions");
     }
 
+    #[tokio::test]
+    async fn t388_greeting_reports_accepted_route_and_omits_unknown() {
+        use uscreen_config::adb::Transport;
+        for (route, expected) in [
+            (Some(Transport::Usb), Some("usb")),
+            (Some(Transport::Network), Some("network")),
+            (None, None),
+        ] {
+            let (settings, _) = watch::channel(settings("libx264"));
+            let attachment = crate::attachment::Attachment::new(settings);
+            attachment.begin_with_transport(Some("same-physical-tablet".into()), route);
+            let (mut client, _, task) =
+                connection_with_attachment("libx264", Some(attachment.clone())).await;
+            let greeting = response(&mut client).await;
+            assert_eq!(greeting["status"], "connected");
+            assert_eq!(greeting.get("transport").and_then(|v| v.as_str()), expected);
+            attachment.begin_with_transport(
+                Some("same-physical-tablet".into()),
+                Some(Transport::Network),
+            );
+            let retired = tokio::time::timeout(std::time::Duration::from_secs(1), task).await;
+            assert!(
+                retired.is_ok(),
+                "T388: migrated route retained old controller"
+            );
+        }
+    }
+
     async fn connection(
         encoder: &str,
+    ) -> (
+        WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
+        watch::Sender<EncoderSettings>,
+        tokio::task::JoinHandle<Result<()>>,
+    ) {
+        connection_with_attachment(encoder, None).await
+    }
+
+    async fn connection_with_attachment(
+        encoder: &str,
+        attachment: Option<crate::attachment::Attachment>,
     ) -> (
         WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
         watch::Sender<EncoderSettings>,
@@ -1723,8 +1763,12 @@ fi
         let task = tokio::spawn(async move {
             let (socket, _) = listener.accept().await.unwrap();
             let (mode_tx, _rx) = watch::channel(false);
+            let mut incoming = PendingInput::new(socket);
+            incoming.attachment = attachment
+                .as_ref()
+                .map(crate::attachment::Attachment::lease);
             handle_connection(
-                PendingInput::new(socket),
+                incoming,
                 InputConfig {
                     touch: false,
                     pen: false,

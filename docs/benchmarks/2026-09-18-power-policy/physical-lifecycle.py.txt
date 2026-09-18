@@ -1,0 +1,56 @@
+from pathlib import Path
+import subprocess,time,json,re,xml.etree.ElementTree as E
+ADB=['adb','-s','8002RH1010011900']
+OUT=Path('/tmp/uscreen-t388-deployment/power-lifecycle');OUT.mkdir(exist_ok=True)
+def shell(*args):return subprocess.check_output(ADB+['shell',*args],text=True,timeout=30)
+def nodes():
+ shell('uiautomator','dump','/sdcard/uscreen-t388-ui.xml')
+ return list(E.fromstring(shell('cat','/sdcard/uscreen-t388-ui.xml')).iter('node'))
+def click(node):
+ x1,y1,x2,y2=map(int,re.findall(r'\d+',node.get('bounds')))
+ shell('input','tap',str((x1+x2)//2),str((y1+y2)//2))
+def toggle(value):
+ for _ in range(5):
+  found=next((n for n in nodes() if n.get('content-desc')=='Battery saver'),None)
+  if found is not None:
+   if (found.get('checked')=='true')!=value:click(found)
+   time.sleep(1)
+   return
+  shell('input','swipe','1000','710','1000','280','450')
+ raise RuntimeError('Battery saver setting not visible')
+def capture(name):
+ power=shell('dumpsys','power');wifi=shell('dumpsys','wifi')
+ activity=shell('dumpsys','activity','services','com.uscreen')
+ display=shell('dumpsys','display')
+ prefs=E.fromstring(subprocess.check_output(ADB+['exec-out','run-as','com.uscreen','cat','shared_prefs/uscreen.xml']))
+ row=dict(utc=time.time(),wake_locks=[l.strip() for l in power.splitlines() if 'PARTIAL_WAKE_LOCK' in l and 'UScreen::' in l],
+  wifi_locks=[l.strip() for l in wifi.splitlines() if 'WifiLock{UScreen::' in l],
+  service=[l.strip() for l in activity.splitlines() if 'isForeground=' in l or 'ServiceRecord{' in l],
+  display=[l.strip() for l in display.splitlines() if 'mActiveModeId=' in l or 'mBrightnessState=' in l],
+  preferences={n.get('name'):n.get('value',n.text) for n in prefs if n.get('name')!='host_token'},
+  pid=shell('pidof','com.uscreen').strip())
+ (OUT/(name+'.json')).write_text(json.dumps(row,indent=2)+'\n')
+ print(name,'wake',len(row['wake_locks']),'wifi',len(row['wifi_locks']),flush=True)
+ return row
+normal=capture('normal-usb')
+assert normal['wake_locks'] and normal['wifi_locks']
+try:
+ toggle(True)
+ saving=capture('battery-usb')
+ assert not saving['wake_locks'] and not saving['wifi_locks']
+ assert normal['pid']==saving['pid']
+ shell('input','keyevent','3');time.sleep(2)
+ background=capture('battery-background')
+ assert not background['wake_locks'] and not background['wifi_locks']
+ shell('am','start','-n','com.uscreen/.MainActivity');time.sleep(3)
+ resume=capture('battery-resumed')
+ assert not resume['wake_locks'] and not resume['wifi_locks']
+finally:
+ shell('am','start','-n','com.uscreen/.MainActivity');time.sleep(1)
+ ns=nodes()
+ gear=next((n for n in ns if n.get('text')=='⚙'),None)
+ if gear is not None:click(gear)
+ toggle(False)
+ restored=capture('normal-restored')
+ assert restored['wake_locks'] and restored['wifi_locks']
+ shell('input','keyevent','4')

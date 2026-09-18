@@ -211,10 +211,11 @@ impl Monitor {
             return;
         }
         // Invalidate before a forwarding operation can deliver new metadata.
-        self.config.tablet.begin(
+        self.config.tablet.begin_with_transport(
             found
                 .as_ref()
                 .map(|serial| attachment_identity(serial, &self.identities)),
+            found.as_deref().map(uscreen_config::adb::transport_of),
         );
         let old = self.current.clone();
         disconnected_primary(&mut self.current, &mut self.wifi_announced);
@@ -267,9 +268,10 @@ impl Monitor {
         else {
             return;
         };
-        self.config
-            .tablet
-            .begin(Some(attachment_identity(&serial, &self.identities)));
+        self.config.tablet.begin_with_transport(
+            Some(attachment_identity(&serial, &self.identities)),
+            Some(uscreen_config::adb::transport_of(&serial)),
+        );
         self.prepare(
             serial,
             Pending {
@@ -311,9 +313,10 @@ impl Monitor {
                 return;
             }
         };
-        session
-            .tablet_tx
-            .begin(Some(attachment_identity(&serial, &self.identities)));
+        session.tablet_tx.begin_with_transport(
+            Some(attachment_identity(&serial, &self.identities)),
+            Some(uscreen_config::adb::transport_of(&serial)),
+        );
         let ports = (session.video_port, session.input_port);
         self.prepare(
             serial,
@@ -568,9 +571,37 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn t390_promoting_an_extra_retires_its_previous_slot() {
+    async fn t388_route_follows_adb_transport_not_physical_identity() {
+        let mut state = fixture();
+        let mut previous = None;
+        for (serial, expected) in [
+            ("8002RH1010011900", "usb"),
+            ("[::1]:5555", "network"),
+            ("tablet._adb-tls-connect._tcp.local.", "network"),
+            ("8002RH1010011900", "usb"),
+        ] {
+            state
+                .identities
+                .insert(serial.into(), "same-physical-tablet".into());
+            state.change_primary(&Some(serial.into()));
+            if let Some(lease) = previous.take() {
+                let lease: attachment::Lease = lease;
+                assert!(!lease.apply(|| panic!("T388: retired route used")));
+            }
+            let lease = state.config.tablet.lease();
+            assert_eq!(lease.transport(), Some(expected));
+            previous = Some(lease);
+            state.prepare_primary();
+            assert_eq!(state.config.tablet.lease().transport(), Some(expected));
+        }
+        state.change_primary(&None);
+        assert_eq!(state.config.tablet.lease().transport(), None);
+        state.stop().await;
+    }
+
+    fn fixture() -> Monitor {
         let (tablet, extra, _stop) = crate::discovery_tests::monitor_inputs(2, (18000, 18001));
-        let mut state = Monitor::new(Config {
+        Monitor::new(Config {
             ports: (18000, 18001),
             auto_launch: false,
             tablet,
@@ -578,7 +609,12 @@ mod tests {
             relaunch: Default::default(),
             extra,
             adb: "/missing-test-adb".into(),
-        });
+        })
+    }
+
+    #[tokio::test]
+    async fn t390_promoting_an_extra_retires_its_previous_slot() {
+        let mut state = fixture();
         let runtime = session::Spec {
             capture: capture::CaptureConfig {
                 instance: 1,

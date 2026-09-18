@@ -6,12 +6,15 @@ import android.util.Log
 import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** Read-only stream observations for Compose; owning a view never starts video. */
 internal class StreamPresentation(private val receiver: VideoReceiver?, control: TouchCapture?) {
     var connected by mutableStateOf(false); private set
     var fps by mutableStateOf(0f); private set
     var mbps by mutableStateOf(0f); private set
+    val connectionState = control?.connectionState ?: MutableStateFlow(ControlConnection())
     val controlConnected: StateFlow<Boolean> = control?.controlConnected ?: MutableStateFlow(false)
     init {
         val ui = Handler(Looper.getMainLooper())
@@ -31,10 +34,11 @@ internal data class SettingsValues(
     val orientation: Int = Prefs.ORIENTATION_AUTO,
     val showStats: Boolean = false,
     val checkUpdates: Boolean = true,
+    val batterySaver: Boolean = false,
 ) {
     companion object {
         fun read(prefs: Prefs) = SettingsValues(prefs.bitrateKbps, prefs.fps, prefs.brightnessPercent,
-            prefs.displayRefreshRate, prefs.orientation, prefs.showStats, prefs.checkUpdates)
+            prefs.displayRefreshRate, prefs.orientation, prefs.showStats, prefs.checkUpdates, prefs.batterySaver)
     }
 }
 
@@ -45,6 +49,7 @@ internal sealed interface SettingsEvent {
     data class Brightness(val value: Int) : SettingsEvent
     data class RefreshRate(val value: Float) : SettingsEvent
     data class ShowStats(val value: Boolean) : SettingsEvent
+    data class BatterySaver(val value: Boolean) : SettingsEvent
     data class CheckUpdates(val value: Boolean) : SettingsEvent
 }
 
@@ -63,6 +68,15 @@ internal class SessionCoordinator(
     private var started = false
     val presentation = StreamPresentation(videoReceiver, touchCapture)
 
+    fun powerNow(): StreamingPower = powerFor(settings.batterySaver, presentation.connected, penOnlyMode, presentation.connectionState.value)
+    fun powerUpdates() = combine(
+        snapshotFlow { Triple(settings.batterySaver, presentation.connected, penOnlyMode) },
+        presentation.connectionState,
+    ) { local, connection -> powerFor(local.first, local.second, local.third, connection) }.distinctUntilChanged()
+
+    private fun powerFor(saver: Boolean, video: Boolean, pen: Boolean, connection: ControlConnection) =
+        StreamingPower(saver, connection.authenticated && (video || pen), connection.transport)
+
     init { applyToken(false); connectStreamCallbacks() }
 
     fun handle(event: SettingsEvent) {
@@ -73,6 +87,7 @@ internal class SessionCoordinator(
             is SettingsEvent.Brightness -> prefs.brightnessPercent = event.value
             is SettingsEvent.RefreshRate -> prefs.displayRefreshRate = event.value
             is SettingsEvent.ShowStats -> prefs.showStats = event.value
+            is SettingsEvent.BatterySaver -> prefs.batterySaver = event.value
             is SettingsEvent.CheckUpdates -> prefs.checkUpdates = event.value
         }
         settings = SettingsValues.read(prefs)

@@ -45,6 +45,11 @@ physical decoding. T400 adds capability-gated VAAPI depth one and an explicit
 low-latency H.264 profile while preserving saved selections; the report also
 records the failed VAAPI HEVC sample and software AV1 motion delay.
 
+The [Android power-policy checks](benchmarks/2026-09-18-power-policy.md) record
+T388's opt-in setting, regression coverage, deployment and physical USB lock
+lifecycle. Sustained power and updated desktop comparisons await an unlocked
+Linux session; no battery-life gain is claimed yet.
+
 The [Android socket-input replay](benchmarks/2026-09-18-decoder-input.md) compares
 reusable heap staging with direct reads into codec-owned input buffers. T403 keeps
 staging as the default and adds tested payload/cancellation contracts; it makes

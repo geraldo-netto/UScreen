@@ -9,12 +9,14 @@ import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     internal lateinit var session: SessionCoordinator; private set
+    private lateinit var powerBinding: StreamingPowerBinding
     internal lateinit var windowPolicy: ActivityWindowPolicy; private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val prefs = Prefs(this)
+        powerBinding = StreamingPowerBinding(this)
         windowPolicy = ActivityWindowPolicy(this, prefs)
         windowPolicy.applyDisplaySettings()
         windowPolicy.applyOrientation()
@@ -91,7 +93,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         windowPolicy.start()
-        startForegroundService(Intent(this, StreamingService::class.java))
+        powerBinding.start(session.powerNow(), session.powerUpdates())
         session.checkUpdate {
             try { packageManager.getPackageInfo(packageName, 0).versionName ?: "0" } catch (_: Exception) { "0" }
         }
@@ -101,11 +103,12 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         windowPolicy.stop()
+        powerBinding.stop()
         session.stop()
-        stopService(Intent(this, StreamingService::class.java))
     }
 
     override fun onDestroy() {
+        if (::powerBinding.isInitialized) powerBinding.stop()
         super.onDestroy()
         windowPolicy.stop()
     }

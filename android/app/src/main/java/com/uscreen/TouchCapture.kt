@@ -16,6 +16,7 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
     internal val control: ControlSession = ControlSession(this, motion, factory)
     val connectionGeneration get() = control.connectionGeneration
     val controlConnected get() = control.controlConnected
+    internal val connectionState get() = control.connectionState
     val isPenOnly get() = control.isPenOnly
     var token: String?
         get() = control.token

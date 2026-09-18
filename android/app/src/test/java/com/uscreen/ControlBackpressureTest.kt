@@ -50,6 +50,31 @@ class ControlBackpressureTest {
         fun recover(): Socket = connect().also { it.open(); it.greet() }
     }
 
+    @Test fun t388_route_is_authenticated_generation_scoped_and_unknown_for_old_hosts() {
+        val connection = Connection()
+        val capture = connection.capture
+        try {
+            val socket = connection.connect().also { it.open() }
+            socket.listener.onMessage(socket, """{"status":"mode","transport":"usb"}""")
+            assertEquals(ControlConnection(), capture.connectionState.value)
+            socket.listener.onMessage(socket, """{"status":"connected","transport":"network"}""")
+            assertEquals(ControlConnection(true, StreamTransport.NETWORK), capture.connectionState.value)
+            socket.listener.onMessage(socket, """{"status":"mode","pen_only":true}""")
+            assertEquals(StreamTransport.NETWORK, capture.connectionState.value.transport)
+            socket.listener.onClosing(socket, 1000, "T388")
+            assertEquals(ControlConnection(), capture.connectionState.value)
+            capture.disconnect()
+            val next = connection.recover() // Old host with no transport field.
+            assertEquals(ControlConnection(true), capture.connectionState.value)
+            socket.listener.onMessage(socket, """{"status":"connected","transport":"usb"}""")
+            assertEquals(ControlConnection(true), capture.connectionState.value)
+            next.listener.onMessage(next, """{"status":"connected","transport":"usb"}""")
+            assertEquals(StreamTransport.USB, capture.connectionState.value.transport)
+            next.listener.onFailure(next, java.io.IOException("T388 disconnect"), null)
+            assertEquals(ControlConnection(), capture.connectionState.value)
+        } finally { capture.disconnect() }
+    }
+
     @Test fun t387_rejectedHandshakeStopsAndRetainsPendingSettings() {
         for (kind in listOf("auth", "resolution", "config", "mode")) {
             val connection = Connection()

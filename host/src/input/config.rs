@@ -44,6 +44,7 @@ impl InputConfig {
             .unwrap_or_else(|| self.codec.clone());
         InputResponse {
             status: status.into(),
+            transport: None,
             fps: settings.as_ref().map(|current| current.fps),
             width: self.virtual_width,
             height: self.virtual_height,

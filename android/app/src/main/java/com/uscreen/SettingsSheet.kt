@@ -10,6 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +61,8 @@ internal fun SettingsSheet(
 
             if (!penOnly) StreamControls(bitrateMbps, fpsChoice, { bitrateMbps = it }, { fpsChoice = it })
 
+            SettingsSwitch("Battery saver", "Reduce background work while keeping your brightness and frame-rate settings.", settings.batterySaver) { onSettingsEvent(SettingsEvent.BatterySaver(it)) }
+            Spacer(Modifier.height(16.dp))
             SettingsSwitch("Show stats overlay", "FPS and bandwidth in the corner", settings.showStats) { onSettingsEvent(SettingsEvent.ShowStats(it)) }
             Spacer(Modifier.height(16.dp))
             SettingsSwitch("Check for newer releases", "One request to GitHub when the app opens. Nothing installs itself.", settings.checkUpdates) { onSettingsEvent(SettingsEvent.CheckUpdates(it)) }
@@ -196,6 +200,7 @@ private fun SettingsSwitch(title: String, description: String, checked: Boolean,
             Text(description, fontSize = 11.sp, color = Color(0xFF6A6A7E))
         }
         Switch(checked = checked, onCheckedChange = onChange,
+            modifier = Modifier.semantics { contentDescription = title },
             colors = SwitchDefaults.colors(checkedTrackColor = Accent))
     }
 }

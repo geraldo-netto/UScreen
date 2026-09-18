@@ -184,6 +184,10 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   USB preference works for recognized transports; mDNS wireless identifiers
   have a known classification bug (T278). See [benchmarks](docs/benchmarks.md)
   for historical Wi-Fi results.
+- **Battery saver** — an opt-in Android setting that preserves brightness,
+  refresh rate and stream settings. It releases unnecessary CPU/Wi-Fi locks on
+  USB or while waiting, while retaining the network lock for active network
+  sessions. It applies immediately; turning it off restores the normal policy.
 - **Updates** — the app, the GUI and the tray tell you when a newer release
   exists; nothing installs itself. `check_updates = false` disables host checks;
   the tablet app has its own update-check switch.

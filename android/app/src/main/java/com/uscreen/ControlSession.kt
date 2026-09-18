@@ -43,6 +43,8 @@ internal class ControlSession(
     @Volatile private var isConnected = false
     private val authenticatedControl = MutableStateFlow(false)
     val controlConnected = authenticatedControl.asStateFlow()
+    private val connection = MutableStateFlow(ControlConnection())
+    val connectionState = connection.asStateFlow()
     private var reconnectJob: Job? = null
 
     /** Set from the host's greeting: it is using us as a graphics tablet for
@@ -104,7 +106,7 @@ internal class ControlSession(
                     applyInputGreeting(o)
                     applyDecoderGreeting(o)
                     applyModeGreeting(o)
-                    if (o.optString("status") == "connected") authenticatedControl.value = true
+                    acceptGreeting(o)
                 } catch (_: Exception) {}
             }
         }
@@ -112,7 +114,7 @@ internal class ControlSession(
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             synchronized(lock) {
                 if (isStale(webSocket)) return
-                authenticatedControl.value = false
+                resetGreeting()
                 webSocket.close(1000, null)
             }
         }
@@ -123,7 +125,7 @@ internal class ControlSession(
                 this@ControlSession.webSocket = null
                 connectionGeneration++
                 isConnected = false
-                authenticatedControl.value = false
+                resetGreeting()
                 scheduleReconnect()
             }
         }
@@ -134,7 +136,7 @@ internal class ControlSession(
                 this@ControlSession.webSocket = null
                 connectionGeneration++
                 isConnected = false
-                authenticatedControl.value = false
+                resetGreeting()
                 Log.w(TAG, "Connection failed: ${t.message}")
                 scheduleReconnect()
             }
@@ -183,6 +185,17 @@ internal class ControlSession(
         if (enqueue(message)) pendingMode = null
     }
 
+    private fun resetGreeting() {
+        connection.value = ControlConnection()
+        authenticatedControl.value = false
+    }
+
+    private fun acceptGreeting(message: JSONObject) {
+        if (message.optString("status") != "connected") return
+        connection.value = ControlConnection(true, StreamTransport.from(message.optString("transport")))
+        authenticatedControl.value = true
+    }
+
     private fun applyInputGreeting(o: JSONObject) {
         if (o.has("touch")) {
             input.setTouchEnabled(o.getBoolean("touch"))
@@ -227,7 +240,7 @@ internal class ControlSession(
 
     private fun connectWebSocket(): Unit = synchronized(lock) {
         connectionGeneration++
-        authenticatedControl.value = false
+        resetGreeting()
         input.reset()
         val previous = webSocket
         webSocket = null
@@ -328,7 +341,7 @@ internal class ControlSession(
         webSocket = null
         connectionGeneration++
         isConnected = false
-        authenticatedControl.value = false
+        resetGreeting()
         input.forgetTouches()
         socket.cancel()
         scheduleReconnect()
@@ -348,7 +361,7 @@ internal class ControlSession(
         val previous = webSocket
         webSocket = null
         isConnected = false
-        authenticatedControl.value = false
+        resetGreeting()
         previous?.close(1000, "Client closing")
     }
 }

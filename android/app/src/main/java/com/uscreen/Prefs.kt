@@ -51,6 +51,11 @@ class Prefs(context: Context) {
             .takeIf { it.isFinite() && it >= 0f } ?: DEFAULT_DISPLAY_REFRESH_RATE
         set(v) = sp.edit().putFloat("display_refresh_rate", v).apply()
 
+    /** Opt-in power policy; independent of brightness, refresh and host settings. */
+    var batterySaver: Boolean
+        get() = sp.getBoolean("battery_saver", false)
+        set(v) = sp.edit().putBoolean("battery_saver", v).apply()
+
     var showStats: Boolean
         get() = sp.getBoolean("show_stats", false)
         set(v) = sp.edit().putBoolean("show_stats", v).apply()
