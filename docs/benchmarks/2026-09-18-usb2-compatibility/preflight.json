@@ -1,0 +1,40 @@
+{
+  "timestamp_ns": 1789764935097023775,
+  "usb": {
+    "1-1.4": {
+      "speed": "480",
+      "version": "2.00",
+      "product": "RugKing Pad 2 Pro",
+      "manufacturer": "Unisoc",
+      "bMaxPower": "500mA",
+      "busnum": "1",
+      "devnum": "14"
+    },
+    "1-1": {
+      "speed": "480",
+      "version": "2.10",
+      "product": "4-Port USB 2.0 Hub",
+      "manufacturer": "Generic",
+      "bMaxPower": "0mA",
+      "busnum": "1",
+      "devnum": "2"
+    },
+    "usb1": {
+      "speed": "480",
+      "version": "2.00",
+      "product": "xHCI Host Controller",
+      "manufacturer": "Linux 7.0.0-31-generic xhci-hcd",
+      "bMaxPower": "0mA",
+      "busnum": "1",
+      "devnum": "1"
+    }
+  },
+  "topology": "/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 480M\n    |__ Port 001: Dev 002, If 0, Class=Hub, Driver=hub/4p, 480M\n        |__ Port 002: Dev 004, If 0, Class=Mass Storage, Driver=usb-storage, 480M\n        |__ Port 003: Dev 005, If 0, Class=Hub, Driver=hub/4p, 480M\n        |__ Port 004: Dev 014, If 0, Class=Vendor Specific Class, Driver=usbfs, 480M\n    |__ Port 002: Dev 003, If 0, Class=Human Interface Device, Driver=usbhid, 12M\n    |__ Port 002: Dev 003, If 1, Class=Human Interface Device, Driver=usbhid, 12M\n    |__ Port 002: Dev 003, If 2, Class=Human Interface Device, Driver=usbhid, 12M\n    |__ Port 002: Dev 003, If 3, Class=Human Interface Device, Driver=usbhid, 12M\n/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 10000M\n    |__ Port 001: Dev 002, If 0, Class=Hub, Driver=hub/4p, 10000M\n        |__ Port 003: Dev 003, If 0, Class=Hub, Driver=hub/4p, 5000M\n            |__ Port 002: Dev 004, If 0, Class=Vendor Specific Class, Driver=r8152, 5000M\n/:  Bus 003.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 480M\n    |__ Port 001: Dev 002, If 0, Class=Human Interface Device, Driver=usbhid, 12M\n    |__ Port 001: Dev 002, If 1, Class=Human Interface Device, Driver=usbhid, 12M\n    |__ Port 002: Dev 003, If 0, Class=Hub, Driver=hub/4p, 480M\n        |__ Port 003: Dev 004, If 0, Class=Wireless, Driver=btusb, 12M\n        |__ Port 003: Dev 004, If 1, Class=Wireless, Driver=btusb, 12M\n/:  Bus 004.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 10000M\n    |__ Port 002: Dev 002, If 0, Class=Hub, Driver=hub/4p, 5000M\n/:  Bus 005.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/1p, 480M\n    |__ Port 001: Dev 002, If 0, Class=Wireless, Driver=btusb, 12M\n    |__ Port 001: Dev 002, If 1, Class=Wireless, Driver=btusb, 12M\n",
+  "adb": "List of devices attached\n8002RH1010011900       device usb:1-1.4 product:GQ8002RH1_EEA model:RugKing_Pad_2_Pro device:GQ8002RH1 transport_id:5\n\n",
+  "foreground": [
+    "mCurrentFocus=Window{eae5af4 u0 com.uscreen/com.uscreen.MainActivity}, [type=1, isChildWindow=false]-[Surface(name=*Title#17293)/@0xa3a8f19]"
+  ],
+  "host_processes": " 149897 uscreen\n 651015 evdi_helper\n 651155 ffmpeg\n1897166 Xorg\n1897918 cinnamon\n",
+  "battery": "Current Battery Service state:\n  AC powered: false\n  USB powered: true\n  Wireless powered: false\n  Dock powered: false\n  Max charging current: 500000\n Time when the latest updated value of the Max charging current was sent via battery changed broadcast: +1d1h47m46s655ms\n  Max charging voltage: 5000000\n  Charge counter: 4875120\n  status: 2\n  health: 2\n  present: true\n  level: 49\n  scale: 100\n  voltage: 3855\n Time when the latest updated value of the voltage was sent via battery changed broadcast: +1d10h35m46s660ms\n The last voltage value sent via the battery changed broadcast: 3857\n  temperature: 310\n  technology: Li-ion\n  Charging state: 0\n  Charging policy: 0\n  Capacity level: 3\n",
+  "installed_replay": "package:/data/app/~~ZMKbVMcTC0j95FUrfFWviQ==/com.uscreen.decoderbench.candidate-U9aZOQt49yE1rQJeUYBZHg==/base.apk\n"
+}

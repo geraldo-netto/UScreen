@@ -75,6 +75,11 @@ records T419's host frame/rectangle/tile/XOR comparisons and native tablet
 decompression. Android reconstruction, upload, presentation and battery
 comparisons remain open; no new production compression mode is enabled.
 
+The [USB 2.0 compatibility check](benchmarks/2026-09-18-usb2-compatibility.md)
+confirms the current tablet already negotiates 480 Mb/s, measures ADB payload
+throughput and verifies all 2,960 replay pictures. Charging and sustained battery
+results remain separate from data-link compatibility.
+
 Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;

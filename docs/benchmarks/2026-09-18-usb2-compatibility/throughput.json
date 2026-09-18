@@ -1,0 +1,76 @@
+{
+  "smoke": {
+    "trial": -1,
+    "bytes": 19,
+    "seconds": 0.059462648,
+    "mbps": 0.0025562265575525666,
+    "sha256": "a55839ff8aa23471d065768c702d8ce7b916dfda783ff04354f8d5d6cfec98e7",
+    "usb_before": {
+      "speed": "480",
+      "version": "2.00",
+      "devnum": "14"
+    },
+    "usb_after": {
+      "speed": "480",
+      "version": "2.00",
+      "devnum": "14"
+    },
+    "boundary": "host subprocess start through ADB shell stdin to Android SHA-256 and process exit; UScreen active"
+  },
+  "trials": [
+    {
+      "trial": 0,
+      "bytes": 67108864,
+      "seconds": 2.222504951,
+      "mbps": 241.56117706664222,
+      "sha256": "fea41a8ce321ed36c94681cd68556a8be64236ddd0c2116b050f89312b849bb1",
+      "usb_before": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "usb_after": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "boundary": "host subprocess start through ADB shell stdin to Android SHA-256 and process exit; UScreen active"
+    },
+    {
+      "trial": 1,
+      "bytes": 67108864,
+      "seconds": 2.197211781,
+      "mbps": 244.34190488258628,
+      "sha256": "fea41a8ce321ed36c94681cd68556a8be64236ddd0c2116b050f89312b849bb1",
+      "usb_before": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "usb_after": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "boundary": "host subprocess start through ADB shell stdin to Android SHA-256 and process exit; UScreen active"
+    },
+    {
+      "trial": 2,
+      "bytes": 67108864,
+      "seconds": 2.247383681,
+      "mbps": 238.88707412928838,
+      "sha256": "fea41a8ce321ed36c94681cd68556a8be64236ddd0c2116b050f89312b849bb1",
+      "usb_before": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "usb_after": {
+        "speed": "480",
+        "version": "2.00",
+        "devnum": "14"
+      },
+      "boundary": "host subprocess start through ADB shell stdin to Android SHA-256 and process exit; UScreen active"
+    }
+  ]
+}

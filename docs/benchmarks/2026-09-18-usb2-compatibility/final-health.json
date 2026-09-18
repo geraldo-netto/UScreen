@@ -1,0 +1,18 @@
+{
+  "time_ns": 1789765757809017951,
+  "usb": {
+    "speed": "480",
+    "version": "2.00",
+    "product": "RugKing Pad 2 Pro",
+    "manufacturer": "Unisoc",
+    "bMaxPower": "500mA",
+    "busnum": "1",
+    "devnum": "14"
+  },
+  "host_processes": " 149897 uscreen\n 651015 evdi_helper\n 651155 ffmpeg\n1897166 Xorg\n1897918 cinnamon\n",
+  "battery": "Current Battery Service state:\n  AC powered: false\n  USB powered: true\n  Wireless powered: false\n  Dock powered: false\n  Max charging current: 500000\n Time when the latest updated value of the Max charging current was sent via battery changed broadcast: +1d1h47m46s655ms\n  Max charging voltage: 5000000\n  Charge counter: 4865130\n  status: 2\n  health: 2\n  present: true\n  level: 49\n  scale: 100\n  voltage: 3859\n Time when the latest updated value of the voltage was sent via battery changed broadcast: +1d10h53m46s660ms\n The last voltage value sent via the battery changed broadcast: 3859\n  temperature: 311\n  technology: Li-ion\n  Charging state: 0\n  Charging policy: 0\n  Capacity level: 3\n",
+  "foreground": [
+    "mCurrentFocus=Window{eae5af4 u0 com.uscreen/com.uscreen.MainActivity}, [type=1, isChildWindow=false]-[Surface(name=*Title#17576)/@0xc5fc31e]"
+  ],
+  "reverse_routes": "UsbFfs tcp:8890 tcp:8890\nUsbFfs tcp:8891 tcp:8891\n\n"
+}

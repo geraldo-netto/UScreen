@@ -1,0 +1,372 @@
+{
+  "phases": [
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.705191,
+        "p95": 22.401327,
+        "p99": 23.740046
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.429872,
+        "p95": 18.968401,
+        "p99": 19.760088
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 118.358455,
+      "trial": "trial-000",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 337.714
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.051242,
+        "p95": 21.935291,
+        "p99": 23.399014
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.62586,
+        "p95": 18.250808,
+        "p99": 18.978902
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 125.382824,
+      "trial": "trial-000",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 55.429
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.030156,
+        "p95": 24.368647,
+        "p99": 25.10177
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 18.774454,
+        "p95": 21.126261,
+        "p99": 22.273358
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 122.610011,
+      "trial": "trial-001",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 234.778
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.274612,
+        "p95": 27.239451,
+        "p99": 27.420332
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.773654,
+        "p95": 22.853474,
+        "p99": 23.774643
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 123.849187,
+      "trial": "trial-001",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 55.011
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.878077,
+        "p95": 22.594922,
+        "p99": 23.205548
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.443659,
+        "p95": 18.929074,
+        "p99": 20.058949
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 133.113105,
+      "trial": "trial-002",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 242.334
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.791118,
+        "p95": 22.049975,
+        "p99": 23.047451
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.196158,
+        "p95": 18.62276,
+        "p99": 19.666506
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 134.046127,
+      "trial": "trial-002",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 67.072
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.824472,
+        "p95": 21.093648,
+        "p99": 24.955576
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.461742,
+        "p95": 17.716871,
+        "p99": 21.855787
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 129.192973,
+      "trial": "trial-003",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 239.747
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.62221,
+        "p95": 22.102958,
+        "p99": 24.971367
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.282696,
+        "p95": 18.613472,
+        "p99": 21.690166
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 137.116389,
+      "trial": "trial-003",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 57.038
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 18.935267,
+        "p95": 22.510068,
+        "p99": 23.101837
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.679114,
+        "p95": 19.083745,
+        "p99": 19.789906
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 128.51599,
+      "trial": "trial-004",
+      "phase": 0,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 227.907
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.482188,
+        "p95": 22.272356,
+        "p99": 24.190932
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.153776,
+        "p95": 18.776128,
+        "p99": 20.823654
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 133.813195,
+      "trial": "trial-004",
+      "phase": 1,
+      "scene": "motion",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 60.646
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.173697,
+        "p95": 31.012076,
+        "p99": 31.656077
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.423475,
+        "p95": 27.749291,
+        "p99": 28.250254
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 125.767033,
+      "trial": "trial-005",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 232.628
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.491604,
+        "p95": 26.523592,
+        "p99": 28.387982
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.689591,
+        "p95": 22.847744,
+        "p99": 25.033428
+      },
+      "samples": 15,
+      "first_write_to_ack_ms": 140.656815,
+      "trial": "trial-005",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 55.4
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.757263,
+        "p95": 22.238721,
+        "p99": 26.363841
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.419913,
+        "p95": 18.650113,
+        "p99": 23.302827
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 128.5516,
+      "trial": "trial-006",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 225.225
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.160615,
+        "p95": 21.926004,
+        "p99": 23.583543
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.957886,
+        "p95": 18.548135,
+        "p99": 20.552618
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 137.6623,
+      "trial": "trial-006",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 63.23
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.004371,
+        "p95": 21.729262,
+        "p99": 23.837165
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 15.751304,
+        "p95": 18.215058,
+        "p99": 20.436522
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 129.089966,
+      "trial": "trial-007",
+      "phase": 0,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 245.251
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 19.636439,
+        "p95": 22.010288,
+        "p99": 24.073735
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 16.601676,
+        "p95": 18.740128,
+        "p99": 21.244521
+      },
+      "samples": 180,
+      "first_write_to_ack_ms": 130.822159,
+      "trial": "trial-007",
+      "phase": 1,
+      "scene": "pen",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 60,
+      "setup_ms": 61.985
+    }
+  ],
+  "summary": [
+    {
+      "scene": "motion",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.266714999999998,
+        "p95": 22.3368415,
+        "p99": 23.56953
+      }
+    },
+    {
+      "scene": "pen",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.3132905,
+        "p95": 21.869774999999997,
+        "p99": 24.5146555
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 5,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 23.2241545,
+        "p95": 26.881521499999998,
+        "p99": 27.904156999999998
+      }
+    },
+    {
+      "scene": "text",
+      "rate": 60,
+      "encoder": "h264_vaapi_baseline",
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 19.7741905,
+        "p95": 22.144348,
+        "p99": 23.3945455
+      }
+    }
+  ],
+  "total_sent": 2960,
+  "total_acks": 2960
+}

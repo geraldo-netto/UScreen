@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""T491: checksum-verified ADB payload test on the already negotiated USB 2 link."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+ROOT = Path('/tmp/uscreen-t491')
+SERIAL = '8002RH1010011900'
+
+
+def snapshot():
+    usb = Path('/sys/bus/usb/devices/1-1.4')
+    return {name: (usb / name).read_text().strip() for name in ('speed', 'version', 'devnum')}
+
+
+def measure(payload, trial):
+    expected = hashlib.sha256(payload).hexdigest()
+    before = snapshot()
+    assert before['speed'] == '480'
+    start = time.monotonic_ns()
+    result = subprocess.run(['adb', '-s', SERIAL, 'shell', '-T', 'sha256sum'],
+                            input=payload, capture_output=True, check=True, timeout=30)
+    elapsed = (time.monotonic_ns() - start) / 1e9
+    assert result.stdout.decode().split()[0] == expected
+    after = snapshot()
+    assert after == before
+    return dict(trial=trial, bytes=len(payload), seconds=elapsed, mbps=len(payload)*8/elapsed/1e6,
+                sha256=expected, usb_before=before, usb_after=after,
+                boundary='host subprocess start through ADB shell stdin to Android SHA-256 and process exit; UScreen active')
+
+
+def main():
+    smoke = measure(b'T491 payload probe\n', -1)
+    payload = os.urandom(64*1024*1024)
+    rows = [measure(payload, trial) for trial in range(3)]
+    (ROOT / 'throughput.json').write_text(json.dumps(dict(smoke=smoke, trials=rows), indent=2)+'\n')
+    for row in rows:
+        print('ADB payload', round(row['mbps'], 2), 'Mb/s', flush=True)
+
+
+if __name__ == '__main__':
+    main()
