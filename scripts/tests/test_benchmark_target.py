@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from types import SimpleNamespace
 import tempfile
+import threading
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'benchmarks'
 sys.path.insert(0, str(SCRIPTS))
@@ -15,6 +16,42 @@ SPEC.loader.exec_module(BASELINE)
 
 
 class BenchmarkTargetTests(unittest.TestCase):
+    def test_t446_metadata_discovers_android_measurement_units(self):
+        def command(args):
+            values = {'com.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}
+            return 0, values.get(args[-1], 'fixture'), ''
+        args = SimpleNamespace(serial='fixture', geometry='1280x800+0+0', seconds=1, warmup=1)
+        with patch.object(BASELINE, 'command', side_effect=command):
+            meta = BASELINE.metadata(args, 'monitor')
+        self.assertEqual(meta['android_ticks_per_second'], 250, 'T446: clock units are per device')
+        self.assertEqual(meta['android_page_size'], 16384, 'T446: Android supports different page sizes')
+
+    def test_t446_sampler_uses_verified_android_page_size(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sampler = BASELINE.Sampler('fixture', Path(directory), {}, threading.Event(), [],
+                                       android_page_size=16384)
+            try:
+                raw = '42 (app) S 1 1 0 0 -1 0 0 0 0 0 200 50 0 0 20 0 3 0 900 1000000 12'
+                with patch.object(sampler, 'android', return_value={'code': 0, 'out': raw}):
+                    self.assertEqual(sampler.app_process()['rss_bytes'], 12 * 16384)
+            finally:
+                sampler.file.close()
+
+    def test_t446_unknown_or_malformed_units_reject_collection(self):
+        args = SimpleNamespace(serial='fixture', geometry='1280x800+0+0', seconds=1, warmup=1)
+        cases = [('CLK_TCK', 1, ''), ('CLK_TCK', -1, ''), ('CLK_TCK', 0, '0'),
+                 ('CLK_TCK', 0, '-100'), ('CLK_TCK', 0, 'unknown'),
+                 ('PAGESIZE', 0, '0'), ('PAGESIZE', 0, '16383')]
+        for name, code, value in cases:
+            def command(query):
+                if query[-1] == name:
+                    return code, value, 'fixture error'
+                return 0, {'com.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}.get(query[-1], 'fixture'), ''
+            with self.subTest(name=name, code=code, value=value), \
+                 patch.object(BASELINE, 'command', side_effect=command):
+                with self.assertRaises(ValueError, msg='T446: never silently guess measurement units'):
+                    BASELINE.metadata(args, 'monitor')
+
     def test_t441_partial_logger_startup_retires_previous_child(self):
         args = SimpleNamespace(output=Path('/unused-t441'), serial='fixture')
         first = ('first-collector', 'first-reader')
@@ -31,7 +68,7 @@ class BenchmarkTargetTests(unittest.TestCase):
             logs = [('collector', 'reader')]
             with patch.object(BASELINE, 'arguments', return_value=args), \
                  patch.object(BASELINE, 'ensure_target', return_value='monitor'), \
-                 patch.object(BASELINE, 'metadata', return_value={'plan': []}), \
+                 patch.object(BASELINE, 'metadata', return_value={'plan': [], 'android_page_size': 16384}), \
                  patch.object(BASELINE, 'command', return_value=(0, '', '')), \
                  patch.object(BASELINE, 'start_logs', return_value=logs), \
                  patch.object(BASELINE, 'Sampler', return_value=sampler), \

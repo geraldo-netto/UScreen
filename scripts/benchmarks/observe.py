@@ -53,10 +53,11 @@ def battery_values(raw):
 
 
 class Sampler:
-    def __init__(self, serial, folder, state, stop, extra_pids):
+    def __init__(self, serial, folder, state, stop, extra_pids, *, android_page_size):
         self.adb = ['adb', '-s', serial]
         self.folder, self.state, self.stop = folder, state, stop
         self.extra_pids = extra_pids
+        self.android_page_size = android_page_size
         self.count = 0
         self.file = (folder / 'samples.jsonl').open('w')
 
@@ -69,7 +70,7 @@ class Sampler:
         if raw['code'] != 0:
             return raw
         try:
-            return process_stat(raw['out'], 4096)
+            return process_stat(raw['out'], self.android_page_size)
         except (ValueError, IndexError):
             return {'error': 'unparseable process stat'}
 

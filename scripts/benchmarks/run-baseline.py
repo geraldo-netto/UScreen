@@ -45,14 +45,32 @@ def metadata(args, monitors):
         raise ValueError('UScreen must already be running on the tablet')
     scripts = Path(__file__).parent
     result = dict(start_utc=time.time(), geometry=args.geometry, monitors=monitors, visibility_guard_version=1,
-                  host_ticks_per_second=os.sysconf('SC_CLK_TCK'), android_ticks_per_second=100,
-                  android_page_size=4096, android_pid=int(pid), plan=phases(args.seconds, args.warmup),
+                  host_ticks_per_second=os.sysconf('SC_CLK_TCK'), **android_units(args.serial),
+                  android_pid=int(pid), plan=phases(args.seconds, args.warmup),
                   source_commit=command(['git', 'rev-parse', 'HEAD'])[1],
                   scripts={p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                            for p in scripts.glob('*.py')})
     result['host_kernel'] = command(['uname', '-srvm'])[1]
     result['android_build'] = command(['adb', '-s', args.serial, 'shell', 'getprop', 'ro.build.fingerprint'])[1]
     return result
+
+
+def android_unit(serial, name):
+    code, output, _ = command(['adb', '-s', serial, 'shell', 'getconf', name])
+    if code or not re.fullmatch(r'[0-9]+', output):
+        raise ValueError(f'Cannot verify Android {name}; getconf must return a positive integer')
+    value = int(output)
+    if value <= 0:
+        raise ValueError(f'Invalid Android {name}: must be positive')
+    return value
+
+
+def android_units(serial):
+    ticks = android_unit(serial, 'CLK_TCK')
+    page_size = android_unit(serial, 'PAGESIZE')
+    if page_size & (page_size - 1):
+        raise ValueError('Invalid Android PAGESIZE: must be a power of two')
+    return dict(android_ticks_per_second=ticks, android_page_size=page_size)
 
 
 def start_logs(args, meta):
@@ -123,7 +141,8 @@ def main():
         extra = [(os.getpid(), 'benchmark-workload-and-observer')]
         for name in ['cinnamon', 'Xorg']:
             extra.extend((int(pid), name) for pid in command(['pgrep', '-x', name])[1].split())
-        sampler = Sampler(args.serial, args.output, state, stop, extra)
+        sampler = Sampler(args.serial, args.output, state, stop, extra,
+                          android_page_size=meta['android_page_size'])
         thread = threading.Thread(target=sampler.run)
         resources.callback(retire_sampler, sampler, thread, stop)
         run_workload(args, meta, state, thread, resources)

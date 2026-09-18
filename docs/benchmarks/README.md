@@ -40,10 +40,11 @@ resolution needs a separately recorded workload rather than silently scaling
 this one. Plotting requires matplotlib; collection and summarization use the
 Python standard library plus Tk and python-xlib. The normal automated suite also
 requires these modules and Xvfb; its visibility tests use a private X server.
-The initial collector uses Android clock-tick/page-size constants of 100 Hz and
-4,096 bytes, verified with `adb shell getconf CLK_TCK` and `getconf PAGESIZE` on
-this tablet. Verify and adapt these before using different hardware; T382 retains
-portable unit discovery as part of broader device coverage.
+The collector queries Android `getconf CLK_TCK` and `getconf PAGESIZE` before
+starting (T446), records the validated values in metadata and uses that same page
+size for RSS conversion. Missing, failed or malformed unit queries reject the
+run; there are no guessed defaults. Historical runs recorded this tablet's
+verified 100 Hz/4,096-byte units and retain their original metadata.
 
 The 36-minute sequence is three paired trials: static/motion, motion/static,
 static/motion. Each five-minute measured phase has a one-minute warm-up. Static
