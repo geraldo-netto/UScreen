@@ -609,9 +609,9 @@ async fn t055_hevc_vaapi_supports_eight_and_ten_bit_output() {
         assert_eq!(
             filters,
             [if ten_bit {
-                "format=p010le,hwupload"
+                "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))',format=p010le,hwupload"
             } else {
-                "format=nv12,hwupload"
+                "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))',format=nv12,hwupload"
             }]
         );
     }

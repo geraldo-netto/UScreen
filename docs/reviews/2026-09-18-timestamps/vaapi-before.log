@@ -1,0 +1,16 @@
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 1 >= 1
+    Last message repeated 13 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2 >= 2
+    Last message repeated 15 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 3 >= 3
+    Last message repeated 15 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 4 >= 4
+    Last message repeated 13 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 5 >= 5
+    Last message repeated 15 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 6 >= 6
+    Last message repeated 15 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 7 >= 7
+    Last message repeated 13 times
+[h264 @ 0x563051c6c540] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 8 >= 8
+    Last message repeated 3 times

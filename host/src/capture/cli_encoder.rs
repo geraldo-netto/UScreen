@@ -1,4 +1,8 @@
 //! Distribution FFmpeg CLI adapter and encoded stdout drain.
+#[cfg(test)]
+#[path = "timestamp_tests.rs"]
+mod timestamp_tests;
+
 use super::{fifo_path_for, CaptureConfig};
 use crate::annex_b::AnnexBPacketizer;
 use crate::media::Codec;
@@ -132,27 +136,11 @@ impl CliEncoder<'_> {
             fifo_path_for(self.config.instance)?.into_os_string(),
         ]);
 
-        if encoder.ends_with("_vaapi") {
-            encoder_args.extend_from_slice(&[
-                "-vf".into(),
-                if ten_bit {
-                    "format=p010le,hwupload"
-                } else {
-                    "format=nv12,hwupload"
-                }
-                .into(),
-            ]);
-        }
-
-        // The FIFO carries 8-bit NV12, so 10-bit encoding needs a conversion
-        // first. Done here rather than in the helper to keep the FIFO format
-        // single: the helper stays the one thing that never has to know which
-        // codec is in use.
-        if ten_bit && !encoder.ends_with("_vaapi") {
-            encoder_args.extend_from_slice(&["-vf".into(), "format=p010le".into()]);
-        }
-
         encoder_args.extend_from_slice(&[
+            "-vf".into(),
+            video_filter(encoder.ends_with("_vaapi"), ten_bit).into(),
+            "-enc_time_base".into(),
+            "1:1000000".into(),
             "-c:v".into(),
             encoder.into(),
             "-fps_mode".into(),
@@ -195,6 +183,22 @@ impl CliEncoder<'_> {
         );
         Ok(())
     }
+}
+
+fn video_filter(vaapi: bool, ten_bit: bool) -> String {
+    // T421: rawvideo quantizes wall-clock timestamps to 1/fps. Catch-up
+    // frames can share PTS, and CLOCK_REALTIME may move backwards. Keep
+    // their order with a minimum one-microsecond step, preserving sparse
+    // wall-time gaps for periodic IDRs. These filters change metadata only.
+    let timing = "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))'";
+    // Conversion/upload retains the single 8-bit NV12 FIFO contract.
+    let conversion = match (vaapi, ten_bit) {
+        (true, true) => ",format=p010le,hwupload",
+        (true, false) => ",format=nv12,hwupload",
+        (false, true) => ",format=p010le",
+        (false, false) => "",
+    };
+    format!("{timing}{conversion}")
 }
 /// T400: distribution FFmpeg options vary; probe the selected stock encoder.
 /// Uses the shared asynchronous deadline/cancellation implementation.
@@ -459,7 +463,7 @@ mod encoder_policy_tests {
             assert_eq!(value("-profile:v"), Some("constrained_baseline"));
             assert_eq!(value("-coder"), Some("cavlc"));
             assert_eq!(value("-vaapi_device"), Some("/dev/dri/renderD129"));
-            assert_eq!(value("-vf"), Some("format=nv12,hwupload"));
+            assert_eq!(value("-vf"), Some("settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))',format=nv12,hwupload"));
             assert_eq!(value("-async_depth"), supported.then_some("1"));
             assert_eq!(value("-f"), Some("h264"));
         }
@@ -606,7 +610,10 @@ mod encoder_policy_tests {
                 );
                 let depth = ten_bit && encoder.starts_with("hevc");
                 let filter = expected_filter(encoder.ends_with("_vaapi"), depth);
-                assert_eq!(value("-vf"), filter, "T373: {encoder}, {ten_bit}");
+                let timing = "settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))'";
+                let full = value("-vf").expect("T421: all codecs need monotonic timestamps");
+                let suffix = full.strip_prefix(timing).expect("T421: unexpected timing filter");
+                assert_eq!(suffix.strip_prefix(','), filter, "T373: {encoder}, {ten_bit}");
             }
         }
     }

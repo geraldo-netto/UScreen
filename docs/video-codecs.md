@@ -6,6 +6,11 @@ actual encoding support in the selected GPU/driver, not just an FFmpeg wrapper
 or hardware decoding. The optional in-process adapter rejects VP9 and AV1; use the
 normal build. Existing configured encoder choices remain unchanged.
 
+CLI timestamps use stock FFmpeg timing filters to keep catch-up pictures in
+strict order while preserving forward wall-time gaps for sparse keyframes.
+The [T421 report](reviews/2026-09-18-timestamps.md) describes the deterministic
+regressions and isolated hardware checks; it does not establish an A/V latency gain.
+
 VP9 uses 8-bit 4:2:0 profile 0. The libvpx profile selects realtime operation,
 CPU-used 8, row threading, no lookahead and no alternate-reference generation.
 Its CRF quality target is combined with the configured bitrate target/maxrate;
