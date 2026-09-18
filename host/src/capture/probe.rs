@@ -16,6 +16,7 @@ pub(crate) struct Measurement {
     pub first_us: u64,
     pub p95_us: u64,
     pub fps: f64,
+    pub stream: Option<uscreen_config::negotiation::StreamProfile>,
 }
 
 pub(crate) async fn measure(config: &CaptureConfig) -> Result<Measurement> {
@@ -44,9 +45,15 @@ async fn run(config: &CaptureConfig) -> Result<Measurement> {
     let stdin = child.stdin.take().unwrap();
     let stdout = child.stdout.take().unwrap();
     let started = Instant::now();
-    let ((), times) = tokio::try_join!(feed(stdin, w, h), drain(stdout, codec, started))?;
+    let ((), (times, sample)) = tokio::try_join!(feed(stdin, w, h), drain(stdout, codec, started))?;
     ensure!(child.wait().await?.success(), "Encoder probe failed");
-    summarize(&config.encoder, &times)
+    let mut measured = summarize(&config.encoder, &times)?;
+    if let Some(sample) = sample {
+        measured.stream = super::probe_format::inspect(codec, w, h, &sample)
+            .await
+            .ok();
+    }
+    Ok(measured)
 }
 
 fn command(config: &CaptureConfig, depth: bool) -> Result<Command> {
@@ -93,10 +100,11 @@ async fn drain(
     stdout: tokio::process::ChildStdout,
     codec: crate::media::Codec,
     started: Instant,
-) -> Result<Vec<u64>> {
+) -> Result<(Vec<u64>, Option<crate::media::VideoPacket>)> {
     let mut input = tokio::io::BufReader::new(stdout);
     let mut parser = Packetizer::new(codec, Default::default());
     let mut times = Vec::with_capacity(65);
+    let mut sample = None;
     loop {
         let (read, frames) = parser.read_from(&mut input).await?;
         ensure!(
@@ -104,8 +112,11 @@ async fn drain(
             "Unexpected probe frame count"
         );
         times.extend(frames.iter().map(|_| started.elapsed().as_micros() as u64));
+        if sample.is_none() {
+            sample = frames.into_iter().find(|frame| frame.is_idr);
+        }
         if read == 0 {
-            return Ok(times);
+            return Ok((times, sample));
         }
     }
 }
@@ -121,6 +132,7 @@ fn summarize(encoder: &str, times: &[u64]) -> Result<Measurement> {
     intervals.sort_unstable();
     Ok(Measurement {
         encoder: encoder.into(),
+        stream: None,
         first_us: times[0],
         p95_us: intervals[(intervals.len() * 95 / 100).min(intervals.len() - 1)],
         fps: (measured.len() - 1) as f64 * 1_000_000.0 / elapsed as f64,
@@ -147,6 +159,13 @@ mod tests {
             assert_eq!(measured.encoder, encoder);
             assert!(measured.fps.is_finite() && measured.fps > 0.0);
             assert!(measured.first_us > 0);
+            if encoder == "libx264" {
+                let actual = measured
+                    .stream
+                    .expect("T478: stock H.264 profile inspection missing");
+                assert_eq!(actual.format.profile, "constrained-baseline");
+                assert_eq!(actual.format.depth, 8);
+            }
         }
     }
 

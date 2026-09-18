@@ -10,5 +10,6 @@
   "video_height": 1848,
   "requested_encoder": "",
   "effective_encoder": "",
-  "selection_reason": ""
+  "selection_reason": "",
+  "decoder_selection": null
 }

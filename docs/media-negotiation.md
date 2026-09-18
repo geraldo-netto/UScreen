@@ -1,7 +1,8 @@
 # Media capability negotiation and selection research
 
 T477, 2026-09-18. This document records the research and implementation contract
-for T478/T479. Sections labelled proposed are not implemented behavior; see
+for T478/T479. The T478 report/selection contract is implemented; T479's measurement
+and ranking gate below remains follow-up work. See
 [video codecs](video-codecs.md) for the running protocol. Windows remains a
 [planned host port](windows-port.md).
 
@@ -62,7 +63,7 @@ host video; it does not encode it. Do not enlarge startup reports or rank the
 receive path using tablet encoder availability. A future reverse-video feature
 would need its own capability direction and contract.
 
-## Proposed T478 contract
+## T478 contract
 
 Extend the control protocol, retaining the existing family report for old peers.
 The host explicitly advertises the richer version. New Android must not send a
@@ -83,7 +84,8 @@ format support, canonical profile/level/depth, nullable acceleration and
 nullable standard hint support. Missing, failed and unrecognized queries remain
 unknown; truncation must never turn an incomplete list into exhaustive rejection
 of the legacy fallback. No arbitrary keys, executable names or library paths
-from a tablet may become host command arguments.
+from a tablet may become host command arguments. The implemented format and
+old-peer behavior are described in [video codecs](video-codecs.md#negotiation).
 
 Selection intersects **actual stock encoder output**, the conversion adapter,
 wire restrictions and one matching Android decoder. Inspect the probe bitstream

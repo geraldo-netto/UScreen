@@ -151,7 +151,13 @@ async fn choose<F: Future<Output = bool>>(
         let reason = format!("Host probe: {:.1} FPS, packet-interval p95 {:.2} ms; {} decoder advertised; awaiting render ACKs",
             candidate.measurement.fps, candidate.measurement.p95_us as f64 / 1000.0,
             if candidate.hardware { "hardware" } else { "software/unknown" });
-        if !publish(settings, key, &candidate.measurement.encoder, &reason) {
+        if !publish_choice(
+            settings,
+            key,
+            &candidate.measurement.encoder,
+            &reason,
+            candidate.decoder.clone(),
+        ) {
             return None;
         }
         if verify(candidate.measurement.encoder.clone()).await {
@@ -168,6 +174,7 @@ async fn choose<F: Future<Output = bool>>(
                     encoder: candidate.measurement.encoder.clone(),
                     reason: verified.clone(),
                     verified: true,
+                    decoder: candidate.decoder.clone(),
                 });
                 true
             });
@@ -190,6 +197,16 @@ fn publish(
     encoder: &str,
     reason: &str,
 ) -> bool {
+    publish_choice(settings, key, encoder, reason, None)
+}
+
+fn publish_choice(
+    settings: &watch::Sender<EncoderSettings>,
+    key: &Key,
+    encoder: &str,
+    reason: &str,
+    decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+) -> bool {
     settings.send_if_modified(|current| {
         if !key.matches(current) {
             return false;
@@ -199,6 +216,7 @@ fn publish(
             encoder: encoder.into(),
             reason: reason.into(),
             verified: false,
+            decoder: decoder.clone(),
         });
         tracing::info!(encoder, reason, "Automatic encoder selection");
         true
@@ -243,6 +261,7 @@ fn matches_evidence(
 struct Candidate {
     measurement: Measurement,
     hardware: bool,
+    decoder: Option<uscreen_config::negotiation::DecoderChoice>,
 }
 
 async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Candidate> {
@@ -255,16 +274,11 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
         }
         let config = probe_config(base, snapshot, encoder.name);
         match probe::measure(&config).await {
-            Ok(measurement) => candidates.push(Candidate {
-                measurement,
-                hardware: snapshot
-                    .decoders
-                    .as_ref()
-                    .unwrap()
-                    .hardware
-                    .iter()
-                    .any(|name| name == codec.wire_name()),
-            }),
+            Ok(measurement) => {
+                if let Some(candidate) = compatible_candidate(snapshot, measurement, base.ten_bit) {
+                    candidates.push(candidate);
+                }
+            }
             Err(error) => {
                 tracing::info!(encoder = encoder.name, %error, "Automatic encoder probe rejected candidate")
             }
@@ -272,6 +286,46 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
     }
     candidates.sort_by(|a, b| rank(a, b, snapshot.fps));
     candidates
+}
+
+fn compatible_candidate(
+    settings: &EncoderSettings,
+    measurement: Measurement,
+    ten_bit: bool,
+) -> Option<Candidate> {
+    let caps = settings.decoders.as_ref()?;
+    let codec = crate::media::Codec::from_encoder(&measurement.encoder);
+    let decoder = if caps.protocol == 2 {
+        if !supported_output(&measurement, codec, ten_bit) {
+            return None;
+        }
+        Some(caps.choose(measurement.stream.as_ref()?, true)?)
+    } else {
+        None
+    };
+    let hardware = match &decoder {
+        Some(choice) => caps.details.iter().any(|d| {
+            d.name == choice.name && d.codec == codec.wire_name() && d.hardware == Some(true)
+        }),
+        None => caps.hardware.iter().any(|name| name == codec.wire_name()),
+    };
+    Some(Candidate {
+        measurement,
+        hardware,
+        decoder,
+    })
+}
+
+fn supported_output(measurement: &Measurement, codec: crate::media::Codec, ten_bit: bool) -> bool {
+    let depth = if ten_bit && codec == crate::media::Codec::Hevc {
+        10
+    } else {
+        8
+    };
+    measurement
+        .stream
+        .as_ref()
+        .is_some_and(|stream| stream.codec == codec.wire_name() && stream.format.depth == depth)
 }
 
 fn probe_config(base: &CaptureConfig, settings: &EncoderSettings, encoder: &str) -> CaptureConfig {

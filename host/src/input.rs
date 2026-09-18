@@ -1736,6 +1736,7 @@ fi
                     encoder: "h264_vaapi".into(),
                     reason: "T472 concurrent selector".into(),
                     verified: true,
+                    decoder: None,
                 });
             });
             self.observed.lock().unwrap().borrow_and_update();
@@ -1786,6 +1787,7 @@ fi
             fps: 60,
             codecs: vec!["h264".into()],
             hardware: vec![],
+            ..Default::default()
         });
         let (tx, mut rx) = watch::channel(initial.clone());
         let source = Some(tx.clone());
@@ -1793,6 +1795,8 @@ fi
         settings::apply_tablet_config(&source, Some(20_000), Some(60), None);
         assert!(!rx.has_changed().unwrap());
         settings::apply_tablet_config(&source, Some(25_000), None, None);
+        assert_eq!(tx.borrow().decoder_epoch, initial.decoder_epoch);
+        assert_eq!(tx.borrow().decoders, initial.decoders);
         rx.borrow_and_update();
         settings::apply_tablet_resolution(&source, (1280, 800), (220, 138), true);
         let updated = rx.borrow_and_update().clone();
@@ -1800,8 +1804,10 @@ fi
             (updated.width, updated.height, updated.bitrate),
             (1280, 800, 25_000)
         );
-        assert_eq!(updated.decoder_epoch, initial.decoder_epoch);
-        assert_eq!(updated.decoders, initial.decoders);
+        // T478: actual format changes retire scope; bitrate-only updates and
+        // duplicate geometry above/below must still preserve unrelated state.
+        assert_eq!(updated.decoder_epoch, initial.decoder_epoch + 1);
+        assert!(updated.decoders.is_none());
         settings::apply_tablet_resolution(&source, (1280, 800), (220, 138), true);
         assert!(!rx.has_changed().unwrap());
     }
@@ -2117,6 +2123,7 @@ fi
             fps: initial.fps,
             codecs: vec!["vp9".into()],
             hardware: vec![],
+            ..Default::default()
         });
         assert_eq!(initial.effective_encoder(), "libvpx-vp9");
         let (tx, rx) = watch::channel(initial);
@@ -2134,6 +2141,38 @@ fi
     #[tokio::test]
     async fn t432_vp9_requires_current_peer_format_support() {
         framed_peer_support("libvpx-vp9", "vp9").await;
+    }
+
+    #[test]
+    fn t478_malformed_stale_and_away_back_reports_cannot_replace_current_scope() {
+        use super::settings::SettingsSink;
+        let initial = settings("auto");
+        let (tx, _) = watch::channel(initial.clone());
+        let source = Some(tx.clone());
+        let (mode, _) = watch::channel(false);
+        let session = SessionSettings::new(&source, &mode, false);
+        let mut caps: crate::media::DecoderCapabilities =
+            serde_json::from_str(include_str!("../../testdata/decoder-capabilities-v2.json"))
+                .unwrap();
+        (caps.width, caps.height) = initial.video_dimensions();
+        caps.scope = Some(initial.decoder_epoch.to_string());
+        session.decoders(caps.clone());
+        assert_eq!(tx.borrow().decoders.as_ref(), Some(&caps));
+        let mut malformed = caps.clone();
+        malformed.protocol = 99;
+        session.decoders(malformed);
+        assert_eq!(tx.borrow().decoders.as_ref(), Some(&caps));
+        session.configure(None, Some(30), None);
+        session.configure(None, Some(60), None);
+        assert_ne!(tx.borrow().decoder_epoch, initial.decoder_epoch);
+        session.decoders(caps.clone());
+        assert!(
+            tx.borrow().decoders.is_none(),
+            "T478: away/back reused retired report"
+        );
+        caps.scope = Some(tx.borrow().decoder_epoch.to_string());
+        session.decoders(caps);
+        assert!(tx.borrow().decoder_supports(crate::media::Codec::H264));
     }
 
     #[tokio::test]

@@ -1,0 +1,1 @@
+{"protocol":2,"scope":"7","width":640,"height":480,"fps":60,"codecs":["h264"],"hardware":["h264"],"details":[{"name":"vendor.avc","codec":"h264","hardware":true,"low_latency":null,"operating_rate":120,"profiles":[{"profile":"baseline","level":41,"depth":8}]}]}

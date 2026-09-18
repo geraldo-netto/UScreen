@@ -689,6 +689,7 @@ fn t432_capability_metadata_restarts_only_when_effective_stream_changes() {
         fps: settings.fps,
         codecs: vec!["h264".into()],
         hardware: vec![],
+        ..Default::default()
     });
     assert!(!manager.stream_settings_changed(&settings));
     settings.encoder = "libvpx-vp9".into();

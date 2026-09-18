@@ -11,5 +11,8 @@
   "pen": true,
   "requested_encoder": "h264_nvenc",
   "effective_encoder": "h264_nvenc",
-  "selection_reason": "Explicit encoder preference"
+  "selection_reason": "Explicit encoder preference",
+  "decoder_protocol": 2,
+  "decoder_scope": "0",
+  "decoder_selection": null
 }

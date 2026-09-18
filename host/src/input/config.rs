@@ -44,6 +44,8 @@ impl InputConfig {
             .unwrap_or_else(|| self.codec.clone());
         let (requested_encoder, effective_encoder, selection_reason) =
             selection_fields(settings.as_deref());
+        let (decoder_protocol, decoder_scope, decoder_selection) =
+            decoder_fields(settings.as_deref());
         let (width, height) = settings
             .as_ref()
             .map(|s| (s.width, s.height))
@@ -66,6 +68,9 @@ impl InputConfig {
             requested_encoder,
             effective_encoder,
             selection_reason,
+            decoder_protocol,
+            decoder_scope,
+            decoder_selection,
             pen_only,
             touch: self.touch,
             pen: self.pen,
@@ -74,6 +79,23 @@ impl InputConfig {
 
     pub fn any_device(&self) -> bool {
         self.touch || self.pen
+    }
+}
+
+fn decoder_fields(
+    settings: Option<&EncoderSettings>,
+) -> (
+    Option<u32>,
+    Option<String>,
+    Option<uscreen_config::negotiation::DecoderChoice>,
+) {
+    match settings {
+        Some(s) => (
+            Some(2),
+            Some(s.decoder_epoch.to_string()),
+            s.decoder_choice().cloned(),
+        ),
+        None => (None, None, None),
     }
 }
 

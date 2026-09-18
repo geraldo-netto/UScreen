@@ -50,7 +50,9 @@ internal class ControlSession(
     val connectionState = connection.asStateFlow()
     private var reconnectJob: Job? = null
     private var capabilityJob: Job? = null
-    private var capabilityRequest: Triple<Int, Int, Int>? = null
+    private data class CapabilityRequest(val format: Triple<Int, Int, Int>, val scope: String?)
+    private var capabilityRequest: CapabilityRequest? = null
+    private var capabilityScope: String? = null
     private var streamFormat: DecoderFormat? = null
     private var formatReceived = false
     private var encodedDimensionsKnown = false
@@ -120,6 +122,7 @@ internal class ControlSession(
                         return
                     }
                     applyInputGreeting(o)
+                    applyCapabilityGreeting(o)
                     applyDecoderGreeting(o)
                     requestDecoderCapabilities(webSocket, streamFormat.takeIf { encodedDimensionsKnown })
                     applyModeGreeting(o)
@@ -206,6 +209,7 @@ internal class ControlSession(
         capabilityJob?.cancel()
         capabilityJob = null
         capabilityRequest = null
+        capabilityScope = null
         streamFormat = null
         formatReceived = false
         encodedDimensionsKnown = false
@@ -235,18 +239,35 @@ internal class ControlSession(
         val width = format.width
         val height = format.height
         val fps = format.fps
-        val request = Triple(width, height, fps)
+        val request = CapabilityRequest(Triple(width, height, fps), capabilityScope)
         if (capabilityRequest == request) return
         capabilityRequest = request
         capabilityJob?.cancel()
         capabilityJob = scope.launch {
-            val report = decoderCapabilities(width, height, fps)
+            val report = scopedCapabilities(decoderCapabilities(width, height, fps), request.scope)
             synchronized(lock) {
                 if (isActive && webSocket === source && isConnected && capabilityRequest == request) {
                     enqueue(JSONObject().put("type", "decoders").put("capabilities", report))
                 }
             }
         }
+    }
+
+    private fun applyCapabilityGreeting(message: JSONObject) {
+        if (!message.has("decoder_protocol")) return
+        capabilityScope = message.optString("decoder_scope").takeIf {
+            message.optInt("decoder_protocol") == 2 && it.length in 1..96 && it.all { char -> char.code in 33..126 }
+        }
+    }
+
+    private fun scopedCapabilities(report: JSONObject, scope: String?): JSONObject {
+        if (scope == null) {
+            report.put("protocol", 1)
+            report.remove("scope"); report.remove("details")
+        } else {
+            report.put("protocol", 2).put("scope", scope)
+        }
+        return report
     }
 
     private fun matchesPendingConfig(requested: JSONObject): Boolean {

@@ -94,6 +94,11 @@ pub struct InputResponse {
     pub requested_encoder: String,
     pub effective_encoder: String,
     pub selection_reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decoder_protocol: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decoder_scope: Option<String>,
+    pub decoder_selection: Option<uscreen_config::negotiation::DecoderChoice>,
     /// Tells the tablet not to expect a video stream: it is acting as a
     /// graphics tablet for the host's own screen, not as a display.
     pub pen_only: bool,

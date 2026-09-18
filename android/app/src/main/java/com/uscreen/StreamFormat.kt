@@ -11,7 +11,9 @@ internal object StreamFormat {
         val (width, height) = dimensions(message, previous, nativeWidth, nativeHeight)
         val fps = message.optInt("fps", previous?.fps ?: defaultFps)
         require(fps in 10..90) { "Invalid stream FPS" }
-        DecoderFormat(mime, width, height, fps)
+        val selection = DecoderSelection.read(message)
+        require(selection == null || VideoCodec.types[selection.codec] == mime) { "Decoder selection codec mismatch" }
+        DecoderFormat(mime, width, height, fps, selection = selection)
     } catch (_: Exception) { null }
 
     private fun dimensions(message: JSONObject, previous: DecoderFormat?, nativeWidth: Int, nativeHeight: Int): Pair<Int, Int> {

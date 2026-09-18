@@ -198,14 +198,24 @@ async fn check_helper_execution(r: &mut Report, helper: &Path) {
 }
 
 fn check_required_commands(r: &mut Report) {
-    for (tool, fatal) in [("ffmpeg", true), ("adb", true), ("kscreen-doctor", false)] {
+    for (tool, fatal) in [
+        ("ffmpeg", true),
+        ("adb", true),
+        ("ffprobe", false),
+        ("kscreen-doctor", false),
+    ] {
         if command_exists(tool) {
             r.line(Level::Ok, tool, "found");
         } else if fatal {
             r.line(Level::Fail, tool, "not installed");
             r.hint(&format!("install {} with your package manager", tool));
         } else {
-            r.line(Level::Warn, tool, "not installed (KDE only)");
+            let purpose = if tool == "ffprobe" {
+                "not installed (richer automatic profile inspection unavailable)"
+            } else {
+                "not installed (KDE only)"
+            };
+            r.line(Level::Warn, tool, purpose);
         }
     }
 }

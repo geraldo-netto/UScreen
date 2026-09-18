@@ -3,6 +3,7 @@ pub mod adb;
 pub mod display;
 pub mod encoding;
 pub mod model;
+pub mod negotiation;
 pub mod release;
 pub mod version;
 pub mod video;

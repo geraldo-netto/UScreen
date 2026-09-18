@@ -41,6 +41,10 @@ internal object DecoderCapabilities {
             decoders[mime]?.isNotEmpty() == true
         }.apply {
             put("hardware", JSONArray(VideoCodec.types.filterValues { mime -> decoders[mime]?.any(::hardware) == true }.keys.toList()))
+            val entries = VideoCodec.types.flatMap { (codec, mime) ->
+                decoders[mime].orEmpty().mapNotNull { MediaInventory.describe(it, codec, width, height, fps) }
+            }.distinctBy { it.getString("codec") to it.getString("name") }.take(16)
+            put("details", JSONArray(entries))
         }
     }
     internal fun describe(width: Int, height: Int, fps: Int, supports: (String, Int, Int, Int) -> Boolean): JSONObject {

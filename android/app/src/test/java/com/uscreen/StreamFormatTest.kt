@@ -15,6 +15,23 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [StartupCodecShadow::class])
 class StreamFormatTest {
+    @Test fun t478_decoderSelectionChangesRetireEvenWithIdenticalGeometry() {
+        val receiver = VideoReceiver { error("T478: wait for Surface") }
+        val base = DecoderFormat("video/avc", 640, 480, 60)
+        val choice = DecoderSelection("vendor.avc", "h264", "baseline", 31, 8, false, null)
+        var disconnected = 0
+        receiver.onDisconnected = { disconnected++ }
+        try {
+            receiver.start(); receiver.setStreamFormat(base)
+            receiver.setStreamFormat(base.copy(selection = choice))
+            assertEquals(2, disconnected)
+            receiver.setStreamFormat(base.copy(selection = choice))
+            assertEquals(2, disconnected)
+            receiver.setStreamFormat(base)
+            assertEquals("T478: fallback must clear the pinned decoder", 3, disconnected)
+        } finally { receiver.stop() }
+    }
+
     private class Socket(val listener: WebSocketListener) : WebSocket {
         override fun request() = Request.Builder().url("ws://localhost/").build()
         override fun queueSize() = 0L

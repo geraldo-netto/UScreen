@@ -1,0 +1,288 @@
+{
+  "sdk": 36,
+  "fingerprint": "Ulefone/GQ8002RH1_EEA/GQ8002RH1:16/BP2A.250605.031.A3/1782987754:user/release-keys",
+  "capabilities": {
+    "protocol": 2,
+    "width": 1280,
+    "height": 800,
+    "fps": 60,
+    "codecs": [
+      "h264",
+      "hevc",
+      "vp9",
+      "av1"
+    ],
+    "hardware": [
+      "h264",
+      "hevc",
+      "vp9"
+    ],
+    "details": [
+      {
+        "name": "c2.unisoc.avc.decoder",
+        "codec": "h264",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "baseline",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "constrained-baseline",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "high",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "OMX.sprd.h264.decoder",
+        "codec": "h264",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "baseline",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "constrained-baseline",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 51
+          },
+          {
+            "profile": "high",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "c2.android.avc.decoder",
+        "codec": "h264",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "constrained-baseline",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "baseline",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "high",
+            "depth": 8,
+            "level": 52
+          }
+        ]
+      },
+      {
+        "name": "OMX.google.h264.decoder",
+        "codec": "h264",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "constrained-baseline",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "baseline",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 52
+          },
+          {
+            "profile": "high",
+            "depth": 8,
+            "level": 52
+          }
+        ]
+      },
+      {
+        "name": "c2.unisoc.hevc.decoder",
+        "codec": "hevc",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "OMX.sprd.hevc.decoder",
+        "codec": "hevc",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "c2.android.hevc.decoder",
+        "codec": "hevc",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": []
+      },
+      {
+        "name": "OMX.google.hevc.decoder",
+        "codec": "hevc",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": []
+      },
+      {
+        "name": "c2.unisoc.vp9.decoder",
+        "codec": "vp9",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "profile0",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "OMX.sprd.vp9.decoder",
+        "codec": "vp9",
+        "hardware": true,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "profile0",
+            "depth": 8,
+            "level": 51
+          }
+        ]
+      },
+      {
+        "name": "c2.android.vp9.decoder",
+        "codec": "vp9",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "profile0",
+            "depth": 8,
+            "level": 50
+          },
+          {
+            "profile": "profile2",
+            "depth": 10,
+            "level": 50
+          }
+        ]
+      },
+      {
+        "name": "OMX.google.vp9.decoder",
+        "codec": "vp9",
+        "hardware": false,
+        "low_latency": false,
+        "operating_rate": 120,
+        "profiles": [
+          {
+            "profile": "profile0",
+            "depth": 8,
+            "level": 50
+          },
+          {
+            "profile": "profile2",
+            "depth": 10,
+            "level": 50
+          }
+        ]
+      },
+      {
+        "name": "c2.android.av1-dav1d.decoder",
+        "codec": "av1",
+        "hardware": false,
+        "low_latency": true,
+        "operating_rate": null,
+        "profiles": [
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 53
+          },
+          {
+            "profile": "main",
+            "depth": 10,
+            "level": 53
+          }
+        ]
+      },
+      {
+        "name": "c2.android.av1.decoder",
+        "codec": "av1",
+        "hardware": false,
+        "low_latency": true,
+        "operating_rate": null,
+        "profiles": [
+          {
+            "profile": "main",
+            "depth": 8,
+            "level": 53
+          },
+          {
+            "profile": "main",
+            "depth": 10,
+            "level": 53
+          }
+        ]
+      }
+    ],
+    "scope": "inventory"
+  }
+}

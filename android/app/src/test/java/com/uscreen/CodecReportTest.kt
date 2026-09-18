@@ -33,6 +33,47 @@ class SelectionCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [SelectionCodecShadow::class])
 class CodecReportTest {
+    @Test @Config(sdk = [27, 29, 30, 34])
+    fun t478_richerReportKeepsProfileLevelDepthAndUnknownFeatures() = runBlocking {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, true))
+            val report = DecoderCapabilities.report(640, 480, 30)
+            assertTrue("T478: missing per-decoder inventory", report.has("details"))
+            val decoder = report.getJSONArray("details").getJSONObject(0)
+            assertEquals("vendor.hevc", decoder.getString("name"))
+            assertEquals("hevc", decoder.getString("codec"))
+            assertEquals(Build.VERSION.SDK_INT < 29, decoder.isNull("hardware"))
+            assertEquals(Build.VERSION.SDK_INT < 30, decoder.isNull("low_latency"))
+            val profile = decoder.getJSONArray("profiles").getJSONObject(0)
+            assertEquals("main10", profile.getString("profile"))
+            assertEquals(40, profile.getInt("level"))
+            assertEquals(10, profile.getInt("depth"))
+        } finally { ShadowMediaCodecList.reset() }
+    }
+
+    @Test fun t478_selectionRevalidatesIdentityFormatAndStandardHints() {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, true))
+            val selection = DecoderSelection("vendor.hevc", "hevc", "main10", 40, 10, false, null)
+            val parameters = DecoderFormat("video/hevc", 640, 480, 30, selection = selection)
+            val decoder = DecoderConfiguration.create(parameters)
+            try {
+                assertEquals("vendor.hevc", decoder.name)
+                val format = DecoderConfiguration.format(decoder, parameters, DecoderProfile(), true)
+                assertFalse("T478: vendor hint forwarded to unrelated decoder", format.containsKey("vendor.qti-ext-dec-low-latency.enable"))
+                assertFalse(format.containsKey("low-latency"))
+                assertFalse(format.containsKey(MediaFormat.KEY_OPERATING_RATE))
+                assertEquals(MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10, format.getInteger(MediaFormat.KEY_PROFILE))
+            } finally { decoder.release() }
+            assertTrue(runCatching { DecoderConfiguration.create(parameters.copy(width = 4096, height = 4096)).release() }.isFailure)
+            assertTrue(runCatching { selection.copy(name = "absent").validate(parameters) }.isFailure)
+            assertTrue(runCatching { selection.copy(level = 62).validate(parameters) }.isFailure)
+            assertTrue(runCatching { selection.copy(lowLatency = true).validate(parameters) }.isFailure)
+        } finally { ShadowMediaCodecList.reset() }
+    }
+
     private fun codec(name: String, software: Boolean, main10: Boolean, encoder: Boolean = false): MediaCodecInfo {
         val profile = MediaCodecInfo.CodecProfileLevel().apply {
             this.profile = if (main10) MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10 else MediaCodecInfo.CodecProfileLevel.HEVCProfileMain

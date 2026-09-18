@@ -47,6 +47,7 @@ pub(crate) struct Selected {
     pub encoder: String,
     pub reason: String,
     pub verified: bool,
+    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
 }
 
 #[cfg(not(feature = "inproc-encoder"))]

@@ -86,6 +86,7 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
     /** Initial decoder format hint; the decoder adapts to the SPS anyway. */
     @Volatile var formatWidth = 1920
     @Volatile var formatHeight = 1080
+    @Volatile private var decoderSelection: DecoderSelection? = null
 
     /** Frame rate the host is configured to send, used to size decoder hints. */
     @Volatile var streamFps = Prefs.DEFAULT_FPS
@@ -102,12 +103,13 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
 
     /** Retire once, then publish all format fields before a replacement worker starts. */
     @Synchronized internal fun setStreamFormat(format: DecoderFormat) {
-        if (format == DecoderFormat(mimeType, formatWidth, formatHeight, streamFps)) return
+        if (format == DecoderFormat(mimeType, formatWidth, formatHeight, streamFps, selection = decoderSelection)) return
         val restart = isRunning
         stop()
         mimeType = format.mimeType
         formatWidth = format.width
         formatHeight = format.height
+        decoderSelection = format.selection
         streamFps = format.fps
         if (restart) start()
     }
@@ -318,13 +320,17 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
             decoder.releaseCodec()
             pendingSurface.get()?.takeIf { it.isValid }
         } ?: throw IllegalStateException("Surface retired during video configuration")
-        check(decoder.setupCodec(surface, parameters) {
+        val selected = parameters.copy(selection = decoderSelection)
+        require(selected.selection == null || (selected.width == formatWidth && selected.height == formatHeight)) {
+            "Framed dimensions differ from negotiated decoder selection"
+        }
+        check(decoder.setupCodec(surface, selected) {
             isCurrent(generation) && surfaceReady.get() && pendingSurface.get() === surface
         }) { "Unable to configure framed video decoder" }
     }
 
     internal fun setupCodec(surface: Surface): Boolean =
-        decoder.setupCodec(surface, DecoderFormat(mimeType, formatWidth, formatHeight, streamFps))
+        decoder.setupCodec(surface, DecoderFormat(mimeType, formatWidth, formatHeight, streamFps, selection = decoderSelection))
 
     internal fun feedDecoder(
         generation: Long, codec: MediaCodec, data: ByteArray, offset: Int, size: Int,

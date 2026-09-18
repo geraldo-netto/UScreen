@@ -97,20 +97,12 @@ pub struct EncoderSettings {
     pub selection: Option<crate::selection::Selected>,
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
-pub struct DecoderCapabilities {
-    pub protocol: u32,
-    pub width: u32,
-    pub height: u32,
-    pub fps: u32,
-    pub codecs: Vec<String>,
-    #[serde(default)]
-    pub hardware: Vec<String>,
-}
+pub use uscreen_config::negotiation::DecoderCapabilities;
 
 impl EncoderSettings {
     pub fn same_stream(&self, other: &Self) -> bool {
         self.effective_encoder() == other.effective_encoder()
+            && self.decoder_choice() == other.decoder_choice()
             && self.helper_geometry() == other.helper_geometry()
             && (self.bitrate, self.quality, self.geometry_ready)
                 == (other.bitrate, other.quality, other.geometry_ready)
@@ -144,6 +136,13 @@ impl EncoderSettings {
             .map(|s| s.reason.as_str())
             .unwrap_or("H.264 fallback while awaiting compatible encoder measurements")
     }
+    pub fn decoder_choice(&self) -> Option<&uscreen_config::negotiation::DecoderChoice> {
+        self.selection
+            .as_ref()
+            .filter(|s| s.key.matches(self))?
+            .decoder
+            .as_ref()
+    }
     pub fn effective_encoder(&self) -> &str {
         if self.encoder == "auto" {
             return self
@@ -164,9 +163,8 @@ impl EncoderSettings {
         let Some(caps) = &self.decoders else {
             return false;
         };
-        caps.protocol == 1
-            && (caps.width, caps.height) == self.video_dimensions()
-            && caps.fps == self.fps
+        let (width, height) = self.video_dimensions();
+        caps.matches(&self.decoder_epoch.to_string(), width, height, self.fps)
             && caps.codecs.iter().any(|name| name == codec.wire_name())
     }
 

@@ -10,7 +10,8 @@ import java.util.concurrent.atomic.AtomicLong
 import com.uscreen.VideoReceiver.Companion.ACK_EVERY
 import com.uscreen.VideoReceiver.Companion.TAG
 
-internal data class DecoderFormat(val mimeType: String, val width: Int, val height: Int, val fps: Int, val codecPrivate: ByteArray? = null)
+internal data class DecoderFormat(val mimeType: String, val width: Int, val height: Int, val fps: Int,
+                                  val codecPrivate: ByteArray? = null, val selection: DecoderSelection? = null)
 
 internal interface DecoderEvents {
     fun rendered(sequence: Int, decodeMicros: Int)

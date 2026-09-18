@@ -44,6 +44,15 @@ class DecoderBenchmarkTests(unittest.TestCase):
                              (project.SOURCE / 'VideoCodec.kt').read_text())
             self.assertIn('org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3',
                           (output / 'app/build.gradle.kts').read_text())
+            for name in ['MediaProfiles.kt', 'MediaInventory.kt', 'DecoderSelection.kt']:
+                self.assertEqual((output / 'app/src/main/java' / name).read_text(),
+                                 (project.SOURCE / name).read_text(), 'T478: missing production negotiation dependency')
+            probe = output / 'app/src/main/java/NegotiatedInventory.kt'
+            self.assertTrue(probe.exists())
+            probe.unlink()
+            (output / 'originals/MediaInventory.kt').unlink()
+            project.copy_replay_sources(output, True)
+            self.assertFalse(probe.exists(), 'T478: historical decoder cannot import newer inventory API')
 
     def test_t386_selected_variants_match_provenance_and_trials(self):
         with tempfile.TemporaryDirectory() as directory:

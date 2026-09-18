@@ -22,19 +22,51 @@ fn settings() -> EncoderSettings {
             fps: 60,
             codecs: vec!["h264".into(), "vp9".into(), "av1".into()],
             hardware: vec!["h264".into(), "vp9".into()],
+            ..Default::default()
         }),
     }
 }
 fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
     Candidate {
         hardware,
+        decoder: None,
         measurement: Measurement {
             encoder: name.into(),
             fps,
             p95_us: p95,
             first_us: 1,
+            stream: None,
         },
     }
+}
+
+#[test]
+fn t478_rich_selection_requires_actual_profile_and_conversion_intersection() {
+    let mut settings = settings();
+    let mut report: DecoderCapabilities = serde_json::from_str(include_str!(
+        "../../../../testdata/decoder-capabilities-v2.json"
+    ))
+    .unwrap();
+    report.scope = Some(settings.decoder_epoch.to_string());
+    settings.decoders = Some(report);
+    let mut measured = candidate("libx264", true, 100.0, 10).measurement;
+    assert!(compatible_candidate(&settings, measured.clone(), false).is_none());
+    measured.stream = Some(uscreen_config::negotiation::StreamProfile {
+        codec: "h264".into(),
+        format: uscreen_config::negotiation::Profile {
+            profile: "constrained-baseline".into(),
+            depth: 8,
+            level: 31,
+        },
+    });
+    let selected = compatible_candidate(&settings, measured.clone(), false).unwrap();
+    assert_eq!(selected.decoder.as_ref().unwrap().name, "vendor.avc");
+    assert!(selected.hardware);
+    measured.stream.as_mut().unwrap().format.depth = 10;
+    assert!(
+        compatible_candidate(&settings, measured, true).is_none(),
+        "T478: H.264 capture path cannot negotiate ten bit"
+    );
 }
 
 #[test]

@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
           'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
-          'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt', 'VideoCodec.kt']
+          'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt', 'VideoCodec.kt',
+          'MediaProfiles.kt', 'MediaInventory.kt', 'DecoderSelection.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
@@ -126,10 +127,7 @@ def prepare(args):
     (directory / 'app/src/main/AndroidManifest.xml').write_text(MANIFEST)
     profiles = shared_sources(directory, args.revision)
     direct_input = (directory / 'originals/ChannelPacketReader.kt').exists()
-    for path in (ROOT / 'scripts/benchmarks/android-decoder').rglob('*.kt'):
-        if path.name == 'SocketReplay.kt' and not direct_input:
-            continue
-        shutil.copy2(path, directory / 'app/src/main/java' / path.name)
+    copy_replay_sources(directory, direct_input)
     bridge = (BRIDGE if profiles else LEGACY_BRIDGE) + (SOCKET_BRIDGE if direct_input else NO_SOCKET_BRIDGE)
     latest = (directory / 'originals/DecodedOutputDrainer.kt').exists()
     if latest:
@@ -138,6 +136,15 @@ def prepare(args):
     bridge += codec_observer(directory)
     (directory / 'app/src/main/java/ProfileBridge.kt').write_text(bridge)
     return directory
+
+
+def copy_replay_sources(directory, direct_input):
+    for path in (ROOT / 'scripts/benchmarks/android-decoder').rglob('*.kt'):
+        if path.name == 'NegotiatedInventory.kt' and not (directory / 'originals/MediaInventory.kt').exists():
+            continue
+        if path.name == 'SocketReplay.kt' and not direct_input:
+            continue
+        shutil.copy2(path, directory / 'app/src/main/java' / path.name)
 
 
 def main():

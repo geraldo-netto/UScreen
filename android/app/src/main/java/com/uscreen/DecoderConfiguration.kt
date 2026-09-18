@@ -21,7 +21,7 @@ internal object DecoderConfiguration {
     fun create(parameters: DecoderFormat): MediaCodec {
         val format = MediaFormat.createVideoFormat(parameters.mimeType, parameters.width, parameters.height)
         format.setInteger(MediaFormat.KEY_FRAME_RATE, parameters.fps)
-        val name = checkNotNull(DecoderCapabilities.decoderName(format, parameters.mimeType)) {
+        val name = checkNotNull(parameters.selection?.validate(parameters) ?: DecoderCapabilities.decoderName(format, parameters.mimeType)) {
             "No compatible decoder for stream format"
         }
         return try { MediaCodec.createByCodecName(name) }
@@ -43,7 +43,8 @@ internal object DecoderConfiguration {
         format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)
         format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT709)
         format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
-        if (allowHints && profile.hints != DecoderHints.NONE) hints(codec, parameters, profile, format, support)
+        if (parameters.selection != null) parameters.selection.configure(format, allowHints)
+        else if (allowHints && profile.hints != DecoderHints.NONE) hints(codec, parameters, profile, format, support)
         return format
     }
 

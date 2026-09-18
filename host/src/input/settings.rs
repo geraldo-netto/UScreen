@@ -86,10 +86,19 @@ impl SettingsSink for SessionSettings<'_> {
         let Some(tx) = self.settings else {
             return;
         };
-        if capabilities.codecs.len() > 8 || capabilities.hardware.len() > 8 {
+        if !capabilities.valid() {
             return;
         }
         tx.send_if_modified(|settings| {
+            let (width, height) = settings.video_dimensions();
+            if !capabilities.matches(
+                &settings.decoder_epoch.to_string(),
+                width,
+                height,
+                settings.fps,
+            ) {
+                return false;
+            }
             if settings.decoders.as_ref() == Some(&capabilities) {
                 return false;
             }
@@ -237,9 +246,12 @@ fn clamp_bitrate(requested: u32) -> u32 {
     clamped
 }
 
-fn replace_if_changed(current: &mut EncoderSettings, new: EncoderSettings) -> bool {
+fn replace_if_changed(current: &mut EncoderSettings, mut new: EncoderSettings) -> bool {
     if *current == new {
         return false;
+    }
+    if current.video_dimensions() != new.video_dimensions() || current.fps != new.fps {
+        new.clear_decoders();
     }
     *current = new;
     true

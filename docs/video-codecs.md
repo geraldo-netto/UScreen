@@ -46,7 +46,7 @@ Android capability report:
 
 Android queries regular MediaCodec decoders for that format off the UI and
 control locks. Responses from retired sockets or superseded requests are
-ignored. The host requires exact dimensions/FPS and protocol version 1 before
+ignored. The host requires exact dimensions/FPS and a supported protocol before
 selecting VP9 or AV1. Without current evidence, it uses `libx264` while preserving the
 requested encoder preference. Tablet replacement and every new authenticated controller clear capabilities,
 so an older APK cannot inherit support reported by its predecessor. Capability-only updates
@@ -56,6 +56,48 @@ A supported-format report is advertised compatibility, not a successful decode
 trial or measured performance. Encoder startup can still fail on an unsupported
 host. Android selects a decoder by the actual configuration dimensions. Unknown
 codec names and mismatched configuration envelopes fail closed.
+
+T478 adds opt-in protocol version 2: new greetings include `decoder_protocol: 2`
+and a `decoder_scope` string. Android echoes that scope with `protocol: 2` and
+adds `details`: decoder name, codec, nullable hardware/standard-low-latency
+support, nullable supported operating rate, and profile/level/depth entries.
+The shared vector is [decoder-capabilities-v2.json](../testdata/decoder-capabilities-v2.json).
+Each entry describes the report's exact dimensions and FPS; supported rate is
+not measured throughput. API 27 leaves hardware identity unknown, and API <30
+leaves standard low latency unknown. Unknown profiles/levels are omitted rather
+than guessed. Reports are bounded to four families, 16 decoders, 32 profile
+entries per decoder and 128 ASCII bytes per name, inside the 64 KiB message limit.
+
+A new tablet keeps version 1 and omits rich fields with an old host. Version-one
+peers keep the existing family policy. Version-two responses require the current
+scope; format changes advance it even when later returning to the same format.
+Malformed, unsupported-version or stale reports cannot replace current evidence.
+
+For automatic selection with version 2, the host inspects a bounded keyframe
+from the actual stock encoder probe using `ffprobe`, then intersects its codec,
+profile, standard level and pixel depth with one advertised decoder. HEVC is
+limited to main tier, checked in the probe SPS; unknown/high tier is rejected.
+VP9/AV1 remain eight-bit 4:2:0, and only the existing HEVC conversion path can
+request ten bits. This cannot create HDR or recover precision from eight-bit
+capture. Missing `ffprobe`, unknown output metadata or an unsupported intersection
+rejects the richer candidate and retains fallback; it never invents a level.
+In particular, FFmpeg builds that omit VP9 level metadata cannot certify that
+candidate for rich automatic selection. Explicit saved choices keep their policy.
+
+The selected request appears as `decoder_selection` in the control reply and
+names a decoder, stream profile and supported standard hints. Android revalidates
+that exact decoder/format before allocation. Rich selections use only advertised
+standard low-latency/operating-rate hints and never forward arbitrary vendor keys;
+the watchdog may omit hints on recovery. Legacy/manual paths retain their
+compatibility profile. A null selection clears the request. Identity or hint
+changes retire the decoder generation even when codec and dimensions are equal.
+Neither the request nor the probe metadata claims the live decoder honored a
+hint; fresh render acknowledgements remain required. This does not alter saved
+encoder choices, brightness or display refresh defaults.
+
+The [negotiation research](media-negotiation.md) records evidence boundaries and
+the separate T479 measurement/ranking work. The schema lives in the shared Rust
+crate without Linux dependencies; Windows still needs its planned host adapter.
 
 ## Automatic selection
 
