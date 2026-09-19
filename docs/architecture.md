@@ -685,5 +685,8 @@ T399's optional `DecodedOutputDrainer` prototype decodes all input and can relea
 older already-decoded outputs without presentation, with a four-output batch cap.
 It is disabled by default: the [cadence and burst experiments](benchmarks/2026-09-18-frame-pacing.md)
 found no ready-output backlog or latency advantage. Capture retains its 200 ms
-keepalive; the tablet's sparse-input delay argues against lengthening it without
-new device evidence. This does not enable arbitrary encoded-reference dropping.
+keepalive. The [T492 live sparse checks](benchmarks/2026-09-19-idle-cadence.md)
+found two-second CLI keyframe gaps at one input/s and about one-second ACK
+delay for H.264 High; Constrained Baseline stayed responsive. Lower idle work
+therefore needs coordinated keyframe scheduling and profile-aware validation.
+This does not enable arbitrary encoded-reference dropping.

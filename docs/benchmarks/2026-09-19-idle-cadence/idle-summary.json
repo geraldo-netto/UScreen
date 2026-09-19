@@ -1,0 +1,1514 @@
+{
+  "phases": [
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.585988,
+        "p95": 26.582512,
+        "p99": 27.600491
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 18.556422,
+        "p95": 22.265144,
+        "p99": 24.241989
+      },
+      "samples": 55,
+      "first_write_to_ack_ms": 135.384532,
+      "trial": "trial-000",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 409.328,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577766565587857
+        },
+        {
+          "sequence": 7,
+          "pts": 1100000,
+          "ready_ns": 577767659430641
+        },
+        {
+          "sequence": 12,
+          "pts": 2100000,
+          "ready_ns": 577768659771317
+        },
+        {
+          "sequence": 18,
+          "pts": 3300000,
+          "ready_ns": 577769859779420
+        },
+        {
+          "sequence": 23,
+          "pts": 4300000,
+          "ready_ns": 577770859227431
+        },
+        {
+          "sequence": 28,
+          "pts": 5300000,
+          "ready_ns": 577771859284389
+        },
+        {
+          "sequence": 33,
+          "pts": 6300000,
+          "ready_ns": 577772858950549
+        },
+        {
+          "sequence": 38,
+          "pts": 7300000,
+          "ready_ns": 577773860737045
+        },
+        {
+          "sequence": 44,
+          "pts": 8500000,
+          "ready_ns": 577775059210371
+        },
+        {
+          "sequence": 49,
+          "pts": 9500000,
+          "ready_ns": 577776059645150
+        },
+        {
+          "sequence": 54,
+          "pts": 10500000,
+          "ready_ns": 577777059214568
+        },
+        {
+          "sequence": 59,
+          "pts": 11500000,
+          "ready_ns": 577778059396930
+        }
+      ],
+      "inter_keyframe_ms": [
+        1093.842784,
+        1000.340676,
+        1200.008103,
+        999.448011,
+        1000.056958,
+        999.66616,
+        1001.786496,
+        1198.473326,
+        1000.434779,
+        999.569418,
+        1000.182362
+      ],
+      "max_inter_keyframe_ms": 1200.008103,
+      "encoded": 60,
+      "acknowledged": 60
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.558066,
+        "p95": 27.528478,
+        "p99": 28.340689
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 20.142384,
+        "p95": 23.955679,
+        "p99": 24.255162
+      },
+      "samples": 55,
+      "first_write_to_ack_ms": 135.733818,
+      "trial": "trial-000",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 51.899,
+      "keys": [
+        {
+          "sequence": 61,
+          "pts": 0,
+          "ready_ns": 577778751958317
+        },
+        {
+          "sequence": 67,
+          "pts": 1100000,
+          "ready_ns": 577779849173322
+        },
+        {
+          "sequence": 72,
+          "pts": 2100000,
+          "ready_ns": 577780852292985
+        },
+        {
+          "sequence": 78,
+          "pts": 3300000,
+          "ready_ns": 577782050111110
+        },
+        {
+          "sequence": 83,
+          "pts": 4300000,
+          "ready_ns": 577783049883736
+        },
+        {
+          "sequence": 88,
+          "pts": 5300000,
+          "ready_ns": 577784050192115
+        },
+        {
+          "sequence": 93,
+          "pts": 6300000,
+          "ready_ns": 577785050232386
+        },
+        {
+          "sequence": 98,
+          "pts": 7300000,
+          "ready_ns": 577786050103459
+        },
+        {
+          "sequence": 104,
+          "pts": 8500000,
+          "ready_ns": 577787249801372
+        },
+        {
+          "sequence": 109,
+          "pts": 9500000,
+          "ready_ns": 577788250482303
+        },
+        {
+          "sequence": 114,
+          "pts": 10500000,
+          "ready_ns": 577789249788542
+        },
+        {
+          "sequence": 119,
+          "pts": 11500000,
+          "ready_ns": 577790249987751
+        }
+      ],
+      "inter_keyframe_ms": [
+        1097.215005,
+        1003.119663,
+        1197.818125,
+        999.772626,
+        1000.308379,
+        1000.040271,
+        999.871073,
+        1199.697913,
+        1000.680931,
+        999.306239,
+        1000.199209
+      ],
+      "max_inter_keyframe_ms": 1199.697913,
+      "encoded": 60,
+      "acknowledged": 60
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 25.709257,
+        "p95": 26.469136,
+        "p99": 26.469136
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 21.681394,
+        "p95": 23.114963,
+        "p99": 23.114963
+      },
+      "samples": 11,
+      "first_write_to_ack_ms": 138.417201,
+      "trial": "trial-001",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 1,
+      "setup_ms": 218.592,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577792469010451
+        },
+        {
+          "sequence": 3,
+          "pts": 1900000,
+          "ready_ns": 577794364205725
+        },
+        {
+          "sequence": 4,
+          "pts": 2900000,
+          "ready_ns": 577795362946628
+        },
+        {
+          "sequence": 5,
+          "pts": 3900000,
+          "ready_ns": 577796362871476
+        },
+        {
+          "sequence": 7,
+          "pts": 5900000,
+          "ready_ns": 577798363048454
+        },
+        {
+          "sequence": 8,
+          "pts": 6900000,
+          "ready_ns": 577799362417668
+        },
+        {
+          "sequence": 9,
+          "pts": 7900000,
+          "ready_ns": 577800362809814
+        },
+        {
+          "sequence": 10,
+          "pts": 8900000,
+          "ready_ns": 577801362584010
+        },
+        {
+          "sequence": 11,
+          "pts": 9900000,
+          "ready_ns": 577802362817853
+        },
+        {
+          "sequence": 12,
+          "pts": 10900000,
+          "ready_ns": 577803363027570
+        }
+      ],
+      "inter_keyframe_ms": [
+        1895.195274,
+        998.740903,
+        999.924848,
+        2000.176978,
+        999.369214,
+        1000.392146,
+        999.774196,
+        1000.233843,
+        1000.209717
+      ],
+      "max_inter_keyframe_ms": 2000.176978,
+      "encoded": 12,
+      "acknowledged": 12
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 25.658596,
+        "p95": 28.640916,
+        "p99": 28.640916
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 22.048806,
+        "p95": 24.96134,
+        "p99": 24.96134
+      },
+      "samples": 11,
+      "first_write_to_ack_ms": 134.284993,
+      "trial": "trial-001",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 1,
+      "setup_ms": 49.0,
+      "keys": [
+        {
+          "sequence": 13,
+          "pts": 0,
+          "ready_ns": 577803862152165
+        },
+        {
+          "sequence": 15,
+          "pts": 1900000,
+          "ready_ns": 577805763145860
+        },
+        {
+          "sequence": 16,
+          "pts": 2900000,
+          "ready_ns": 577806762135710
+        },
+        {
+          "sequence": 17,
+          "pts": 3900000,
+          "ready_ns": 577807761746260
+        },
+        {
+          "sequence": 19,
+          "pts": 5900000,
+          "ready_ns": 577809762515497
+        },
+        {
+          "sequence": 20,
+          "pts": 6900000,
+          "ready_ns": 577810762184327
+        },
+        {
+          "sequence": 21,
+          "pts": 7900000,
+          "ready_ns": 577811761566964
+        },
+        {
+          "sequence": 22,
+          "pts": 8900000,
+          "ready_ns": 577812762201908
+        },
+        {
+          "sequence": 23,
+          "pts": 9900000,
+          "ready_ns": 577813761168520
+        },
+        {
+          "sequence": 24,
+          "pts": 10900000,
+          "ready_ns": 577814762634495
+        }
+      ],
+      "inter_keyframe_ms": [
+        1900.993695,
+        998.98985,
+        999.61055,
+        2000.769237,
+        999.66883,
+        999.382637,
+        1000.634944,
+        998.966612,
+        1001.465975
+      ],
+      "max_inter_keyframe_ms": 2000.769237,
+      "encoded": 12,
+      "acknowledged": 12
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 223.285282,
+        "p95": 228.18806,
+        "p99": 229.54307
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.37242,
+        "p95": 224.596496,
+        "p99": 225.782407
+      },
+      "samples": 54,
+      "first_write_to_ack_ms": 222.897405,
+      "trial": "trial-002",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 243.765,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577816791810918
+        },
+        {
+          "sequence": 7,
+          "pts": 1100000,
+          "ready_ns": 577817879630644
+        },
+        {
+          "sequence": 12,
+          "pts": 2100000,
+          "ready_ns": 577818878594332
+        },
+        {
+          "sequence": 18,
+          "pts": 3300000,
+          "ready_ns": 577820078013494
+        },
+        {
+          "sequence": 23,
+          "pts": 4300000,
+          "ready_ns": 577821078435682
+        },
+        {
+          "sequence": 28,
+          "pts": 5300000,
+          "ready_ns": 577822077955710
+        },
+        {
+          "sequence": 33,
+          "pts": 6300000,
+          "ready_ns": 577823077581024
+        },
+        {
+          "sequence": 38,
+          "pts": 7300000,
+          "ready_ns": 577824078008131
+        },
+        {
+          "sequence": 44,
+          "pts": 8500000,
+          "ready_ns": 577825277721158
+        },
+        {
+          "sequence": 49,
+          "pts": 9500000,
+          "ready_ns": 577826277287715
+        },
+        {
+          "sequence": 54,
+          "pts": 10500000,
+          "ready_ns": 577827277819442
+        },
+        {
+          "sequence": 59,
+          "pts": 11500000,
+          "ready_ns": 577828278312245
+        }
+      ],
+      "inter_keyframe_ms": [
+        1087.819726,
+        998.963688,
+        1199.419162,
+        1000.422188,
+        999.520028,
+        999.625314,
+        1000.427107,
+        1199.713027,
+        999.566557,
+        1000.531727,
+        1000.492803
+      ],
+      "max_inter_keyframe_ms": 1199.713027,
+      "encoded": 60,
+      "acknowledged": 59
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 223.765539,
+        "p95": 228.938745,
+        "p99": 228.98095
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.840393,
+        "p95": 225.352171,
+        "p99": 225.626515
+      },
+      "samples": 54,
+      "first_write_to_ack_ms": 224.053634,
+      "trial": "trial-002",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 55.802,
+      "keys": [
+        {
+          "sequence": 61,
+          "pts": 0,
+          "ready_ns": 577828997613664
+        },
+        {
+          "sequence": 67,
+          "pts": 1083333,
+          "ready_ns": 577830078745888
+        },
+        {
+          "sequence": 72,
+          "pts": 2083333,
+          "ready_ns": 577831078912768
+        },
+        {
+          "sequence": 78,
+          "pts": 3283333,
+          "ready_ns": 577832279443995
+        },
+        {
+          "sequence": 83,
+          "pts": 4283333,
+          "ready_ns": 577833278783851
+        },
+        {
+          "sequence": 88,
+          "pts": 5283333,
+          "ready_ns": 577834278602982
+        },
+        {
+          "sequence": 93,
+          "pts": 6283333,
+          "ready_ns": 577835278994177
+        },
+        {
+          "sequence": 98,
+          "pts": 7283333,
+          "ready_ns": 577836278926053
+        },
+        {
+          "sequence": 103,
+          "pts": 8283333,
+          "ready_ns": 577837279230485
+        },
+        {
+          "sequence": 108,
+          "pts": 9283333,
+          "ready_ns": 577838278614662
+        },
+        {
+          "sequence": 113,
+          "pts": 10283333,
+          "ready_ns": 577839278710956
+        },
+        {
+          "sequence": 118,
+          "pts": 11283333,
+          "ready_ns": 577840279656353
+        }
+      ],
+      "inter_keyframe_ms": [
+        1081.132224,
+        1000.16688,
+        1200.531227,
+        999.339856,
+        999.819131,
+        1000.391195,
+        999.931876,
+        1000.304432,
+        999.384177,
+        1000.096294,
+        1000.945397
+      ],
+      "max_inter_keyframe_ms": 1200.531227,
+      "encoded": 60,
+      "acknowledged": 59
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 1023.550115,
+        "p95": 1028.009352,
+        "p99": 1028.009352
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 1018.682436,
+        "p95": 1023.497179,
+        "p99": 1023.497179
+      },
+      "samples": 10,
+      "first_write_to_ack_ms": 1023.350351,
+      "trial": "trial-003",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 1,
+      "setup_ms": 231.95,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577843829309878
+        },
+        {
+          "sequence": 3,
+          "pts": 1883333,
+          "ready_ns": 577845713703393
+        },
+        {
+          "sequence": 4,
+          "pts": 2883333,
+          "ready_ns": 577846712265401
+        },
+        {
+          "sequence": 5,
+          "pts": 3883333,
+          "ready_ns": 577847712127360
+        },
+        {
+          "sequence": 7,
+          "pts": 5883333,
+          "ready_ns": 577849711991229
+        },
+        {
+          "sequence": 8,
+          "pts": 6883333,
+          "ready_ns": 577850712051162
+        },
+        {
+          "sequence": 9,
+          "pts": 7883333,
+          "ready_ns": 577851712342909
+        },
+        {
+          "sequence": 10,
+          "pts": 8883333,
+          "ready_ns": 577852712200615
+        },
+        {
+          "sequence": 11,
+          "pts": 9883333,
+          "ready_ns": 577853712228665
+        },
+        {
+          "sequence": 12,
+          "pts": 10883333,
+          "ready_ns": 577854711897149
+        }
+      ],
+      "inter_keyframe_ms": [
+        1884.393515,
+        998.562008,
+        999.861959,
+        1999.863869,
+        1000.059933,
+        1000.291747,
+        999.857706,
+        1000.02805,
+        999.668484
+      ],
+      "max_inter_keyframe_ms": 1999.863869,
+      "encoded": 12,
+      "acknowledged": 11
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 1026.910295,
+        "p95": 1028.565994,
+        "p99": 1028.565994
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 1023.15822,
+        "p95": 1024.025343,
+        "p99": 1024.025343
+      },
+      "samples": 10,
+      "first_write_to_ack_ms": 1027.93805,
+      "trial": "trial-003",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 1,
+      "setup_ms": 60.063,
+      "keys": [
+        {
+          "sequence": 13,
+          "pts": 0,
+          "ready_ns": 577855225578862
+        },
+        {
+          "sequence": 15,
+          "pts": 1900000,
+          "ready_ns": 577857113280400
+        },
+        {
+          "sequence": 16,
+          "pts": 2900000,
+          "ready_ns": 577858112631093
+        },
+        {
+          "sequence": 17,
+          "pts": 3900000,
+          "ready_ns": 577859111753245
+        },
+        {
+          "sequence": 19,
+          "pts": 5900000,
+          "ready_ns": 577861111540729
+        },
+        {
+          "sequence": 20,
+          "pts": 6900000,
+          "ready_ns": 577862112058774
+        },
+        {
+          "sequence": 21,
+          "pts": 7900000,
+          "ready_ns": 577863112074677
+        },
+        {
+          "sequence": 22,
+          "pts": 8900000,
+          "ready_ns": 577864111820718
+        },
+        {
+          "sequence": 23,
+          "pts": 9900000,
+          "ready_ns": 577865111738656
+        },
+        {
+          "sequence": 24,
+          "pts": 10900000,
+          "ready_ns": 577866111782613
+        }
+      ],
+      "inter_keyframe_ms": [
+        1887.701538,
+        999.350693,
+        999.122152,
+        1999.787484,
+        1000.518045,
+        1000.015903,
+        999.746041,
+        999.917938,
+        1000.043957
+      ],
+      "max_inter_keyframe_ms": 1999.787484,
+      "encoded": 12,
+      "acknowledged": 11
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 1026.583528,
+        "p95": 1029.449104,
+        "p99": 1029.449104
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 1021.633074,
+        "p95": 1024.556079,
+        "p99": 1024.556079
+      },
+      "samples": 10,
+      "first_write_to_ack_ms": 1028.180323,
+      "trial": "trial-004",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 1,
+      "setup_ms": 230.35,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577869253255713
+        },
+        {
+          "sequence": 3,
+          "pts": 1900000,
+          "ready_ns": 577871142615857
+        },
+        {
+          "sequence": 4,
+          "pts": 2900000,
+          "ready_ns": 577872140851898
+        },
+        {
+          "sequence": 5,
+          "pts": 3900000,
+          "ready_ns": 577873139290527
+        },
+        {
+          "sequence": 7,
+          "pts": 5900000,
+          "ready_ns": 577875139893308
+        },
+        {
+          "sequence": 8,
+          "pts": 6900000,
+          "ready_ns": 577876139153775
+        },
+        {
+          "sequence": 10,
+          "pts": 8900000,
+          "ready_ns": 577878139650160
+        },
+        {
+          "sequence": 11,
+          "pts": 9900000,
+          "ready_ns": 577879140106692
+        },
+        {
+          "sequence": 12,
+          "pts": 10900000,
+          "ready_ns": 577880139350180
+        }
+      ],
+      "inter_keyframe_ms": [
+        1889.360144,
+        998.236041,
+        998.438629,
+        2000.602781,
+        999.260467,
+        2000.496385,
+        1000.456532,
+        999.243488
+      ],
+      "max_inter_keyframe_ms": 2000.602781,
+      "encoded": 12,
+      "acknowledged": 11
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 1027.231017,
+        "p95": 1029.463344,
+        "p99": 1029.463344
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 1023.371434,
+        "p95": 1025.627046,
+        "p99": 1025.627046
+      },
+      "samples": 10,
+      "first_write_to_ack_ms": 1026.440724,
+      "trial": "trial-004",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 1,
+      "setup_ms": 39.383,
+      "keys": [
+        {
+          "sequence": 13,
+          "pts": 0,
+          "ready_ns": 577880632629150
+        },
+        {
+          "sequence": 15,
+          "pts": 1883333,
+          "ready_ns": 577882520167309
+        },
+        {
+          "sequence": 16,
+          "pts": 2883333,
+          "ready_ns": 577883518411312
+        },
+        {
+          "sequence": 17,
+          "pts": 3883333,
+          "ready_ns": 577884518248956
+        },
+        {
+          "sequence": 19,
+          "pts": 5883333,
+          "ready_ns": 577886517923293
+        },
+        {
+          "sequence": 20,
+          "pts": 6883333,
+          "ready_ns": 577887518516877
+        },
+        {
+          "sequence": 21,
+          "pts": 7883333,
+          "ready_ns": 577888517646569
+        },
+        {
+          "sequence": 22,
+          "pts": 8883333,
+          "ready_ns": 577889518260200
+        },
+        {
+          "sequence": 23,
+          "pts": 9883333,
+          "ready_ns": 577890517655706
+        },
+        {
+          "sequence": 24,
+          "pts": 10883333,
+          "ready_ns": 577891519064499
+        }
+      ],
+      "inter_keyframe_ms": [
+        1887.538159,
+        998.244003,
+        999.837644,
+        1999.674337,
+        1000.593584,
+        999.129692,
+        1000.613631,
+        999.395506,
+        1001.408793
+      ],
+      "max_inter_keyframe_ms": 1999.674337,
+      "encoded": 12,
+      "acknowledged": 11
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 223.070436,
+        "p95": 227.04766,
+        "p99": 227.501143
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 219.527213,
+        "p95": 223.121046,
+        "p99": 224.291443
+      },
+      "samples": 54,
+      "first_write_to_ack_ms": 223.517853,
+      "trial": "trial-005",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 239.801,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577894652355612
+        },
+        {
+          "sequence": 7,
+          "pts": 1083333,
+          "ready_ns": 577895736305093
+        },
+        {
+          "sequence": 12,
+          "pts": 2083333,
+          "ready_ns": 577896736677178
+        },
+        {
+          "sequence": 18,
+          "pts": 3283333,
+          "ready_ns": 577897937097027
+        },
+        {
+          "sequence": 23,
+          "pts": 4283333,
+          "ready_ns": 577898936742065
+        },
+        {
+          "sequence": 28,
+          "pts": 5283333,
+          "ready_ns": 577899936070461
+        },
+        {
+          "sequence": 33,
+          "pts": 6283333,
+          "ready_ns": 577900937123683
+        },
+        {
+          "sequence": 38,
+          "pts": 7283333,
+          "ready_ns": 577901936459661
+        },
+        {
+          "sequence": 43,
+          "pts": 8283333,
+          "ready_ns": 577902936936030
+        },
+        {
+          "sequence": 48,
+          "pts": 9283333,
+          "ready_ns": 577903936424712
+        },
+        {
+          "sequence": 53,
+          "pts": 10283333,
+          "ready_ns": 577904936274600
+        },
+        {
+          "sequence": 58,
+          "pts": 11283333,
+          "ready_ns": 577905936848510
+        }
+      ],
+      "inter_keyframe_ms": [
+        1083.949481,
+        1000.372085,
+        1200.419849,
+        999.645038,
+        999.328396,
+        1001.053222,
+        999.335978,
+        1000.476369,
+        999.488682,
+        999.849888,
+        1000.57391
+      ],
+      "max_inter_keyframe_ms": 1200.419849,
+      "encoded": 60,
+      "acknowledged": 59
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 223.801982,
+        "p95": 228.56983,
+        "p99": 229.667887
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 220.213407,
+        "p95": 224.426656,
+        "p99": 226.255527
+      },
+      "samples": 54,
+      "first_write_to_ack_ms": 225.542821,
+      "trial": "trial-005",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "setup_ms": 43.738,
+      "keys": [
+        {
+          "sequence": 61,
+          "pts": 0,
+          "ready_ns": 577906828622017
+        },
+        {
+          "sequence": 67,
+          "pts": 1083333,
+          "ready_ns": 577907918702613
+        },
+        {
+          "sequence": 72,
+          "pts": 2083333,
+          "ready_ns": 577908918470147
+        },
+        {
+          "sequence": 78,
+          "pts": 3283333,
+          "ready_ns": 577910119382082
+        },
+        {
+          "sequence": 83,
+          "pts": 4283333,
+          "ready_ns": 577911118849298
+        },
+        {
+          "sequence": 88,
+          "pts": 5283333,
+          "ready_ns": 577912119004365
+        },
+        {
+          "sequence": 93,
+          "pts": 6283333,
+          "ready_ns": 577913119149587
+        },
+        {
+          "sequence": 98,
+          "pts": 7283333,
+          "ready_ns": 577914118218230
+        },
+        {
+          "sequence": 103,
+          "pts": 8283333,
+          "ready_ns": 577915119130570
+        },
+        {
+          "sequence": 108,
+          "pts": 9283333,
+          "ready_ns": 577916118499214
+        },
+        {
+          "sequence": 113,
+          "pts": 10283333,
+          "ready_ns": 577917118397001
+        },
+        {
+          "sequence": 118,
+          "pts": 11283333,
+          "ready_ns": 577918118807337
+        }
+      ],
+      "inter_keyframe_ms": [
+        1090.080596,
+        999.767534,
+        1200.911935,
+        999.467216,
+        1000.155067,
+        1000.145222,
+        999.068643,
+        1000.91234,
+        999.368644,
+        999.897787,
+        1000.410336
+      ],
+      "max_inter_keyframe_ms": 1200.911935,
+      "encoded": 60,
+      "acknowledged": 59
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 26.263543,
+        "p95": 28.549966,
+        "p99": 28.549966
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 22.221655,
+        "p95": 24.538829,
+        "p99": 24.538829
+      },
+      "samples": 11,
+      "first_write_to_ack_ms": 122.34179,
+      "trial": "trial-006",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 1,
+      "setup_ms": 236.501,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577921661619028
+        },
+        {
+          "sequence": 3,
+          "pts": 1900000,
+          "ready_ns": 577923567667844
+        },
+        {
+          "sequence": 4,
+          "pts": 2900000,
+          "ready_ns": 577924568813491
+        },
+        {
+          "sequence": 5,
+          "pts": 3900000,
+          "ready_ns": 577925566620492
+        },
+        {
+          "sequence": 7,
+          "pts": 5900000,
+          "ready_ns": 577927567378276
+        },
+        {
+          "sequence": 8,
+          "pts": 6900000,
+          "ready_ns": 577928567099430
+        },
+        {
+          "sequence": 9,
+          "pts": 7900000,
+          "ready_ns": 577929567029664
+        },
+        {
+          "sequence": 10,
+          "pts": 8900000,
+          "ready_ns": 577930566552451
+        },
+        {
+          "sequence": 11,
+          "pts": 9900000,
+          "ready_ns": 577931566739112
+        },
+        {
+          "sequence": 12,
+          "pts": 10900000,
+          "ready_ns": 577932567018187
+        }
+      ],
+      "inter_keyframe_ms": [
+        1906.048816,
+        1001.145647,
+        997.807001,
+        2000.757784,
+        999.721154,
+        999.930234,
+        999.522787,
+        1000.186661,
+        1000.279075
+      ],
+      "max_inter_keyframe_ms": 2000.757784,
+      "encoded": 12,
+      "acknowledged": 12
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 25.921095,
+        "p95": 30.735423,
+        "p99": 30.735423
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 22.447463,
+        "p95": 25.236955,
+        "p99": 25.236955
+      },
+      "samples": 11,
+      "first_write_to_ack_ms": 139.858861,
+      "trial": "trial-006",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 1,
+      "setup_ms": 51.615,
+      "keys": [
+        {
+          "sequence": 13,
+          "pts": 0,
+          "ready_ns": 577933070463087
+        },
+        {
+          "sequence": 15,
+          "pts": 1900000,
+          "ready_ns": 577934966160213
+        },
+        {
+          "sequence": 16,
+          "pts": 2900000,
+          "ready_ns": 577935965303560
+        },
+        {
+          "sequence": 17,
+          "pts": 3900000,
+          "ready_ns": 577936964258636
+        },
+        {
+          "sequence": 19,
+          "pts": 5900000,
+          "ready_ns": 577938964157545
+        },
+        {
+          "sequence": 20,
+          "pts": 6900000,
+          "ready_ns": 577939965596020
+        },
+        {
+          "sequence": 21,
+          "pts": 7900000,
+          "ready_ns": 577940964131216
+        },
+        {
+          "sequence": 22,
+          "pts": 8900000,
+          "ready_ns": 577941963946084
+        },
+        {
+          "sequence": 23,
+          "pts": 9900000,
+          "ready_ns": 577942964676826
+        },
+        {
+          "sequence": 24,
+          "pts": 10900000,
+          "ready_ns": 577943964100982
+        }
+      ],
+      "inter_keyframe_ms": [
+        1895.697126,
+        999.143347,
+        998.955076,
+        1999.898909,
+        1001.438475,
+        998.535196,
+        999.814868,
+        1000.730742,
+        999.424156
+      ],
+      "max_inter_keyframe_ms": 1999.898909,
+      "encoded": 12,
+      "acknowledged": 12
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 22.92529,
+        "p95": 26.742589,
+        "p99": 27.315513
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.538086,
+        "p95": 23.392397,
+        "p99": 23.8669
+      },
+      "samples": 55,
+      "first_write_to_ack_ms": 139.216071,
+      "trial": "trial-007",
+      "phase": 0,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 248.224,
+      "keys": [
+        {
+          "sequence": 1,
+          "pts": 0,
+          "ready_ns": 577945992487864
+        },
+        {
+          "sequence": 7,
+          "pts": 1083333,
+          "ready_ns": 577947086774642
+        },
+        {
+          "sequence": 12,
+          "pts": 2083333,
+          "ready_ns": 577948087666157
+        },
+        {
+          "sequence": 18,
+          "pts": 3283333,
+          "ready_ns": 577949287725335
+        },
+        {
+          "sequence": 23,
+          "pts": 4283333,
+          "ready_ns": 577950288232941
+        },
+        {
+          "sequence": 28,
+          "pts": 5283333,
+          "ready_ns": 577951286848334
+        },
+        {
+          "sequence": 33,
+          "pts": 6283333,
+          "ready_ns": 577952287074511
+        },
+        {
+          "sequence": 38,
+          "pts": 7283333,
+          "ready_ns": 577953286867442
+        },
+        {
+          "sequence": 43,
+          "pts": 8283333,
+          "ready_ns": 577954287122143
+        },
+        {
+          "sequence": 48,
+          "pts": 9283333,
+          "ready_ns": 577955287038992
+        },
+        {
+          "sequence": 53,
+          "pts": 10283333,
+          "ready_ns": 577956287259467
+        },
+        {
+          "sequence": 58,
+          "pts": 11283333,
+          "ready_ns": 577957287135526
+        }
+      ],
+      "inter_keyframe_ms": [
+        1094.286778,
+        1000.891515,
+        1200.059178,
+        1000.507606,
+        998.615393,
+        1000.226177,
+        999.792931,
+        1000.254701,
+        999.916849,
+        1000.220475,
+        999.876059
+      ],
+      "max_inter_keyframe_ms": 1200.059178,
+      "encoded": 60,
+      "acknowledged": 60
+    },
+    {
+      "raw_write_to_ack_ms": {
+        "p50": 23.625479,
+        "p95": 27.412201,
+        "p99": 27.927251
+      },
+      "packet_ready_to_ack_ms": {
+        "p50": 19.809493,
+        "p95": 23.92964,
+        "p99": 24.360679
+      },
+      "samples": 55,
+      "first_write_to_ack_ms": 130.121625,
+      "trial": "trial-007",
+      "phase": 1,
+      "scene": "text",
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "setup_ms": 63.671,
+      "keys": [
+        {
+          "sequence": 61,
+          "pts": 0,
+          "ready_ns": 577958182784795
+        },
+        {
+          "sequence": 67,
+          "pts": 1100000,
+          "ready_ns": 577959287214693
+        },
+        {
+          "sequence": 72,
+          "pts": 2100000,
+          "ready_ns": 577960287423692
+        },
+        {
+          "sequence": 78,
+          "pts": 3300000,
+          "ready_ns": 577961487172995
+        },
+        {
+          "sequence": 83,
+          "pts": 4300000,
+          "ready_ns": 577962487795907
+        },
+        {
+          "sequence": 88,
+          "pts": 5300000,
+          "ready_ns": 577963487462394
+        },
+        {
+          "sequence": 93,
+          "pts": 6300000,
+          "ready_ns": 577964486841778
+        },
+        {
+          "sequence": 98,
+          "pts": 7300000,
+          "ready_ns": 577965487308058
+        },
+        {
+          "sequence": 104,
+          "pts": 8500000,
+          "ready_ns": 577966686434847
+        },
+        {
+          "sequence": 109,
+          "pts": 9500000,
+          "ready_ns": 577967686710625
+        },
+        {
+          "sequence": 114,
+          "pts": 10500000,
+          "ready_ns": 577968687564150
+        },
+        {
+          "sequence": 119,
+          "pts": 11500000,
+          "ready_ns": 577969686618433
+        }
+      ],
+      "inter_keyframe_ms": [
+        1104.429898,
+        1000.208999,
+        1199.749303,
+        1000.622912,
+        999.666487,
+        999.379384,
+        1000.46628,
+        1199.126789,
+        1000.275778,
+        1000.853525,
+        999.054283
+      ],
+      "max_inter_keyframe_ms": 1199.749303,
+      "encoded": 60,
+      "acknowledged": 60
+    }
+  ],
+  "completed_phases": 16,
+  "timing": [
+    {
+      "encoder": "h264_vaapi",
+      "rate": 1,
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 1026.7469115,
+        "p95": 1029.007549,
+        "p99": 1029.007549
+      }
+    },
+    {
+      "encoder": "h264_vaapi",
+      "rate": 5,
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 223.5254105,
+        "p95": 228.378945,
+        "p99": 229.26201
+      }
+    },
+    {
+      "encoder": "h264_vaapi_baseline",
+      "rate": 1,
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 25.815176,
+        "p95": 28.595441,
+        "p99": 28.595441
+      }
+    },
+    {
+      "encoder": "h264_vaapi_baseline",
+      "rate": 5,
+      "runs": 4,
+      "median_run_percentiles": {
+        "p50": 23.241678,
+        "p95": 27.077395,
+        "p99": 27.763871
+      }
+    }
+  ],
+  "boundary": "Host raw-write admission to callback ACK, plus encoded keyframe availability; excludes capture and physical presentation."
+}

@@ -19,6 +19,16 @@ SPEC.loader.exec_module(DRIVER)
 
 
 class ProfileUsbTests(unittest.TestCase):
+    def test_t492_sparse_usb_comparison_remains_bounded_by_duration_and_corpus(self):
+        meta = dict(scenes=[dict(scene='text')], frames=240)
+        row = dict(scene='text', encoder='h264_vaapi_baseline', rate=1, seconds=12)
+        DRIVER.validate([row], meta)
+        DRIVER.validate([dict(row, rate=5)], meta)
+        for change in [dict(rate=0), dict(rate=2), dict(seconds=13),
+                       dict(seconds=1), dict(rate=60)]:
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                DRIVER.validate([dict(row, **change)], meta)
+
     def test_t479_tee_fragmentation_preserves_packet_boundaries(self):
         payload = b'\x00\x00\x01\x65\n\x00fixture'
         line = f'0, 1, 1, 1, {len(payload)}, 0x{zlib.adler32(payload, 0):08x}\n'.encode()

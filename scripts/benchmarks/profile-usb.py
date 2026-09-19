@@ -32,7 +32,7 @@ def validate(rows, meta):
     for row in rows:
         if row['scene'] not in scenes or row['encoder'] not in ['libx264', 'h264_vaapi', 'h264_vaapi_baseline']:
             raise ValueError('unsupported isolated USB trial')
-        if row['rate'] not in [5, 60] or not 2 <= row['seconds'] <= 4:
+        if row['rate'] not in [1, 5, 60] or not 2 <= row['seconds'] <= 12:
             raise ValueError('unbounded replay workload')
         if row['rate'] * row['seconds'] > meta['frames']:
             raise ValueError('replay exceeds verified corpus')
