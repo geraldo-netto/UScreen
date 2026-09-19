@@ -48,19 +48,19 @@ internal data class DecoderSelection(
     companion object {
         fun read(message: JSONObject): DecoderSelection? {
             if (message.isNull("decoder_selection")) return null
-            require(message.optInt("decoder_protocol") == 2) { "Unsupported decoder selection version" }
+            JsonNumbers.integer(message, "decoder_protocol", 2, 2)
             val selection = message.getJSONObject("decoder_selection")
             val stream = selection.getJSONObject("stream")
             val name = selection.getString("name")
             require(MediaInventory.identifier(name)) { "Invalid decoder identity" }
             val codec = stream.getString("codec")
             val profile = stream.getString("profile")
-            val depth = stream.getInt("depth")
+            val depth = JsonNumbers.integer(stream, "depth", 8, 10)
             requireNotNull(MediaProfiles.profile(codec, profile, depth)) { "Unknown stream profile" }
-            val level = stream.getInt("level")
+            val level = JsonNumbers.integer(stream, "level", 9, 73)
             require(MediaProfiles.validLevel(codec, level)) { "Invalid stream level" }
-            val rate = if (selection.isNull("operating_rate")) null else selection.getInt("operating_rate")
-            require(rate == null || rate in 10..180) { "Invalid operating rate" }
+            val rate = if (selection.isNull("operating_rate")) null else
+                JsonNumbers.integer(selection, "operating_rate", 10, 180)
             return DecoderSelection(name, codec, profile, level, depth, selection.getBoolean("low_latency"), rate)
         }
     }

@@ -9,7 +9,7 @@ internal object StreamFormat {
             else previous?.mimeType ?: VideoReceiver.MIME_TYPE
         requireNotNull(mime) { "Unsupported host codec" }
         val (width, height) = dimensions(message, previous, nativeWidth, nativeHeight)
-        val fps = message.optInt("fps", previous?.fps ?: defaultFps)
+        val fps = JsonNumbers.optional(message, "fps", previous?.fps ?: defaultFps, 10, 90)
         require(fps in 10..90) { "Invalid stream FPS" }
         val selection = DecoderSelection.read(message)
         require(selection == null || VideoCodec.types[selection.codec] == mime) { "Decoder selection codec mismatch" }
@@ -20,7 +20,8 @@ internal object StreamFormat {
         // Old hosts omit both encoded dimensions. Retain the current format on
         // partial updates, or use the panel hint for the first legacy greeting.
         val pixels = if (message.has("video_width") || message.has("video_height")) {
-            message.optInt("video_width") to message.optInt("video_height")
+            JsonNumbers.integer(message, "video_width", 2, 4096) to
+                JsonNumbers.integer(message, "video_height", 2, 4096)
         } else if (previous != null) {
             previous.width to previous.height
         } else {
