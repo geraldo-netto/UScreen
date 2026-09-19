@@ -453,10 +453,10 @@ temporary edits that were reverted before the final check.
 Ignored build outputs may change. SDK/compiler/container inputs and ignored
 signing configuration/keys are supplied by the trusted release environment and
 must stay fixed throughout the run; the Git checks do not attest those external
-inputs. The fork certificate is designated, but application-ID migration and
-publication-time certificate verification remain T250; replacing the Debian
-release asset with AppImage remains T308. A successful source check does not
-verify that an APK uses the designated certificate.
+inputs. The release APK must use the fork application ID and designated certificate;
+`scripts/verify-release-apk.py` verifies both before publication API writes.
+Replacing the Debian release asset with AppImage remains T308. The separate
+source-provenance checks do not establish APK signing identity.
 
 `make dist-local` uses the local toolchain and requires a successful signed APK
 build. It bundles libevdi v1.15.0 beside the helper; if the compiler cannot find
