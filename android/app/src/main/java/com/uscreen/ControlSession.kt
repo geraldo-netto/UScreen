@@ -69,9 +69,10 @@ internal class ControlSession(
     @Volatile var settingsGeneration = 0L
         private set
 
-    /// Session token from the host, delivered as an intent extra when the
-    /// daemon launches us over adb. Must be the first thing sent on the
-    /// socket; without it the host closes the connection unanswered.
+    /// Attachment token from the host, delivered through the protected ADB
+    /// receiver or initial token Activity. The token store updates a running
+    /// session without requiring another Activity launch. It must be the first
+    /// socket message; otherwise the host closes the connection unanswered.
     @Volatile var token: String? = null
 
     /** Settings to (re)send to the host whenever the control channel connects */
