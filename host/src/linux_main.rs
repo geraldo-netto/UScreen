@@ -34,6 +34,8 @@ mod runtime;
 mod selection;
 mod session;
 mod stream;
+#[cfg(test)]
+mod test_logging;
 mod tray;
 mod update;
 mod vdisplay;
@@ -2870,3 +2872,6 @@ async fn list_displays() -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod runtime_coverage_tests;

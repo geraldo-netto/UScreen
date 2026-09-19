@@ -51,6 +51,38 @@ class CallbackCodecShadow : ShadowMediaCodec() {
 @Config(sdk = [27, 34], shadows = [CallbackCodecShadow::class])
 class CallbackDecoderTest {
     @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
+    @Test fun t497_closedHandlerRejectsInputAndCodecErrorsCloseAdmission() {
+        val thread = android.os.HandlerThread("t497-retired").apply { start() }
+        val handler = Handler(thread.looper)
+        thread.quitSafely(); thread.join(1000)
+        assertFalse(thread.isAlive)
+        val codec = MediaCodec.createDecoderByType("video/avc")
+        val owner = CodecLifetime(codec)
+        val callback = CallbackDecoder(owner, handler, {}, {}, { throw AssertionError(it) })
+        try {
+            val input = DecoderInput(byteArrayOf(1), 0, 1, false, 0)
+            assertFalse("T497: stopped handler accepted input", callback.offer(input))
+            assertFalse("T497: mailbox reopened", callback.offer(input))
+            callback.onOutputFormatChanged(codec, MediaFormat())
+        } finally { callback.close(); codec.release() }
+    }
+
+    @Test fun t497_codecErrorRetiresOnlyItsCurrentOwner() {
+        Fixture().use { fixture ->
+            val codec = fixture.decoder.mediaCodec!!
+            val callback = fixture.callback()
+            val error = org.robolectric.util.ReflectionHelpers.callConstructor(MediaCodec.CodecException::class.java,
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(Int::class.javaPrimitiveType, 1100),
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(Int::class.javaPrimitiveType, 0),
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(String::class.java, "T497 injected error"))
+            callback.onError(codec, error)
+            assertTrue(fixture.invalidated.await(2, TimeUnit.SECONDS))
+            fixture.decoder.releaseCodec()
+            assertNull(fixture.decoder.mediaCodec)
+            callback.onError(codec, error)
+            assertTrue(CallbackCodecShadow.inputs.isEmpty())
+        }
+    }
     private class Fixture : AutoCloseable {
         private val surface = Surface(SurfaceTexture(1))
         val invalidated = CountDownLatch(1)

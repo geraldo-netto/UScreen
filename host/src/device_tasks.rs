@@ -103,3 +103,31 @@ impl<T> Drop for DeviceTasks<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn t497_dropping_scheduler_cancels_started_work_and_never_starts_the_queue() {
+        let (ready, started) = tokio::sync::oneshot::channel();
+        let (retired, completed) = tokio::sync::oneshot::channel::<()>();
+        let mut tasks = DeviceTasks::new(1);
+        tasks.schedule("active".into(), async move {
+            let _retirement = retired;
+            ready.send(()).unwrap();
+            std::future::pending::<()>().await;
+        });
+        tasks.schedule("queued".into(), async {
+            panic!("T497 queued work escaped scheduler")
+        });
+        started.await.unwrap();
+        drop(tasks);
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), completed)
+                .await
+                .unwrap()
+                .is_err()
+        );
+    }
+}

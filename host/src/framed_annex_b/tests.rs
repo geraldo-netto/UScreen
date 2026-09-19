@@ -2,6 +2,24 @@ use super::*;
 use std::{sync::atomic::Ordering, time::Duration};
 use tokio::io::{AsyncWriteExt, BufReader};
 
+#[test]
+fn t497_extradata_bounds_and_malformed_numbers_are_rejected() {
+    let limit = crate::video_queue::MAX_CONFIG_BYTES;
+    for size in [0, 1, limit - 1, limit] {
+        assert!(extradata(&format!(" {size}, 0xffffffff ")).is_ok());
+    }
+    for invalid in ["", "-1", "0x10", "18446744073709551616", "NaN"] {
+        assert!(extradata(&format!("{invalid}, 0x1234")).is_err());
+    }
+    for size in limit + 1..limit + 1025 {
+        assert!(extradata(&format!("{size}, 0x1234")).is_err());
+    }
+    for invalid in ["", "1234", "0x", "0x100000000", "0x-1", "0xzz", "0x1,extra"] {
+        assert!(extradata(&format!("1,{invalid}")).is_err());
+    }
+    assert!(extradata("no comma").is_err());
+}
+
 pub(crate) fn stream(codec: Codec, packets: &[Vec<u8>]) -> Vec<u8> {
     let mut out = format!(
         "#tb 0: 1/1000000\n#media_type 0: video\n#codec_id 0: {}\n#dimensions 0: 64x64\n",

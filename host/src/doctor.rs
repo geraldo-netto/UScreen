@@ -19,6 +19,10 @@ use uscreen_config::adb::{transport_of, Transport};
 use uscreen_config::commands::AsyncCommandExt;
 use uscreen_config::linux::processes::{self, CaptureRole, Process};
 
+#[cfg(test)]
+#[path = "doctor/coverage_tests.rs"]
+mod coverage_tests;
+
 #[derive(PartialEq)]
 enum Level {
     Ok,
@@ -96,7 +100,11 @@ async fn output_of(program: &str, args: &[&str]) -> Option<String> {
 use uscreen_config::linux::programs::command_exists;
 
 fn check_modules(r: &mut Report, cfg: &FileConfig) {
-    match std::fs::read_to_string("/sys/devices/evdi/count") {
+    check_modules_at(r, cfg, Path::new("/"));
+}
+
+fn check_modules_at(r: &mut Report, cfg: &FileConfig, root: &Path) {
+    match std::fs::read_to_string(root.join("sys/devices/evdi/count")) {
         Ok(text) => {
             let count: i32 = text.trim().parse().unwrap_or(-1);
             if count > 0 {
@@ -120,7 +128,7 @@ fn check_modules(r: &mut Report, cfg: &FileConfig) {
         }
     }
 
-    let uinput = Path::new("/dev/uinput");
+    let uinput = root.join("dev/uinput");
     // With every input device switched off the daemon never opens uinput,
     // so a problem here is worth knowing about but blocks nothing.
     let uinput_level = if cfg.input_touch || cfg.input_pen {
@@ -142,7 +150,7 @@ fn check_modules(r: &mut Report, cfg: &FileConfig) {
                     "uinput device",
                     &format!("not writable: {}", e),
                 );
-                r.hint(&uinput_hint(Path::new("/")));
+                r.hint(&uinput_hint(root));
             }
         }
     }
@@ -281,7 +289,11 @@ fn report_auto_encoder(r: &mut Report, fallback: bool) {
 /// Check daemon ownership and per-slot process counts. Each tablet slot has its
 /// own FIFO; duplicate encoders on one FIFO corrupt its frames.
 async fn check_processes(r: &mut Report, cfg: &FileConfig) {
-    let inventory = match processes::same_user_processes() {
+    report_process_query(r, cfg, processes::same_user_processes());
+}
+
+fn report_process_query(r: &mut Report, cfg: &FileConfig, query: std::io::Result<Vec<Process>>) {
+    let inventory = match query {
         Ok(inventory) => inventory,
         Err(error) => {
             r.line(Level::Warn, "process inspection", &error.to_string());
@@ -598,15 +610,25 @@ fn report_forwarding(r: &mut Report, cfg: &FileConfig, serial: &str, reverse: &s
 
 async fn check_virtual_display(r: &mut Report, cfg: &FileConfig) {
     let connectors = vdisplay::evdi_connectors();
+    check_named_virtual_display(r, cfg, &connectors, std::ffi::OsStr::new("kscreen-doctor")).await;
+}
+
+async fn check_named_virtual_display(
+    r: &mut Report,
+    cfg: &FileConfig,
+    connectors: &[vdisplay::EvdiConnector],
+    program: &std::ffi::OsStr,
+) {
     if connectors.is_empty() {
         r.line(Level::Fail, "EVDI connector", "none found in sysfs");
         r.hint("the evdi module is loaded but exposes no DRM connector — reboot or re-add");
         return;
     }
-    report_connectors(r, &connectors);
+    report_connectors(r, connectors);
 
     let names: Vec<&str> = connectors.iter().map(|c| c.name.as_str()).collect();
-    let Ok(response) = crate::kscreen::fetch().await else {
+    let Ok(response) = crate::kscreen::fetch_with(tokio::process::Command::new(program)).await
+    else {
         return;
     };
     // Preserve doctor's text-output decoding; mapping consumes strict bytes.
@@ -890,6 +912,14 @@ async fn check_desktop_colour_profiles(r: &mut Report) {
     let Some(outputs) = crate::kscreen::outputs().await else {
         return;
     };
+    report_desktop_colour_profiles(r, &names, &outputs);
+}
+
+fn report_desktop_colour_profiles(
+    r: &mut Report,
+    names: &[String],
+    outputs: &[crate::kscreen::Output],
+) {
     for out in outputs {
         let name = out.label();
         if !names.iter().any(|n| n == name) {
@@ -1011,28 +1041,29 @@ fn check_config(r: &mut Report, cfg: &FileConfig) {
 fn check_tablet_capacity(r: &mut Report, cfg: &FileConfig) {
     if cfg.max_tablets > 1 {
         let cards = crate::vdisplay::evdi_cards().len() as u32;
-        if cards >= cfg.max_tablets {
-            r.line(
-                Level::Ok,
-                "tablet slots",
-                &format!("{} (EVDI devices: {})", cfg.max_tablets, cards),
-            );
-        } else {
-            r.line(
-                Level::Warn,
-                "tablet slots",
-                &format!(
-                    "{} wanted, but only {} EVDI device(s) exist",
-                    cfg.max_tablets, cards
-                ),
-            );
-            r.hint(&format!(
-                "for this boot: echo 1 | sudo tee /sys/devices/evdi/add   (repeat {} time(s)); \
+        report_tablet_capacity(r, cfg.max_tablets, cards);
+    }
+}
+
+fn report_tablet_capacity(r: &mut Report, wanted: u32, cards: u32) {
+    if cards >= wanted {
+        r.line(
+            Level::Ok,
+            "tablet slots",
+            &format!("{} (EVDI devices: {})", wanted, cards),
+        );
+    } else {
+        r.line(
+            Level::Warn,
+            "tablet slots",
+            &format!("{} wanted, but only {} EVDI device(s) exist", wanted, cards),
+        );
+        r.hint(&format!(
+            "for this boot: echo 1 | sudo tee /sys/devices/evdi/add   (repeat {} time(s)); \
                  for every boot: initial_device_count={} in /etc/modprobe.d/uscreen-evdi.conf",
-                cfg.max_tablets - cards,
-                cfg.max_tablets
-            ));
-        }
+            wanted - cards,
+            wanted
+        ));
     }
 }
 

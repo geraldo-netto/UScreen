@@ -16,6 +16,12 @@ import org.robolectric.shadow.api.Shadow
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [PowerTestWifiManager::class, PowerTestWifiLock::class])
 class StreamingPowerTest {
+    @Test fun t497_foregroundServiceDoesNotExposeAnIpcBinder() {
+        val controller = Robolectric.buildService(StreamingService::class.java).create()
+        try { assertNull(controller.get().onBind(Intent())) }
+        finally { controller.destroy() }
+    }
+
     private fun held(service: StreamingService, name: String): Boolean {
         val value = StreamingService::class.java.getDeclaredField(name).apply { isAccessible = true }.get(service)
         return when (value) {

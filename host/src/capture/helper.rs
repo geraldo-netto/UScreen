@@ -361,6 +361,9 @@ pub(super) fn ensure_fifo(path: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
+mod coverage_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

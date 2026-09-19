@@ -72,7 +72,7 @@ class NoticeTest(unittest.TestCase):
             shutil.copy(docs / 'bin/evdi_helper', source / 'host/evdi/evdi_helper')
             (root / 'evdi-1.15.0/library').mkdir(parents=True)
             shutil.copy(docs / 'bin/libevdi.so.1.15.0', root / 'evdi-1.15.0/library/')
-            run('bash', '-c', 'set -e; source packaging/arch/PKGBUILD; srcdir="$PWD"; pkgdir="$PWD/arch"; package')
+            run('bash', '-c', 'set -e; source "$PWD/packaging/arch/PKGBUILD"; srcdir="$PWD"; pkgdir="$PWD/arch"; package')
             self.verify_docs(root / 'arch/usr/share/doc/uscreen')
             self.assertEqual((root / 'arch/usr/share/uscreen/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Arch setup missing')
 

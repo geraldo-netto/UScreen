@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from shell_fixture import run as run_shell
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -30,13 +31,16 @@ elif name == 'modprobe':
 elif name == 'tee' and args == ['/sys/devices/evdi/add']:
     value = sys.stdin.read().strip()
     if os.environ.get('FAIL_ADD'): sys.exit(1)
-    count.write_text(str(int(count.read_text()) + int(value)))
+    if os.environ.get('INVALID_AFTER_ADD'): count.write_text('invalid')
+    elif not os.environ.get('IGNORE_ADD'): count.write_text(str(int(count.read_text()) + int(value)))
 elif name not in ['touch', 'udevadm', 'gtk-update-icon-cache']:
     raise RuntimeError('Unexpected fixture command: ' + repr([name] + args))
 '''
 
 
 def setup_program(entry):
+    if entry == 'script':
+        return (REPO / 'scripts/setup-evdi.sh').read_text(), ['2']
     if entry == 'installer':
         source = (REPO / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
         return source + '\nSCRIPT_DIR=$1\nactivate_evdi\n', [str(REPO / 'scripts')]
@@ -64,18 +68,22 @@ class EvdiSetupTest(unittest.TestCase):
             source, args = setup_program(entry)
             # Map the installed, architecture-independent script into the source fixture.
             source = source.replace('%{_datadir}', '/usr/share')
-            source = source.replace('/usr/share/uscreen/setup-evdi.sh', str(REPO / 'scripts/setup-evdi.sh'))
-            env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_SETUP_FIXTURE=tmp)
+            source = '''sh() {
+    [[ $1 == /usr/share/uscreen/setup-evdi.sh ]] || return 91
+    command sh "$USCREEN_SETUP_SCRIPT" "${@:2}"
+}
+''' + source
+            env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_SETUP_FIXTURE=tmp,
+                       USCREEN_SETUP_SCRIPT=str(REPO / 'scripts/setup-evdi.sh'))
             if failure:
                 env[failure] = '1'
-            result = subprocess.run(['bash', '-s', '--'] + args, input=source,
-                                    env=env, cwd=REPO, capture_output=True, text=True, timeout=5)
+            result = run_shell(source, args, env=env, cwd=REPO, capture_output=True, text=True, timeout=5)
             trace = [json.loads(row) for row in (root / 'commands').read_text().splitlines()]
             final = (root / 'count').read_text() if (root / 'count').exists() else None
             return result, trace, final
 
     def test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity(self):
-        for entry in ['installer', 'deb', 'rpm', 'post_install', 'post_upgrade']:
+        for entry in ['script', 'installer', 'deb', 'rpm', 'post_install', 'post_upgrade']:
             for count in [None, 0, 1, 2, 4]:
                 with self.subTest(entry=entry, existing=count):
                     result, trace, final = self.run_setup(entry, count)
@@ -86,13 +94,31 @@ class EvdiSetupTest(unittest.TestCase):
                         self.assertNotIn(['tee', '/sys/devices/evdi/add'], trace)
 
     def test_t269_setup_failure_defers_to_reboot_without_unloading(self):
-        for entry in ['installer', 'deb', 'rpm', 'post_install', 'post_upgrade']:
+        for entry in ['script', 'installer', 'deb', 'rpm', 'post_install', 'post_upgrade']:
             for count, failure in [(None, 'FAIL_LOAD'), (0, 'FAIL_ADD'), ('invalid', '')]:
                 with self.subTest(entry=entry, existing=count, failure=failure):
                     result, trace, final = self.run_setup(entry, count, failure)
                     self.assertNotIn(['modprobe', '-r', 'evdi'], trace)
                     self.assertEqual(final, None if count is None else str(count))
                     self.assertIn('reboot', (result.stdout + result.stderr).lower())
+
+    def test_t497_capacity_is_confirmed_after_a_successful_sysfs_write(self):
+        for failure, final in [('INVALID_AFTER_ADD', 'invalid'), ('IGNORE_ADD', '0')]:
+            with self.subTest(failure=failure):
+                result, trace, actual = self.run_setup('script', 0, failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(actual, final)
+                self.assertIn(['tee', '/sys/devices/evdi/add'], trace)
+                self.assertIn('reboot', result.stderr)
+
+    def test_t497_invalid_capacity_never_runs_system_commands(self):
+        for value in ['0', '5', '-1', '2.0', '4294967295', 'invalid']:
+            with self.subTest(value=value):
+                result = run_shell((REPO / 'scripts/setup-evdi.sh').read_text(), [value],
+                                   env=dict(os.environ, PATH='/no/commands'), executable='/bin/bash',
+                                   capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn('Usage:', result.stderr)
 
 
 if __name__ == '__main__':

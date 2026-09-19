@@ -75,10 +75,6 @@ pub(crate) async fn fetch_with(
     command.arg("-j").output_bounded().await
 }
 
-pub(crate) async fn fetch() -> std::io::Result<std::process::Output> {
-    fetch_with(tokio::process::Command::new("kscreen-doctor")).await
-}
-
 /// Preserve the existing contract: parseable output remains usable even when
 /// the command exits nonzero. Consumers decide mapping/diagnostic policy.
 pub(crate) async fn outputs() -> Option<Vec<Output>> {

@@ -366,6 +366,24 @@ fn report_encoder_throughput(frames: &mut u64, total: &mut u64, last_log: &mut I
 mod tests {
     use super::*;
     #[test]
+    fn t497_throughput_accounting_keeps_frames_until_the_log_deadline() {
+        let mut frames = 30;
+        let mut bytes = 1_000_000;
+        let mut logged = Instant::now();
+        report_encoder_throughput(&mut frames, &mut bytes, &mut logged);
+        assert_eq!((frames, bytes), (30, 1_000_000));
+        logged -= std::time::Duration::from_secs(6);
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(std::io::sink)
+            .finish();
+        tracing::subscriber::with_default(subscriber, || {
+            report_encoder_throughput(&mut frames, &mut bytes, &mut logged);
+        });
+        assert_eq!((frames, bytes), (0, 0));
+        assert!(logged.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
     fn t307_encoder_throughput_uses_displayed_decimal_units() {
         for (bytes, seconds, megabytes, kilobits) in [
             (0, 5.0, 0.0, 0.0),

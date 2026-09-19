@@ -18,6 +18,7 @@ jobs:
           docker run --rm --security-opt seccomp=unconfined
           -v "$PWD:/work" -v uscreen-cargo:/usr/local/cargo/registry
           -v uscreen-target:/build -e CARGO_TARGET_DIR=/build
+          -e USCREEN_TEST_PRIVATE_PID_NAMESPACE=1
           uscreen-ci cargo test --locked --release --workspace
       - name: Build portable Linux package fixtures
         run: >-

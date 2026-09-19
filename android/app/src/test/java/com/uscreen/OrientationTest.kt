@@ -21,6 +21,26 @@ import org.robolectric.util.ReflectionHelpers
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class OrientationTest {
+    @Test fun t497_manualOrientationReplacesSensorPolicyAndSurvivesStop() {
+        val app = RuntimeEnvironment.getApplication()
+        val prefs = Prefs(app).apply { checkUpdates = false }
+        val controller = Robolectric.buildActivity(android.app.Activity::class.java).setup()
+        val policy = ActivityWindowPolicy(controller.get(), prefs)
+        try {
+            policy.start()
+            prefs.orientation = Prefs.ORIENTATION_CAMERA_UP
+            policy.applyOrientation()
+            assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, controller.get().requestedOrientation)
+            prefs.orientation = Prefs.ORIENTATION_CAMERA_DOWN
+            policy.applyOrientation()
+            assertEquals(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE, controller.get().requestedOrientation)
+            policy.stop()
+            prefs.orientation = Prefs.ORIENTATION_AUTO
+            policy.applyOrientation()
+            assertEquals(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, controller.get().requestedOrientation)
+        } finally { policy.stop(); controller.pause().stop().destroy() }
+    }
+
     @Test fun t238_naturallyLandscapePanelsFollowBothFlips() {
         for (rotation in rotations) withListener(true, rotation) { activity, listener ->
             listener.onOrientationChanged(0)

@@ -209,4 +209,95 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
             "-j\noutput.2.enable output.2.position.1000,0\n-j\noutput.2.disable\n"
         );
     }
+
+    const T497_TEST: &str =
+        "capture::placement::tests::t497_placement_handles_absence_retries_and_failed_commands";
+
+    fn isolated_placement() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", T497_TEST, "--nocapture"])
+            .env("USCREEN_T497_PLACEMENT", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    async fn missing_outputs() {
+        let kind = crate::desktop::Desktop::KdeWayland;
+        let position = crate::config::Position::Left;
+        let names = ["fixture-evdi".into()];
+        let (_dir, program, trace) = t224_placement_fixture("invalid");
+        enable_named_evdi_display(&[], position, kind, program.as_os_str()).await;
+        assert!(!trace.exists());
+        for inventory in ["invalid", r#"{"outputs":[]}"#] {
+            std::fs::write(_dir.path().join("inventory"), inventory).unwrap();
+            enable_named_evdi_display(&names, position, kind, program.as_os_str()).await;
+        }
+        assert_eq!(std::fs::read_to_string(trace).unwrap(), "-j\n".repeat(30));
+        let logs = crate::test_logging::text();
+        assert!(logs.contains("No EVDI connector found"));
+        assert!(logs.contains("did not appear in kscreen-doctor"));
+    }
+
+    async fn failed_placement_commands() {
+        let inventory = r#"{"outputs":[
+            {"id":1,"name":"physical","enabled":true,"pos":{"x":0,"y":0},"size":{"width":1000,"height":500}},
+            {"id":2,"name":"fixture-evdi","enabled":true,"pos":{"x":0,"y":0},"size":{"width":1280,"height":800}}]}"#;
+        let (_dir, program, trace) = t224_placement_fixture(inventory);
+        let names = ["fixture-evdi".into()];
+        let position = crate::config::Position::Left;
+        let outputs = crate::kscreen::parse(inventory.as_bytes()).unwrap();
+        let plan = crate::kscreen::placement(&outputs, &names, position).unwrap();
+        apply_display_placement(&plan, position, program.as_os_str()).await;
+        std::fs::write(
+            &program,
+            "#!/bin/sh\nprintf 'fixture refused' >&2\nexit 17\n",
+        )
+        .unwrap();
+        apply_display_placement(&plan, position, program.as_os_str()).await;
+        std::fs::remove_file(&program).unwrap();
+        apply_display_placement(&plan, position, program.as_os_str()).await;
+        let logs = crate::test_logging::text();
+        assert!(logs.contains("Shifting the other screens by (1280, 0)"));
+        assert!(logs.contains("kscreen-doctor enable+position: ok"));
+        assert!(logs.contains("kscreen-doctor failed: fixture refused"));
+        assert!(logs.contains("kscreen-doctor error:"));
+        assert_eq!(
+            std::fs::read_to_string(trace).unwrap(),
+            "output.2.enable output.2.position.0,0 output.1.position.1280,0\n"
+        );
+    }
+
+    async fn already_placed() {
+        let (_dir, program, trace) = t224_placement_fixture(
+            r#"{"outputs":[
+            {"id":1,"name":"physical","enabled":true,"pos":{"x":0,"y":0},"size":{"width":1000,"height":500}},
+            {"id":2,"name":"fixture-evdi","enabled":true,"pos":{"x":1000,"y":0},"size":{"width":1280,"height":800}}]}"#,
+        );
+        enable_named_evdi_display(
+            &["fixture-evdi".into()],
+            crate::config::Position::Right,
+            crate::desktop::Desktop::KdeWayland,
+            program.as_os_str(),
+        )
+        .await;
+        assert_eq!(std::fs::read_to_string(trace).unwrap(), "-j\n");
+    }
+
+    #[tokio::test]
+    async fn t497_placement_handles_absence_retries_and_failed_commands() {
+        if std::env::var_os("USCREEN_T497_PLACEMENT").is_none() {
+            isolated_placement();
+            return;
+        }
+        crate::test_logging::enable();
+        missing_outputs().await;
+        failed_placement_commands().await;
+        already_placed().await;
+    }
 }

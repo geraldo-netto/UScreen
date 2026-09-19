@@ -1,0 +1,28 @@
+// T497: cover the ordinary local unit suite, including Robolectric classes.
+allprojects { project ->
+    project.afterEvaluate {
+        if (plugins.hasPlugin('com.android.application')) {
+            project.apply plugin: 'jacoco'
+            project.extensions.getByName('jacoco').toolVersion = '0.8.15'
+            project.configurations.configureEach {
+                resolutionStrategy.eachDependency { dependency ->
+                    if (dependency.requested.group == 'org.jacoco') dependency.useVersion('0.8.15')
+                }
+            }
+            tasks.withType(Test).configureEach {
+                jacoco {
+                    includeNoLocationClasses = true
+                    includes = ['com.uscreen.*']
+                    excludes = ['jdk.internal.*']
+                }
+            }
+            tasks.register('profileCoverage', JacocoReport) {
+                dependsOn 'testDebugUnitTest'
+                executionData file("$buildDir/jacoco/testDebugUnitTest.exec")
+                classDirectories.setFrom(fileTree("$buildDir/tmp/kotlin-classes/debug"))
+                sourceDirectories.setFrom(files('src/main/java'))
+                reports { xml.required = true; html.required = false; csv.required = false }
+            }
+        }
+    }
+}

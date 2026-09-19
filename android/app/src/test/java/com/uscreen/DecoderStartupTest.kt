@@ -27,6 +27,7 @@ class StartupCodecShadow : ShadowMediaCodec() {
         var entered = CountDownLatch(1)
         var resume = CountDownLatch(1)
         var released = CountDownLatch(1)
+        var renderedListener: MediaCodec.OnFrameRenderedListener? = null
         fun gate(at: String) {
             if (stage != at) return
             entered.countDown()
@@ -35,7 +36,9 @@ class StartupCodecShadow : ShadowMediaCodec() {
     }
     @Implementation fun configure(format: MediaFormat, surface: Surface?, crypto: MediaCrypto?, flags: Int) { gate("configure") }
     @Implementation fun setVideoScalingMode(mode: Int) {}
-    @Implementation fun setOnFrameRenderedListener(listener: MediaCodec.OnFrameRenderedListener, handler: Handler) {}
+    @Implementation fun setOnFrameRenderedListener(listener: MediaCodec.OnFrameRenderedListener, handler: Handler) {
+        renderedListener = listener
+    }
     @Implementation fun start() { gate("start") }
     @Implementation fun stop() {}
     @Implementation fun release() { released.countDown() }
@@ -48,6 +51,31 @@ class StartupCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [StartupCodecShadow::class])
 class DecoderStartupTest {
+    @Test fun t497_factoryFailureRetiresStartupAndAcknowledgementsIgnoreRetiredCodec() {
+        StartupCodecShadow.stage = ""
+        StartupCodecShadow.renderedListener = null
+        val surface = Surface(SurfaceTexture(1))
+        val receiver = VideoReceiver { error("T497 uses only local codec callbacks") }
+        val acknowledgements = mutableListOf<Int>()
+        receiver.onFrameRendered = { seq, _ -> acknowledgements.add(seq) }
+        org.robolectric.util.ReflectionHelpers.setField(receiver, "isRunning", true)
+        try {
+            receiver.decoder.createCodec = { throw IllegalStateException("T497 failed allocation") }
+            assertFalse(receiver.setupCodec(surface))
+            assertNull(receiver.decoder.mediaCodec)
+            assertEquals(0L, receiver.decoder.discardedOutputs)
+            receiver.decoder.createCodec = { MediaCodec.createDecoderByType(it.mimeType) }
+            assertTrue("T497 factory failure retained process startup reservation", receiver.setupCodec(surface))
+            val codec = receiver.decoder.mediaCodec!!
+            val listener = StartupCodecShadow.renderedListener!!
+            for (seq in 1..VideoReceiver.ACK_EVERY) listener.onFrameRendered(codec, seq.toLong(), 0L)
+            assertEquals(listOf(VideoReceiver.ACK_EVERY), acknowledgements)
+            receiver.stop()
+            for (seq in 1..VideoReceiver.ACK_EVERY) listener.onFrameRendered(codec, seq.toLong(), 0L)
+            assertEquals("T497 retired callback sent an ACK", 1, acknowledgements.size)
+        } finally { receiver.stop(); surface.release() }
+    }
+
     @Test fun t425_stopDuringNativeCreation() = blockedSetup("create", false)
     @Test fun t425_stopDuringNativeConfiguration() = blockedSetup("configure", false)
     @Test fun t425_stopDuringNativeStart() = blockedSetup("start", false)

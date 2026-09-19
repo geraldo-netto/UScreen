@@ -170,6 +170,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn t497_debug_view_and_retirement_do_not_change_storage_ownership() {
+        let data = MediaBytes::from(vec![1, 2, 255]);
+        let budget = Budget::new(3);
+        assert!(data.charge(&budget));
+        assert_eq!(format!("{data:?}"), "b\"\\x01\\x02\\xff\"");
+        assert_eq!(budget.usage(), (3, 3));
+        drop(data);
+        assert_eq!(budget.usage(), (0, 3));
+        let subscriber = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .with_writer(std::io::sink)
+            .finish();
+        tracing::subscriber::with_default(subscriber, || drop(budget));
+    }
+
+    #[test]
     fn t391_slice_retains_full_capacity_once_until_final_release() {
         let budget = Budget::new(4096);
         let mut source = Vec::with_capacity(4096);

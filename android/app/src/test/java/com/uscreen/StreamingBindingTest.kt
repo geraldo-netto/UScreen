@@ -34,6 +34,19 @@ class StreamingBindingTest {
     }
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
+    @Test fun t497_completedPolicyFlowKeepsTheServiceOwnedUntilStop() {
+        val context = ServiceContext()
+        val binding = StreamingPowerBinding(context)
+        val initial = StreamingPower(false)
+        binding.start(initial, kotlinx.coroutines.flow.flowOf(initial, StreamingPower(true)))
+        idle()
+        assertEquals(3, context.commands.size)
+        assertTrue(context.commands.last().getBooleanExtra("battery_saver", false))
+        assertEquals(0, context.stops)
+        binding.stop()
+        assertEquals(1, context.stops)
+    }
+
     @Test fun t388_stop_cancels_updates_and_restart_takes_current_policy() {
         val context = ServiceContext()
         val binding = StreamingPowerBinding(context)

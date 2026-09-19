@@ -1,5 +1,19 @@
 use super::*;
 
+#[tokio::test]
+async fn t497_ivf_configuration_is_absent_until_validated_and_survives_frames() {
+    let mut parser = IvfPacketizer::new(Codec::Vp9, Default::default());
+    assert!(parser.codec_config().is_none());
+    let data = fixture();
+    let mut input = data.as_slice();
+    let (_, frames) = parser.read_from(&mut input).await.unwrap();
+    let config = parser.codec_config().unwrap();
+    assert_eq!(Some(&config), frames[0].codec_config.as_ref());
+    assert_eq!(config.as_ref(), b"USC1\x03\0\0\0\x40\0\0\0\x40");
+    parser.read_from(&mut input).await.unwrap();
+    assert_eq!(parser.codec_config().as_ref(), Some(&config));
+}
+
 fn header() -> Vec<u8> {
     b"DKIF\0\0\x20\0VP90\x40\0\x40\0\x1e\0\0\0\x01\0\0\0\x02\0\0\0\0\0\0\0".to_vec()
 }

@@ -26,6 +26,18 @@ internal class PacketSocketPair : AutoCloseable {
 }
 
 class ChannelPacketReaderTest {
+    @Test fun t497_payloadRequiresAnUnconsumedValidatedHeader() {
+        PacketSocketPair().use { sockets ->
+            ChannelPacketReader(sockets.client).use { reader ->
+                assertThrows(IllegalStateException::class.java) { reader.readPayload(ByteBuffer.allocate(4)) }
+                sockets.send(packet(0, byteArrayOf(1, 2, 3, 4)))
+                assertEquals(ChannelPacketHeader(4, true, 0), reader.readHeader())
+                assertArrayEquals(byteArrayOf(1, 2, 3, 4), payload(reader, 4))
+                assertThrows(IllegalStateException::class.java) { reader.readPayload(ByteBuffer.allocate(4)) }
+            }
+        }
+    }
+
     private fun packet(type: Int, bytes: ByteArray, sequence: Int = 0): ByteArray {
         val extra = if (type == VideoReceiver.PACKET_TYPE_FRAME) 5 else 1
         return ByteBuffer.allocate(4 + extra + bytes.size).putInt(extra + bytes.size)

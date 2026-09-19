@@ -25,6 +25,10 @@ const PIXMAP_SCREEN: &[u8] = include_bytes!("../../packaging/icons/uscreen-64.rg
 const PIXMAP_TABLET: &[u8] = include_bytes!("../../packaging/icons/uscreen-pen-64.rgba");
 const PIXMAP_SIDE: i32 = 64;
 
+#[cfg(test)]
+#[path = "tray_tests.rs"]
+mod tests;
+
 /// RGBA as ImageMagick wrote it → ARGB32 in network byte order, which is
 /// what StatusNotifierItem expects.
 fn pixmap(rgba: &[u8]) -> ksni::Icon {

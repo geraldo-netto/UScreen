@@ -210,6 +210,50 @@ mod tests {
     use super::super::tests::candidate;
     use super::*;
 
+    #[tokio::test(start_paused = true)]
+    async fn t497_hint_and_decoder_variants_require_new_measurements() {
+        let mut snapshot = super::super::tests::settings();
+        let mut report: crate::media::DecoderCapabilities = serde_json::from_str(include_str!(
+            "../../../../testdata/decoder-capabilities-v2.json"
+        ))
+        .unwrap();
+        report.scope = Some(snapshot.decoder_epoch.to_string());
+        let mut software = report.details[0].clone();
+        software.name = "software.avc".into();
+        software.hardware = Some(false);
+        report.details.push(software);
+        snapshot.decoders = Some(report);
+        let stream = uscreen_config::negotiation::StreamProfile {
+            codec: "h264".into(),
+            format: uscreen_config::negotiation::Profile {
+                profile: "baseline".into(),
+                level: 31,
+                depth: 8,
+            },
+        };
+        let mut best = measured("libx264", 20_000);
+        best.measurement.stream = Some(stream.clone());
+        best.decoder = Some(snapshot.decoders.as_ref().unwrap().choices(&stream, true)[0].clone());
+        let alternatives = variants(&snapshot, &best);
+        assert_eq!(alternatives.len(), 2);
+        assert!(alternatives.iter().all(|c| c.observation.is_none()));
+        assert!(alternatives[0].hardware);
+        assert!(!alternatives[1].hardware);
+        let unhinted = alternatives[0].decoder.as_ref().unwrap();
+        assert!(!unhinted.low_latency);
+        assert_eq!(unhinted.operating_rate, None);
+        let (tx, _rx) = watch::channel(snapshot.clone());
+        let mut trials = 0;
+        let rows = benchmark_with(&tx, &snapshot, vec![best.clone()], |_| {
+            trials += 1;
+            std::future::ready(best.observation.clone())
+        })
+        .await;
+        assert_eq!(trials, 3);
+        assert_eq!(rows.len(), 3);
+        assert!(rows.iter().all(|c| c.observation.is_some()));
+    }
+
     fn measured(name: &str, latency: u32) -> Candidate {
         let mut row = candidate(name, true, 120.0, 1);
         row.observation = Some(Observation {

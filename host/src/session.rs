@@ -226,17 +226,24 @@ pub(crate) async fn start_servers(
 ) -> Result<(JoinHandle<()>, JoinHandle<()>)> {
     let video_listener = stream.bind().await?;
     let input_listener = input.bind().await?;
-    let stream = tokio::spawn(async move {
-        if let Err(error) = stream.run_with_listener(video, video_listener).await {
-            error!("Stream server failed: {error}");
-        }
+    let stream = spawn_server("Stream", async move {
+        stream.run_with_listener(video, video_listener).await
     });
-    let input = tokio::spawn(async move {
-        if let Err(error) = input.run_with_listener(input_listener).await {
-            error!("Input server failed: {error}");
-        }
+    let input = spawn_server("Input", async move {
+        input.run_with_listener(input_listener).await
     });
     Ok((stream, input))
+}
+
+fn spawn_server(
+    name: &'static str,
+    run: impl std::future::Future<Output = Result<()>> + Send + 'static,
+) -> JoinHandle<()> {
+    tokio::spawn(async move {
+        if let Err(error) = run.await {
+            error!("{name} server failed: {error}");
+        }
+    })
 }
 
 fn spawn_display_gate(
@@ -463,3 +470,34 @@ mod tests {
 
 #[cfg(test)]
 mod credential_tests;
+
+#[cfg(test)]
+#[tokio::test]
+async fn t497_server_task_errors_keep_the_service_name_and_do_not_escape() {
+    const TEST: &str = "session::t497_server_task_errors_keep_the_service_name_and_do_not_escape";
+    if std::env::var_os("USCREEN_T497_SERVER_REPORT").is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", TEST, "--nocapture"])
+            .env("USCREEN_T497_SERVER_REPORT", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    crate::test_logging::enable();
+    spawn_server("Successful", async { Ok(()) }).await.unwrap();
+    assert!(!crate::test_logging::text().contains("Successful server failed"));
+    for name in ["Stream", "Input"] {
+        spawn_server(name, async { anyhow::bail!("fixture failure") })
+            .await
+            .unwrap();
+        assert!(
+            crate::test_logging::text().contains(&format!("{name} server failed: fixture failure"))
+        );
+    }
+}

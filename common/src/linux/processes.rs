@@ -332,3 +332,71 @@ mod tests {
         assert!(!process.has_path_argument("-i", &path));
     }
 }
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    struct OwnedChild(std::process::Child);
+    impl Drop for OwnedChild {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+
+    fn ready_child() -> OwnedChild {
+        let root = tempfile::tempdir().unwrap();
+        let ready = root.path().join("ready");
+        let mut child = OwnedChild(std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "linux::processes::coverage_tests::t497_pinned_signals_reject_invalid_inputs_and_accept_retired_children"])
+            .env("USCREEN_T497_PIN_READY", &ready)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .spawn().unwrap());
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while !ready.exists() {
+            assert!(child.0.try_wait().unwrap().is_none());
+            assert!(
+                std::time::Instant::now() < deadline,
+                "T497: child did not become ready"
+            );
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        child
+    }
+
+    fn await_parent_retirement() -> bool {
+        let Some(path) = std::env::var_os("USCREEN_T497_PIN_READY") else {
+            return false;
+        };
+        std::fs::write(path, "ready").unwrap();
+        let mut byte = [0];
+        let _ = std::io::Read::read_exact(&mut std::io::stdin(), &mut byte);
+        true
+    }
+
+    #[test]
+    fn t497_pinned_signals_reject_invalid_inputs_and_accept_retired_children() {
+        if await_parent_retirement() {
+            return;
+        }
+        let own = Process::read(std::process::id()).unwrap();
+        let handle = ProcessHandle::pin(&own).unwrap().unwrap();
+        handle.signal(0).unwrap();
+        assert_eq!(
+            handle.signal(-1).unwrap_err().raw_os_error(),
+            Some(libc::EINVAL)
+        );
+        let mut invalid = own;
+        invalid.pid = u32::MAX;
+        assert!(ProcessHandle::pin(&invalid).is_err());
+        let mut child = ready_child();
+        let process = Process::read(child.0.id()).unwrap();
+        let retired = ProcessHandle::pin(&process).unwrap().unwrap();
+        child.0.kill().unwrap();
+        child.0.wait().unwrap();
+        retired.signal(0).unwrap();
+        assert!(ProcessHandle::pin(&process).unwrap().is_none());
+    }
+}

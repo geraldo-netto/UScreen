@@ -483,6 +483,43 @@ mod tests {
     };
 
     #[tokio::test]
+    async fn t497_lagged_batch_forgets_old_dependencies_and_uses_the_latest_idr() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let _viewer = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (server, _) = listener.accept().await.unwrap();
+        let (_, socket) = server.into_split();
+        let mut playback = ClientPlayback {
+            socket,
+            last_sent_config: None,
+            last_generation: None,
+            wait_for_idr: false,
+            dropped: 0,
+            scratch: VecDeque::new(),
+        };
+        let generation = crate::media::EncoderGeneration::new();
+        let packet = |seq| VideoPacket {
+            data: Bytes::from(vec![1]),
+            is_idr: seq == 5,
+            seq,
+            codec_config: None,
+            generation: generation.active.clone(),
+        };
+        let (sender, mut receiver) = crate::video_queue::channel(4, Default::default());
+        assert!(sender.send(packet(0)).is_ok());
+        let first = receiver.try_recv().unwrap();
+        for seq in 1..=6 {
+            assert!(sender.send(packet(seq)).is_ok());
+        }
+        let batch = playback.drain_batch(&mut receiver, first);
+        assert_eq!(batch.iter().map(|p| p.seq).collect::<Vec<_>>(), [5, 6]);
+        assert!(playback.wait_for_idr);
+        assert_eq!(playback.dropped, 2);
+        assert!(receiver.try_recv().is_err());
+    }
+
+    #[tokio::test]
     async fn t391_initial_config_counts_backing_before_first_frame() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let mut viewer = TcpStream::connect(listener.local_addr().unwrap())

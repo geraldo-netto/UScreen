@@ -230,6 +230,9 @@ pub async fn list_strings(path: &str, iface: &str, prop: &str) -> Option<Vec<Str
 mod regression_tests;
 
 #[cfg(test)]
+mod coverage_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

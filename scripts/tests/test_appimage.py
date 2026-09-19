@@ -8,7 +8,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -335,6 +337,130 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
         result = self.invoke('--install-user')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('interrupted', result.stderr)
+
+    def t497_archive(self, name, payload=b'fixture license', kind=tarfile.REGTYPE):
+        output = io.BytesIO()
+        with tarfile.open(fileobj=output, mode='w:gz') as archive:
+            member = tarfile.TarInfo(name)
+            member.type = kind
+            member.size = len(payload) if kind == tarfile.REGTYPE else 0
+            archive.addfile(member, io.BytesIO(payload))
+        return output.getvalue()
+
+    def test_t497_runtime_source_licenses_are_bounded_regular_files(self):
+        destination, notices = self.root/'sources', self.root/'notices'
+        destination.mkdir(); notices.mkdir()
+        name = 'type2-runtime-20251108/LICENSE'
+        for payload, kind, valid in [(b'fixture license', tarfile.REGTYPE, True),
+                                      (b'x'*(1024*1024+1), tarfile.REGTYPE, False),
+                                      (b'', tarfile.SYMTYPE, False)]:
+            stream = io.BytesIO(self.t497_archive(name, payload, kind))
+            with patch.object(sources.urllib.request, 'urlopen', return_value=stream), \
+                    patch.object(sources, 'runtime_dependencies', return_value={'fixture': 'pinned'}):
+                if valid:
+                    row = sources.runtime_sources(destination, notices)
+                    self.assertEqual(row['sha256'], tools.digest(destination/'appimage-runtime-20251108.tar.gz'))
+                    self.assertEqual(row['dependencies'], {'fixture': 'pinned'})
+                    self.assertEqual((notices/'AppImage-runtime-LICENSE').read_bytes(), payload)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'license'): sources.runtime_sources(destination, notices)
+
+    def test_t497_runtime_dependency_sources_keep_pins_and_reject_license_links(self):
+        destination, notices = self.root/'sources', self.root/'notices'
+        destination.mkdir(); notices.mkdir()
+        entry = dict(url='https://example.invalid/runtime.tar.gz', sha256='a'*64, license='runtime/LICENSE')
+        manifest = self.root/'runtime-inputs.json'
+        manifest.write_text(json.dumps({'runtime.tar.gz': entry}))
+        def download(observed, target):
+            self.assertEqual(observed, entry)
+            target.write_bytes(self.t497_archive(entry['license']))
+        with patch.object(sources, '__file__', str(self.root/'sources.py')), patch.object(tools, 'fetch', side_effect=download):
+            self.assertEqual(sources.runtime_dependencies(destination, notices), {'runtime.tar.gz': entry})
+            self.assertEqual((notices/'runtime.tar.gz.LICENSE').read_text(), 'fixture license')
+            with patch.object(tools, 'fetch', side_effect=lambda _, target: target.write_bytes(self.t497_archive(entry['license'], kind=tarfile.SYMTYPE))):
+                with self.assertRaisesRegex(ValueError, 'license'): sources.runtime_dependencies(destination, notices)
+            for invalid in [dict(entry, url='file:///fixture'), dict(entry, sha256='invalid')]:
+                manifest.write_text(json.dumps({'runtime.tar.gz': invalid}))
+                with self.assertRaisesRegex(ValueError, 'pinned'): sources.runtime_dependencies(destination, notices)
+
+    def test_t497_debian_sources_deduplicate_packages_but_preserve_binary_notices(self):
+        destination, notices, cache = self.root/'sources', self.root/'notices', self.root/'cache'
+        destination.mkdir(); notices.mkdir()
+        copyright_file = self.write(self.root/'copyright', 'fixture license')
+        copyfile = shutil.copyfile
+        def copy_notice(source, target):
+            self.assertTrue(str(source).startswith('/usr/share/doc/'))
+            return copyfile(copyright_file, target)
+        with patch.object(sources, 'package_for', side_effect=['one:amd64', 'two:amd64', 'one:amd64']), \
+                patch.object(sources, 'package_info', return_value=('shared-source', '1:2.0')), \
+                patch.object(sources.shutil, 'copyfile', side_effect=copy_notice), \
+                patch.object(sources, 'download_debian_source') as download:
+            rows = sources.debian_sources([Path('/one'), Path('/two'), Path('/one')], destination, notices, cache)
+        self.assertEqual([row['package'] for row in rows], ['one:amd64', 'two:amd64'])
+        download.assert_called_once_with('shared-source', '1:2.0', cache, destination)
+        self.assertTrue(cache.is_dir())
+        self.assertEqual({path.name for path in notices.iterdir()}, {'one_amd64.copyright', 'two_amd64.copyright'})
+
+    def test_t497_corresponding_source_collection_mirrors_complete_manifest(self):
+        destination, notices = self.root/'sources', self.root/'notices'
+        with patch.object(sources, 'verify_evdi', return_value='a'*40), \
+                patch.object(sources, 'debian_sources', return_value=['debian-fixture']), \
+                patch.object(sources, 'rust_sources', return_value=['rust-fixture']), \
+                patch.object(sources, 'runtime_sources', return_value={'runtime': 'fixture'}), \
+                patch.object(sources.subprocess, 'run') as git:
+            row = sources.collect(REPO, [], destination, notices, self.root/'evdi', self.root/'cache')
+        self.assertEqual(row, dict(debian=['debian-fixture'], rust=['rust-fixture'], evdi_revision='a'*40,
+                                   runtime={'runtime': 'fixture'}))
+        self.assertEqual(json.loads((destination/'manifest.json').read_text()), row)
+        self.assertEqual((destination/'manifest.json').read_bytes(), (notices/'manifest.json').read_bytes())
+        self.assertIn('--output=' + str(destination/'libevdi-v1.15.0.tar.gz'), git.call_args.args[0])
+
+    def t497_bundle(self):
+        bundle = self.root/'bundle'
+        for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+            self.write(bundle/'bin'/name, 'fixture binary')
+        programs = [self.write(self.root/'stock'/name, 'fixture stock') for name in ['ffmpeg', 'ffprobe', 'adb']]
+        return bundle, programs
+
+    def test_t497_staging_keeps_stock_tools_unmodified_and_evdi_replaceable(self):
+        bundle, stock = self.t497_bundle()
+        target = self.root/'staged.AppDir'
+        dependency = self.write(self.root/'libextra.so.1', 'fixture dependency')
+        dependencies = {'libevdi.so.1': bundle/'bin/libevdi.so.1.15.0', 'libextra.so.1': dependency}
+        with patch.object(build.shutil, 'which', side_effect=lambda name: str(self.root/'stock'/name)), \
+                patch.object(elf, 'verify_abi') as abi, patch.object(elf, 'closure', return_value=dependencies), \
+                patch.object(elf, 'set_app_rpath') as rpath, patch.object(elf, 'check_loaded') as loaded:
+            paths = build.stage(REPO, bundle, target)
+        self.assertEqual(paths, [Path('/bin/bash'), *stock, dependency])
+        self.assertEqual(abi.call_count, 8)
+        self.assertEqual(rpath.call_count, 4)
+        self.assertEqual(loaded.call_count, 4)
+        self.assertTrue((target/'usr/bin/libevdi.so.1').is_symlink())
+        self.assertNotIn('libevdi.so.1', dependencies)
+        for program in stock:
+            self.assertEqual((target/'usr/libexec'/program.name).read_bytes(), program.read_bytes())
+            self.assertIn('LD_LIBRARY_PATH=', (target/'usr/bin'/program.name).read_text())
+        with patch.object(build.shutil, 'which', return_value=None):
+            self.assertEqual(build.stock_paths(), [Path('/nonexistent')/name for name in ['ffmpeg', 'ffprobe', 'adb']])
+
+    def test_t497_build_replaces_stale_assets_and_archives_corresponding_sources(self):
+        args = SimpleNamespace(bundle=self.root/'bundle', output=self.root/'output', version='1.2.3',
+                               evdi_source=self.root/'evdi', source_cache=self.root/'cache', tool_cache=self.root/'tools')
+        self.write(args.output/'appimage-work/stale', 'stale')
+        image = args.output/'uscreen-1.2.3-x86_64.AppImage'
+        self.write(image, 'old image')
+        tool = self.write(self.root/'appimagetool', '#!/bin/sh\nfor last do :; done\nprintf image > "$last"\nprintf "%s\\n" "$@" > "$0.args"\n')
+        def collect(_repo, _paths, destination, _notices, _evdi, _cache):
+            destination.mkdir(parents=True)
+            (destination/'LICENSE').write_text('source fixture')
+        with patch.object(build, 'stage', return_value=[]), patch.object(sources, 'collect', side_effect=collect), \
+                patch.object(tools, 'prepare', return_value={'appimagetool': tool, 'runtime-x86_64': self.root/'runtime'}):
+            build.build(args)
+        self.assertFalse((args.output/'appimage-work/stale').exists())
+        self.assertEqual(image.read_text(), 'image')
+        with tarfile.open(args.output/'uscreen-1.2.3-AppImage-sources.tar.gz') as archive:
+            self.assertEqual(archive.extractfile('sources/LICENSE').read(), b'source fixture')
+        self.assertIn('--runtime-file\n' + str(self.root/'runtime'), tool.with_suffix('.args').read_text())
 
 
 if __name__ == '__main__':

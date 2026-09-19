@@ -13,6 +13,14 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Set up JDK for the source inventory
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Check every Rust source root (T500)
         run: python3 scripts/format-rust.py --check
@@ -25,7 +33,7 @@ jobs:
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
             libclang-dev libavcodec-dev libavformat-dev libavutil-dev \
             libavfilter-dev libavdevice-dev libswresample-dev libswscale-dev \
-            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin python3-xlib python3-tk
+            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin python3-xlib python3-tk python3-numpy python3-pil python3-venv
           sudo apt-get install -y libevdi-dev
 
       - name: Cache cargo
@@ -40,8 +48,23 @@ jobs:
       - name: Build daemon and GUI
         run: cargo build --release
 
-      - name: Run tests
-        run: cargo test --release --workspace
+      - name: Install coverage reporting tools (T497)
+        run: |
+          python3 -m venv '${{ runner.temp }}/uscreen-coverage-venv'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
+          cargo install cargo-llvm-cov --version 0.8.7 --locked
+
+      - name: Run both Rust configurations and enforce Linux function coverage (T497)
+        run: |
+          mkdir -p '${{ runner.temp }}/uscreen-rust-coverage'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/uscreen-rust-coverage/manifest.json'
+          cargo llvm-cov --locked --workspace --lcov --output-path '${{ runner.temp }}/uscreen-rust-coverage/default.lcov'
+          cargo llvm-cov --locked --workspace --all-features --lcov --output-path '${{ runner.temp }}/uscreen-rust-coverage/all-features.lcov'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/rust_check.py \
+            --manifest '${{ runner.temp }}/uscreen-rust-coverage/manifest.json' \
+            --lcov '${{ runner.temp }}/uscreen-rust-coverage/default.lcov' \
+            --lcov '${{ runner.temp }}/uscreen-rust-coverage/all-features.lcov' \
+            --output '${{ runner.temp }}/uscreen-rust-coverage'
 
       - name: Check portable configuration policy (T371)
         run: |
@@ -49,11 +72,24 @@ jobs:
           rustup target add wasm32-unknown-unknown
           cargo check --locked -p uscreen-config --no-default-features --target wasm32-unknown-unknown
 
-      - name: Test optional in-process encoder
-        run: cargo test --release -p uscreen --features inproc-encoder --bin uscreen
-
       - name: Build EVDI helper
         run: make build-helper
+
+      - name: Enforce per-function C capture coverage (T497)
+        run: "'${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/capture_check.py '${{ runner.temp }}/uscreen-capture-coverage'"
+
+      - name: Enforce essential installation and packaging function coverage (T497)
+        run: "'${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/script_check.py '${{ runner.temp }}/uscreen-script-coverage'"
+
+      - name: Preserve host coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-coverage
+          path: |
+            ${{ runner.temp }}/uscreen-capture-coverage
+            ${{ runner.temp }}/uscreen-rust-coverage
+            ${{ runner.temp }}/uscreen-script-coverage
 
       - name: Upload host binaries
         uses: actions/upload-artifact@v4
@@ -79,11 +115,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build debug APK
+      - name: Install Android coverage reporting tools (T497)
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew lintDebug testDebugUnitTest assembleDebug
+          python3 -m venv '${{ runner.temp }}/uscreen-coverage-venv'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
+          mkdir -p '${{ runner.temp }}/uscreen-android-coverage'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/uscreen-android-coverage/manifest.json'
+
+      - name: Build debug APK and enforce Android method coverage (T497)
+        run: |
+          ./android/gradlew -p android -I "$PWD/scripts/coverage/android.init.gradle" lintDebug profileCoverage assembleDebug
+          cp android/app/build/reports/jacoco/profileCoverage/profileCoverage.xml '${{ runner.temp }}/uscreen-android-coverage/jacoco.xml'
+          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py check \
+            --manifest '${{ runner.temp }}/uscreen-android-coverage/manifest.json' \
+            --jacoco '${{ runner.temp }}/uscreen-android-coverage/jacoco.xml' \
+            --scope android/app/src/main/ --output '${{ runner.temp }}/uscreen-android-coverage/report.json'
+
+      - name: Preserve Android coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-coverage
+          path: ${{ runner.temp }}/uscreen-android-coverage
 
       - name: Build isolated decoder replay (T458)
         run: >-

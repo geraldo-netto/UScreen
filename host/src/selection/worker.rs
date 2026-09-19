@@ -404,3 +404,6 @@ fn fallback_encoder(settings: &EncoderSettings) -> &str {
         .map(|s| s.encoder.as_str())
         .unwrap_or("libx264")
 }
+
+#[cfg(test)]
+mod coverage_tests;

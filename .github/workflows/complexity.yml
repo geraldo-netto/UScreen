@@ -12,8 +12,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: python -m pip install -r scripts/complexity/requirements.txt
+      - run: python -m pip install -r scripts/coverage/requirements.txt
       - name: Test pinned metric rules (T381)
         run: python -m unittest discover -s scripts/complexity -p 'test_*.py'
+      - name: Test coverage report contracts (T497)
+        run: python -m unittest discover -s scripts/coverage -p 'test_*.py'
       - name: Enforce maximum cyclomatic complexity of nine
         run: python scripts/complexity/check.py

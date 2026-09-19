@@ -18,7 +18,7 @@ impl Harness {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
-        } else if matches!(case, "T082" | "T274" | "T340") {
+        } else if matches!(case, "T082" | "T274" | "T340" | "T497") {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler
@@ -280,4 +280,12 @@ fn t415_live_resize_keeps_queued_frames_and_retries_busy_or_denied_requests() {
 #[test]
 fn t415_report_uses_actual_rounded_kernel_capacity() {
     Harness::build("T415-rounding").run("T415-rounding");
+}
+
+#[test]
+fn t497_capture_callbacks_startup_and_numeric_fuzz() {
+    let harness = Harness::build("T497");
+    for case in ["T497-callbacks", "T497-main", "T497-bounds"] {
+        harness.run(case);
+    }
 }

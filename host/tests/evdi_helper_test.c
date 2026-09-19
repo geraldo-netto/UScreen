@@ -80,6 +80,8 @@ static long long now_ms(void) {
 }
 
 static int fail_worker = 0;
+static int t497_fail_writer;
+static int t497_poll_error;
 static int stall_once = 0;
 static int mock_poll_calls;
 static int add_result = 0;
@@ -129,6 +131,7 @@ static int mock_nanosleep(const struct timespec *request, struct timespec *remai
 }
 static int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attrs,
                                void *(*start)(void *), void *arg) {
+    if (t497_fail_writer && start == writer_run) return EAGAIN;
     if (fail_worker && start == conv_worker && ((conv_worker_arg_t *)arg)->id == fail_worker) return EAGAIN;
     return pthread_create(thread, attrs, start, arg);
 }
@@ -152,6 +155,7 @@ static long mock_sysconf(int name) {
 }
 static int mock_poll(struct pollfd *fds, nfds_t n, int timeout) {
     mock_poll_calls++;
+    if (t497_poll_error) { errno = t497_poll_error; return -1; }
     if (stall_once) { stall_once = 0; return 0; }
     return poll(fds, n, timeout);
 }
@@ -159,10 +163,15 @@ int evdi_add_device(void) { mock_add_calls++; return add_result; }
 
 static char mock_card_root[4096];
 static DIR *mock_opendir(const char *path) {
-    if (strcmp(path, "/sys/devices/platform") == 0) {
+    const char *base = "/sys/devices/platform";
+    size_t prefix = strlen(base);
+    if (strncmp(path, base, prefix) == 0 && (path[prefix] == '/' || path[prefix] == 0)) {
         assert(mock_card_root[0] && "test must never inspect host DRM devices");
-        mock_discovery_calls++;
-        return opendir(mock_card_root);
+        if (!path[prefix]) mock_discovery_calls++;
+        char mapped[8192];
+        int length = snprintf(mapped, sizeof(mapped), "%s%s", mock_card_root, path + prefix);
+        assert(length > 0 && (size_t)length < sizeof(mapped));
+        return opendir(mapped);
     }
     return opendir(path);
 }
@@ -181,24 +190,35 @@ evdi_handle evdi_open(int card) {
 }
 void evdi_close(evdi_handle handle) { close(handle->fd); free(handle); }
 static int mock_disconnect_calls;
+static int t497_capture_events, t497_event_count, t497_immediate, t497_rectangles;
+static void t497_dispatch(struct evdi_event_context *context);
 void evdi_disconnect(evdi_handle handle) { (void)handle; mock_disconnect_calls++; }
 void evdi_connect(evdi_handle handle, const unsigned char *edid, unsigned int length, uint32_t limit) {
-    (void)handle; (void)edid; (void)length; (void)limit;
+    (void)handle;
+    if (t497_capture_events) { assert(edid && length == 128 && limit == 0); return; }
     assert(0 && "startup validation must not connect a display");
 }
 evdi_selectable evdi_get_event_ready(evdi_handle handle) { return handle->fd; }
 
 void evdi_handle_events(evdi_handle handle, struct evdi_event_context *context) {
-    (void)handle; (void)context;
+    (void)handle;
+    if (t497_capture_events) { t497_dispatch(context); return; }
     assert(0 && "failed event channel must not dispatch EVDI events");
 }
 bool evdi_request_update(evdi_handle handle, int buffer) {
     (void)handle; (void)buffer;
+    if (t497_capture_events) return t497_immediate;
     assert(0 && "failed event channel must not request a capture");
     return false;
 }
 void evdi_grab_pixels(evdi_handle handle, struct evdi_rect *rects, int *count) {
-    (void)handle; (void)rects; (void)count;
+    (void)handle;
+    if (t497_capture_events) {
+        assert(*count == 64);
+        rects[0] = (struct evdi_rect){.x1 = 0, .x2 = 8, .y1 = INT_MIN, .y2 = INT_MAX};
+        *count = t497_rectangles;
+        return;
+    }
     if (mock_grab_calls >= 0) {
         mock_grab_calls++;
         *count = 0;
@@ -1305,6 +1325,8 @@ static void test_t415_rounding(void) {
     close(ends[0]); close(ends[1]); unlink(request);
 }
 
+#include "coverage_capture.c"
+
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
     if (fifo_fixture) return t226_command(argc, argv, fifo_fixture);
@@ -1312,6 +1334,9 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T497-callbacks", test_t497_callbacks},
+        {"T497-main", test_t497_main},
+        {"T497-bounds", test_t497_bounds},
         {"T474", test_t474_capacity},
         {"T415-open", test_t415_open},
         {"T415-live", test_t415_live},

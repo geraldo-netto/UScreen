@@ -284,3 +284,66 @@ pub(super) fn apply_tablet_mode(mode_tx: &watch::Sender<bool>, pen_only: bool, p
     );
     let _ = mode_tx.send(pen_only);
 }
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    #[test]
+    fn t497_mode_adapter_preserves_dependencies_and_avoids_duplicate_wakeups() {
+        let (mode, mut receiver) = watch::channel(false);
+        let no_settings = None;
+        let disabled = SessionSettings::new(&no_settings, &mode, false);
+        disabled.mode(true);
+        assert!(!*receiver.borrow());
+        assert!(!receiver.has_changed().unwrap());
+        let enabled = SessionSettings::new(&no_settings, &mode, true);
+        enabled.mode(true);
+        assert!(*receiver.borrow_and_update());
+        enabled.mode(true);
+        assert!(!receiver.has_changed().unwrap());
+        enabled.mode(false);
+        assert!(!*receiver.borrow_and_update());
+        enabled.mode(false);
+        assert!(!receiver.has_changed().unwrap());
+    }
+
+    #[test]
+    fn t497_resolution_adapter_reports_rejection_and_clears_it_after_valid_input() {
+        let initial = EncoderSettings {
+            encoder: "libx264".into(),
+            fps: 60,
+            bitrate: 20_000,
+            width: 1280,
+            height: 800,
+            quality: 18,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+            geometry_ready: true,
+            decoders: None,
+            decoder_epoch: 0,
+            selection: None,
+        };
+        let (tx, mut updates) = watch::channel(initial);
+        let settings = Some(tx);
+        let (mode, _rx) = watch::channel(false);
+        let mut adapter = SessionSettings::new(&settings, &mode, true);
+        adapter.auto_resolution = || true;
+        for pixels in [(0, 0), (u32::MAX, u32::MAX), (1, 480)] {
+            adapter.resolution(pixels, (0, u32::MAX));
+            let reply: serde_json::Value =
+                serde_json::from_str(&adapter.rejection_reply().unwrap()).unwrap();
+            assert_eq!(reply["status"], "settings_rejected");
+            assert!(reply.get("requested").is_none());
+            assert!(!updates.has_changed().unwrap());
+        }
+        adapter.resolution((640, 480), (220, 138));
+        assert!(adapter.rejection_reply().is_none());
+        let current = updates.borrow_and_update().clone();
+        assert_eq!((current.width, current.height), (640, 480));
+        assert_eq!((current.width_mm, current.height_mm), (220, 138));
+        adapter.resolution((640, 480), (220, 138));
+        assert!(!updates.has_changed().unwrap());
+    }
+}

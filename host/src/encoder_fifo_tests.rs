@@ -8,6 +8,149 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
+static T497_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
+
+extern "C" fn t497_interrupt(_: libc::c_int) {
+    T497_INTERRUPTS.fetch_add(1, Ordering::SeqCst);
+}
+
+fn t497_wait_for_poll(tid: libc::pid_t) {
+    let path = format!("/proc/self/task/{tid}/syscall");
+    let expected = format!("{} ", libc::SYS_poll);
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    while !std::fs::read_to_string(&path)
+        .unwrap()
+        .starts_with(&expected)
+    {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "T497 thread never entered poll"
+        );
+        std::thread::yield_now();
+    }
+}
+
+fn t497_poll_interruption() {
+    let mut action: libc::sigaction = unsafe { std::mem::zeroed() };
+    let mut previous: libc::sigaction = unsafe { std::mem::zeroed() };
+    action.sa_sigaction = t497_interrupt as *const () as usize;
+    assert_eq!(unsafe { libc::sigemptyset(&mut action.sa_mask) }, 0);
+    assert_eq!(
+        unsafe { libc::sigaction(libc::SIGUSR1, &action, &mut previous) },
+        0
+    );
+    let stop = StopSignal::new().unwrap();
+    let request = stop.clone();
+    let target = unsafe { libc::pthread_self() };
+    let tid = unsafe { libc::syscall(libc::SYS_gettid) } as libc::pid_t;
+    let worker = std::thread::spawn(move || {
+        t497_wait_for_poll(tid);
+        assert_eq!(unsafe { libc::pthread_kill(target, libc::SIGUSR1) }, 0);
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        while T497_INTERRUPTS.load(Ordering::SeqCst) == 0 {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "T497 signal was not delivered"
+            );
+            std::thread::yield_now();
+        }
+        request.request();
+    });
+    let result = poll_ready(&mut [poll_descriptor(stop.event.as_raw_fd())], 3000, &stop);
+    worker.join().unwrap();
+    assert_eq!(
+        unsafe { libc::sigaction(libc::SIGUSR1, &previous, std::ptr::null_mut()) },
+        0
+    );
+    assert!(
+        !result.unwrap(),
+        "T497 interrupted poll ignored latched cancellation"
+    );
+    assert_eq!(T497_INTERRUPTS.load(Ordering::SeqCst), 1);
+}
+
+fn t497_poll_rejects_excess_descriptors() {
+    let stop = StopSignal::new().unwrap();
+    let mut previous: libc::rlimit = unsafe { std::mem::zeroed() };
+    assert_eq!(
+        unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut previous) },
+        0
+    );
+    let bounded = libc::rlimit {
+        rlim_cur: 0,
+        rlim_max: previous.rlim_max,
+    };
+    assert_eq!(unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &bounded) }, 0);
+    let error = poll_ready(&mut [poll_descriptor(stop.event.as_raw_fd())], 0, &stop);
+    assert_eq!(
+        unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &previous) },
+        0
+    );
+    assert_eq!(error.unwrap_err().raw_os_error(), Some(libc::EINVAL));
+}
+
+#[test]
+fn t497_poll_retries_interrupted_waits_and_preserves_kernel_errors() {
+    if std::env::var_os("USCREEN_T497_POLL_CHILD").is_none() {
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "encoder_io::fifo::tests::t497_poll_retries_interrupted_waits_and_preserves_kernel_errors", "--nocapture"])
+            .env("USCREEN_T497_POLL_CHILD", "1")
+            .output().unwrap();
+        assert!(
+            result.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+        return;
+    }
+    t497_poll_interruption();
+    t497_poll_rejects_excess_descriptors();
+}
+
+#[test]
+fn t497_cancellation_survives_a_full_event_counter_and_missing_fifo_watch() {
+    struct Missing;
+    impl Read for Missing {
+        fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
+            Ok(0)
+        }
+    }
+    impl AsRawFd for Missing {
+        fn as_raw_fd(&self) -> RawFd {
+            -1
+        }
+    }
+    let stop = StopSignal::new().unwrap();
+    let full = u64::MAX - 1;
+    assert_eq!(
+        unsafe { libc::write(stop.event.as_raw_fd(), (&full as *const u64).cast(), 8) },
+        8
+    );
+    stop.request(); // EAGAIN still leaves cancellation latched.
+    stop.request();
+    assert!(stop.requested());
+    let mut source = FifoReader::new(Missing);
+    assert!(source.events.is_none());
+    assert!(!source.wait(Waiting::Writer, &stop).unwrap());
+    assert!(!source.wait(Waiting::Data, &stop).unwrap());
+}
+
+#[test]
+fn t497_retired_event_sources_are_not_treated_as_live_fifo_notifications() {
+    let mut empty = tempfile::tempfile().unwrap();
+    assert!(!drain_events(&mut empty).unwrap());
+    let path = tempfile::NamedTempFile::new().unwrap();
+    let mut write_only = std::fs::OpenOptions::new()
+        .write(true)
+        .open(path.path())
+        .unwrap();
+    assert_eq!(
+        drain_events(&mut write_only).unwrap_err().raw_os_error(),
+        Some(libc::EBADF)
+    );
+}
+
 struct Counted {
     file: std::fs::File,
     reads: Arc<AtomicUsize>,

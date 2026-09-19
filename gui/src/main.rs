@@ -993,6 +993,7 @@ fn main() -> eframe::Result {
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {
+    mod coverage;
     use super::*;
     use std::os::unix::fs::PermissionsExt;
     use uscreen_config::commands::daemon_command_timeout;

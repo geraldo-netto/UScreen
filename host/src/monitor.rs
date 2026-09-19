@@ -667,3 +667,6 @@ mod launch_tests;
 
 #[cfg(test)]
 mod credential_tests;
+
+#[cfg(test)]
+mod coverage_tests;

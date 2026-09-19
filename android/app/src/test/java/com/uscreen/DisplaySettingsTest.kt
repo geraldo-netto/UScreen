@@ -19,6 +19,38 @@ import org.robolectric.util.ReflectionHelpers.ClassParameter
 class DisplaySettingsTest {
     private val app get() = RuntimeEnvironment.getApplication()
 
+    @Test fun t497_invalidPersistedRefreshValuesFallBackWithoutChangingValidOverrides() {
+        val prefs = Prefs(app)
+        for (value in listOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, -1f)) {
+            prefs.displayRefreshRate = value
+            assertEquals(Prefs.DEFAULT_DISPLAY_REFRESH_RATE, prefs.displayRefreshRate, 0f)
+        }
+        for (value in listOf(0f, 59.94f, 120f)) {
+            prefs.displayRefreshRate = value
+            assertEquals(value, prefs.displayRefreshRate, 0f)
+        }
+    }
+
+    @Test fun t497_activitySettingsEventsApplyWindowAndOrientationPoliciesImmediately() {
+        installModes()
+        val controller = Robolectric.buildActivity(MainActivity::class.java).create()
+        try {
+            val activity = controller.get()
+            fun change(event: SettingsEvent) = ReflectionHelpers.callInstanceMethod<Unit>(activity, "settingsEvent",
+                ClassParameter.from(SettingsEvent::class.java, event))
+            change(SettingsEvent.Brightness(70))
+            assertEquals(0.7f, activity.window.attributes.screenBrightness, 0f)
+            change(SettingsEvent.RefreshRate(0f))
+            assertEquals(0, activity.window.attributes.preferredDisplayModeId)
+            change(SettingsEvent.Orientation(Prefs.ORIENTATION_CAMERA_DOWN))
+            assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE, activity.requestedOrientation)
+            change(SettingsEvent.ShowStats(true))
+            assertTrue(activity.session.settings.showStats)
+            val hover = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_HOVER_MOVE, 10f, 10f, 0)
+            try { assertFalse(activity.onGenericMotionEvent(hover)) } finally { hover.recycle() }
+        } finally { controller.destroy() }
+    }
+
     private fun mode(id: Int, width: Int, height: Int, hz: Float): Display.Mode =
         ReflectionHelpers.callConstructor(Display.Mode::class.java,
             ClassParameter.from(Int::class.javaPrimitiveType, id),

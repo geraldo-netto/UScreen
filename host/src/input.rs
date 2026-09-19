@@ -1992,13 +1992,27 @@ fi
         watch::Sender<EncoderSettings>,
         tokio::task::JoinHandle<Result<()>>,
     ) {
+        let (client, settings, _mode, task) = connection_with_controls(encoder, attachment).await;
+        (client, settings, task)
+    }
+
+    async fn connection_with_controls(
+        encoder: &str,
+        attachment: Option<crate::attachment::Attachment>,
+    ) -> (
+        WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
+        watch::Sender<EncoderSettings>,
+        watch::Sender<bool>,
+        tokio::task::JoinHandle<Result<()>>,
+    ) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let (settings_tx, _settings_rx) = watch::channel(settings(encoder));
         let tx = settings_tx.clone();
+        let (mode, _rx) = watch::channel(false);
+        let mode_tx = mode.clone();
         let task = tokio::spawn(async move {
             let (socket, _) = listener.accept().await.unwrap();
-            let (mode_tx, _rx) = watch::channel(false);
             let mut incoming = PendingInput::new(socket);
             incoming.attachment = attachment
                 .as_ref()
@@ -2021,7 +2035,23 @@ fi
             .await
         });
         let (client, _) = connect_async(format!("ws://{addr}")).await.unwrap();
-        (client, settings_tx, task)
+        (client, settings_tx, mode, task)
+    }
+
+    #[tokio::test]
+    async fn t497_external_mode_updates_reach_the_current_controller() {
+        let (mut client, settings, mode, task) = connection_with_controls("libx264", None).await;
+        assert_eq!(response(&mut client).await["pen_only"], false);
+        for pen_only in [true, false, true] {
+            mode.send(pen_only).unwrap();
+            let reply = response(&mut client).await;
+            assert_eq!(reply["status"], "mode");
+            assert_eq!(reply["pen_only"], pen_only);
+            assert_eq!(reply["codec"], "h264");
+        }
+        client.close(None).await.unwrap();
+        task.await.unwrap().unwrap();
+        assert!(settings.borrow().decoders.is_none());
     }
 
     async fn response(

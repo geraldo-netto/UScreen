@@ -33,6 +33,56 @@ class SelectionCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [SelectionCodecShadow::class])
 class CodecReportTest {
+    @Test fun t497_selectionRejectsMismatchedCodecsInvalidIdentitiesAndOversizedHints() {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, true))
+            ShadowMediaCodecList.addCodec(codec("invalid identity", false, true))
+            val selection = DecoderSelection("vendor.hevc", "hevc", "main10", 40, 10, false, null)
+            val format = DecoderFormat("video/hevc", 640, 480, 30)
+            assertThrows(IllegalArgumentException::class.java) { selection.validate(format.copy(mimeType = "video/avc")) }
+            assertThrows(IllegalArgumentException::class.java) { selection.copy(name = "invalid identity").validate(format) }
+            assertThrows(IllegalArgumentException::class.java) { selection.copy(operatingRate = Int.MAX_VALUE).validate(format) }
+            assertEquals("vendor.hevc", selection.validate(format))
+            assertNull(MediaInventory.describe(codec("", false, true), "hevc", 640, 480, 30))
+            assertEquals(0, MediaInventory.describe(codec("fixture", false, true), "unknown", 640, 480, 30)!!
+                .getJSONArray("profiles").length())
+        } finally { ShadowMediaCodecList.reset() }
+    }
+
+    @Test fun t497_platformHintsStayAbsentWhenCapabilitiesAreUnsupportedOrUnknown() {
+        ShadowMediaCodecList.reset()
+        try {
+            ShadowMediaCodecList.addCodec(codec("vendor.hevc", false, false))
+            val decoder = MediaCodec.createByCodecName("vendor.hevc")
+            try {
+                val profile = DecoderProfile(hints = DecoderHints.SUPPORTED)
+                val unsupported = DecoderConfiguration.format(decoder,
+                    DecoderFormat("video/not-advertised", 640, 480, 30), profile, true)
+                assertFalse(unsupported.containsKey("low-latency"))
+                assertFalse(unsupported.containsKey(MediaFormat.KEY_OPERATING_RATE))
+                val known = DecoderConfiguration.format(decoder,
+                    DecoderFormat("video/hevc", 640, 480, 30), profile, true)
+                assertFalse(known.containsKey("low-latency"))
+                assertFalse(known.containsKey("vendor.qti-ext-dec-low-latency.enable"))
+                assertTrue(decoderReport().startsWith("USCREEN_CODECS_V1:"))
+            } finally { decoder.release() }
+        } finally { ShadowMediaCodecList.reset() }
+    }
+
+    @Test fun t497_orderedInventoryBroadcastReturnsTheRequestedWireVersion() {
+        val context = RuntimeEnvironment.getApplication()
+        ShadowMediaCodecList.reset()
+        var result: String? = null
+        val completion = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context, intent: android.content.Intent) { result = resultData }
+        }
+        val intent = android.content.Intent(context, CodecReportReceiver::class.java).putExtra("uscreen_codecs_version", 2)
+        context.sendOrderedBroadcast(intent, null, completion, null, 0, null, null)
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertEquals("USCREEN_CODECS_V2:h264=none;hevc=none;vp9=none;av1=none", result)
+    }
+
     @Test @Config(sdk = [27, 29, 30, 34])
     fun t478_richerReportKeepsProfileLevelDepthAndUnknownFeatures() = runBlocking {
         ShadowMediaCodecList.reset()

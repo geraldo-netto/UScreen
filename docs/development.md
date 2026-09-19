@@ -99,7 +99,7 @@ tests spawning processes; concurrency tests still run their own concurrent
 clients/tasks. On Debian/Ubuntu, add:
 
 ```bash
-sudo apt-get install -y python3 python3-xlib python3-tk ffmpeg rpm fakeroot dpkg-dev \
+sudo apt-get install -y python3 python3-xlib python3-tk python3-numpy python3-pil ffmpeg rpm fakeroot dpkg-dev \
   xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin libxkbcommon-x11-0 libegl1
 ```
 
@@ -113,6 +113,14 @@ parsers and a checksum-verified Kotlin compiler; follow its setup and boundary
 test instructions before running `scripts/complexity/check.py`. CI runs both
 the checker tests and the audit. Its documented macro/C limitations still
 require review; this is not a native SonarQube analysis.
+
+The [per-function coverage gates](../scripts/coverage/README.md) require 80%
+executable-line coverage for each production function/method in Rust, Android,
+capture C and essential installation/packaging scripts. Benchmarks and
+nonessential development tools are exempt, while their existing tests remain.
+The Linux lifecycle fixtures need private PID and mount namespaces; they use
+`unshare` and fail if isolation is unavailable. They never attach EVDI. Native
+Windows coverage remains an explicit prerequisite in `TODO.md`.
 
 `scripts/fake-tablet.py` pretends to be a tablet on the loopback ports
 (authenticates, reports a resolution, acks frames). With

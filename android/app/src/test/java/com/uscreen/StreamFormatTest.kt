@@ -15,6 +15,24 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [StartupCodecShadow::class])
 class StreamFormatTest {
+    @Test fun t497_legacyCodecCallbacksPreservePenModeAndRejectUnknownFormats() {
+        Fixture().use { f ->
+            f.capture.onModeKnown!!(true)
+            f.capture.onCodecKnown!!("hevc")
+            assertEquals("video/hevc", f.receiver.mimeType)
+            assertTrue(f.session.penOnlyMode)
+            f.capture.onCodecKnown!!("unsupported")
+            assertEquals("video/hevc", f.receiver.mimeType)
+            f.capture.onModeKnown!!(false)
+            f.capture.onCodecKnown!!("h264")
+            assertEquals("video/avc", f.receiver.mimeType)
+            f.capture.onFpsKnown!!(30)
+            assertEquals(30, f.receiver.streamFps)
+            f.session.stop()
+            f.capture.onCodecKnown!!("av1")
+            assertEquals("video/avc", f.receiver.mimeType)
+        }
+    }
     @Test fun t478_decoderSelectionChangesRetireEvenWithIdenticalGeometry() {
         val receiver = VideoReceiver { error("T478: wait for Surface") }
         val base = DecoderFormat("video/avc", 640, 480, 60)

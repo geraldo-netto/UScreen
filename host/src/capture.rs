@@ -591,8 +591,12 @@ impl CaptureRun {
     }
 
     fn explain_evdi_failure(&mut self) {
+        self.explain_evdi_failure_with(helper::evdi_setup_problem);
+    }
+
+    fn explain_evdi_failure_with(&mut self, inspect: impl FnOnce() -> Option<String>) {
         if !self.explained_evdi {
-            if let Some(reason) = helper::evdi_setup_problem() {
+            if let Some(reason) = inspect() {
                 self.explained_evdi = true;
                 error!("{}", reason);
             }
@@ -648,6 +652,10 @@ mod ownership_tests;
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 #[path = "capture/tests.rs"]
 mod tests;
+
+#[cfg(all(test, not(feature = "inproc-encoder")))]
+#[path = "capture/coverage_tests.rs"]
+mod coverage_tests;
 
 #[cfg(test)]
 #[path = "capture/fifo_tests.rs"]

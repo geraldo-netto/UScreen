@@ -33,6 +33,30 @@ class DrainCodecShadow : ShadowMediaCodec() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [DrainCodecShadow::class])
 class DecodedOutputDrainerTest {
+    @Test fun t497_sessionReportsDiscardedDecodedOutputsAndHonorsRetirement() {
+        DrainCodecShadow.pending.clear(); DrainCodecShadow.pending.addAll(listOf(1, 2))
+        DrainCodecShadow.releases.clear(); DrainCodecShadow.afterDequeue = {}
+        val codec = MediaCodec.createDecoderByType("video/avc")
+        val receiver = VideoReceiver { error("T497 local output test") }
+        val owner = CodecLifetime(codec)
+        org.robolectric.util.ReflectionHelpers.setField(receiver.decoder, "mediaCodec", codec)
+        org.robolectric.util.ReflectionHelpers.setField(receiver.decoder, "codecAlive", true)
+        org.robolectric.util.ReflectionHelpers.setField(receiver.decoder, "lifetime", owner)
+        try {
+            val drainer = org.robolectric.util.ReflectionHelpers.callInstanceMethod<DecodedOutputDrainer>(
+                receiver.decoder, "outputDrainer",
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(MediaCodec::class.java, codec),
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(CodecLifetime::class.java, owner))
+            assertEquals(102, drainer.release(0, 100, true))
+            assertEquals(2L, receiver.decoder.discardedOutputs)
+            assertEquals(listOf(0 to false, 1 to false, 2 to true), DrainCodecShadow.releases)
+            owner.closeAdmission()
+            assertNull(drainer.release(3, 103, true))
+            assertEquals(3, DrainCodecShadow.releases.size)
+            assertEquals(2L, receiver.decoder.discardedOutputs)
+        } finally { receiver.stop(); owner.awaitRetirement(2000) }
+    }
+
     private fun exercise(latest: Boolean, pending: List<Int>, retireDuringRead: Boolean = false): Pair<Int?, List<Int>> {
         DrainCodecShadow.pending.clear(); DrainCodecShadow.pending.addAll(pending)
         DrainCodecShadow.releases.clear(); DrainCodecShadow.dequeues = 0

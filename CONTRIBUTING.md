@@ -42,6 +42,13 @@ the daemon can change the live display configuration.
   use the approved count: 1 plus branches, loops, case alternatives and
   short-circuit operators. This applies to existing project code as well as
   changes; exclude generated code, dependencies, caches and build outputs.
+- Enforce at least **80% executable-line coverage per production function/method**
+  in the Rust applications, Android app, C EVDI helper and essential installation,
+  EVDI setup and packaging scripts. Count Kotlin inline bodies within their
+  enclosing method; separately compiled callbacks keep their own requirement.
+  Benchmarks and nonessential development tools are exempt from this threshold.
+  Retain all tests already developed, including tests outside the coverage scope.
+  Keep platform-dependent gaps explicit; unmeasured functions do not pass.
 - Share compatible implementations and separate distinct responsibilities.
   Ask when requirements or preferences are unclear before dependent work.
 
@@ -72,6 +79,11 @@ cargo test --release -p uscreen --features inproc-encoder --bin uscreen
 Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
 for refactors. Its pinned parser setup, boundary tests and scope limitations
 are documented there; CI runs it on pushes and pull requests.
+
+The [per-function coverage gates](scripts/coverage/README.md) collect native
+counters and bounded invalid-input/bounds corpora. CI gates Linux Rust, Android,
+capture C and essential scripts separately; native Windows evidence remains
+tracked in `TODO.md`. Inline Kotlin code is measured in its enclosing method.
 
 Select checks appropriate to the affected components; document exact results
 and obstacles. Documentation edits need link/metadata/format checks and any

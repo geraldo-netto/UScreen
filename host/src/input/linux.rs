@@ -1067,3 +1067,7 @@ impl InjectDevices<File> {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "linux/coverage_tests.rs"]
+mod coverage_tests;

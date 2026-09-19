@@ -15,6 +15,58 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34], shadows = [StartupCodecShadow::class])
 class FramedDecoderTest {
+    @Suppress("UNCHECKED_CAST")
+    @Test fun t497_surfaceCodecRequiresCurrentReadySurfaceAndReusesItsOwner() {
+        StartupCodecShadow.stage = ""
+        val receiver = VideoReceiver { error("T497 must not connect") }
+        val surface = Surface(SurfaceTexture(1))
+        val pending = field("pendingSurface").get(receiver) as AtomicReference<Surface?>
+        val ready = field("surfaceReady").get(receiver) as AtomicBoolean
+        val method = VideoReceiver::class.java.getDeclaredMethod("ensureSurfaceCodec", Long::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+        var allocations = 0
+        receiver.decoder.createCodec = { allocations++; MediaCodec.createDecoderByType(it.mimeType) }
+        try {
+            assertEquals(false, method.invoke(receiver, 0L))
+            field("isRunning").set(receiver, true)
+            assertEquals(false, method.invoke(receiver, 0L))
+            pending.set(surface)
+            assertEquals(false, method.invoke(receiver, 0L))
+            assertEquals(0, allocations)
+            ready.set(true)
+            assertEquals(true, method.invoke(receiver, 0L))
+            val owner = receiver.decoder.mediaCodec
+            assertEquals(true, method.invoke(receiver, 0L))
+            assertSame(owner, receiver.decoder.mediaCodec)
+            assertEquals(1, allocations)
+            receiver.stop()
+            assertEquals(false, method.invoke(receiver, 0L))
+        } finally { receiver.stop(); surface.release() }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test fun t497_framedSetupRejectsRetiredSurfaceWrongDimensionsAndFailedAllocation() {
+        val receiver = VideoReceiver { error("T497 must not connect") }
+        receiver.mimeType = "video/x-vnd.on2.vp9"
+        val surface = Surface(SurfaceTexture(1))
+        val configuration = ByteBuffer.allocate(13).putInt(0x55534331).put(3).putInt(640).putInt(400).array()
+        field("isRunning").set(receiver, true)
+        var allocations = 0
+        receiver.decoder.createCodec = { allocations++; throw IllegalStateException("T497 refused codec") }
+        try {
+            assertThrows(IllegalStateException::class.java) { packets(receiver, 0).configuration(configuration, 0, 13) }
+            (field("pendingSurface").get(receiver) as AtomicReference<Surface?>).set(surface)
+            (field("surfaceReady").get(receiver) as AtomicBoolean).set(true)
+            field("decoderSelection").set(receiver, DecoderSelection("fixture", "vp9", "profile0", 31, 8, false, null))
+            assertThrows(IllegalArgumentException::class.java) { packets(receiver, 0).configuration(configuration, 0, 13) }
+            assertEquals(0, allocations)
+            field("decoderSelection").set(receiver, null)
+            assertThrows(IllegalStateException::class.java) { packets(receiver, 0).configuration(configuration, 0, 13) }
+            assertEquals(1, allocations)
+            assertNull(receiver.decoder.mediaCodec)
+        } finally { receiver.stop(); surface.release() }
+    }
+
     private fun field(name: String) = VideoReceiver::class.java
         .getDeclaredField(name).apply { isAccessible = true }
     private fun packets(receiver: VideoReceiver, generation: Long): VideoPacketSink {

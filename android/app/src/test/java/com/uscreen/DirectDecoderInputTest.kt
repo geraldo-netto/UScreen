@@ -77,6 +77,31 @@ internal class DirectInputFixture(callbacks: Boolean = false) : AutoCloseable {
 class DirectDecoderInputTest {
     @get:org.junit.Rule val decoderInventory = DecoderInventoryRule()
 
+    @Test fun t497_inputLengthFuzzRejectsBoundsBeforeReadingOrQueueing() {
+        val random = java.util.Random(497)
+        val sizes = listOf(Int.MIN_VALUE, Int.MAX_VALUE, -1, 0, 1, 63, 64, 65) +
+            List(2048) { random.nextInt(1024) - 512 }
+        DirectInputFixture().use { fixture ->
+            for (size in sizes) {
+                val input = ChannelPacketHeader(size, false, 17)
+                var reads = 0
+                val attempt = runCatching { queueCodecInput(fixture.codec, 0, input) {
+                    reads++
+                    repeat(size) { _ -> it.put(7) }
+                } }
+                if (size in 1..64) {
+                    attempt.getOrThrow()
+                    assertEquals(1, reads)
+                    assertArrayEquals(ByteArray(size) { 7 }, DirectInputCodecShadow.queued.remove().bytes)
+                } else {
+                    assertTrue(attempt.exceptionOrNull() is IllegalArgumentException)
+                    assertEquals("T497: invalid length consumed input", 0, reads)
+                }
+                assertTrue(DirectInputCodecShadow.queued.isEmpty())
+            }
+        }
+    }
+
     @Test fun t403_fill_uses_codec_owned_storage_and_preserves_csd_and_unsigned_sequence() {
         DirectInputFixture().use { fixture ->
             assertTrue(fixture.decoder.feedDirect(fixture.codec, ChannelPacketHeader(2, true, 0)) {

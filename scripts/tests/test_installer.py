@@ -4,6 +4,7 @@ import mmap
 import subprocess
 import tempfile
 import unittest
+from shell_fixture import run as run_shell
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = (REPO / 'scripts/install.sh').read_text().removesuffix('main "$@"\n')
@@ -57,8 +58,8 @@ MOCK_FEDORA=$3
 MOCK_IMMUTABLE=$4
 install_distro_deps "$1"
 '''
-        result = subprocess.run(['bash', '-s', '--', distro, version, fedora_macro, str(int(immutable))],
-            input=SOURCE + stubs, cwd=REPO, capture_output=True, text=True)
+        result = run_shell(SOURCE + stubs, [distro, version, fedora_macro, str(int(immutable))],
+                           cwd=REPO, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout
 
@@ -103,8 +104,8 @@ install_distro_deps "$1"
         return project, system
 
     def dependency_output(self, fixture, commands):
-        result = subprocess.run(['bash', '-s', '--', *map(str, fixture)],
-            input=SOURCE + DEPENDENCY_STUBS + commands, cwd=REPO, capture_output=True, text=True)
+        result = run_shell(SOURCE + DEPENDENCY_STUBS + commands, fixture,
+                           cwd=REPO, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout
 
@@ -168,9 +169,8 @@ install_distro_deps "$1"
             (installed / 'libevdi.so.1').symlink_to(library)
             with (installed / library).open('rb') as old:
                 with mmap.mmap(old.fileno(), 0, access=mmap.ACCESS_READ) as active:
-                    result = subprocess.run(['bash', '-s', '--', str(project), str(installed)],
-                        input=SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\ninstall_binaries\n',
-                        cwd=REPO, capture_output=True, text=True)
+                    result = run_shell(SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\ninstall_binaries\n',
+                                       [project, installed], cwd=REPO, capture_output=True, text=True)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertTrue(active[:] == b'O' * 4096,
                                     'T249: upgrade modified a running helper library mapping')
@@ -214,13 +214,11 @@ install_distro_deps "$1"
         return source, installed
 
     def install_fixture(self, source, installed, stub=''):
-        return subprocess.run(['bash', '-s', '--', str(source.parent), str(installed)],
-            input=SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\n' + stub + 'install_binaries\n',
-            cwd=REPO, capture_output=True, text=True)
+        return run_shell(SOURCE + '\nPROJECT_DIR=$1\nBIN_DIR=$2\n' + stub + 'install_binaries\n',
+                         [source.parent, installed], cwd=REPO, capture_output=True, text=True)
 
     def run_installer(self, commands):
-        result = subprocess.run(['bash', '-s'], input=SOURCE + commands,
-                                capture_output=True, text=True, cwd=REPO)
+        result = run_shell(SOURCE + commands, capture_output=True, text=True, cwd=REPO)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result.stdout
 

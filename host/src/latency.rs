@@ -404,6 +404,43 @@ mod tests {
     use super::*;
 
     #[test]
+    fn t497_pre_subscriber_logs_keep_decode_units_and_retired_storage_peak() {
+        if std::env::var_os("USCREEN_T497_LOG_FACADE").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "latency::tests::t497_pre_subscriber_logs_keep_decode_units_and_retired_storage_peak", "--nocapture"])
+                .env("USCREEN_T497_LOG_FACADE", "1").output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+        crate::test_logging::enable();
+        let mut report = Report {
+            samples: vec![],
+            decode_samples: vec![3_000, 1_000, 2_000],
+            lost: 0,
+            inflight: 0,
+        };
+        report.log_decode();
+        assert_eq!(report.decode_samples, [1_000, 2_000, 3_000]);
+        let bytes = crate::media_storage::MediaBytes::from(vec![1, 2, 3]);
+        let budget = crate::media_storage::Budget::new(3);
+        assert!(bytes.charge(&budget));
+        drop(bytes);
+        drop(budget);
+        let log = crate::test_logging::text();
+        assert!(
+            log.contains("p50 2.0ms  p95 3.0ms  (3 samples)"),
+            "T497: {log}"
+        );
+        assert!(log.contains("Encoded storage budget retired"));
+        assert!(log.contains("peak_bytes=3"), "T497: {log}");
+    }
+
+    #[test]
     fn t479_observation_windows_are_bounded_and_never_mix_generations() {
         let tracker = LatencyTracker::new();
         let old = tracker.encoder_started("libx264", (640, 480, 60, 20000, 18));
@@ -460,6 +497,32 @@ mod tests {
             !output.contains("encode→display"),
             "T457: exclude unmeasured stages"
         );
+    }
+
+    #[test]
+    fn t497_empty_latency_reports_do_not_invent_acknowledged_frames() {
+        for lost in [0, 1, u64::MAX] {
+            let buffer = LogBuffer(Arc::new(Mutex::new(Vec::new())));
+            let writer = buffer.clone();
+            let subscriber = tracing_subscriber::fmt()
+                .without_time()
+                .with_ansi(false)
+                .with_writer(move || writer.clone())
+                .finish();
+            let mut report = Report {
+                samples: vec![],
+                decode_samples: vec![],
+                lost,
+                inflight: 0,
+            };
+            tracing::subscriber::with_default(subscriber, || {
+                report.log();
+                report.log_decode();
+            });
+            let output = String::from_utf8(buffer.0.lock().unwrap().clone()).unwrap();
+            assert_eq!(output.contains("no frames acknowledged"), lost > 0);
+            assert!(!output.contains("p50"));
+        }
     }
 
     #[test]

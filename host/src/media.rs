@@ -185,6 +185,52 @@ mod tests {
     use super::*;
 
     #[test]
+    fn t497_restart_identity_tracks_stream_changes_but_not_inventory_metadata() {
+        let base = EncoderSettings {
+            encoder: "libx264".into(),
+            fps: 60,
+            bitrate: 20_000,
+            width: 1280,
+            height: 800,
+            quality: 18,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+            geometry_ready: true,
+            decoders: None,
+            decoder_epoch: 0,
+            selection: None,
+        };
+        let mut metadata = base.clone();
+        metadata.decoder_epoch = u64::MAX;
+        assert!(base.same_stream(&metadata));
+        for mutate in profile_mutations().into_iter().chain(geometry_mutations()) {
+            let mut other = base.clone();
+            mutate(&mut other);
+            assert!(!base.same_stream(&other), "T497 lost restart: {other:?}");
+        }
+    }
+
+    fn profile_mutations() -> [fn(&mut EncoderSettings); 4] {
+        [
+            |s| s.encoder = "h264_vaapi".into(),
+            |s| s.fps = 30,
+            |s| s.bitrate += 1,
+            |s| s.quality += 1,
+        ]
+    }
+
+    fn geometry_mutations() -> [fn(&mut EncoderSettings); 5] {
+        [
+            |s| s.width += 2,
+            |s| s.height += 2,
+            |s| s.width_mm += 1,
+            |s| s.height_mm += 1,
+            |s| s.geometry_ready = false,
+        ]
+    }
+
+    #[test]
     fn t401_delayed_packet_lease_keeps_storage_after_producer_retirement() {
         use std::sync::atomic::Ordering;
         let owner = EncoderGeneration::new();

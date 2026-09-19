@@ -12,6 +12,38 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class VideoCodecTest {
+    @Test fun t497_configurationRecognitionAndBoundedMutationFuzz() {
+        val random = java.util.Random(497)
+        val framed = byteArrayOf(99) + header() + byteArrayOf(88)
+        assertTrue(VideoCodec.hasConfigurationHeader(framed, 1, framed.size - 2))
+        assertFalse(VideoCodec.hasConfigurationHeader(framed, 0, framed.size))
+        for (size in 0..3) assertFalse(VideoCodec.hasConfigurationHeader(framed, 1, size))
+        repeat(2048) {
+            val data = header().copyOf(random.nextInt(70))
+            if (data.isNotEmpty()) data[random.nextInt(data.size)] = random.nextInt().toByte()
+            val parsed = runCatching { VideoCodec.configuration(data, 0, data.size, vp9, 60) }
+            parsed.onSuccess {
+                assertTrue(it.width in 2..4096)
+                assertTrue(it.height in 2..4096)
+                assertEquals(vp9, it.mimeType)
+            }.onFailure { assertTrue("T497: unexpected parser failure: $it", it is IllegalArgumentException) }
+        }
+    }
+
+    @Test fun t497_configurationRejectsOutOfBoundsSlices() {
+        val data = header()
+        for (offset in listOf(Int.MIN_VALUE, -1, 1, data.size, Int.MAX_VALUE)) {
+            assertThrows(IndexOutOfBoundsException::class.java) {
+                VideoCodec.configuration(data, offset, data.size, vp9, 60)
+            }
+        }
+        for (size in listOf(Int.MIN_VALUE, -1, 0, 12, 65550, Int.MAX_VALUE)) {
+            assertThrows(IllegalArgumentException::class.java) {
+                VideoCodec.configuration(data, 0, size, vp9, 60)
+            }
+        }
+    }
+
     private val vp9 = "video/x-vnd.on2.vp9"
     private fun header(width: Int = 640, private: ByteArray = byteArrayOf()): ByteArray =
         ByteBuffer.allocate(13 + private.size).putInt(0x55534331).put(3).putInt(width).putInt(400).put(private).array()

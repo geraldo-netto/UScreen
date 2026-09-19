@@ -92,7 +92,13 @@ pub(super) async fn map_devices_using(
         map_x11_devices(pen_only, ident, card, expected, xinput, xrandr, connectors).await;
         return;
     }
-    let Some(output) = target_output(pen_only, card, std::time::Duration::from_secs(10)).await
+    let Some(output) = target_output(
+        pen_only,
+        card,
+        std::time::Duration::from_secs(10),
+        connectors,
+    )
+    .await
     else {
         if pen_only {
             warn!("No physical output found — pen will address the whole desktop");
@@ -406,6 +412,7 @@ pub(super) async fn target_output(
     pen_only: bool,
     card: Option<u32>,
     timeout: std::time::Duration,
+    known_connectors: Option<&[crate::vdisplay::EvdiConnector]>,
 ) -> Option<String> {
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
@@ -416,9 +423,14 @@ pub(super) async fn target_output(
             // No kscreen-doctor means no KDE session: nothing to wait for.
             crate::kscreen::outputs().await?;
         } else {
-            let connectors = crate::vdisplay::evdi_connectors();
+            let discovered = known_connectors
+                .is_none()
+                .then(crate::vdisplay::evdi_connectors);
+            let connectors = known_connectors
+                .or(discovered.as_deref())
+                .unwrap_or_default();
             // Keep this tablet's assigned card, including during discovery gaps.
-            let fallback = fallback_output(&connectors, card);
+            let fallback = fallback_output(connectors, card);
             let Some(outputs) = crate::kscreen::outputs().await else {
                 return fallback;
             };
@@ -442,6 +454,9 @@ pub(super) async fn target_output(
         tokio::time::sleep(std::time::Duration::from_millis(250)).await;
     }
 }
+
+#[cfg(test)]
+mod coverage_tests;
 
 pub(super) fn enabled_named_output<'a>(
     outputs: &'a [crate::kscreen::Output],
