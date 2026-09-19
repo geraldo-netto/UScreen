@@ -1,0 +1,70 @@
+...FFF.FF
+======================================================================
+FAIL: test_t235_portable_build_uses_literal_checkout_path (__main__.PackageTest.test_t235_portable_build_uses_literal_checkout_path) (name='project with spaces')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_packages.py", line 99, in test_t235_portable_build_uses_literal_checkout_path
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : uscreen: glibc 2.36
+uscreen-gui: glibc 2.36
+evdi_helper: glibc 2.36
+libevdi.so.1.15.0: glibc 2.36
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+
+
+======================================================================
+FAIL: test_t235_portable_build_uses_literal_checkout_path (__main__.PackageTest.test_t235_portable_build_uses_literal_checkout_path) (name="project'quote")
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_packages.py", line 99, in test_t235_portable_build_uses_literal_checkout_path
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : uscreen: glibc 2.36
+uscreen-gui: glibc 2.36
+evdi_helper: glibc 2.36
+libevdi.so.1.15.0: glibc 2.36
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+
+
+======================================================================
+FAIL: test_t235_portable_build_uses_literal_checkout_path (__main__.PackageTest.test_t235_portable_build_uses_literal_checkout_path) (name='project$(touch INJECTED)`touch INJECTED`')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_packages.py", line 99, in test_t235_portable_build_uses_literal_checkout_path
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : uscreen: glibc 2.36
+uscreen-gui: glibc 2.36
+evdi_helper: glibc 2.36
+libevdi.so.1.15.0: glibc 2.36
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+
+
+======================================================================
+FAIL: test_t428_portable_build_rejects_unverified_evdi_cache (__main__.PackageTest.test_t428_portable_build_rejects_unverified_evdi_cache) (mode='missing')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_packages.py", line 53, in test_t428_portable_build_rejects_unverified_evdi_cache
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : uscreen: glibc 2.36
+uscreen-gui: glibc 2.36
+evdi_helper: glibc 2.36
+libevdi.so.1.15.0: glibc 2.36
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+
+
+======================================================================
+FAIL: test_t428_portable_build_rejects_unverified_evdi_cache (__main__.PackageTest.test_t428_portable_build_rejects_unverified_evdi_cache) (mode='valid')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_packages.py", line 53, in test_t428_portable_build_rejects_unverified_evdi_cache
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : uscreen: glibc 2.36
+uscreen-gui: glibc 2.36
+evdi_helper: glibc 2.36
+libevdi.so.1.15.0: glibc 2.36
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+
+
+----------------------------------------------------------------------
+Ran 6 tests in 4.508s
+
+FAILED (failures=5)

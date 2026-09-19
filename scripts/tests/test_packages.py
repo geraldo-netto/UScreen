@@ -114,6 +114,8 @@ exit 0
             self.assertFalse((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').exists())
 
     def portable_fixture(self, root):
+        import release_signing_fixture
+        release_signing_fixture.install_tools(root / "bin")
         files = {
             'bin/distrobox': '#!/bin/bash\nshift 3; shift 2; exec bash -c "$@"\n',
             'bin/git': '#!/bin/sh\ncase " $* " in *" rev-parse HEAD "*) echo 2713cd41932f2bd8697953a205862a68a966b5ba;; *" status "*) exit 0;; *) exit 1;; esac\n',
