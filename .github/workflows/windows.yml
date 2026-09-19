@@ -1,0 +1,40 @@
+name: Windows compilation preview
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-msvc:
+    name: Native Windows policy and service contracts
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test portable policy without platform features
+        run: cargo test --locked -p uscreen-config --no-default-features
+      - name: Test native paths, ACLs, leases, jobs and preview applications
+        # T493 security/lease tests remain mandatory; Wine cannot replace them.
+        run: cargo test --locked --workspace
+      - name: Build the preview with every feature selected
+        # Linux libavcodec remains target-gated; this does not enable Windows capture.
+        run: cargo build --locked --workspace --all-features
+
+  cross-gnu:
+    name: Linux to Windows GNU build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+      - name: Install MinGW linker
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: Link all Windows preview applications and regression executables
+        run: cargo test --locked --workspace --all-features --target x86_64-pc-windows-gnu --no-run

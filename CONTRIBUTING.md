@@ -84,3 +84,14 @@ Keep the PR scope coherent and each finding's commit separate. Explain the
 problem, resulting behavior and validation. Update both ends and their tests
 when the Android/host protocol changes. Distinguish isolated automated coverage
 from real-device testing and list remaining limitations.
+
+### Windows compilation preview
+
+Run `cargo test --locked -p uscreen-config --no-default-features` first, then
+`cargo test --locked --workspace` on native Windows. The Windows CI workflow
+runs both, including mandatory ACL, runtime lease and owned-process tests.
+Linux-only EVDI/process-group/desktop fixtures remain on Linux. GNU cross-builds
+can link the workspace with `cargo test --locked --workspace --all-features
+--target x86_64-pc-windows-gnu --no-run` when MinGW is available. This is a build
+preview; Windows capture/input/lifecycle remain unavailable. Wine can exercise
+many fixtures but does not replace native Windows security validation.

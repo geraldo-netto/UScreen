@@ -22,6 +22,12 @@ and checks on MSVC. Its Windows preview saves shared settings and hides Linux
 setup/capacity controls; unavailable lifecycle actions fail explicitly. Automated
 headless UI tests and a real window launch passed under Wine, not native Windows.
 
+T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/windows.yml).
+Shell-free command fixtures run as Windows executables; Linux process-group
+assertions remain in the Linux suite. Local policy and library execution passed
+under Wine. The native CI workflow is configured but has not been run from this
+checkout; its mandatory ACL/lease tests must pass before T493 can close.
+
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.

@@ -326,6 +326,7 @@ mod tests {
             assert_eq!(FileConfig::load_at(&path).position, expected);
         }
     }
+    #[cfg(not(windows))]
     #[test]
     fn t140_xdg_config_isolation() {
         if let Ok(mode) = std::env::var("USCREEN_T140_CHILD") {
