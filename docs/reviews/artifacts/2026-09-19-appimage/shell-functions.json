@@ -1,0 +1,82 @@
+[
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "absolute_base",
+    "lines": 1,
+    "covered": 1,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "check_stopped",
+    "lines": 4,
+    "covered": 4,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "install_image",
+    "lines": 6,
+    "covered": 6,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "install_extracted",
+    "lines": 11,
+    "covered": 11,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "install_service",
+    "lines": 8,
+    "covered": 8,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "install_desktop",
+    "lines": 7,
+    "covered": 7,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "install_entry",
+    "lines": 8,
+    "covered": 8,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "update_autostart",
+    "lines": 8,
+    "covered": 8,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "packaging/appimage/install-appimage.sh",
+    "function": "check_destination",
+    "lines": 4,
+    "covered": 4,
+    "percent": 100.0,
+    "missing": []
+  },
+  {
+    "file": "scripts/write-systemd-service.sh",
+    "function": "systemd_path",
+    "lines": 9,
+    "covered": 9,
+    "percent": 100.0,
+    "missing": []
+  }
+]

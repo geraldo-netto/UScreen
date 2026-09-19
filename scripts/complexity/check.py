@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LANGUAGES = {'.rs': 'rust', '.c': 'c', '.h': 'c', '.py': 'python',
              '.sh': 'shell', '.install': 'shell', '.kt': 'kotlin', '.kts': 'kotlin', '.spec': 'rpm'}
 EXCLUDED = {'host/evdi/evdi_lib.h', 'android/gradlew', 'android/gradlew.bat'}
-GENERATED = {'build', 'dist', 'target', 'target-deb12', 'target-portability',
+GENERATED = {'build', 'dist', 'target', 'target-deb12', 'target-portability', 'target-appimage-tools', 'target-appimage-sources',
              '.gradle', '.git', '.cache', '__pycache__', 'node_modules', '.venv', 'vendor'}
 
 

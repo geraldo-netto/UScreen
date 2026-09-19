@@ -26,15 +26,16 @@ attachment or tablet operation.
 
 | Artifact | Installation |
 | --- | --- |
-| `uscreen_<ver>_amd64.deb` | Debian/Ubuntu family: `sudo apt install ./uscreen_*.deb` |
+| `uscreen-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: make executable and launch; see [AppImage setup, extraction and migration](appimage-plan.md) |
 | `uscreen-<ver>-1.x86_64.rpm` | openSUSE: `sudo zypper install ./uscreen-*.rpm`; Fedora: supply the required FFmpeg package (the build workflow uses RPM Fusion), then `sudo dnf install --allowerasing ./uscreen-*.rpm` |
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch family: install AUR `evdi-dkms` first, extract the recipe and run `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | Other compatible Linux setups: extract and inspect/run `./scripts/install.sh`; unsupported package managers need manual dependency installation |
 
 Review the package transaction, especially `dnf --allowerasing`, which permits
-removing conflicting packages. The Debian package **recommends** `evdi-dkms`;
-it is not a hard dependency and may not be installed when recommendations are
-disabled. A working EVDI kernel module is still required for an extended display.
+removing conflicting packages. AppImage replaces the Debian release asset and
+bundles userspace dependencies; it does not install EVDI/DKMS, GPU drivers or
+device permissions. A working EVDI kernel module is still required for an
+extended display. Install the appropriate module package for your kernel.
 
 `makepkg -s` installs repository dependencies through pacman; it does not build
 AUR packages. Install [evdi-dkms](https://aur.archlinux.org/packages/evdi-dkms)

@@ -13,4 +13,5 @@ python3 scripts/ci/verify-portability.py "$D/bin"
 tar -C dist -czf "dist/uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION"
 # Already inside the build container: execute the package program locally.
 export PATH="$PWD/scripts/ci:$PATH"
+export USCREEN_EVDI_SOURCE=/opt/evdi
 bash packaging/build-packages.sh

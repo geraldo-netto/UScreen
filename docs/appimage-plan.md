@@ -1,62 +1,103 @@
-# AppImage packaging plan — T308
+# AppImage distribution — T308
 
-The maintainer selected AppImage to replace the Debian `.deb` release asset.
-This is planned work, not an available artifact. Current code still builds and
-publishes the Debian package; RPM, Arch and tar distributions remain in scope
-unless separately changed.
+AppImage replaces the Debian `.deb` release asset in the packaging and publishing
+code. RPM, Arch and the portable tarball remain available build formats. This
+change does not announce a published fork release.
 
-## Bundle and host boundary
+## Launch and install for your user
 
-Reuse `scripts/stage-linux-bundle.sh` and the Debian 12 build baseline, then
-assemble an AppDir containing the GUI, daemon, capture helper, replaceable
-libevdi, stock FFmpeg, ADB and the required userspace libraries. Verify actual
-dependency closure in a clean environment. Preserve third-party notices and
-applicable library replacement/source requirements; do not patch FFmpeg.
+On Linux x86-64 with glibc 2.36 or newer:
 
-An AppImage simplifies distribution but cannot supply a kernel module built for
-every user's running kernel. EVDI/DKMS setup, GPU drivers and uinput/USB device
-permissions remain host responsibilities. Reuse the existing explicit system
-setup flow and prerequisite diagnostics. Keep the supported libc baseline and
-graphics/backend limits documented. AppImage's [bundling guidance](https://docs.appimage.org/introduction/concepts.html)
-also distinguishes bundled resources from system and graphics libraries.
+```bash
+chmod +x uscreen-1.2.3-x86_64.AppImage
+./uscreen-1.2.3-x86_64.AppImage               # GUI
+./uscreen-1.2.3-x86_64.AppImage status        # daemon CLI
+./uscreen-1.2.3-x86_64.AppImage --daemon --help
+```
 
-## Process lifetime and launch paths
+Stop any running UScreen daemon before explicitly registering this distribution:
 
-`gui/src/main.rs` currently finds a sibling daemon, then an installed executable;
-`scripts/install.sh` writes fixed daemon/helper paths into a user service. These
-paths need an AppImage-aware implementation, not references to a transient mount.
+```bash
+./uscreen-1.2.3-x86_64.AppImage --install-user
+```
 
-Provide GUI and daemon entry modes through `AppRun`. A daemon started by the
-GUI must own an independent AppImage invocation, so closing the GUI cannot
-retire its filesystem. Point autostart/service entries to a stable installed
-AppImage path and route stop/status through the same distribution. Keep native
-installations working and prevent concurrent daemon instances during migration.
+Registration copies the image to `$XDG_DATA_HOME/uscreen/appimage/UScreen.AppImage`
+(default `~/.local/share`), writes a user service and desktop launcher, and creates
+`~/.local/bin/uscreen`. The installed image wrapper enables extract-and-run,
+so it also works on hosts without FUSE. It preserves application preferences and existing
+autostart intent; enable or disable autostart in the GUI. Existing desktop
+autostart paths are redirected to the installed image, or removed when an enabled
+user service already supplies autostart. Registration does not start streaming,
+activate EVDI, enable autostart, uninstall packages or alter system configuration.
 
-Use the runtime's [APPIMAGE/APPDIR distinction](https://docs.appimage.org/packaging-guide/environment-variables.html):
-`APPIMAGE` identifies the outer file, while `APPDIR` is its current mountpoint.
-Neither temporary mount paths nor shell-expanded user paths belong in persistent
-service configuration. Preserve existing path quoting and bounded shutdown.
+Update by stopping UScreen and registering the new image the same way. Close the
+old GUI and reopen the installed launcher. Keep the installed image in place:
+a running portable GUI reports a missing launcher if its outer image was moved.
+The GUI will use a systemd service only when its installation marker matches the
+current AppImage path; otherwise it starts its own foreground daemon process.
 
-Support [extracted execution when FUSE is unavailable](https://docs.appimage.org/user-guide/troubleshooting/fuse.html#extract-and-run-type-2-appimages).
-That mode also needs a stable directory for background processes; test both
-lifetimes explicitly. Application state stays outside the read-only bundle.
+## Without FUSE; replacing libevdi
 
-## Delivery and acceptance
+The [runtime supports extraction](https://docs.appimage.org/user-guide/troubleshooting/fuse.html):
 
-1. Add a reproducible packaging target with pinned packaging-tool inputs and
-   a clean-environment dependency check. Reuse existing ABI verification.
-2. Implement and test GUI/daemon launch, helper lookup, service registration,
-   paths containing spaces, extraction, GUI closure and shutdown.
-3. Explain migration from `.deb`, prerequisite setup, stable placement and
-   updates. Do not automatically uninstall the existing package or delete
-   preferences. Use Geraldo Netto's [GitHub profile](https://github.com/geraldo-netto)
-   for attribution; preserve the original author's attribution separately.
-4. Replace the `.deb` expectation consistently in package building, publication
-   inventory, checksums, release tests, CI and website/download documentation.
-   Correct retained Arch maintainer attribution without inventing an email.
-5. Smoke-test the actual artifact and its dependencies in isolation. Keep active
-   desktop EVDI attachment outside packaging checks while T222 is unresolved.
+```bash
+./uscreen-1.2.3-x86_64.AppImage --appimage-extract-and-run
+# Or retain an editable directory:
+./uscreen-1.2.3-x86_64.AppImage --appimage-extract
+./squashfs-root/AppRun --install-user
+```
 
-Only claim that a dependency is bundled after inspecting and testing the actual
-artifact. AppImage does not make Windows builds available or establish support
-for every Linux kernel, compositor or GPU.
+Registration from a manually extracted directory copies it to
+`$XDG_DATA_HOME/uscreen/appimage/UScreen.AppDir`. Registration from automatic
+extract-and-run copies the original image. The launcher propagates extraction
+mode to children. Every independently launched daemon invokes the outer image
+again and owns its own runtime lifetime; closing the GUI cannot unmount the
+daemon's files. Manually extracted execution uses the persistent directory.
+
+`usr/bin/libevdi.so.1.15.0` remains unmodified and replaceable, with the
+`libevdi.so.1` link beside the helper. Use an extracted directory to replace it
+with an ABI-compatible library and retain the applicable license notices.
+
+## Bundled dependencies and host requirements
+
+The bundle contains the GUI, daemon, helper, Bash, stock Debian FFmpeg/ffprobe and
+ADB, their discovered ELF dependencies, and dynamically loaded X11/Wayland
+libraries needed by the GUI. FFmpeg, libav libraries and ADB are copied without
+source or binary patches. Private search paths apply to bundled executables;
+AppRun does not set a global `LD_LIBRARY_PATH` that could affect host utilities.
+Matching host library SONAMEs are preferred, with bundled libraries as fallbacks;
+the helper prefers its sibling libevdi. This is an ABI baseline, not a promise
+that every distribution or graphics stack works.
+
+The host still supplies its matching glibc/loader, GPU implementations and kernel
+interfaces. EVDI/DKMS for the running kernel, graphics drivers, `/dev/uinput`, USB
+permissions and any Xorg/compositor integration remain host setup. Follow
+[installation prerequisites](installation.md); the bundle includes the explicit
+`usr/share/uscreen/setup-evdi.sh` tool. Core host utilities and a Linux desktop
+session are required. No package smoke check deliberately attaches EVDI.
+
+When migrating from `.deb`, stop the existing daemon, close its GUI and register
+the AppImage. Configuration stays in the same user location. Removing the old
+system package is optional and explicit; inspect the package transaction. The
+installer does not remove existing kernel packages, rules or preferences.
+
+## Build inputs, licenses and sources
+
+`packaging/appimage/build.py` consumes the portable Debian 12 Linux bundle.
+`packaging/ci/Dockerfile` supplies the dependencies and matching source indexes.
+Packaging tools/runtime are pinned with SHA-256 in `tools.json`; a changed or
+missing digest fails before execution. Every bundled ELF is checked against the
+glibc 2.36 ceiling. Missing libraries or corresponding sources fail packaging.
+
+The required `uscreen-<version>-AppImage-sources.tar.gz` asset contains exact
+Debian corresponding-source archives and descriptors, Rust dependency sources,
+the pinned libevdi source and AppImage runtime source. Debian archive checksums
+are verified against their source descriptors. `usr/share/doc/uscreen/bundled`
+contains dependency copyright files and a version/license/source manifest.
+Project source is supplied by the matching release tag. Keep the source asset,
+notices and matching project source alongside any redistribution.
+
+The publisher verifies the AppImage, source archive, RPM, Arch recipe, Linux tar,
+APK and `SHA256SUMS` as one complete asset set before publishing. Legacy Debian
+metadata remains only for historical regression coverage and is not a release
+format. Maintainer: [Geraldo Netto](https://github.com/geraldo-netto).

@@ -148,6 +148,9 @@ pub(crate) fn service_managed() -> bool {
 }
 
 pub(crate) fn service_managed_with(running: impl FnOnce() -> bool) -> bool {
+    if !uscreen_config::linux::appimage::permits_service() {
+        return false;
+    }
     if Command::new("systemctl")
         .args(["--user", "is-active", "--quiet", "uscreen.service"])
         .output_bounded()

@@ -54,7 +54,7 @@ exit 0
                     self.assertEqual((root / 'clone-called').exists(), mode == 'missing')
 
     def test_t101_container_and_rpmbuild_failures_reject_stale_assets(self):
-        for mode in ['container', 'rpm', 'success']:
+        for mode in ['container', 'appimage', 'rpm', 'success']:
             with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-packages-') as tmp:
                 root = Path(tmp)
                 assets = self.create_fixture(root)
@@ -65,8 +65,8 @@ exit 0
                     self.assertTrue(all((root / 'dist' / name).is_file() for name in assets))
                 else:
                     self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertFalse((root / 'dist' / assets[2]).exists())
-                    for name in assets[:2]:
+                    self.assertFalse((root / 'dist' / assets[-1]).exists())
+                    for name in assets[:-1]:
                         path = root / 'dist' / name
                         self.assertFalse(path.exists() and path.read_text() == 'stale')
 
@@ -172,13 +172,15 @@ exit 0
                      'packaging/uscreen.service', 'packaging/uscreen-evdi.conf', 'packaging/uscreen-modules.conf',
                      'packaging/60-uscreen-uinput.rules']:
             write(name, 'fixture')
-        assets = ['uscreen_1.2.3_amd64.deb', 'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz']
+        assets = ['uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz', 'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz']
         for name in assets + ['uscreen-1.2.3-linux-x86_64.tar.gz', '.packages-ok']:
             write('dist/' + name, 'stale')
         write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_MODE" != container ]; then shift 3; shift 2; bash -c "$@"; fi\nexit 0\n', True)
         write('bin/fakeroot', '#!/bin/sh\nexec "$@"\n', True)
         write('bin/dpkg-deb', '#!/bin/bash\nif [ "$1" = --info ]; then echo "Package: uscreen"; else echo new > "${@: -1}"; fi\n', True)
         write('bin/rpmbuild', '#!/bin/sh\nRB=${2#_topdir }\nmkdir -p "$RB/RPMS/x86_64"\necho new > "$RB/RPMS/x86_64/uscreen-1.2.3-1.x86_64.rpm"\necho Wrote\n[ "$USCREEN_TEST_MODE" != rpm ]\n', True)
+        import appimage_fixture
+        appimage_fixture.install(root)
         return assets
 
 

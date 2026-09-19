@@ -24,7 +24,7 @@ class VersionFixtureTest(unittest.TestCase):
                 path.write_text(updated)
             cases = [
                 test_distribution.DistributionTest('test_t102_apk_failure_and_bundled_helper_loading'),
-                test_notices.NoticeTest('test_t129_tar_deb_rpm_and_arch_include_notices'),
+                test_notices.NoticeTest('test_t129_tar_appimage_rpm_and_arch_include_notices'),
                 test_packages.PackageTest('test_t235_portable_build_uses_literal_checkout_path'),
                 test_packages.PackageTest('test_t236_release_rejects_new_glibc_in_bundled_evdi'),
             ]

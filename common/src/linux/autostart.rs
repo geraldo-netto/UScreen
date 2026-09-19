@@ -12,6 +12,9 @@ pub fn desktop_path() -> Result<PathBuf> {
 }
 
 pub fn systemd_available() -> bool {
+    if !super::appimage::permits_service() {
+        return false;
+    }
     Command::new("systemctl")
         .args([
             "--user",
@@ -124,6 +127,9 @@ pub fn set_enabled(on: bool, binary: &Path) -> Result<()> {
         );
         // Avoid running both a desktop entry and a service on the next login.
         return remove_desktop_entry();
+    }
+    if std::env::var_os(super::appimage::LAUNCHER).is_some() && systemd_enabled() {
+        anyhow::bail!("Another UScreen distribution owns autostart; stop it and run the AppImage with --install-user before changing this preference");
     }
     anyhow::ensure!(!systemd_enabled(), "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart");
     if on {

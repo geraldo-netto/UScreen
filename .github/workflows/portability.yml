@@ -28,7 +28,8 @@ jobs:
         with:
           name: portability-packages
           path: |
-            dist/*.deb
+            dist/*.AppImage
+            dist/*AppImage-sources.tar.gz
             dist/*.rpm
             dist/*linux-x86_64.tar.gz
 

@@ -494,6 +494,10 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         "scripts/write-desktop-entry.sh",
         &std::fs::read_to_string(repo().join("scripts/write-desktop-entry.sh")).unwrap(),
     );
+    sandbox.script(
+        "scripts/write-systemd-service.sh",
+        &std::fs::read_to_string(repo().join("scripts/write-systemd-service.sh")).unwrap(),
+    );
     sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
     sandbox.script("bin/uscreen-gui", "#!/bin/sh\necho stale\n");
     let output = Command::new("make")
@@ -751,4 +755,19 @@ fn t250_official_android_release_checks_fork_certificate() {
         .status()
         .unwrap();
     assert!(status.success());
+}
+
+#[test]
+fn t308_appimage_packaging_launch_and_invalid_inputs() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_appimage.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    release_tests("t308");
 }

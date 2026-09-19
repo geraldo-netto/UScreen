@@ -167,7 +167,7 @@ host/              Rust daemon
 common/            settings, commands, version parsing, runtime session ledger
 gui/               egui desktop app: status, settings, start/stop
 android/           Kotlin/Compose app: MediaCodec decoder, touch/pen capture
-packaging/         deb control/postinst, rpm spec, PKGBUILD, udev/modprobe files
+packaging/         AppImage builder, rpm spec, PKGBUILD (legacy deb fixtures retained), udev/modprobe files
 scripts/           install.sh, release build, fake tablet
 docs/              documentation and proposed static-site source
 ```
@@ -425,7 +425,9 @@ build/signing environment:
 ```bash
 distrobox create --image debian:12 --name uscreen-build
 # Inside: install the host compiler/GUI prerequisites listed above,
-# plus dpkg-dev fakeroot rpm, and stable Rust through rustup.
+# plus dpkg-dev fakeroot rpm patchelf squashfs-tools file, and stable Rust through rustup.
+# Enable matching deb-src repositories for the bundled package versions.
+# packaging/ci/Dockerfile provides the complete build environment.
 # build-release.sh builds and bundles pinned libevdi v1.15.0 itself.
 
 GH_TOKEN=... make publish NOTES=release-notes.md
@@ -436,7 +438,7 @@ with `make dist` or `make publish`; an empty or unset value uses `uscreen-build`
 
 `make publish` runs `scripts/build-release.sh` and `packaging/build-packages.sh`,
 checks that HEAD and both local/origin tag objects match, and refuses to
-continue unless all five release files exist. It creates a **draft**, uploads
+continue unless all six release files exist. It creates a **draft**, uploads
 those files plus `SHA256SUMS`, verifies the complete server asset inventory,
 sizes and SHA-256 digests, then publishes. Any earlier failure leaves the draft
 unpublished. Publishing needs Python 3.11+ on the host and `GH_TOKEN` with
@@ -455,7 +457,8 @@ signing configuration/keys are supplied by the trusted release environment and
 must stay fixed throughout the run; the Git checks do not attest those external
 inputs. The release APK must use the fork application ID and designated certificate;
 `scripts/verify-release-apk.py` verifies both before publication API writes.
-Replacing the Debian release asset with AppImage remains T308. The separate
+The AppImage replaces the Debian release asset; its corresponding-source
+archive is a required seventh asset when counting SHA256SUMS. The separate
 source-provenance checks do not establish APK signing identity.
 
 `make dist-local` uses the local toolchain and requires a successful signed APK
@@ -504,7 +507,9 @@ tools. Optional-encoder FFmpeg/libclang development packages are installed
 by the separate build workflow, not this container.
 The Docker base image is pinned by digest; Cargo uses `Cargo.lock`. Debian
 security package updates remain enabled. Build/test tools include **both
-`rpm` and the `rpmbuild` executable**, plus `dpkg-deb` and `fakeroot`.
+`rpm` and the `rpmbuild` executable**, plus `dpkg-dev`, `fakeroot`, `patchelf` and `squashfs-tools`.
+AppImage packaging downloads checksum-pinned AppImage tools and exact Debian
+source packages, so matching `deb-src` indexes and network access are needed.
 Installing only `librpmbuild9t64` does not supply those commands. These tools
 are not dependencies for running an installed UScreen package.
 

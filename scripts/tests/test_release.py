@@ -96,7 +96,7 @@ class ReleaseTest(unittest.TestCase):
     def enable_uploads(self):
         for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
             self.write(name, '#!/bin/sh\nexit 0\n', True)
-        for name in ['uscreen-1.2.3-linux-x86_64.tar.gz', 'uscreen_1.2.3_amd64.deb',
+        for name in ['uscreen-1.2.3-linux-x86_64.tar.gz', 'uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz',
                      'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz',
                      'uscreen-1.2.3/uscreen.apk']:
             self.write('dist/' + name, 'asset ' + name)
@@ -117,6 +117,19 @@ class ReleaseTest(unittest.TestCase):
         curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$USCREEN_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
         curl.chmod(0o755)
 
+    def test_t308_release_replaces_deb_with_appimage_and_dependency_sources(self):
+        import json
+        self.enable_uploads()
+        for name in ['uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz']:
+            self.write('dist/' + name, 'offline fixture')
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        assets = json.loads((self.base / 'api-state').read_text())['assets']
+        names = {asset['name'] for asset in assets}
+        self.assertIn('uscreen-1.2.3-x86_64.AppImage', names)
+        self.assertIn('uscreen-1.2.3-AppImage-sources.tar.gz', names)
+        self.assertFalse(any(name.endswith('.deb') for name in names))
+
     def test_t250_wrong_certificate_prevents_all_release_api_writes(self):
         self.enable_uploads()
         signer = self.bin / 'apksigner'
@@ -130,7 +143,7 @@ class ReleaseTest(unittest.TestCase):
         import json
         self.enable_uploads()
         for failure in ['http', 'api']:
-            for index in range(6):
+            for index in range(7):
                 with self.subTest(failure=failure, index=index):
                     (self.base / 'api-state').unlink(missing_ok=True)
                     self.env.update(USCREEN_TEST_FAILURE=failure, USCREEN_TEST_FAIL_INDEX=str(index))
@@ -174,7 +187,7 @@ class ReleaseTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         state = json.loads((self.base / 'api-state').read_text())
         self.assertTrue(state['published'])
-        self.assertEqual(len(state['assets']), 6)
+        self.assertEqual(len(state['assets']), 7)
         requests = [json.loads(line) for line in (self.base / 'requests').read_text().splitlines()]
         self.assertEqual(requests[-1]['method'], 'PATCH')
         self.assertTrue(any(r['method'] == 'GET' for r in requests))
@@ -309,7 +322,7 @@ class MetadataTest(unittest.TestCase):
 <p id="release-status">No published fork release.</p>
 <span id="source-version">1.2.3</span>
 <time datetime="2026-09-17">2026-09-17</time>
-uscreen_1.2.3_amd64.deb
+uscreen-1.2.3-x86_64.AppImage
 uscreen-1.2.3-1.x86_64.rpm
 uscreen-1.2.3-PKGBUILD.tar.gz
 uscreen-1.2.3-linux-x86_64.tar.gz

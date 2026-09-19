@@ -47,7 +47,7 @@ RULES = {
          f'<p id="release-status">Release candidate {version}; check the release page for publication and available files. Build from source if it is not published.</p>'),
         (rf'<span id="source-version">{NUM}</span>', f'<span id="source-version">{version}</span>'),
         (rf'<time datetime="{DAY}">{DAY}</time>', f'<time datetime="{date}">{date}</time>'),
-        (rf"uscreen_{NUM}_amd64\.deb", f"uscreen_{version}_amd64.deb"),
+        (rf"uscreen-{NUM}-x86_64\.AppImage", f"uscreen-{version}-x86_64.AppImage"),
         (rf"uscreen-{NUM}-1\.x86_64\.rpm", f"uscreen-{version}-1.x86_64.rpm"),
         (rf"uscreen-{NUM}-PKGBUILD\.tar\.gz", f"uscreen-{version}-PKGBUILD.tar.gz"),
         (rf"uscreen-{NUM}-linux-x86_64\.tar\.gz", f"uscreen-{version}-linux-x86_64.tar.gz"),

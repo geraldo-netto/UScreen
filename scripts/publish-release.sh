@@ -70,7 +70,8 @@ check_release_sources
 # keeps every future release honest about it.
 ASSETS=(
   "dist/uscreen-$VERSION-linux-x86_64.tar.gz:application/gzip"
-  "dist/uscreen_${VERSION}_amd64.deb:application/vnd.debian.binary-package"
+  "dist/uscreen-$VERSION-x86_64.AppImage:application/octet-stream"
+  "dist/uscreen-$VERSION-AppImage-sources.tar.gz:application/gzip"
   "dist/uscreen-$VERSION-1.x86_64.rpm:application/x-rpm"
   "dist/uscreen-$VERSION-PKGBUILD.tar.gz:application/gzip"
   "dist/uscreen-$VERSION/uscreen.apk:application/vnd.android.package-archive"
@@ -84,7 +85,7 @@ echo "All $(( ${#ASSETS[@]} )) files present."
 python3 scripts/verify-release-apk.py "dist/uscreen-$VERSION/uscreen.apk"
 
 # Checksums for everything above, published alongside.
-( cd dist && sha256sum "uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen_${VERSION}_amd64.deb" \
+( cd dist && sha256sum "uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION-x86_64.AppImage" "uscreen-$VERSION-AppImage-sources.tar.gz" \
     "uscreen-$VERSION-1.x86_64.rpm" "uscreen-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \
   && cp "uscreen-$VERSION/uscreen.apk" . && sha256sum uscreen.apk >> SHA256SUMS && rm uscreen.apk )
 ASSETS+=("dist/SHA256SUMS:text/plain")

@@ -271,31 +271,8 @@ install_icons() {
     fi
 }
 
-systemd_path() {
-    local value=$1
-    [[ $value = /* ]] || value="$PWD/$value"
-    value=${value//\\/\\\\}
-    value=${value//\"/\\\"}
-    value=${value//%/%%}
-    value=${value//$'\n'/\\n}
-    value=${value//$'\r'/\\r}
-    value=${value//$'\t'/\\t}
-    printf '"%s"' "$value"
-}
-
 write_user_service() {
-    local daemon helper line
-    daemon=$(systemd_path "$BIN_DIR/uscreen") || return
-    helper=$(systemd_path "$BIN_DIR/evdi_helper") || return
-    while IFS= read -r line || [[ -n $line ]]; do
-        case "$line" in
-            # ':' suppresses environment expansion; %% protects specifiers.
-            # Use a fixed executable so arbitrary paths are ordinary arguments.
-            ExecStart=*) printf 'ExecStart=:/usr/bin/env %s --helper %s start\n' "$daemon" "$helper" ;;
-            ExecStop=*) printf 'ExecStop=:/usr/bin/env %s stop\n' "$daemon" ;;
-            *) printf '%s\n' "$line" ;;
-        esac
-    done < "$SCRIPT_DIR/uscreen.service"
+    bash "$SCRIPT_DIR/write-systemd-service.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen.service" "$BIN_DIR/evdi_helper"
 }
 
 write_installed_user_service() {

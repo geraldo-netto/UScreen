@@ -62,7 +62,7 @@ or produced from the checkout you intend to install:
 
 | file | distribution |
 | --- | --- |
-| `uscreen_<ver>_amd64.deb` | Debian 12+, Ubuntu 24.04+, Mint 22+, Pop!_OS 24.04+ — `sudo apt install ./uscreen_*.deb` |
+| `uscreen-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: `chmod +x uscreen-*.AppImage`; see [launch and user installation](docs/appimage-plan.md) |
 | `uscreen-<ver>-1.x86_64.rpm` | openSUSE (`zypper install`), Fedora (RPM Fusion first, then `dnf install --allowerasing`) |
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |

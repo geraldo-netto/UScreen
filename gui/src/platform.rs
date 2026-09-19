@@ -33,6 +33,12 @@ pub(crate) fn publish_pipe(mib: u32) -> Result<(), String> {
 }
 
 pub(crate) fn find_uscreen_bin() -> Option<PathBuf> {
+    #[cfg(target_os = "linux")]
+    match uscreen_config::linux::appimage::launcher() {
+        Ok(Some(path)) => return Some(path),
+        Err(_) => return None,
+        Ok(None) => {}
+    }
     find_uscreen_bin_in(
         std::env::current_exe().ok(),
         installed_binary().unwrap_or_default(),
@@ -55,4 +61,58 @@ pub(crate) fn find_uscreen_bin_in(
         }
     }
     find_in("uscreen", path).or_else(|| is_executable(&installed).then_some(installed))
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod appimage_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t308_outer_launcher_child() {
+        let Ok(mode) = std::env::var("USCREEN_T308_GUI_MODE") else {
+            return;
+        };
+        let expected =
+            std::env::var_os(uscreen_config::linux::appimage::LAUNCHER).map(PathBuf::from);
+        match mode.as_str() {
+            "valid" => assert_eq!(find_uscreen_bin(), expected),
+            "invalid" => assert_eq!(find_uscreen_bin(), None),
+            _ => {
+                let _ = find_uscreen_bin();
+            }
+        }
+    }
+
+    #[test]
+    fn t308_gui_uses_outer_image_and_refuses_moved_images() {
+        let root = tempfile::tempdir().unwrap();
+        let image = root.path().join("space %h$.AppImage");
+        std::fs::write(&image, "#!/bin/sh\nexit 0\n").unwrap();
+        std::fs::set_permissions(&image, std::fs::Permissions::from_mode(0o700)).unwrap();
+        for (mode, path) in [
+            ("valid", Some(image)),
+            ("invalid", Some(root.path().join("moved"))),
+            ("native", None),
+        ] {
+            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            command
+                .args([
+                    "--exact",
+                    "platform::appimage_tests::t308_outer_launcher_child",
+                    "--nocapture",
+                ])
+                .env("USCREEN_T308_GUI_MODE", mode)
+                .env_remove(uscreen_config::linux::appimage::LAUNCHER);
+            if let Some(path) = path {
+                command.env(uscreen_config::linux::appimage::LAUNCHER, path);
+            }
+            let result = command.output().unwrap();
+            assert!(
+                result.status.success(),
+                "{}",
+                String::from_utf8_lossy(&result.stdout)
+            );
+        }
+    }
 }

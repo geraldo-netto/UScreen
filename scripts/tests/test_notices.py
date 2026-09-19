@@ -13,7 +13,7 @@ NOTICES = ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses/libevdi-LGPL-2.1.txt'
 
 
 class NoticeTest(unittest.TestCase):
-    def test_t129_tar_deb_rpm_and_arch_include_notices(self):
+    def test_t129_tar_appimage_rpm_and_arch_include_notices(self):
         with tempfile.TemporaryDirectory(prefix='uscreen-notices-') as tmp:
             root = Path(tmp)
             version = self.copy_sources(root)
@@ -45,11 +45,12 @@ class NoticeTest(unittest.TestCase):
             self.verify_docs(docs)
             self.assertEqual((docs / 'scripts/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: portable setup missing')
             env['USCREEN_TEST_BUILD'] = 'packages'
+            import appimage_fixture
+            appimage_fixture.install(root)
             run('bash', 'packaging/build-packages.sh')
-            deb = root / 'deb'
-            run('dpkg-deb', '-x', f'dist/uscreen_{version}_amd64.deb', str(deb))
-            self.verify_docs(deb / 'usr/share/doc/uscreen')
-            self.assertEqual((deb / 'usr/share/uscreen/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Debian setup missing')
+            self.verify_docs(root / 'dist/appimage-docs-fixture')
+            self.assertEqual((root / 'dist/appimage-docs-fixture/scripts/setup-evdi.sh').read_bytes(),
+                             (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: AppImage setup missing')
             rpm_files = run('rpm', '-qpl', f'dist/uscreen-{version}-1.x86_64.rpm').splitlines()
             self.assertIn('/usr/share/uscreen/setup-evdi.sh', rpm_files, 'T269: RPM setup missing')
             for name in NOTICES:

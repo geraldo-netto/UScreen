@@ -5,8 +5,7 @@ set -euo pipefail
 trap 'echo "Package smoke failed at line $LINENO" >&2' ERR
 case "$1" in
   debian)
-    apt-get update
-    apt-get install -y --no-install-recommends /artifacts/*.deb
+    exec /source/scripts/ci/appimage-smoke.sh
     ;;
   fedora)
     dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm
