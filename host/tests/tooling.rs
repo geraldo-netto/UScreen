@@ -742,3 +742,13 @@ fn t233_user_installers_share_xdg_paths() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn t250_official_android_release_checks_fork_certificate() {
+    release_tests("t250");
+    let status = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_release_apk.py"))
+        .status()
+        .unwrap();
+    assert!(status.success());
+}

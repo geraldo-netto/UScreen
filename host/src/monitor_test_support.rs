@@ -154,7 +154,8 @@ cat >> "$0.commands"
         !command.contains("am start"),
         "T420: token recovery must not launch an Activity"
     );
-    assert!(command.contains("am broadcast -n com.uscreen/.TokenReceiver"));
+    assert!(command
+        .contains("am broadcast -n io.github.geraldo_netto.uscreen/com.uscreen.TokenReceiver"));
     assert!(command.contains(&token));
     assert!(
         !arguments.contains(&token),

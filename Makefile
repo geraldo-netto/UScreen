@@ -107,7 +107,9 @@ dist-local: build
 	rm -rf dist/uscreen-$(VERSION)
 	rm -f dist/uscreen-$(VERSION)-linux-x86_64.tar.gz
 	./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper $(call quote,$(LIBEVDI)) dist/uscreen-$(VERSION)
-	cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk ../dist/uscreen-$(VERSION)/uscreen.apk
+	./android/gradlew -p android assembleRelease -q
+	python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+	cp android/app/build/outputs/apk/release/app-release.apk dist/uscreen-$(VERSION)/uscreen.apk
 	tar -C dist -czf dist/uscreen-$(VERSION)-linux-x86_64.tar.gz uscreen-$(VERSION)
 	@echo "✓ Release: dist/uscreen-$(VERSION)-linux-x86_64.tar.gz"
 

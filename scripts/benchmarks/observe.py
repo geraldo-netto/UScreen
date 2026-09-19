@@ -69,7 +69,7 @@ class Sampler:
         return {'code': code, 'out': out, 'error': err}
 
     def app_process(self):
-        raw = self.android(['p=$(pidof com.uscreen); test -n "$p" && run-as com.uscreen cat /proc/$p/stat'])
+        raw = self.android(['p=$(pidof io.github.geraldo_netto.uscreen); test -n "$p" && run-as io.github.geraldo_netto.uscreen cat /proc/$p/stat'])
         if raw['code'] != 0:
             return raw
         try:
@@ -89,7 +89,7 @@ class Sampler:
                              if 'mActiveModeId=' in line or 'mBrightnessState=' in line]
 
     def memory_sample(self, result):
-        memory = self.android(['dumpsys', 'meminfo', '--local', 'com.uscreen'])
+        memory = self.android(['dumpsys', 'meminfo', '--local', 'io.github.geraldo_netto.uscreen'])
         result['app_memory'] = [line.strip() for line in memory['out'].splitlines()
                                 if re.match(r'\s*(TOTAL|Native Heap|Dalvik Heap)', line)]
 

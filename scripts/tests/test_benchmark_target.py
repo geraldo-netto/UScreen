@@ -18,7 +18,7 @@ SPEC.loader.exec_module(BASELINE)
 class BenchmarkTargetTests(unittest.TestCase):
     def test_t446_metadata_discovers_android_measurement_units(self):
         def command(args):
-            values = {'com.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}
+            values = {'io.github.geraldo_netto.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}
             return 0, values.get(args[-1], 'fixture'), ''
         args = SimpleNamespace(serial='fixture', geometry='1280x800+0+0', seconds=1, warmup=1)
         with patch.object(BASELINE, 'command', side_effect=command):
@@ -46,7 +46,7 @@ class BenchmarkTargetTests(unittest.TestCase):
             def command(query):
                 if query[-1] == name:
                     return code, value, 'fixture error'
-                return 0, {'com.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}.get(query[-1], 'fixture'), ''
+                return 0, {'io.github.geraldo_netto.uscreen': '123', 'CLK_TCK': '250', 'PAGESIZE': '16384'}.get(query[-1], 'fixture'), ''
             with self.subTest(name=name, code=code, value=value), \
                  patch.object(BASELINE, 'command', side_effect=command):
                 with self.assertRaises(ValueError, msg='T446: never silently guess measurement units'):

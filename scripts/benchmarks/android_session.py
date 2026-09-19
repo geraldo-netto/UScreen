@@ -6,8 +6,8 @@ import threading
 import time
 from observe import process_stat
 
-QUERY = ('p=$(pidof com.uscreen); test -n "$p" || exit 1; '
-         'printf "USCREEN_STAT "; run-as com.uscreen cat /proc/$p/stat || exit 1; '
+QUERY = ('p=$(pidof io.github.geraldo_netto.uscreen); test -n "$p" || exit 1; '
+         'printf "USCREEN_STAT "; run-as io.github.geraldo_netto.uscreen cat /proc/$p/stat || exit 1; '
          'dumpsys window displays; dumpsys window policy')
 
 
@@ -18,7 +18,7 @@ def parse_snapshot(output):
         raise ValueError('tablet process identity unavailable')
     process = process_stat(stat, 1)
     focus = re.findall(r'mCurrentFocus=Window\{[^\n}]*\s([\w.]+)/[\w.$]+\}', output)
-    if focus != ['com.uscreen']:
+    if focus != ['io.github.geraldo_netto.uscreen']:
         raise ValueError('UScreen is not the verified foreground tablet window')
     if re.search(r'(?:mShowingLockscreen|mKeyguardShowing|isKeyguardShowing)\s*=\s*true', output):
         raise ValueError('tablet keyguard is showing')

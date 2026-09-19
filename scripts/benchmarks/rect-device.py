@@ -11,7 +11,7 @@ import observe
 from rect_surface import PresentationSampler
 
 PACKAGE = 'com.uscreen.rectbench'
-SERVICES = ['com.uscreen', 'media.unisoc.codec2', 'surfaceflinger', 'android.hardware.graphics.composer@2.4-service']
+SERVICES = ['io.github.geraldo_netto.uscreen', 'media.unisoc.codec2', 'surfaceflinger', 'android.hardware.graphics.composer@2.4-service']
 
 
 def adb(args, *command, **kwargs):
@@ -25,7 +25,7 @@ def capture(args, *command):
 def foreground(args):
     lines = capture(args, 'shell', 'dumpsys', 'activity', 'activities').splitlines()
     top = [line for line in lines if 'topResumedActivity=' in line]
-    if len(top) != 1 or 'com.uscreen/.MainActivity' not in top[0]:
+    if len(top) != 1 or 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' not in top[0]:
         raise RuntimeError('UScreen is not foreground; do not interrupt another app')
 
 
@@ -47,7 +47,7 @@ def sample(args, pids):
     rows = {}
     for name, pid in pids.items():
         command = ['cat', f'/proc/{pid}/stat']
-        if name in (PACKAGE, 'com.uscreen'):
+        if name in (PACKAGE, 'io.github.geraldo_netto.uscreen'):
             command = ['run-as', name, *command]
         begin = time.monotonic_ns()
         raw = capture(args, 'shell', *command)

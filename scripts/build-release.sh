@@ -51,7 +51,9 @@ D="dist/uscreen-$VERSION"
 rm -rf "$D"
 ./scripts/stage-linux-bundle.sh target-deb12/release target-deb12/evdi_helper target-deb12/evdi-src/library/libevdi.so.1.15.0 "$D"
 python3 scripts/ci/verify-portability.py "$D/bin"
-( cd android && ./gradlew assembleRelease -q && cp app/build/outputs/apk/release/app-release.apk "../$D/uscreen.apk" )
+./android/gradlew -p android assembleRelease -q
+python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+cp android/app/build/outputs/apk/release/app-release.apk "$D/uscreen.apk"
 tar -C dist -czf "dist/uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION"
 
 echo "  helper runpath: $(readelf -d "$D/bin/evdi_helper" | grep -i runpath | grep -oE "\[.*\]")"

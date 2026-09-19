@@ -5,11 +5,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// Release signing: keystore.properties is NOT committed — each maintainer
-// supplies a key (see docs/development.md, "Release APK"). The fork key is
-// provisioned; package migration and publication verification remain T250.
+// Local signing properties stay outside Git. Official release tooling verifies
+// the APK against the designated public certificate (docs/release-signing.md).
 val keystoreProps = Properties().apply {
-    val f = rootProject.file("keystore.properties")
+    val f = rootProject.file(System.getenv("USCREEN_KEYSTORE_PROPERTIES") ?: "keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
@@ -18,7 +17,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.uscreen"
+        applicationId = "io.github.geraldo_netto.uscreen"
         minSdk = 27
         targetSdk = 34
         versionCode = 12

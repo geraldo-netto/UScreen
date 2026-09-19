@@ -41,7 +41,7 @@ def ensure_target(geometry):
 
 
 def metadata(args, monitors):
-    code, pid, _ = command(['adb', '-s', args.serial, 'shell', 'pidof', 'com.uscreen'])
+    code, pid, _ = command(['adb', '-s', args.serial, 'shell', 'pidof', 'io.github.geraldo_netto.uscreen'])
     if code or not pid.isdigit():
         raise ValueError('UScreen must already be running on the tablet')
     scripts = Path(__file__).parent

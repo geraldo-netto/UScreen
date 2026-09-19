@@ -22,7 +22,7 @@ def module(name):
 class CompletionTests(unittest.TestCase):
     def assert_no_relaunch(self, capture):
         targets = [call.args for call in capture.call_args_list
-                   if 'com.uscreen/.MainActivity' in call.args]
+                   if 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' in call.args]
         self.assertEqual(targets, [], 'T485: completion relaunched UScreen over the next app')
 
     def test_t485_decoder_matrix_completion_does_not_choose_foreground_app(self):

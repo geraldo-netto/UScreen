@@ -389,9 +389,12 @@ are documented in [the packetizer replay](benchmarks.md#annex-b-packetizer-repla
 
 The fork's permanent release key has been provisioned. See
 [release signing](release-signing.md) for the public certificate, fingerprint
-and migration status. T250 must migrate the application ID and add publication
-verification before this key is used for official fork releases; current code
-still builds `com.uscreen`. Reuse the designated key for future fork updates.
+and migration instructions. Builds use `io.github.geraldo_netto.uscreen` while
+Kotlin classes retain the `com.uscreen` namespace. Official bundle/publication
+tooling rejects APKs whose package, launcher or signing certificate differs
+from the designated identity, and rejects debuggable APKs. Reuse the designated
+key for future fork updates. Set `USCREEN_KEYSTORE_PROPERTIES` to an owner-only
+properties file outside Git; otherwise Gradle reads `android/keystore.properties`.
 
 For an independent signing identity, the existing local-build mechanism is:
 
@@ -405,7 +408,8 @@ keytool -genkeypair -keystore uscreen-release.keystore -alias uscreen \
 
 The keystore and `keystore.properties` are gitignored. Create a new key only
 for a new signing identity; do not regenerate an established release key.
-An independently generated developer key is not the official fork key. Android
+An independently generated developer key is not the official fork key and
+fails the official release verifier. Android
 requires compatible signing credentials for in-place updates. Debug and
 release APKs normally use different keys. See [release integrity](../SECURITY.md#release-integrity).
 

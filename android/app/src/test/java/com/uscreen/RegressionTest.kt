@@ -326,6 +326,17 @@ class RegressionTest {
         assertEquals(listOf("127.0.0.1"), domains)
     }
 
+    @Test fun t250_forkPackageKeepsProtectedOriginalClasses() {
+        assertEquals("io.github.geraldo_netto.uscreen", app.packageName)
+        for (name in listOf("MainActivity", "TokenActivity")) {
+            val component = ComponentName(app.packageName, "com.uscreen.$name")
+            val info = app.packageManager.getActivityInfo(component, 0)
+            assertEquals("com.uscreen.$name", info.name)
+        }
+        val receiver = ComponentName(app.packageName, "com.uscreen.TokenReceiver")
+        assertEquals("android.permission.DUMP", app.packageManager.getReceiverInfo(receiver, 0).permission)
+    }
+
     @Test fun t039_launcherIntentCannotOverwriteTrustedToken() {
         val prefs = Prefs(app).apply { hostToken = "trusted"; checkUpdates = false }
         val controller = Robolectric.buildActivity(MainActivity::class.java, Intent().putExtra("token", "untrusted")).create()

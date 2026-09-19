@@ -1,9 +1,10 @@
 # Fork Android release identity
 
 The maintainer designated an independent fork identity on 2026-09-18, and its
-permanent signing key has been provisioned. **Integration remains open as T250:**
-current code still builds `com.uscreen`, the host addresses that package, and
-the publication workflow does not yet enforce the certificate below.
+permanent signing key has been provisioned. Android builds the fork package
+below. Host discovery, launch, token delivery and capability queries target
+that package; Kotlin classes retain their `com.uscreen` namespace. Release
+bundling and publication verify the APK against the designated certificate.
 
 | Property | Value |
 | --- | --- |
@@ -47,8 +48,47 @@ Inspect the tracked public certificate without accessing private material:
 openssl x509 -in docs/release-certificate.pem -noout -fingerprint -sha256 -dates
 ```
 
-Before T250 is complete, migrate host component targets and Android packaging,
-document settings migration, and add permanent package-targeting and
-wrong-certificate publication regressions. The certificate fingerprint must be
-checked on the actual release APK before publication. Do not configure this
-fork release key for the current upstream application ID.
+## Build and verify
+
+Provide an owner-only properties file outside the repository containing
+`storeFile`, `storePassword`, `keyAlias` and `keyPassword`. Use the provisioned
+keystore and alias above; do not generate a replacement. `storeFile` should be
+an absolute path. The environment variable selects the properties file without
+putting passwords on the command line:
+
+```bash
+USCREEN_KEYSTORE_PROPERTIES=/private/path/keystore.properties \
+  ./android/gradlew -p android assembleRelease
+python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+```
+
+The verifier uses stock Android SDK `apksigner` and `aapt2`, from PATH or the
+latest stable installed build-tools directory. It discovers the SDK through
+`ANDROID_SDK_ROOT`, `ANDROID_HOME`, then `android/local.properties`. Verification
+requires a valid APK signature, exactly one signer matching the tracked public
+certificate, the fork package, `com.uscreen.MainActivity` as launcher, and a
+non-debuggable APK. Missing tools, unsigned/debug APKs and mismatched identities
+fail closed. Both release bundle builders verify before copying the APK;
+publication verifies the staged APK before any release API writes.
+
+## Migration from the upstream package
+
+Install the fork APK alongside the existing `com.uscreen` app. The host now
+looks specifically for `io.github.geraldo_netto.uscreen`, so an upstream-only
+installation is reported as missing. The fork has separate Android private
+data. Note the old app's brightness, refresh, decoder and other preferences,
+then select them in the fork app as needed; there is no automatic settings
+transfer. The installer does not remove the old app. Both apps can remain
+installed, but use the fork with the updated host.
+
+An explicit launch uses the application ID and the original class namespace:
+
+```bash
+adb shell am start -n io.github.geraldo_netto.uscreen/com.uscreen.MainActivity
+```
+
+Debug builds use the same fork application ID with a different signing key.
+They cannot replace an official release in place. Preserve app data and check
+which APK is installed before choosing a migration; do not automatically
+uninstall an app to bypass a signature mismatch. Future official releases use
+the same designated package and signing identity.

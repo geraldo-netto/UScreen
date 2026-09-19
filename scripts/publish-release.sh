@@ -81,6 +81,8 @@ for a in "${ASSETS[@]}"; do
 done
 echo "All $(( ${#ASSETS[@]} )) files present."
 
+python3 scripts/verify-release-apk.py "dist/uscreen-$VERSION/uscreen.apk"
+
 # Checksums for everything above, published alongside.
 ( cd dist && sha256sum "uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen_${VERSION}_amd64.deb" \
     "uscreen-$VERSION-1.x86_64.rpm" "uscreen-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \

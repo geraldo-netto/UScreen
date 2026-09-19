@@ -176,12 +176,13 @@ they do not independently authenticate its publisher.
 
 The fork's permanent Android release key is provisioned; its public certificate
 and SHA-256 fingerprint are recorded in [release signing](docs/release-signing.md).
-The selected application ID is `io.github.geraldo_netto.uscreen`. Current code
-still builds `com.uscreen` and accepts a supplied keystore: application-ID
-migration and publication-time certificate enforcement remain open under T250.
-Provisioning the key does not establish that existing APKs were signed with it.
-The planned fork package installs separately from upstream; no upstream
-certificate is asserted as the fork identity.
+Builds use `io.github.geraldo_netto.uscreen`. Release bundling and publication
+verify a valid APK signature with exactly the designated certificate, package,
+launcher and non-debuggable status before proceeding. Independent local builds
+may use another key, but the official release gate rejects them. These checks
+do not establish the identity of previously built or installed APKs. The fork
+installs separately from upstream, with separate private settings; installers
+do not remove the existing app.
 
 Android updates require compatible signing credentials;
 a debug APK, a differently signed release, a version downgrade or platform

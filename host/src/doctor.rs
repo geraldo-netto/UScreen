@@ -516,9 +516,9 @@ async fn check_tablet_session(
             "broadcast",
             "--include-stopped-packages",
             "-n",
-            "com.uscreen/.CodecReportReceiver",
+            &uscreen_config::android::Component::CodecReportReceiver.adb_name(),
             "-a",
-            "com.uscreen.DECODER_CAPABILITIES",
+            "io.github.geraldo_netto.uscreen.DECODER_CAPABILITIES",
             "--ei",
             "uscreen_codecs_version",
             "2",
@@ -532,12 +532,25 @@ async fn check_tablet_session(
     report_codec(r, cfg, codec_output.as_deref());
 
     let mut pm_args: Vec<&str> = vec!["-s", &session.serial];
-    pm_args.extend_from_slice(&["shell", "pm", "list", "packages", "com.uscreen"]);
+    pm_args.extend_from_slice(&[
+        "shell",
+        "pm",
+        "list",
+        "packages",
+        uscreen_config::android::PACKAGE,
+    ]);
     if let Some(out) = output_of(adb, &pm_args).await {
-        if out.contains("com.uscreen") {
+        if out
+            .lines()
+            .any(|line| line.trim() == format!("package:{}", uscreen_config::android::PACKAGE))
+        {
             r.line(Level::Ok, "tablet app", "installed");
         } else {
-            r.line(Level::Fail, "tablet app", "com.uscreen not installed");
+            r.line(
+                Level::Fail,
+                "tablet app",
+                "io.github.geraldo_netto.uscreen not installed",
+            );
             r.hint(&format!(
                 "download uscreen.apk from {} then: adb -s {} install -r uscreen.apk",
                 crate::update::RELEASES_PAGE,
@@ -1873,8 +1886,8 @@ case "$*" in
   devices) printf 'List of devices attached\nPHONE\tdevice\nTABLET\tdevice\n192.0.2.1:5555\tdevice\nEXTRA\tdevice\n';;
   '-s 192.0.2.1:5555 reverse --list') printf 'USB tcp:8890 tcp:19000\nUSB tcp:8891 tcp:19100\n';;
   '-s EXTRA reverse --list') printf 'USB tcp:8890 tcp:19004\nUSB tcp:8891 tcp:19104\n';;
-  *'pm path com.uscreen') [ "$2" = TABLET ] && echo package:/app/uscreen.apk;;
-  *'pm list packages com.uscreen') echo package:com.uscreen;;
+  *'pm path io.github.geraldo_netto.uscreen') [ "$2" = TABLET ] && echo package:/app/uscreen.apk;;
+  *'pm list packages io.github.geraldo_netto.uscreen') echo package:io.github.geraldo_netto.uscreen;;
 esac
 exit 0
 "#, log.display())).unwrap();

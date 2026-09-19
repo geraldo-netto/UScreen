@@ -166,15 +166,15 @@ class ObservationTests(unittest.TestCase):
 
 
 STAT = '123 (app) S 1 1 0 0 -1 0 0 0 0 0 200 50 0 0 20 0 3 0 900 1000000 12'
-FOREGROUND = 'USCREEN_STAT ' + STAT + '\nmCurrentFocus=Window{abc u0 com.uscreen/com.uscreen.MainActivity}\nmShowingLockscreen=false\n'
+FOREGROUND = 'USCREEN_STAT ' + STAT + '\nmCurrentFocus=Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\nmShowingLockscreen=false\n'
 
 
 class AndroidFocusSectionTests(unittest.TestCase):
     def test_t488_query_reads_focus_from_android_display_dump(self):
         # Android 16 device evidence: `windows` enumerates app windows but
         # `displays` owns mCurrentFocus. A visible window alone is insufficient.
-        windows = 'Window #10 Window{abc u0 com.uscreen/com.uscreen.MainActivity}\n'
-        displays = 'mCurrentFocus=Window{abc u0 com.uscreen/com.uscreen.MainActivity}\n'
+        windows = 'Window #10 Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\n'
+        displays = 'mCurrentFocus=Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\n'
 
         def shell(arguments, **kwargs):
             query = arguments[-1]
@@ -201,7 +201,7 @@ class TabletSessionTests(unittest.TestCase):
             self.assertEqual(snapshot('fixture'), dict(pid=123, start_ticks=900, foreground=True))
 
     def test_t470_background_unknown_focus_and_keyguard_are_rejected(self):
-        cases = [FOREGROUND.replace('com.uscreen/', 'com.other/'),
+        cases = [FOREGROUND.replace('io.github.geraldo_netto.uscreen/', 'com.other/'),
                  FOREGROUND.replace('mCurrentFocus=', 'oldFocus='),
                  FOREGROUND.replace('mShowingLockscreen=false', 'mShowingLockscreen=true')]
         for text in cases:

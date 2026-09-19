@@ -110,6 +110,31 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
 #[cfg(test)]
 mod cli_tests {
     #[test]
+    fn t250_activity_and_token_targets_use_fork_package_and_original_classes() {
+        let with_token = super::app_launch_command(Some(&"a".repeat(64)));
+        assert!(with_token.contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenActivity"));
+        assert!(super::app_launch_command(None)
+            .contains("io.github.geraldo_netto.uscreen/com.uscreen.MainActivity"));
+        assert!(super::token_delivery_command(None)
+            .contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenReceiver"));
+    }
+
+    #[tokio::test]
+    async fn t250_discovery_requires_the_fork_even_when_upstream_is_installed() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(&adb, r#"#!/bin/sh
+if [ "$6" = com.uscreen ]; then echo package:/upstream/base.apk; exit 0; fi
+if [ "$6" = io.github.geraldo_netto.uscreen ] && [ "$2" = FORK ]; then echo package:/fork/base.apk; exit 0; fi
+exit 1
+"#).unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(!super::app_installed_with("UPSTREAM", adb.to_str().unwrap()).await);
+        assert!(super::app_installed_with("FORK", adb.to_str().unwrap()).await);
+    }
+
+    #[test]
     fn t321_explicit_cli_low_clock_is_not_silently_repaired() {
         use clap::Parser;
         let cli = super::Cli::parse_from([
@@ -1060,7 +1085,9 @@ printf '%s\n' "$2" >> "$0.log"
     fn t039_host_sends_tokens_only_to_the_protected_activity() {
         let token = "a".repeat(64);
         let cmd = super::app_launch_command(Some(&token));
-        assert!(cmd.contains("com.uscreen/.TokenActivity --es token"));
+        assert!(
+            cmd.contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenActivity --es token")
+        );
         assert!(!cmd.contains(".MainActivity --es token"));
         assert!(super::app_launch_command(None).contains(".MainActivity"));
     }
@@ -2411,14 +2438,13 @@ impl TabletConnection<'_> {
 /// to a local process that must not receive it. Failed input authentication
 /// requests a protected broadcast, never an Activity launch.
 fn app_launch_command(token: Option<&str>) -> String {
-    let mut cmd = format!(
-        "am start -n com.uscreen/.{}",
-        if token.is_some() {
-            "TokenActivity"
-        } else {
-            "MainActivity"
-        }
-    );
+    use uscreen_config::android::Component;
+    let component = if token.is_some() {
+        Component::TokenActivity
+    } else {
+        Component::MainActivity
+    };
+    let mut cmd = format!("am start -n {}", component.adb_name());
     if let Some(t) = token {
         // Hex only, so no quoting is needed and nothing can break out.
         cmd.push_str(" --es token ");
@@ -2434,7 +2460,10 @@ async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
 }
 
 fn token_delivery_command(token: Option<&str>) -> String {
-    let mut command = "am broadcast -n com.uscreen/.TokenReceiver".to_string();
+    let mut command = format!(
+        "am broadcast -n {}",
+        uscreen_config::android::Component::TokenReceiver.adb_name()
+    );
     if let Some(token) = token {
         command.push_str(" --es token ");
         command.push_str(token);
@@ -2614,7 +2643,14 @@ async fn app_presence_with(serial: &str, adb: &str) -> Option<bool> {
         return Some(true);
     }
     let out = tokio::process::Command::new(adb)
-        .args(["-s", serial, "shell", "pm", "path", "com.uscreen"])
+        .args([
+            "-s",
+            serial,
+            "shell",
+            "pm",
+            "path",
+            uscreen_config::android::PACKAGE,
+        ])
         .output_bounded()
         .await
         .ok()?;

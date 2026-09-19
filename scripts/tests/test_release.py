@@ -34,6 +34,8 @@ class ReleaseTest(unittest.TestCase):
         for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
             self.write(name, '#!/bin/sh\ntouch "$USCREEN_TEST_ROOT/build-called"\nexit 42\n', True)
         self.write('scripts/publish-release.sh', (REPO / 'scripts/publish-release.sh').read_text(), True)
+        for name in ['scripts/verify-release-apk.py', 'docs/release-certificate.pem']:
+            self.write(name, (REPO / name).read_text())
         self.git('init', '-q')
         self.git('config', 'user.email', 'test@example.invalid')
         self.git('config', 'user.name', 'Regression Test')
@@ -101,6 +103,13 @@ class ReleaseTest(unittest.TestCase):
         self.git('commit', '-qm', 'mock builds')
         self.git('tag', '-fa', 'v1.2.3', '-m', 'mock release')
         self.git('push', '-q', '-f', 'origin', 'refs/tags/v1.2.3')
+        for name, report in {
+            'apksigner': 'Signer #1 certificate SHA-256 digest: 1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400',
+            'aapt2': "package: name='io.github.geraldo_netto.uscreen'\nlaunchable-activity: name='com.uscreen.MainActivity'",
+        }.items():
+            tool = self.bin / name
+            tool.write_text("#!/bin/sh\ncat <<'REPORT'\n" + report + "\nREPORT\n")
+            tool.chmod(0o755)
         # urllib is intercepted in every child interpreter. No real HTTP.
         site = self.base / 'sitecustomize.py'
         site.write_text((REPO / 'scripts/tests/release_api_stub.py').read_text())
@@ -112,6 +121,15 @@ class ReleaseTest(unittest.TestCase):
         curl = self.bin / 'curl'
         curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$USCREEN_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
         curl.chmod(0o755)
+
+    def test_t250_wrong_certificate_prevents_all_release_api_writes(self):
+        self.enable_uploads()
+        signer = self.bin / 'apksigner'
+        signer.write_text('#!/bin/sh\necho "Signer #1 certificate SHA-256 digest: ' + '0' * 64 + '"\n')
+        signer.chmod(0o755)
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0, 'T250: wrong-certificate APK was published')
+        self.assertFalse((self.base / 'requests').exists(), 'T250: release API reached before signing verification')
 
     def test_t117_failed_uploads_never_publish(self):
         import json

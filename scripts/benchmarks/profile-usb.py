@@ -23,7 +23,7 @@ PACKAGE = 'com.uscreen.decoderbench.candidate'
 def foreground(serial):
     state = DEVICE.capture(serial, 'shell', 'dumpsys', 'activity', 'activities')
     top = [line for line in state.splitlines() if 'topResumedActivity=' in line]
-    if len(top) != 1 or 'com.uscreen/.MainActivity' not in top[0]:
+    if len(top) != 1 or 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' not in top[0]:
         raise RuntimeError('tablet is not available in the authorized UScreen foreground')
 
 
