@@ -46,6 +46,15 @@ pub(super) struct Owned {
 }
 
 impl Owned {
+    pub(super) fn rotate(&mut self) -> Result<()> {
+        let retired = self.identity;
+        self.replace_retired(retired)?;
+        anyhow::ensure!(
+            self.identity != retired,
+            "capture FIFO ownership changed before restart"
+        );
+        Ok(())
+    }
     pub(super) fn create(path: &Path) -> Result<Self> {
         super::helper::ensure_fifo(path)?;
         let inode = std::fs::OpenOptions::new()
@@ -91,5 +100,52 @@ impl Drop for Owned {
         if self.identity.matches(&self.path).unwrap_or(false) {
             let _ = std::fs::remove_file(&self.path);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t498_rotation_preserves_replacements_and_rejects_missing_ownership() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("frames");
+        let mut owned = Owned::create(&path).unwrap();
+        let retired = owned.identity;
+        owned.rotate().unwrap();
+        let fresh = owned.identity;
+        owned.replace_retired(retired).unwrap();
+        assert_eq!(owned.identity, fresh, "T498: late reset rotated fresh FIFO");
+        std::fs::remove_file(&path).unwrap();
+        assert!(owned.rotate().is_err());
+        let replacement = Owned::create(&path).unwrap();
+        assert!(owned.rotate().is_err());
+        drop(owned);
+        assert!(replacement.identity.matches(&path).unwrap());
+    }
+
+    #[test]
+    fn t498_reset_parser_bounds_and_mutation_corpus() {
+        for a in ["0", "1", "18446744073709551615"] {
+            for b in ["0", "1", "18446744073709551615"] {
+                assert!(Identity::from_reset_line(&format!("FIFO_RESET {a} {b}")).is_some());
+            }
+        }
+        for bad in ["", "-1", "18446744073709551616", "1.0", "NaN", "\0"] {
+            assert!(Identity::from_reset_line(&format!("FIFO_RESET {bad} 1")).is_none());
+            assert!(Identity::from_reset_line(&format!("FIFO_RESET 1 {bad}")).is_none());
+        }
+        let seed = b"FIFO_RESET 123 456";
+        for offset in 0..seed.len() {
+            for byte in 0..=255 {
+                let mut input = seed.to_vec();
+                input[offset] = byte;
+                if let Ok(text) = std::str::from_utf8(&input) {
+                    let _ = Identity::from_reset_line(text);
+                }
+            }
+        }
+        assert!(Identity::from_reset_line("FIFO_RESET 1 2 extra").is_none());
     }
 }

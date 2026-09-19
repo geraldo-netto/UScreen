@@ -171,3 +171,93 @@ fn t429_ownership_does_not_hold_fifo_endpoints_open() {
     drop(owned);
     assert!(!path.exists(), "T429: owned FIFO leaked on Drop");
 }
+
+fn restart_run(manager: &CaptureManager) -> CaptureRun {
+    let config = &manager.config;
+    let settings = EncoderSettings {
+        encoder: config.encoder.clone(),
+        fps: config.fps,
+        bitrate: config.bitrate,
+        width: config.width,
+        height: config.height,
+        quality: config.quality,
+        width_mm: config.width_mm,
+        height_mm: config.height_mm,
+        stream_scale: config.stream_scale,
+        geometry_ready: true,
+        decoders: None,
+        decoder_epoch: 0,
+        selection: None,
+    };
+    CaptureRun {
+        settings_rx: watch::channel(settings).1,
+        display_rx: watch::channel(true).1,
+        shutdown_rx: watch::channel(false).1,
+        mode_rx: manager.helper.mode_rx.clone(),
+        stream_rx: manager.helper.stream_rx.clone(),
+        fifo_reset_rx: manager.helper.fifo_reset_rx.clone(),
+        backoff_ms: 0,
+        explained_evdi: false,
+        pipeline_started_at: Instant::now(),
+        encoder_mode: Some((1280, 800)),
+    }
+}
+
+#[tokio::test]
+async fn t498_encoder_restart_retires_reader_and_queued_frame_suffix() {
+    use std::{
+        io::{Read, Write},
+        os::unix::fs::OpenOptionsExt,
+    };
+    for cause in 0..3 {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("frames");
+        let mut manager = CaptureManager::new(Default::default());
+        manager.helper.fifo = Some(fifo::Owned::create(&path).unwrap());
+        // Keep both old endpoints alive so unread bytes cannot disappear by luck.
+        let mut old = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .custom_flags(libc::O_NONBLOCK)
+            .open(&path)
+            .unwrap();
+        old.write_all(&[128; 4096]).unwrap();
+        let old_inode = old.metadata().unwrap().ino();
+        let child = tokio::process::Command::new("sleep")
+            .arg("60")
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        let pid = child.id().unwrap();
+        manager.encoder.child = Some(child);
+        let mut run = restart_run(&manager);
+        let _ = manager
+            .finish_encoder_session(
+                SessionChanges {
+                    settings_changed: cause == 0,
+                    mode_changed: cause == 1,
+                    fifo_reset: cause == 2,
+                    display_dropped: false,
+                },
+                &mut run,
+            )
+            .await;
+        let mut fresh = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NONBLOCK)
+            .open(&path)
+            .unwrap();
+        assert_ne!(
+            old_inode,
+            fresh.metadata().unwrap().ino(),
+            "T498: a new encoder could consume a retired frame suffix"
+        );
+        assert_eq!(fresh.read(&mut [0; 4096]).unwrap(), 0);
+        assert!(
+            !std::path::Path::new(&format!("/proc/{pid}")).exists(),
+            "T498: old encoder must be reaped before a new reader starts"
+        );
+        assert_eq!(run.encoder_mode, None);
+        manager.shutdown().await;
+    }
+}

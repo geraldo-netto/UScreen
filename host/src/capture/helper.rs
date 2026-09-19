@@ -111,6 +111,12 @@ impl HelperProcess {
         }
         Ok(())
     }
+    pub(super) fn rotate_fifo(&mut self) -> Result<()> {
+        self.fifo
+            .as_mut()
+            .context("no owned capture FIFO")?
+            .rotate()
+    }
     pub(super) fn is_running(&self) -> bool {
         self.child.is_some()
     }

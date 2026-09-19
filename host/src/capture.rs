@@ -176,7 +176,7 @@ impl CaptureManager {
                 return Ok(());
             };
             run.adjust_backoff(changes);
-            self.finish_encoder_session(changes, &mut run).await;
+            self.finish_encoder_session(changes, &mut run).await?;
         }
     }
 
@@ -509,17 +509,22 @@ impl CaptureManager {
         }))
     }
 
-    async fn finish_encoder_session(&mut self, changes: SessionChanges, run: &mut CaptureRun) {
+    async fn finish_encoder_session(
+        &mut self,
+        changes: SessionChanges,
+        run: &mut CaptureRun,
+    ) -> Result<()> {
         // Clean up and retry. On a settings or mode change, keep the helper
         // alive (an fps/resolution change is handled at the top of the loop)
         // so the virtual display doesn't flicker off.
         if !changes.keep_helper() {
             self.helper.terminate().await;
         }
-        if changes.fifo_reset {
-            self.encoder.shutdown().await;
-        } else {
-            self.encoder.stop();
+        // Every replacement reader needs a whole-frame boundary, even when
+        // the writer has not yet reported a partial write. Reap before rotation.
+        self.encoder.shutdown().await;
+        if changes.keep_helper() {
+            self.helper.rotate_fifo()?;
         }
         run.encoder_mode = None;
         // Reset codec config so it gets re-extracted on restart
@@ -527,6 +532,7 @@ impl CaptureManager {
         if changes.crashed() {
             run.pause(run.backoff_ms).await;
         }
+        Ok(())
     }
 
     pub fn stop(&mut self) {
