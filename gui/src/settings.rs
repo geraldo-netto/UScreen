@@ -62,7 +62,7 @@ impl PendingSave {
             submitted,
             baseline,
             restart,
-            Box::new(|mib| uscreen_config::linux::pipe::publish(mib).map_err(|e| e.to_string())),
+            Box::new(crate::platform::publish_pipe),
         )
     }
 
@@ -232,6 +232,7 @@ mod tests {
         assert_eq!(store.load(), saved);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn t463_concurrent_saves_cannot_publish_older_pipe_request_last() {
         use std::sync::mpsc;
@@ -289,6 +290,7 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn t415_live_pipe_save_persists_then_publishes_without_restart() {
         let dir = tempfile::tempdir().unwrap();

@@ -2,54 +2,30 @@
 
 mod conversion_settings;
 mod pipe_settings;
+mod platform;
 mod settings;
+use platform::*;
 mod status_poll;
 mod status_worker;
+#[cfg(all(test, windows))]
+mod windows_tests;
 
 use eframe::egui;
+#[cfg(all(test, target_os = "linux"))]
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use uscreen_config::commands::SyncCommandExt;
-use uscreen_config::commands::{daemon_command_timeout, spawn_reaped};
-use uscreen_config::linux::daemon;
 use uscreen_config::model::{
     FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
 };
 use uscreen_config::storage::{config_path, ConfigStore};
 
-/// Autostart can be a user service or an XDG desktop entry.
-fn autostart_enabled() -> bool {
-    uscreen_config::linux::autostart::enabled()
-}
-
-fn set_autostart(on: bool) -> Result<(), String> {
-    set_autostart_with(on, || !daemon::discover(Some(&pid_path())).is_empty())
-}
-
-fn set_autostart_with(on: bool, running: impl Fn() -> bool) -> Result<(), String> {
-    let bin = if on {
-        find_uscreen_bin().ok_or("uscreen binary not found")?
-    } else {
-        PathBuf::new()
-    };
-    uscreen_config::linux::autostart::set_enabled(on, &bin).map_err(|e| e.to_string())?;
-    let result = if on {
-        if !running() {
-            start_daemon_with(service_managed_with(&running))
-        } else {
-            Ok(())
-        }
-    } else {
-        run_daemon_command("stop", service_managed_with(&running))
-    };
-    result.map_err(|e| format!("Autostart preference saved; daemon action failed: {e}"))
-}
-
 #[derive(Default, Clone, PartialEq, Eq)]
 struct Status {
     daemon_running: bool,
+    daemon_binary: bool,
     daemon_pid: u32,
     tablet_connected: bool,
     tablet_model: String,
@@ -64,240 +40,14 @@ struct Status {
 }
 
 fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
-    status.evdi_count < config.max_tablets.clamp(1, 4) as i32
-        || ((config.input_touch || config.input_pen) && !status.uinput_ok)
+    capabilities().system_setup
+        && (status.evdi_count < config.max_tablets.clamp(1, 4) as i32
+            || ((config.input_touch || config.input_pen) && !status.uinput_ok))
 }
 
-fn home() -> String {
-    std::env::var("HOME").unwrap_or_default()
-}
-
-fn pid_path() -> PathBuf {
-    PathBuf::from(format!("{}/.local/share/uscreen/uscreen.pid", home()))
-}
-
-fn find_uscreen_bin() -> Option<PathBuf> {
-    find_uscreen_bin_in(
-        std::env::current_exe().ok(),
-        PathBuf::from(format!("{}/.local/bin/uscreen", home())),
-        &std::env::var_os("PATH").unwrap_or_default(),
-    )
-}
-
-fn find_uscreen_bin_in(
-    exe: Option<PathBuf>,
-    installed: PathBuf,
-    path: &std::ffi::OsStr,
-) -> Option<PathBuf> {
-    use uscreen_config::linux::programs::{find_in, is_executable};
-    if let Some(sibling) = exe.and_then(|exe| exe.parent().map(|dir| dir.join("uscreen"))) {
-        if is_executable(&sibling) {
-            return Some(sibling);
-        }
-    }
-    find_in("uscreen", path).or_else(|| is_executable(&installed).then_some(installed))
-}
-
-use uscreen_config::linux::programs::command_exists;
-
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 fn poll_status() -> Status {
     status_poll::StatusPoller::default().poll(true)
-}
-
-#[cfg(test)]
-fn apply_tablet_status(s: &mut Status, text: &str, sessions_path: Option<&std::path::Path>) {
-    let sessions = sessions_path
-        .and_then(uscreen_config::runtime::load_sessions)
-        .unwrap_or_default();
-    apply_tablet_sessions(s, text, sessions);
-}
-
-fn apply_tablet_sessions(
-    s: &mut Status,
-    text: &str,
-    mut sessions: Vec<uscreen_config::runtime::TabletSession>,
-) {
-    sessions.sort_by_key(|session| session.instance);
-    let models: Vec<_> = sessions
-        .iter()
-        .filter_map(|session| {
-            let line = text.lines().find(|line| {
-                let mut fields = line.split_whitespace();
-                fields.next() == Some(session.serial.as_str()) && fields.next() == Some("device")
-            })?;
-            Some(
-                line.split_whitespace()
-                    .find_map(|field| field.strip_prefix("model:"))
-                    .unwrap_or(&session.serial)
-                    .replace('_', " "),
-            )
-        })
-        .collect();
-    s.tablet_connected = !models.is_empty();
-    s.tablet_model = models.join(", ");
-}
-
-/// One-time privileged setup via the desktop's graphical password prompt:
-/// pre-create an EVDI device now and at every boot.
-fn system_setup_script(root: &std::path::Path, max_tablets: u32) -> String {
-    let count = max_tablets.clamp(1, 4);
-    let script = format!(
-        r#"set -e
-mkdir -p /etc/modprobe.d /etc/modules-load.d
-echo 'options evdi initial_device_count={count}' > /etc/modprobe.d/uscreen-evdi.conf
-printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf
-modprobe evdi || true
-modprobe uinput || true
-existing=$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)
-if [ "$existing" -lt {count} ]; then
-    echo "$(({count} - existing))" > /sys/devices/evdi/add
-fi"#
-    );
-    let script = format!("{}\nmkdir -p /etc/udev/rules.d\ncat > /etc/udev/rules.d/60-uscreen-uinput.rules <<'USCREEN_RULE'\n{}USCREEN_RULE\nudevadm control --reload\nudevadm trigger --name-match=uinput\n", script,
-        include_str!("../../packaging/60-uscreen-uinput.rules"));
-    script
-        .replace("/etc/", &format!("{}/etc/", root.display()))
-        .replace("/sys/", &format!("{}/sys/", root.display()))
-}
-
-fn run_system_setup(max_tablets: u32) -> Result<(), String> {
-    let script = system_setup_script(std::path::Path::new("/"), max_tablets);
-    system_setup_result(
-        Command::new("pkexec").args(["sh", "-c", &script]),
-        Duration::from_secs(120),
-    )
-}
-
-fn system_setup_result(command: &mut Command, timeout: Duration) -> Result<(), String> {
-    let out = command
-        .output_timeout(timeout)
-        .map_err(|e| {
-            if e.kind() == std::io::ErrorKind::TimedOut {
-                "Setup response timed out. Setup may still be running with elevated permissions. Wait and check its status before trying again.".to_owned()
-            } else {
-                format!("pkexec failed to run: {e}")
-            }
-        })?;
-    if out.status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "Setup failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        ))
-    }
-}
-
-fn daemon_command(bin: &std::path::Path, action: &str, managed: bool) -> Command {
-    if managed {
-        let mut command = Command::new("systemctl");
-        command.args(["--user", action, "uscreen.service"]);
-        command
-    } else {
-        let mut command = Command::new(bin);
-        command.arg(action);
-        command
-    }
-}
-
-fn service_managed() -> bool {
-    service_managed_with(|| !daemon::discover(Some(&pid_path())).is_empty())
-}
-
-fn service_managed_with(running: impl FnOnce() -> bool) -> bool {
-    if Command::new("systemctl")
-        .args(["--user", "is-active", "--quiet", "uscreen.service"])
-        .output_bounded()
-        .is_ok_and(|output| output.status.success())
-    {
-        return true;
-    }
-    if running() {
-        return false;
-    }
-    uscreen_config::linux::autostart::systemd_available()
-}
-
-fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
-    let bin = if managed {
-        PathBuf::new()
-    } else {
-        find_uscreen_bin().ok_or("uscreen binary not found")?
-    };
-    execute_daemon_command(action, &mut daemon_command(&bin, action, managed), managed)
-}
-
-fn execute_daemon_command(
-    action: &str,
-    command: &mut Command,
-    managed: bool,
-) -> Result<(), String> {
-    let output = command
-        .output_timeout(daemon_command_timeout(managed))
-        .map_err(|e| e.to_string())?;
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "{} failed: {}",
-            action,
-            String::from_utf8_lossy(&output.stderr).trim()
-        ))
-    }
-}
-
-fn restart_daemon() -> Result<(), String> {
-    restart_with(service_managed(), run_daemon_command, start_direct_daemon)
-}
-
-fn restart_with(
-    managed: bool,
-    mut run: impl FnMut(&str, bool) -> Result<(), String>,
-    start: impl FnOnce() -> Result<(), String>,
-) -> Result<(), String> {
-    if managed {
-        return run("restart", true);
-    }
-    run("stop", false)?;
-    start()
-}
-
-fn start_daemon() -> Result<(), String> {
-    start_daemon_with(service_managed())
-}
-
-fn start_daemon_with(managed: bool) -> Result<(), String> {
-    if managed {
-        return run_daemon_command("start", true);
-    }
-    start_direct_daemon()
-}
-
-fn start_direct_daemon() -> Result<(), String> {
-    let bin = find_uscreen_bin().ok_or("uscreen binary not found — run `make install`")?;
-    let log_dir = PathBuf::from(format!("{}/.local/share/uscreen", home()));
-    let _ = std::fs::create_dir_all(&log_dir);
-    let log = std::fs::File::create(log_dir.join("daemon.log")).map_err(|e| e.to_string())?;
-    let log_err = log.try_clone().map_err(|e| e.to_string())?;
-    let mut child = daemon_command(&bin, "start", false)
-        .stdout(log)
-        .stderr(log_err)
-        .stdin(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Failed to start daemon: {}", e))?;
-    // The GUI launches the foreground daemon as a child. The
-    // std::process::Child handle must still be waited on or the kernel
-    // leaves a zombie behind once it exits. Reap it on a background thread
-    // instead of blocking the GUI.
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    Ok(())
-}
-
-fn stop_daemon() -> Result<(), String> {
-    run_daemon_command("stop", service_managed())
 }
 
 fn dispatch_action(
@@ -337,23 +87,6 @@ enum Tab {
 
 use uscreen_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
 
-fn os_release_name() -> String {
-    std::fs::read_to_string("/etc/os-release")
-        .ok()
-        .and_then(|t| {
-            t.lines().find_map(|l| {
-                l.strip_prefix("PRETTY_NAME=")
-                    .map(|v| v.trim_matches('"').to_string())
-            })
-        })
-        .unwrap_or_default()
-        + " / "
-        + &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default()
-        + " ("
-        + &std::env::var("XDG_SESSION_TYPE").unwrap_or_default()
-        + ")"
-}
-
 fn urlencode(s: &str) -> String {
     let mut out = String::new();
     for b in s.bytes() {
@@ -385,7 +118,7 @@ fn compatibility_url(distro: &str, encoder: &str, tablet: &str, version: &str) -
 }
 
 use uscreen_config::release::newer_from_json as release_from_response;
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 use uscreen_config::version::is_newer as is_newer_version;
 
 /// One request when the window opens. Reports; never installs.
@@ -663,10 +396,10 @@ impl App {
             {
                 let url = compatibility_url(&os_release_name(), &self.cfg.encoder,
                     &status.tablet_model, env!("CARGO_PKG_VERSION"));
-                let _ = spawn_reaped(Command::new("xdg-open").arg(url));
+                ui.ctx().open_url(egui::OpenUrl::new_tab(url));
             }
             if ui.small_button("Star on GitHub").clicked() {
-                let _ = spawn_reaped(Command::new("xdg-open").arg("https://github.com/geraldo-netto/UScreen"));
+                ui.ctx().open_url(egui::OpenUrl::new_tab("https://github.com/geraldo-netto/UScreen"));
             }
         });
         if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {
@@ -674,7 +407,7 @@ impl App {
             ui.horizontal(|ui| {
                 ui.label(egui::RichText::new(format!("Update available: {}", v)).strong());
                 if ui.link("open release page").clicked() {
-                    let _ = spawn_reaped(Command::new("xdg-open").arg(RELEASES_PAGE));
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(RELEASES_PAGE));
                 }
             });
         }
@@ -717,6 +450,15 @@ impl App {
     }
 
     fn show_setup(&mut self, ui: &mut egui::Ui, status: &Status) {
+        if !capabilities().system_setup {
+            ui.label("Windows preview: settings can be saved; streaming and input are not available yet.");
+            ui.label(if status.daemon_binary {
+                "Host executable found"
+            } else {
+                "Host executable not found"
+            });
+            return;
+        }
         let needs_setup = needs_system_setup(status, &self.cfg);
         let missing_pkgs = !status.ffmpeg_ok || !status.adb_ok;
         if needs_setup || missing_pkgs {
@@ -742,6 +484,10 @@ impl App {
     }
 
     fn show_status(&mut self, ui: &mut egui::Ui, status: &Status) {
+        if !capabilities().daemon {
+            ui.label("Daemon, display and input backends: unavailable");
+            return;
+        }
         // ----- Status -----
         egui::Frame::group(ui.style())
             .inner_margin(12.0)
@@ -788,6 +534,10 @@ impl App {
     }
 
     fn show_daemon_control(&mut self, ui: &mut egui::Ui, running: bool) {
+        if !capabilities().daemon {
+            ui.add_enabled(false, egui::Button::new("Start (unavailable)"));
+            return;
+        }
         ui.horizontal(|ui| {
             let big = egui::vec2(ui.available_width(), 34.0);
             let label = if running { "Stop" } else { "Start" };
@@ -1127,7 +877,10 @@ impl App {
             );
             let mut auto = status.autostart;
             if ui
-                .checkbox(&mut auto, "Start UScreen with the desktop")
+                .add_enabled(
+                    capabilities().autostart,
+                    egui::Checkbox::new(&mut auto, "Start UScreen with the desktop"),
+                )
                 .changed()
             {
                 self.run_action(move || {
@@ -1154,9 +907,13 @@ impl App {
         self.setting_colour_depth(ui);
         self.setting_resolution(ui);
         self.setting_stream_detail(ui);
-        conversion_settings::show(ui, &mut self.cfg.conversion_threads);
-        let status = self.status.lock().unwrap().clone();
-        pipe_settings::show(ui, &mut self.cfg.pipe_capacity_mib, &status);
+        if capabilities().conversion_pool {
+            conversion_settings::show(ui, &mut self.cfg.conversion_threads);
+        }
+        if capabilities().pipe_capacity {
+            let status = self.status.lock().unwrap().clone();
+            pipe_settings::show(ui, &mut self.cfg.pipe_capacity_mib, &status);
+        }
     }
 
     fn show_display_settings(&mut self, ui: &mut egui::Ui) {
@@ -1224,10 +981,11 @@ fn main() -> eframe::Result {
     )
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+    use uscreen_config::commands::daemon_command_timeout;
 
     #[test]
     fn t374_release_json_contract() {

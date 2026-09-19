@@ -1,7 +1,8 @@
 # Architecture
 
 This describes the Linux host and Android client in the current checkout.
-Windows remains a [proposed integration](windows-port.md). Known behavioral
+Windows has a [compilation preview](windows-port.md), without capture, input or
+daemon lifecycle support. Known behavioral
 limits are tracked in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md); describing a path does not certify
 it on every desktop or device.
 
@@ -29,7 +30,8 @@ from the existing implementation.
    idle writer descriptor prevents EOF from racing ahead of the reset report;
    it closes when the helper opens the replacement FIFO or shuts down. The helper
    and virtual display stay attached; delayed reports for old inodes are
-   ignored. The target FPS is not a guarantee of capture throughput.
+   ignored. Encoder-only restarts also reap the previous reader and rotate the
+   FIFO, so the next encoder cannot consume an old frame suffix. The target FPS is not a guarantee of capture throughput.
 3. **Encode.** The default FFmpeg child uses NVENC, VAAPI, software libx264, libvpx VP9 or libaom AV1.
    Automatic selection probes compatible CLI profiles off the capture path.
    Current peers add bounded live render-ACK comparisons, a synthetic fidelity

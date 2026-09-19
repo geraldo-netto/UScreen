@@ -17,6 +17,11 @@ adds Windows paths, executable discovery, process jobs and private-state
 primitives. T493 remains blocked on native ACL/lease validation; these
 primitives do not enable a Windows application backend.
 
+The [T495 GUI boundary](reviews/2026-09-19-windows-gui.md) also builds for GNU
+and checks on MSVC. Its Windows preview saves shared settings and hides Linux
+setup/capacity controls; unavailable lifecycle actions fail explicitly. Automated
+headless UI tests and a real window launch passed under Wine, not native Windows.
+
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.

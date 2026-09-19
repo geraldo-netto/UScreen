@@ -1,13 +1,12 @@
 //! Dynamic status stays fresh; program/autostart probes have a bounded cache.
-use crate::{apply_tablet_sessions, autostart_enabled, command_exists, pid_path, Status};
-use std::process::Command;
+use crate::Status;
 use std::time::{Duration, Instant};
-use uscreen_config::{commands::SyncCommandExt, linux::daemon, runtime};
 
 const CAPABILITY_TTL: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 struct Capabilities {
+    daemon_binary: bool,
     ffmpeg: bool,
     adb: bool,
     autostart: bool,
@@ -18,75 +17,14 @@ trait Source {
     fn dynamic(&mut self, capabilities: &Capabilities) -> Status;
 }
 
-#[derive(Default)]
-struct Platform {
-    daemon: daemon::StatusProbe,
-}
-
-impl Source for Platform {
-    fn capabilities(&mut self) -> Capabilities {
-        Capabilities {
-            ffmpeg: command_exists("ffmpeg"),
-            adb: command_exists("adb"),
-            autostart: autostart_enabled(),
-        }
-    }
-
-    fn dynamic(&mut self, capabilities: &Capabilities) -> Status {
-        let pid = self.daemon.poll(Some(&pid_path()));
-        let mut status = Status {
-            ffmpeg_ok: capabilities.ffmpeg,
-            adb_ok: capabilities.adb,
-            autostart: capabilities.autostart,
-            daemon_running: pid.is_some(),
-            daemon_pid: pid.unwrap_or_default(),
-            evdi_count: std::fs::read_to_string("/sys/devices/evdi/count")
-                .ok()
-                .and_then(|text| text.trim().parse().ok())
-                .unwrap_or(-1),
-            uinput_ok: std::fs::OpenOptions::new()
-                .write(true)
-                .open("/dev/uinput")
-                .is_ok(),
-            ..Status::default()
-        };
-        let sessions = runtime::runtime_dir()
-            .ok()
-            .and_then(|dir| runtime::load_sessions(&dir.join("sessions.json")))
-            .unwrap_or_default();
-        status.pipe_ceiling = uscreen_config::linux::pipe::ceiling_bytes();
-        status.pipe_capacities = sessions
-            .iter()
-            .map(|session| {
-                let capacity = runtime::fifo_path_for(session.instance)
-                    .ok()
-                    .and_then(|path| uscreen_config::linux::pipe::effective_bytes(&path));
-                (session.instance, capacity)
-            })
-            .collect();
-        query_tablets(&mut status, sessions, capabilities.adb, || {
-            Command::new("adb")
-                .args(["devices", "-l"])
-                .output_bounded()
-                .map(|out| String::from_utf8_lossy(&out.stdout).into_owned())
-        });
-        status
-    }
-}
-
-fn query_tablets(
-    status: &mut Status,
-    sessions: Vec<runtime::TabletSession>,
-    adb_available: bool,
-    devices: impl FnOnce() -> std::io::Result<String>,
-) {
-    if !adb_available || sessions.is_empty() {
-        return;
-    }
-    if let Ok(text) = devices() {
-        apply_tablet_sessions(status, &text, sessions);
-    }
-}
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "linux")]
+use linux::Platform;
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows::Platform;
 
 struct Sampler<S> {
     source: S,
@@ -134,6 +72,7 @@ mod tests {
         fn capabilities(&mut self) -> Capabilities {
             self.static_calls += 1;
             Capabilities {
+                daemon_binary: self.installed,
                 ffmpeg: self.installed,
                 adb: self.installed,
                 autostart: self.installed,
@@ -180,8 +119,11 @@ mod tests {
         assert_eq!(sampler.source.static_calls, 3);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn t409_no_idle_adb_calls_and_live_assignment_refresh() {
+        use super::linux::query_tablets;
+        use uscreen_config::runtime;
         let calls = std::cell::Cell::new(0);
         let devices = || {
             calls.set(calls.get() + 1);

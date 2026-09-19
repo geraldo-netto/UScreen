@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! Runs the actual GUI binary; workspace tests preserve Cargo feature unification.
 #[test]
 fn t078_workspace_gui_and_accessibility_start_without_worker_panics() {
