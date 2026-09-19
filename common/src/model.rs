@@ -119,8 +119,8 @@ pub struct FileConfig {
     /// gradients at a given bitrate. Costs a format conversion per frame.
     pub ten_bit: bool,
     /// Require the tablet to present its attachment's credential before it is
-    /// sent any video or allowed to inject input. The token is handed to the
-    /// app over adb when it is launched. Without this, any local process —
+    /// sent any video or allowed to inject input. Protected ADB broadcasts
+    /// deliver the token without launching the app. Without this, any local process —
     /// or any other app on the tablet — could connect to the loopback ports,
     /// read the screen and drive the mouse. Off only if you need an app
     /// older than 1.1.0 to keep working.
