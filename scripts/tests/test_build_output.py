@@ -26,6 +26,8 @@ def fixture(root, selection, stale):
     version = test_notices.NoticeTest().copy_sources(root)
     tools = root / 'tools'
     tools.mkdir()
+    import release_signing_fixture
+    release_signing_fixture.install_tools(tools)
     shutil.copy(REPO / 'testdata/cargo_output.py', tools / 'cargo')
     (tools / 'cargo').chmod(0o755)
     write(root, 'tools/gcc', '#!/bin/sh\nmkdir -p host/evdi\nprintf "#!/bin/sh\\necho fresh-helper\\n" > host/evdi/evdi_helper\nchmod +x host/evdi/evdi_helper\n', True)

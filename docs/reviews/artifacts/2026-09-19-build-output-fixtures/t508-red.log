@@ -1,0 +1,68 @@
+FFF..
+======================================================================
+FAIL: test_t336_make_build_install_run_and_dist_share_outputs (__main__.BuildOutputTest.test_t336_make_build_install_run_and_dist_share_outputs) (selection='absolute')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 92, in test_t336_make_build_install_run_and_dist_share_outputs
+    self.run_command(root, env, 'make', 'dist-local', 'LIBEVDI=fixture.so')
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 58, in run_command
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 2 != 0 : gcc -O3 -o host/evdi/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c -levdi -lpthread -Ihost/evdi -Wl,-rpath,'$ORIGIN'
+✓ EVDI helper: host/evdi/evdi_helper
+cargo build --release --target-dir '/tmp/tmph92lvv60/target'
+✓ Binaries: /tmp/tmph92lvv60/target/release/uscreen and uscreen-gui
+rm -rf dist/uscreen-1.2.3
+rm -f dist/uscreen-1.2.3-linux-x86_64.tar.gz
+./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper 'fixture.so' dist/uscreen-1.2.3
+./android/gradlew -p android assembleRelease -q
+python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+make: *** [Makefile:111: dist-local] Error 1
+
+
+======================================================================
+FAIL: test_t336_make_build_install_run_and_dist_share_outputs (__main__.BuildOutputTest.test_t336_make_build_install_run_and_dist_share_outputs) (selection='relative')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 92, in test_t336_make_build_install_run_and_dist_share_outputs
+    self.run_command(root, env, 'make', 'dist-local', 'LIBEVDI=fixture.so')
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 58, in run_command
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 2 != 0 : gcc -O3 -o host/evdi/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c -levdi -lpthread -Ihost/evdi -Wl,-rpath,'$ORIGIN'
+✓ EVDI helper: host/evdi/evdi_helper
+cargo build --release --target-dir '/tmp/tmpu_l8p1dy/target'
+✓ Binaries: /tmp/tmpu_l8p1dy/target/release/uscreen and uscreen-gui
+rm -rf dist/uscreen-1.2.3
+rm -f dist/uscreen-1.2.3-linux-x86_64.tar.gz
+./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper 'fixture.so' dist/uscreen-1.2.3
+./android/gradlew -p android assembleRelease -q
+python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+make: *** [Makefile:111: dist-local] Error 1
+
+
+======================================================================
+FAIL: test_t336_make_build_install_run_and_dist_share_outputs (__main__.BuildOutputTest.test_t336_make_build_install_run_and_dist_share_outputs) (selection='config')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 92, in test_t336_make_build_install_run_and_dist_share_outputs
+    self.run_command(root, env, 'make', 'dist-local', 'LIBEVDI=fixture.so')
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_build_output.py", line 58, in run_command
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 2 != 0 : gcc -O3 -o host/evdi/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c -levdi -lpthread -Ihost/evdi -Wl,-rpath,'$ORIGIN'
+✓ EVDI helper: host/evdi/evdi_helper
+cargo build --release --target-dir '/tmp/tmpe4xdu1qy/target'
+✓ Binaries: /tmp/tmpe4xdu1qy/target/release/uscreen and uscreen-gui
+rm -rf dist/uscreen-1.2.3
+rm -f dist/uscreen-1.2.3-linux-x86_64.tar.gz
+./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper 'fixture.so' dist/uscreen-1.2.3
+./android/gradlew -p android assembleRelease -q
+python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
+APK verification failed: Android SDK missing; set ANDROID_SDK_ROOT
+make: *** [Makefile:111: dist-local] Error 1
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.824s
+
+FAILED (failures=3)
