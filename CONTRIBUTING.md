@@ -52,11 +52,16 @@ including native artifact tools and optional FFmpeg headers. For code changes,
 run the relevant permanent regressions and normal suites:
 
 ```bash
+python3 scripts/format-rust.py --check
 make build
 cargo test --release --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ./android/gradlew -p android lintDebug testDebugUnitTest assembleDebug
 ```
+
+Use `python3 scripts/format-rust.py` to format. The wrapper includes the Linux
+supervisor and its modules, which `cargo fmt --all` does not traverse through
+the platform entry point's `include!`.
 
 For optional encoder changes, also run:
 

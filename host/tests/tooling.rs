@@ -1,5 +1,19 @@
-#![cfg(target_os = "linux")]
 //! Install/release regressions: all external writes and builds are sandboxed.
+#![cfg(target_os = "linux")]
+
+#[test]
+fn t500_rust_formatter_checks_included_supervisor_modules() {
+    let output = std::process::Command::new("python3")
+        .arg(repo().join("scripts/tests/test_format_rust.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
 use std::{
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
