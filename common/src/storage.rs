@@ -3,43 +3,68 @@ use crate::model::FileConfig;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-pub fn config_home() -> PathBuf {
+pub fn config_home() -> Result<PathBuf> {
+    #[cfg(windows)]
+    return crate::windows::paths::roaming();
+    #[cfg(not(windows))]
+    linux_config_home()
+}
+
+#[cfg(not(windows))]
+fn linux_config_home() -> Result<PathBuf> {
     std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
-        .unwrap_or_else(|| {
-            PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
+        .or_else(|| {
+            std::env::var_os("HOME")
+                .map(PathBuf::from)
+                .filter(|path| path.is_absolute())
+                .map(|path| path.join(".config"))
         })
+        .context("configuration needs an absolute XDG_CONFIG_HOME or HOME")
 }
 
-pub fn config_path() -> PathBuf {
-    config_home().join("uscreen/config.toml")
+pub fn config_path() -> Result<PathBuf> {
+    Ok(config_home()?.join("uscreen/config.toml"))
 }
 
 /// A filesystem adapter with an explicit location, shared by UI and daemon
 /// workers. Keep synchronous transactions off their event/render threads.
 #[derive(Clone, Debug)]
 pub struct ConfigStore {
-    path: PathBuf,
+    path: std::result::Result<PathBuf, String>,
 }
 
 impl Default for ConfigStore {
     fn default() -> Self {
-        Self::new(config_path())
+        Self {
+            path: config_path().map_err(|error| error.to_string()),
+        }
     }
 }
 
 impl ConfigStore {
     pub fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self { path: Ok(path) }
+    }
+
+    pub fn path(&self) -> Result<&Path> {
+        self.path
+            .as_deref()
+            .map_err(|error| anyhow::anyhow!(error.clone()))
     }
 
     pub fn load(&self) -> FileConfig {
-        FileConfig::load_at(&self.path)
+        self.path()
+            .map(FileConfig::load_at)
+            .unwrap_or_else(|error| {
+                tracing::warn!("Cannot locate configuration: {error}");
+                FileConfig::default()
+            })
     }
 
     pub fn update(&self, edit: impl FnOnce(&mut FileConfig) -> Result<()>) -> Result<FileConfig> {
-        FileConfig::update_at(&self.path, edit)
+        FileConfig::update_at(self.path()?, edit)
     }
 
     /// Cooperative cancellation while waiting for a lock. Once filesystem
@@ -51,12 +76,13 @@ impl ConfigStore {
         edit: impl FnOnce(&mut FileConfig) -> Result<()>,
     ) -> Result<FileConfig> {
         use std::sync::atomic::Ordering;
-        let lock = FileConfig::open_lock_at(&self.path)?;
+        let path = self.path()?;
+        let lock = FileConfig::open_lock_at(path)?;
         while !cancelled.load(Ordering::Acquire) {
             match lock.try_lock() {
                 Ok(()) => {
                     anyhow::ensure!(!cancelled.load(Ordering::Acquire), "config save cancelled");
-                    return FileConfig::update_locked_at(&self.path, edit);
+                    return FileConfig::update_locked_at(path, edit);
                 }
                 Err(std::fs::TryLockError::WouldBlock) => {
                     std::thread::sleep(std::time::Duration::from_millis(10));
@@ -80,8 +106,9 @@ impl ConfigStore {
         baseline: &FileConfig,
         publish: impl FnOnce(&FileConfig) -> T,
     ) -> Result<(FileConfig, T)> {
-        let _lock = FileConfig::lock_at(&self.path)?;
-        let config = FileConfig::update_locked_at(&self.path, |latest| {
+        let path = self.path()?;
+        let _lock = FileConfig::lock_at(path)?;
+        let config = FileConfig::update_locked_at(path, |latest| {
             *latest = edited.merge_edits(baseline, latest.clone())?;
             Ok(())
         })?;
@@ -92,14 +119,14 @@ impl ConfigStore {
     /// Read and act on the current persisted snapshot under the same lock used
     /// by saves. The callback must not recursively start a config transaction.
     pub fn read_locked<T>(&self, action: impl FnOnce(&FileConfig) -> Result<T>) -> Result<T> {
-        let _lock = FileConfig::lock_at(&self.path)?;
+        let _lock = FileConfig::lock_at(self.path()?)?;
         action(&self.load())
     }
 }
 
 impl FileConfig {
     pub fn load() -> Self {
-        Self::load_at(&config_path())
+        ConfigStore::default().load()
     }
 
     pub fn load_at(path: &Path) -> Self {
@@ -115,7 +142,7 @@ impl FileConfig {
     }
 
     pub fn save(&self) -> Result<()> {
-        self.save_at(&config_path())
+        self.save_at(&config_path()?)
     }
 
     /// Serialize the entire read/modify/write operation across processes.
@@ -306,7 +333,7 @@ mod tests {
                 let expected = PathBuf::from(std::env::var_os("XDG_CONFIG_HOME").unwrap())
                     .join("uscreen/config.toml");
                 assert_eq!(
-                    config_path(),
+                    config_path().unwrap(),
                     expected,
                     "config must stay inside test's XDG directory"
                 );
@@ -320,7 +347,7 @@ mod tests {
             } else {
                 let expected = PathBuf::from(std::env::var_os("HOME").unwrap())
                     .join(".config/uscreen/config.toml");
-                assert_eq!(config_path(), expected);
+                assert_eq!(config_path().unwrap(), expected);
             }
             return;
         }

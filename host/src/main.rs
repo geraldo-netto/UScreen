@@ -187,7 +187,7 @@ mod cli_tests {
         }
         let dir = tempfile::tempdir().unwrap();
         std::env::set_var("XDG_RUNTIME_DIR", dir.path());
-        let path = config::config_path();
+        let path = config::config_path().unwrap();
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         for saved_fps in [60, 90] {
             std::fs::write(
@@ -216,7 +216,7 @@ mod cli_tests {
         }
         let dir = tempfile::tempdir().unwrap();
         std::env::set_var("XDG_RUNTIME_DIR", dir.path());
-        let path = config::config_path();
+        let path = config::config_path().unwrap();
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         for saved_mode in [false, true] {
             std::fs::write(
@@ -275,7 +275,8 @@ mod cli_tests {
         writer: impl std::future::Future<Output = ()> + Send + 'static,
     ) {
         config::FileConfig::default().save().unwrap();
-        let lock = std::fs::File::open(config::config_path().with_extension("lock")).unwrap();
+        let lock =
+            std::fs::File::open(config::config_path().unwrap().with_extension("lock")).unwrap();
         lock.lock().unwrap();
         let (release, wait) = std::sync::mpsc::channel();
         let holder = std::thread::spawn(move || {
@@ -365,7 +366,7 @@ mod cli_tests {
         let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
         let writer = persist_settings_with(receiver, CliOverrides::new(&cli), worker.writer());
         tokio::pin!(writer);
-        std::fs::write(config::config_path(), "invalid = [").unwrap();
+        std::fs::write(config::config_path().unwrap(), "invalid = [").unwrap();
         let unsaved = media::EncoderSettings {
             bitrate: 12000,
             ..initial
@@ -376,7 +377,7 @@ mod cli_tests {
         // the file; polling an asynchronous writer alone cannot establish it.
         worker.writer().barrier().await;
         assert_eq!(
-            std::fs::read_to_string(config::config_path()).unwrap(),
+            std::fs::read_to_string(config::config_path().unwrap()).unwrap(),
             "invalid = ["
         );
         config::FileConfig {
@@ -1740,8 +1741,9 @@ fn heal_config(file_cfg: &config::FileConfig) {
     // `load()` clamps unusable values, but leaving the bad number on disk means
     // the GUI keeps showing it and writes it straight back. Heal the file once,
     // here, so every tool agrees on what the settings actually are.
-    let raw: Option<config::FileConfig> = std::fs::read_to_string(config::config_path())
+    let raw: Option<config::FileConfig> = config::config_path()
         .ok()
+        .and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|t| toml::from_str(&t).ok());
     if raw.is_some_and(|r| &r != file_cfg) {
         match config::FileConfig::update(|_| Ok(())) {

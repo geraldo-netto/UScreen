@@ -4,13 +4,24 @@ version = "1.2.3"
 edition = "2021"
 
 [features]
-default = ["storage", "commands", "platform-linux"]
+default = ["storage", "commands", "platform"]
 storage = ["dep:tempfile"]
 commands = ["dep:tempfile", "dep:tokio", "dep:libc"]
-platform-linux = ["storage", "commands", "dep:libc", "dep:clap"]
+platform = ["storage", "commands", "dep:libc", "dep:clap"]
+# Preserve explicit feature selections made before the Windows extraction.
+platform-linux = ["platform"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { version = "0.2", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation", "Win32_Security", "Win32_Security_Authorization",
+    "Win32_Security_Cryptography", "Win32_Storage_FileSystem",
+    "Win32_System_Com", "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_JobObjects", "Win32_System_Memory",
+    "Win32_System_Threading", "Win32_UI_Shell",
+] }
 
 [dependencies]
 clap = { version = "4", features = ["derive"], optional = true }

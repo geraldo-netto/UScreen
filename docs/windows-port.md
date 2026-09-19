@@ -3,6 +3,19 @@
 Status: proposed plan, saved 2026-09-17. Windows support is not implemented.
 The recommendations below remain pending decisions.
 
+Build feasibility checked 2026-09-19: the shared configuration library,
+its test executable and the encoder-options example cross-compile from Linux
+to Windows x64 GNU. The daemon and GUI fail GNU and MSVC target checks on
+unconditional Linux imports. No Windows executable was run. See the
+[cross-compilation review](reviews/2026-09-19-windows-cross-compilation.md)
+for commands, evidence and T493–T496; this check does not complete a milestone
+or select the release toolchain.
+
+The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
+adds Windows paths, executable discovery, process jobs and private-state
+primitives. T493 remains blocked on native ACL/lease validation; these
+primitives do not enable a Windows application backend.
+
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.

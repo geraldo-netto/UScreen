@@ -1,11 +1,14 @@
 //! Command deadlines, not transactional cancellation of delegated operations.
 //! Linux commands get a private process group. Timeout/cancellation signals its
-//! members and reaps the direct child when permitted. Detached processes, work
-//! sent to another service and privileged descendants can continue. Other
-//! platforms currently terminate only the direct child (see Windows plan).
+//! members and reaps the direct child when permitted. Windows commands enter
+//! an owned kill-on-close job before their suspended initial thread resumes.
+//! Work delegated to another service can outlive the owned process tree.
 use std::io::{self, Read, Seek};
 use std::process::{Command, ExitStatus, Output, Stdio};
 use std::time::Duration;
+
+#[cfg(windows)]
+mod windows;
 
 pub fn spawn_reaped(command: &mut std::process::Command) -> std::io::Result<u32> {
     let mut child = command.spawn()?;
@@ -81,6 +84,11 @@ fn prepare_group(command: &mut Command) {
     }
     #[cfg(not(target_os = "linux"))]
     let _ = command;
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(windows_sys::Win32::System::Threading::CREATE_SUSPENDED);
+    }
 }
 
 fn terminate_group(pid: u32) {
@@ -132,12 +140,22 @@ impl Drop for RunningAsync {
 impl SyncCommandExt for Command {
     fn output_timeout(&mut self, timeout: Duration) -> io::Result<Output> {
         let output = CapturedOutput::new()?;
+        #[cfg(windows)]
+        let job = windows::Job::new()?;
         prepare_group(self);
         let mut child = self
             .stdin(Stdio::null())
             .stdout(output.stdout.try_clone()?)
             .stderr(output.stderr.try_clone()?)
             .spawn()?;
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            if let Err(error) = job.start(child.id(), child.as_raw_handle()) {
+                retire_sync(child);
+                return Err(error);
+            }
+        }
         let start = std::time::Instant::now();
         loop {
             match child.try_wait() {
@@ -166,6 +184,8 @@ pub trait AsyncCommandExt {
 impl AsyncCommandExt for tokio::process::Command {
     async fn output_timeout(&mut self, timeout: Duration) -> io::Result<Output> {
         let output = CapturedOutput::new()?;
+        #[cfg(windows)]
+        let job = windows::Job::new()?;
         prepare_group(self.as_std_mut());
         let mut child = RunningAsync(
             self.kill_on_drop(true)
@@ -174,6 +194,14 @@ impl AsyncCommandExt for tokio::process::Command {
                 .stderr(output.stderr.try_clone()?)
                 .spawn()?,
         );
+        #[cfg(windows)]
+        if let Err(error) = job.start(
+            child.0.id().expect("new child"),
+            child.0.raw_handle().expect("new child handle"),
+        ) {
+            let _ = child.0.kill().await;
+            return Err(error);
+        }
         match tokio::time::timeout(timeout, child.0.wait()).await {
             Ok(status) => output.finish(status?),
             Err(_) => {

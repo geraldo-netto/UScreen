@@ -152,7 +152,7 @@ impl Monitor {
             let devices = adb_inventory::query(&adb).await;
             let mut synthetic = Vec::new();
             add_fake_tablets(&mut synthetic);
-            let reconnected = if reconnect {
+            let reconnected = if let Some(path) = path.ok().filter(|_| reconnect) {
                 WifiReconnect::new(path, adb).connect().await
             } else {
                 None

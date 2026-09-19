@@ -1,0 +1,21 @@
+{
+  "baseline": "63b332e34cad62287fd2691972b8e3bab7f86685",
+  "environment": "Linux host; Windows GNU execution under isolated Wine 9 and Xvfb; MSVC check only",
+  "red_tests": [
+    "common/tests/windows_platform.rs: four path/descendant failures",
+    "common/tests/config_location.rs: relative fallback failure"
+  ],
+  "limits": [
+    "Native Windows ACL/lease validation blocked (two Wine failures)",
+    "Linux workspace exposed T498; full suite not green",
+    "T497 per-function coverage not established"
+  ],
+  "commands": [
+    "cargo test -p uscreen-config --target x86_64-pc-windows-gnu --test windows_platform -- --test-threads=1",
+    "cargo test -p uscreen-config --target x86_64-pc-windows-gnu --lib t493",
+    "cargo check -p uscreen-config --all-targets --target x86_64-pc-windows-msvc",
+    "cargo test -p uscreen-config",
+    "cargo test --workspace",
+    "python3 scripts/complexity/check.py"
+  ]
+}

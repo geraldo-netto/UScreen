@@ -971,7 +971,13 @@ fn read_config_report(r: &mut Report, path: &Path) -> Option<FileConfig> {
 }
 
 fn check_config(r: &mut Report, cfg: &FileConfig) {
-    let path = config::config_path();
+    let path = match config::config_path() {
+        Ok(path) => path,
+        Err(error) => {
+            r.line(Level::Fail, "config location", &error.to_string());
+            return;
+        }
+    };
     // `cfg` has already been clamped, so compare against the raw file too: a
     // stale 200 Mbps on disk is worth reporting even though the daemon would
     // no longer act on it.

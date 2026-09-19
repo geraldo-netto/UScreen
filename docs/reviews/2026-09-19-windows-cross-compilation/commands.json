@@ -1,0 +1,181 @@
+[
+  {
+    "name": "gnu-core-build",
+    "command": [
+      "cargo",
+      "build",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--lib",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never",
+      "--no-default-features"
+    ],
+    "exit_code": 0,
+    "seconds": 5.627
+  },
+  {
+    "name": "gnu-default-build",
+    "command": [
+      "cargo",
+      "build",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--lib",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never"
+    ],
+    "exit_code": 101,
+    "seconds": 1.979
+  },
+  {
+    "name": "gnu-config-test-check",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--all-targets",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never"
+    ],
+    "exit_code": 0,
+    "seconds": 2.769
+  },
+  {
+    "name": "gnu-default-build-with-mingw",
+    "command": [
+      "cargo",
+      "build",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never",
+      "--lib"
+    ],
+    "exit_code": 0,
+    "seconds": 3.03
+  },
+  {
+    "name": "gnu-example-build",
+    "command": [
+      "cargo",
+      "build",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never",
+      "--example",
+      "encoder-options",
+      "--no-default-features"
+    ],
+    "exit_code": 0,
+    "seconds": 1.637
+  },
+  {
+    "name": "gnu-config-tests-build",
+    "command": [
+      "cargo",
+      "test",
+      "--no-run",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--lib",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never"
+    ],
+    "exit_code": 0,
+    "seconds": 1.08
+  },
+  {
+    "name": "gnu-app-check",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--keep-going",
+      "-p",
+      "uscreen",
+      "-p",
+      "uscreen-gui",
+      "--bins",
+      "--target",
+      "x86_64-pc-windows-gnu",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-gnu",
+      "--color",
+      "never"
+    ],
+    "exit_code": 101,
+    "seconds": 13.456
+  },
+  {
+    "name": "msvc-config-check",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "-p",
+      "uscreen-config",
+      "--all-targets",
+      "--target",
+      "x86_64-pc-windows-msvc",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-msvc",
+      "--color",
+      "never"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "msvc-app-check",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "-p",
+      "uscreen",
+      "-p",
+      "uscreen-gui",
+      "--keep-going",
+      "--bins",
+      "--target",
+      "x86_64-pc-windows-msvc",
+      "--target-dir",
+      "/tmp/uscreen-windows-check-20260919/target-msvc",
+      "--color",
+      "never"
+    ],
+    "exit_code": 101
+  }
+]

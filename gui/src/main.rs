@@ -640,9 +640,14 @@ impl App {
             }
             ui.add_space(8.0);
             ui.label(
-                egui::RichText::new(format!("config: {}", config_path().display()))
-                    .weak()
-                    .size(10.0),
+                egui::RichText::new(format!(
+                    "config: {}",
+                    config_path()
+                        .map(|path| path.display().to_string())
+                        .unwrap_or_else(|error| error.to_string())
+                ))
+                .weak()
+                .size(10.0),
             );
             ui.add_space(2.0);
         });
@@ -2005,7 +2010,7 @@ mod tests {
     fn t231_autostart_supports_a_desktop_without_a_user_manager() {
         if std::env::var_os("USCREEN_T231_CHILD").is_some() {
             if std::env::var("USCREEN_T231_CHILD").unwrap() == "offline-enabled" {
-                let path = uscreen_config::linux::autostart::desktop_path();
+                let path = uscreen_config::linux::autostart::desktop_path().unwrap();
                 let original = std::fs::read(&path).unwrap();
                 assert!(
                     set_autostart_with(false, || false).is_err(),

@@ -7,8 +7,8 @@ use std::{
     process::Command,
 };
 
-pub fn desktop_path() -> PathBuf {
-    config_home().join("autostart/uscreen.desktop")
+pub fn desktop_path() -> Result<PathBuf> {
+    Ok(config_home()?.join("autostart/uscreen.desktop"))
 }
 
 pub fn systemd_available() -> bool {
@@ -34,7 +34,10 @@ fn systemd_enabled() -> bool {
 
 pub fn enabled() -> bool {
     systemd_enabled()
-        || std::fs::read_to_string(desktop_path()).is_ok_and(|text| desktop_enabled(&text))
+        || desktop_path()
+            .ok()
+            .and_then(|path| std::fs::read_to_string(path).ok())
+            .is_some_and(|text| desktop_enabled(&text))
 }
 
 fn desktop_enabled(text: &str) -> bool {
@@ -88,7 +91,7 @@ pub fn desktop_entry(binary: &Path) -> Result<String> {
 }
 
 fn remove_desktop_entry() -> Result<()> {
-    match std::fs::remove_file(desktop_path()) {
+    match std::fs::remove_file(desktop_path()?) {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(error).context("remove desktop autostart"),
@@ -97,7 +100,7 @@ fn remove_desktop_entry() -> Result<()> {
 
 fn write_desktop_entry(binary: &Path) -> Result<()> {
     let entry = desktop_entry(binary)?;
-    let path = desktop_path();
+    let path = desktop_path()?;
     let parent = path.parent().context("autostart directory")?;
     std::fs::create_dir_all(parent).context("create autostart directory")?;
     let mut file = tempfile::NamedTempFile::new_in(parent)?;

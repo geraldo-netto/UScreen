@@ -1,0 +1,60 @@
+{
+  "recorded_utc": "2026-09-19T01:13:13.617252+00:00",
+  "source_commit": "63b332e34cad62287fd2691972b8e3bab7f86685",
+  "cargo_lock_sha256": "afaa15dc4d6adc82ed1bf62bbb7c7c721e4722f8dd75e3c314bf47cc612579d8",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+  "packages": [
+    {
+      "file": "binutils-mingw-w64-x86-64_2.41.90.20240122-1ubuntu1+11.4_amd64.deb",
+      "package_version_architecture": "binutils-mingw-w64-x86-64 2.41.90.20240122-1ubuntu1+11.4 amd64",
+      "sha256": "28bfabbf64a68813a56360bca056072af9ff71ef4090a4b8a8a085afcda3e4dd"
+    },
+    {
+      "file": "gcc-mingw-w64-base_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "package_version_architecture": "gcc-mingw-w64-base 13.2.0-6ubuntu1+26.1 amd64",
+      "sha256": "a30c07e807e9874ea93909448c5d6d37f9569ebe60ad32de8e490aad198538a3"
+    },
+    {
+      "file": "gcc-mingw-w64-x86-64-posix-runtime_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "package_version_architecture": "gcc-mingw-w64-x86-64-posix-runtime 13.2.0-6ubuntu1+26.1 amd64",
+      "sha256": "aca6b438e0b55b11cedcf1170a1ee26e7979e34192e34f6e6389e560908a5bfc"
+    },
+    {
+      "file": "gcc-mingw-w64-x86-64-posix_13.2.0-6ubuntu1+26.1_amd64.deb",
+      "package_version_architecture": "gcc-mingw-w64-x86-64-posix 13.2.0-6ubuntu1+26.1 amd64",
+      "sha256": "0855fa1d4a618550faac3a3e4352aa3226833b28184ad3c3b496a68a22c4eda2"
+    },
+    {
+      "file": "mingw-w64-common_11.0.1-3build1_all.deb",
+      "package_version_architecture": "mingw-w64-common 11.0.1-3build1 all",
+      "sha256": "4a42fd30fbc3838c58c929d8a4882682fc12408bb7a0e6cafa913c0f0a57c187"
+    },
+    {
+      "file": "mingw-w64-x86-64-dev_11.0.1-3build1_all.deb",
+      "package_version_architecture": "mingw-w64-x86-64-dev 11.0.1-3build1 all",
+      "sha256": "018480a62907fcca19c6bf2975ae01f5c92c23dee8c3cf7a8355c10bf7d42c6f"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/uscreen-windows-check-20260919/target-gnu/x86_64-pc-windows-gnu/debug/examples/encoder-options.exe",
+      "size": 27588850,
+      "sha256": "995a2fa4071a8b7148ceb4be70667a53366fd5d2af32345ec019ef86eba218bc",
+      "file": "PE32+ executable (console) x86-64, for MS Windows, 21 sections",
+      "executed": false
+    },
+    {
+      "path": "/tmp/uscreen-windows-check-20260919/target-gnu/x86_64-pc-windows-gnu/debug/deps/uscreen_config-919d51042fc9a71d.exe",
+      "size": 41577176,
+      "sha256": "b71088aa866cce9a0d2c1a2d822aa48d955a9b8590c17b442aed6792a33a5fd1",
+      "file": "PE32+ executable (console) x86-64, for MS Windows, 21 sections",
+      "executed": false
+    }
+  ],
+  "cross_environment": {
+    "PATH_prefix": "/tmp/uscreen-windows-check-20260919/toolchain/root/usr/bin",
+    "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER": "/tmp/uscreen-windows-check-20260919/toolchain/root/usr/bin/x86_64-w64-mingw32-gcc"
+  },
+  "scope": "Compilation/checking only; no Windows execution, application source edits, deployment, or device interaction."
+}
