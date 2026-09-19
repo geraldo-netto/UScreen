@@ -204,8 +204,10 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
 
 No subcommand defaults to `start`. `--width`/`--height` do not turn off
 auto-resolution: set `auto_resolution = false` in config for a manual mode.
-Oversized tablet metadata can still block an otherwise valid manual mode
-(T275). An explicit `--edid` pins the supplied EDID instead of generating one.
+With auto-resolution disabled, UScreen validates the configured capture geometry
+independently of the tablet's native size. The native report must still have
+nonzero width and height; an oversized native size does not invalidate a supported
+manual mode. An explicit `--edid` pins the supplied EDID instead of generating one.
 `list-displays` invokes `kscreen-doctor -o` and, when present, `wpctl status`;
 it is not a universal compositor enumeration API.
 
