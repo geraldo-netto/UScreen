@@ -8,11 +8,10 @@ fn fake_adb(root: &std::path::Path) -> PathBuf {
     std::fs::write(
         &path,
         r#"#!/bin/sh
-if [ "$2" = SLOW ] && [ "$4" = pidof ]; then
+if [ "$2" = SLOW ] && [ "$3" = shell ]; then
     printf ready > "$0.slow-started"
     while [ ! -e "$0.release" ]; do sleep 0.01; done
 fi
-if [ "$4" = pidof ]; then exit 1; fi
 cat >/dev/null
 printf launched > "$0.$2.launched"
 "#,
@@ -33,18 +32,14 @@ async fn wait_file(path: &std::path::Path) {
 }
 
 #[tokio::test]
-async fn t390_slow_recovery_cannot_delay_another_tablet() {
+async fn t390_slow_token_delivery_cannot_delay_another_tablet() {
     let root = tempfile::tempdir().unwrap();
     let adb = fake_adb(root.path());
     let command = adb.to_str().unwrap().to_owned();
     let task = tokio::spawn(async move {
-        let mut policies = Default::default();
-        recover_assigned_apps(
+        monitor::test_support::deliver_assigned_tokens(
             &["SLOW".into(), "FAST".into()],
-            true,
             None,
-            &mut policies,
-            std::time::Instant::now(),
             &command,
         )
         .await;
@@ -59,7 +54,10 @@ async fn t390_slow_recovery_cannot_delay_another_tablet() {
     // Release the gate and join even on the pre-fix failure path.
     std::fs::write(adb.with_extension("release"), "").unwrap();
     task.await.unwrap();
-    assert!(fast, "T390: FAST recovery waited for SLOW's ADB response");
+    assert!(
+        fast,
+        "T390: FAST token delivery waited for SLOW's ADB response"
+    );
 }
 
 #[tokio::test]

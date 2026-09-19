@@ -579,7 +579,7 @@ async fn authenticate_input(
                 warn!("Further unauthenticated clients will be dropped quietly.");
             }
             // Most likely the app was started by hand and never received a
-            // token. Launching it again over adb delivers one.
+            // token. The protected broadcast delivers one without opening an Activity.
             relaunch.notify_one();
             let _ = tokio::time::timeout_at(deadline, ws_sender.send(Message::Close(None))).await;
             return false;

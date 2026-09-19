@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task::JoinSet;
+mod launch_policy;
 
 pub(crate) struct Config {
     pub ports: (u16, u16),
@@ -22,7 +23,6 @@ struct Pending {
 
 enum Mutation {
     Prepared { ready: bool, retry: RelaunchBackoff },
-    Recovered(RelaunchBackoff),
     Token,
 }
 
@@ -52,7 +52,8 @@ struct Monitor {
     ready: HashSet<String>,
     identities: HashMap<String, String>,
     forwarding: HashMap<String, RelaunchBackoff>,
-    recovery: HashMap<String, RelaunchBackoff>,
+    token_retries: HashMap<String, RelaunchBackoff>,
+    launches: launch_policy::Launches,
     extras: HashMap<String, ExtraSession>,
     pending: HashMap<String, Pending>,
     retiring_slots: HashSet<u32>,
@@ -61,7 +62,7 @@ struct Monitor {
     mutations: device_tasks::DeviceTasks<Mutation>,
     inventory: JoinSet<Inventory>,
     checked_adb: bool,
-    last_recovery: Instant,
+    last_reconnect: Instant,
     last_relaunch: Instant,
     relaunch_wait: Duration,
     relaunches: u32,
@@ -77,7 +78,8 @@ impl Monitor {
             ready: HashSet::new(),
             identities: HashMap::new(),
             forwarding: HashMap::new(),
-            recovery: HashMap::new(),
+            token_retries: HashMap::new(),
+            launches: Default::default(),
             extras: HashMap::new(),
             pending: HashMap::new(),
             retiring_slots: HashSet::new(),
@@ -86,7 +88,7 @@ impl Monitor {
             mutations: device_tasks::DeviceTasks::new(4),
             inventory: JoinSet::new(),
             checked_adb: false,
-            last_recovery: now,
+            last_reconnect: now,
             last_relaunch: now - Duration::from_secs(60),
             relaunch_wait: Duration::from_secs(5),
             relaunches: 0,
@@ -117,11 +119,10 @@ impl Monitor {
     }
 
     fn tick(&mut self) {
-        let recover = self.last_recovery.elapsed() >= Duration::from_secs(10);
+        let recover = self.last_reconnect.elapsed() >= Duration::from_secs(10);
         self.queue_inventory(recover);
         if recover {
-            self.last_recovery = Instant::now();
-            self.recover_apps(Instant::now());
+            self.last_reconnect = Instant::now();
         }
     }
 
@@ -179,12 +180,14 @@ impl Monitor {
         ) else {
             return;
         };
+        self.launches.refresh(&devices);
         self.identities
             .retain(|serial, _| devices.contains(serial) || self.current.as_ref() == Some(serial));
         self.discovery.refresh(devices, &self.config.adb);
     }
 
     fn probe_ready(&mut self, serial: String, identity: Option<String>) {
+        self.launches.observe(&serial, identity.as_deref());
         if let Some(identity) = identity {
             self.identities.insert(serial, identity);
         } else {
@@ -204,7 +207,7 @@ impl Monitor {
     fn remove_assignment(&mut self, serial: &str) {
         self.ready.remove(serial);
         self.mutations.cancel(serial);
-        self.recovery.remove(serial);
+        self.token_retries.remove(serial);
         if let Some(pending) = self.pending.remove(serial) {
             if let Some(session) = pending.session {
                 self.retire(session);
@@ -252,7 +255,10 @@ impl Monitor {
         let mut retry = self.forwarding.remove(&serial).unwrap_or_default();
         let adb = self.config.adb.clone();
         let token = self.config.token.clone();
-        let auto_launch = self.config.auto_launch;
+        let auto_launch = self.config.auto_launch && !is_fake_serial(&serial);
+        let ticket = self
+            .launches
+            .observe(&serial, self.identities.get(&serial).map(String::as_str));
         self.pending.insert(serial.clone(), pending);
         let job_serial = serial.clone();
         self.mutations.schedule(serial, async move {
@@ -260,11 +266,14 @@ impl Monitor {
                 serial: &job_serial,
                 video_port: ports.0,
                 input_port: ports.1,
-                auto_launch,
+                auto_launch: false,
                 token: token.as_deref(),
                 adb: &adb,
             };
             let ready = request.prepare(&mut retry, Instant::now()).await;
+            if ready && auto_launch && ticket.is_some_and(|ticket| ticket.take()) {
+                launch_app_using(&job_serial, token.as_deref(), &adb).await;
+            }
             Mutation::Prepared { ready, retry }
         });
     }
@@ -338,6 +347,9 @@ impl Monitor {
     }
 
     async fn reconcile(&mut self) {
+        if self.discovery.initial_probes_finished() {
+            self.launches.retain(self.discovery.inventory());
+        }
         let devices = select_device_transports(
             &self.discovery.eligible(),
             self.current.as_deref(),
@@ -395,7 +407,8 @@ impl Monitor {
             transport_of(&serial).label()
         );
         self.ready.insert(serial.clone());
-        self.recovery.insert(serial, RelaunchBackoff::default());
+        self.token_retries
+            .insert(serial, RelaunchBackoff::default());
     }
 
     fn mutation_ready(
@@ -405,9 +418,6 @@ impl Monitor {
     ) {
         match result {
             Ok(Mutation::Prepared { ready, retry }) => self.prepared(serial, ready, retry),
-            Ok(Mutation::Recovered(retry)) if self.ready.contains(&serial) => {
-                self.recovery.insert(serial, retry);
-            }
             Ok(_) => {}
             Err(error) => {
                 if !error.is_cancelled() {
@@ -419,31 +429,6 @@ impl Monitor {
                     }
                 }
             }
-        }
-    }
-
-    fn recover_apps(&mut self, now: Instant) {
-        if !self.config.auto_launch {
-            return;
-        }
-        let assigned: Vec<_> = self
-            .ready
-            .iter()
-            .filter(|serial| !is_fake_serial(serial) && !self.mutations.contains(serial))
-            .cloned()
-            .collect();
-        for serial in assigned {
-            let policy = self.recovery.remove(&serial).unwrap_or_default();
-            let adb = self.config.adb.clone();
-            let token = self.config.token.clone();
-            let job_serial = serial.clone();
-            self.mutations.schedule(serial, async move {
-                Mutation::Recovered(
-                    recover_app(job_serial, policy, token.as_deref(), now, &adb)
-                        .await
-                        .1,
-                )
-            });
         }
     }
 
@@ -484,7 +469,7 @@ impl Monitor {
             return;
         }
         if self
-            .recovery
+            .token_retries
             .get_mut(&serial)
             .is_some_and(|policy| policy.allow(now))
         {
@@ -674,3 +659,7 @@ mod probe_tests;
 #[cfg(test)]
 #[path = "monitor/inventory_tests.rs"]
 mod inventory_tests;
+
+#[cfg(test)]
+#[path = "monitor/launch_tests.rs"]
+mod launch_tests;

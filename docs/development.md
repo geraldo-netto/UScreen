@@ -573,3 +573,15 @@ completion, and verify no delayed writes from ordinary cancelled descendants.
 An injected permission denial covers eventual reaping without blocking the
 deadline; it does not execute privileged system setup. T094 continues to check
 direct-child reaping.
+
+### Attachment-only auto-launch
+
+`auto_launch_app` opens the Android Activity once after forwarding succeeds for
+a fresh logical attachment observed by the daemon. Closing the app, a crash or
+background eviction requires manual reopening. Route repair, package revalidation,
+USB/Wi-Fi migration proven to belong to the same tablet, and credential retries
+do not bring the Activity to the foreground. A failed forwarding attempt retains
+the initial launch allowance; an attempted Activity launch consumes it even if
+ADB's result is lost. A confirmed absence permits one launch on reattachment.
+Daemon restart begins a new observation lifetime. Unknown tablet identities are
+not merged, and bounded launch-history exhaustion falls back to manual opening.

@@ -873,7 +873,7 @@ impl App {
         ui.vertical(|ui| {
             ui.checkbox(
                 &mut self.cfg.auto_launch_app,
-                "Open the app on the tablet automatically",
+                "Open the app when a tablet attaches",
             );
             let mut auto = status.autostart;
             if ui
@@ -887,7 +887,7 @@ impl App {
                     set_autostart(auto)
                         .map(|_| {
                             if auto {
-                                "Autostart on — plugging the cable in is now enough".into()
+                                "Autostart on — opens the app on a fresh attachment".into()
                             } else {
                                 "Autostart off".into()
                             }

@@ -36,14 +36,14 @@ pub(crate) async fn deliver_extra_token(
 ) {
     let assigned: Vec<_> = policies.keys().cloned().collect();
     let mut state = fixture(&assigned, true, token, adb);
-    state.recovery = std::mem::take(policies);
+    state.token_retries = std::mem::take(policies);
     state.extra_token(requested.into(), now);
     finish(&mut state).await;
-    *policies = std::mem::take(&mut state.recovery);
+    *policies = std::mem::take(&mut state.token_retries);
     state.stop().await;
 }
 
-pub(crate) async fn recover_assigned_apps(
+pub(crate) async fn tick_assigned_apps(
     assigned: &[String],
     auto_launch: bool,
     token: Option<&str>,
@@ -52,10 +52,21 @@ pub(crate) async fn recover_assigned_apps(
     adb: &str,
 ) {
     let mut state = fixture(assigned, auto_launch, token, adb);
-    state.recovery = std::mem::take(policies);
-    state.recover_apps(now);
+    state.token_retries = std::mem::take(policies);
+    state.last_reconnect = now - Duration::from_secs(11);
+    state.tick();
     finish(&mut state).await;
-    *policies = std::mem::take(&mut state.recovery);
+    *policies = std::mem::take(&mut state.token_retries);
+    state.stop().await;
+}
+
+// T390 now exercises token delivery; T445 deliberately removes process relaunch.
+pub(crate) async fn deliver_assigned_tokens(assigned: &[String], token: Option<&str>, adb: &str) {
+    let mut state = fixture(assigned, false, token, adb);
+    for serial in assigned {
+        state.redeliver(serial.clone());
+    }
+    finish(&mut state).await;
     state.stop().await;
 }
 
@@ -63,13 +74,13 @@ pub(crate) async fn recover_assigned_apps(
 async fn t431_inflight_mutation_does_not_consume_token_backoff() {
     let mut state = fixture(&["tablet".into()], true, None, "/missing-t431-adb");
     state
-        .recovery
+        .token_retries
         .insert("tablet".into(), RelaunchBackoff::default());
     state
         .mutations
         .schedule("tablet".into(), std::future::pending());
     state.extra_token("tablet".into(), Instant::now());
-    assert!(state.recovery["tablet"].next.is_none());
+    assert!(state.token_retries["tablet"].next.is_none());
     state.stop().await;
 }
 
@@ -77,7 +88,7 @@ async fn t431_inflight_mutation_does_not_consume_token_backoff() {
 async fn t431_reassignment_rejects_late_recovery_and_cancels_work() {
     let mut state = fixture(&["OLD".into()], true, None, "/missing-t431-adb");
     state
-        .recovery
+        .token_retries
         .insert("OLD".into(), RelaunchBackoff::default());
     state
         .mutations
@@ -88,13 +99,10 @@ async fn t431_reassignment_rejects_late_recovery_and_cancels_work() {
         .unwrap();
     assert!(result.as_ref().is_err_and(|error| error.is_cancelled()));
     state.mutation_ready(serial, result);
-    state.mutation_ready(
-        "OLD".into(),
-        Ok(Mutation::Recovered(RelaunchBackoff::default())),
-    );
+    state.mutation_ready("OLD".into(), Ok(Mutation::Token));
     state.extra_token("OLD".into(), Instant::now());
     assert!(!state.ready.contains("OLD"));
-    assert!(!state.recovery.contains_key("OLD"));
+    assert!(!state.token_retries.contains_key("OLD"));
     assert!(!state.mutations.contains("OLD"));
     state.stop().await;
 }

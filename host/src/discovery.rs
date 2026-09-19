@@ -7,6 +7,7 @@ struct Observation {
     epoch: u64,
     identity: Option<String>,
     eligible: bool,
+    probed: bool,
 }
 
 struct Probe {
@@ -47,6 +48,7 @@ impl Discovery {
                     epoch: self.next_epoch,
                     identity: None,
                     eligible: false,
+                    probed: false,
                 }
             });
             self.work.schedule(
@@ -81,6 +83,12 @@ impl Discovery {
         &self.inventory
     }
 
+    /// Old launch aliases may be pruned once new routes have had their first
+    /// bounded identity probe. This does not delay independent device preparation.
+    pub fn initial_probes_finished(&self) -> bool {
+        self.observed.values().all(|observation| observation.probed)
+    }
+
     pub async fn next(&mut self) -> Option<(String, Option<String>)> {
         let (serial, result) = self.work.next().await;
         let result = result.ok()?;
@@ -89,6 +97,7 @@ impl Discovery {
             return None;
         }
         observation.identity = result.identity.clone();
+        observation.probed = true;
         if let Some(eligible) = result.eligible {
             observation.eligible = eligible;
         }

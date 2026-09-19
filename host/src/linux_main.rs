@@ -45,7 +45,7 @@ use clap::Parser;
 mod discovery_tests;
 
 #[cfg(test)]
-use monitor::test_support::{deliver_extra_token, recover_assigned_apps};
+use monitor::test_support::{deliver_extra_token, tick_assigned_apps};
 #[cfg(test)]
 use session::start_servers;
 use session::Runtime as ExtraSession;
@@ -54,8 +54,8 @@ use tokio::signal;
 use tokio::sync::watch;
 use tracing::{error, info, warn};
 use uscreen_config::adb::{transport_of, Transport};
-use uscreen_config::commands::AsyncCommandExt;
 use uscreen_config::cli::{Cli, Commands};
+use uscreen_config::commands::AsyncCommandExt;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -748,13 +748,15 @@ fi
     }
 
     #[tokio::test]
-    async fn t143_crashed_extra_apps_recover_with_per_device_backoff() {
+    async fn t143_t445_process_loss_stays_manual_across_retry_boundaries() {
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
         let adb = root.path().join("adb");
         std::fs::write(
             &adb,
             r#"#!/bin/sh
+if [ "$1" = devices ]; then printf 'List of devices attached\n'; exit 0; fi
+if [ "$1" = version ]; then exit 0; fi
 if [ "$4" = pidof ]; then
     if [ "$2" = LIVE ] || [ -e "$0.$2.alive" ]; then echo 123; exit 0; fi
     exit 1
@@ -769,7 +771,7 @@ printf '%s\n' "$2" >> "$0.log"
         let assigned = ["LIVE", "DEAD", "FAILED"].map(String::from);
         let mut policies = std::collections::HashMap::new();
         let now = std::time::Instant::now();
-        recover_assigned_apps(
+        tick_assigned_apps(
             &assigned,
             true,
             None,
@@ -779,8 +781,8 @@ printf '%s\n' "$2" >> "$0.log"
         )
         .await;
         let log = adb.with_extension("log");
-        assert_eq!(sorted_launches(&log), "DEAD\nFAILED\n");
-        recover_assigned_apps(
+        assert_eq!(sorted_launches(&log), "");
+        tick_assigned_apps(
             &assigned,
             true,
             None,
@@ -789,8 +791,8 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        assert_eq!(sorted_launches(&log), "DEAD\nFAILED\n");
-        recover_assigned_apps(
+        assert_eq!(sorted_launches(&log), "");
+        tick_assigned_apps(
             &assigned,
             true,
             None,
@@ -799,9 +801,9 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        assert_eq!(sorted_launches(&log), "DEAD\nDEAD\nFAILED\nFAILED\n");
+        assert_eq!(sorted_launches(&log), "");
         std::fs::write(adb.with_extension("DEAD.alive"), "").unwrap();
-        recover_assigned_apps(
+        tick_assigned_apps(
             &assigned,
             true,
             None,
@@ -811,7 +813,7 @@ printf '%s\n' "$2" >> "$0.log"
         )
         .await;
         std::fs::remove_file(adb.with_extension("DEAD.alive")).unwrap();
-        recover_assigned_apps(
+        tick_assigned_apps(
             &assigned,
             true,
             None,
@@ -820,9 +822,9 @@ printf '%s\n' "$2" >> "$0.log"
             adb.to_str().unwrap(),
         )
         .await;
-        let expected = "DEAD\nDEAD\nDEAD\nFAILED\nFAILED\n";
+        let expected = "";
         assert_eq!(sorted_launches(&log), expected);
-        recover_assigned_apps(
+        tick_assigned_apps(
             &assigned,
             false,
             None,
@@ -2177,21 +2179,6 @@ impl RelaunchBackoff {
     }
 }
 
-async fn recover_app(
-    serial: String,
-    mut policy: RelaunchBackoff,
-    token: Option<&str>,
-    now: std::time::Instant,
-    adb: &str,
-) -> (String, RelaunchBackoff) {
-    match app_running_with(&serial, adb).await {
-        Some(true) => policy = RelaunchBackoff::default(),
-        Some(false) if policy.allow(now) => launch_app_using(&serial, token, adb).await,
-        _ => {}
-    }
-    (serial, policy)
-}
-
 struct WifiReconnect {
     path: PathBuf,
     adb: String,
@@ -2347,23 +2334,6 @@ fn parse_tablet_ip(text: &str) -> Option<String> {
         }
     }
     None
-}
-
-/// Whether the app's process exists on the tablet. `None` when adb could not
-/// answer (cable pulled mid-check, adb restarting), so the caller does nothing
-/// rather than launching on a guess.
-async fn app_running_with(serial: &str, adb: &str) -> Option<bool> {
-    let out = tokio::process::Command::new(adb)
-        .args(["-s", serial, "shell", "pidof", "com.uscreen"])
-        .output_bounded()
-        .await
-        .ok()?;
-    // pidof exits 1 with no output when nothing matches; adb itself failing
-    // shows up as a non-empty stderr.
-    if !out.stderr.is_empty() {
-        return None;
-    }
-    Some(!String::from_utf8_lossy(&out.stdout).trim().is_empty())
 }
 
 /// Historical upstream test (docs/benchmarks.md): median 32.0 ms without
