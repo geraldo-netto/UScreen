@@ -251,13 +251,24 @@ toggle combinations; saving or starting with an incompatible file or `--pen-only
 fails with an explanation before restarting or allocating display resources.
 Existing invalid files remain editable: enable Pen or disable graphics-tablet mode.
 
-Resolution and FPS are validated together against the generated EDID's
-655.35 MHz pixel-clock limit. Invalid combinations, such as 3840×2160 at 90 FPS,
-are rejected before saving, starting capture or replacing a working stream.
-The GUI explains invalid drafts before Apply; rejected Android requests restore
-the host's confirmed FPS/bitrate and show the reason. Lower the resolution or FPS
-and apply again. This checks representable timings, not compositor compatibility
-(the low-clock compatibility question remains T321).
+Resolution and FPS are validated together against the generated EDID's supported
+**10–655.35 MHz** rounded pixel-clock range. Explicit unsupported combinations,
+such as 640×480 at 10 FPS or 3840×2160 at 90 FPS, are rejected before saving,
+starting capture or replacing a working stream. The GUI explains invalid drafts
+before Apply; rejected Android FPS requests restore the host's confirmed values
+and show the reason. For a low clock, raise FPS or resolution: 640×480 needs at
+least 25 FPS with these fixed porches. For an excessive clock, lower either.
+
+Loading an old saved mode or negotiating native geometry can raise an insufficient
+refresh to the lowest supported integer value while preserving the selected
+pixels (640×480 at 10 becomes 25 FPS). The confirmed FPS is sent back to Android;
+this fallback never lowers an excessive clock into range, and explicit CLI or
+settings edits remain rejections. Display refresh and stream FPS still share one
+setting. Both EDID generators reject low-clock requests and advertise the
+geometry's supported minimum refresh. The 10 MHz boundary is a conservative
+supported-timing policy, not proof that a lower clock crashes a kernel or that an
+accepted mode works on every compositor. No live desktop attach is needed for
+these validation/generation checks.
 The GUI offers all registered encoder/profile choices, including HEVC VAAPI;
 10-bit controls are enabled for HEVC. The render-node path remains a config setting.
 App brightness starts at 50%, refresh preference at 60 Hz; these persist only

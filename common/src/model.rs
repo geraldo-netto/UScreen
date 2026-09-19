@@ -263,7 +263,7 @@ impl FileConfig {
             }
         }
         let mut config: Self = merged.try_into()?;
-        config.sanitize();
+        config.sanitize_requested();
         Ok(config)
     }
 
@@ -272,6 +272,14 @@ impl FileConfig {
     /// straight to disk, so existing installs carry settings that guarantee
     /// multi-second latency until they are clamped here.
     pub fn sanitize(&mut self) {
+        self.sanitize_requested();
+        self.fps = crate::display::compatible_refresh(self.width, self.height, self.fps)
+            .unwrap_or(self.fps);
+    }
+
+    /// Clamp scalar settings without changing an explicitly requested timing.
+    /// Call validate before committing or activating this configuration.
+    pub fn sanitize_requested(&mut self) {
         if !supported_encoder(&self.encoder) {
             tracing::warn!("Unknown encoder {:?} — using auto", self.encoder);
             self.encoder = "auto".into();

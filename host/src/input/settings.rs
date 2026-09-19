@@ -171,13 +171,16 @@ pub(crate) fn negotiated_geometry(
         );
         return None;
     }
-    if let Err(error) =
-        uscreen_config::display::pixel_clock_10khz(selected.0, selected.1, current.fps)
-    {
-        warn!("Ignoring unsupported display mode: {error}");
-        return None;
-    }
+    let refresh =
+        match uscreen_config::display::compatible_refresh(selected.0, selected.1, current.fps) {
+            Ok(refresh) => refresh,
+            Err(error) => {
+                warn!("Ignoring unsupported display mode: {error}");
+                return None;
+            }
+        };
     let mut settings = current.clone();
+    settings.fps = refresh;
     (settings.width, settings.height) = selected;
     (settings.width_mm, settings.height_mm) = physical_dimensions(millimetres.0, millimetres.1);
     settings.geometry_ready = true;

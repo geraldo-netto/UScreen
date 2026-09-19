@@ -1329,23 +1329,27 @@ mod tests {
     }
 
     #[test]
-    fn t332_invalid_display_draft_explains_error_before_save() {
-        let mut app = settings_test_app(Tab::Video);
-        app.status.lock().unwrap().daemon_running = false;
-        app.cfg.width = 3840;
-        app.cfg.height = 2160;
-        app.cfg.fps = 90;
-        let ctx = egui::Context::default();
-        let text = window_test_frame(&mut app, &ctx, Vec::new());
-        assert!(
-            text.iter().any(|(text, _)| text.contains("655.35 MHz")),
-            "T332: {text:?}"
-        );
-        click_settings_text(&mut app, &ctx, "Save", window_test_frame);
-        assert!(
-            app.save.is_none(),
-            "T332: invalid draft must not start saving"
-        );
+    fn t332_t321_invalid_display_draft_explains_error_before_save() {
+        for (width, height, fps, message) in
+            [(3840, 2160, 90, "655.35 MHz"), (640, 480, 10, "25 Hz")]
+        {
+            let mut app = settings_test_app(Tab::Video);
+            app.status.lock().unwrap().daemon_running = false;
+            app.cfg.width = width;
+            app.cfg.height = height;
+            app.cfg.fps = fps;
+            let ctx = egui::Context::default();
+            let text = window_test_frame(&mut app, &ctx, Vec::new());
+            assert!(
+                text.iter().any(|(text, _)| text.contains(message)),
+                "T332/T321: {text:?}"
+            );
+            click_settings_text(&mut app, &ctx, "Save", window_test_frame);
+            assert!(
+                app.save.is_none(),
+                "T332/T321: invalid draft must not start saving"
+            );
+        }
     }
 
     #[test]

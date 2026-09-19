@@ -125,7 +125,10 @@ def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm
     # Pixel clock in 10kHz units
     pixel_clock_10khz = (h_total * v_total * refresh + 5000) // 10000
 
-    if not 0 < pixel_clock_10khz <= 65535:
+    minimum = max(MIN_FPS, (9_995_000 + h_total * v_total - 1) // (h_total * v_total))
+    if pixel_clock_10khz < 1000:
+        raise ValueError(f"EDID pixel clock is below the supported 10 MHz minimum; use at least {minimum} Hz (maximum {MAX_FPS} Hz), or increase the resolution")
+    if pixel_clock_10khz > 65535:
         raise ValueError("EDID pixel clock must fit 16 bits (maximum 655.35 MHz)")
     h_image = width_mm
     v_image = height_mm
@@ -210,10 +213,10 @@ def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm
     edid[idx+1] = 0x00
     edid[idx+2] = 0x00
     edid[idx+3] = 0xFD  # Range limits tag
-    edid[idx+5] = MIN_FPS
+    edid[idx+5] = minimum
     edid[idx+6] = MAX_FPS
     clock_hz = pixel_clock_10khz * 10000
-    min_h = min(v_total * MIN_FPS // 1000, clock_hz // (h_total * 1000))
+    min_h = min(v_total * minimum // 1000, clock_hz // (h_total * 1000))
     max_h = max((v_total * MAX_FPS + 999) // 1000,
                 (clock_hz + h_total * 1000 - 1) // (h_total * 1000))
     edid[idx+4] = ((min_h > 255) << 2) | ((max_h > 255) << 3)

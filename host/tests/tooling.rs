@@ -323,6 +323,19 @@ fn t075_missing_tag_fails_before_build() {
 }
 
 #[test]
+fn t321_edid_tool_rejects_invalid_and_low_clock_modes() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_gen_edid.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn t103_t242_fake_tablet_handles_partial_io_and_runtime_paths() {
     let output = Command::new("python3")
         .arg(repo().join("scripts/tests/test_fake_tablet.py"))

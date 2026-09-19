@@ -2077,6 +2077,24 @@ fi
     }
 
     #[test]
+    fn t321_negotiated_small_panel_uses_supported_refresh() {
+        let mut current = settings("libx264");
+        current.fps = 10;
+        let negotiated = negotiated_geometry(&current, (640, 480), (200, 150), true).unwrap();
+        assert_eq!(
+            (negotiated.width, negotiated.height, negotiated.fps),
+            (640, 480, 25)
+        );
+        assert!(negotiated.geometry_ready);
+        let (tx, _) = watch::channel(negotiated);
+        let source = Some(tx.clone());
+        let reason = apply_tablet_config(&source, None, Some(10), None)
+            .expect("T321: explicit low refresh request accepted");
+        assert!(reason.contains("10 MHz") && reason.contains("25 Hz"));
+        assert_eq!(tx.borrow().fps, 25);
+    }
+
+    #[test]
     fn t275_selected_manual_and_automatic_modes_keep_edid_bounds() {
         let initial = settings("libx264");
         for pixels in [(1920, 1080), (640, 480)] {

@@ -103,12 +103,26 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
         pen_only: cli.pen_only || saved.pen_only,
         ..saved.clone()
     };
-    effective.sanitize();
+    effective.sanitize_requested();
     effective
 }
 
 #[cfg(test)]
 mod cli_tests {
+    #[test]
+    fn t321_explicit_cli_low_clock_is_not_silently_repaired() {
+        use clap::Parser;
+        let cli = super::Cli::parse_from([
+            "uscreen", "--width", "640", "--height", "480", "--fps", "10",
+        ]);
+        let config = super::effective_config(&cli, &Default::default());
+        assert_eq!(config.fps, 10);
+        assert!(
+            config.validate().is_err(),
+            "T321: invalid explicit mode accepted"
+        );
+    }
+
     #[test]
     fn t474_cli_overrides_saved_capacity_and_reaches_every_slot() {
         use super::*;

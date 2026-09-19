@@ -188,7 +188,7 @@ impl FileConfig {
         };
         config.sanitize();
         edit(&mut config)?;
-        config.sanitize();
+        config.sanitize_requested();
         config.write_at(path)?;
         Ok(config)
     }
@@ -240,6 +240,53 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t321_missing_or_malformed_saved_configuration_has_supported_default_timing() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("config.toml");
+        let missing = FileConfig::load_at(&path);
+        assert!(missing.validate().is_ok());
+        std::fs::write(&path, "fps = [not a number").unwrap();
+        let malformed = FileConfig::load_at(&path);
+        assert!(malformed.validate().is_ok());
+        assert_eq!(missing, malformed);
+        assert_eq!(
+            std::fs::read_to_string(path).unwrap(),
+            "fps = [not a number"
+        );
+    }
+
+    #[test]
+    fn t321_explicit_edit_rejects_low_clock_without_overwriting_preferences() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("config.toml");
+        let initial = FileConfig {
+            width: 640,
+            height: 480,
+            fps: 30,
+            ..Default::default()
+        };
+        initial.save_at(&path).unwrap();
+        let before = std::fs::read(&path).unwrap();
+        let store = ConfigStore::new(path.clone());
+        let edited = FileConfig {
+            fps: 10,
+            ..initial.clone()
+        };
+        assert!(
+            store.save_edits(&edited, &initial).is_err(),
+            "T321: explicit save silently raised requested refresh"
+        );
+        assert!(FileConfig::update_at(&path, |config| {
+            config.fps = 10;
+            Ok(())
+        })
+        .is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+        std::fs::write(&path, "width = 640\nheight = 480\nfps = 10\n").unwrap();
+        assert_eq!(FileConfig::load_at(&path).fps, 25);
+    }
 
     #[test]
     fn t332_invalid_joint_mode_save_preserves_last_valid_configuration() {

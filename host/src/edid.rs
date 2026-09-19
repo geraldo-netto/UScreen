@@ -119,12 +119,13 @@ pub fn make_edid_sized(
     // === Range limits descriptor (bytes 108-125) ===
     let i = 108;
     edid[i + 3] = 0xFD;
-    edid[i + 5] = uscreen_config::MIN_FPS as u8;
+    let minimum_refresh = uscreen_config::display::minimum_refresh(width, height)?;
+    edid[i + 5] = minimum_refresh as u8;
     edid[i + 6] = uscreen_config::MAX_FPS as u8;
     // Include the actual rounded DTD clock and every configured refresh.
     // EDID 1.4 range offsets represent horizontal rates above 255 kHz.
     let clock_hz = u32::from(pixel_clock_10khz) * 10_000;
-    let min_h = (v_total * uscreen_config::MIN_FPS / 1000).min(clock_hz / (h_total * 1000));
+    let min_h = (v_total * minimum_refresh / 1000).min(clock_hz / (h_total * 1000));
     let max_h = (v_total * uscreen_config::MAX_FPS)
         .div_ceil(1000)
         .max(clock_hz.div_ceil(h_total * 1000));
@@ -152,7 +153,7 @@ pub fn make_edid(width: u32, height: u32, refresh: u32) -> Vec<u8> {
 /// Bumped whenever the generator changes. It is part of the cache filename so
 /// that fixing a bug here actually reaches existing installs — without it, a
 /// stale file from a previous version would be reused forever.
-const EDID_GENERATION: u32 = 6;
+const EDID_GENERATION: u32 = 7;
 
 /// Write (or reuse) a generated EDID for this mode and return its path.
 pub fn ensure_edid_sized(
@@ -211,6 +212,43 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t321_range_minimum_tracks_supported_geometry() {
+        let rust = make_edid_sized(640, 480, 25, 310, 194).unwrap();
+        let python = python_edid(640, 480, 25, 310, 194).unwrap();
+        assert_eq!(
+            rust[113], 25,
+            "T321: Rust range advertises unsupported low refresh"
+        );
+        assert_eq!(
+            python[113], 25,
+            "T321: Python range advertises unsupported low refresh"
+        );
+        assert_eq!(rust, python);
+    }
+
+    #[test]
+    fn t321_python_rejects_low_clock_modes() {
+        for fps in [10, 24] {
+            assert!(
+                python_edid(640, 480, fps, 310, 194).is_none(),
+                "T321: Python admitted low clock"
+            );
+        }
+        assert!(python_edid(640, 480, 25, 310, 194).is_some());
+    }
+
+    #[test]
+    fn t321_rust_rejects_low_clock_modes() {
+        for fps in [10, 24] {
+            assert!(
+                make_edid_sized(640, 480, fps, 310, 194).is_err(),
+                "T321: Rust admitted low clock"
+            );
+        }
+        assert!(make_edid_sized(640, 480, 25, 310, 194).is_ok());
+    }
 
     fn assert_t320_dummy_descriptor(edid: &[u8]) {
         // EDID base-block display descriptor: zero clock/reserved bytes,
@@ -349,7 +387,8 @@ mod tests {
             (3840, 2160, 75, false),
             (3840, 2160, 90, false),
             (4095, 4095, 60, false),
-            (640, 480, 10, true),
+            (640, 480, 10, false),
+            (640, 480, 25, true),
         ] {
             let config = uscreen_config::FileConfig {
                 width,
@@ -378,7 +417,7 @@ mod tests {
             (1920, 1080, 10, 310, 194),
             (2960, 1848, 90, 314, 195),
             (4095, 2160, 30, 4095, 4095),
-            (1, 1080, 10, 255, 256),
+            (1, 1080, 60, 255, 256),
             (1024, 4095, 90, 310, 194),
         ] {
             let rust = make_edid_sized(w, h, fps, wm, hm).unwrap();
@@ -403,6 +442,7 @@ mod tests {
     #[test]
     fn t115_both_generators_reject_unrepresentable_or_unsupported_values() {
         for (w, h, fps, wm, hm) in [
+            (1, 1080, 10, 255, 256),
             (4096, 1080, 60, 310, 194),
             (1920, 4096, 60, 310, 194),
             (0, 1080, 60, 310, 194),
