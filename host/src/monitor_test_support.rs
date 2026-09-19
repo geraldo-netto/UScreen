@@ -7,12 +7,22 @@ fn fixture(assigned: &[String], auto_launch: bool, token: Option<&str>, adb: &st
         ports: (18000, 18001),
         auto_launch,
         tablet,
-        token: token.map(str::to_owned),
+        token_dir: None,
         relaunch: Default::default(),
         extra,
         adb: adb.into(),
     });
     state.ready.extend(assigned.iter().cloned());
+    for serial in assigned {
+        let prepared = session::Spec {
+            capture: Default::default(),
+            ports: (0, 0),
+            token: token.map(str::to_owned),
+            devices: (false, false, false),
+        }
+        .prepare(state.config.extra.mode_tx.clone());
+        state.attachments.insert(serial.clone(), prepared.tablet);
+    }
     state
 }
 
@@ -94,11 +104,17 @@ async fn t431_reassignment_rejects_late_recovery_and_cancels_work() {
         .mutations
         .schedule("OLD".into(), std::future::pending());
     state.remove_assignment("OLD");
-    let (serial, result) = tokio::time::timeout(Duration::from_millis(500), state.mutations.next())
+    assert!(
+        !state.mutations.contains("OLD"),
+        "T431: cancellation ownership was not transferred"
+    );
+    assert!(state.retiring_routes.contains_key("OLD"));
+    let retired = tokio::time::timeout(Duration::from_millis(500), state.retiring.join_next())
         .await
+        .unwrap()
+        .unwrap()
         .unwrap();
-    assert!(result.as_ref().is_err_and(|error| error.is_cancelled()));
-    state.mutation_ready(serial, result);
+    state.retired(retired);
     state.mutation_ready("OLD".into(), Ok(Mutation::Token));
     state.extra_token("OLD".into(), Instant::now());
     assert!(!state.ready.contains("OLD"));

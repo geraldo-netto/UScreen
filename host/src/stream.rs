@@ -30,7 +30,7 @@ const SEND_BUFFER_BYTES: libc::c_int = 128 * 1024;
 
 pub struct StreamConfig {
     pub video_port: u16,
-    /// This run's session token; `None` disables the check.
+    /// Fallback for standalone servers; production uses the attachment lease.
     pub token: Option<String>,
 }
 
@@ -50,6 +50,7 @@ const WRITE_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(1)
 
 pub struct StreamServer {
     config: StreamConfig,
+    attachment: Option<crate::attachment::Attachment>,
     stop: tokio::sync::watch::Sender<bool>,
     codec_config: CodecConfig,
     /// Raised on attachment for the optional in-process encoder's next-frame
@@ -65,10 +66,16 @@ impl StreamServer {
     ) -> Self {
         Self {
             config,
+            attachment: None,
             stop: tokio::sync::watch::channel(false).0,
             codec_config,
             idr_wanted,
         }
+    }
+
+    pub(crate) fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
+        self.attachment = Some(attachment);
+        self
     }
 
     pub async fn bind(&self) -> Result<TcpListener> {
@@ -113,9 +120,15 @@ impl StreamServer {
             let idr_wanted = self.idr_wanted.clone();
             let cc = self.codec_config.clone();
             let token = self.config.token.clone();
+            let lease = self
+                .attachment
+                .as_ref()
+                .map(crate::attachment::Attachment::lease);
             clients.spawn(async move {
                 let _permit = permit;
-                if let Err(e) = Self::handle_client(socket, tx, cc, token, idr_wanted).await {
+                if let Err(e) =
+                    Self::handle_attached_client(socket, tx, cc, token, idr_wanted, lease).await
+                {
                     warn!("Client {} disconnected: {}", peer, e);
                 }
                 info!("Client {} session ended", peer);
@@ -124,6 +137,25 @@ impl StreamServer {
 
         clients.shutdown().await;
         Ok(())
+    }
+
+    async fn handle_attached_client(
+        socket: TcpStream,
+        video: crate::video_queue::VideoSender,
+        config: CodecConfig,
+        fallback: Option<String>,
+        idr: Arc<AtomicBool>,
+        lease: Option<crate::attachment::Lease>,
+    ) -> Result<()> {
+        match lease {
+            Some(lease) => {
+                let token = lease.token(fallback.as_deref())?.map(str::to_owned);
+                lease
+                    .run(Self::handle_client(socket, video, config, token, idr))
+                    .await
+            }
+            None => Self::handle_client(socket, video, config, fallback, idr).await,
+        }
     }
 
     async fn handle_client(

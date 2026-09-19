@@ -285,15 +285,11 @@ async fn handle_connection(
 
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-    if !authenticate_input(
-        &mut ws_sender,
-        &mut ws_receiver,
-        config.token.as_deref(),
-        deadline,
-        &relaunch,
-    )
-    .await
-    {
+    let token = match incoming.attachment.as_ref() {
+        Some(lease) => lease.token(config.token.as_deref())?,
+        None => config.token.as_deref(),
+    };
+    if !authenticate_input(&mut ws_sender, &mut ws_receiver, token, deadline, &relaunch).await {
         return Ok(());
     }
 

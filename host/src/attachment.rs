@@ -4,7 +4,11 @@ use crate::media::EncoderSettings;
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
+mod auth;
+use auth::Authentication;
+
 struct State {
+    authentication: Authentication,
     identity: Option<String>,
     generation: u64,
     transport: Option<uscreen_config::adb::Transport>,
@@ -21,6 +25,7 @@ impl Attachment {
     pub fn new(settings: watch::Sender<EncoderSettings>) -> Self {
         Self(Arc::new(Shared {
             state: Mutex::new(State {
+                authentication: Authentication::Unmanaged,
                 identity: None,
                 generation: 0,
                 transport: None,
@@ -29,6 +34,22 @@ impl Attachment {
             generation: watch::channel(0).0,
             settings,
         }))
+    }
+
+    pub fn with_token(settings: watch::Sender<EncoderSettings>, token: Option<String>) -> Self {
+        let attachment = Self::new(settings);
+        attachment.0.state.lock().unwrap().authentication = Authentication::configured(token);
+        attachment
+    }
+
+    pub fn token(&self) -> anyhow::Result<Option<String>> {
+        self.0
+            .state
+            .lock()
+            .unwrap()
+            .authentication
+            .expected(None)
+            .map(|token| token.map(str::to_owned))
     }
 
     /// Begin a transport handoff before its first authenticated message can
@@ -45,6 +66,9 @@ impl Attachment {
     ) {
         let mut state = self.0.state.lock().unwrap();
         let preserve = identity.is_some() && state.identity == identity;
+        state
+            .authentication
+            .rotate(preserve, crate::runtime::random_token);
         state.transport = transport.filter(|_| identity.is_some());
         state.identity = identity;
         state.generation = state.generation.wrapping_add(1);
@@ -79,6 +103,7 @@ impl Attachment {
     pub fn lease(&self) -> Lease {
         let state = self.0.state.lock().unwrap();
         Lease {
+            authentication: state.authentication.clone(),
             attachment: self.clone(),
             generation: state.generation,
             transport: state.transport,
@@ -88,12 +113,37 @@ impl Attachment {
 }
 
 pub(crate) struct Lease {
+    authentication: Authentication,
     attachment: Attachment,
     generation: u64,
     transport: Option<uscreen_config::adb::Transport>,
     changed: watch::Receiver<u64>,
 }
 impl Lease {
+    pub fn token<'a>(&'a self, fallback: Option<&'a str>) -> anyhow::Result<Option<&'a str>> {
+        self.authentication.expected(fallback)
+    }
+
+    /// Poll video I/O under the generation check. Retirement cannot race a
+    /// synchronous socket write; a pending poll never holds the mutex asleep.
+    pub async fn run(
+        &self,
+        work: impl std::future::Future<Output = anyhow::Result<()>>,
+    ) -> anyhow::Result<()> {
+        let mut work = std::pin::pin!(work);
+        let checked = std::future::poll_fn(|cx| {
+            let mut result = std::task::Poll::Ready(Ok(()));
+            self.apply(|| result = work.as_mut().poll(cx));
+            result
+        });
+        let mut retirement = self.retirement();
+        tokio::select! {
+            biased;
+            _ = retirement.retired() => Ok(()),
+            result = checked => result,
+        }
+    }
+
     /// Immutable accepted route: never read a replacement tablet's transport.
     pub fn transport(&self) -> Option<&'static str> {
         self.transport.map(|route| match route {

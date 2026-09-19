@@ -6,11 +6,23 @@ The host video and input servers bind to **127.0.0.1**, on ports 8890/8891
 by default, plus two ports per additional tablet slot. The tablet reaches
 these ports through `adb reverse`.
 
-With the default `require_token = true`, each daemon run creates a random
-256-bit token, encoded as 64 hex characters. The host delivers it over adb
-on stdin, rather than in process arguments. The video and input connections
-must authenticate before receiving video or injecting input. Keep token
-authentication enabled: disabling it removes that protection. In disabled
+With the default `require_token = true`, each logical tablet attachment gets a
+random 256-bit token, encoded as 64 hex characters, shared by its video and input
+channels. Replacement, detach and slot reuse invalidate the old credential and
+accepted connection leases. A proven same-tablet USB/Wi-Fi migration keeps its
+credential but retires the old connections; an unknown identity is treated
+conservatively as a replacement. Entropy or private-token publication failure
+prevents attachment preparation rather than disabling authentication.
+
+The host delivers credentials over adb on stdin, rather than in process
+arguments. Initial attachment and authentication retries use the protected
+TokenReceiver broadcast; only an enabled, fresh-attachment auto-launch may open
+an Activity. The host attempts to remove both old reverse routes before reusing
+the slot, waiting for owned device work and extra-session teardown. An offline
+device may not acknowledge cleanup: the revoked token still rejects its late
+connections. Keep authentication enabled; **tokenless mode cannot provide this
+attachment isolation**, even though existing accepted leases are still retired.
+Video and input must authenticate before receiving video or injecting input. In disabled
 mode, video accepts tokenless clients or consumes one optional saved 64-byte
 hex token without checking its value. This compatibility path is never used
 when token authentication is enabled. Incomplete optional prefixes expire
@@ -47,6 +59,10 @@ relocated HOME cache) are resolved before validation. The final `uscreen`
 directory is opened with `O_DIRECTORY | O_NOFOLLOW` and must belong to the same
 UID with permission bits 0700. Existing unsafe paths are refused without changing
 their ownership or permissions; a selected unsafe path does not trigger fallback.
+The primary slot publishes its current token in `token`; extra slots use
+`token-1`, `token-2`, and `token-3`. Attachment preparation atomically replaces
+these private files. A retained file after disconnection is not evidence of a
+live or authorized route; retired credentials cannot authenticate.
 Creation/open/validation errors propagate to startup and capture; doctor reports
 them, and cleanup skips paths it cannot validate. Token and FIFO creation request
 mode 0600 and use only accepted runtime paths. These checks do not protect

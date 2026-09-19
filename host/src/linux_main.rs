@@ -1526,6 +1526,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     );
 
     let token = create_session_token(file_cfg.require_token)?;
+    let token_dir = token.as_ref().map(|_| runtime::runtime_dir()).transpose()?;
     let (mode_tx, mode_persistence) = mode_channel(pen_only);
     let prepared = session::Spec {
         capture: cap_config.clone(),
@@ -1604,7 +1605,6 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Plug-and-play: watch for the tablet over ADB, set up port forwarding
     // and launch the app whenever it's (re)connected.
     let auto_launch = file_cfg.auto_launch_app;
-    let adb_token = token.clone();
     let extra = ExtraSessionTemplate {
         max_tablets: file_cfg.max_tablets,
         cap_template: capture::CaptureConfig {
@@ -1626,7 +1626,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             input_port,
             auto_launch,
             tablet_tx,
-            adb_token,
+            token_dir,
             relaunch,
             extra,
         )
@@ -2073,7 +2073,7 @@ async fn adb_monitor(
     input_port: u16,
     auto_launch: bool,
     tablet_tx: attachment::Attachment,
-    token: Option<String>,
+    token_dir: Option<PathBuf>,
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
 ) {
@@ -2082,7 +2082,7 @@ async fn adb_monitor(
         input_port,
         auto_launch,
         tablet_tx,
-        token,
+        token_dir,
         relaunch,
         extra,
         "adb",
@@ -2096,7 +2096,7 @@ async fn adb_monitor_using(
     input_port: u16,
     auto_launch: bool,
     tablet_tx: attachment::Attachment,
-    token: Option<String>,
+    token_dir: Option<PathBuf>,
     relaunch: std::sync::Arc<tokio::sync::Notify>,
     extra: ExtraSessionTemplate,
     adb: &str,
@@ -2105,7 +2105,7 @@ async fn adb_monitor_using(
         ports: (video_port, input_port),
         auto_launch,
         tablet: tablet_tx,
-        token,
+        token_dir,
         relaunch,
         extra,
         adb: adb.to_owned(),
@@ -2394,8 +2394,8 @@ impl TabletConnection<'_> {
 /// The command goes to `adb shell` on stdin, not as arguments. Anything in
 /// argv is readable by every local process for as long as the adb client
 /// runs (/proc/<pid>/cmdline is world-readable), which would hand the token
-/// to exactly the attacker it exists to keep out — and a failed auth on the
-/// control socket can make the daemon spawn this on demand.
+/// to a local process that must not receive it. Failed input authentication
+/// requests a protected broadcast, never an Activity launch.
 fn app_launch_command(token: Option<&str>) -> String {
     let mut cmd = format!(
         "am start -n com.uscreen/.{}",
@@ -2429,11 +2429,11 @@ fn token_delivery_command(token: Option<&str>) -> String {
     command
 }
 
-async fn redeliver_token_using(serial: &str, token: Option<&str>, adb: &str) {
-    app_command_using(serial, token_delivery_command(token), "token delivery", adb).await;
+async fn redeliver_token_using(serial: &str, token: Option<&str>, adb: &str) -> bool {
+    app_command_using(serial, token_delivery_command(token), "token delivery", adb).await
 }
 
-async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) {
+async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) -> bool {
     use tokio::io::AsyncWriteExt;
 
     let child = tokio::process::Command::new(adb)
@@ -2447,7 +2447,7 @@ async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) {
         Ok(c) => c,
         Err(e) => {
             warn!("Could not run adb: {}", e);
-            return;
+            return false;
         }
     };
     let operation = async {
@@ -2458,10 +2458,14 @@ async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) {
         child.wait().await
     };
     match tokio::time::timeout(std::time::Duration::from_secs(15), operation).await {
-        Ok(Ok(st)) if st.success() => info!("UScreen {action} command completed on tablet"),
+        Ok(Ok(st)) if st.success() => {
+            info!("UScreen {action} command completed on tablet");
+            true
+        }
         _ => {
             let _ = child.kill().await;
             warn!("Could not complete UScreen {action} (is the matching app installed?)");
+            false
         }
     }
 }

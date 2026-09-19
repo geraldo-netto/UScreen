@@ -55,7 +55,8 @@ impl Spec {
     /// before any control message can change them (T292/T296).
     pub fn prepare(self, mode: watch::Sender<bool>) -> Prepared {
         let (settings, settings_rx) = watch::channel(self.settings());
-        let tablet = crate::attachment::Attachment::new(settings.clone());
+        let tablet =
+            crate::attachment::Attachment::with_token(settings.clone(), self.token.clone());
         let relaunch = Arc::new(Notify::new());
         let input_config = self.input_config();
         let capture = capture::CaptureManager::new(self.capture.clone());
@@ -66,7 +67,8 @@ impl Spec {
             },
             capture.codec_config(),
             capture.idr_request_flag(),
-        );
+        )
+        .with_attachment(tablet.clone());
         let input = input::InputServer::new(
             input_config,
             Some(settings.clone()),
@@ -457,3 +459,6 @@ mod tests {
             .unwrap();
     }
 }
+
+#[cfg(test)]
+mod credential_tests;

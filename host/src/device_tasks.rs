@@ -67,6 +67,17 @@ impl<T: Send + 'static> DeviceTasks<T> {
         result
     }
 
+    /// Transfer cancellation ownership to a route-retirement barrier.
+    pub fn retire(&mut self, serial: &str) -> Option<JoinHandle<T>> {
+        self.queued.retain(|(key, _)| key != serial);
+        let task = self.active.remove(serial);
+        if let Some(task) = &task {
+            task.abort();
+        }
+        self.start_ready();
+        task
+    }
+
     pub fn cancel(&mut self, serial: &str) {
         self.queued.retain(|(key, _)| key != serial);
         if let Some(task) = self.active.get(serial) {

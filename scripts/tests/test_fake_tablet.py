@@ -185,6 +185,35 @@ class RuntimePaths(unittest.TestCase):
             with mock.patch.dict(os.environ, {'XDG_RUNTIME_DIR': str(alias)}):
                 self.assertEqual(tablet.runtime_dir(), str(base / 'uscreen'))
 
+class AttachmentTokenTest(unittest.TestCase):
+    def test_t444_slot_uses_its_own_credential(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            for slot in range(4):
+                name = 'token' if slot == 0 else f'token-{slot}'
+                Path(directory, name).write_text(str(slot) * 64)
+            for slot in range(4):
+                with self.subTest(slot=slot), \
+                        patch.object(tablet.sys, 'argv', ['fake-tablet', '--slot', str(slot)]), \
+                        patch.object(tablet, 'runtime_dir', return_value=directory), \
+                        patch.object(tablet, 'ws_connect', return_value=object()), \
+                        patch.object(tablet, 'ws_send', side_effect=RuntimeError('stop after auth')) as send:
+                    with self.assertRaisesRegex(RuntimeError, 'stop after auth'):
+                        tablet.main()
+                    self.assertEqual(send.call_args.args[1], {'type': 'auth', 'token': str(slot) * 64})
+
+    def test_t444_slot_bounds_reject_before_io(self):
+        import io
+        for slot in ['-1', '4', '4294967295', '999999999999999999999', 'x']:
+            with self.subTest(slot=slot), \
+                    patch.object(tablet.sys, 'argv', ['fake-tablet', '--slot', slot]), \
+                    patch.object(tablet.sys, 'stderr', io.StringIO()), \
+                    patch.object(tablet, 'runtime_dir') as runtime:
+                with self.assertRaises(SystemExit) as failure:
+                    tablet.main()
+                self.assertEqual(failure.exception.code, 2)
+                runtime.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

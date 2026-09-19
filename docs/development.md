@@ -122,7 +122,11 @@ host capture/encoder pipeline and can attach EVDI; it is not an isolated unit
 test or a measure of tablet decoding. Token discovery uses the daemon's base
 selection: an existing XDG_RUNTIME_DIR, then an existing /run/user/<uid>, then
 HOME/.cache (/tmp/.cache when HOME is absent). Both resolve base aliases before
-using the uscreen/token path. Run with the daemon's environment; the script
+using `uscreen/token` for slot 0 and `uscreen/token-N` for slots 1–3. Each slot's
+credential rotates on logical attachment replacement; wait for slot preparation
+before connecting, and restart the client after a replacement. A proven same-tablet
+transport migration keeps its key but closes old sockets. Run with the daemon's
+environment; the script
 reads the token and does not create runtime directories. Rust and Python test
 this order against the shared runtime-bases.json fixture. The client drains video
 through bounded reusable storage; its ACKs mean complete receipt with synthetic

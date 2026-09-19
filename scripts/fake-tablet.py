@@ -159,9 +159,15 @@ def receive_video(video, control, seconds):
     return got_config, frames, seq_last
 
 
+def token_for_slot(slot):
+    name = "token" if slot == 0 else f"token-{slot}"
+    with open(os.path.join(runtime_dir(), name)) as stream:
+        return stream.read().strip()
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--slot", type=int, default=1)
+    ap.add_argument("--slot", type=int, choices=range(4), default=1)
     ap.add_argument("--seconds", type=int, default=20)
     ap.add_argument("--width", type=int, default=2560)
     ap.add_argument("--height", type=int, default=1600)
@@ -170,8 +176,7 @@ def main():
     vport, iport = 8890 + 2 * a.slot, 8891 + 2 * a.slot
     token = None
     if not a.no_token:
-        with open(os.path.join(runtime_dir(), "token")) as f:
-            token = f.read().strip()
+        token = token_for_slot(a.slot)
 
     # --- control channel ---
     ws = ws_connect(iport)

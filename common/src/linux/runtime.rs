@@ -92,10 +92,8 @@ fn token_path() -> Result<PathBuf> {
     Ok(runtime_dir()?.join("token"))
 }
 
-/// 64 hex characters from the kernel's RNG. Generated once per daemon run and
-/// written to the runtime directory (0600) for anything else of ours that
-/// needs it; it is never sent anywhere except to the tablet, over adb.
-pub fn new_session_token() -> Result<String> {
+/// 64 hex characters from the kernel RNG, without publishing or logging them.
+pub fn random_token() -> Result<String> {
     use std::io::Read;
     let mut raw = [0u8; 32];
     std::fs::File::open("/dev/urandom")
@@ -104,6 +102,12 @@ pub fn new_session_token() -> Result<String> {
         .context("read /dev/urandom")?;
     let token: String = raw.iter().map(|b| format!("{:02x}", b)).collect();
 
+    Ok(token)
+}
+
+/// Create the initial private credential file; attachments rotate it thereafter.
+pub fn new_session_token() -> Result<String> {
+    let token = random_token()?;
     let path = token_path()?;
     let _ = std::fs::remove_file(&path);
     let mut f = std::fs::OpenOptions::new()
@@ -137,6 +141,28 @@ pub fn token_matches(expected: &str, presented: &str) -> bool {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn t444_random_tokens_are_fresh_fixed_width_and_reject_mutations() {
+        let first = random_token().unwrap();
+        let second = random_token().unwrap();
+        assert_ne!(first, second);
+        for token in [&first, &second] {
+            assert_eq!(token.len(), 64);
+            assert!(token
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+            for index in 0..token.len() {
+                let mut bytes = token.as_bytes().to_vec();
+                bytes[index] = b'x';
+                let mutated = String::from_utf8(bytes).unwrap();
+                assert!(!token_matches(token, &mutated));
+            }
+            for length in [0, 1, 63, 65, 4096] {
+                assert!(!token_matches(token, &"a".repeat(length)));
+            }
+        }
+    }
 
     #[test]
     fn t436_runtime_fixture_survives_shared_umask() {

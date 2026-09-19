@@ -32,11 +32,22 @@ fn launches(adb: &std::path::Path) -> usize {
 }
 
 async fn complete(state: &mut Monitor, serial: &str) {
-    while state.mutations.contains(serial) {
-        let (serial, result) = tokio::time::timeout(Duration::from_secs(2), state.mutations.next())
-            .await
-            .unwrap();
-        state.mutation_ready(serial, result);
+    loop {
+        if !state.retiring.is_empty() {
+            let result = tokio::time::timeout(Duration::from_secs(2), state.retiring.join_next())
+                .await
+                .unwrap();
+            apply_event(state, Event::Retired(result)).await;
+            state.prepare_primary();
+        } else if state.mutations.contains(serial) {
+            let (serial, result) =
+                tokio::time::timeout(Duration::from_secs(2), state.mutations.next())
+                    .await
+                    .unwrap();
+            state.mutation_ready(serial, result);
+        } else {
+            break;
+        }
     }
 }
 

@@ -4,13 +4,16 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task::JoinSet;
+mod credentials;
 mod launch_policy;
+mod preparation;
+mod retirement;
 
 pub(crate) struct Config {
     pub ports: (u16, u16),
     pub auto_launch: bool,
     pub tablet: attachment::Attachment,
-    pub token: Option<String>,
+    pub token_dir: Option<PathBuf>,
     pub relaunch: Arc<tokio::sync::Notify>,
     pub extra: ExtraSessionTemplate,
     pub adb: String,
@@ -41,7 +44,7 @@ enum Event {
         std::result::Result<Mutation, tokio::task::JoinError>,
     ),
     Inventory(Option<std::result::Result<Inventory, tokio::task::JoinError>>),
-    Retired(Option<std::result::Result<u32, tokio::task::JoinError>>),
+    Retired(Option<std::result::Result<(String, u32), tokio::task::JoinError>>),
     PrimaryToken,
     ExtraToken(String),
 }
@@ -50,6 +53,7 @@ struct Monitor {
     config: Config,
     current: Option<String>,
     ready: HashSet<String>,
+    attachments: HashMap<String, attachment::Attachment>,
     identities: HashMap<String, String>,
     forwarding: HashMap<String, RelaunchBackoff>,
     token_retries: HashMap<String, RelaunchBackoff>,
@@ -57,7 +61,8 @@ struct Monitor {
     extras: HashMap<String, ExtraSession>,
     pending: HashMap<String, Pending>,
     retiring_slots: HashSet<u32>,
-    retiring: JoinSet<u32>,
+    retiring: JoinSet<(String, u32)>,
+    retiring_routes: HashMap<String, u32>,
     discovery: discovery::Discovery,
     mutations: device_tasks::DeviceTasks<Mutation>,
     inventory: JoinSet<Inventory>,
@@ -76,6 +81,7 @@ impl Monitor {
             config,
             current: None,
             ready: HashSet::new(),
+            attachments: HashMap::new(),
             identities: HashMap::new(),
             forwarding: HashMap::new(),
             token_retries: HashMap::new(),
@@ -84,6 +90,7 @@ impl Monitor {
             pending: HashMap::new(),
             retiring_slots: HashSet::new(),
             retiring: JoinSet::new(),
+            retiring_routes: HashMap::new(),
             discovery: discovery::Discovery::new(),
             mutations: device_tasks::DeviceTasks::new(4),
             inventory: JoinSet::new(),
@@ -188,34 +195,28 @@ impl Monitor {
 
     fn probe_ready(&mut self, serial: String, identity: Option<String>) {
         self.launches.observe(&serial, identity.as_deref());
+        let changed = self.identities.get(&serial) != identity.as_ref();
         if let Some(identity) = identity {
-            self.identities.insert(serial, identity);
+            self.identities.insert(serial.clone(), identity);
         } else {
             self.identities.remove(&serial);
         }
+        if changed {
+            self.revalidate_identity(&serial);
+        }
     }
 
-    fn retire(&mut self, session: ExtraSession) {
-        let instance = session.instance;
-        self.retiring_slots.insert(instance);
-        self.retiring.spawn(async move {
-            session.stop().await;
-            instance
-        });
-    }
-
-    fn remove_assignment(&mut self, serial: &str) {
-        self.ready.remove(serial);
-        self.mutations.cancel(serial);
-        self.token_retries.remove(serial);
-        if let Some(pending) = self.pending.remove(serial) {
-            if let Some(session) = pending.session {
-                self.retire(session);
-            }
+    fn revalidate_identity(&mut self, serial: &str) {
+        if !self.attachments.contains_key(serial) {
+            return;
         }
-        if let Some(session) = self.extras.remove(serial) {
-            self.retire(session);
+        if self.current.as_deref() == Some(serial) {
+            self.config.tablet.begin_with_transport(
+                Some(attachment_identity(serial, &self.identities)),
+                Some(uscreen_config::adb::transport_of(serial)),
+            );
         }
+        self.remove_assignment(serial);
     }
 
     fn change_primary(&mut self, found: &Option<String>) {
@@ -243,7 +244,8 @@ impl Monitor {
     }
 
     fn can_prepare(&self, serial: &str) -> bool {
-        !self.ready.contains(serial)
+        !self.retiring_routes.contains_key(serial)
+            && !self.ready.contains(serial)
             && !self.mutations.contains(serial)
             && self
                 .forwarding
@@ -252,33 +254,32 @@ impl Monitor {
     }
 
     fn prepare(&mut self, serial: String, pending: Pending, ports: (u16, u16)) {
-        let mut retry = self.forwarding.remove(&serial).unwrap_or_default();
-        let adb = self.config.adb.clone();
-        let token = self.config.token.clone();
-        let auto_launch = self.config.auto_launch && !is_fake_serial(&serial);
-        let ticket = self
-            .launches
-            .observe(&serial, self.identities.get(&serial).map(String::as_str));
+        let tablet = pending
+            .session
+            .as_ref()
+            .map_or(&self.config.tablet, |session| &session.tablet_tx);
+        self.attachments.insert(serial.clone(), tablet.clone());
+        let work = preparation::Preparation {
+            serial: serial.clone(),
+            ports,
+            token: tablet.token(),
+            token_dir: self.config.token_dir.clone(),
+            instance: pending.instance,
+            adb: self.config.adb.clone(),
+            auto_launch: self.config.auto_launch && !is_fake_serial(&serial),
+            ticket: self
+                .launches
+                .observe(&serial, self.identities.get(&serial).map(String::as_str)),
+            retry: self.forwarding.remove(&serial).unwrap_or_default(),
+        };
         self.pending.insert(serial.clone(), pending);
-        let job_serial = serial.clone();
-        self.mutations.schedule(serial, async move {
-            let request = TabletConnection {
-                serial: &job_serial,
-                video_port: ports.0,
-                input_port: ports.1,
-                auto_launch: false,
-                token: token.as_deref(),
-                adb: &adb,
-            };
-            let ready = request.prepare(&mut retry, Instant::now()).await;
-            if ready && auto_launch && ticket.is_some_and(|ticket| ticket.take()) {
-                launch_app_using(&job_serial, token.as_deref(), &adb).await;
-            }
-            Mutation::Prepared { ready, retry }
-        });
+        self.mutations.schedule(serial, work.run());
     }
 
     fn prepare_primary(&mut self) {
+        if self.retiring_slots.contains(&0) {
+            return;
+        }
         let Some(serial) = self
             .current
             .clone()
@@ -387,9 +388,7 @@ impl Monitor {
         };
         self.forwarding.insert(serial.clone(), retry);
         if !ready {
-            if let Some(session) = pending.session {
-                self.retire(session);
-            }
+            self.retire(serial, pending.instance, pending.session, None);
             return;
         }
         if let Some(session) = pending.session {
@@ -424,9 +423,7 @@ impl Monitor {
                     warn!("Device operation failed for {serial}: {error}");
                 }
                 if let Some(pending) = self.pending.remove(&serial) {
-                    if let Some(session) = pending.session {
-                        self.retire(session);
-                    }
+                    self.retire(serial, pending.instance, pending.session, None);
                 }
             }
         }
@@ -440,7 +437,13 @@ impl Monitor {
             return;
         }
         let adb = self.config.adb.clone();
-        let token = self.config.token.clone();
+        let Some(Ok(token)) = self
+            .attachments
+            .get(&serial)
+            .map(attachment::Attachment::token)
+        else {
+            return;
+        };
         let job_serial = serial.clone();
         self.mutations.schedule(serial, async move {
             redeliver_token_using(&job_serial, token.as_deref(), &adb).await;
@@ -513,15 +516,15 @@ impl Monitor {
         while self.inventory.join_next().await.is_some() {}
         self.discovery.stop().await;
         self.mutations.stop().await;
-        let pending = std::mem::take(&mut self.pending);
-        for (_, pending) in pending {
-            if let Some(session) = pending.session {
-                self.retire(session);
-            }
-        }
-        let extras = std::mem::take(&mut self.extras);
-        for (_, session) in extras {
-            self.retire(session);
+        let serials: HashSet<_> = self
+            .current
+            .iter()
+            .chain(self.pending.keys())
+            .chain(self.extras.keys())
+            .cloned()
+            .collect();
+        for serial in serials {
+            self.remove_assignment(&serial);
         }
         while self.retiring.join_next().await.is_some() {}
     }
@@ -533,9 +536,7 @@ async fn apply_event(state: &mut Monitor, event: Event) {
         Event::Probe(Some((serial, identity))) => state.probe_ready(serial, identity),
         Event::Mutation(serial, result) => state.mutation_ready(serial, result),
         Event::Inventory(Some(Ok(result))) => state.inventory_ready(result),
-        Event::Retired(Some(Ok(slot))) => {
-            state.retiring_slots.remove(&slot);
-        }
+        Event::Retired(Some(Ok(route))) => state.retired(route),
         Event::PrimaryToken => state.primary_token(),
         Event::ExtraToken(serial) => state.extra_token(serial, Instant::now()),
         _ => {}
@@ -599,7 +600,7 @@ mod tests {
             ports: (18000, 18001),
             auto_launch: false,
             tablet,
-            token: None,
+            token_dir: None,
             relaunch: Default::default(),
             extra,
             adb: "/missing-test-adb".into(),
@@ -642,7 +643,7 @@ mod tests {
             "T390: reused ports before prior owner joined"
         );
         let retired = state.retiring.join_next().await.unwrap().unwrap();
-        state.retiring_slots.remove(&retired);
+        state.retired(retired);
         assert_eq!(state.available_slot(), Some(1));
         state.stop().await;
     }
@@ -663,3 +664,6 @@ mod inventory_tests;
 #[cfg(test)]
 #[path = "monitor/launch_tests.rs"]
 mod launch_tests;
+
+#[cfg(test)]
+mod credential_tests;

@@ -182,7 +182,7 @@ fn t281_attachment() -> crate::attachment::Attachment {
     crate::session::Spec {
         capture: Default::default(),
         ports: (0, 0),
-        token: None,
+        token: Some("initial-t281-token".into()),
         devices: (false, false, false),
     }
     .prepare(watch::channel(false).0)
@@ -229,6 +229,7 @@ fn t281_retired_socket_cannot_claim_or_dispatch_into_current_controller() {
 async fn t281_socket_accepted_before_replacement_cannot_authenticate_after_it() {
     let tablet = t281_attachment();
     tablet.begin(Some("a".into()));
+    let token = tablet.token().unwrap().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let socket = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
         .await
@@ -241,7 +242,7 @@ async fn t281_socket_accepted_before_replacement_cannot_authenticate_after_it() 
     let task = tokio::spawn(handle_connection(
         incoming,
         InputConfig {
-            token: Some("test-token".into()),
+            token: Some(token.clone()),
             ..InputConfig::default()
         },
         None,
@@ -255,7 +256,7 @@ async fn t281_socket_accepted_before_replacement_cannot_authenticate_after_it() 
         .unwrap();
     tablet.begin(Some("b".into()));
     ws.send(Message::Text(
-        r#"{"type":"auth","token":"test-token"}"#.into(),
+        serde_json::json!({"type":"auth", "token":token}).to_string(),
     ))
     .await
     .unwrap();
