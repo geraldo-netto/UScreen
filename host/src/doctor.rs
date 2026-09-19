@@ -88,7 +88,9 @@ async fn output_of(program: &str, args: &[&str]) -> Option<String> {
         .output_bounded()
         .await
         .ok()?;
-    Some(String::from_utf8_lossy(&out.stdout).to_string())
+    out.status
+        .success()
+        .then(|| String::from_utf8_lossy(&out.stdout).to_string())
 }
 
 use uscreen_config::linux::programs::command_exists;

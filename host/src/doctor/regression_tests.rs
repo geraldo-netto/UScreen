@@ -3,6 +3,21 @@ use super::*;
 use std::os::unix::fs::PermissionsExt;
 
 #[tokio::test]
+async fn t515_failed_diagnostic_commands_cannot_supply_successful_settings() {
+    let directory = tempfile::tempdir().unwrap();
+    let tool = directory.path().join("fake-adb");
+    std::fs::write(&tool, "#!/bin/sh\nprintf '0\\n'\nexit \"$1\"\n").unwrap();
+    std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let program = tool.to_str().unwrap();
+    assert_eq!(
+        output_of(program, &["17"]).await,
+        None,
+        "T515: failed commands must not report apparently valid setting values"
+    );
+    assert_eq!(output_of(program, &["0"]).await.as_deref(), Some("0\n"));
+}
+
+#[tokio::test]
 async fn t513_keyboard_report_requires_an_exact_supported_mode() {
     if let Ok(expected) = std::env::var("USCREEN_T513_WARNINGS") {
         let mut report = Report::new();
