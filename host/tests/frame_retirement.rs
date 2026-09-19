@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! T389: observable wakeup/deadline contract and retained native frame storage.
 use std::{path::PathBuf, process::Command};
 

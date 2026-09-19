@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! Install/release regressions: all external writes and builds are sandboxed.
 use std::{
     os::unix::fs::PermissionsExt,

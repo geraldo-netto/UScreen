@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! T380: public C ownership interfaces, linked without including production C.
 use std::{path::PathBuf, process::Command};
 

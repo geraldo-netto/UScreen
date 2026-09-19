@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! T383: bit-exact conversion and dirty-history contracts, without EVDI.
 use std::{path::PathBuf, process::Command};
 

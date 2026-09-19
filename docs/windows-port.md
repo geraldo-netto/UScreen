@@ -1,15 +1,16 @@
 # Windows integration plan
 
-Status: proposed plan, saved 2026-09-17. Windows support is not implemented.
-The recommendations below remain pending decisions.
+Status: staged implementation, updated 2026-09-19. Linux remains the supported
+runtime. Windows capture, input, lifecycle and packaging are not implemented.
+The backend and release recommendations below remain pending decisions.
 
-Build feasibility checked 2026-09-19: the shared configuration library,
-its test executable and the encoder-options example cross-compile from Linux
-to Windows x64 GNU. The daemon and GUI fail GNU and MSVC target checks on
-unconditional Linux imports. No Windows executable was run. See the
-[cross-compilation review](reviews/2026-09-19-windows-cross-compilation.md)
-for commands, evidence and T493–T496; this check does not complete a milestone
-or select the release toolchain.
+The initial [cross-compilation review](reviews/2026-09-19-windows-cross-compilation.md)
+recorded GNU/MSVC failures at `63b332e`. The subsequent
+[T494 daemon boundary](reviews/2026-09-19-windows-cli.md) builds a Windows GNU
+command-line diagnostics executable and passes MSVC target checking. Help and
+version work; runtime commands return explicit unsupported errors. This is a
+compilation preview, not a functioning second-screen server or a selected
+release toolchain.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
@@ -67,7 +68,7 @@ availability. Keep Linux behavior covered throughout the extraction.
 | EVDI discovery, EDID attachment and capture helper | `host/src/vdisplay.rs`, `host/src/capture.rs`, `host/src/edid.rs`, `host/evdi/` | Integrate a virtual monitor through an IDD and capture its output. Scope creation and removal to UScreen-owned resources. |
 | Raw NV12 through a POSIX FIFO | `host/src/capture.rs`, `host/src/encoder_io.rs`, `host/src/encoder.rs` | Introduce a frame-transfer interface with a Windows pipe or in-process implementation, explicit frame boundaries and cancellation. The existing in-process encoder still has a Unix FIFO input that needs porting. |
 | uinput, KWin and X11 mapping | `host/src/input.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows pointer injection, display placement and monitor/DPI mapping. Evaluate on-screen keyboard behavior separately. |
-| Unix signals, `/proc`, UID checks and file permissions | `host/src/main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs`, `host/src/stream.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling, private paths/ACLs, secure randomness and portable socket handling. |
+| Unix signals, `/proc`, UID checks and file permissions | `host/src/linux_main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs`, `host/src/stream.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling, private paths/ACLs, secure randomness and portable socket handling. |
 | systemd, D-Bus tray and Linux setup/diagnostics | `gui/src/main.rs`, `host/src/tray.rs`, `host/src/doctor.rs` | Windows lifecycle, tray, optional autostart and diagnostics; normal operation in the interactive user session. |
 | VAAPI defaults and Linux build/packaging | `common/src/model.rs`, `host/src/capture.rs`, `host/src/encoder.rs`, `Makefile`, `scripts/`, `packaging/`, `.github/workflows/` | Windows encoder capability detection, build scripts, tests and installation artifacts. |
 

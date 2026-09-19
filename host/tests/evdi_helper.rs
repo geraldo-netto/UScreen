@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! Hardware-independent regressions for the C capture helper.
 //! Run by the normal `cargo test` suite; only a C compiler is required.
 

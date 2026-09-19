@@ -14,7 +14,6 @@ inproc-encoder = ["ffmpeg-next"]
 
 [dependencies]
 uscreen-config = { path = "../common" }
-ffmpeg-next = { version = "9", optional = true }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 tracing = "0.1"
@@ -27,14 +26,17 @@ simd-adler32 = "0.3"
 futures-util = { version = "0.3", features = ["sink"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tokio-tungstenite = "0.21"
+toml = "0.8"
+
+tempfile = "3"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+ffmpeg-next = { version = "9", optional = true }
 libc = "0.2"
 zbus = { version = "4", features = ["tokio"] }
-toml = "0.8"
 # Share AccessKit's zbus 5 runtime in workspace builds. Enabling Tokio here
 # makes AccessKit's dedicated async-io worker panic without a Tokio reactor.
 ksni = { version = "0.3", default-features = false, features = ["async-io"] }
-
-tempfile = "3"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["test-util"] }

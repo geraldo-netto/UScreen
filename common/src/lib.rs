@@ -23,6 +23,8 @@ pub mod commands;
 pub use commands::spawn_reaped;
 
 #[cfg(feature = "platform")]
+pub mod cli;
+#[cfg(feature = "platform")]
 pub mod platform;
 
 #[cfg(all(target_os = "linux", feature = "platform"))]

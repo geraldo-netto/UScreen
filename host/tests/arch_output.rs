@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 //! T467: source-build the production PKGBUILD with real Cargo and isolated assets.
 use std::{path::Path, process::Command};
 
