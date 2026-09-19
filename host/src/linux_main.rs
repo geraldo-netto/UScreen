@@ -2312,7 +2312,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
         .output_bounded()
         .await?;
     let said = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if !said.contains("connected") {
+    if !out.status.success() || !said.contains("connected") {
         anyhow::bail!("adb connect {} did not take: {}", address, said);
     }
 
@@ -2351,6 +2351,9 @@ async fn tablet_ip(serial: &str) -> Option<String> {
         else {
             continue;
         };
+        if !out.status.success() {
+            continue;
+        }
         let text = String::from_utf8_lossy(&out.stdout);
         if let Some(ip) = parse_tablet_ip(&text) {
             return Some(ip);
