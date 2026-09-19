@@ -56,12 +56,14 @@ from the existing implementation.
    frames. The TCP server skips a lagging client's backlog to a retained IDR,
    or waits for another IDR if necessary.
 5. **Decode.** Android receives length-prefixed encoded access units through
-   adb forwarding and feeds MediaCodec, rendering to a SurfaceView. It requests
-   the legacy low-latency hints (including a Qualcomm vendor key) and a 2x
-   operating rate without querying advertised support. Experimental profiles
-   separately gate standard hints on codec capabilities or omit them. None of
-   these requests confirms effective latency or throughput. MediaCodec selection
-   does not guarantee a hardware decoder; support is device-dependent.
+   adb forwarding and feeds MediaCodec, rendering to a SurfaceView. Negotiated
+   automatic selections name a compatible decoder and request only its advertised
+   standard low-latency/operating-rate hints. Legacy/manual defaults request the
+   legacy hints (including a Qualcomm vendor key) and a 2x operating rate without
+   querying advertised support; experimental replay profiles can omit hints or
+   gate them on capabilities. The watchdog can omit hints during recovery. None
+   of these requests confirms effective latency or throughput. MediaCodec
+   selection does not guarantee a hardware decoder; support is device-dependent.
    The output watchdog reconnects after four queued frames and more than 1.5
    seconds without output. Two stalls disable latency hints. Only four output
    frames spanning at least 1.5 seconds, with no gap longer than that window,
