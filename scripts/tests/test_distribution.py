@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 import test_notices
+import release_signing_fixture
 
 
 def tree_contents(root):
@@ -66,7 +67,10 @@ class DistributionTest(unittest.TestCase):
                     library.rename(library.parent / 'actual.so')
                     library.symlink_to('actual.so')
                 write('android/gradlew', '#!/bin/sh\nexit ' + ('42' if mode == 'failed-apk' else '0') + '\n', True)
-                env = dict(os.environ, LIBRARY_PATH=str(library.parent))
+                # T505: retain the real release gate with offline SDK reports.
+                release_signing_fixture.install_tools(root / "bin")
+                env = dict(os.environ, LIBRARY_PATH=str(library.parent),
+                           PATH=f'{root}/bin:{os.environ["PATH"]}')
                 result = subprocess.run(['make', 'dist-local', 'CARGO=true', f'LIBEVDI={library}'], cwd=root, env=env, capture_output=True, text=True)
                 if mode != 'success':
                     self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)

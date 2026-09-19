@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import release_signing_fixture
 
 REPO = Path(__file__).resolve().parents[2]
 NOTICES = ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses/libevdi-LGPL-2.1.txt']
@@ -30,6 +31,7 @@ class NoticeTest(unittest.TestCase):
             write('bin/fakeroot', '#!/bin/sh\nexec "$@"\n', True)
             write('android/gradlew', '#!/bin/sh\nexit 0\n', True)
             write('android/app/build/outputs/apk/release/app-release.apk', 'apk')
+            release_signing_fixture.install_tools(root / 'bin')
             env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_TEST_BUILD='portable')
             def run(*args):
                 result = subprocess.run(args, cwd=root, env=env, capture_output=True, text=True)

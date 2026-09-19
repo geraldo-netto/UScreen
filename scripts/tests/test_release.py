@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import release_signing_fixture
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -103,13 +104,7 @@ class ReleaseTest(unittest.TestCase):
         self.git('commit', '-qm', 'mock builds')
         self.git('tag', '-fa', 'v1.2.3', '-m', 'mock release')
         self.git('push', '-q', '-f', 'origin', 'refs/tags/v1.2.3')
-        for name, report in {
-            'apksigner': 'Signer #1 certificate SHA-256 digest: 1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400',
-            'aapt2': "package: name='io.github.geraldo_netto.uscreen'\nlaunchable-activity: name='com.uscreen.MainActivity'",
-        }.items():
-            tool = self.bin / name
-            tool.write_text("#!/bin/sh\ncat <<'REPORT'\n" + report + "\nREPORT\n")
-            tool.chmod(0o755)
+        release_signing_fixture.install_tools(self.bin)
         # urllib is intercepted in every child interpreter. No real HTTP.
         site = self.base / 'sitecustomize.py'
         site.write_text((REPO / 'scripts/tests/release_api_stub.py').read_text())
