@@ -69,6 +69,33 @@ async fn owner() -> CaptureManager {
     manager
 }
 
+// T499 investigation: ensure_fifo already creates a distinct inode. Preserve
+// that behavior across repeated helper starts; no production fix was needed.
+#[tokio::test]
+async fn t499_helper_restart_keeps_its_new_fifo() {
+    use std::os::unix::fs::OpenOptionsExt;
+    if isolated("capture::ownership_tests::t499_helper_restart_keeps_its_new_fifo") {
+        return;
+    }
+    let path = fifo_path_for(0).unwrap();
+    let mut manager = owner().await;
+    for _ in 0..3 {
+        let pin = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_PATH)
+            .open(&path)
+            .unwrap();
+        manager.helper.terminate().await;
+        manager.start_helper().await.unwrap();
+        let current = std::fs::symlink_metadata(&path)
+            .expect("T499: previous ownership unlinked the restarted helper's FIFO");
+        assert!(current.file_type().is_fifo());
+        assert_ne!(current.ino(), pin.metadata().unwrap().ino());
+    }
+    manager.shutdown().await;
+    assert!(!path.exists());
+}
+
 #[tokio::test]
 async fn t429_retired_owner_preserves_replacement_paths() {
     use std::os::unix::fs::{symlink, OpenOptionsExt};
