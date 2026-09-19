@@ -2,6 +2,9 @@
 use crate::Status;
 use std::time::{Duration, Instant};
 
+#[cfg(all(test, target_os = "linux"))]
+mod regression_tests;
+
 const CAPABILITY_TTL: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]

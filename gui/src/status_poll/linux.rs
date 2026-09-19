@@ -51,14 +51,19 @@ impl Source for Platform {
                 (session.instance, capacity)
             })
             .collect();
-        query_tablets(&mut status, sessions, capabilities.adb, || {
-            Command::new("adb")
-                .args(["devices", "-l"])
-                .output_bounded()
-                .map(|out| String::from_utf8_lossy(&out.stdout).into_owned())
-        });
+        query_tablets(&mut status, sessions, capabilities.adb, adb_devices);
         status
     }
+}
+
+fn adb_devices() -> std::io::Result<String> {
+    let out = Command::new("adb")
+        .args(["devices", "-l"])
+        .output_bounded()?;
+    if !out.status.success() {
+        return Err(std::io::Error::other("ADB inventory command failed"));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
 pub(super) fn query_tablets(
