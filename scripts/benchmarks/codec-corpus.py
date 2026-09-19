@@ -63,7 +63,8 @@ def corpus(scene, args, base):
             if child.poll() is None:
                 child.kill()
                 child.wait()
-    digest = hashlib.file_digest(target.open('rb'), 'sha256').hexdigest()
+    with target.open('rb') as source:
+        digest = hashlib.file_digest(source, 'sha256').hexdigest()
     return dict(scene=scene, path=target.name, sha256=digest, bytes=target.stat().st_size, command=command)
 
 
