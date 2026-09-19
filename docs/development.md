@@ -93,7 +93,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 The normal host suite includes permanent C sanitizer, FFmpeg, GUI startup,
-installer and real Debian/RPM artifact tests. `.cargo/config.toml` serializes
+installer, AppImage assembly and real RPM artifact tests. `.cargo/config.toml` serializes
 test functions to avoid Linux ETXTBSY races between fixture writes and other
 tests spawning processes; concurrency tests still run their own concurrent
 clients/tasks. On Debian/Ubuntu, add:
