@@ -2368,11 +2368,10 @@ fn parse_tablet_ip(text: &str) -> Option<String> {
         }
         let Some(value) = words.peek() else { continue };
         let ip = value.split('/').next().unwrap_or(value);
-        if ip.starts_with("127.") || !ip.contains('.') {
-            continue;
-        }
-        if ip.split('.').count() == 4 && ip.split('.').all(|o| o.parse::<u8>().is_ok()) {
-            return Some(ip.to_string());
+        if let Ok(address) = ip.parse::<std::net::Ipv4Addr>() {
+            if !address.is_loopback() {
+                return Some(address.to_string());
+            }
         }
     }
     None

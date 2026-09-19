@@ -3,6 +3,55 @@ use super::*;
 use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 
+#[test]
+fn t511_tablet_routes_require_valid_non_loopback_ipv4() {
+    for text in [
+        "inet 192.168.1.42/24 brd 192.168.1.255",
+        "1.1.1.1 via gateway src 192.168.1.42 uid 1000",
+        "inet 127.0.0.1/8\ninet 192.168.1.42/24",
+    ] {
+        assert_eq!(parse_tablet_ip(text).as_deref(), Some("192.168.1.42"));
+    }
+    for value in [
+        "+127.0.0.1",
+        "+1.2.3.4",
+        "001.2.3.4",
+        "1.02.3.4",
+        "256.2.3.4",
+        "-1.2.3.4",
+        "1.2.3",
+        "1.2.3.4.5",
+        "::1",
+        "127.255.255.255",
+        "inet",
+        "",
+    ] {
+        assert_eq!(
+            parse_tablet_ip(&format!("inet {value}/24")),
+            None,
+            "T511 accepted {value}"
+        );
+    }
+    assert_eq!(parse_tablet_ip("inet"), None);
+    let mut seed = 511_u64;
+    for _ in 0..4096 {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let value = format!(
+            "{}.{}.{}.{}",
+            (seed >> 32) % 1024,
+            (seed >> 24) & 255,
+            (seed >> 8) & 255,
+            seed & 255
+        );
+        let expected = value
+            .parse::<std::net::Ipv4Addr>()
+            .ok()
+            .filter(|ip| !ip.is_loopback())
+            .map(|ip| ip.to_string());
+        assert_eq!(parse_tablet_ip(&format!("src {value}")), expected);
+    }
+}
+
 fn fake_adb(root: &std::path::Path) -> PathBuf {
     let path = root.join("adb");
     std::fs::write(
