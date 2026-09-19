@@ -150,11 +150,7 @@ pub async fn get_property(path: &str, iface: &str, prop: &str) -> Option<String>
                 (end > start).then(|| raw[start..end].to_string())
             } else {
                 let value = raw.rsplit_once(':').map(|(_, v)| v).unwrap_or(&raw);
-                Some(
-                    value
-                        .trim_matches(|c: char| !c.is_ascii_alphanumeric())
-                        .to_string(),
-                )
+                Some(value.trim().trim_end_matches(']').trim().to_string())
             }
         }
     }
@@ -229,6 +225,9 @@ pub async fn list_strings(path: &str, iface: &str, prop: &str) -> Option<Vec<Str
         }
     }
 }
+
+#[cfg(test)]
+mod regression_tests;
 
 #[cfg(test)]
 mod tests {
