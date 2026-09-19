@@ -115,6 +115,7 @@ private fun OrientationControls(orientation: Int, onOrientationChange: (Int) -> 
         Spacer(Modifier.width(12.dp))
         Switch(
             checked = orientation == Prefs.ORIENTATION_AUTO,
+            modifier = Modifier.semantics { contentDescription = "Rotate automatically" },
             onCheckedChange = { auto ->
                 onOrientationChange(
                     if (auto) Prefs.ORIENTATION_AUTO else Prefs.ORIENTATION_CAMERA_DOWN
@@ -250,6 +251,7 @@ private fun ModeControl(penOnly: Boolean, onChange: (Boolean) -> Unit) {
         Spacer(Modifier.width(12.dp))
         Switch(
             checked = penOnly,
+            modifier = Modifier.semantics { contentDescription = "Graphics tablet" },
             onCheckedChange = onChange,
             colors = SwitchDefaults.colors(checkedTrackColor = Accent)
         )
