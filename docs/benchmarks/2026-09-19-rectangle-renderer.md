@@ -7,8 +7,13 @@ Keep the installed hardware H.264 path; these results justify an experimental
 UI/video fallback design, not a production default or a battery-saving claim.
 
 This follows the [compression screen](2026-09-18-frame-compression.md) and
-[resource investigation](2026-09-18-frame-compression-resources.md). T419 stays
-open for live transport, recovery, fallback and sustained power validation.
+[resource investigation](2026-09-18-frame-compression-resources.md). At this
+stage, live transport, recovery, fallback and sustained power validation
+remained unresolved. The subsequent
+[presentation and battery follow-up](2026-09-19-presentation-power.md) diagnoses
+reproduced presentation omissions and tests sustained battery flow; it finds
+no repeatable RGB battery advantage. The observations below remain the original
+short-replay evidence, rather than a pooled result from both experiments.
 
 ## Experiment and boundaries
 

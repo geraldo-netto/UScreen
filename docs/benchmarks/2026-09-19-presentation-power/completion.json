@@ -1,0 +1,50 @@
+{
+  "at_utc": "2026-09-19T00:26:19.871497+00:00",
+  "probe_uninstall": "Success",
+  "packages": [
+    "package:com.uscreen",
+    "package:com.uscreen.powercontrol",
+    "package:com.uscreen.decoderbench.baseline",
+    "package:com.uscreen.decoderbench.candidate"
+  ],
+  "foreground": [
+    "topResumedActivity=ActivityRecord{245315784 u0 com.uscreen/.MainActivity t427 d0}"
+  ],
+  "production_foreground": true,
+  "host_processes": [
+    [
+      "149897",
+      "41920",
+      "uscreen"
+    ],
+    [
+      "651015",
+      "19659",
+      "evdi_helper"
+    ],
+    [
+      "651155",
+      "19640",
+      "ffmpeg"
+    ],
+    [
+      "1897166",
+      "174813",
+      "Xorg"
+    ],
+    [
+      "1897918",
+      "174806",
+      "cinnamon"
+    ]
+  ],
+  "host_predates_battery_matrix": true,
+  "battery_matrix_elapsed_seconds": 4928.283447265625,
+  "scratch_traces_removed": [
+    "/data/misc/perfetto-traces/uscreen-t419-01.pftrace",
+    "/data/misc/perfetto-traces/uscreen-t419-02.pftrace",
+    "/data/misc/perfetto-traces/uscreen-t419-03.pftrace",
+    "/data/misc/perfetto-traces/uscreen-t419-power-preflight.pftrace",
+    "/data/local/tmp/uscreen-t419-trace.pbtxt"
+  ]
+}

@@ -101,6 +101,46 @@ for controls: `--presentation` for presentation polling, `--mapped` for mmap,
 and `--keep-process` to exercise repeated Activity teardown without force-stop.
 Results preserve APK identity, raw samples and collection boundaries.
 
+For an explicitly available sustained-test window, `rect-power.py` runs five
+cases in forward and reverse order: static H.264 at five and one updates/s,
+static Zstd rectangles, and pen H.264/Zstd. Its default is eight minutes per
+phase (about 83 minutes including transitions). It uses 30-second resource
+sampling and on-device Perfetto battery polling every five seconds. The
+rectangle trace allocation is bounded to 600 seconds; its storage scales
+with the selected rate and duration. Do not combine these allocations with
+the earlier fixed-storage short-trial memory results.
+
+```sh
+python3 scripts/benchmarks/rect-power.py \
+  --serial DEVICE_SERIAL --fixtures /tmp/uscreen-rect-fixtures \
+  --provenance /tmp/uscreen-rect-replay/provenance.json \
+  --output /tmp/uscreen-rect-power --seconds 480
+python3 scripts/benchmarks/rect-power-report.py /tmp/uscreen-rect-power \
+  --processor /path/to/trace_processor_shell
+python3 scripts/benchmarks/plot-rect-power.py /tmp/uscreen-rect-power/summary.json \
+  --output /tmp/uscreen-rect-power-plots
+```
+
+Use the new long-duration APK built from current sources. USB remains connected;
+no charging, battery simulation or production preference setting is changed.
+The report excludes the first 30 measured seconds of each phase and checks
+clock conversion, trace errors, counter availability and sampling coverage.
+Positive battery current means net charging, not measured USB input power.
+Check that all ten phases completed before interpreting the balanced result.
+Touch/app switching cancels replay and stops the remaining comparison.
+The plotting command requires the complete matrix and writes standalone SVGs
+showing both repeats and the raw battery timeline. See the
+[presentation and battery follow-up](../../../docs/benchmarks/2026-09-19-presentation-power.md)
+for the measured result and its limits.
+
+For presentation diagnosis, capture `android.surfaceflinger.frame` alongside
+the existing `--presentation` run. Start tracing before replay and retain its
+config, full trace and processor version. `rect-trace-report.py` restricts the
+query to the exact replay layer, validates sequence/frame identity against
+matched presentation times, rejects trace loss or a truncated measurement
+window, and separates queued-but-not-latched frames from unknown omissions.
+Use `--processor`, `--trace`, `--trial` and `--output` to provide those files.
+
 ```sh
 python3 scripts/benchmarks/summarize-rect.py /path/to/completed-results
 ```

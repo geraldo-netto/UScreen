@@ -76,7 +76,7 @@ def result(args):
 
 def wait(args, folder):
     pids = process_ids(args)
-    deadline = time.monotonic() + args.seconds + args.warmup + 12
+    deadline = time.monotonic() + args.seconds + args.warmup + args.sample_period + 12
     count = 0
     with (folder / 'resources.jsonl').open('w') as output:
         while time.monotonic() < deadline:
@@ -87,7 +87,7 @@ def wait(args, folder):
             if count in (2, 7):
                 memory(args, folder, count, pids)
             count += 1
-            time.sleep(2)
+            time.sleep(args.sample_period)
     raise TimeoutError('replay did not finish within its bounded window')
 
 
@@ -147,7 +147,8 @@ def main():
     parser.add_argument('--fixtures', required=True, type=Path)
     parser.add_argument('--provenance', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--seconds', type=int, choices=range(1, 31), default=20)
+    parser.add_argument('--seconds', type=int, choices=range(1, 601), default=20)
+    parser.add_argument('--sample-period', type=int, choices=[2, 10, 30], default=2)
     parser.add_argument('--warmup', type=int, choices=range(0, 6), default=4)
     parser.add_argument('--scenes', nargs='+', choices=['text', 'pen', 'motion', 'scroll', 'photo'], default=['text', 'pen', 'motion', 'scroll', 'photo'])
     parser.add_argument('--codecs', nargs='+', type=int, choices=[0, 1, 2], default=[0, 1, 2])
@@ -171,6 +172,7 @@ def run(args):
     args.output.mkdir()
     args.page_size = int(capture(args, 'shell', 'getconf', 'PAGESIZE'))
     meta = dict(provenance=provenance, page_size=args.page_size, clock_ticks=int(capture(args, 'shell', 'getconf', 'CLK_TCK')),
+                sample_period=args.sample_period,
                 seconds=args.seconds, warmup=args.warmup, verification=args.verify, mapped=args.mapped,
                 keep_process=args.keep_process,
                 text_rate=args.text_rate,

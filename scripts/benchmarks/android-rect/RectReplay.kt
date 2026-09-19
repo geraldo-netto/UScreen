@@ -12,18 +12,19 @@ import org.json.JSONObject
 internal class RectReplay(private val surface: Surface, private val active: AtomicBoolean) {
     private val output = ByteBuffer.allocateDirect(1280 * 800 * 3)
     private var context = 0L
-    private val timings = LongArray(60 * 30 * 8)
+    private var timings = LongArray(0)
     private var count = 0
     private var pending = 0
     private var updates = 0
 
     fun run(file: File, seconds: Int, warmup: Int, verify: Boolean, mapped: Boolean): JSONObject {
-        require(seconds in 1..30 && warmup in 0..5)
+        require(seconds in 1..600 && warmup in 0..5)
         BenchMetrics.snapshot() // Same fixed instrumentation backing as H.264 replay.
         context = RectNative.create()
         check(context != 0L)
         try {
             RectClip(file, mapped).use { clip ->
+                timings = LongArray(RectLimits.traceElements(clip.rate, seconds))
                 RectGl(surface).use { renderer ->
                     val readback = if (verify) ByteBuffer.allocateDirect(1280 * 800 * 4) else null
                     phase(clip, renderer, warmup, readback, false)
