@@ -1112,7 +1112,10 @@ mod tests {
 
     #[test]
     fn t480_profile_cache_checkbox_is_opt_in_and_persists() {
+        // T537: persistence checks must never write the developer's settings.
+        let directory = tempfile::tempdir().unwrap();
         let mut app = settings_test_app(Tab::Video);
+        app.store = ConfigStore::new(directory.path().join("config.toml"));
         let ctx = egui::Context::default();
         assert!(!app.cfg.profile_cache);
         fn frame(

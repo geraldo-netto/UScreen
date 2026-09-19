@@ -1,6 +1,38 @@
 //! T497: UI callbacks dispatch only isolated fixture commands.
 use super::*;
 
+#[test]
+fn t537_profile_cache_test_preserves_external_configuration() {
+    let root = tempfile::tempdir().unwrap();
+    let config = root.path().join("uscreen/config.toml");
+    std::fs::create_dir_all(config.parent().unwrap()).unwrap();
+    let original = b"# T537 external user preferences\nwidth = 1280\nprofile_cache = false\n";
+    std::fs::write(&config, original).unwrap();
+    let output = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "tests::t480_profile_cache_checkbox_is_opt_in_and_persists",
+            "--nocapture",
+        ])
+        .env("HOME", root.path())
+        .env("XDG_CONFIG_HOME", root.path())
+        .env("APPDATA", root.path())
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success() && stdout.contains("1 passed; 0 failed;"),
+        "T537 child failed: {}{}",
+        stdout,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        std::fs::read(config).unwrap(),
+        original,
+        "T537 profile-cache test must preserve external user settings"
+    );
+}
+
 fn fps_frame(
     app: &mut App,
     ctx: &egui::Context,
