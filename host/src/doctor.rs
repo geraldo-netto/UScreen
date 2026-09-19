@@ -26,6 +26,10 @@ enum Level {
     Fail,
 }
 
+#[cfg(test)]
+#[path = "doctor/regression_tests.rs"]
+mod regression_tests;
+
 struct Report {
     warnings: u32,
     failures: u32,
@@ -745,8 +749,7 @@ async fn check_kwin_input(r: &mut Report) {
     else {
         return;
     };
-    let mode: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
-    match mode.trim() {
+    match raw.trim() {
         "1" | "2" => {
             r.line(Level::Warn, "on-screen keyboard", "pops up on touch input");
             r.hint("the daemon suppresses this while its touch devices exist, then restores the saved setting");
