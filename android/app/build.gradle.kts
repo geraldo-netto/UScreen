@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.security.MessageDigest
 
 plugins {
     id("com.android.application")
@@ -11,6 +12,24 @@ val keystoreProps = Properties().apply {
     val f = rootProject.file(System.getenv("USCREEN_KEYSTORE_PROPERTIES") ?: "keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
+
+// Stable across launches; source or build-input changes invalidate cached profiles.
+val sourceDigest = MessageDigest.getInstance("SHA-256")
+val identityInputs = fileTree("src/main").files + listOf(
+    file("build.gradle.kts"), file("proguard-rules.pro"), rootProject.file("build.gradle.kts"),
+    rootProject.file("gradle.properties"),
+    rootProject.file("settings.gradle.kts"), rootProject.file("gradle/wrapper/gradle-wrapper.properties")
+)
+identityInputs.sortedBy { it.path }.forEach { input ->
+    val data = input.readBytes()
+    sourceDigest.update(input.relativeTo(rootProject.projectDir).path.toByteArray())
+    sourceDigest.update(0.toByte())
+    sourceDigest.update(data.size.toString().toByteArray())
+    sourceDigest.update(0.toByte())
+    sourceDigest.update(data)
+}
+val sourceId = sourceDigest.digest().joinToString("") { "%02x".format(it) }
+
 
 android {
     namespace = "com.uscreen"
@@ -78,6 +97,24 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+// Per-variant generated Kotlin avoids conflating debug and release software.
+listOf("debug", "release").forEach { variant ->
+    val title = variant.replaceFirstChar { it.uppercaseChar() }
+    val profileSource = layout.buildDirectory.dir("generated/source/profile/$variant")
+    val generateProfileIdentity = tasks.register("generate${title}ProfileIdentity") {
+        inputs.files(identityInputs)
+        inputs.property("variant", variant)
+        outputs.dir(profileSource)
+        doLast {
+            val output = profileSource.get().file("com/uscreen/ProfileBuild.kt").asFile
+            output.parentFile.mkdirs()
+            output.writeText("package com.uscreen\ninternal object ProfileBuild { const val SOURCE_ID = \"$sourceId:$variant\" }\n")
+        }
+    }
+    android.sourceSets.getByName(variant).java.srcDir(profileSource)
+    tasks.matching { it.name == "pre${title}Build" }.configureEach { dependsOn(generateProfileIdentity) }
 }
 
 dependencies {

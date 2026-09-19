@@ -107,3 +107,26 @@ fn t478_avc_level_one_b_orders_between_one_and_one_one() {
     assert!(report.choose(&stream("baseline", 8, 10), false).is_some());
     assert!(report.choose(&stream("baseline", 8, 11), false).is_none());
 }
+
+#[test]
+fn t480_software_fingerprint_is_bounded_and_optional_for_older_peers() {
+    let base = serde_json::to_value(report()).unwrap();
+    for value in [
+        "".to_string(),
+        "a".repeat(63),
+        "g".repeat(64),
+        "a".repeat(65),
+    ] {
+        let mut raw = base.clone();
+        raw["software"] = value.into();
+        assert!(!serde_json::from_value::<DecoderCapabilities>(raw)
+            .unwrap()
+            .valid());
+    }
+    let mut raw = base;
+    raw["software"] = "a".repeat(64).into();
+    assert!(serde_json::from_value::<DecoderCapabilities>(raw)
+        .unwrap()
+        .valid());
+    assert!(report().valid());
+}

@@ -899,8 +899,18 @@ impl App {
         ui.end_row();
     }
 
+    fn setting_profile_cache(&mut self, ui: &mut egui::Ui) {
+        ui.label("Automatic profiles");
+        ui.checkbox(&mut self.cfg.profile_cache, "Reuse a recent measured profile")
+            .on_hover_text("Optional. Rechecks compatibility and rendering before reuse. Historical results may not be fastest now; manual encoder choices take precedence.");
+        ui.end_row();
+    }
+
     fn show_video_settings(&mut self, ui: &mut egui::Ui) {
         self.setting_encoder(ui);
+        if capabilities().daemon {
+            self.setting_profile_cache(ui);
+        }
         self.setting_quality(ui);
         self.setting_bitrate(ui);
         self.setting_frame_rate(ui);
@@ -1097,6 +1107,27 @@ mod tests {
             6,
             "T295: unknown report results must stay unset"
         );
+    }
+
+    #[test]
+    fn t480_profile_cache_checkbox_is_opt_in_and_persists() {
+        let mut app = settings_test_app(Tab::Video);
+        let ctx = egui::Context::default();
+        assert!(!app.cfg.profile_cache);
+        fn frame(
+            app: &mut App,
+            ctx: &egui::Context,
+            events: Vec<egui::Event>,
+        ) -> Vec<(String, egui::Rect)> {
+            settings_test_frame(app, ctx, events, |app, ui| app.setting_profile_cache(ui))
+        }
+        click_settings_text(&mut app, &ctx, "Reuse a recent measured profile", frame);
+        assert!(app.cfg.profile_cache);
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert!(app.store.load().profile_cache);
+        click_settings_text(&mut app, &ctx, "Reuse a recent measured profile", frame);
+        assert!(!app.cfg.profile_cache);
     }
 
     #[test]

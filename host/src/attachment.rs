@@ -104,6 +104,7 @@ impl Attachment {
         let state = self.0.state.lock().unwrap();
         Lease {
             authentication: state.authentication.clone(),
+            identity: state.identity.clone(),
             attachment: self.clone(),
             generation: state.generation,
             transport: state.transport,
@@ -113,6 +114,8 @@ impl Attachment {
 }
 
 pub(crate) struct Lease {
+    #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
+    identity: Option<String>,
     authentication: Authentication,
     attachment: Attachment,
     generation: u64,
@@ -120,6 +123,16 @@ pub(crate) struct Lease {
     changed: watch::Receiver<u64>,
 }
 impl Lease {
+    /// Identity and route are captured atomically with the attachment generation.
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub fn profile_identity(&self) -> Option<(String, &'static str)> {
+        let identity = self.identity.as_ref()?.strip_prefix("device:")?;
+        if identity.is_empty() {
+            return None;
+        }
+        Some((identity.to_string(), self.transport()?))
+    }
+
     pub fn token<'a>(&'a self, fallback: Option<&'a str>) -> anyhow::Result<Option<&'a str>> {
         self.authentication.expected(fallback)
     }

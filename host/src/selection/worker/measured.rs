@@ -1,4 +1,4 @@
-//! Compare a bounded subset in the current session; never persist tablet scores.
+//! Compare a bounded subset in the current session with measurement provenance.
 use super::*;
 use crate::selection::trial::Observation;
 
@@ -22,7 +22,7 @@ fn shortlist(mut candidates: Vec<Candidate>, fps: u32) -> Vec<Candidate> {
     candidates
 }
 
-fn quality_capacity(candidate: &Candidate, reference: f64, fps: u32) -> bool {
+pub(super) fn quality_capacity(candidate: &Candidate, reference: f64, fps: u32) -> bool {
     candidate.measurement.fps >= f64::from(fps)
         && candidate
             .measurement
@@ -189,7 +189,17 @@ fn variant(
 
 pub(super) fn reason(candidate: &Candidate) -> Option<String> {
     let result = candidate.observation.as_ref()?;
-    Some(format!("This-session packet-ready→render-ACK p50/p95/p99 {:.1}/{:.1}/{:.1} ms; {:.1} ACK FPS, {} samples, {:.1}% delivery; first-frame probe PSNR {:.2} dB; awaiting render ACKs",
+    let scope = if candidate.cached {
+        "Historical"
+    } else {
+        "This-session"
+    };
+    let probe_scope = if candidate.cached {
+        "current host probe"
+    } else {
+        "first-frame probe"
+    };
+    Some(format!("{scope} packet-ready→render-ACK p50/p95/p99 {:.1}/{:.1}/{:.1} ms; {:.1} ACK FPS, {} samples, {:.1}% delivery; {probe_scope} PSNR {:.2} dB; awaiting render ACKs",
         result.p50_us as f64 / 1000.0, result.p95_us as f64 / 1000.0, result.p99_us as f64 / 1000.0,
         result.ack_fps, result.samples, result.delivery_permille as f64 / 10.0,
         candidate.measurement.quality_db.unwrap_or(0.0)))

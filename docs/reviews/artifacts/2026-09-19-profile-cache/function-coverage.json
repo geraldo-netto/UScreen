@@ -1,0 +1,210 @@
+[
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 36,
+    "name": "remember",
+    "lines": 8,
+    "covered": 8,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 45,
+    "name": "active",
+    "lines": 3,
+    "covered": 3,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 49,
+    "name": "read",
+    "lines": 17,
+    "covered": 16,
+    "percent": 94.12
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 68,
+    "name": "load",
+    "lines": 19,
+    "covered": 19,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 88,
+    "name": "save",
+    "lines": 19,
+    "covered": 19,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 112,
+    "name": "write",
+    "lines": 14,
+    "covered": 14,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 127,
+    "name": "invalidate",
+    "lines": 8,
+    "covered": 8,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 136,
+    "name": "retired",
+    "lines": 5,
+    "covered": 5,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 146,
+    "name": "valid",
+    "lines": 10,
+    "covered": 10,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 158,
+    "name": "observation_valid",
+    "lines": 11,
+    "covered": 11,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 170,
+    "name": "compatible",
+    "lines": 26,
+    "covered": 25,
+    "percent": 96.15
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 198,
+    "name": "now",
+    "lines": 6,
+    "covered": 6,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache.rs",
+    "line": 205,
+    "name": "supports_choice",
+    "lines": 13,
+    "covered": 13,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache/context.rs",
+    "line": 8,
+    "name": "open",
+    "lines": 30,
+    "covered": 30,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache/context.rs",
+    "line": 40,
+    "name": "fingerprint",
+    "lines": 32,
+    "covered": 32,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache/context.rs",
+    "line": 74,
+    "name": "hash_file",
+    "lines": 10,
+    "covered": 10,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/cache/context.rs",
+    "line": 87,
+    "name": "host_stamp",
+    "lines": 25,
+    "covered": 24,
+    "percent": 96.0
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 9,
+    "name": "optimize",
+    "lines": 10,
+    "covered": 10,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 25,
+    "name": "candidates",
+    "lines": 3,
+    "covered": 3,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 30,
+    "name": "optimize_with",
+    "lines": 28,
+    "covered": 28,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 67,
+    "name": "prepare",
+    "lines": 32,
+    "covered": 31,
+    "percent": 96.88
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 104,
+    "name": "cached",
+    "lines": 24,
+    "covered": 24,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/selection/worker/preparation.rs",
+    "line": 130,
+    "name": "watch_cached",
+    "lines": 11,
+    "covered": 11,
+    "percent": 100.0
+  },
+  {
+    "file": "common/src/negotiation.rs",
+    "line": 83,
+    "name": "valid_software",
+    "lines": 5,
+    "covered": 5,
+    "percent": 100.0
+  },
+  {
+    "file": "gui/src/main.rs",
+    "line": 902,
+    "name": "setting_profile_cache",
+    "lines": 6,
+    "covered": 6,
+    "percent": 100.0
+  },
+  {
+    "file": "host/src/attachment.rs",
+    "line": 128,
+    "name": "profile_identity",
+    "lines": 7,
+    "covered": 6,
+    "percent": 85.71
+  }
+]

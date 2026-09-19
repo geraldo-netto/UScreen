@@ -264,9 +264,10 @@ internal class ControlSession(
     private fun scopedCapabilities(report: JSONObject, scope: String?): JSONObject {
         if (scope == null) {
             report.put("protocol", 1)
-            report.remove("scope"); report.remove("details")
+            report.remove("scope"); report.remove("details"); report.remove("software")
         } else {
             report.put("protocol", 2).put("scope", scope)
+                .put("software", ProfileSoftware.fingerprint(android.os.Build.FINGERPRINT, ProfileBuild.SOURCE_ID))
         }
         return report
     }

@@ -132,6 +132,7 @@ impl Prepared {
             gate_rx.clone(),
             capture_stop_rx.clone(),
             self.capture.latency_tracker(),
+            self.tablet.clone(),
         );
         let mut manager = self.capture;
         let instance = self.instance;

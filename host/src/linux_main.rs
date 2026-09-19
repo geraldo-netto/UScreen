@@ -1543,6 +1543,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let cap_config = slot_capture_config(
         capture::CaptureConfig {
             helper_path: helper_path.clone(),
+            profile_cache: file_cfg.profile_cache,
             edid_path: cli.edid.clone(),
             encoder: encoder.clone(),
             decoder: None,

@@ -94,7 +94,7 @@ pub(super) async fn uninterrupted<T>(
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(super) struct Observation {
     pub p50_us: u32,
     pub p95_us: u32,

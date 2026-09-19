@@ -59,7 +59,7 @@ codec names and mismatched configuration envelopes fail closed.
 
 T478 adds opt-in protocol version 2: new greetings include `decoder_protocol: 2`
 and a `decoder_scope` string. Android echoes that scope with `protocol: 2` and
-adds `details`: decoder name, codec, nullable hardware/standard-low-latency
+adds an optional 64-hex `software` fingerprint and `details`: decoder name, codec, nullable hardware/standard-low-latency
 support, nullable supported operating rate, and profile/level/depth entries.
 The shared vector is [decoder-capabilities-v2.json](../testdata/decoder-capabilities-v2.json).
 Each entry describes the report's exact dimensions and FPS; supported rate is
@@ -207,12 +207,47 @@ encoder choices retain their existing behavior.
 
 Settings changes, controller replacement, inactive display and shutdown cancel
 selection and retire its child process. Interrupted trials cannot become a
-rollback target. Results stay in the current process/peer/settings epoch; there
-is no disk cache, no reuse across reconnects, and no migration of saved explicit
-preferences. The GPU path and depth are fixed for a daemon session; restarting
-for driver/configuration changes recalibrates. The optional in-process encoder
-build currently maps `auto` to `libx264`; these CLI measurements do not claim to
-rank a different adapter.
+rollback target. By default, results stay in the current process/peer/settings
+epoch. Explicit encoder preferences are never migrated. The GPU path and depth
+are fixed for a daemon session. The optional in-process encoder build maps
+`auto` to `libx264`; these CLI measurements do not rank that adapter.
+
+### Optional historical profile cache
+
+Linux Video settings expose **Reuse a recent measured profile** (`profile_cache
+= true` in `config.toml`). It is off by default and affects only automatic
+selection with the normal FFmpeg CLI adapter. Manual encoder choices take
+precedence. An old peer without a software fingerprint always uses normal
+selection. This is a convenience feature, with no new latency or battery claim.
+
+One recent successful measured profile is saved atomically as the owner-only
+`profile-cache.json` beside the host configuration. It stores the encoder,
+complete decoder choice, observation percentiles/rate/delivery/startup/sample
+count, first-frame quality score, timestamp and context digest. The digest
+includes proven physical tablet identity, USB versus network route, capabilities
+without the transient scope, Android firmware/app source-build fingerprint,
+host/FFmpeg/helper binaries, FFmpeg version report, kernel/boot identity, pipe
+request/limit, stream geometry/rate/bitrate/quality, GPU path, depth, scale,
+conversion threads and EDID path. Credentials and raw tablet identities are
+not written to the cache. Rebooting conservatively invalidates the entry.
+
+Reuse requires an age of at most 24 hours, unchanged context, a **fresh host
+probe** meeting capacity and quality requirements, current advertised support
+for the exact decoder/profile/hints, and three fresh matching render receipts.
+Only the comparative live trials are skipped on a successful hit. The reason
+identifies historical ACK statistics and current host-probe quality; it does
+not label the result as best measured in this session. Runtime load, temperature,
+content and unreported driver behavior can still change; compatibility and
+fresh receipts do not prove the historical choice remains fastest.
+
+Malformed, oversized, future-dated, incompatible or expired entries are ignored.
+Missing storage or write failure leaves ordinary selection available. An
+interrupted write preserves the previous complete record. Failed cache
+verification discards the entry before normal measurements. Lost render progress
+or attachment retirement discards an active cached result and resumes the
+measurement path. A reused entry never refreshes its own timestamp. Turning
+the setting off disables reads/writes; deleting the file discards its history.
+No physical or simulated multi-tablet campaign was used to validate this feature.
 
 ## Framing
 

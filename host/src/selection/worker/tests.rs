@@ -28,6 +28,7 @@ pub(super) fn settings() -> EncoderSettings {
 }
 pub(super) fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candidate {
     Candidate {
+        cached: false,
         hardware,
         decoder: None,
         observation: None,
@@ -66,7 +67,7 @@ async fn t484_old_decoder_acks_cannot_certify_a_new_decoder_only_trial() {
     let worker = tokio::spawn({
         let tx = tx.clone();
         let latency = latency.clone();
-        async move { supervise(&tx, &snapshot, &latency, vec![trial]).await }
+        async move { supervise(&tx, &snapshot, &latency, vec![trial], None).await }
     });
     updates.changed().await.unwrap();
     for seq in 0..3 {
@@ -240,7 +241,15 @@ async fn t434_closed_display_watch_terminates_selector() {
         instance: u32::MAX,
         ..Default::default()
     };
-    let mut task = spawn(config, settings, display, stop, Default::default());
+    let attachment = crate::attachment::Attachment::new(settings.clone());
+    let mut task = spawn(
+        config,
+        settings,
+        display,
+        stop,
+        Default::default(),
+        attachment,
+    );
     let result = tokio::time::timeout(Duration::from_millis(200), &mut task).await;
     if result.is_err() {
         stop_tx.send(true).unwrap();
@@ -326,6 +335,7 @@ async fn t465_verified_stream_failure_advances_without_control_reconnect() {
                 candidate("libvpx-vp9", true, 120.0, 4),
                 candidate("libx264", true, 120.0, 6),
             ],
+            None,
         )
         .await;
     });
@@ -369,6 +379,7 @@ async fn t465_exhaustion_keeps_fallback_without_retrying_failed_candidates() {
             &initial,
             &observed,
             vec![candidate("libvpx-vp9", true, 120.0, 4)],
+            None,
         )
         .await;
     });

@@ -163,7 +163,11 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   measure available host encoders and, with current peers, compare bounded live
   render-ACK timing with a quality guard before accepting a selection. Saved
   explicit choices remain unchanged. Choose NVENC,
-  VAAPI or a software encoder to override automatic selection. VP9 and AV1 (software or supported VAAPI/NVENC encoders) use tablet
+  VAAPI or a software encoder to override automatic selection. Linux settings
+  can optionally
+  [reuse a recent measured profile](docs/video-codecs.md#optional-historical-profile-cache)
+  after fresh compatibility/render checks; this is off by default. VP9 and AV1
+  (software or supported VAAPI/NVENC encoders) use tablet
   capability negotiation; see [codec compatibility](docs/video-codecs.md). HEVC is optional and needs a compatible tablet decoder.
   `h264_vaapi_baseline` is an explicit low-latency VAAPI H.264 profile; it trades
   higher bandwidth for lower decoder delay on the measured tablet. Existing

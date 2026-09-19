@@ -20,8 +20,9 @@ pub(crate) fn spawn(
     display: watch::Receiver<bool>,
     stop: watch::Receiver<bool>,
     latency: LatencyTracker,
+    attachment: crate::attachment::Attachment,
 ) -> JoinHandle<()> {
-    tokio::spawn(run(config, settings, display, stop, latency))
+    tokio::spawn(run(config, settings, display, stop, latency, attachment))
 }
 
 async fn run(
@@ -30,6 +31,7 @@ async fn run(
     mut display: watch::Receiver<bool>,
     mut stop: watch::Receiver<bool>,
     latency: LatencyTracker,
+    attachment: crate::attachment::Attachment,
 ) {
     let mut updates = settings.subscribe();
     let mut completed = None;
@@ -45,7 +47,7 @@ async fn run(
                 &mut updates,
                 &mut display,
                 &mut stop,
-                optimize(&config, &settings, &snapshot, &latency),
+                optimize(&config, &settings, &snapshot, &latency, &attachment),
             )
             .await;
             if finished.is_some() {
@@ -99,67 +101,33 @@ async fn until_changed<T>(
     }
 }
 
-async fn optimize(
-    base: &CaptureConfig,
-    settings: &watch::Sender<EncoderSettings>,
-    snapshot: &EncoderSettings,
-    latency: &LatencyTracker,
-) {
-    let rich = snapshot.decoders.as_ref().is_some_and(|d| d.protocol == 2);
-    let mut input = latency.interaction_updates();
-    if rich && !super::trial::quiet(&mut input).await {
-        return;
-    }
-    let work = async {
-        let _permit = tokio::time::timeout(Duration::from_secs(3), ADMISSION.acquire())
-            .await
-            .ok()?
-            .ok()?;
-        let candidates = calibrate(base, snapshot).await;
-        Some(if rich {
-            measured::benchmark(settings, snapshot, latency, candidates).await
-        } else {
-            candidates
-        })
-    };
-    let candidates = if rich {
-        super::trial::uninterrupted(&mut input, work)
-            .await
-            .flatten()
-    } else {
-        work.await
-    };
-    let Some(candidates) = candidates else {
-        publish(
-            settings,
-            &Key::new(snapshot),
-            fallback_encoder(snapshot),
-            "Calibration interrupted; restored fallback",
-        );
-        return;
-    };
-    supervise(settings, snapshot, latency, candidates).await;
-}
-
 async fn supervise(
     settings: &watch::Sender<EncoderSettings>,
     snapshot: &EncoderSettings,
     latency: &LatencyTracker,
     candidates: Vec<Candidate>,
+    cache: Option<Arc<cache::Cache>>,
 ) {
     let key = Key::new(snapshot);
     let mut pending = candidates;
     let mut fallback = fallback_encoder(snapshot).to_string();
-    while let Some((name, remaining)) = choose(settings, &key, &fallback, pending, |name| {
+    while let Some((candidate, remaining)) = choose(settings, &key, &fallback, pending, |name| {
         let key = &key;
         let decoder = settings.borrow().decoder_choice().cloned();
         async move { rendered(latency, key, &name, decoder.as_ref()).await }
     })
     .await
     {
+        let name = candidate.measurement.encoder.clone();
+        if let Some(cache) = cache.as_ref().filter(|_| key.matches(&settings.borrow())) {
+            cache.remember(&candidate).await;
+        }
         let decoder = settings.borrow().decoder_choice().cloned();
         super::health::failed(latency, &key, &name, decoder.as_ref()).await;
         tracing::warn!(encoder = %name, "Verified encoder lost render progress; trying remaining compatible candidates");
+        if let Some(cache) = &cache {
+            cache.invalidate();
+        }
         // Never return to a candidate that failed in this settings/peer epoch.
         pending = remaining;
         fallback = "libx264".into();
@@ -179,7 +147,7 @@ async fn choose<F: Future<Output = bool>>(
     fallback: &str,
     candidates: Vec<Candidate>,
     mut verify: impl FnMut(String) -> F,
-) -> Option<(String, Vec<Candidate>)> {
+) -> Option<(Candidate, Vec<Candidate>)> {
     let mut candidates = candidates.into_iter();
     while let Some(candidate) = candidates.next() {
         let reason = measured::reason(&candidate).unwrap_or_else(|| format!("Host probe: {:.1} FPS, packet-interval p95 {:.2} ms; {} decoder advertised; awaiting render ACKs",
@@ -197,7 +165,9 @@ async fn choose<F: Future<Output = bool>>(
         if verify(candidate.measurement.encoder.clone()).await {
             let verified = reason.replace(
                 "awaiting render ACKs",
-                if candidate.observation.is_some() {
+                if candidate.cached {
+                    "render ACKs reverified; historical profile, not ranked this session"
+                } else if candidate.observation.is_some() {
                     "render ACKs reverified; best tested in this session"
                 } else {
                     "render ACKs verified; decoder speed not benchmarked"
@@ -216,7 +186,7 @@ async fn choose<F: Future<Output = bool>>(
                 });
                 true
             });
-            return Some((candidate.measurement.encoder, candidates.collect()));
+            return Some((candidate, candidates.collect()));
         }
         tracing::warn!(encoder = %candidate.measurement.encoder, "Automatic codec trial produced no verified render ACKs; trying next compatible candidate");
     }
@@ -304,6 +274,7 @@ fn matches_evidence(
 
 #[derive(Clone, Debug)]
 struct Candidate {
+    cached: bool,
     measurement: Measurement,
     hardware: bool,
     decoder: Option<uscreen_config::negotiation::DecoderChoice>,
@@ -370,6 +341,7 @@ fn compatible_candidate(
         None => caps.hardware.iter().any(|name| name == codec.wire_name()),
     };
     Some(Candidate {
+        cached: false,
         measurement,
         hardware,
         decoder,
@@ -417,7 +389,10 @@ fn rank(a: &Candidate, b: &Candidate, fps: u32) -> Ordering {
         .then_with(|| a.measurement.encoder.cmp(&b.measurement.encoder))
 }
 
+mod cache;
 mod measured;
+mod preparation;
+use preparation::optimize;
 #[cfg(test)]
 mod tests;
 

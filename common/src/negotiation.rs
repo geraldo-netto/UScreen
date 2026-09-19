@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
 pub struct DecoderCapabilities {
     pub protocol: u32,
+    /// Optional firmware/app fingerprint for persistent profile invalidation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub software: Option<String>,
     pub width: u32,
     pub height: u32,
     pub fps: u32,
@@ -74,7 +77,13 @@ impl DecoderCapabilities {
         let bounded = (2..=4096).contains(&self.width)
             && (2..=4096).contains(&self.height)
             && (10..=90).contains(&self.fps);
-        bounded && self.valid_families() && self.valid_extension()
+        bounded && self.valid_software() && self.valid_families() && self.valid_extension()
+    }
+
+    fn valid_software(&self) -> bool {
+        self.software
+            .as_ref()
+            .is_none_or(|id| id.len() == 64 && id.bytes().all(|b| b.is_ascii_hexdigit()))
     }
 
     fn valid_families(&self) -> bool {

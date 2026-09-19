@@ -162,8 +162,10 @@ a universal weighted score. A winner is best tested under recorded conditions.
 Do not attach/restart EVDI for measurement while T222 remains unresolved; use an
 isolated path or retain the missing full-path evidence explicitly.
 
-Cross-tablet persistent configuration and a multi-tablet campaign remain outside
-this work (T480 deferred; T382 declined).
+An optional single-record historical profile cache is implemented separately
+(see [cache validation and limits](video-codecs.md#optional-historical-profile-cache)).
+It does not establish cross-tablet performance. A multi-tablet campaign remains
+outside this work (T382 declined).
 
 ## Permanent automated coverage required before behavior changes
 

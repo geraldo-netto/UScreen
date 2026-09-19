@@ -83,6 +83,8 @@ pub fn validated_pipe_capacity(value: u32) -> u32 {
 #[serde(default)]
 pub struct FileConfig {
     pub encoder: String,
+    /// Opt-in reuse of a historical measured profile, after fresh verification.
+    pub profile_cache: bool,
     /// DRM render node used by VA-API encoders.
     pub vaapi_device: String,
     pub fps: u32,
@@ -163,6 +165,7 @@ impl Default for FileConfig {
     fn default() -> Self {
         Self {
             encoder: "auto".into(),
+            profile_cache: false,
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,
@@ -322,6 +325,20 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t480_profile_cache_is_opt_in_and_persists() {
+        for (input, expected) in [("", false), ("profile_cache = true", true)] {
+            let config: FileConfig = toml::from_str(input).unwrap();
+            assert_eq!(
+                toml::Value::try_from(config)
+                    .unwrap()
+                    .get("profile_cache")
+                    .and_then(toml::Value::as_bool),
+                Some(expected)
+            );
+        }
+    }
 
     #[test]
     fn t474_conversion_capacity_defaults_round_trips_and_rejects_invalid_values() {

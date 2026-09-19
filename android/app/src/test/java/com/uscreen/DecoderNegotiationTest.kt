@@ -57,12 +57,14 @@ class DecoderNegotiationTest {
             val old = receive()
             assertEquals(1, old.getInt("protocol"))
             assertFalse("T478: rich extension sent to old host", old.has("details"))
+            assertFalse("T480: no software extension for legacy host", old.has("software"))
             socket.sent.clear()
             socket.listener.onMessage(socket, """{"decoder_protocol":2,"decoder_scope":"9","codec":"h264","fps":60,"video_width":640,"video_height":400}""")
             val rich = receive()
             assertEquals(2, rich.getInt("protocol"))
             assertEquals("9", rich.getString("scope"))
             assertTrue(rich.has("details"))
+            assertTrue("T480: firmware/app software key missing", rich.getString("software").matches(Regex("[0-9a-f]{64}")))
         } finally { control.disconnect() }
     }
 
