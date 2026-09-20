@@ -109,4 +109,35 @@ class ActivityUiContractTest {
         assertTrue("T497 Activity composition never emitted its trace", fixture.trace.starts.get() > 0)
         assertEquals("T497 unbalanced Activity composition trace", fixture.trace.starts.get(), fixture.trace.ends.get())
     }
+
+    @Test fun t539_cameraSelectionUsesAndroidPermissionResultAndForegroundOwner() {
+        val activity = compose.activity
+        org.robolectric.Shadows.shadowOf(RuntimeEnvironment.getApplication())
+            .denyPermissions(android.Manifest.permission.CAMERA)
+        try {
+            compose.runOnIdle {
+                CameraInvitations.endpoint.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000)
+            }
+            compose.onNodeWithText("⚙").performClick()
+            compose.onNodeWithText("Front").performScrollTo().performClick()
+            val permission = org.robolectric.Shadows.shadowOf(activity).nextStartedActivityForResult
+            assertNotNull("T539 camera selection bypassed permission request", permission)
+            assertNull(activity.cameras.selected)
+            compose.runOnIdle {
+                org.robolectric.Shadows.shadowOf(RuntimeEnvironment.getApplication())
+                    .grantPermissions(android.Manifest.permission.CAMERA)
+                activity.onRequestPermissionsResult(permission.requestCode,
+                    arrayOf(android.Manifest.permission.CAMERA), intArrayOf(android.content.pm.PackageManager.PERMISSION_GRANTED))
+            }
+            compose.waitUntil(5000) {
+                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                activity.cameras.status == "Front camera unavailable"
+            }
+            assertNull(activity.cameras.selected)
+        } finally {
+            CameraInvitations.endpoint.value = null
+            fixture.stop()
+        }
+        assertNull(activity.cameras.endpoint)
+    }
 }

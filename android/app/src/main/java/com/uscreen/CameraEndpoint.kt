@@ -1,0 +1,35 @@
+package com.uscreen
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import kotlinx.coroutines.flow.MutableStateFlow
+
+internal enum class CameraLens(val wire: Int, val label: String) { FRONT(0, "Front"), REAR(1, "Rear") }
+
+internal data class CameraEndpoint(val token: String, val port: Int, val width: Int, val height: Int, val fps: Int, val bitrate: Int) {
+    fun valid(): Boolean = token.matches(Regex("[0-9a-f]{64}")) && port in 1..65535 && validProfile()
+
+    private fun validProfile(): Boolean = width in 160..1920 && height in 120..1080 &&
+        width % 2 == 0 && height % 2 == 0 && fps in 5..30 && bitrate in 256..20000
+
+    companion object {
+        fun read(intent: Intent): CameraEndpoint? {
+            val candidate = CameraEndpoint(intent.getStringExtra("token") ?: "", intent.getIntExtra("port", 0),
+                intent.getIntExtra("width", 0), intent.getIntExtra("height", 0),
+                intent.getIntExtra("fps", 0), intent.getIntExtra("bitrate", 0))
+            return candidate.takeIf { it.valid() }
+        }
+    }
+}
+
+/** Invitations remain in process memory; receiving one never starts capture. */
+internal object CameraInvitations { val endpoint = MutableStateFlow<CameraEndpoint?>(null) }
+
+class CameraReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val endpoint = CameraEndpoint.read(intent) ?: return
+        CameraInvitations.endpoint.value = endpoint
+        resultCode = 1
+    }
+}

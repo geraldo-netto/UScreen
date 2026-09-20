@@ -88,4 +88,21 @@ pub enum Commands {
     },
     /// Diagnose the whole setup and report what is wrong
     Doctor,
+    /// Expose tablet front/rear cameras as Linux webcams (one active at a time).
+    Cameras(crate::camera::CameraOptions),
+}
+
+#[cfg(test)]
+mod camera_tests {
+    use super::*;
+
+    #[test]
+    fn t539_camera_command_is_separate_from_display_startup() {
+        let result = Cli::try_parse_from(["uscreen", "cameras"]);
+        assert!(
+            result.is_ok(),
+            "T539 camera command unavailable: {:?}",
+            result.err()
+        );
+    }
 }

@@ -30,6 +30,7 @@ internal fun SettingsSheet(
     onDismiss: () -> Unit,
     displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
     onSettingsEvent: (SettingsEvent) -> Unit = {},
+    cameraControls: @Composable () -> Unit = {},
 ) {
     var bitrateMbps by remember(settings.bitrateKbps) {
         mutableStateOf(settings.bitrateKbps / 1000f)
@@ -59,6 +60,8 @@ internal fun SettingsSheet(
             ModeControl(penOnly) { onSettingsEvent(SettingsEvent.Mode(it)); onDismiss() }
 
             OrientationControls(settings.orientation) { onSettingsEvent(SettingsEvent.Orientation(it)) }
+
+            cameraControls()
 
             if (!penOnly) StreamControls(bitrateMbps, fpsChoice, { bitrateMbps = it }, { fpsChoice = it })
 

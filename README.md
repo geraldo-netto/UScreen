@@ -244,6 +244,7 @@ More in [docs/faq.md](docs/faq.md).
 - [Installation](docs/installation.md) · [Troubleshooting](docs/troubleshooting.md)
 - [Architecture and protocol](docs/architecture.md) · [Development, building, releasing](docs/development.md)
 - [Benchmarks](docs/benchmarks.md) · [Compatibility](docs/compatibility.md) · [FAQ](docs/faq.md)
+- [Tablet webcams on Linux](docs/cameras.md) — front/rear OS cameras, one active lens at a time.
 - [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 ## Plans and proposals

@@ -19,7 +19,9 @@ import org.robolectric.shadows.ShadowSensor
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [27, 34])
+// T539: foreground MainActivity owns asynchronous camera state. Isolate its
+// Compose dispatcher from rule.setContent tests after Robolectric resets loopers.
+@Config(sdk = [27, 34], instrumentedPackages = ["androidx.compose.ui.platform"])
 class OrientationTest {
     @Test fun t497_manualOrientationReplacesSensorPolicyAndSurvivesStop() {
         val app = RuntimeEnvironment.getApplication()

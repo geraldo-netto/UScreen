@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-20",
+  "baseCommit": "d48f5d27ca81f6ef8d06182b9258c0a545cf4a67",
+  "hostBinarySha256": "72dbdc7ec98a3e812b89e36d60da769ca1f857fa919a20124c11cbd168f55d85",
+  "signedApkSha256": "3845f1bcaa243bcfd95e3e37a298f469dbeca49c9356d705952729f570a6c829",
+  "certificateSha256": "1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400",
+  "androidTests": 502,
+  "androidFailures": 0,
+  "androidMethodsPassing80": 548,
+  "linuxFunctionsPassing80": 1046,
+  "windowsFunctionsUnmeasured": 58,
+  "profile": {
+    "width": 1280,
+    "height": 720,
+    "fpsRequested": 30,
+    "bitrateKbpsRequested": 3000
+  },
+  "browser": "Google Chrome 153.0.8010.52",
+  "device": "RugKing Pad 2 Pro / Android 16",
+  "rearId": "0",
+  "frontId": "1",
+  "displayServicePidBeforeAndAfter": 68365,
+  "finalActiveAndroidCameras": [],
+  "remainingAdbReversePorts": [
+    8890,
+    8891
+  ],
+  "limits": [
+    "No actual Google Meet call",
+    "No physical USB unplug/replug (T540/T222)",
+    "No sustained battery/thermal or latency measurement",
+    "No Windows webcam backend"
+  ],
+  "imagesRetained": false,
+  "rustDefault": {
+    "reportedPassed": 712,
+    "failed": 0,
+    "existingIgnored": 3,
+    "includesChildHarnessSummaries": true
+  },
+  "rustAllFeatures": {
+    "reportedPassed": 609,
+    "failed": 0,
+    "existingIgnored": 2,
+    "includesChildHarnessSummaries": true
+  }
+}

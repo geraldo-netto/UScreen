@@ -4,6 +4,7 @@ mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
 mod attachment;
+mod camera;
 mod capture;
 mod config;
 mod desktop;
@@ -74,6 +75,7 @@ async fn main() -> Result<()> {
         Some(Commands::ListDisplays) => list_displays().await?,
         Some(Commands::Wifi { off }) => setup_wifi(*off).await?,
         Some(Commands::Doctor) => doctor::run().await?,
+        Some(Commands::Cameras(options)) => camera::run(options).await?,
     }
 
     Ok(())

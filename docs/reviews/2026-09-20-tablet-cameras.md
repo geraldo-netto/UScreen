@@ -1,7 +1,9 @@
 # Tablet cameras as desktop cameras
 
 Assessment: 2026-09-20. Follow-up: T539. This is a feasibility assessment and
-proposed design, not an implemented UScreen capability.
+proposed design at the time of inspection. The subsequent experimental
+[camera implementation](../cameras.md) and T539 track current behavior and
+validation; implementation-state statements below describe the inspected revision.
 
 The maintainer wants separate front/rear desktop camera entries and confirmed
 that only one physical camera needs to operate at a time. This is technically

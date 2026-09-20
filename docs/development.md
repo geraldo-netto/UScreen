@@ -196,6 +196,7 @@ COMMANDS
   list-displays   show compositor displays and PipeWire status
   wifi            enable ADB TCP; --off forgets/disconnects the saved address
   doctor          diagnose the setup and print fixes
+  cameras         expose tablet front/rear Linux webcams (foreground command)
 
 OPTIONS (override ~/.config/uscreen/config.toml for this run only)
   --encoder <NAME>      auto or a registered NVENC/VAAPI/software codec profile

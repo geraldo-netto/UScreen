@@ -8,6 +8,10 @@ import androidx.activity.compose.setContent
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
+    internal lateinit var cameras: CameraBinding; private set
+    private val cameraPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        cameras.permissionResult(it)
+    }
     internal lateinit var session: SessionCoordinator; private set
     private lateinit var powerBinding: StreamingPowerBinding
     internal lateinit var windowPolicy: ActivityWindowPolicy; private set
@@ -16,6 +20,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val prefs = Prefs(this)
+        cameras = CameraBinding(this, { @Suppress("DEPRECATION") windowManager.defaultDisplay.rotation },
+            { cameraPermission.launch(android.Manifest.permission.CAMERA) })
         powerBinding = StreamingPowerBinding(this)
         windowPolicy = ActivityWindowPolicy(this, prefs)
         windowPolicy.applyDisplaySettings()
@@ -35,6 +41,7 @@ class MainActivity : ComponentActivity() {
                     onSurfaceDestroyed = session::surfaceDestroyed,
                     displayRefreshRates = windowPolicy.supportedDisplayModes().map { it.refreshRate },
                     onSettingsEvent = ::settingsEvent,
+                    cameraControls = { CameraControls(cameras) },
                 )
             }
         }
@@ -92,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        cameras.start()
         windowPolicy.start()
         powerBinding.start(session.powerNow(), session.powerUpdates())
         session.checkUpdate {
@@ -101,6 +109,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        cameras.stop()
         super.onStop()
         windowPolicy.stop()
         powerBinding.stop()

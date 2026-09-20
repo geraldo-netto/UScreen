@@ -15,7 +15,8 @@ import org.robolectric.util.ReflectionHelpers
 import org.robolectric.util.ReflectionHelpers.ClassParameter
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [27, 34])
+// T539: Activity-created Compose dispatchers must not outlive their test looper.
+@Config(sdk = [27, 34], instrumentedPackages = ["androidx.compose.ui.platform"])
 class DisplaySettingsTest {
     private val app get() = RuntimeEnvironment.getApplication()
 

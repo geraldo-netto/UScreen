@@ -17,7 +17,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [27, 34])
+// T539: isolate Activity-created Compose dispatchers from rule.setContent tests.
+@Config(sdk = [27, 34], instrumentedPackages = ["androidx.compose.ui.platform"])
 class RegressionTest {
     private val app get() = RuntimeEnvironment.getApplication()
     private fun owner(target: Any, name: String): Any = when (target) {

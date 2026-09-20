@@ -1,0 +1,302 @@
+{
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/camera",
+    "common/src/camera"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 25,
+      "passing": 25,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/camera.rs",
+      "name": "validate",
+      "line": 32,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/camera.rs",
+      "name": "frame_bytes",
+      "line": 57,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "output",
+      "line": 17,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "create",
+      "line": 31,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "invite",
+      "line": 53,
+      "language": "rust",
+      "covered": 37,
+      "total": 37,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "close",
+      "line": 93,
+      "language": "rust",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        101
+      ]
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "owns_mapping",
+      "line": 106,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "filters",
+      "line": 14,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "command",
+      "line": 26,
+      "language": "rust",
+      "covered": 43,
+      "total": 43,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "connection",
+      "line": 72,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "transfer",
+      "line": 90,
+      "language": "rust",
+      "covered": 29,
+      "total": 29,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "open_device",
+      "line": 23,
+      "language": "rust",
+      "covered": 23,
+      "total": 23,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "blank",
+      "line": 57,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "producer",
+      "line": 64,
+      "language": "rust",
+      "covered": 34,
+      "total": 34,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "feed",
+      "line": 99,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "write_frames",
+      "line": 111,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "current_frame",
+      "line": 133,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "name": "retire",
+      "line": 140,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/protocol.rs",
+      "name": "header",
+      "line": 14,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/protocol.rs",
+      "name": "packet",
+      "line": 31,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera.rs",
+      "name": "run",
+      "line": 14,
+      "language": "rust",
+      "covered": 20,
+      "total": 21,
+      "percent": 95.23809523809524,
+      "passes": true,
+      "missing": [
+        32
+      ]
+    },
+    {
+      "file": "host/src/camera.rs",
+      "name": "executable",
+      "line": 38,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera.rs",
+      "name": "serve",
+      "line": 43,
+      "language": "rust",
+      "covered": 43,
+      "total": 44,
+      "percent": 97.72727272727273,
+      "passes": true,
+      "missing": [
+        85
+      ]
+    },
+    {
+      "file": "host/src/camera.rs",
+      "name": "invited_session",
+      "line": 90,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera.rs",
+      "name": "sessions",
+      "line": 110,
+      "language": "rust",
+      "covered": 11,
+      "total": 13,
+      "percent": 84.61538461538461,
+      "passes": true,
+      "missing": [
+        122,
+        124
+      ]
+    }
+  ]
+}

@@ -57,6 +57,7 @@ internal fun UScreenMain(
     settings: SettingsValues = SettingsValues(),
     displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
     onSettingsEvent: (SettingsEvent) -> Unit = {},
+    cameraControls: @Composable () -> Unit = {},
 ) {
     val isConnected = presentation?.connected ?: false
     var showSettings by remember { mutableStateOf(false) }
@@ -109,7 +110,8 @@ internal fun UScreenMain(
                 penOnly = penOnly,
                 onDismiss = { showSettings = false },
                 displayRefreshRates = displayRefreshRates,
-                onSettingsEvent = onSettingsEvent
+                onSettingsEvent = onSettingsEvent,
+                cameraControls = cameraControls,
             )
         }
     }
@@ -348,4 +350,3 @@ private fun ConnectionScreen(penOnly: Boolean) {
         }
     }
 }
-
