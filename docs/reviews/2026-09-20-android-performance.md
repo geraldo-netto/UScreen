@@ -52,15 +52,45 @@ That interval combines multiple stages; it neither identifies CPU saturation
 nor measures when pixels become visible. Historical SurfaceFlinger work also
 demonstrated that [decoder callbacks do not certify physical presentation](../benchmarks/2026-09-19-presentation-power.md).
 
-## Next evidence, before implementation
+## Follow-up requested at review time (completed)
 
-T560 keeps a narrow current-playback profiling follow-up open: measure per-thread
+T560 requested a narrow current-playback profile: measure per-thread
 CPU/runnable/blocking time, codec input/output waits, frame queue occupancy,
 allocation/GC and compositor timing together. [Android system tracing](https://developer.android.com/topic/performance/tracing)
 can show scheduler and frame activity; method-level costs require a CPU profile.
 Keep instrumentation overhead, missing counters and time boundaries explicit.
 No activity replacement, screen lock, ADB reset or EVDI restart is needed merely
 to assess passive observations.
+
+The subsequent [T560 passive profile](../benchmarks/2026-09-20-live-playback/README.md)
+completed this investigation at **30 FPS**, without replacing the app or
+restarting the display. The busiest app codec thread used 12.47% of one CPU
+core; the output thread used 3.31%, with a runnable-wait p95 of 0.40 ms.
+These are CPU scheduling measurements, not hardware decoder utilization.
+No application GC event was observed; allocation rates and call stacks were
+not captured. T561 retains six unlatched buffers for further correlation,
+and T414 retains the audio issue because no gap was established during the trace.
+This status update resolves the stale open-follow-up description (T562).
+
+## Fork-join assessment
+
+No current measurement supports adding a fork-join pool around the Android
+decoder. `MediaCodec` processes submitted buffers asynchronously even when
+the application uses its synchronous dequeue API. UScreen already overlaps
+receipt/input with output release and frame callbacks. An application worker
+pool cannot subdivide the vendor's internal decode operation through this API;
+it would need separately independent tasks and ordered, bounded handoff.
+Holding buffers while joining can also stall a codec under the
+[documented buffer ownership contract](https://developer.android.com/reference/android/media/MediaCodec#DataProcessing).
+
+Codec-internal parallelism is a different mechanism. For example, stock
+[FFmpeg frame threading](https://ffmpeg.org/doxygen/trunk/multithreading_8txt.html)
+documents additional frame delay per extra thread; that software-decoder rule
+does not quantify this tablet's vendor decoder. Splitting a compressed stream
+between independent decoders would additionally require valid independent
+decode boundaries and presentation ordering. Neither design has been measured
+here. Prefer a matched latency/CPU comparison after identifying parallelizable
+work over assuming that more workers improve a single interactive stream.
 
 Only pursue an extra worker, changed queue structure, bounded buffer pool or
 platform-specific SIMD kernel when a measured cost justifies it. A callback
