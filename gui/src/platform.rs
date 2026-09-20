@@ -69,6 +69,36 @@ mod appimage_tests {
     use std::os::unix::fs::PermissionsExt;
 
     #[test]
+    fn t541_pipe_publication_validates_and_preserves_previous_request() {
+        if std::env::var_os("USCREEN_T541_PIPE_CHILD").is_some() {
+            publish_pipe(4).unwrap();
+            let path = uscreen_config::linux::pipe::request_path().unwrap();
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "4\n");
+            assert_eq!(
+                std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+            assert!(publish_pipe(3)
+                .unwrap_err()
+                .contains("Invalid pipe capacity"));
+            assert_eq!(std::fs::read_to_string(path).unwrap(), "4\n");
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "platform::appimage_tests::t541_pipe_publication_validates_and_preserves_previous_request"])
+            .env("USCREEN_T541_PIPE_CHILD", "1")
+            .env("XDG_RUNTIME_DIR", root.path())
+            .output().unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stdout)
+        );
+    }
+
+    #[test]
     fn t308_outer_launcher_child() {
         let Ok(mode) = std::env::var("USCREEN_T308_GUI_MODE") else {
             return;
