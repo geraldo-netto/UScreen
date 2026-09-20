@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-20",
+  "playback": "Linux Chrome, video through UScreen; audio to Linux-paired BW01 Bluetooth headphones",
+  "symptom": "User reports intermittent audio gaps; smooth during sample",
+  "video": {
+    "width": 1280,
+    "height": 800,
+    "fps": 30,
+    "encoder": "h264_vaapi",
+    "profile": "Constrained Baseline",
+    "rate_control": "CQP",
+    "qp": 18,
+    "vaapi_device": "/dev/dri/renderD128"
+  },
+  "audio": {
+    "profile": "A2DP",
+    "codec": "SBC",
+    "sink_format": "s16le 2ch 44100 Hz",
+    "chrome_format": "float32le 2ch 48000 Hz"
+  },
+  "camera_active": false,
+  "processes": {
+    "68386": {
+      "name": "uscreen",
+      "sha256": "57f0ab6f65a67e5903f2518e16426dc1a597c66a3a74088fc8aae4db929e379e"
+    },
+    "82323": {
+      "name": "evdi_helper",
+      "sha256": "cf925698017ae4ac1f69ce44fadab4c1e041bc828b14679186132350aa0e039d"
+    },
+    "122344": {
+      "name": "ffmpeg",
+      "sha256": "0dafc1360bb07743f76abeb1e4ae16b0aaa1331e9041a0e8d6a8524111dc0cbb"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "first": {
+    "time": 18481.736739961,
+    "send_queue": 0,
+    "bytes_acked": 1849924189
+  },
+  "last": {
+    "time": 18491.780734878,
+    "send_queue": 0,
+    "bytes_acked": 1866619536
+  },
+  "measurement": "Host loopback socket carrying encoded display data into ADB, not USB wire throughput",
+  "payload_mbps": 13.297774152986117
+}
