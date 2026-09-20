@@ -2,6 +2,7 @@
 use crate::model::FileConfig;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
+mod diff;
 
 pub fn config_home() -> Result<PathBuf> {
     #[cfg(windows)]
@@ -204,24 +205,8 @@ impl FileConfig {
             std::fs::create_dir_all(parent)?;
         }
         let text = toml::to_string_pretty(self).context("serialize config")?;
-        // Say exactly which lines change. Settings that drift with nobody
-        // touching them are impossible to chase down otherwise.
         if let Ok(old) = std::fs::read_to_string(path) {
-            let before: std::collections::BTreeMap<&str, &str> =
-                old.lines().filter_map(|l| l.split_once(" = ")).collect();
-            let changed: Vec<String> = text
-                .lines()
-                .filter_map(|l| l.split_once(" = "))
-                .filter(|(k, v)| before.get(k) != Some(v))
-                .map(|(k, v)| {
-                    format!(
-                        "{} = {} (was {})",
-                        k,
-                        v,
-                        before.get(k).unwrap_or(&"<unset>")
-                    )
-                })
-                .collect();
+            let changed = diff::changes(&old, &text);
             if !changed.is_empty() {
                 tracing::info!("Config written: {}", changed.join(", "));
             }

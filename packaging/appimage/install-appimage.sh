@@ -68,6 +68,42 @@ install_desktop() {
     mv -f -- "$temporary" "$DATA_BASE/applications/uscreen.desktop"
     cp -- "$APPDIR/usr/share/icons/hicolor/scalable/apps/uscreen.svg" "$DATA_BASE/icons/hicolor/scalable/apps/"
     ln -sfnT -- "$ENTRY" "$HOME/.local/bin/uscreen"
+    install_gui_entry
+}
+
+backup_gui_entry() {
+    local entry="$1" backup
+    [[ -e "$entry" || -L "$entry" ]] || return 0
+    [[ -f "$entry" || -L "$entry" ]] || { echo 'GUI launcher destination is not a file or link.' >&2; return 1; }
+    backup=$(mktemp -d "$DEST/gui-backup.XXXXXXXX")
+    mv -T -- "$entry" "$backup/uscreen-gui"
+    printf '%s' "$backup/uscreen-gui"
+}
+
+link_gui_entry() {
+    local entry="$HOME/.local/bin/uscreen-gui" backup
+    if [[ -L "$entry" ]] && [[ $(readlink -- "$entry") = "$DEST/uscreen-gui" ]]; then return 0; fi
+    backup=$(backup_gui_entry "$entry") || return
+    if ln -sT -- "$DEST/uscreen-gui" "$entry"; then return 0; fi
+    if [[ -n "$backup" ]]; then mv -T -- "$backup" "$entry"; fi
+    return 1
+}
+
+install_gui_entry() {
+    local temporary
+    # A sibling link avoids embedding user paths in executable shell text.
+    ln -sfnT -- "$ENTRY" "$DEST/gui-launcher"
+    temporary=$(mktemp "$DEST/.gui-launcher.XXXXXXXX")
+    cat > "$temporary" <<'GUI_SCRIPT'
+#!/bin/sh
+# USCREEN_APPIMAGE_GUI_WRAPPER=1
+set -eu
+launcher=$(readlink -f -- "$0")
+exec "${launcher%/*}/gui-launcher" --gui "$@"
+GUI_SCRIPT
+    chmod 755 "$temporary"
+    mv -f -- "$temporary" "$DEST/uscreen-gui"
+    link_gui_entry
 }
 
 install_entry() {

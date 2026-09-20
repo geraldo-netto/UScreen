@@ -32,6 +32,13 @@ starts that same service even on desktops without `graphical-session.target`.
 Registration does not start streaming,
 activate EVDI, enable autostart, uninstall packages or alter system configuration.
 
+Registration also routes `~/.local/bin/uscreen-gui` to the same distribution.
+An older GUI executable or link is retained under
+`$XDG_DATA_HOME/uscreen/appimage/gui-backup.*/uscreen-gui` for rollback; symlink
+targets are not changed. Repeated registration reuses the managed launcher.
+Both image and extracted-directory registration preserve literal arguments and
+paths containing spaces or shell metacharacters.
+
 Update by stopping UScreen and registering the new image the same way. Close the
 old GUI and reopen the installed launcher. Keep the installed image in place:
 a running portable GUI reports a missing launcher if its outer image was moved.

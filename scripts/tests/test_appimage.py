@@ -100,6 +100,57 @@ class AppImageTest(unittest.TestCase):
         for home in ('', 'relative'):
             self.assertNotEqual(self.invoke('--install-user', env=dict(self.env, HOME=home)).returncode, 0)
 
+    def test_t551_gui_upgrade_uses_registered_distribution_and_retains_rollback(self):
+        self.installer_fixture()
+        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        legacy = '#!/bin/sh\nprintf "legacy GUI\\n"\n'
+        self.write(gui, legacy)
+        self.write(self.app / 'usr/bin/uscreen-gui', '#!/bin/sh\nprintf "%s\\n" "new GUI" "$@"\n')
+        destination = Path(self.env['XDG_DATA_HOME']) / 'uscreen/appimage'
+        for _ in range(2):
+            result = self.invoke('--install-user')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            output = subprocess.check_output([gui, 'space value', '$HOME'], env=self.env, text=True)
+            self.assertEqual(output.splitlines(), ['new GUI', 'space value', '$HOME'], 'T551: stale GUI')
+        backups = list(destination.glob('gui-backup.*/uscreen-gui'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_text(), legacy)
+        outer = self.write(self.root / 'image with spaces.AppImage', '#!/bin/sh\nprintf "%s\\n" "image GUI" "$@"\n')
+        result = self.invoke('--install-user', env=dict(self.env, APPIMAGE=str(outer)))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        outer.unlink()
+        shutil.rmtree(self.app)
+        output = subprocess.check_output([gui, 'literal argument'], env=self.env, text=True)
+        self.assertEqual(output.splitlines(), ['image GUI', '--gui', 'literal argument'])
+
+    def test_t551_gui_registration_preserves_unrelated_symlink_target_and_rejects_directory(self):
+        self.installer_fixture()
+        target = self.write(self.root / 'unrelated program', '#!/bin/sh\nexit 17\n')
+        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        gui.parent.mkdir(parents=True)
+        gui.symlink_to(target)
+        result = self.invoke('--install-user')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(target.read_text(), '#!/bin/sh\nexit 17\n')
+        self.assertNotEqual(gui.resolve(), target)
+        backups = list((Path(self.env['XDG_DATA_HOME'])/'uscreen/appimage').glob('gui-backup.*/uscreen-gui'))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].readlink(), target)
+        gui.unlink()
+        gui.mkdir()
+        result = self.invoke('--install-user')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(list(gui.iterdir()), [])
+
+    def test_t551_failed_gui_link_restores_the_previous_launcher(self):
+        self.installer_fixture()
+        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        self.write(gui, '#!/bin/sh\nprintf "previous GUI\\n"\n')
+        self.write(self.app / 'usr/bin/ln', '#!/bin/sh\n[ "$1" != -sT ] || exit 1\nexec /usr/bin/ln "$@"\n')
+        result = self.invoke('--install-user')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(subprocess.check_output([gui], text=True), 'previous GUI\n')
+
     def test_t308_image_copy_survives_source_deletion_and_keeps_preferences(self):
         self.installer_fixture()
         outer = self.write(self.root / 'download.AppImage', '#!/bin/sh\nprintf "stable image\\n"\n')
