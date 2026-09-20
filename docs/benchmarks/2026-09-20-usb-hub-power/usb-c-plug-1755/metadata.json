@@ -1,0 +1,6 @@
+{
+  "issue": "T538",
+  "start_utc": "2026-09-20T15:55:41.586262+00:00",
+  "scope": "Follow-up after maintainer reports a proper USB-C charging plug. Existing live UScreen stream; observer changes no settings, workload or wiring. Battery is already reported at 100%, limiting charging-capacity inference. No matched controlled baseline; net battery flow is not USB input power.",
+  "end_utc": "2026-09-20T15:56:46.903434+00:00"
+}

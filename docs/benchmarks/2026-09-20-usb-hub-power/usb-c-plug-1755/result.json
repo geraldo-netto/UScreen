@@ -1,0 +1,551 @@
+{
+  "issue": "T538",
+  "boundary": "Follow-up after maintainer reports a proper USB-C charging plug. Existing live UScreen stream; observer changes no settings, workload or wiring. Battery is already reported at 100%, limiting charging-capacity inference. No matched controlled baseline; net battery flow is not USB input power.",
+  "battery": {
+    "samples": 66,
+    "seconds": 64.171664839,
+    "mean_current_ma": -13.709364318258029,
+    "integrated_net_charge_mah": -0.24437575894083333,
+    "gauge_net_charge_mah": 0.0,
+    "nonzero_gauge_steps_uah": [],
+    "mean_voltage_v": 4.367981728669741,
+    "current_range_ua": [
+      -285000.0,
+      159000.0
+    ],
+    "capacity_range_pct": [
+      100.0,
+      100.0
+    ]
+  },
+  "samples": [
+    {
+      "ts": 3663829542282,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -102000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 445.0
+    },
+    {
+      "ts": 3664001578628,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -102000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 445.0
+    },
+    {
+      "ts": 3665002089051,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 5000.0,
+      "batt.voltage_uv": 4370000.0,
+      "batt.power_mw": 21.0
+    },
+    {
+      "ts": 3666002152319,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 41000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 179.0
+    },
+    {
+      "ts": 3667001377049,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -224000.0,
+      "batt.voltage_uv": 4358000.0,
+      "batt.power_mw": 976.0
+    },
+    {
+      "ts": 3668001873010,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -285000.0,
+      "batt.voltage_uv": 4354000.0,
+      "batt.power_mw": 1240.0
+    },
+    {
+      "ts": 3669000851625,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -143000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 623.0
+    },
+    {
+      "ts": 3670002095932,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -143000.0,
+      "batt.voltage_uv": 4361000.0,
+      "batt.power_mw": 623.0
+    },
+    {
+      "ts": 3671001705239,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -3000.0,
+      "batt.voltage_uv": 4368000.0,
+      "batt.power_mw": 13.0
+    },
+    {
+      "ts": 3672001763623,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 44000.0,
+      "batt.voltage_uv": 4368000.0,
+      "batt.power_mw": 192.0
+    },
+    {
+      "ts": 3673002107853,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -120000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 523.0
+    },
+    {
+      "ts": 3674001925467,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -55000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 240.0
+    },
+    {
+      "ts": 3675001401005,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -64000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 279.0
+    },
+    {
+      "ts": 3676001602927,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -49000.0,
+      "batt.voltage_uv": 4365000.0,
+      "batt.power_mw": 213.0
+    },
+    {
+      "ts": 3677000840658,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -183000.0,
+      "batt.voltage_uv": 4358000.0,
+      "batt.power_mw": 797.0
+    },
+    {
+      "ts": 3678000848388,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -46000.0,
+      "batt.voltage_uv": 4365000.0,
+      "batt.power_mw": 200.0
+    },
+    {
+      "ts": 3679001905425,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -37000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 161.0
+    },
+    {
+      "ts": 3680002086232,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -232000.0,
+      "batt.voltage_uv": 4357000.0,
+      "batt.power_mw": 1010.0
+    },
+    {
+      "ts": 3681001892501,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -145000.0,
+      "batt.voltage_uv": 4361000.0,
+      "batt.power_mw": 632.0
+    },
+    {
+      "ts": 3682002210577,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -151000.0,
+      "batt.voltage_uv": 4361000.0,
+      "batt.power_mw": 658.0
+    },
+    {
+      "ts": 3683001704653,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -75000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 327.0
+    },
+    {
+      "ts": 3684001756653,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -174000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 758.0
+    },
+    {
+      "ts": 3685000631998,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 114000.0,
+      "batt.voltage_uv": 4374000.0,
+      "batt.power_mw": 498.0
+    },
+    {
+      "ts": 3686001863651,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 49000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 214.0
+    },
+    {
+      "ts": 3687002123727,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -41000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 179.0
+    },
+    {
+      "ts": 3688001236880,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -53000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 231.0
+    },
+    {
+      "ts": 3689002004303,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -104000.0,
+      "batt.voltage_uv": 4364000.0,
+      "batt.power_mw": 453.0
+    },
+    {
+      "ts": 3690001310917,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 27000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 118.0
+    },
+    {
+      "ts": 3691001621840,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 40000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 174.0
+    },
+    {
+      "ts": 3692000853954,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 137000.0,
+      "batt.voltage_uv": 4376000.0,
+      "batt.power_mw": 599.0
+    },
+    {
+      "ts": 3693000831300,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 85000.0,
+      "batt.voltage_uv": 4374000.0,
+      "batt.power_mw": 371.0
+    },
+    {
+      "ts": 3694001840376,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 50000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 218.0
+    },
+    {
+      "ts": 3695001597529,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 55000.0,
+      "batt.voltage_uv": 4373000.0,
+      "batt.power_mw": 240.0
+    },
+    {
+      "ts": 3696001985759,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -52000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 227.0
+    },
+    {
+      "ts": 3697002036259,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 148000.0,
+      "batt.voltage_uv": 4376000.0,
+      "batt.power_mw": 647.0
+    },
+    {
+      "ts": 3698001609181,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 143000.0,
+      "batt.voltage_uv": 4376000.0,
+      "batt.power_mw": 625.0
+    },
+    {
+      "ts": 3699001975988,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -44000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 192.0
+    },
+    {
+      "ts": 3700001405872,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 50000.0,
+      "batt.voltage_uv": 4371000.0,
+      "batt.power_mw": 218.0
+    },
+    {
+      "ts": 3701002328179,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 152000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 665.0
+    },
+    {
+      "ts": 3702001274755,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 104000.0,
+      "batt.voltage_uv": 4374000.0,
+      "batt.power_mw": 454.0
+    },
+    {
+      "ts": 3703002025100,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 159000.0,
+      "batt.voltage_uv": 4380000.0,
+      "batt.power_mw": 696.0
+    },
+    {
+      "ts": 3704000501831,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 131000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 573.0
+    },
+    {
+      "ts": 3705001919253,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 157000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 687.0
+    },
+    {
+      "ts": 3706001702675,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -114000.0,
+      "batt.voltage_uv": 4362000.0,
+      "batt.power_mw": 497.0
+    },
+    {
+      "ts": 3707001748905,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 157000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 687.0
+    },
+    {
+      "ts": 3708001316982,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 148000.0,
+      "batt.voltage_uv": 4376000.0,
+      "batt.power_mw": 647.0
+    },
+    {
+      "ts": 3709001645981,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 146000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 639.0
+    },
+    {
+      "ts": 3710002107403,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -12000.0,
+      "batt.voltage_uv": 4368000.0,
+      "batt.power_mw": 52.0
+    },
+    {
+      "ts": 3711001230672,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -137000.0,
+      "batt.voltage_uv": 4362000.0,
+      "batt.power_mw": 597.0
+    },
+    {
+      "ts": 3712001719863,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 66000.0,
+      "batt.voltage_uv": 4373000.0,
+      "batt.power_mw": 288.0
+    },
+    {
+      "ts": 3713002039286,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -41000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 179.0
+    },
+    {
+      "ts": 3714001653746,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 140000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 612.0
+    },
+    {
+      "ts": 3715000878938,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 73000.0,
+      "batt.voltage_uv": 4374000.0,
+      "batt.power_mw": 319.0
+    },
+    {
+      "ts": 3716000822745,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -148000.0,
+      "batt.voltage_uv": 4362000.0,
+      "batt.power_mw": 645.0
+    },
+    {
+      "ts": 3717000888706,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 108000.0,
+      "batt.voltage_uv": 4373000.0,
+      "batt.power_mw": 472.0
+    },
+    {
+      "ts": 3718000929321,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -181000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 788.0
+    },
+    {
+      "ts": 3719000895320,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -2000.0,
+      "batt.voltage_uv": 4370000.0,
+      "batt.power_mw": 8.0
+    },
+    {
+      "ts": 3720000870011,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -55000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 240.0
+    },
+    {
+      "ts": 3721002017203,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 151000.0,
+      "batt.voltage_uv": 4377000.0,
+      "batt.power_mw": 660.0
+    },
+    {
+      "ts": 3722002018664,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -111000.0,
+      "batt.voltage_uv": 4362000.0,
+      "batt.power_mw": 484.0
+    },
+    {
+      "ts": 3723001341394,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 23000.0,
+      "batt.voltage_uv": 4370000.0,
+      "batt.power_mw": 100.0
+    },
+    {
+      "ts": 3724002108509,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -181000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 788.0
+    },
+    {
+      "ts": 3725001762162,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": 34000.0,
+      "batt.voltage_uv": 4370000.0,
+      "batt.power_mw": 148.0
+    },
+    {
+      "ts": 3726001663238,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -30000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 131.0
+    },
+    {
+      "ts": 3727002099045,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -34000.0,
+      "batt.voltage_uv": 4367000.0,
+      "batt.power_mw": 148.0
+    },
+    {
+      "ts": 3728001207121,
+      "batt.charge_uah": 9990000.0,
+      "batt.capacity_pct": 100.0,
+      "batt.current_ua": -159000.0,
+      "batt.voltage_uv": 4359000.0,
+      "batt.power_mw": 693.0
+    }
+  ]
+}

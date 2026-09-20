@@ -1,0 +1,4 @@
+{
+  "utc": "2026-09-20T15:57:44.684886+00:00",
+  "output": "Current Battery Service state:\n  AC powered: false\n  USB powered: true\n  Wireless powered: false\n  Dock powered: false\n  Max charging current: 500000\n Time when the latest updated value of the Max charging current was sent via battery changed broadcast: +49m55s493ms\n  Max charging voltage: 5000000\n  Charge counter: 9990000\n  status: 2\n  health: 2\n  present: true\n  level: 100\n  scale: 100\n  voltage: 4373\n Time when the latest updated value of the voltage was sent via battery changed broadcast: +59m29s896ms\n The last voltage value sent via the battery changed broadcast: 4377\n  temperature: 305\n  technology: Li-ion\n  Charging state: 0\n  Charging policy: 0\n  Capacity level: 5\n"
+}

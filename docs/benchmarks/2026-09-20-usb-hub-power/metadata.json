@@ -1,0 +1,6 @@
+{
+  "issue": "T538",
+  "start_utc": "2026-09-20T15:49:46.020541+00:00",
+  "scope": "Observe existing live UScreen stream. Observer made no settings, workload or power-source changes. The maintainer reports moving only the charging cable during observation; the result uses the final 30 seconds after that report. Hub model and exact charging-port wiring remain unknown. Signed battery current is net battery flow, not USB input power.",
+  "end_utc": "2026-09-20T15:50:51.485168+00:00"
+}
