@@ -14,7 +14,11 @@ internal object CameraWire {
     fun connect(endpoint: CameraEndpoint, lens: CameraLens, rotation: Int, resources: CameraResources): BufferedSink {
         val socket = Socket()
         resources.own { socket.close() }
-        socket.connect(InetSocketAddress("127.0.0.1", endpoint.port), 3000)
+        try {
+            socket.connect(InetSocketAddress("127.0.0.1", endpoint.port), 3000)
+        } catch (error: java.io.IOException) {
+            throw java.io.IOException("Cannot reach the computer camera service. Enable camera sharing in UScreen on your computer.", error)
+        }
         socket.tcpNoDelay = true
         socket.soTimeout = 3000
         socket.sendBufferSize = 128 * 1024

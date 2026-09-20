@@ -20,6 +20,19 @@ import org.robolectric.annotation.Config
 class CameraContractTest {
     private fun endpoint(port: Int = 12345) = CameraEndpoint("a".repeat(64), port, 1280, 720, 30, 3000)
 
+    @Test fun t542_retiredDesktopEndpointExplainsHowToRestoreSharing() {
+        val port = ServerSocket(0).use { it.localPort }
+        val resources = CameraResources()
+        try {
+            val failure = runCatching {
+                CameraWire.connect(endpoint(port), CameraLens.FRONT, 0, resources)
+            }.exceptionOrNull()
+            assertEquals("Cannot reach the computer camera service. Enable camera sharing in UScreen on your computer.", failure?.message)
+        } finally { resources.close() }
+        // A failed connection must not prevent a later invitation/connection.
+        t539_socketHandshakeAndOwnershipClose()
+    }
+
     @Test fun t539_invitationOnlyAdvertisesAndRejectsInvalidProfiles() {
         CameraInvitations.endpoint.value = null
         val context = RuntimeEnvironment.getApplication()
