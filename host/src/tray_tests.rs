@@ -33,6 +33,7 @@ fn isolated_tray() {
         .env("USCREEN_T497_TRAY", "1")
         .env("HOME", directory.path())
         .env("PATH", tools)
+        .env_remove(uscreen_config::linux::appimage::LAUNCHER)
         .env_remove("DBUS_SESSION_BUS_ADDRESS")
         .output()
         .unwrap();
@@ -66,6 +67,61 @@ async fn launched(root: &Path, expected: &str) {
     })
     .await
     .unwrap();
+}
+
+#[tokio::test]
+async fn t550_appimage_tray_uses_updated_stable_launcher() {
+    const CASE: &str = "USCREEN_T550_TRAY";
+    if let Ok(case) = std::env::var(CASE) {
+        let root = std::path::PathBuf::from(std::env::var_os("HOME").unwrap());
+        open_settings();
+        if case == "stable" {
+            launched(&root, "updated:--gui").await;
+            assert_eq!(
+                std::fs::read_to_string(root.join("launches")).unwrap(),
+                "updated:--gui\n"
+            );
+        } else {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            assert!(
+                !root.join("launches").exists(),
+                "T550 invalid stable launcher must not silently open the stale sibling GUI"
+            );
+        }
+        return;
+    }
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let executable = root.join("old-daemon-test");
+    std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
+    fake_launcher(&root.join("uscreen-gui"), "stale");
+    let stable = root.join("updated image with spaces.AppImage");
+    fake_launcher(&stable, "updated");
+    for (case, launcher) in [
+        ("stable", stable),
+        ("missing", root.join("missing.AppImage")),
+        ("directory", root.to_path_buf()),
+        ("relative", "relative.AppImage".into()),
+    ] {
+        let _ = std::fs::remove_file(root.join("launches"));
+        let output = std::process::Command::new(&executable)
+            .args([
+                "--exact",
+                "tray::tests::t550_appimage_tray_uses_updated_stable_launcher",
+                "--nocapture",
+            ])
+            .env(CASE, case)
+            .env("HOME", root)
+            .env(uscreen_config::linux::appimage::LAUNCHER, launcher)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "T550 {case}: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 }
 
 async fn launch_actions(root: &Path) {

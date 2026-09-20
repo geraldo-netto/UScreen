@@ -1,0 +1,21 @@
+{
+  "appimage_sha256": "57b42929cf2ad0e0c7a58428a3396c2714b97ba53e97ebfbc944ff4663de2455",
+  "rollback_file": "UScreen-before-T550-0ae68e4bfde7.AppImage",
+  "display_main_pid": 68365,
+  "display_daemon_pid": 68386,
+  "daemon_inode_preserved": true,
+  "all_adb_mappings_unchanged": true,
+  "running_camera_gui_was_not_restarted": true,
+  "old_extraction_gui_sha256": "4c2499cc9afcf8a739a3a2307b45fd8d7203746d6948039591801dd2e551e485",
+  "only_old_extraction_gui_entry_forwarded": true,
+  "daemon_executable_inode_preserved": true,
+  "target": "installed stable launcher --gui",
+  "rollback_sibling": "uscreen-gui.before-T550",
+  "smoke": {
+    "legacy_tray_entry_launches_installed_gui": true,
+    "gui_sha256": "9948aaef0a41a7d3145029434476b5e7c9a1828761ed7a06c7a7651ae332705e",
+    "isolated_xvfb": true,
+    "camera_started": false,
+    "gui_closed_gracefully": true
+  }
+}

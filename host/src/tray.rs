@@ -194,6 +194,22 @@ fn open_release_page() {
 /// Best effort: a missing GUI binary is worth a log line, not a crash in the
 /// middle of a menu callback.
 fn open_settings() {
+    let result = settings_command()
+        .and_then(|mut command| crate::config::spawn_reaped(&mut command).map_err(Into::into));
+    match result {
+        Ok(_) => info!("Opened settings from the tray"),
+        Err(e) => warn!("Could not launch uscreen-gui: {}", e),
+    }
+}
+
+fn settings_command() -> anyhow::Result<std::process::Command> {
+    // T550: the daemon may retain an older extraction after an image update.
+    // Re-enter the stable image so its current GUI owns its own runtime lifetime.
+    if let Some(launcher) = uscreen_config::linux::appimage::launcher()? {
+        let mut command = std::process::Command::new(launcher);
+        command.arg("--gui");
+        return Ok(command);
+    }
     // Next to this binary first. Under systemd --user the PATH usually lacks
     // ~/.local/bin, where install.sh puts both binaries, so a bare name would
     // fail for exactly the installs that start the daemon at login.
@@ -202,10 +218,7 @@ fn open_settings() {
         .and_then(|p| p.parent().map(|d| d.join("uscreen-gui")))
         .filter(|p| p.exists());
     let program = sibling.unwrap_or_else(|| std::path::PathBuf::from("uscreen-gui"));
-    match crate::config::spawn_reaped(&mut std::process::Command::new(&program)) {
-        Ok(_) => info!("Opened settings from the tray"),
-        Err(e) => warn!("Could not launch uscreen-gui: {}", e),
-    }
+    Ok(std::process::Command::new(program))
 }
 
 /// Publish the tray icon and keep it in step with the daemon.

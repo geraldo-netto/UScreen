@@ -1,0 +1,177 @@
+{
+  "scopes": [
+    "Linux Rust applications"
+  ],
+  "minimum_percent": 80,
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 1086,
+      "passing": 1086,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/tray.rs",
+      "name": "pixmap",
+      "line": 34,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "state_line",
+      "line": 59,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "id",
+      "line": 71,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "title",
+      "line": 75,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "icon_name",
+      "line": 79,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "icon_pixmap",
+      "line": 87,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "status",
+      "line": 97,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "tool_tip",
+      "line": 101,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "activate",
+      "line": 116,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "menu",
+      "line": 120,
+      "language": "rust",
+      "covered": 45,
+      "total": 45,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "open_release_page",
+      "line": 185,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "open_settings",
+      "line": 196,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "settings_command",
+      "line": 205,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "run",
+      "line": 228,
+      "language": "rust",
+      "covered": 46,
+      "total": 46,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ],
+  "unavailable_platform": {
+    "platform": "Windows",
+    "todo": "T493/T497",
+    "functions": 58
+  },
+  "summary_note": "Summary combines fresh tray counters with unchanged T543 baseline; function details below are tray-only."
+}
