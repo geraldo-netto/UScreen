@@ -1,0 +1,9 @@
+{
+  "library": "libevdi 1.15.0",
+  "library_source_sha256": "98f00baa06c9f7e24c052ed3936c91eca252c2539113f7f8215d1706bcce68aa",
+  "source_archive_sha256": "1175f62ef65eb8ab853b3f7a46536932104ab5a38fec2e2232caa64a3173ec1a",
+  "host_xorg_pid": 2512,
+  "xorg_fd_and_maps": "Permission denied for ordinary user",
+  "live_helper_pid_excluded": 463376,
+  "semantics": "Use the live helper PID as the scanner self PID, excluding its own existing DRM descriptor to model pre-open startup. No DRM file is opened."
+}
