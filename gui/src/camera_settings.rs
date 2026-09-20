@@ -28,7 +28,7 @@ impl Panel {
             ui.label(state_label(&state));
             if let Some(error) = &self.error { ui.colored_label(egui::Color32::RED, error); }
             self.buttons(ui, options, &state);
-            ui.label(egui::RichText::new("Start uses these settings. Apply saves them. Camera changes never restart display sharing.").weak().size(11.0));
+            ui.label(egui::RichText::new("Start/Restart camera applies these settings. Apply only saves preferences. Camera changes never restart display sharing.").weak().size(11.0));
             ui.label(egui::RichText::new("Keep this host window open while sharing. Select UScreen Front or UScreen Rear in your video call; only the selected lens is live.").weak().size(11.0));
         });
         ui.end_row();
