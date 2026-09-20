@@ -1,0 +1,2046 @@
+[
+  {
+    "label": "0-30-0-h264_vaapi_baseline-current",
+    "fps": 30,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "current",
+    "frames": 31,
+    "bytes": 18850,
+    "max_keyframe_gap_ms": 1200.509,
+    "keyframe_gaps_ms": [
+      1129.422,
+      999.098,
+      1000.639,
+      1200.509,
+      1000.315
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 4.482,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.073
+      }
+    ],
+    "write_to_packet_ms": [
+      73.106,
+      3.545,
+      4.075,
+      3.134,
+      3.324,
+      3.394,
+      3.315,
+      3.016,
+      2.996,
+      3.23,
+      3.37,
+      2.415,
+      3.282,
+      3.377,
+      3.241,
+      3.19,
+      2.996,
+      3.451,
+      3.031,
+      3.059,
+      3.419,
+      3.095,
+      3.515,
+      3.055,
+      3.44,
+      3.135,
+      3.302,
+      3.83,
+      3.138,
+      3.509,
+      4.482
+    ]
+  },
+  {
+    "label": "0-30-0-h264_vaapi_baseline-two",
+    "fps": 30,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "two",
+    "frames": 12,
+    "bytes": 15558,
+    "max_keyframe_gap_ms": 1501.662,
+    "keyframe_gaps_ms": [
+      1434.184,
+      1501.662,
+      998.535,
+      1000.142
+    ],
+    "independently_decoded_keys": 5,
+    "final_packet_delay_ms": 2.896,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.068
+      }
+    ],
+    "write_to_packet_ms": [
+      68.356,
+      3.88,
+      4.371,
+      2.901,
+      3.219,
+      3.243,
+      4.575,
+      3.432,
+      3.046,
+      3.323,
+      3.189,
+      2.896
+    ]
+  },
+  {
+    "label": "0-30-0-h264_vaapi_baseline-coordinated",
+    "fps": 30,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "coordinated",
+    "frames": 12,
+    "bytes": 18603,
+    "max_keyframe_gap_ms": 1000.113,
+    "keyframe_gaps_ms": [
+      937.246,
+      999.129,
+      1000.113,
+      999.683,
+      999.913
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 3.171,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.064
+      }
+    ],
+    "write_to_packet_ms": [
+      66.574,
+      3.953,
+      4.073,
+      3.231,
+      3.211,
+      3.096,
+      3.367,
+      3.523,
+      2.996,
+      3.34,
+      2.915,
+      3.171
+    ]
+  },
+  {
+    "label": "0-30-1-h264_vaapi_baseline-current",
+    "fps": 30,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "current",
+    "frames": 65,
+    "bytes": 176046,
+    "max_keyframe_gap_ms": 1166.261,
+    "keyframe_gaps_ms": [
+      1135.711,
+      999.356,
+      1000.762,
+      1166.261,
+      999.814,
+      1000.024
+    ],
+    "independently_decoded_keys": 7,
+    "final_packet_delay_ms": 3.368,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.081
+      },
+      {
+        "marker": 33,
+        "delay_ms": 0.017
+      },
+      {
+        "marker": 34,
+        "delay_ms": 0.024
+      },
+      {
+        "marker": 35,
+        "delay_ms": 0.027
+      },
+      {
+        "marker": 36,
+        "delay_ms": 0.037
+      },
+      {
+        "marker": 37,
+        "delay_ms": 32.395
+      },
+      {
+        "marker": 38,
+        "delay_ms": 32.377
+      },
+      {
+        "marker": 39,
+        "delay_ms": 32.364
+      },
+      {
+        "marker": 40,
+        "delay_ms": 32.363
+      },
+      {
+        "marker": 41,
+        "delay_ms": 32.365
+      },
+      {
+        "marker": 42,
+        "delay_ms": 32.366
+      },
+      {
+        "marker": 43,
+        "delay_ms": 32.355
+      },
+      {
+        "marker": 44,
+        "delay_ms": 32.352
+      },
+      {
+        "marker": 45,
+        "delay_ms": 32.347
+      },
+      {
+        "marker": 46,
+        "delay_ms": 32.322
+      },
+      {
+        "marker": 47,
+        "delay_ms": 32.326
+      },
+      {
+        "marker": 48,
+        "delay_ms": 32.33
+      },
+      {
+        "marker": 49,
+        "delay_ms": 32.338
+      },
+      {
+        "marker": 50,
+        "delay_ms": 32.334
+      },
+      {
+        "marker": 51,
+        "delay_ms": 32.31
+      },
+      {
+        "marker": 52,
+        "delay_ms": 32.343
+      },
+      {
+        "marker": 53,
+        "delay_ms": 32.357
+      },
+      {
+        "marker": 54,
+        "delay_ms": 32.354
+      },
+      {
+        "marker": 55,
+        "delay_ms": 32.375
+      },
+      {
+        "marker": 56,
+        "delay_ms": 32.367
+      },
+      {
+        "marker": 57,
+        "delay_ms": 32.352
+      },
+      {
+        "marker": 58,
+        "delay_ms": 32.322
+      },
+      {
+        "marker": 59,
+        "delay_ms": 32.322
+      },
+      {
+        "marker": 60,
+        "delay_ms": 32.3
+      },
+      {
+        "marker": 61,
+        "delay_ms": 32.374
+      },
+      {
+        "marker": 62,
+        "delay_ms": 32.368
+      },
+      {
+        "marker": 63,
+        "delay_ms": 32.371
+      },
+      {
+        "marker": 64,
+        "delay_ms": 32.407
+      },
+      {
+        "marker": 65,
+        "delay_ms": 32.36
+      },
+      {
+        "marker": 66,
+        "delay_ms": 32.376
+      },
+      {
+        "marker": 67,
+        "delay_ms": 0.036
+      }
+    ],
+    "write_to_packet_ms": [
+      66.333,
+      3.832,
+      3.955,
+      3.204,
+      3.205,
+      3.195,
+      3.189,
+      3.701,
+      3.132,
+      3.364,
+      3.061,
+      3.175,
+      3.504,
+      3.053,
+      3.323,
+      3.23,
+      3.215,
+      4.235,
+      4.846,
+      4.162,
+      2.949,
+      2.969,
+      3.281,
+      3.752,
+      3.035,
+      3.284,
+      3.189,
+      3.087,
+      3.295,
+      3.354,
+      3.072,
+      3.18,
+      3.045,
+      3.151,
+      3.34,
+      3.254,
+      2.952,
+      3.285,
+      3.175,
+      3.26,
+      3.272,
+      3.373,
+      3.033,
+      3.383,
+      3.044,
+      3.065,
+      3.272,
+      3.053,
+      3.223,
+      3.086,
+      3.165,
+      3.421,
+      3.183,
+      3.284,
+      2.951,
+      3.437,
+      3.217,
+      3.223,
+      3.222,
+      2.924,
+      3.392,
+      3.474,
+      2.965,
+      3.223,
+      3.368
+    ]
+  },
+  {
+    "label": "0-30-1-h264_vaapi_baseline-two",
+    "fps": 30,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "two",
+    "frames": 47,
+    "bytes": 172769,
+    "max_keyframe_gap_ms": 1499.694,
+    "keyframe_gaps_ms": [
+      1432.332,
+      1499.694,
+      1000.361,
+      1466.849,
+      999.975
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 3.2,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.074
+      },
+      {
+        "marker": 33,
+        "delay_ms": 0.042
+      },
+      {
+        "marker": 34,
+        "delay_ms": 32.695
+      },
+      {
+        "marker": 35,
+        "delay_ms": 33.277
+      },
+      {
+        "marker": 36,
+        "delay_ms": 33.257
+      },
+      {
+        "marker": 37,
+        "delay_ms": 32.245
+      },
+      {
+        "marker": 38,
+        "delay_ms": 32.274
+      },
+      {
+        "marker": 39,
+        "delay_ms": 32.214
+      },
+      {
+        "marker": 40,
+        "delay_ms": 32.215
+      },
+      {
+        "marker": 41,
+        "delay_ms": 32.204
+      },
+      {
+        "marker": 42,
+        "delay_ms": 32.243
+      },
+      {
+        "marker": 43,
+        "delay_ms": 32.261
+      },
+      {
+        "marker": 44,
+        "delay_ms": 32.272
+      },
+      {
+        "marker": 45,
+        "delay_ms": 32.282
+      },
+      {
+        "marker": 46,
+        "delay_ms": 32.251
+      },
+      {
+        "marker": 47,
+        "delay_ms": 32.263
+      },
+      {
+        "marker": 48,
+        "delay_ms": 32.261
+      },
+      {
+        "marker": 49,
+        "delay_ms": 32.275
+      },
+      {
+        "marker": 50,
+        "delay_ms": 32.285
+      },
+      {
+        "marker": 51,
+        "delay_ms": 32.274
+      },
+      {
+        "marker": 52,
+        "delay_ms": 32.27
+      },
+      {
+        "marker": 53,
+        "delay_ms": 32.275
+      },
+      {
+        "marker": 54,
+        "delay_ms": 32.271
+      },
+      {
+        "marker": 55,
+        "delay_ms": 32.28
+      },
+      {
+        "marker": 56,
+        "delay_ms": 32.272
+      },
+      {
+        "marker": 57,
+        "delay_ms": 32.249
+      },
+      {
+        "marker": 58,
+        "delay_ms": 32.28
+      },
+      {
+        "marker": 59,
+        "delay_ms": 32.274
+      },
+      {
+        "marker": 60,
+        "delay_ms": 32.273
+      },
+      {
+        "marker": 61,
+        "delay_ms": 32.241
+      },
+      {
+        "marker": 62,
+        "delay_ms": 32.252
+      },
+      {
+        "marker": 63,
+        "delay_ms": 32.267
+      },
+      {
+        "marker": 64,
+        "delay_ms": 32.25
+      },
+      {
+        "marker": 65,
+        "delay_ms": 32.264
+      },
+      {
+        "marker": 66,
+        "delay_ms": 32.275
+      },
+      {
+        "marker": 67,
+        "delay_ms": 0.034
+      }
+    ],
+    "write_to_packet_ms": [
+      69.199,
+      3.739,
+      4.372,
+      3.224,
+      3.122,
+      3.207,
+      3.121,
+      3.161,
+      3.23,
+      2.825,
+      3.222,
+      3.212,
+      3.09,
+      3.432,
+      3.289,
+      3.093,
+      3.111,
+      3.182,
+      3.05,
+      3.206,
+      3.15,
+      3.047,
+      3.323,
+      3.364,
+      3.271,
+      3.055,
+      3.277,
+      3.381,
+      3.15,
+      3.057,
+      3.19,
+      3.241,
+      3.429,
+      3.577,
+      3.44,
+      3.145,
+      3.153,
+      3.082,
+      3.058,
+      3.128,
+      4.411,
+      3.093,
+      2.975,
+      3.678,
+      3.004,
+      3.127,
+      3.2
+    ]
+  },
+  {
+    "label": "0-30-1-h264_vaapi_baseline-coordinated",
+    "fps": 30,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "coordinated",
+    "frames": 45,
+    "bytes": 174308,
+    "max_keyframe_gap_ms": 1067.345,
+    "keyframe_gaps_ms": [
+      933.649,
+      999.213,
+      999.647,
+      900.327,
+      1067.345,
+      999.834,
+      999.835
+    ],
+    "independently_decoded_keys": 8,
+    "final_packet_delay_ms": 3.226,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.074
+      },
+      {
+        "marker": 33,
+        "delay_ms": 0.042
+      },
+      {
+        "marker": 34,
+        "delay_ms": 32.837
+      },
+      {
+        "marker": 35,
+        "delay_ms": 0.046
+      },
+      {
+        "marker": 36,
+        "delay_ms": 0.059
+      },
+      {
+        "marker": 37,
+        "delay_ms": 32.449
+      },
+      {
+        "marker": 38,
+        "delay_ms": 32.47
+      },
+      {
+        "marker": 39,
+        "delay_ms": 32.493
+      },
+      {
+        "marker": 40,
+        "delay_ms": 32.489
+      },
+      {
+        "marker": 41,
+        "delay_ms": 32.484
+      },
+      {
+        "marker": 42,
+        "delay_ms": 32.474
+      },
+      {
+        "marker": 43,
+        "delay_ms": 32.471
+      },
+      {
+        "marker": 44,
+        "delay_ms": 32.475
+      },
+      {
+        "marker": 45,
+        "delay_ms": 32.483
+      },
+      {
+        "marker": 46,
+        "delay_ms": 32.45
+      },
+      {
+        "marker": 47,
+        "delay_ms": 32.436
+      },
+      {
+        "marker": 48,
+        "delay_ms": 32.451
+      },
+      {
+        "marker": 49,
+        "delay_ms": 32.478
+      },
+      {
+        "marker": 50,
+        "delay_ms": 32.466
+      },
+      {
+        "marker": 51,
+        "delay_ms": 32.465
+      },
+      {
+        "marker": 52,
+        "delay_ms": 32.464
+      },
+      {
+        "marker": 53,
+        "delay_ms": 32.414
+      },
+      {
+        "marker": 54,
+        "delay_ms": 32.426
+      },
+      {
+        "marker": 55,
+        "delay_ms": 32.487
+      },
+      {
+        "marker": 56,
+        "delay_ms": 32.482
+      },
+      {
+        "marker": 57,
+        "delay_ms": 32.477
+      },
+      {
+        "marker": 58,
+        "delay_ms": 32.486
+      },
+      {
+        "marker": 59,
+        "delay_ms": 32.469
+      },
+      {
+        "marker": 60,
+        "delay_ms": 32.464
+      },
+      {
+        "marker": 61,
+        "delay_ms": 32.454
+      },
+      {
+        "marker": 62,
+        "delay_ms": 32.473
+      },
+      {
+        "marker": 63,
+        "delay_ms": 32.471
+      },
+      {
+        "marker": 64,
+        "delay_ms": 32.473
+      },
+      {
+        "marker": 65,
+        "delay_ms": 32.434
+      },
+      {
+        "marker": 66,
+        "delay_ms": 32.375
+      },
+      {
+        "marker": 67,
+        "delay_ms": 0.033
+      }
+    ],
+    "write_to_packet_ms": [
+      68.769,
+      4.108,
+      3.829,
+      3.351,
+      3.118,
+      3.078,
+      3.516,
+      2.692,
+      3.216,
+      3.117,
+      3.081,
+      3.136,
+      3.185,
+      3.066,
+      3.226,
+      3.28,
+      3.427,
+      3.175,
+      3.12,
+      3.035,
+      3.226,
+      3.318,
+      3.29,
+      3.261,
+      3.52,
+      3.145,
+      3.13,
+      3.416,
+      3.119,
+      3.139,
+      3.259,
+      3.364,
+      3.144,
+      3.309,
+      2.951,
+      3.643,
+      3.253,
+      3.507,
+      3.317,
+      3.348,
+      3.347,
+      3.206,
+      3.314,
+      3.031,
+      3.226
+    ]
+  },
+  {
+    "label": "0-60-0-h264_vaapi_baseline-current",
+    "fps": 60,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "current",
+    "frames": 30,
+    "bytes": 18837,
+    "max_keyframe_gap_ms": 1200.435,
+    "keyframe_gaps_ms": [
+      1137.231,
+      1000.322,
+      999.626,
+      1200.435,
+      999.509
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 3.489,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.075
+      }
+    ],
+    "write_to_packet_ms": [
+      65.664,
+      4.528,
+      3.941,
+      3.066,
+      3.047,
+      3.284,
+      3.029,
+      3.412,
+      3.293,
+      3.144,
+      3.425,
+      3.295,
+      3.368,
+      3.076,
+      4.27,
+      3.375,
+      2.919,
+      3.119,
+      3.111,
+      3.927,
+      3.455,
+      3.175,
+      3.397,
+      3.121,
+      3.24,
+      3.157,
+      3.097,
+      2.87,
+      3.588,
+      3.489
+    ]
+  },
+  {
+    "label": "0-60-0-h264_vaapi_baseline-two",
+    "fps": 60,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "two",
+    "frames": 13,
+    "bytes": 15571,
+    "max_keyframe_gap_ms": 1499.702,
+    "keyframe_gaps_ms": [
+      1435.943,
+      1499.702,
+      1000.079,
+      999.764
+    ],
+    "independently_decoded_keys": 5,
+    "final_packet_delay_ms": 3.296,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.075
+      }
+    ],
+    "write_to_packet_ms": [
+      66.305,
+      4.527,
+      4.111,
+      3.079,
+      3.329,
+      3.13,
+      2.846,
+      3.364,
+      2.925,
+      3.443,
+      2.692,
+      3.064,
+      3.296
+    ]
+  },
+  {
+    "label": "0-60-0-h264_vaapi_baseline-coordinated",
+    "fps": 60,
+    "mixed": false,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "coordinated",
+    "frames": 12,
+    "bytes": 18603,
+    "max_keyframe_gap_ms": 1001.029,
+    "keyframe_gaps_ms": [
+      924.796,
+      999.44,
+      999.66,
+      999.823,
+      1001.029
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 4.22,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.083
+      }
+    ],
+    "write_to_packet_ms": [
+      79.158,
+      4.069,
+      4.035,
+      2.71,
+      3.469,
+      3.182,
+      3.133,
+      3.191,
+      2.956,
+      3.397,
+      3.988,
+      4.22
+    ]
+  },
+  {
+    "label": "0-60-1-h264_vaapi_baseline-current",
+    "fps": 60,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "current",
+    "frames": 96,
+    "bytes": 315124,
+    "max_keyframe_gap_ms": 1185.498,
+    "keyframe_gaps_ms": [
+      1134.321,
+      998.863,
+      999.862,
+      1185.498,
+      999.674,
+      999.951,
+      1116.185
+    ],
+    "independently_decoded_keys": 8,
+    "final_packet_delay_ms": 2.957,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.063
+      },
+      {
+        "marker": 33,
+        "delay_ms": 0.021
+      },
+      {
+        "marker": 34,
+        "delay_ms": 0.028
+      },
+      {
+        "marker": 35,
+        "delay_ms": 0.036
+      },
+      {
+        "marker": 36,
+        "delay_ms": 0.034
+      },
+      {
+        "marker": 37,
+        "delay_ms": 14.985
+      },
+      {
+        "marker": 38,
+        "delay_ms": 14.945
+      },
+      {
+        "marker": 39,
+        "delay_ms": 14.938
+      },
+      {
+        "marker": 40,
+        "delay_ms": 14.913
+      },
+      {
+        "marker": 41,
+        "delay_ms": 14.923
+      },
+      {
+        "marker": 42,
+        "delay_ms": 14.912
+      },
+      {
+        "marker": 43,
+        "delay_ms": 14.909
+      },
+      {
+        "marker": 44,
+        "delay_ms": 14.923
+      },
+      {
+        "marker": 45,
+        "delay_ms": 14.956
+      },
+      {
+        "marker": 46,
+        "delay_ms": 14.979
+      },
+      {
+        "marker": 47,
+        "delay_ms": 14.958
+      },
+      {
+        "marker": 48,
+        "delay_ms": 14.952
+      },
+      {
+        "marker": 49,
+        "delay_ms": 14.98
+      },
+      {
+        "marker": 50,
+        "delay_ms": 14.976
+      },
+      {
+        "marker": 51,
+        "delay_ms": 14.981
+      },
+      {
+        "marker": 52,
+        "delay_ms": 14.95
+      },
+      {
+        "marker": 53,
+        "delay_ms": 14.984
+      },
+      {
+        "marker": 54,
+        "delay_ms": 14.953
+      },
+      {
+        "marker": 55,
+        "delay_ms": 14.981
+      },
+      {
+        "marker": 56,
+        "delay_ms": 14.97
+      },
+      {
+        "marker": 57,
+        "delay_ms": 14.938
+      },
+      {
+        "marker": 58,
+        "delay_ms": 14.97
+      },
+      {
+        "marker": 59,
+        "delay_ms": 14.945
+      },
+      {
+        "marker": 60,
+        "delay_ms": 14.966
+      },
+      {
+        "marker": 61,
+        "delay_ms": 14.968
+      },
+      {
+        "marker": 62,
+        "delay_ms": 14.959
+      },
+      {
+        "marker": 63,
+        "delay_ms": 14.98
+      },
+      {
+        "marker": 64,
+        "delay_ms": 14.958
+      },
+      {
+        "marker": 65,
+        "delay_ms": 14.974
+      },
+      {
+        "marker": 66,
+        "delay_ms": 14.949
+      },
+      {
+        "marker": 67,
+        "delay_ms": 14.973
+      },
+      {
+        "marker": 68,
+        "delay_ms": 14.971
+      },
+      {
+        "marker": 69,
+        "delay_ms": 14.939
+      },
+      {
+        "marker": 70,
+        "delay_ms": 14.989
+      },
+      {
+        "marker": 71,
+        "delay_ms": 14.989
+      },
+      {
+        "marker": 72,
+        "delay_ms": 14.99
+      },
+      {
+        "marker": 73,
+        "delay_ms": 14.988
+      },
+      {
+        "marker": 74,
+        "delay_ms": 14.988
+      },
+      {
+        "marker": 75,
+        "delay_ms": 14.963
+      },
+      {
+        "marker": 76,
+        "delay_ms": 14.971
+      },
+      {
+        "marker": 77,
+        "delay_ms": 14.992
+      },
+      {
+        "marker": 78,
+        "delay_ms": 14.978
+      },
+      {
+        "marker": 79,
+        "delay_ms": 14.993
+      },
+      {
+        "marker": 80,
+        "delay_ms": 14.998
+      },
+      {
+        "marker": 81,
+        "delay_ms": 14.984
+      },
+      {
+        "marker": 82,
+        "delay_ms": 14.941
+      },
+      {
+        "marker": 83,
+        "delay_ms": 14.909
+      },
+      {
+        "marker": 84,
+        "delay_ms": 14.911
+      },
+      {
+        "marker": 85,
+        "delay_ms": 14.91
+      },
+      {
+        "marker": 86,
+        "delay_ms": 14.912
+      },
+      {
+        "marker": 87,
+        "delay_ms": 14.908
+      },
+      {
+        "marker": 88,
+        "delay_ms": 14.9
+      },
+      {
+        "marker": 89,
+        "delay_ms": 14.916
+      },
+      {
+        "marker": 90,
+        "delay_ms": 14.927
+      },
+      {
+        "marker": 91,
+        "delay_ms": 14.937
+      },
+      {
+        "marker": 92,
+        "delay_ms": 14.934
+      },
+      {
+        "marker": 93,
+        "delay_ms": 14.918
+      },
+      {
+        "marker": 94,
+        "delay_ms": 14.92
+      },
+      {
+        "marker": 95,
+        "delay_ms": 14.914
+      },
+      {
+        "marker": 96,
+        "delay_ms": 14.916
+      },
+      {
+        "marker": 97,
+        "delay_ms": 0.04
+      }
+    ],
+    "write_to_packet_ms": [
+      67.376,
+      4.023,
+      4.005,
+      3.177,
+      3.1,
+      3.115,
+      3.036,
+      2.97,
+      3.11,
+      3.6,
+      3.986,
+      3.482,
+      3.355,
+      2.783,
+      3.217,
+      3.029,
+      3.162,
+      3.519,
+      3.293,
+      3.328,
+      3.306,
+      3.393,
+      3.314,
+      2.778,
+      3.773,
+      3.414,
+      3.129,
+      2.646,
+      3.389,
+      2.585,
+      3.192,
+      2.643,
+      3.46,
+      2.503,
+      3.373,
+      2.927,
+      2.945,
+      3.487,
+      3.029,
+      2.67,
+      3.212,
+      2.955,
+      2.889,
+      3.174,
+      3.295,
+      3.072,
+      3.474,
+      3.091,
+      3.023,
+      3.379,
+      2.98,
+      3.461,
+      2.889,
+      2.871,
+      2.937,
+      3.419,
+      2.395,
+      3.07,
+      3.418,
+      2.876,
+      3.184,
+      3.141,
+      2.979,
+      3.377,
+      3.093,
+      3.104,
+      3.213,
+      2.807,
+      3.314,
+      3.37,
+      2.774,
+      2.768,
+      3.524,
+      2.738,
+      3.249,
+      2.596,
+      3.048,
+      3.033,
+      3.763,
+      3.197,
+      3.129,
+      3.099,
+      3.945,
+      3.436,
+      2.868,
+      3.213,
+      3.193,
+      3.097,
+      3.63,
+      2.823,
+      3.473,
+      3.105,
+      3.539,
+      3.209,
+      2.95,
+      2.957
+    ]
+  },
+  {
+    "label": "0-60-1-h264_vaapi_baseline-two",
+    "fps": 60,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "two",
+    "frames": 76,
+    "bytes": 304252,
+    "max_keyframe_gap_ms": 1499.738,
+    "keyframe_gaps_ms": [
+      1434.166,
+      1499.738,
+      999.307,
+      1485.335,
+      1000.089
+    ],
+    "independently_decoded_keys": 6,
+    "final_packet_delay_ms": 3.374,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.079
+      },
+      {
+        "marker": 33,
+        "delay_ms": 0.036
+      },
+      {
+        "marker": 34,
+        "delay_ms": 16.127
+      },
+      {
+        "marker": 35,
+        "delay_ms": 0.046
+      },
+      {
+        "marker": 36,
+        "delay_ms": 15.813
+      },
+      {
+        "marker": 37,
+        "delay_ms": 14.867
+      },
+      {
+        "marker": 38,
+        "delay_ms": 14.861
+      },
+      {
+        "marker": 39,
+        "delay_ms": 14.869
+      },
+      {
+        "marker": 40,
+        "delay_ms": 14.871
+      },
+      {
+        "marker": 41,
+        "delay_ms": 14.877
+      },
+      {
+        "marker": 42,
+        "delay_ms": 14.887
+      },
+      {
+        "marker": 43,
+        "delay_ms": 14.88
+      },
+      {
+        "marker": 44,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 45,
+        "delay_ms": 14.872
+      },
+      {
+        "marker": 46,
+        "delay_ms": 14.882
+      },
+      {
+        "marker": 47,
+        "delay_ms": 14.88
+      },
+      {
+        "marker": 48,
+        "delay_ms": 14.875
+      },
+      {
+        "marker": 49,
+        "delay_ms": 14.868
+      },
+      {
+        "marker": 50,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 51,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 52,
+        "delay_ms": 14.873
+      },
+      {
+        "marker": 53,
+        "delay_ms": 14.887
+      },
+      {
+        "marker": 54,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 55,
+        "delay_ms": 14.889
+      },
+      {
+        "marker": 56,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 57,
+        "delay_ms": 14.891
+      },
+      {
+        "marker": 58,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 59,
+        "delay_ms": 14.866
+      },
+      {
+        "marker": 60,
+        "delay_ms": 14.824
+      },
+      {
+        "marker": 61,
+        "delay_ms": 14.826
+      },
+      {
+        "marker": 62,
+        "delay_ms": 14.828
+      },
+      {
+        "marker": 63,
+        "delay_ms": 14.826
+      },
+      {
+        "marker": 64,
+        "delay_ms": 14.866
+      },
+      {
+        "marker": 65,
+        "delay_ms": 14.865
+      },
+      {
+        "marker": 66,
+        "delay_ms": 14.873
+      },
+      {
+        "marker": 67,
+        "delay_ms": 14.829
+      },
+      {
+        "marker": 68,
+        "delay_ms": 14.819
+      },
+      {
+        "marker": 69,
+        "delay_ms": 14.821
+      },
+      {
+        "marker": 70,
+        "delay_ms": 14.826
+      },
+      {
+        "marker": 71,
+        "delay_ms": 14.827
+      },
+      {
+        "marker": 72,
+        "delay_ms": 14.83
+      },
+      {
+        "marker": 73,
+        "delay_ms": 14.816
+      },
+      {
+        "marker": 74,
+        "delay_ms": 14.834
+      },
+      {
+        "marker": 75,
+        "delay_ms": 14.828
+      },
+      {
+        "marker": 76,
+        "delay_ms": 14.84
+      },
+      {
+        "marker": 77,
+        "delay_ms": 14.846
+      },
+      {
+        "marker": 78,
+        "delay_ms": 14.848
+      },
+      {
+        "marker": 79,
+        "delay_ms": 14.865
+      },
+      {
+        "marker": 80,
+        "delay_ms": 14.885
+      },
+      {
+        "marker": 81,
+        "delay_ms": 14.884
+      },
+      {
+        "marker": 82,
+        "delay_ms": 14.848
+      },
+      {
+        "marker": 83,
+        "delay_ms": 14.842
+      },
+      {
+        "marker": 84,
+        "delay_ms": 14.834
+      },
+      {
+        "marker": 85,
+        "delay_ms": 14.825
+      },
+      {
+        "marker": 86,
+        "delay_ms": 14.834
+      },
+      {
+        "marker": 87,
+        "delay_ms": 14.836
+      },
+      {
+        "marker": 88,
+        "delay_ms": 14.833
+      },
+      {
+        "marker": 89,
+        "delay_ms": 14.833
+      },
+      {
+        "marker": 90,
+        "delay_ms": 14.832
+      },
+      {
+        "marker": 91,
+        "delay_ms": 14.829
+      },
+      {
+        "marker": 92,
+        "delay_ms": 14.84
+      },
+      {
+        "marker": 93,
+        "delay_ms": 14.853
+      },
+      {
+        "marker": 94,
+        "delay_ms": 14.89
+      },
+      {
+        "marker": 95,
+        "delay_ms": 14.876
+      },
+      {
+        "marker": 96,
+        "delay_ms": 14.888
+      },
+      {
+        "marker": 97,
+        "delay_ms": 0.04
+      }
+    ],
+    "write_to_packet_ms": [
+      67.308,
+      3.874,
+      4.039,
+      3.618,
+      2.859,
+      3.156,
+      4.648,
+      3.169,
+      3.505,
+      3.113,
+      3.12,
+      3.99,
+      3.192,
+      4.17,
+      2.905,
+      4.112,
+      3.054,
+      3.834,
+      2.898,
+      4.488,
+      3.109,
+      4.253,
+      3.094,
+      4.227,
+      2.986,
+      4.198,
+      3.028,
+      4.191,
+      3.431,
+      3.305,
+      2.913,
+      3.051,
+      3.018,
+      3.189,
+      3.033,
+      3.315,
+      3.031,
+      4.358,
+      3.038,
+      4.284,
+      3.26,
+      3.035,
+      2.552,
+      3.28,
+      2.626,
+      4.126,
+      4.099,
+      4.197,
+      4.061,
+      3.06,
+      3.358,
+      2.95,
+      3.077,
+      3.255,
+      3.021,
+      3.179,
+      3.2,
+      2.921,
+      3.172,
+      2.964,
+      2.999,
+      2.987,
+      3.143,
+      3.166,
+      2.928,
+      3.406,
+      2.999,
+      3.688,
+      2.745,
+      3.504,
+      3.28,
+      3.151,
+      3.374,
+      3.241,
+      3.195,
+      3.374
+    ]
+  },
+  {
+    "label": "0-60-1-h264_vaapi_baseline-coordinated",
+    "fps": 60,
+    "mixed": true,
+    "encoder": "h264_vaapi_baseline",
+    "variant": "coordinated",
+    "frames": 76,
+    "bytes": 310339,
+    "max_keyframe_gap_ms": 1083.996,
+    "keyframe_gaps_ms": [
+      936.193,
+      999.704,
+      999.69,
+      898.72,
+      1083.996,
+      1000.145,
+      999.745
+    ],
+    "independently_decoded_keys": 8,
+    "final_packet_delay_ms": 3.248,
+    "publications": [
+      {
+        "marker": 32,
+        "delay_ms": 0.076
+      },
+      {
+        "marker": 33,
+        "delay_ms": 16.591
+      },
+      {
+        "marker": 34,
+        "delay_ms": 0.042
+      },
+      {
+        "marker": 35,
+        "delay_ms": 0.05
+      },
+      {
+        "marker": 36,
+        "delay_ms": 16.233
+      },
+      {
+        "marker": 37,
+        "delay_ms": 15.244
+      },
+      {
+        "marker": 38,
+        "delay_ms": 15.244
+      },
+      {
+        "marker": 39,
+        "delay_ms": 15.245
+      },
+      {
+        "marker": 40,
+        "delay_ms": 15.056
+      },
+      {
+        "marker": 41,
+        "delay_ms": 15.208
+      },
+      {
+        "marker": 42,
+        "delay_ms": 15.196
+      },
+      {
+        "marker": 43,
+        "delay_ms": 15.192
+      },
+      {
+        "marker": 44,
+        "delay_ms": 15.186
+      },
+      {
+        "marker": 45,
+        "delay_ms": 15.192
+      },
+      {
+        "marker": 46,
+        "delay_ms": 15.212
+      },
+      {
+        "marker": 47,
+        "delay_ms": 15.224
+      },
+      {
+        "marker": 48,
+        "delay_ms": 15.195
+      },
+      {
+        "marker": 49,
+        "delay_ms": 15.196
+      },
+      {
+        "marker": 50,
+        "delay_ms": 15.19
+      },
+      {
+        "marker": 51,
+        "delay_ms": 15.188
+      },
+      {
+        "marker": 52,
+        "delay_ms": 15.207
+      },
+      {
+        "marker": 53,
+        "delay_ms": 15.213
+      },
+      {
+        "marker": 54,
+        "delay_ms": 15.218
+      },
+      {
+        "marker": 55,
+        "delay_ms": 15.224
+      },
+      {
+        "marker": 56,
+        "delay_ms": 15.217
+      },
+      {
+        "marker": 57,
+        "delay_ms": 15.207
+      },
+      {
+        "marker": 58,
+        "delay_ms": 15.211
+      },
+      {
+        "marker": 59,
+        "delay_ms": 15.203
+      },
+      {
+        "marker": 60,
+        "delay_ms": 15.219
+      },
+      {
+        "marker": 61,
+        "delay_ms": 15.19
+      },
+      {
+        "marker": 62,
+        "delay_ms": 15.206
+      },
+      {
+        "marker": 63,
+        "delay_ms": 15.195
+      },
+      {
+        "marker": 64,
+        "delay_ms": 15.201
+      },
+      {
+        "marker": 65,
+        "delay_ms": 15.213
+      },
+      {
+        "marker": 66,
+        "delay_ms": 15.207
+      },
+      {
+        "marker": 67,
+        "delay_ms": 15.211
+      },
+      {
+        "marker": 68,
+        "delay_ms": 15.205
+      },
+      {
+        "marker": 69,
+        "delay_ms": 15.2
+      },
+      {
+        "marker": 70,
+        "delay_ms": 15.206
+      },
+      {
+        "marker": 71,
+        "delay_ms": 15.214
+      },
+      {
+        "marker": 72,
+        "delay_ms": 15.201
+      },
+      {
+        "marker": 73,
+        "delay_ms": 15.204
+      },
+      {
+        "marker": 74,
+        "delay_ms": 15.204
+      },
+      {
+        "marker": 75,
+        "delay_ms": 15.202
+      },
+      {
+        "marker": 76,
+        "delay_ms": 15.202
+      },
+      {
+        "marker": 77,
+        "delay_ms": 15.207
+      },
+      {
+        "marker": 78,
+        "delay_ms": 15.209
+      },
+      {
+        "marker": 79,
+        "delay_ms": 15.194
+      },
+      {
+        "marker": 80,
+        "delay_ms": 15.185
+      },
+      {
+        "marker": 81,
+        "delay_ms": 15.197
+      },
+      {
+        "marker": 82,
+        "delay_ms": 15.208
+      },
+      {
+        "marker": 83,
+        "delay_ms": 15.209
+      },
+      {
+        "marker": 84,
+        "delay_ms": 15.223
+      },
+      {
+        "marker": 85,
+        "delay_ms": 15.191
+      },
+      {
+        "marker": 86,
+        "delay_ms": 15.181
+      },
+      {
+        "marker": 87,
+        "delay_ms": 15.194
+      },
+      {
+        "marker": 88,
+        "delay_ms": 15.209
+      },
+      {
+        "marker": 89,
+        "delay_ms": 15.206
+      },
+      {
+        "marker": 90,
+        "delay_ms": 15.212
+      },
+      {
+        "marker": 91,
+        "delay_ms": 15.2
+      },
+      {
+        "marker": 92,
+        "delay_ms": 15.202
+      },
+      {
+        "marker": 93,
+        "delay_ms": 15.198
+      },
+      {
+        "marker": 94,
+        "delay_ms": 15.213
+      },
+      {
+        "marker": 95,
+        "delay_ms": 15.214
+      },
+      {
+        "marker": 96,
+        "delay_ms": 15.208
+      },
+      {
+        "marker": 97,
+        "delay_ms": 0.03
+      }
+    ],
+    "write_to_packet_ms": [
+      66.728,
+      4.858,
+      4.445,
+      3.71,
+      4.445,
+      4.565,
+      2.944,
+      4.682,
+      4.259,
+      3.051,
+      3.159,
+      3.369,
+      3.034,
+      3.066,
+      2.979,
+      3.217,
+      3.243,
+      3.064,
+      3.101,
+      4.48,
+      4.217,
+      4.477,
+      4.45,
+      4.298,
+      3.506,
+      3.08,
+      3.208,
+      2.946,
+      3.153,
+      2.976,
+      3.295,
+      3.068,
+      3.328,
+      3.065,
+      3.137,
+      3.071,
+      3.006,
+      3.083,
+      3.083,
+      3.108,
+      3.104,
+      3.18,
+      3.067,
+      3.104,
+      3.192,
+      3.235,
+      3.134,
+      3.178,
+      3.0,
+      3.224,
+      3.389,
+      3.208,
+      3.268,
+      3.017,
+      3.069,
+      3.204,
+      3.119,
+      3.274,
+      3.098,
+      3.074,
+      3.28,
+      3.106,
+      2.914,
+      3.341,
+      3.26,
+      2.911,
+      3.125,
+      3.129,
+      3.248,
+      3.27,
+      2.918,
+      5.38,
+      3.062,
+      3.658,
+      2.867,
+      3.248
+    ]
+  }
+]
