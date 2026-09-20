@@ -4,6 +4,7 @@ use super::*;
 fn app(store: ConfigStore) -> App {
     let cfg = store.load();
     App {
+        camera: camera_settings::Panel::default(),
         _status_worker: None,
         store,
         save: None,

@@ -1,16 +1,46 @@
-# Tablet webcams on Linux
+# Tablet cameras in UScreen host
 
-The experimental `uscreen cameras` command exposes two ordinary Linux webcams:
-**UScreen Front** and **UScreen Rear**. Select either in a browser/video-call
-camera picker. Only one tablet camera streams at a time; select Front or Rear in
-the tablet's UScreen settings. The other desktop camera produces black video.
-Desktop camera selection alone does not switch the tablet lens.
+The host **Cameras** tab controls camera sharing: Front/Rear, resolution, frame
+rate, bitrate, clockwise rotation (0°, 90°, 180° or 270°), mirroring and whether sharing continues while the tablet app is
+hidden or its screen is locked. Android shows status and its required camera
+permission prompt; it has no camera configuration controls.
 
-Camera sharing is off by default. An invitation from the desktop never starts
-capture. Android asks for camera permission on first selection. Leaving UScreen,
-selecting Off, losing the connection or stopping the command releases capture.
-This first version is foreground-only: keep UScreen visible during a call.
-Camera sharing does not include microphone audio.
+Choose a lens and press **Start camera**. Open UScreen on the tablet and grant
+camera permission if requested. In Google Meet or another application, select
+**UScreen Front** or **UScreen Rear**, matching the host selection. Both ordinary
+Linux webcams exist while sharing runs, but only the selected lens is live;
+the inactive endpoint is black. A browser's webcam picker does not switch lenses.
+
+The small live preview shows the selected webcam’s exported image, including
+rotation and mirroring. It uses a thumbnail at up to five updates per second; it
+does not open a second camera. Stopped or stale previews clear rather than
+retaining the last camera image. Select **180°** when the tablet is upside down,
+then **Restart camera** to apply the change.
+
+The camera helper is embedded in the host GUI through a reusable host library.
+No separate helper command or display daemon is needed. Keep the host window
+open while sharing; **Stop camera** or closing that window releases capture,
+flushes black frames, retires its FFmpeg children and removes its own temporary
+ADB reverse mapping. Camera operations never attach EVDI or restart display sharing.
+
+**Apply** saves camera preferences without starting capture. **Start camera**
+uses the current controls; **Restart camera** applies changed controls to an
+active camera. Opening the host never restores capture automatically. After
+an error, correct its cause and press Start/Restart to retry.
+
+**Continue while hidden or locked** defaults off. When enabled, Android starts a
+camera foreground service with a persistent notification and holds a CPU wake
+lock until capture ends. Start with UScreen visible on the tablet; Android's
+[camera service restrictions](https://developer.android.com/develop/background-work/services/fgs/service-types#camera)
+require foreground permission to initiate this service. Once running, the
+Activity may hide or the screen may lock. Lock/sleep actions can require a
+manual Android unlock before later foreground-only sharing; the host does not
+bypass the tablet’s lock. Foreground-only mode stops when the
+Activity hides; reopening it can resume an outstanding host request while its
+session remains available. Background mode costs additional tablet power.
+
+Camera sharing does not include audio. Tablet microphone, audio output and NFC
+are future work tracked separately in `TODO.md`.
 
 ## Prepare the devices
 
@@ -30,36 +60,30 @@ and takes ownership locks; it does not relabel or replace unrelated webcams.
 Your user must have read/write access to these nodes, normally through the
 desktop's device-access policy or the `video` group.
 
-Use the updated Android APK built from the same checkout, preserving the
-[release signing identity](release-signing.md). Open UScreen on the tablet and
-connect it through authorized ADB. Then run:
+Use the updated Android APK and host GUI from the same checkout, preserving the
+[release signing identity](release-signing.md). Connect the tablet through
+authorized ADB. Leave **Tablet serial** empty with one connected tablet; enter
+its ADB serial when multiple tablets are connected. Refresh/reopen a browser's
+camera picker if it cached devices before sharing started. A full Stop may end
+a browser’s capture track; select the webcam again after a later Start.
+
+For an unreleased checkout, build with `cargo build -p uscreen-gui` and run
+`./target/debug/uscreen-gui`. Building the checkout does not update an older
+installed AppImage automatically.
+
+## Diagnostic command and profile limits
+
+The CLI remains available for headless diagnostics, with the same pipeline:
 
 ```sh
-uscreen cameras
+uscreen cameras --lens rear --background --serial TABLET_SERIAL \
+  --width 1280 --height 720 --fps 30 --bitrate 3000 --rotation 180 \
+  --front-device /dev/video20 --rear-device /dev/video21
 ```
 
-For an unreleased source checkout, build with `cargo build -p uscreen --bin
-uscreen` and run `./target/debug/uscreen cameras` from the repository root. An
-older installed AppImage does not gain the command when the checkout is built.
-
-In tablet settings, find **Camera sharing**, select Front or Rear and grant
-camera permission. In Google Meet or another application, select the matching
-UScreen webcam. Both endpoints have producers while the command runs so they
-can appear in browser camera pickers; the inactive endpoint stays black.
-Refresh/reopen a camera picker if it cached devices before producers started.
-
-The command runs in the foreground. Ctrl-C or SIGTERM stops its producers,
-clears output and removes only its own temporary ADB reverse mapping. It neither
-starts nor restarts the display daemon, and it does not attach EVDI. A fresh
-invitation or restarting the Android app requires explicit camera selection
-again. After a capture error, select the desired camera again to retry.
-
-## Profile controls
-
-```sh
-uscreen cameras --serial TABLET_SERIAL --width 1280 --height 720 \
-  --fps 30 --bitrate 3000 --front-device /dev/video20 --rear-device /dev/video21
-```
+The command explicitly starts the selected lens (default Front); omit
+`--background` for foreground-only capture. Ctrl-C/SIGTERM stops it. Do not run
+it alongside GUI camera sharing: both enforce exclusive output ownership.
 
 Default capture is 1280x720, 30 FPS and a 3000 kbit/s H.264 target. Optional
 `--mirror` mirrors exported video. Width accepts even values 160–1920; height
@@ -79,7 +103,22 @@ connection gets a new decoder; no encoded history crosses the switch.
 FFmpeg's decoder pixel budget includes alignment padding; individual allocations
 are capped at 64 MiB. Output frames always use the selected desktop dimensions.
 
-## Validation status
+## Backend boundary
+
+`common/src/camera.rs` defines the portable settings, state and `CameraBackend`
+Start/Stop/status contract. `host/src/camera_control.rs` owns the shared manual
+session lifecycle. The GUI depends on that contract and chooses a native adapter
+at one factory. Linux output ownership/V4L2, FFmpeg launch and ADB mapping live
+inside `host/src/camera/`; Android's authenticated wire contract is independent
+of the host OS. Windows and macOS require their own virtual-camera output and
+lifecycle adapters plus native validation. An interface alone is not platform
+support; the Windows preview disables camera Start.
+
+## Historical standalone-helper validation (T539)
+
+The [host integration validation](reviews/2026-09-20-camera-host.md) records the
+new Camera tab, background capture, rotation/preview checks and installed builds.
+The following observations describe the earlier standalone-helper version.
 
 On 2026-09-20, the connected RugKing Pad 2 Pro (Android 16) delivered both rear
 ID `0` and front ID `1` through Chrome 153's real `getUserMedia` API at 1280x720.
@@ -97,4 +136,4 @@ test/coverage evidence and limits. An actual Google Meet call, physical USB
 unplug/replug, other tablets and sustained power/latency were not validated.
 No camera images were retained in the evidence. The original
 [feasibility assessment](reviews/2026-09-20-tablet-cameras.md) preserves the
-initial hardware observations. Windows webcam output is not implemented.
+initial hardware observations. Windows and macOS webcam output backends are not implemented.

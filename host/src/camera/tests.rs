@@ -294,7 +294,8 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
         local: "tcp:12345".into(),
     };
     let token = "a".repeat(64);
-    let profile = options();
+    let mut profile = options();
+    profile.lens = uscreen_config::camera::Lens::Rear;
     let clients = async {
         let mut foreign = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
             .await
@@ -313,12 +314,203 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
         assert_eq!(&ack, b"OK");
         client.shutdown().await.unwrap();
     };
+    let (_stop, mut stopped) = watch::channel(false);
+    let (status, _) = watch::channel(State::Starting);
+    let status = Report {
+        state: status,
+        preview: watch::channel(None).0,
+    };
     let (result, _) = tokio::join!(
-        serve(&listener, &bridge, &token, &ffmpeg, &profile),
+        serve(
+            &listener,
+            &bridge,
+            &token,
+            &ffmpeg,
+            &profile,
+            &mut stopped,
+            &status
+        ),
         clients
     );
     assert!(result.is_err());
     let mut invalid = profile;
     invalid.front_device = root.path().join("missing");
     assert!(run(&invalid).await.is_err());
+}
+
+#[tokio::test]
+async fn t543_host_reports_frames_and_rejects_unselected_lens() {
+    let profile = options();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let mut client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let (server, _) = listener.accept().await.unwrap();
+    let (front, _) = watch::channel(None);
+    let (rear, _) = watch::channel(None);
+    let frames = [front, rear];
+    let token = "a".repeat(64);
+    client
+        .write_all(&[protocol::MAGIC.as_slice(), token.as_bytes(), &[1, 0]].concat())
+        .await
+        .unwrap();
+    let result = decoder::connection(
+        server,
+        &token,
+        Path::new("/missing-ffmpeg"),
+        &profile,
+        &frames,
+    )
+    .await;
+    assert!(result.unwrap_err().to_string().contains("selected by host"));
+    let (status, mut state) = watch::channel(State::Waiting);
+    let status = Report {
+        state: status,
+        preview: watch::channel(None).0,
+    };
+    let monitor = frame_status(&frames, &profile, &status);
+    tokio::pin!(monitor);
+    let checks = async {
+        tokio::task::yield_now().await;
+        frames[0].send_replace(Some(std::sync::Arc::new(outputs::blank(&profile))));
+        state.wait_for(|s| *s == State::Streaming).await.unwrap();
+        assert!(status.preview.borrow().is_some());
+        frames[0].send_replace(None);
+        state.wait_for(|s| *s == State::Waiting).await.unwrap();
+        assert!(status.preview.borrow().is_none());
+    };
+    tokio::select! { _ = &mut monitor => panic!(), _ = checks => {} }
+}
+
+#[tokio::test]
+async fn t543_embedded_adapter_rejects_invalid_profile_before_native_work() {
+    let (_stop, stopped) = watch::channel(false);
+    let (status, _) = watch::channel(State::Stopped);
+    let status = Report {
+        state: status,
+        preview: watch::channel(None).0,
+    };
+    let profile = CameraProfile {
+        fps: 0,
+        ..Default::default()
+    };
+    assert!(run_controlled(profile, stopped, status)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("FPS"));
+}
+
+#[test]
+fn t543_desktop_rotation_combines_sensor_orientation_before_mirroring() {
+    let mut profile = options();
+    for host in [0, 90, 180, 270] {
+        profile.rotation = host;
+        for sensor in 0..4 {
+            let expected = match (sensor + (host / 90) as u8) % 4 {
+                0 => "scale=",
+                1 => "transpose=clock,",
+                2 => "hflip,vflip,",
+                _ => "transpose=cclock,",
+            };
+            assert!(decoder::filters(sensor, &profile).starts_with(expected));
+        }
+    }
+    profile.rotation = 180;
+    profile.mirror = true;
+    assert!(decoder::filters(0, &profile).starts_with("hflip,vflip,hflip,"));
+}
+
+async fn transformed_test_frame(
+    encoded: &[u8],
+    profile: &CameraOptions,
+) -> std::sync::Arc<Vec<u8>> {
+    let ffmpeg = executable("ffmpeg").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let mut client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let (server, _) = listener.accept().await.unwrap();
+    let (front, mut received) = watch::channel(None);
+    let frames = [front, watch::channel(None).0];
+    let token = "a".repeat(64);
+    let upload = async {
+        client
+            .write_all(&[protocol::MAGIC.as_slice(), token.as_bytes(), &[0, 0]].concat())
+            .await
+            .unwrap();
+        client.read_exact(&mut [0; 2]).await.unwrap();
+        client.write_u32(encoded.len() as u32).await.unwrap();
+        client.write_all(encoded).await.unwrap();
+        tokio::time::timeout(
+            Duration::from_secs(3),
+            received.wait_for(|image| image.is_some()),
+        )
+        .await
+        .unwrap()
+        .unwrap()
+        .clone()
+        .unwrap()
+    };
+    tokio::select! {
+        result = decoder::connection(server, &token, &ffmpeg, profile, &frames) => panic!("{result:?}"),
+        frame = upload => frame,
+    }
+}
+
+#[tokio::test]
+async fn t543_real_output_and_preview_rotate_the_same_asymmetric_picture() {
+    let encoded = tokio::process::Command::new(executable("ffmpeg").unwrap())
+        .args([
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=red:s=160x120:r=30,drawbox=x=0:y=60:w=160:h=60:color=blue:t=fill",
+            "-frames:v",
+            "8",
+            "-c:v",
+            "libx264",
+            "-threads",
+            "1",
+            "-tune",
+            "zerolatency",
+            "-f",
+            "h264",
+            "pipe:1",
+        ])
+        .output()
+        .await
+        .unwrap();
+    assert!(encoded.status.success());
+    // A clockwise quarter-turn moves the red top half to the right.
+    for (rotation, red, blue) in [
+        (0, (80, 30), (80, 90)),
+        (90, (115, 60), (45, 60)),
+        (180, (80, 90), (80, 30)),
+        (270, (45, 60), (115, 60)),
+    ] {
+        let mut profile = options();
+        profile.rotation = rotation;
+        let bytes = transformed_test_frame(&encoded.stdout, &profile).await;
+        let preview = uscreen_config::camera::CameraPreview::from_yuv420(
+            profile.lens,
+            profile.width,
+            profile.height,
+            &bytes,
+        )
+        .unwrap();
+        let channel = |point: (usize, usize), c: usize| {
+            i16::from(preview.rgba()[(point.1 * 160 + point.0) * 4 + c])
+        };
+        assert!(
+            channel(red, 0) - channel(red, 2) > 100,
+            "T543 red quadrant wrong at {rotation}°"
+        );
+        assert!(
+            channel(blue, 2) - channel(blue, 0) > 100,
+            "T543 blue quadrant wrong at {rotation}°"
+        );
+    }
 }

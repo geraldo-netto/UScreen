@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod camera_preview;
+mod camera_settings;
 mod conversion_settings;
 mod pipe_settings;
 mod platform;
@@ -61,6 +63,7 @@ fn dispatch_action(
 }
 
 struct App {
+    camera: camera_settings::Panel,
     _status_worker: Option<status_worker::StatusWorker>,
     store: ConfigStore,
     save: Option<settings::PendingSave>,
@@ -83,6 +86,7 @@ enum Tab {
     Display,
     /// Security, updates, plug & play.
     General,
+    Camera,
 }
 
 use uscreen_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
@@ -182,6 +186,7 @@ impl App {
         );
 
         Self {
+            camera: camera_settings::Panel::default(),
             _status_worker: Some(worker),
             store: ConfigStore::default(),
             save: None,
@@ -947,6 +952,7 @@ impl App {
                 (Tab::Video, "Video"),
                 (Tab::Display, "Display & input"),
                 (Tab::General, "General"),
+                (Tab::Camera, "Cameras"),
             ] {
                 ui.selectable_value(&mut self.tab, tab, name);
             }
@@ -960,6 +966,7 @@ impl App {
                 Tab::Video => self.show_video_settings(ui),
                 Tab::Display => self.show_display_settings(ui),
                 Tab::General => self.show_general_settings(ui, status),
+                Tab::Camera => self.camera.show(ui, &mut self.cfg.camera.options),
             });
     }
 }
@@ -1160,6 +1167,7 @@ mod tests {
             ..saved_cfg.clone()
         };
         App {
+            camera: camera_settings::Panel::default(),
             _status_worker: None,
             store: ConfigStore::default(),
             save: None,
@@ -1713,12 +1721,99 @@ mod tests {
             .any(|(value, _)| value == "AMD / Intel HEVC (VAAPI)"));
     }
 
+    fn camera_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            app.camera.show(ui, &mut app.cfg.camera.options);
+        })
+    }
+
+    #[test]
+    fn t543_camera_tab_controls_only_camera_profile_and_saves_without_display_restart() {
+        use std::{cell::RefCell, rc::Rc};
+        use uscreen_config::camera::{CameraBackend, CameraProfile, CameraState, Lens};
+        struct Backend(Rc<RefCell<(CameraState, Vec<CameraProfile>)>>);
+        impl CameraBackend for Backend {
+            fn start(&self, options: CameraProfile) -> uscreen_config::camera::BackendResult {
+                let mut state = self.0.borrow_mut();
+                state.0 = CameraState::Streaming;
+                state.1.push(options);
+                Ok(())
+            }
+            fn stop(&self) {
+                self.0.borrow_mut().0 = CameraState::Stopped;
+            }
+            fn state(&self) -> CameraState {
+                self.0.borrow().0.clone()
+            }
+            fn preview(&self) -> Option<std::sync::Arc<uscreen_config::camera::CameraPreview>> {
+                None
+            }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Camera);
+        app.cfg = app.saved_cfg.clone();
+        app.store = ConfigStore::new(directory.path().join("config.toml"));
+        let calls = Rc::new(RefCell::new((CameraState::Stopped, Vec::new())));
+        app.camera.backend = Some(Box::new(Backend(calls.clone())));
+        let ctx = egui::Context::default();
+        click_settings_text(&mut app, &ctx, "Rear", camera_test_frame);
+        click_settings_text(&mut app, &ctx, "0°", camera_test_frame);
+        click_settings_text(&mut app, &ctx, "180°", camera_test_frame);
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Continue while hidden or locked",
+            camera_test_frame,
+        );
+        click_settings_text(&mut app, &ctx, "Flip video horizontally", camera_test_frame);
+        click_settings_text(&mut app, &ctx, "1280 × 720", camera_test_frame);
+        click_settings_text(&mut app, &ctx, "640 × 480", camera_test_frame);
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Automatic (one connected tablet)",
+            camera_test_frame,
+        );
+        camera_test_frame(
+            &mut app,
+            &ctx,
+            vec![egui::Event::Text(" tablet-543 ".into())],
+        );
+        assert_eq!(app.cfg.camera.options.serial.as_deref(), Some("tablet-543"));
+        assert!(
+            calls.borrow().1.is_empty(),
+            "T543 preference editing started camera"
+        );
+        click_settings_text(&mut app, &ctx, "Start camera", camera_test_frame);
+        assert_eq!(calls.borrow().1.len(), 1);
+        let profile = calls.borrow().1[0].clone();
+        assert_eq!(profile.lens, Lens::Rear);
+        assert_eq!(profile.rotation, 180);
+        assert!(profile.background && profile.mirror);
+        assert_eq!((profile.width, profile.height), (640, 480));
+        click_settings_text(&mut app, &ctx, "Restart camera", camera_test_frame);
+        assert_eq!(calls.borrow().1.len(), 2);
+        click_settings_text(&mut app, &ctx, "Stop camera", camera_test_frame);
+        assert_eq!(calls.borrow().0, CameraState::Stopped);
+        assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
+        app.apply(true); // must not call the display daemon adapter
+        wait_for_work(&mut app);
+        assert_eq!(app.message, "Settings saved");
+        assert_eq!(app.store.load().camera.options, profile);
+        assert_eq!(app.cfg.width, app.saved_cfg.width);
+    }
+
     #[test]
     fn t162_tabs_keep_one_visible_shared_apply_button() {
         for (tab, marker) in [
             (Tab::Video, "Encoder"),
             (Tab::Display, "Input devices"),
             (Tab::General, "Security"),
+            (Tab::Camera, "Camera sharing"),
         ] {
             for height in [560.0, 1800.0] {
                 let mut app = settings_test_app(tab);

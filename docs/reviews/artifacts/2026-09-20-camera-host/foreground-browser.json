@@ -1,0 +1,48 @@
+[
+  {
+    "phase": "front-foreground-only",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 106.6995081018519,
+      "variance": 3453.9526733690527,
+      "min": 0.6666666666666666,
+      "max": 252,
+      "frames": 118,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 4,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "foreground-only-hidden",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 148,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 8,
+      "ready": "live"
+    }
+  }
+]

@@ -17,7 +17,7 @@ pub async fn header(reader: &mut (impl AsyncRead + Unpin), token: &str) -> Resul
     ensure!(&bytes[..8] == MAGIC, "unsupported camera protocol");
     let presented = std::str::from_utf8(&bytes[8..72])?;
     ensure!(
-        crate::runtime::token_matches(token, presented),
+        uscreen_config::runtime::token_matches(token, presented),
         "camera authentication failed"
     );
     ensure!(bytes[72] <= 1, "invalid camera identity");

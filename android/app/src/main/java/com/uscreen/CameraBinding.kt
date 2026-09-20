@@ -8,7 +8,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.android.asCoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
 
-/** UI/permission owner. Permission or host invitation alone never starts a lens. */
+/** Host-command/permission owner. A camera foreground service may extend its lifetime. */
 internal class CameraBinding(
     context: Context,
     private val rotation: () -> Int,
@@ -17,11 +17,13 @@ internal class CameraBinding(
     private val capture: suspend (CameraEndpoint, CameraLens, Int, CameraResources) -> Unit = CameraCapture(context)::stream,
     private val invitations: StateFlow<CameraEndpoint?> = CameraInvitations.endpoint,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + android.os.Handler(android.os.Looper.getMainLooper()).asCoroutineDispatcher()),
+    private val backgroundService: (Boolean) -> Unit = {},
 ) {
     var endpoint by mutableStateOf<CameraEndpoint?>(null); private set
     var selected by mutableStateOf<CameraLens?>(null); private set
     var status by mutableStateOf("Start camera sharing on your computer."); private set
     private var active = false
+    private var backgroundRunning = false
     private var pending: Pair<CameraEndpoint, CameraLens>? = null
     private var observer: Job? = null
     private var worker: Job? = null
@@ -31,6 +33,7 @@ internal class CameraBinding(
     fun start() {
         if (active) return
         active = true
+        if (observer?.isActive == true) return
         observer = scope.launch {
             invitations.collect { value ->
                 if (endpoint != value) {
@@ -38,6 +41,7 @@ internal class CameraBinding(
                     endpoint = value
                     pending = null
                     status = if (value == null) "Start camera sharing on your computer." else "Camera sharing is off."
+                    choose(value?.requestedLens)
                 }
             }
         }
@@ -47,14 +51,27 @@ internal class CameraBinding(
         val previous = stopCapture()
         pending = null
         status = "Camera sharing is off."
-        if (!active || lens == null) return
+        if (lens == null) { background(false); return }
+        if (!active && !backgroundRunning) return
         val host = endpoint ?: return
-        if (!permission()) {
-            pending = host to lens
-            requestPermission()
-            return
+        if (!active && !host.background) { background(false); return }
+        if (!allowCapture(host, lens)) return
+        try {
+            background(host.background)
+            launch(host, lens, previous)
+        } catch (error: Exception) {
+            status = error.message ?: "Camera background service unavailable."
+            background(false)
         }
-        launch(host, lens, previous)
+    }
+
+    private fun allowCapture(host: CameraEndpoint, lens: CameraLens): Boolean {
+        if (permission()) return true
+        background(false)
+        if (!active) { status = "Open UScreen on the tablet to allow camera access."; return false }
+        pending = host to lens
+        requestPermission()
+        return false
     }
 
     fun permissionResult(granted: Boolean) {
@@ -80,7 +97,7 @@ internal class CameraBinding(
                 if (generation == revision && error !is CancellationException) status = error.message ?: "Camera sharing failed."
             } finally {
                 owned.close()
-                if (generation == revision) selected = null
+                if (generation == revision) { selected = null; background(false) }
             }
         }
     }
@@ -95,7 +112,24 @@ internal class CameraBinding(
         return previous
     }
 
+    private fun background(enabled: Boolean) {
+        if (backgroundRunning == enabled) return
+        backgroundRunning = enabled
+        backgroundService(enabled)
+    }
+
     fun stop() {
+        active = false
+        pending = null
+        if (backgroundRunning && selected != null) return
+        shutdown()
+    }
+
+    fun backgroundStopped() {
+        if (backgroundRunning) shutdown()
+    }
+
+    fun shutdown() {
         active = false
         observer?.cancel()
         observer = null
@@ -103,5 +137,6 @@ internal class CameraBinding(
         stopCapture()
         endpoint = null
         status = "Camera sharing is off."
+        background(false)
     }
 }

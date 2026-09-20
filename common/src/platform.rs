@@ -12,6 +12,7 @@ pub use crate::windows::{programs, runtime};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Capabilities {
+    pub camera: bool,
     pub daemon: bool,
     pub display: bool,
     pub input: bool,
@@ -24,6 +25,7 @@ pub struct Capabilities {
 pub const fn capabilities() -> Capabilities {
     let linux = cfg!(target_os = "linux");
     Capabilities {
+        camera: linux,
         daemon: linux,
         display: linux,
         input: linux,
@@ -59,6 +61,7 @@ mod tests {
     #[test]
     fn t493_capabilities_never_imply_an_unimplemented_backend() {
         let caps = capabilities();
+        assert_eq!(caps.camera, cfg!(target_os = "linux"));
         assert_eq!(caps.daemon, cfg!(target_os = "linux"));
         assert_eq!(caps.display, caps.daemon);
         assert_eq!(caps.input, caps.daemon);

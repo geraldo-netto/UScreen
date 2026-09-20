@@ -1,5 +1,9 @@
 # Native tablet webcams — T539
 
+Historical implementation record. T543 subsequently moved camera configuration
+and session ownership into the host GUI; see the
+[host integration validation](2026-09-20-camera-host.md) for current behavior.
+
 The Linux foreground command `uscreen cameras` and the Android **Camera sharing**
 controls implement two OS webcam entries with one active tablet lens. The native
 Camera2/MediaCodec uplink is separate from the display protocol. See

@@ -46,6 +46,7 @@ class ActivityUiContractTest {
         private var stopped = false
 
         override fun before() {
+            CameraOwner.reset()
             previousTracer = ReflectionHelpers.getStaticField(Class.forName("androidx.compose.runtime.ComposerKt"), "compositionTracer")
             androidx.compose.runtime.Composer.setTracer(trace)
             prefs = Prefs(RuntimeEnvironment.getApplication()).apply { checkUpdates = false }
@@ -65,6 +66,7 @@ class ActivityUiContractTest {
             (content.getChildAt(0) as? androidx.compose.ui.platform.AbstractComposeView)?.disposeComposition()
             controller.pause().stop().destroy()
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            CameraOwner.reset()
             ReflectionHelpers.setStaticField(Class.forName("androidx.compose.runtime.ComposerKt"), "compositionTracer", previousTracer)
         }
 
@@ -116,10 +118,10 @@ class ActivityUiContractTest {
             .denyPermissions(android.Manifest.permission.CAMERA)
         try {
             compose.runOnIdle {
-                CameraInvitations.endpoint.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000)
+                CameraInvitations.endpoint.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000, CameraLens.FRONT)
             }
             compose.onNodeWithText("⚙").performClick()
-            compose.onNodeWithText("Front").performScrollTo().performClick()
+            compose.onNodeWithText("Configure cameras in the Cameras tab of UScreen on your computer.").performScrollTo().assertExists()
             val permission = org.robolectric.Shadows.shadowOf(activity).nextStartedActivityForResult
             assertNotNull("T539 camera selection bypassed permission request", permission)
             assertNull(activity.cameras.selected)

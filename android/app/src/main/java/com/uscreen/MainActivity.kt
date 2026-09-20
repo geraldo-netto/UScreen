@@ -20,8 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val prefs = Prefs(this)
-        cameras = CameraBinding(this, { @Suppress("DEPRECATION") windowManager.defaultDisplay.rotation },
-            { cameraPermission.launch(android.Manifest.permission.CAMERA) })
+        cameras = CameraOwner.get(applicationContext)
         powerBinding = StreamingPowerBinding(this)
         windowPolicy = ActivityWindowPolicy(this, prefs)
         windowPolicy.applyDisplaySettings()
@@ -99,6 +98,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        CameraOwner.permissionRequest = { cameraPermission.launch(android.Manifest.permission.CAMERA) }
         cameras.start()
         windowPolicy.start()
         powerBinding.start(session.powerNow(), session.powerUpdates())
@@ -109,6 +109,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        CameraOwner.permissionRequest = null
         cameras.stop()
         super.onStop()
         windowPolicy.stop()

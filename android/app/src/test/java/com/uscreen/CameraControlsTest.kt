@@ -30,12 +30,18 @@ class CameraControlsTest {
             { _, lens, _, resources -> opened.add(lens); resources.own { closed.add(lens) }; awaitCancellation() }, invitations, scope)
         binding.start()
         compose.setContent { UScreenTheme { CameraControls(binding) } }
-        compose.onNodeWithText("Front").assertIsNotEnabled()
-        compose.onNodeWithText("Rear").assertIsNotEnabled()
+        compose.onNodeWithText("Front").assertDoesNotExist()
+        compose.onNodeWithText("Rear").assertDoesNotExist()
         compose.runOnIdle { invitations.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000) }
-        compose.onNodeWithText("Front").performClick().assertIsSelected()
-        compose.onNodeWithText("Rear").performClick().assertIsSelected()
-        compose.onNodeWithText("Off").performClick().assertIsSelected()
+        compose.runOnIdle {
+            assertTrue(opened.isEmpty()) // T539 legacy invitations still cannot capture.
+            invitations.value = invitations.value!!.copy(requestedLens = CameraLens.FRONT)
+        }
+        compose.onNodeWithText("Front camera selected.").assertExists()
+        compose.runOnIdle { invitations.value = invitations.value!!.copy(requestedLens = CameraLens.REAR) }
+        compose.onNodeWithText("Rear camera selected.").assertExists()
+        compose.runOnIdle { invitations.value = null }
+        compose.onNodeWithText("Off").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(listOf(CameraLens.FRONT, CameraLens.REAR), opened)
             assertEquals(opened, closed)

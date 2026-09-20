@@ -1,0 +1,186 @@
+[
+  {
+    "phase": "front-host-start",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 102.72858796296285,
+      "variance": 3358.5491171418616,
+      "min": 1.3333333333333333,
+      "max": 254,
+      "frames": 109,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 4,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "rear-host-restart",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 120,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 113.99623842592518,
+      "variance": 5013.0235198013015,
+      "min": 2.6666666666666665,
+      "max": 187.33333333333334,
+      "frames": 100,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "rear-background-enabled",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 126,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 114.19531249999945,
+      "variance": 5001.904368459585,
+      "min": 3.3333333333333335,
+      "max": 187.66666666666666,
+      "frames": 200,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "rear-app-hidden",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 130,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 113.40552662037013,
+      "variance": 5063.226317836154,
+      "min": 3.3333333333333335,
+      "max": 188,
+      "frames": 326,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "rear-screen-off",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 134,
+      "ready": "live"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 113.47873263888863,
+      "variance": 5062.553270693248,
+      "min": 3,
+      "max": 187.33333333333334,
+      "frames": 453,
+      "ready": "live"
+    }
+  },
+  {
+    "phase": "host-stop-while-screen-off",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 136,
+      "ready": "ended"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 458,
+      "ready": "ended"
+    }
+  },
+  {
+    "phase": "front-foreground-only",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 136,
+      "ready": "ended"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 458,
+      "ready": "ended"
+    }
+  },
+  {
+    "phase": "foreground-only-hidden",
+    "UScreen Front": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 136,
+      "ready": "ended"
+    },
+    "UScreen Rear": {
+      "width": 1280,
+      "height": 720,
+      "mean": 0,
+      "variance": 0,
+      "min": 0,
+      "max": 0,
+      "frames": 458,
+      "ready": "ended"
+    }
+  }
+]

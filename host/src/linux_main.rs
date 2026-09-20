@@ -4,7 +4,7 @@ mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
 mod attachment;
-mod camera;
+use uscreen::camera;
 mod capture;
 mod config;
 mod desktop;

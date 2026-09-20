@@ -1,0 +1,24 @@
+{
+  "android": {
+    "apk_sha256": "21ecabb00ec1553e5cde8fcab2f18416bfe82a22b06f0e684b86e60dd0a004c9",
+    "installed_apk_matches": true,
+    "certificate_sha256": "1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400"
+  },
+  "linux": {
+    "appimage_sha256": "0ae68e4bfde7833caa207234438d066c82c154b8060e440fa702b110b18e6c02",
+    "previous_appimage_sha256": "ce76965dbbe6e14e8b561fdede11d069e30e02a0ea4c0a11a67f64330048832b",
+    "rollback_file": "UScreen-before-camera-host-ce76965dbbe6.AppImage",
+    "stable_launcher_preserved": true,
+    "display_service_main_pid": 68365,
+    "display_daemon_pid": 68386,
+    "display_daemon_executable_inode_preserved": true,
+    "display_adb_mappings_preserved": true,
+    "camera_capture_left_stopped": true
+  },
+  "checks": {
+    "packaged_gui_camera_tab": "pass (Xvfb, camera stopped)",
+    "installed_camera_start_stop": "pass",
+    "apk_update": "adb install -r: Success",
+    "android_lock_sleep_action_during_final_deployment": false
+  }
+}

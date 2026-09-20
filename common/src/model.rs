@@ -82,6 +82,8 @@ pub fn validated_pipe_capacity(value: u32) -> u32 {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct FileConfig {
+    /// Camera settings apply independently, without restarting the display.
+    pub camera: crate::camera::CameraSettings,
     pub encoder: String,
     /// Opt-in reuse of a historical measured profile, after fresh verification.
     pub profile_cache: bool,
@@ -164,6 +166,7 @@ pub struct FileConfig {
 impl Default for FileConfig {
     fn default() -> Self {
         Self {
+            camera: Default::default(),
             encoder: "auto".into(),
             profile_cache: false,
             vaapi_device: "/dev/dri/renderD128".into(),
@@ -248,6 +251,7 @@ impl FileConfig {
     pub fn requires_restart_from(&self, previous: &Self) -> bool {
         let mut without_pipe_edit = self.clone();
         without_pipe_edit.pipe_capacity_mib = previous.pipe_capacity_mib;
+        without_pipe_edit.camera = previous.camera.clone();
         without_pipe_edit != *previous
     }
 
@@ -325,6 +329,35 @@ impl FileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t543_camera_preferences_round_trip_without_starting_or_restarting_display() {
+        let baseline = FileConfig::default();
+        let mut edited = baseline.clone();
+        edited.camera.options.lens = crate::camera::Lens::Rear;
+        edited.camera.options.background = true;
+        edited.camera.options.mirror = true;
+        edited.camera.options.rotation = 270;
+        let text = toml::to_string(&edited).unwrap();
+        assert!(
+            !text.contains("enabled"),
+            "T543 camera start must remain transient"
+        );
+        let restored: FileConfig = toml::from_str(&text).unwrap();
+        assert_eq!(restored.camera, edited.camera);
+        assert!(!restored.requires_restart_from(&baseline));
+        let old: FileConfig = toml::from_str("fps = 60").unwrap();
+        assert_eq!(old.camera, baseline.camera);
+        let mut invalid_camera = restored;
+        invalid_camera.camera.options.fps = 0;
+        assert!(invalid_camera.camera.options.validate().is_err());
+        invalid_camera.validate().unwrap(); // independent display policy remains valid
+        let mut latest = baseline.clone();
+        latest.fps = 30;
+        let merged = edited.merge_edits(&baseline, latest).unwrap();
+        assert_eq!(merged.fps, 30);
+        assert_eq!(merged.camera, edited.camera);
+    }
 
     #[test]
     fn t480_profile_cache_is_opt_in_and_persists() {

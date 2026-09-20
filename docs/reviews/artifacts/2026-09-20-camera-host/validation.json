@@ -1,0 +1,85 @@
+{
+  "finding": "T543",
+  "date": "2026-09-20",
+  "android": {
+    "tests": 518,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "lint": "pass",
+    "production_functions": 559,
+    "functions_at_least_80_percent": 559,
+    "apk_sha256": "21ecabb00ec1553e5cde8fcab2f18416bfe82a22b06f0e684b86e60dd0a004c9",
+    "installed_apk_matches": true,
+    "certificate_sha256": "1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400"
+  },
+  "linux_rust": {
+    "workspace_default_tests": "pass",
+    "workspace_all_feature_tests": "pass",
+    "production_functions": 1085,
+    "functions_at_least_80_percent": 1085,
+    "coverage_includes_native_v4l2_start_stop": true
+  },
+  "quality": {
+    "cyclomatic_functions": 5037,
+    "cyclomatic_above_9": 0,
+    "rust_format": "pass",
+    "clippy_all_features_all_targets": "pass",
+    "windows_gnu_cross_check": "pass",
+    "portable_config_wasm_check": "pass",
+    "windows_native_unmeasured_functions": 58
+  },
+  "browser": {
+    "version": "153.0.8010.52",
+    "fake_video": false,
+    "resolution": [
+      1280,
+      720
+    ],
+    "saved_camera_images": false,
+    "browser_json_valid_phases": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "browser_json_invalid_phases": [
+      6,
+      7
+    ],
+    "invalid_reason": "Probe reused ended tracks after full host Stop; these phases do not establish restarted capture.",
+    "foreground_browser_json_valid_phases": [
+      0,
+      1
+    ],
+    "screen_off_power_state": "Dozing",
+    "native_observations_before_final_preview_rotation_permission_correction": true
+  },
+  "final_rotation_preview": {
+    "real_h264_synthetic_red_blue_regions": "pass, all four rotations",
+    "exported_yuv_thumbnail_consistency": "pass",
+    "egui_texture_create_update_reuse_clear": "pass"
+  },
+  "regressions_first_failed": [
+    "host-selected lens rejection",
+    "hidden permission loss retires background service",
+    "T542 retired host endpoint guidance"
+  ],
+  "display_preservation": {
+    "service_main_pid": 68365,
+    "adb_ports": [
+      8890,
+      8891
+    ],
+    "evdi_attach_performed": false
+  },
+  "limits": [
+    "No actual Meet call",
+    "No physical unplug/replug: T222/T540",
+    "No further deliberate Android lock/sleep tests after maintainer warning: T549",
+    "No native Windows/macOS camera backend",
+    "No sustained battery/thermal/latency measurements"
+  ]
+}

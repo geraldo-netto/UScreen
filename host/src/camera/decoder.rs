@@ -12,6 +12,7 @@ use tokio::{
 use uscreen_config::camera::CameraOptions;
 
 pub fn filters(rotation: u8, options: &CameraOptions) -> String {
+    let rotation = (rotation + (options.rotation / 90) as u8) % 4;
     let turn = match rotation {
         1 => "transpose=clock,",
         2 => "hflip,vflip,",
@@ -78,6 +79,14 @@ pub async fn connection(
 ) -> Result<()> {
     let header = tokio::time::timeout(Duration::from_secs(5), protocol::header(&mut socket, token))
         .await??;
+    let selected = match options.lens {
+        uscreen_config::camera::Lens::Front => 0,
+        uscreen_config::camera::Lens::Rear => 1,
+    };
+    anyhow::ensure!(
+        header.lens == selected,
+        "camera lens was not selected by host"
+    );
     let mut decoder = command(ffmpeg, header.rotation, options)
         .spawn()
         .context("start camera decoder")?;
