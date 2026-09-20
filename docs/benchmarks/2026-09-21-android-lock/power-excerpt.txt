@@ -1,0 +1,8 @@
+  mWakefulness=Awake
+  mLastWakeTime=16640902 (11672306 ms ago)
+  mLastSleepTime=16640711 (11672497 ms ago)
+  mLastSleepReason=force_suspend
+  mScreenOffTimeoutSetting=15000
+  SCREEN_BRIGHT_WAKE_LOCK           'WindowManager/displayId:0' ON_AFTER_RELEASE ACQ=-3h14m28s670ms (uid=1000 pid=1082 ws=WorkSource{10238 io.github.geraldo_netto.uscreen})
+  PARTIAL_WAKE_LOCK                 'UScreen::StreamingWakeLock' ACQ=-3h14m28s649ms LONG (uid=10238 pid=22610)
+  09-20 21:32:01.600 - 10238 (io.github.geraldo_netto.uscreen) - ACQ UScreen::StreamingWakeLock (partial)

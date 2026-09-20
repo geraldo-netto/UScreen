@@ -94,3 +94,21 @@ counters. The final in-process capture rerun passed all 27 tests.
 Complexity checked 5,229 functions with none above 9. Local evidence is retained
 under `/tmp/uscreen-item2-*`; the source snapshots and reports identify their
 scopes and do not claim Windows/macOS native validation.
+
+## Item 3 — stock EVDI behavior and Android lock evidence
+
+The maintainer chose to keep stock libevdi. Its roughly twelve-second startup
+wait is now [documented at the source/API boundary](../benchmarks/2026-09-20-evdi-startup/README.md):
+the nominal five-second limit counts sleeps, while repeated process scans add
+CPU and wall time. Root Xorg process metadata is unreadable to the ordinary
+user. The stock public API cannot bound that private scan, and its subsequent
+master/slave checks must remain intact. T558 moves to deferred under that
+explicit decision; no local library patch was made.
+
+[Read-only Android evidence](../benchmarks/2026-09-21-android-lock/README.md)
+shows the current screen and CPU wake locks active and the last recorded sleep
+reason `force_suspend`. Available logs cannot identify its caller or link it
+to the historical report. T549 remains blocked on that missing event/action
+correlation. No unsupported lock workaround or behavioral fix is claimed.
+Documentation links and source paths were checked; this item changes no
+production behavior and needs no artificial regression test.

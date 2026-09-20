@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-21",
+  "method": [
+    "adb shell dumpsys power",
+    "adb logcat -d -b events -s power_sleep_requested power_screen_state screen_toggled",
+    "adb logcat -d -b system -t 1200 -s PowerManagerService DisplayPowerController KeyguardViewMediator"
+  ],
+  "full_power_sha256": "86b949f084b48e2b2ed9420a10181d7b2dd628002fda193bd368e112edfad687",
+  "full_power_local_only": "/tmp/uscreen-item3-power.txt",
+  "source_revision": "edea404aae6084d29b9eeeca8418a2dee77e1810",
+  "last_sleep_caller": "not retained in available logs",
+  "actions": "read-only; no display detach, force-stop, screen power or ADB restart"
+}
