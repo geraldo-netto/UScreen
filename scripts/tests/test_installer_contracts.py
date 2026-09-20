@@ -92,6 +92,20 @@ echo preserved
 ''')
         self.assertIn('preserved', output)
 
+    def test_t536_failed_autostart_staging_preserves_existing_login_entry(self):
+        output = self.execute('''
+mkdir -p "$CONFIG_BASE/autostart"
+echo original > "$CONFIG_BASE/autostart/uscreen.desktop"
+partial_entry() { echo partial; return 7; }
+if install_autostart_entry partial_entry; then exit 8; fi
+[[ $(cat "$CONFIG_BASE/autostart/uscreen.desktop") == original ]]
+shopt -s nullglob
+staged=("$CONFIG_BASE/autostart/".uscreen.*)
+[[ ${#staged[@]} == 0 ]]
+echo preserved
+''')
+        self.assertIn('preserved', output)
+
     def test_t497_boot_configuration_errors_are_reported_without_aborting(self):
         output = self.execute('''
 sudo() { if [[ $1 == tee ]]; then command cat >/dev/null; return 9; fi; }

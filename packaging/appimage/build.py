@@ -65,7 +65,8 @@ def stage_metadata(repo, appdir):
     copy(source / 'AppRun', appdir / 'AppRun', 0o755)
     share = appdir / 'usr/share/uscreen'
     copy(source / 'install-appimage.sh', share / 'install-appimage.sh', 0o755)
-    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'uscreen.service'):
+    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'uscreen.service',
+                 'uscreen-service-autostart.desktop'):
         copy(repo / 'scripts' / name, share / name)
     copy(repo / 'scripts/uscreen.desktop', share / 'uscreen.desktop')
     desktop = (repo / 'scripts/uscreen.desktop').read_text().replace('Exec=uscreen-gui', 'Exec=AppRun')

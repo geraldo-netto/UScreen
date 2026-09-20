@@ -26,8 +26,10 @@ Registration copies the image to `$XDG_DATA_HOME/uscreen/appimage/UScreen.AppIma
 `~/.local/bin/uscreen`. The installed image wrapper enables extract-and-run,
 so it also works on hosts without FUSE. It preserves application preferences and existing
 autostart intent; enable or disable autostart in the GUI. Existing desktop
-autostart paths are redirected to the installed image, or removed when an enabled
-user service already supplies autostart. Registration does not start streaming,
+autostart paths are redirected to the installed image. When the user service is
+already enabled, registration creates or repairs its desktop login entry, which
+starts that same service even on desktops without `graphical-session.target`.
+Registration does not start streaming,
 activate EVDI, enable autostart, uninstall packages or alter system configuration.
 
 Update by stopping UScreen and registering the new image the same way. Close the

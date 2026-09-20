@@ -88,26 +88,34 @@ requirement even when the bundle supplies its userspace library.
 
 ## Start the host
 
-After a native package installation, on a desktop with a systemd user manager:
+Enable **Start UScreen with the desktop** in the GUI for automatic login startup,
+including on Cinnamon. It enables/disables the available route and starts/stops
+the current daemon.
+
+On a systemd desktop that activates `graphical-session.target`, the unit alone
+can also be enabled and started from a terminal:
 
 ```bash
 systemctl --user enable --now uscreen
 ```
 
-The full tarball/source installer enables the user service when it can reach
-the user manager, and otherwise creates an XDG desktop autostart entry. It
+The full tarball/source installer enables the user service and creates a desktop
+login entry when it can reach the user manager. Otherwise it creates an entry
+that starts the daemon directly. It
 reports the selected route and does not start the daemon during installation.
-`make install` installs user files while preserving the autostart preference.
-The GUI's **Start UScreen with the desktop** setting enables/disables the
-available route and starts/stops the current daemon.
+`make install` installs user files while preserving the autostart preference;
+it also repairs the login entry for an already enabled service.
 
-Systemd autostart depends on the desktop activating `graphical-session.target`.
-The fallback uses `XDG_CONFIG_HOME/autostart/uscreen.desktop` (default
+Both routes use `XDG_CONFIG_HOME/autostart/uscreen.desktop` (default
 `~/.config/autostart/uscreen.desktop`) on desktops implementing the
 [XDG autostart specification](https://specifications.freedesktop.org/autostart/latest/).
-It runs a direct daemon without service restart supervision. `uscreen start`
-also runs a foreground session from a terminal. Enabling the systemd route
-removes UScreen's fallback entry to avoid duplicate startup.
+With systemd, that entry starts `uscreen.service`, even when the desktop does not
+activate `graphical-session.target`. If the target already started the service,
+systemd keeps the same daemon. Enabling the systemd route replaces any direct
+fallback entry with this service entry. Use the GUI setting to disable both the
+unit and its login entry; `systemctl disable` alone does not remove an XDG entry.
+Without systemd, the entry runs a direct daemon without service restart
+supervision. `uscreen start` also runs a foreground session from a terminal.
 If systemctl still reports an enabled unit while its manager is unreachable,
 autostart changes report an error; restore the user manager before switching
 routes or disabling that unit.

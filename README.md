@@ -67,8 +67,8 @@ or produced from the checkout you intend to install:
 | `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
 | `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
 
-On a systemd desktop, enable/start the installed service with
-`systemctl --user enable --now uscreen`. The full installer enables autostart
+Enable **Start UScreen with the desktop** in the GUI for automatic login startup,
+including on Cinnamon. The full installer enables autostart
 through a user service or an XDG desktop entry; `make install` preserves that
 preference. The GUI can toggle either route. Read
 [installation details](docs/installation.md) first: full installer/native

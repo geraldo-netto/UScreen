@@ -287,20 +287,34 @@ write_installed_user_service() {
     fi
 }
 
+install_autostart_entry() {
+    local directory="$CONFIG_BASE/autostart" staged
+    mkdir -p "$directory" || return
+    staged=$(mktemp "$directory/.uscreen.XXXXXXXX") || return
+    if "$@" > "$staged" && mv -f "$staged" "$directory/uscreen.desktop"; then
+        return 0
+    fi
+    rm -f "$staged"
+    return 1
+}
+
 install_desktop_autostart() {
     if systemctl --user is-enabled --quiet uscreen.service 2>/dev/null; then
         error "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart"
         return 1
     fi
-    local directory="$CONFIG_BASE/autostart" staged
-    mkdir -p "$directory" || return
-    staged=$(mktemp "$directory/.uscreen.XXXXXXXX") || return
-    if bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen-autostart.desktop" start > "$staged" &&
-       mv -f "$staged" "$directory/uscreen.desktop"; then
-        return 0
+    install_autostart_entry bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen-autostart.desktop" start
+}
+
+configure_managed_autostart() {
+    if [ "${1:-enable}" = enable ]; then
+        systemctl --user enable uscreen.service || return
     fi
-    rm -f "$staged"
-    return 1
+    # Repair existing enabled installations even when preserving the preference.
+    if systemctl --user is-enabled --quiet uscreen.service 2>/dev/null; then
+        install_autostart_entry cat "$SCRIPT_DIR/uscreen-service-autostart.desktop" || return
+    fi
+    info "User service installed; desktop login follows the autostart preference. Start now with: systemctl --user start uscreen"
 }
 
 install_user_service() {
@@ -308,13 +322,7 @@ install_user_service() {
     # A successful reload proves a usable user manager. No process is started
     # here: module/uinput setup still follows in a full installation.
     if systemctl --user daemon-reload 2>/dev/null; then
-        if [ "${1:-enable}" = enable ]; then
-            systemctl --user enable uscreen.service || return
-            rm -f "$CONFIG_BASE/autostart/uscreen.desktop" || return
-            info "User service enabled for desktop login; start now with: systemctl --user start uscreen"
-        else
-            info "User service installed; desktop autostart preference unchanged"
-        fi
+        configure_managed_autostart "${1:-enable}" || return
     elif [ "${1:-enable}" = enable ]; then
         install_desktop_autostart || return
         info "Desktop autostart enabled (no systemd user manager); start now with: uscreen start"

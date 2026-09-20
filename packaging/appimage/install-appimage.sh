@@ -89,13 +89,15 @@ ENTRY_SCRIPT
 
 update_autostart() {
     local entry="$CONFIG_BASE/autostart/uscreen.desktop" temporary
-    [[ -f "$entry" ]] || return 0
     if systemctl --user is-enabled uscreen.service >/dev/null 2>&1; then
-        rm -f -- "$entry"
-        return
+        mkdir -p -- "$CONFIG_BASE/autostart"
+        temporary=$(mktemp "$CONFIG_BASE/autostart/.uscreen.XXXXXXXX")
+        cat "$TOOLS/uscreen-service-autostart.desktop" > "$temporary"
+    else
+        [[ -f "$entry" ]] || return 0
+        temporary=$(mktemp "$CONFIG_BASE/autostart/.uscreen.XXXXXXXX")
+        bash "$TOOLS/write-desktop-entry.sh" "$ENTRY" "$entry" start > "$temporary"
     fi
-    temporary=$(mktemp "$CONFIG_BASE/autostart/.uscreen.XXXXXXXX")
-    bash "$TOOLS/write-desktop-entry.sh" "$ENTRY" "$entry" start > "$temporary"
     mv -f -- "$temporary" "$entry"
 }
 

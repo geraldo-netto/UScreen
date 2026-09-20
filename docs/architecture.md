@@ -324,9 +324,12 @@ timer. Dropping the window stops future samples after any in-flight probe.
 The [status-polling fixtures](benchmarks/2026-09-18-status-polling.md) document
 probe counts, refresh limits and lifecycle regressions.
 
-Autostart uses the loaded systemd user unit when available, with an XDG desktop
-entry as the fallback. The installer and GUI share the fallback template and
-test their generated commands against each other. The GUI persists the login
+Autostart uses an XDG desktop entry to start the loaded systemd user unit when
+available. This also supports desktops such as Cinnamon that do not activate
+`graphical-session.target`; both launch paths start the same unit, which keeps
+one daemon. Without an available unit, the entry starts the daemon directly.
+The installers and GUI share the service-entry template; the source installer
+and GUI also test their generated direct commands against each other. The GUI persists the login
 preference separately from controlling the current daemon; direct start/stop
 still follows the same validated daemon-discovery rules.
 

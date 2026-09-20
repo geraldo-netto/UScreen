@@ -101,8 +101,7 @@ fn remove_desktop_entry() -> Result<()> {
     }
 }
 
-fn write_desktop_entry(binary: &Path) -> Result<()> {
-    let entry = desktop_entry(binary)?;
+fn write_desktop_entry(entry: &str) -> Result<()> {
     let path = desktop_path()?;
     let parent = path.parent().context("autostart directory")?;
     std::fs::create_dir_all(parent).context("create autostart directory")?;
@@ -125,15 +124,22 @@ pub fn set_enabled(on: bool, binary: &Path) -> Result<()> {
             "systemctl {verb} failed: {}",
             String::from_utf8_lossy(&out.stderr).trim()
         );
-        // Avoid running both a desktop entry and a service on the next login.
-        return remove_desktop_entry();
+        // T536: not every desktop activates graphical-session.target. Both
+        // login paths start the same unit, so systemd keeps a single daemon.
+        return if on {
+            write_desktop_entry(include_str!(
+                "../../../scripts/uscreen-service-autostart.desktop"
+            ))
+        } else {
+            remove_desktop_entry()
+        };
     }
     if std::env::var_os(super::appimage::LAUNCHER).is_some() && systemd_enabled() {
         anyhow::bail!("Another UScreen distribution owns autostart; stop it and run the AppImage with --install-user before changing this preference");
     }
     anyhow::ensure!(!systemd_enabled(), "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart");
     if on {
-        write_desktop_entry(binary)
+        write_desktop_entry(&desktop_entry(binary)?)
     } else {
         remove_desktop_entry()
     }

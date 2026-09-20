@@ -46,7 +46,7 @@ make setup-system     # modprobe.d / modules-load.d / udev rule (sudo)
 ```
 
 These install/setup commands modify the machine. For a configured systemd
-desktop, explicitly enable/start with `systemctl --user enable --now uscreen`;
+desktop, enable **Start UScreen with the desktop** in the GUI (including Cinnamon);
 `make install` does not do that. Without a user manager, launch `uscreen start`
 in a terminal. See [installation](installation.md) before attaching EVDI.
 Make delegates user-file installation to `scripts/install.sh --user-install`;

@@ -20,6 +20,7 @@ import elf
 import tools
 import sources
 import build
+import autostart_fixture
 
 
 class AppImageTest(unittest.TestCase):
@@ -216,10 +217,28 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
         self.assertNotIn('/old/uscreen', entry.read_text())
         self.write(self.app / 'usr/bin/systemctl', '#!/bin/sh\nexit 0\n')
         self.assertEqual(self.invoke('--install-user').returncode, 0)
-        self.assertFalse(entry.exists())
+        # T536 keeps a service login trigger, replacing the obsolete direct
+        # launch (and its Hidden=true), so only the installed service can run.
+        self.assertEqual(entry.read_text(), (REPO / 'scripts/uscreen-service-autostart.desktop').read_text())
         result = self.invoke('--install-user', env=dict(self.env, XDG_DATA_HOME=str(self.app / 'nested')))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('outside', result.stderr)
+
+    def test_t536_registration_preserves_managed_login_without_graphical_target(self):
+        self.installer_fixture()
+        state = autostart_fixture.manager(self.root, self.env, self.app / 'usr/bin/systemctl')
+        self.env['PATH'] = str(self.app / 'usr/bin') + ':/usr/bin:/bin'
+        entry = Path(self.env['XDG_CONFIG_HOME']) / 'autostart/uscreen.desktop'
+        for enabled in [False, True]:
+            if enabled:
+                (state / 'enabled').touch()
+            for attempt in range(2):
+                result = self.invoke('--install-user')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(entry.exists(), enabled, 'T536: registration lost the desktop service launch')
+                self.assertFalse((state / 'launches').exists(), 'T536: registration started streaming')
+        self.assertEqual(autostart_fixture.login(entry, self.env, 1), 'daemon\n')
+        self.assertEqual(autostart_fixture.login(entry, self.env, 2), 'daemon\n')
 
     def test_t308_loader_index_and_commands(self):
         with patch.object(elf, 'run', return_value=' libX.so.1 (libc6,x86-64) => /lib/libX.so.1\ninvalid\n'):

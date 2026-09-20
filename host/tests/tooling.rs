@@ -490,6 +490,10 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         "scripts/uscreen.service",
         &std::fs::read_to_string(repo().join("scripts/uscreen.service")).unwrap(),
     );
+    sandbox.write(
+        "scripts/uscreen-service-autostart.desktop",
+        &std::fs::read_to_string(repo().join("scripts/uscreen-service-autostart.desktop")).unwrap(),
+    );
     sandbox.script(
         "scripts/write-desktop-entry.sh",
         &std::fs::read_to_string(repo().join("scripts/write-desktop-entry.sh")).unwrap(),
