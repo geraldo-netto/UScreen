@@ -1,5 +1,6 @@
 name: Cyclomatic complexity
-on: [push, pull_request]
+on:
+  workflow_dispatch:
 jobs:
   complexity:
     runs-on: ubuntu-latest

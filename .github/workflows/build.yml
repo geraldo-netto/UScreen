@@ -1,8 +1,7 @@
 name: Build UScreen
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build-host:

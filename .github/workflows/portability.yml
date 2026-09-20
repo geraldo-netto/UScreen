@@ -1,8 +1,6 @@
 name: Linux package portability
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:

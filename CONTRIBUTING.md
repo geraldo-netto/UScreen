@@ -78,7 +78,7 @@ cargo test --release -p uscreen --features inproc-encoder --bin uscreen
 
 Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
 for refactors. Its pinned parser setup, boundary tests and scope limitations
-are documented there; CI runs it on pushes and pull requests.
+are documented there; CI workflows remain available through GitHub Actions “Run workflow” (manual dispatch); pushes and pull requests do not start them automatically.
 
 The [per-function coverage gates](scripts/coverage/README.md) collect native
 counters and bounded invalid-input/bounds corpora. CI gates Linux Rust, Android,

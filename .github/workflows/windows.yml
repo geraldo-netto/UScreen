@@ -1,8 +1,6 @@
 name: Windows compilation preview
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
