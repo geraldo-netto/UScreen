@@ -1,0 +1,418 @@
+[
+  {
+    "pid": 3084,
+    "name": "pipewire",
+    "start_ticks": 19776,
+    "cpu_ticks": 785,
+    "rss_pages": 8505
+  },
+  {
+    "pid": 3086,
+    "name": "pipewire",
+    "start_ticks": 19776,
+    "cpu_ticks": 0,
+    "rss_pages": 1413
+  },
+  {
+    "pid": 3087,
+    "name": "wireplumber",
+    "start_ticks": 19777,
+    "cpu_ticks": 3044,
+    "rss_pages": 7668
+  },
+  {
+    "pid": 3088,
+    "name": "pipewire-pulse",
+    "start_ticks": 19777,
+    "cpu_ticks": 4014,
+    "rss_pages": 26328
+  },
+  {
+    "pid": 3457,
+    "name": "cinnamon",
+    "start_ticks": 19818,
+    "cpu_ticks": 47390,
+    "rss_pages": 78687
+  },
+  {
+    "pid": 10918,
+    "name": "chrome",
+    "start_ticks": 44385,
+    "cpu_ticks": 67246,
+    "rss_pages": 188559
+  },
+  {
+    "pid": 10934,
+    "name": "chrome",
+    "start_ticks": 44402,
+    "cpu_ticks": 1,
+    "rss_pages": 16351
+  },
+  {
+    "pid": 10935,
+    "name": "chrome",
+    "start_ticks": 44402,
+    "cpu_ticks": 1,
+    "rss_pages": 16252
+  },
+  {
+    "pid": 10937,
+    "name": "chrome",
+    "start_ticks": 44405,
+    "cpu_ticks": 112,
+    "rss_pages": 4806
+  },
+  {
+    "pid": 10961,
+    "name": "chrome",
+    "start_ticks": 44418,
+    "cpu_ticks": 70673,
+    "rss_pages": 72396
+  },
+  {
+    "pid": 10964,
+    "name": "chrome",
+    "start_ticks": 44419,
+    "cpu_ticks": 12779,
+    "rss_pages": 38700
+  },
+  {
+    "pid": 10978,
+    "name": "chrome",
+    "start_ticks": 44426,
+    "cpu_ticks": 195,
+    "rss_pages": 15016
+  },
+  {
+    "pid": 11049,
+    "name": "chrome",
+    "start_ticks": 44435,
+    "cpu_ticks": 232,
+    "rss_pages": 42406
+  },
+  {
+    "pid": 11240,
+    "name": "chrome",
+    "start_ticks": 44656,
+    "cpu_ticks": 1517,
+    "rss_pages": 54481
+  },
+  {
+    "pid": 11252,
+    "name": "chrome",
+    "start_ticks": 44679,
+    "cpu_ticks": 17837,
+    "rss_pages": 136410
+  },
+  {
+    "pid": 11377,
+    "name": "chrome",
+    "start_ticks": 44866,
+    "cpu_ticks": 6377,
+    "rss_pages": 83759
+  },
+  {
+    "pid": 11386,
+    "name": "chrome",
+    "start_ticks": 44868,
+    "cpu_ticks": 4870,
+    "rss_pages": 22732
+  },
+  {
+    "pid": 11449,
+    "name": "chrome",
+    "start_ticks": 44980,
+    "cpu_ticks": 8657,
+    "rss_pages": 115304
+  },
+  {
+    "pid": 11511,
+    "name": "chrome",
+    "start_ticks": 45072,
+    "cpu_ticks": 1864,
+    "rss_pages": 75373
+  },
+  {
+    "pid": 11622,
+    "name": "chrome",
+    "start_ticks": 45326,
+    "cpu_ticks": 152,
+    "rss_pages": 37271
+  },
+  {
+    "pid": 11708,
+    "name": "chrome",
+    "start_ticks": 45691,
+    "cpu_ticks": 52,
+    "rss_pages": 34818
+  },
+  {
+    "pid": 11718,
+    "name": "chrome",
+    "start_ticks": 45764,
+    "cpu_ticks": 649,
+    "rss_pages": 62734
+  },
+  {
+    "pid": 11793,
+    "name": "chrome",
+    "start_ticks": 46029,
+    "cpu_ticks": 4298,
+    "rss_pages": 68760
+  },
+  {
+    "pid": 11802,
+    "name": "chrome",
+    "start_ticks": 46042,
+    "cpu_ticks": 4208,
+    "rss_pages": 69572
+  },
+  {
+    "pid": 11814,
+    "name": "chrome",
+    "start_ticks": 46044,
+    "cpu_ticks": 39,
+    "rss_pages": 32933
+  },
+  {
+    "pid": 11830,
+    "name": "chrome",
+    "start_ticks": 46064,
+    "cpu_ticks": 1123,
+    "rss_pages": 72998
+  },
+  {
+    "pid": 11839,
+    "name": "chrome",
+    "start_ticks": 46066,
+    "cpu_ticks": 36,
+    "rss_pages": 32904
+  },
+  {
+    "pid": 11982,
+    "name": "chrome",
+    "start_ticks": 46467,
+    "cpu_ticks": 90,
+    "rss_pages": 44401
+  },
+  {
+    "pid": 12015,
+    "name": "chrome",
+    "start_ticks": 46730,
+    "cpu_ticks": 50,
+    "rss_pages": 32739
+  },
+  {
+    "pid": 12037,
+    "name": "chrome",
+    "start_ticks": 46787,
+    "cpu_ticks": 428,
+    "rss_pages": 51905
+  },
+  {
+    "pid": 12050,
+    "name": "chrome",
+    "start_ticks": 46949,
+    "cpu_ticks": 1449,
+    "rss_pages": 67936
+  },
+  {
+    "pid": 12076,
+    "name": "chrome",
+    "start_ticks": 47088,
+    "cpu_ticks": 652,
+    "rss_pages": 53173
+  },
+  {
+    "pid": 12141,
+    "name": "chrome",
+    "start_ticks": 47300,
+    "cpu_ticks": 4462,
+    "rss_pages": 69113
+  },
+  {
+    "pid": 12230,
+    "name": "chrome",
+    "start_ticks": 47652,
+    "cpu_ticks": 4039,
+    "rss_pages": 70715
+  },
+  {
+    "pid": 12374,
+    "name": "chrome",
+    "start_ticks": 48032,
+    "cpu_ticks": 3723,
+    "rss_pages": 63291
+  },
+  {
+    "pid": 12442,
+    "name": "chrome",
+    "start_ticks": 48368,
+    "cpu_ticks": 3637,
+    "rss_pages": 64615
+  },
+  {
+    "pid": 12467,
+    "name": "chrome",
+    "start_ticks": 48395,
+    "cpu_ticks": 30,
+    "rss_pages": 32282
+  },
+  {
+    "pid": 22088,
+    "name": "chrome",
+    "start_ticks": 92948,
+    "cpu_ticks": 117,
+    "rss_pages": 35853
+  },
+  {
+    "pid": 22126,
+    "name": "chrome",
+    "start_ticks": 94201,
+    "cpu_ticks": 390,
+    "rss_pages": 41071
+  },
+  {
+    "pid": 22144,
+    "name": "chrome",
+    "start_ticks": 94212,
+    "cpu_ticks": 37,
+    "rss_pages": 38421
+  },
+  {
+    "pid": 22197,
+    "name": "chrome",
+    "start_ticks": 94911,
+    "cpu_ticks": 92,
+    "rss_pages": 48175
+  },
+  {
+    "pid": 25527,
+    "name": "chrome",
+    "start_ticks": 97305,
+    "cpu_ticks": 81,
+    "rss_pages": 45585
+  },
+  {
+    "pid": 66977,
+    "name": "chrome",
+    "start_ticks": 178262,
+    "cpu_ticks": 113,
+    "rss_pages": 52122
+  },
+  {
+    "pid": 67322,
+    "name": "chrome",
+    "start_ticks": 180617,
+    "cpu_ticks": 35,
+    "rss_pages": 33758
+  },
+  {
+    "pid": 71580,
+    "name": "chrome",
+    "start_ticks": 229691,
+    "cpu_ticks": 4771,
+    "rss_pages": 84825
+  },
+  {
+    "pid": 71750,
+    "name": "chrome",
+    "start_ticks": 230888,
+    "cpu_ticks": 9666,
+    "rss_pages": 95824
+  },
+  {
+    "pid": 267705,
+    "name": "chrome",
+    "start_ticks": 1317773,
+    "cpu_ticks": 122,
+    "rss_pages": 48477
+  },
+  {
+    "pid": 378975,
+    "name": "chrome",
+    "start_ticks": 1582728,
+    "cpu_ticks": 16840,
+    "rss_pages": 61771
+  },
+  {
+    "pid": 421721,
+    "name": "chrome",
+    "start_ticks": 1679101,
+    "cpu_ticks": 3136,
+    "rss_pages": 67401
+  },
+  {
+    "pid": 435921,
+    "name": "chrome",
+    "start_ticks": 1809475,
+    "cpu_ticks": 40,
+    "rss_pages": 43635
+  },
+  {
+    "pid": 442517,
+    "name": "chrome",
+    "start_ticks": 1896000,
+    "cpu_ticks": 43,
+    "rss_pages": 36811
+  },
+  {
+    "pid": 444088,
+    "name": "chrome",
+    "start_ticks": 1906931,
+    "cpu_ticks": 680,
+    "rss_pages": 67868
+  },
+  {
+    "pid": 444292,
+    "name": "chrome",
+    "start_ticks": 1907761,
+    "cpu_ticks": 4993,
+    "rss_pages": 102592
+  },
+  {
+    "pid": 462987,
+    "name": "chrome",
+    "start_ticks": 2016000,
+    "cpu_ticks": 6,
+    "rss_pages": 34917
+  },
+  {
+    "pid": 463253,
+    "name": "adb",
+    "start_ticks": 2017958,
+    "cpu_ticks": 30,
+    "rss_pages": 2140
+  },
+  {
+    "pid": 463278,
+    "name": "uscreen",
+    "start_ticks": 2018009,
+    "cpu_ticks": 20,
+    "rss_pages": 3024,
+    "sha256": "bb13911e91fe707a70fa7c417ff3ccecc42de890b610b082bd35c42592fc1451"
+  },
+  {
+    "pid": 463376,
+    "name": "evdi_helper",
+    "start_ticks": 2018309,
+    "cpu_ticks": 942,
+    "rss_pages": 2458,
+    "sha256": "7550151bc674a7829c756c70d2e25dc9b4cddca1319a4406e86a6d35adc77cd8"
+  },
+  {
+    "pid": 463503,
+    "name": "ffmpeg",
+    "start_ticks": 2019484,
+    "cpu_ticks": 117,
+    "rss_pages": 27727,
+    "sha256": "0dafc1360bb07743f76abeb1e4ae16b0aaa1331e9041a0e8d6a8524111dc0cbb"
+  },
+  {
+    "pid": 463771,
+    "name": "chrome",
+    "start_ticks": 2022000,
+    "cpu_ticks": 0,
+    "rss_pages": 20843
+  }
+]

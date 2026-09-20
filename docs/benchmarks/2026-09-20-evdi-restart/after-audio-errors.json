@@ -1,0 +1,13 @@
+{
+  "start": "2026-09-20T20:27:07.864644+00:00",
+  "end": "2026-09-20T20:27:08.868066+00:00",
+  "command": [
+    "pw-top",
+    "-b",
+    "-n",
+    "3"
+  ],
+  "returncode": 0,
+  "stdout": "S   ID  QUANT   RATE    WAIT    BUSY   W/Q   B/Q  ERR FORMAT           NAME \nC   29      0      0    ---     ---   ---   ---     0                  Dummy-Driver\nC   30      0      0    ---     ---   ---   ---     0                  Freewheel-Driver\nC   39      0      0    ---     ---   ---   ---     0                  Midi-Bridge\nC   86      0      0    ---     ---   ---   ---     0                  alsa_output.pci-0000_08_00.1.hdmi-stereo-extra3\nC  152      0      0    ---     ---   ---   ---     0                  bluez_output.F4_4E_FD_01_53_0F.1\nC   64      0      0    ---     ---   ---   ---     0                  Google Chrome\nS   ID  QUANT   RATE    WAIT    BUSY   W/Q   B/Q  ERR FORMAT           NAME \nS   29      0      0    ---     ---   ---   ---     0                  Dummy-Driver\nS   30      0      0    ---     ---   ---   ---     0                  Freewheel-Driver\nS   39      0      0    ---     ---   ---   ---     0                  Midi-Bridge\nS   86      0      0    ---     ---   ---   ---     0                  alsa_output.pci-0000_08_00.1.hdmi-stereo-extra3\nR  152   1024  48000  27,7us  30,4us  0,00  0,00    0    S16LE 2 44100 bluez_output.F4_4E_FD_01_53_0F.1\nR   64   1024  48000  11,5us   9,9us  0,00  0,00    0    F32LE 2 48000  + Google Chrome\nS   ID  QUANT   RATE    WAIT    BUSY   W/Q   B/Q  ERR FORMAT           NAME \nS   29      0      0    ---     ---   ---   ---     0                  Dummy-Driver\nS   30      0      0    ---     ---   ---   ---     0                  Freewheel-Driver\nS   39      0      0    ---     ---   ---   ---     0                  Midi-Bridge\nS   86      0      0    ---     ---   ---   ---     0                  alsa_output.pci-0000_08_00.1.hdmi-stereo-extra3\nR  152   1024  48000  19,6us  14,7us  0,00  0,00    0    S16LE 2 44100 bluez_output.F4_4E_FD_01_53_0F.1\nR   64   1024  48000   8,8us   5,5us  0,00  0,00    0    F32LE 2 48000  + Google Chrome\n",
+  "stderr": ""
+}

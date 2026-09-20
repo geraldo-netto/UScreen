@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "fps": 30,
+  "encoder": "h264_vaapi_baseline",
+  "bitrate_kbps": null,
+  "quality": 18,
+  "conversion_threads": 0,
+  "pipe_capacity_mib": 4,
+  "auto_resolution": true,
+  "profile_cache": false
+}

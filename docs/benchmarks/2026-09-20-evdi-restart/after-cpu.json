@@ -1,0 +1,295 @@
+{
+  "seconds": 60.16786045800109,
+  "usage": [
+    {
+      "pid": 2512,
+      "name": "Xorg",
+      "percent_of_one_core": 2.758948028671766
+    },
+    {
+      "pid": 3084,
+      "name": "pipewire",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 3086,
+      "name": "pipewire",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 3087,
+      "name": "wireplumber",
+      "percent_of_one_core": 0.24930253271130415
+    },
+    {
+      "pid": 3088,
+      "name": "pipewire-pulse",
+      "percent_of_one_core": 0.23268236386388388
+    },
+    {
+      "pid": 3457,
+      "name": "cinnamon",
+      "percent_of_one_core": 2.692467353282085
+    },
+    {
+      "pid": 10918,
+      "name": "chrome",
+      "percent_of_one_core": 0.38226388349066637
+    },
+    {
+      "pid": 10934,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10935,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10937,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10961,
+      "name": "chrome",
+      "percent_of_one_core": 2.7921883663666067
+    },
+    {
+      "pid": 10964,
+      "name": "chrome",
+      "percent_of_one_core": 0.24930253271130415
+    },
+    {
+      "pid": 10978,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11049,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11240,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11252,
+      "name": "chrome",
+      "percent_of_one_core": 0.18282185732162304
+    },
+    {
+      "pid": 11377,
+      "name": "chrome",
+      "percent_of_one_core": 0.34902354579582584
+    },
+    {
+      "pid": 11386,
+      "name": "chrome",
+      "percent_of_one_core": 0.26592270155872444
+    },
+    {
+      "pid": 11449,
+      "name": "chrome",
+      "percent_of_one_core": 0.11634118193194194
+    },
+    {
+      "pid": 11511,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11622,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11708,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 11718,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 11793,
+      "name": "chrome",
+      "percent_of_one_core": 0.28254287040614473
+    },
+    {
+      "pid": 11802,
+      "name": "chrome",
+      "percent_of_one_core": 0.28254287040614473
+    },
+    {
+      "pid": 11814,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11830,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 11839,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11982,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 12015,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12037,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 12050,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 12076,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12141,
+      "name": "chrome",
+      "percent_of_one_core": 0.29916303925356497
+    },
+    {
+      "pid": 12230,
+      "name": "chrome",
+      "percent_of_one_core": 0.11634118193194194
+    },
+    {
+      "pid": 12374,
+      "name": "chrome",
+      "percent_of_one_core": 0.24930253271130415
+    },
+    {
+      "pid": 12442,
+      "name": "chrome",
+      "percent_of_one_core": 0.09972101308452166
+    },
+    {
+      "pid": 12467,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22088,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22126,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22144,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22197,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 25527,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 66977,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 67322,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 71580,
+      "name": "chrome",
+      "percent_of_one_core": 0.38226388349066637
+    },
+    {
+      "pid": 71750,
+      "name": "chrome",
+      "percent_of_one_core": 0.14958151962678248
+    },
+    {
+      "pid": 267705,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 378975,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 421721,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 435921,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 442517,
+      "name": "chrome",
+      "percent_of_one_core": 0.016620168847420277
+    },
+    {
+      "pid": 444088,
+      "name": "chrome",
+      "percent_of_one_core": 0.29916303925356497
+    },
+    {
+      "pid": 444292,
+      "name": "chrome",
+      "percent_of_one_core": 2.6758471844346645
+    },
+    {
+      "pid": 462987,
+      "name": "chrome",
+      "percent_of_one_core": 0.08310084423710139
+    },
+    {
+      "pid": 463253,
+      "name": "adb",
+      "percent_of_one_core": 0.48198489657518806
+    },
+    {
+      "pid": 463278,
+      "name": "uscreen",
+      "percent_of_one_core": 0.29916303925356497
+    },
+    {
+      "pid": 463376,
+      "name": "evdi_helper",
+      "percent_of_one_core": 15.00801246922051
+    }
+  ]
+}

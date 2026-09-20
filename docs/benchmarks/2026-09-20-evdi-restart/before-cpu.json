@@ -1,0 +1,305 @@
+{
+  "seconds": 15.292324385998654,
+  "usage": [
+    {
+      "pid": 2512,
+      "name": "Xorg",
+      "percent_of_one_core": 2.41951446137753
+    },
+    {
+      "pid": 3084,
+      "name": "pipewire",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 3086,
+      "name": "pipewire",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 3087,
+      "name": "wireplumber",
+      "percent_of_one_core": 0.26156913095973294
+    },
+    {
+      "pid": 3088,
+      "name": "pipewire-pulse",
+      "percent_of_one_core": 0.26156913095973294
+    },
+    {
+      "pid": 3457,
+      "name": "cinnamon",
+      "percent_of_one_core": 2.0271607649379306
+    },
+    {
+      "pid": 10918,
+      "name": "chrome",
+      "percent_of_one_core": 0.3269614136996662
+    },
+    {
+      "pid": 10934,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10935,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10937,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 10961,
+      "name": "chrome",
+      "percent_of_one_core": 2.681083592337263
+    },
+    {
+      "pid": 10964,
+      "name": "chrome",
+      "percent_of_one_core": 0.19617684821979972
+    },
+    {
+      "pid": 10978,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11049,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11240,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11252,
+      "name": "chrome",
+      "percent_of_one_core": 0.13078456547986647
+    },
+    {
+      "pid": 11377,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    },
+    {
+      "pid": 11386,
+      "name": "chrome",
+      "percent_of_one_core": 0.3269614136996662
+    },
+    {
+      "pid": 11449,
+      "name": "chrome",
+      "percent_of_one_core": 5.362167184674526
+    },
+    {
+      "pid": 11511,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11622,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11708,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11718,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11793,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11802,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11814,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11830,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    },
+    {
+      "pid": 11839,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 11982,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12015,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12037,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12050,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12076,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12141,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12230,
+      "name": "chrome",
+      "percent_of_one_core": 0.19617684821979972
+    },
+    {
+      "pid": 12374,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 12442,
+      "name": "chrome",
+      "percent_of_one_core": 0.13078456547986647
+    },
+    {
+      "pid": 12467,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22088,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22126,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22144,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 22197,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 25527,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 66977,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 67322,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 68386,
+      "name": "uscreen",
+      "percent_of_one_core": 0.39235369643959944
+    },
+    {
+      "pid": 68429,
+      "name": "adb",
+      "percent_of_one_core": 0.6539228273993324
+    },
+    {
+      "pid": 71580,
+      "name": "chrome",
+      "percent_of_one_core": 0.13078456547986647
+    },
+    {
+      "pid": 71750,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    },
+    {
+      "pid": 82323,
+      "name": "evdi_helper",
+      "percent_of_one_core": 5.623736315634258
+    },
+    {
+      "pid": 122344,
+      "name": "ffmpeg",
+      "percent_of_one_core": 2.2887298958976636
+    },
+    {
+      "pid": 267705,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 378975,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 421721,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    },
+    {
+      "pid": 435921,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 442517,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 444088,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    },
+    {
+      "pid": 444292,
+      "name": "chrome",
+      "percent_of_one_core": 1.9617684821979973
+    },
+    {
+      "pid": 462599,
+      "name": "chrome",
+      "percent_of_one_core": 0.0
+    },
+    {
+      "pid": 462987,
+      "name": "chrome",
+      "percent_of_one_core": 0.06539228273993324
+    }
+  ]
+}

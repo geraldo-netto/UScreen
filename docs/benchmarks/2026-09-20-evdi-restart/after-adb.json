@@ -1,0 +1,12 @@
+{
+  "start": "2026-09-20T20:27:07.854668+00:00",
+  "end": "2026-09-20T20:27:07.857437+00:00",
+  "command": [
+    "adb",
+    "devices",
+    "-l"
+  ],
+  "returncode": 0,
+  "stdout": "List of devices attached\n8002RH1010011900       device usb:1-1.4 product:GQ8002RH1_EEA model:RugKing_Pad_2_Pro device:GQ8002RH1 transport_id:1\n\n",
+  "stderr": ""
+}

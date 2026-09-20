@@ -1,0 +1,52 @@
+[ 20179.561] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20179.561] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20179.561] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20179.561] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20179.561] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20179.561] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20179.561] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20179.561] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz
+[ 20179.573] (II) AMDGPU(0): Allocate new frame buffer 1920x1200
+[ 20179.573] (II) AMDGPU(0):  => pitch 7680 bytes
+[ 20179.701] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20179.701] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20179.701] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20179.701] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20179.701] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20179.701] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20179.701] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20179.701] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz
+[ 20179.702] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20179.702] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20179.702] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20179.702] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20179.702] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20179.702] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20179.702] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20179.702] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz
+[ 20194.740] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20194.740] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20194.740] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20194.740] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20194.740] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20194.740] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20194.740] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20194.740] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz
+[ 20194.746] (II) AMDGPU(0): Allocate new frame buffer 3200x1200
+[ 20194.746] (II) AMDGPU(0):  => pitch 12800 bytes
+[ 20194.881] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20194.881] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20194.881] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20194.881] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20194.881] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz
+[ 20194.881] (II) AMDGPU(0): EDID vendor "XYK", prod id 4608
+[ 20194.881] (II) AMDGPU(0): Using hsync ranges from config file
+[ 20194.881] (II) AMDGPU(0): Using vrefresh ranges from config file
+[ 20194.881] (II) AMDGPU(0): Printing DDC gathered Modelines:
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1202 1207 1236 +hsync -vsync (74.2 kHz eP)
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1200"x0.0  154.26  1920 1968 2000 2080  1200 1204 1209 1236 +hsync -vsync (74.2 kHz e)
+[ 20194.881] (II) AMDGPU(0): Modeline "1920x1080"x0.0  148.50  1920 2008 2052 2200  1080 1084 1089 1125 +hsync +vsync (67.5 kHz e)
+[ 20194.881] (--) AMDGPU(0): HDMI max TMDS frequency 200000KHz

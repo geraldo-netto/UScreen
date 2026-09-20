@@ -1,0 +1,2 @@
+2026-09-20T22:25:46+02:00 morpheus systemd[3071]: Started uscreen-t556-observe.service - /usr/bin/python3 /home/netto/Desktop/projects/uscreen/target/t556-restart/observe.py /home/netto/Desktop/projects/uscreen/target/t556-restart.
+2026-09-20T22:27:09+02:00 morpheus systemd[3071]: uscreen-t556-observe.service: Consumed 2.155s CPU time.

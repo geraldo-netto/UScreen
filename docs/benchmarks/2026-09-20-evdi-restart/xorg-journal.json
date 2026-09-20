@@ -1,0 +1,16 @@
+{
+  "start": "2026-09-20T20:27:09.049232+00:00",
+  "end": "2026-09-20T20:27:09.055632+00:00",
+  "command": [
+    "journalctl",
+    "_COMM=Xorg",
+    "--since",
+    "@1789935826",
+    "--no-pager",
+    "-o",
+    "short-iso-precise"
+  ],
+  "returncode": 0,
+  "stdout": "-- No entries --\n",
+  "stderr": ""
+}

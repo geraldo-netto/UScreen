@@ -1,0 +1,148 @@
+{
+  "cpu_before": {
+    "seconds": 15.292324385998654,
+    "usage": [
+      {
+        "pid": 2512,
+        "name": "Xorg",
+        "percent_of_one_core": 2.41951446137753
+      },
+      {
+        "pid": 3457,
+        "name": "cinnamon",
+        "percent_of_one_core": 2.0271607649379306
+      },
+      {
+        "pid": 68386,
+        "name": "uscreen",
+        "percent_of_one_core": 0.39235369643959944
+      },
+      {
+        "pid": 82323,
+        "name": "evdi_helper",
+        "percent_of_one_core": 5.623736315634258
+      },
+      {
+        "pid": 122344,
+        "name": "ffmpeg",
+        "percent_of_one_core": 2.2887298958976636
+      }
+    ]
+  },
+  "cpu_after_steady": {
+    "start": "2026-09-20T20:26:37.131389+00:00",
+    "end": "2026-09-20T20:27:06.748263+00:00",
+    "seconds": 29.616874,
+    "clock_ticks_per_second": 100,
+    "usage": [
+      {
+        "pid": 2512,
+        "name": "Xorg",
+        "percent_of_one_core": 2.667398321645965
+      },
+      {
+        "pid": 3457,
+        "name": "cinnamon",
+        "percent_of_one_core": 2.5323401787778144
+      },
+      {
+        "pid": 463278,
+        "name": "uscreen",
+        "percent_of_one_core": 0.33764535717037525
+      },
+      {
+        "pid": 463376,
+        "name": "evdi_helper",
+        "percent_of_one_core": 5.604912929028229
+      },
+      {
+        "pid": 463503,
+        "name": "ffmpeg",
+        "percent_of_one_core": 2.2959884287585517
+      }
+    ]
+  },
+  "latency_window_summary": {
+    "before": {
+      "capture_to_fifo": {
+        "windows": 28,
+        "median_of_window_p50_ms": 47.05,
+        "window_p50_range_ms": [
+          34.1,
+          63.6
+        ],
+        "window_p95_range_ms": [
+          36.6,
+          65.5
+        ]
+      },
+      "packet_to_render_ack": {
+        "windows": 28,
+        "median_of_window_p50_ms": 17.0,
+        "window_p50_range_ms": [
+          16.7,
+          17.3
+        ],
+        "window_p95_range_ms": [
+          18.2,
+          19.2
+        ]
+      },
+      "tablet_arrival_to_render_callback": {
+        "windows": 28,
+        "median_of_window_p50_ms": 12.4,
+        "window_p50_range_ms": [
+          12.1,
+          12.6
+        ],
+        "window_p95_range_ms": [
+          13.0,
+          13.5
+        ]
+      }
+    },
+    "after": {
+      "capture_to_fifo": {
+        "windows": 10,
+        "median_of_window_p50_ms": 47.05,
+        "window_p50_range_ms": [
+          36.7,
+          64.5
+        ],
+        "window_p95_range_ms": [
+          38.6,
+          66.5
+        ]
+      },
+      "packet_to_render_ack": {
+        "windows": 9,
+        "median_of_window_p50_ms": 17.0,
+        "window_p50_range_ms": [
+          16.9,
+          17.1
+        ],
+        "window_p95_range_ms": [
+          18.3,
+          19.1
+        ]
+      },
+      "tablet_arrival_to_render_callback": {
+        "windows": 9,
+        "median_of_window_p50_ms": 12.3,
+        "window_p50_range_ms": [
+          12.2,
+          12.4
+        ],
+        "window_p95_range_ms": [
+          13.0,
+          13.4
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "Window percentile summaries, not pooled sample percentiles or end-to-end latency.",
+    "Post-startup CPU uses last 30 snapshots to exclude helper startup work.",
+    "Non-identical YouTube content and daemon versions; not an isolated paired optimization trial."
+  ]
+}
