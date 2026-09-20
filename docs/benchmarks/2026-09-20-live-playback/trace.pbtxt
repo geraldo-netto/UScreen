@@ -1,0 +1,20 @@
+buffers { size_kb: 65536 fill_policy: DISCARD }
+duration_ms: 60000
+data_sources { config { name: "linux.ftrace" ftrace_config {
+ compact_sched { enabled: true }
+ ftrace_events: "sched/sched_switch"
+ ftrace_events: "sched/sched_waking"
+ ftrace_events: "sched/sched_process_exit"
+ ftrace_events: "task/task_newtask"
+ ftrace_events: "task/task_rename"
+ ftrace_events: "power/cpu_frequency"
+ ftrace_events: "power/cpu_idle"
+ atrace_categories: "gfx"
+ atrace_categories: "view"
+ atrace_categories: "video"
+ atrace_categories: "dalvik"
+ atrace_apps: "io.github.geraldo_netto.uscreen"
+} } }
+data_sources { config { name: "linux.process_stats" process_stats_config { scan_all_processes_on_start: true proc_stats_poll_ms: 1000 } } }
+data_sources { config { name: "android.surfaceflinger.frame" } }
+data_sources { config { name: "android.surfaceflinger.frametimeline" } }

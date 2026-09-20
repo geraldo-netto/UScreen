@@ -1,0 +1,31 @@
+import csv,collections,gzip,json,pathlib,re,shutil,statistics
+p=pathlib.Path(__file__).resolve().parent;out=pathlib.Path('docs/benchmarks/2026-09-20-live-playback');out.mkdir(exist_ok=True)
+def rows(name):return list(csv.DictReader((p/(name+'.csv')).open()))
+frames=collections.defaultdict(dict)
+for r in rows('frame_events'):
+ if '(BLAST)#788' in r['layer_name']:frames[r['frame_number']][r['name']]=int(r['ts'])
+queued=[r for r in frames.values() if 'Queue' in r];start=min(r['Queue'] for r in queued);end=max(r['Queue'] for r in queued)
+interior={k:r for k,r in frames.items() if 'Queue' in r and start+1e9<r['Queue']<end-1e9}
+values=sorted((r['PresentFenceSignaled']-r['Queue'])/1e6 for r in interior.values() if 'PresentFenceSignaled' in r)
+samples=json.loads((p/'host-samples.json').read_text());a,b=samples[0],samples[-1];seconds=b['monotonic']-a['monotonic'];first={(r['pid'],r['start']):r for r in a['processes']};cpu=[]
+for r in b['processes']:
+ old=first.get((r['pid'],r['start']))
+ if old:cpu.append(dict(pid=r['pid'],name=r['name'],percent_one_core=(r['ticks']-old['ticks'])/seconds))
+text=json.loads((p/'host-journal.json').read_text())['stdout'];latencies={}
+for name,pattern in [('host_ack',r'Latency packet-ready→render-ACK \(host clock\): p50 ([\d.]+)ms  p95 ([\d.]+)ms'),('tablet_callback',r'Latency tablet arrival→render-callback \(tablet clock\): p50 ([\d.]+)ms  p95 ([\d.]+)ms')]:
+ vals=[tuple(map(float,m)) for m in re.findall(pattern,text)]
+ latencies[name]=dict(windows=len(vals),median_of_window_p50_ms=statistics.median(x[0] for x in vals),window_p95_min_ms=min(x[1] for x in vals),window_p95_max_ms=max(x[1] for x in vals))
+errors=collections.defaultdict(set)
+for line in json.loads((p/'audio-counters.json').read_text())['stdout'].splitlines():
+ fields=line.split()
+ if len(fields)>8 and fields[0] in ['R','S','I','C'] and fields[1].isdigit():errors[fields[1]].add(fields[8])
+summary=dict(android_app_cpu_percent_one_core=sum(float(r['percent_one_core']) for r in rows('app_cpu')),cpu_window_seconds=seconds,host_cpu=cpu,frame_queues=len(queued),interior_frames=len(interior),interior_present_fences=len(values),queue_to_present_fence_ms=dict(p50=statistics.median(values),p95=values[int(len(values)*.95)],max=max(values)),unlatched_interior={k:r for k,r in interior.items() if 'Latch' not in r},latency_windows=latencies,pipewire_error_counters={k:sorted(v) for k,v in errors.items()})
+(out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+for name in ['complete.json','provenance.json','trace.pbtxt','quality.csv','app_cpu.csv','app_states.csv','app_counters.csv','codec_calls.csv','gc_owners.csv','idle.csv','frame_timeline.csv','memory-before.json','memory-after.json','routes-before.json','routes-after.json','audio-journal.json','bluetooth-journal.json','service.json']:
+ shutil.copy2(p/name,out/name)
+for name in ['frame_events.csv','host-journal.json','audio-counters.json','host-samples.json']:
+ (out/(name+'.gz')).write_bytes(gzip.compress((p/name).read_bytes(),mtime=0))
+for name in ['collect.py','analyze.py','summarize.py']:
+ shutil.copy2(p/name,out/(name+'.txt'))
+for source in p.glob('*.sql'):shutil.copy2(source,out/source.name)
+print(json.dumps({k:v for k,v in summary.items() if k!='host_cpu'},indent=2))

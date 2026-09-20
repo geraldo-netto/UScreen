@@ -1,0 +1,1 @@
+SELECT t.name,s.state,count(*) AS events,round(sum(s.dur)/1e6,3) AS total_ms,round(max(s.dur)/1e6,3) AS max_ms,round(PERCENTILE(s.dur/1e6,95),3) AS p95_ms FROM thread_state s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.dur>0 GROUP BY t.utid,s.state ORDER BY total_ms DESC;

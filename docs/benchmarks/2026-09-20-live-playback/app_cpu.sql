@@ -1,0 +1,1 @@
+SELECT t.tid,t.name,count(*) AS runs,round(sum(s.dur)/1e6,3) AS cpu_ms,round(100.0*sum(s.dur)/(SELECT end_ts-start_ts FROM trace_bounds),3) AS percent_one_core FROM sched s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.dur>0 GROUP BY t.utid ORDER BY cpu_ms DESC;

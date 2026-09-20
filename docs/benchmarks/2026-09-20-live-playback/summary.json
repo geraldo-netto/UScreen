@@ -1,0 +1,357 @@
+{
+  "android_app_cpu_percent_one_core": 38.007,
+  "cpu_window_seconds": 61.781693757999165,
+  "host_cpu": [
+    {
+      "pid": 2512,
+      "name": "Xorg",
+      "percent_one_core": 6.26399142626117
+    },
+    {
+      "pid": 3084,
+      "name": "pipewire",
+      "percent_one_core": 0.19423229228716807
+    },
+    {
+      "pid": 3086,
+      "name": "pipewire",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 3087,
+      "name": "wireplumber",
+      "percent_one_core": 0.32372048714528007
+    },
+    {
+      "pid": 3088,
+      "name": "pipewire-pulse",
+      "percent_one_core": 0.38846458457433614
+    },
+    {
+      "pid": 10918,
+      "name": "chrome",
+      "percent_one_core": 0.5826968768615042
+    },
+    {
+      "pid": 10934,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 10935,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 10937,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 10961,
+      "name": "chrome",
+      "percent_one_core": 2.525019799733185
+    },
+    {
+      "pid": 10964,
+      "name": "chrome",
+      "percent_one_core": 0.27516241407348807
+    },
+    {
+      "pid": 10978,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11049,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11240,
+      "name": "chrome",
+      "percent_one_core": 0.016186024357264003
+    },
+    {
+      "pid": 11252,
+      "name": "chrome",
+      "percent_one_core": 0.21041831664443206
+    },
+    {
+      "pid": 11377,
+      "name": "chrome",
+      "percent_one_core": 3.609483431669873
+    },
+    {
+      "pid": 11386,
+      "name": "chrome",
+      "percent_one_core": 0.27516241407348807
+    },
+    {
+      "pid": 11449,
+      "name": "chrome",
+      "percent_one_core": 0.8254872422204642
+    },
+    {
+      "pid": 11511,
+      "name": "chrome",
+      "percent_one_core": 0.016186024357264003
+    },
+    {
+      "pid": 11622,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11708,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11718,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11793,
+      "name": "chrome",
+      "percent_one_core": 0.06474409742905601
+    },
+    {
+      "pid": 11802,
+      "name": "chrome",
+      "percent_one_core": 0.06474409742905601
+    },
+    {
+      "pid": 11814,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11830,
+      "name": "chrome",
+      "percent_one_core": 0.04855807307179202
+    },
+    {
+      "pid": 11839,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 11982,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 12015,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 12037,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 12050,
+      "name": "chrome",
+      "percent_one_core": 0.016186024357264003
+    },
+    {
+      "pid": 12076,
+      "name": "chrome",
+      "percent_one_core": 0.03237204871452801
+    },
+    {
+      "pid": 12141,
+      "name": "chrome",
+      "percent_one_core": 0.32372048714528007
+    },
+    {
+      "pid": 12230,
+      "name": "chrome",
+      "percent_one_core": 0.06474409742905601
+    },
+    {
+      "pid": 12374,
+      "name": "chrome",
+      "percent_one_core": 0.27516241407348807
+    },
+    {
+      "pid": 12442,
+      "name": "chrome",
+      "percent_one_core": 0.24279036535896006
+    },
+    {
+      "pid": 12467,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 22144,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 22197,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 25527,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 66977,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 67322,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 71580,
+      "name": "chrome",
+      "percent_one_core": 0.11330217050084804
+    },
+    {
+      "pid": 71750,
+      "name": "chrome",
+      "percent_one_core": 0.17804626792990405
+    },
+    {
+      "pid": 267705,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 421721,
+      "name": "chrome",
+      "percent_one_core": 0.03237204871452801
+    },
+    {
+      "pid": 435921,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 442517,
+      "name": "chrome",
+      "percent_one_core": 0.016186024357264003
+    },
+    {
+      "pid": 444088,
+      "name": "chrome",
+      "percent_one_core": 0.2913484384307521
+    },
+    {
+      "pid": 463278,
+      "name": "uscreen",
+      "percent_one_core": 0.3722785602170721
+    },
+    {
+      "pid": 463376,
+      "name": "evdi_helper",
+      "percent_one_core": 7.299896985126066
+    },
+    {
+      "pid": 463503,
+      "name": "ffmpeg",
+      "percent_one_core": 2.2174853369451686
+    },
+    {
+      "pid": 471235,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 471529,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 495506,
+      "name": "chrome",
+      "percent_one_core": 0.0
+    },
+    {
+      "pid": 495987,
+      "name": "chrome",
+      "percent_one_core": 0.04855807307179202
+    }
+  ],
+  "frame_queues": 1787,
+  "interior_frames": 1727,
+  "interior_present_fences": 1721,
+  "queue_to_present_fence_ms": {
+    "p50": 24.143731,
+    "p95": 31.2465,
+    "max": 32.747154
+  },
+  "unlatched_interior": {
+    "149083": {
+      "Queue": 21971943317322
+    },
+    "149095": {
+      "Queue": 21972383276052
+    },
+    "149239": {
+      "Queue": 21977331564857
+    },
+    "149260": {
+      "Queue": 21978119630356
+    },
+    "149449": {
+      "Queue": 21984408807159
+    },
+    "149758": {
+      "Queue": 21994704314113
+    }
+  },
+  "latency_windows": {
+    "host_ack": {
+      "windows": 13,
+      "median_of_window_p50_ms": 18.1,
+      "window_p95_min_ms": 19.3,
+      "window_p95_max_ms": 38.1
+    },
+    "tablet_callback": {
+      "windows": 13,
+      "median_of_window_p50_ms": 13.1,
+      "window_p95_min_ms": 13.9,
+      "window_p95_max_ms": 14.3
+    }
+  },
+  "pipewire_error_counters": {
+    "29": [
+      "0"
+    ],
+    "30": [
+      "0"
+    ],
+    "39": [
+      "0"
+    ],
+    "86": [
+      "0"
+    ],
+    "152": [
+      "0"
+    ],
+    "98": [
+      "0"
+    ],
+    "200": [
+      "0"
+    ],
+    "173": [
+      "0"
+    ],
+    "145": [
+      "0"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "start": "2026-09-20T21:01:27.042506+00:00",
+  "end": "2026-09-20T21:01:27.370128+00:00",
+  "command": [
+    "journalctl",
+    "-u",
+    "bluetooth",
+    "--since",
+    "@1789938022",
+    "--no-pager",
+    "-o",
+    "short-iso-precise"
+  ],
+  "exit": 0,
+  "stdout": "-- No entries --\n",
+  "stderr": ""
+}

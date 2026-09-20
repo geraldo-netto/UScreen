@@ -1,0 +1,48 @@
+import concurrent.futures,datetime,hashlib,json,os,pathlib,subprocess,time
+P=pathlib.Path(__file__).resolve().parent
+ADB=['adb','-s','8002RH1010011900']
+def stamp(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def call(name,args,timeout=20,**kw):
+ start=stamp()
+ try:
+  r=subprocess.run(args,capture_output=True,text=True,timeout=timeout,**kw)
+  result=dict(start=start,end=stamp(),command=args,exit=r.returncode,stdout=r.stdout,stderr=r.stderr)
+ except Exception as e: result=dict(start=start,end=stamp(),command=args,error=str(e))
+ (P/(name+'.json')).write_text(json.dumps(result,indent=2)+'\n');return result
+def host():
+ result=[]
+ for p in pathlib.Path('/proc').iterdir():
+  if not p.name.isdigit(): continue
+  try:
+   name=(p/'comm').read_text().strip()
+   if name not in {'uscreen','ffmpeg','evdi_helper','Xorg','chrome','pipewire','pipewire-pulse','wireplumber'}:continue
+   fields=(p/'stat').read_text().rsplit(')',1)[1].split()
+   result.append(dict(pid=int(p.name),name=name,start=int(fields[19]),ticks=int(fields[11])+int(fields[12])))
+  except (OSError,ValueError): pass
+ return result
+start=time.time();pid=call('pid',ADB+['shell','pidof','io.github.geraldo_netto.uscreen'])['stdout'].strip();assert pid.isdigit()
+remote='/data/misc/perfetto-traces/uscreen-t560.pftrace'
+call('memory-before',ADB+['shell','dumpsys','meminfo','io.github.geraldo_netto.uscreen'])
+call('routes-before',ADB+['reverse','--list'])
+trace=call('trace-start',ADB+['shell','perfetto','--txt','--background-wait','-c','-','-o',remote],input=(P/'trace.pbtxt').read_text());assert trace['exit']==0,trace
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+ jobs=[pool.submit(call,'audio-counters',['pw-top','-b','-n','60'],timeout=75),pool.submit(call,'android-top',ADB+['shell',f'top -H -b -n 12 -d 5 -p {pid}'],timeout=75)]
+ samples=[]
+ for i in range(62):
+  samples.append(dict(at=stamp(),monotonic=time.monotonic(),processes=host()))
+  time.sleep(1)
+ (P/'host-samples.json').write_text(json.dumps(samples))
+ for job in jobs:job.result()
+call('trace-pull',ADB+['pull',remote,str(P/'playback.pftrace')],timeout=45)
+call('trace-cleanup',ADB+['shell','rm',remote])
+call('memory-after',ADB+['shell','dumpsys','meminfo','io.github.geraldo_netto.uscreen'])
+call('routes-after',ADB+['reverse','--list'])
+for name,units in [('host-journal',['uscreen.service']),('audio-journal',['pipewire','pipewire-pulse','wireplumber'])]:
+ args=['journalctl','--user','--since','@'+str(int(start)),'--no-pager','-o','short-iso-precise']
+ for unit in units: args+=['-u',unit]
+ call(name,args)
+call('app-log',ADB+['logcat','-d','--pid='+pid,'-v','epoch','-T',datetime.datetime.fromtimestamp(start).strftime('%m-%d %H:%M:%S.000')])
+call('bluetooth-journal',['journalctl','-u','bluetooth','--since','@'+str(int(start)),'--no-pager','-o','short-iso-precise'])
+call('service',['systemctl','--user','show','uscreen.service','-p','MainPID','-p','ActiveState'])
+(P/'complete.json').write_text(json.dumps(dict(start_epoch=start,end=stamp(),pid=pid,trace_sha256=hashlib.sha256((P/'playback.pftrace').read_bytes()).hexdigest()),indent=2)+'\n')
+print('complete',flush=True)

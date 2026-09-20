@@ -1,0 +1,23 @@
+import csv,io,json,pathlib,subprocess
+P=pathlib.Path(__file__).resolve().parent
+T='/home/netto/.local/share/perfetto/prebuilts/trace_processor_shell-58042408e6cc861f'
+queries={
+'quality':"SELECT name,idx,value,severity FROM stats WHERE severity IN ('error','data_loss') AND value>0",
+'bounds':"SELECT * FROM trace_bounds",
+'app_cpu':"SELECT t.tid,t.name,count(*) AS runs,round(sum(s.dur)/1e6,3) AS cpu_ms,round(100.0*sum(s.dur)/(SELECT end_ts-start_ts FROM trace_bounds),3) AS percent_one_core FROM sched s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.dur>0 GROUP BY t.utid ORDER BY cpu_ms DESC",
+'app_states':"SELECT t.name,s.state,count(*) AS events,round(sum(s.dur)/1e6,3) AS total_ms,round(max(s.dur)/1e6,3) AS max_ms,round(PERCENTILE(s.dur/1e6,95),3) AS p95_ms FROM thread_state s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.dur>0 GROUP BY t.utid,s.state ORDER BY total_ms DESC",
+'process_cpu':"SELECT p.name,round(sum(s.dur)/1e6,3) AS cpu_ms FROM sched s JOIN thread t USING(utid) JOIN process p USING(upid) WHERE s.dur>0 GROUP BY p.upid ORDER BY cpu_ms DESC LIMIT 12",
+'frame_layers':"SELECT layer_name,name,count(*) AS n FROM frame_slice WHERE layer_name LIKE '%uscreen%' GROUP BY layer_name,name",
+'frame_events':"SELECT frame_number,name,ts,dur,layer_name FROM frame_slice WHERE layer_name LIKE '%uscreen%' AND name IN ('Queue','Latch','PresentFenceSignaled') ORDER BY ts",
+'app_slices':"SELECT s.name,count(*) AS n,round(sum(s.dur)/1e6,3) AS total_ms,round(max(s.dur)/1e6,3) AS max_ms FROM slice s JOIN thread_track tt ON s.track_id=tt.id JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.dur>=0 GROUP BY s.name ORDER BY total_ms DESC LIMIT 60",
+'app_counters':"SELECT ct.name,count(*) AS n,min(c.value) AS min,max(c.value) AS max FROM counter c JOIN process_counter_track ct ON c.track_id=ct.id JOIN process p USING(upid) WHERE p.pid=22610 GROUP BY ct.name",
+'frame_timeline':"SELECT layer_name,jank_type,present_type,count(*) AS n FROM actual_frame_timeline_slice WHERE layer_name LIKE '%uscreen%' GROUP BY layer_name,jank_type,present_type",
+}
+for name,sql in queries.items():
+ r=subprocess.run([T,'query',str(P/'playback.pftrace'),sql],text=True,capture_output=True,timeout=50)
+ (P/(name+'.sql')).write_text(sql+';\n')
+ (P/(name+'.csv')).write_text(r.stdout)
+ (P/(name+'.stderr')).write_text(r.stderr)
+ if r.returncode: print(name,'FAILED',r.stderr[-350:])
+ else:
+  rows=list(csv.DictReader(io.StringIO(r.stdout))); print(name,len(rows),rows[:6])

@@ -1,0 +1,1 @@
+SELECT t.name AS thread,s.name,s.ts,s.dur/1e6 AS ms FROM slice s JOIN thread_track tt ON s.track_id=tt.id JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND (lower(s.name) LIKE '%gc%' OR lower(s.name) LIKE '%suspend%' OR lower(s.name) LIKE '%mark%' OR lower(s.name) LIKE '%alloc%') ORDER BY s.ts;

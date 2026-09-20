@@ -1,0 +1,24 @@
+"name","n","min","max"
+"ADPF Session 2147483648 actual duration",69,3462846.000000,15142923.000000
+"ADPF Session 2147483648 batch size",69,0.000000,0.000000
+"GPU completion",130,0.000000,1.000000
+"HWUI All Memory",69,2406967.000000,2406967.000000
+"HWUI CPU Memory",69,44071.000000,44071.000000
+"HWUI Misc Memory",69,2362896.000000,2362896.000000
+"Heap size (KB)",158,4663.000000,9687.000000
+"PendingRelease",1922,0.000000,1.000000
+"Purgeable HWUI Misc Memory",69,134672.000000,134672.000000
+"QueuedBuffer - VRI[MainActivity]#0BLAST#0",207,1.000000,3.000000
+"QueuedBuffer - b36eedb SurfaceView[io.github.geraldo_netto.uscreen/com.uscreen.MainActivity]#1BLAST#1",3568,1.000000,3.000000
+"RenderRate",120,59.000000,60.000000
+"VRI[MainActivity]#0(BLAST Consumer)0",138,0.000000,1.000000
+"b36eedb SurfaceView[io.github.geraldo_netto.uscreen/com.uscreen.MainActivity]#1(BLAST Consumer)1",3567,0.000000,1.000000
+"mem.locked",61,0.000000,0.000000
+"mem.rss",61,185397248.000000,190566400.000000
+"mem.rss.anon",61,48877568.000000,54046720.000000
+"mem.rss.file",61,130875392.000000,130875392.000000
+"mem.rss.shmem",61,5644288.000000,5644288.000000
+"mem.rss.watermark",61,208064512.000000,208064512.000000
+"mem.swap",61,16777216.000000,16777216.000000
+"mem.virt",61,18001592320.000000,18037374976.000000
+"oom_score_adj",61,0.000000,0.000000

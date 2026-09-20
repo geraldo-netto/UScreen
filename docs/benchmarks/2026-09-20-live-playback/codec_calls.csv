@@ -1,0 +1,3 @@
+"name","n","avg_ms","p50_ms","p95_ms","max_ms"
+"MediaCodec::dequeueOutputBuffer#native",5640,9.887192,10.722827,11.652638,32.611615
+"MediaCodec::queueInputBuffer#native",1784,2.114281,2.066635,2.837087,22.022231

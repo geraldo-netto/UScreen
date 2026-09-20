@@ -1,0 +1,25 @@
+{
+  "463278": {
+    "exe": "/tmp/appimage_extracted_feb0beeaf84c600adbe38836743b8f1d/usr/bin/uscreen",
+    "sha256": "bb13911e91fe707a70fa7c417ff3ccecc42de890b610b082bd35c42592fc1451"
+  },
+  "463376": {
+    "exe": "/tmp/appimage_extracted_feb0beeaf84c600adbe38836743b8f1d/usr/bin/evdi_helper",
+    "sha256": "7550151bc674a7829c756c70d2e25dc9b4cddca1319a4406e86a6d35adc77cd8"
+  },
+  "463503": {
+    "exe": "/tmp/appimage_extracted_feb0beeaf84c600adbe38836743b8f1d/usr/libexec/ffmpeg",
+    "sha256": "0dafc1360bb07743f76abeb1e4ae16b0aaa1331e9041a0e8d6a8524111dc0cbb"
+  },
+  "settings": {
+    "width": 1280,
+    "height": 800,
+    "fps": 30,
+    "encoder": "h264_vaapi_baseline",
+    "quality": 18,
+    "bitrate": 60000,
+    "conversion_threads": 0,
+    "pipe_capacity_mib": 4
+  },
+  "checkout": "6c03ddcd1b19a175f65ddbed42495b00fe0dbaba"
+}

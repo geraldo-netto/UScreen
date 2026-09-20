@@ -1,0 +1,7 @@
+"name","ts","ms","thread","process"
+"Background young concurrent mark compact GC",22003545209415,148.416615,"HeapTaskDaemon","system_server"
+"Suspending mutator threads",22003588248684,0.155962,"HeapTaskDaemon","system_server"
+"Mutator threads suspended for ScopedPause",22003588410184,1.925923,"HeapTaskDaemon","system_server"
+"Resuming mutator threads",22003590338069,0.027192,"HeapTaskDaemon","system_server"
+"ThreadFlipSuspendAll",22003604292300,0.168730,"HeapTaskDaemon","system_server"
+"Resuming mutator threads",22003607792223,0.010769,"HeapTaskDaemon","system_server"
