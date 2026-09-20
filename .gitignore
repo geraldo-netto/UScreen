@@ -4,6 +4,7 @@
 /target-deb12/
 /target-appimage-tools/
 /target-appimage-sources/
+/target-appimage-ffmpeg/
 
 # Cargo.lock is committed intentionally (this is a binary project)
 

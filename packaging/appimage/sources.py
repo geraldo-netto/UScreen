@@ -149,7 +149,7 @@ def verify_evdi(repo, source):
     return actual
 
 
-def collect(repo, paths, destination, notices, evdi, cache):
+def collect(repo, paths, destination, notices, evdi, cache, ffmpeg_prefix=None):
     revision = verify_evdi(repo, evdi)
     destination.mkdir(parents=True)
     notices.mkdir(parents=True)
@@ -162,6 +162,9 @@ def collect(repo, paths, destination, notices, evdi, cache):
                     '--output=' + str(destination / 'libevdi-v1.15.0.tar.gz'), 'HEAD'], check=True)
     manifest['evdi_revision'] = revision
     manifest['runtime'] = runtime_sources(destination, notices)
+    if ffmpeg_prefix is not None:
+        from ffmpeg_bundle import corresponding_sources
+        manifest['ffmpeg'] = corresponding_sources(ffmpeg_prefix, destination, notices)
     text = json.dumps(manifest, indent=2) + '\n'
     (destination / 'manifest.json').write_text(text)
     (notices / 'manifest.json').write_text(text)

@@ -20,6 +20,7 @@ import elf
 import tools
 import sources
 import build
+import ffmpeg_bundle
 import autostart_fixture
 
 
@@ -438,7 +439,8 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
         bundle = self.root/'bundle'
         for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
             self.write(bundle/'bin'/name, 'fixture binary')
-        programs = [self.write(self.root/'stock'/name, 'fixture stock') for name in ['ffmpeg', 'ffprobe', 'adb']]
+        programs = [self.write(self.root/'pinned/bin'/name, 'fixture stock') for name in ['ffmpeg', 'ffprobe']]
+        programs.append(self.write(self.root/'stock/adb', 'fixture stock'))
         return bundle, programs
 
     def test_t497_staging_keeps_stock_tools_unmodified_and_evdi_replaceable(self):
@@ -447,10 +449,11 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
         dependency = self.write(self.root/'libextra.so.1', 'fixture dependency')
         dependencies = {'libevdi.so.1': bundle/'bin/libevdi.so.1.15.0', 'libextra.so.1': dependency}
         with patch.object(build.shutil, 'which', side_effect=lambda name: str(self.root/'stock'/name)), \
+                patch.object(ffmpeg_bundle, 'verify'), \
                 patch.object(elf, 'verify_abi') as abi, patch.object(elf, 'closure', return_value=dependencies), \
                 patch.object(elf, 'set_app_rpath') as rpath, patch.object(elf, 'check_loaded') as loaded:
-            paths = build.stage(REPO, bundle, target)
-        self.assertEqual(paths, [Path('/bin/bash'), *stock, dependency])
+            paths = build.stage(REPO, bundle, target, self.root/'pinned')
+        self.assertEqual(paths, [Path('/bin/bash'), stock[-1], dependency])
         self.assertEqual(abi.call_count, 8)
         self.assertEqual(rpath.call_count, 4)
         self.assertEqual(loaded.call_count, 4)
@@ -460,16 +463,18 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
             self.assertEqual((target/'usr/libexec'/program.name).read_bytes(), program.read_bytes())
             self.assertIn('LD_LIBRARY_PATH=', (target/'usr/bin'/program.name).read_text())
         with patch.object(build.shutil, 'which', return_value=None):
-            self.assertEqual(build.stock_paths(), [Path('/nonexistent')/name for name in ['ffmpeg', 'ffprobe', 'adb']])
+            self.assertEqual(build.stock_paths(self.root/'pinned'), [*stock[:2], Path('/nonexistent/adb')])
 
     def test_t497_build_replaces_stale_assets_and_archives_corresponding_sources(self):
         args = SimpleNamespace(bundle=self.root/'bundle', output=self.root/'output', version='1.2.3',
-                               evdi_source=self.root/'evdi', source_cache=self.root/'cache', tool_cache=self.root/'tools')
+                               evdi_source=self.root/'evdi', source_cache=self.root/'cache', tool_cache=self.root/'tools',
+                               ffmpeg_prefix=self.root/'pinned', ffmpeg_cache=self.root/'ffmpeg-cache', ffmpeg_jobs=2)
         self.write(args.output/'appimage-work/stale', 'stale')
         image = args.output/'uscreen-1.2.3-x86_64.AppImage'
         self.write(image, 'old image')
         tool = self.write(self.root/'appimagetool', '#!/bin/sh\nfor last do :; done\nprintf image > "$last"\nprintf "%s\\n" "$@" > "$0.args"\n')
-        def collect(_repo, _paths, destination, _notices, _evdi, _cache):
+        def collect(_repo, _paths, destination, _notices, _evdi, _cache, prefix):
+            self.assertEqual(prefix, self.root/'pinned')
             destination.mkdir(parents=True)
             (destination/'LICENSE').write_text('source fixture')
         with patch.object(build, 'stage', return_value=[]), patch.object(sources, 'collect', side_effect=collect), \

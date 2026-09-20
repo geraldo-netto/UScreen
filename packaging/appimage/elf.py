@@ -87,12 +87,13 @@ def set_app_rpath(binary, helper=False):
 def stock_wrapper(program):
     if program not in ('ffmpeg', 'ffprobe', 'adb'):
         raise ValueError('unsupported stock executable')
+    codec_path = '$root/usr/lib/uscreen-ffmpeg:' if program in ('ffmpeg', 'ffprobe') else ''
     return f'''#!/bin/sh
 set -eu
 root=$(readlink -f -- "$0")
 root=${{root%/usr/bin/{program}}}
-# Stock FFmpeg/ADB and their libraries are copied without binary/source patches.
-LD_LIBRARY_PATH="${{LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}}{HOST_DIRS}:$root/usr/lib"
+# Pin codec libraries for FFmpeg; retain host driver/loader integration.
+LD_LIBRARY_PATH="{codec_path}${{LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}}{HOST_DIRS}:$root/usr/lib"
 export LD_LIBRARY_PATH
 exec "$root/usr/libexec/{program}" "$@"
 '''

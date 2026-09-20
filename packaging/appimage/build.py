@@ -8,6 +8,7 @@ import subprocess
 import tarfile
 
 import elf
+import ffmpeg_bundle
 import sources
 import tools
 
@@ -19,7 +20,8 @@ def copy(source, target, mode=None):
         target.chmod(mode)
 
 
-def stage(repo, bundle, appdir):
+def stage(repo, bundle, appdir, ffmpeg_prefix):
+    ffmpeg_bundle.verify(ffmpeg_prefix, ffmpeg_bundle.configuration())
     binary = appdir / 'usr/bin'
     binary.mkdir(parents=True)
     library = appdir / 'usr/lib'
@@ -28,7 +30,7 @@ def stage(repo, bundle, appdir):
         copy(bundle / 'bin' / name, binary / name)
     (binary / 'libevdi.so.1').symlink_to('libevdi.so.1.15.0')
     programs = [binary / name for name in ('uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0')]
-    stock = stage_stock(appdir)
+    stock = stage_stock(appdir, ffmpeg_prefix)
     copy(Path('/bin/bash'), binary / 'bash')
     programs.extend([binary / 'bash', *stock])
     for program in programs:
@@ -37,20 +39,23 @@ def stage(repo, bundle, appdir):
     # libevdi is kept as a replaceable, unmodified sibling of the helper.
     (library / 'libevdi.so.1').unlink(missing_ok=True)
     dependencies.pop('libevdi.so.1', None)
+    ffmpeg_bundle.isolate_codecs(appdir, dependencies)
     for name in ('uscreen', 'uscreen-gui', 'evdi_helper', 'bash'):
         elf.set_app_rpath(binary / name, helper=name == 'evdi_helper')
         elf.check_loaded(binary / name)
     stage_metadata(repo, appdir)
-    return [Path('/bin/bash'), *stock_paths(), *dependencies.values()]
+    # Upstream FFmpeg is accounted for separately from Debian source packages.
+    return [Path('/bin/bash'), stock_paths(ffmpeg_prefix)[-1], *dependencies.values()]
 
 
-def stock_paths():
-    return [Path(shutil.which(program) or '/nonexistent/' + program) for program in ('ffmpeg', 'ffprobe', 'adb')]
+def stock_paths(ffmpeg_prefix):
+    return [ffmpeg_prefix / 'bin/ffmpeg', ffmpeg_prefix / 'bin/ffprobe',
+            Path(shutil.which('adb') or '/nonexistent/adb')]
 
 
-def stage_stock(appdir):
+def stage_stock(appdir, ffmpeg_prefix):
     result = []
-    for source in stock_paths():
+    for source in stock_paths(ffmpeg_prefix):
         target = appdir / 'usr/libexec' / source.name
         copy(source, target)
         wrapper = appdir / 'usr/bin' / source.name
@@ -89,9 +94,11 @@ def build(args):
         shutil.rmtree(work)
     work.mkdir()
     appdir = work / 'UScreen.AppDir'
-    paths = stage(repo, bundle, appdir)
+    ffmpeg_prefix = args.ffmpeg_prefix or ffmpeg_bundle.prepare(args.ffmpeg_cache.resolve(), args.ffmpeg_jobs)
+    paths = stage(repo, bundle, appdir, ffmpeg_prefix.resolve())
     source_dir = work / 'sources'
-    sources.collect(repo, paths, source_dir, appdir / 'usr/share/doc/uscreen/bundled', args.evdi_source, args.source_cache.resolve())
+    sources.collect(repo, paths, source_dir, appdir / 'usr/share/doc/uscreen/bundled',
+                    args.evdi_source, args.source_cache.resolve(), ffmpeg_prefix.resolve())
     with tarfile.open(output / f'uscreen-{args.version}-AppImage-sources.tar.gz', 'w:gz') as archive:
         archive.add(source_dir, arcname='sources')
     pinned = tools.prepare(args.tool_cache)
@@ -109,6 +116,9 @@ def arguments():
     parser.add_argument('--evdi-source', type=Path, default=Path('/opt/evdi'))
     parser.add_argument('--source-cache', type=Path, default=Path('target-appimage-sources'))
     parser.add_argument('--tool-cache', type=Path, default=Path('target-appimage-tools'))
+    parser.add_argument('--ffmpeg-cache', type=Path, default=Path('target-appimage-ffmpeg'))
+    parser.add_argument('--ffmpeg-jobs', type=int, choices=range(1, 129), default=2, metavar='N')
+    parser.add_argument('--ffmpeg-prefix', type=Path, help='reuse a verified pinned build, including its source manifest')
     args = parser.parse_args()
     import re
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', args.version):

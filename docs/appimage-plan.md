@@ -62,14 +62,31 @@ with an ABI-compatible library and retain the applicable license notices.
 
 ## Bundled dependencies and host requirements
 
-The bundle contains the GUI, daemon, helper, Bash, stock Debian FFmpeg/ffprobe and
-ADB, their discovered ELF dependencies, and dynamically loaded X11/Wayland
-libraries needed by the GUI. FFmpeg, libav libraries and ADB are copied without
-source or binary patches. Private search paths apply to bundled executables;
-AppRun does not set a global `LD_LIBRARY_PATH` that could affect host utilities.
-Matching host library SONAMEs are preferred, with bundled libraries as fallbacks;
-the helper prefers its sibling libevdi. This is an ABI baseline, not a promise
-that every distribution or graphics stack works.
+The bundle contains the GUI, daemon, helper, Bash, pinned upstream **FFmpeg
+6.1.6/ffprobe**, Debian ADB and discovered dependencies. FFmpeg is built from
+unmodified, checksum-pinned source on Debian 12, with its libav libraries linked
+into the executables. Its external libx264, libx265, libvpx and libaom codec libraries
+have a private search directory that takes precedence over matching host
+libraries. AppImage therefore uses its selected codec build independently of
+the operating system's FFmpeg package.
+
+The build includes H.264/HEVC/VP9/AV1 VAAPI and H.264/HEVC/AV1 NVENC support,
+plus software H.264, VP9 and AV1. A compiled backend still needs compatible
+host hardware/drivers and a usable tablet decoder. Automatic selection retains
+the existing compatibility, quality, measured timing and render-progress checks;
+installing a newer codec library does not prove that AV1 or HEVC is fastest.
+The generic x86-64 build retains runtime CPU dispatch rather than requiring
+the build machine's instruction set. Stock source receives no codec patches;
+UScreen supplies its existing low-latency runtime options.
+The bundled libx265 software encoder also preserves the existing HEVC framing
+regressions; it is not an additional automatic-selection candidate.
+
+Other matching host library SONAMEs are preferred, with bundled fallbacks, for
+GPU and desktop integration. Dynamically loaded X11/Wayland libraries are also
+included; the helper prefers its sibling libevdi. Private search paths apply
+only to bundled executables. AppRun does not set a global `LD_LIBRARY_PATH`
+that could affect host utilities. This is an ABI baseline, not a promise that
+every distribution or graphics stack works.
 
 The host still supplies its matching glibc/loader, GPU implementations and kernel
 interfaces. EVDI/DKMS for the running kernel, graphics drivers, `/dev/uinput`, USB
@@ -90,10 +107,17 @@ installer does not remove existing kernel packages, rules or preferences.
 Packaging tools/runtime are pinned with SHA-256 in `tools.json`; a changed or
 missing digest fails before execution. Every bundled ELF is checked against the
 glibc 2.36 ceiling. Missing libraries or corresponding sources fail packaging.
+`ffmpeg.json` pins the upstream FFmpeg source and NV codec headers;
+`ffmpeg_bundle.py` verifies them before extraction/build. Packaging builds this
+version with two compiler jobs by default (`--ffmpeg-jobs 1..128`); a previously
+built prefix may be supplied with `--ffmpeg-prefix`, but its recipe, executable
+hashes, versions and encoder inventory must pass verification. Downloaded source
+archives are cached under `--ffmpeg-cache`; each build gets its own working tree.
 
 The required `uscreen-<version>-AppImage-sources.tar.gz` asset contains exact
 Debian corresponding-source archives and descriptors, Rust dependency sources,
-the pinned libevdi source and AppImage runtime source. Debian archive checksums
+the pinned libevdi source, upstream FFmpeg/NV header archives with their build
+manifest, and AppImage runtime source. Debian archive checksums
 are verified against their source descriptors. `usr/share/doc/uscreen/bundled`
 contains dependency copyright files and a version/license/source manifest.
 Project source is supplied by the matching release tag. Keep the source asset,
