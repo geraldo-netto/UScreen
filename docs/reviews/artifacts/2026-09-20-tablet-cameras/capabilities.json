@@ -1,0 +1,58 @@
+{
+  "captured_at_utc": "2026-09-20T17:08:10.087763+00:00",
+  "checkout": "e7de71c6b0e2a53f7733f20746b0c3a49e754572",
+  "scope": "Read-only capability inspection. No camera opened, no frames captured, no driver loaded, no USB functions changed.",
+  "commands": [
+    "adb shell getprop ro.product.model",
+    "adb shell getprop ro.build.version.release",
+    "adb shell getprop ro.build.version.sdk",
+    "adb shell dumpsys media.camera",
+    "adb shell pm list packages DeviceAsWebcam",
+    "adb shell getprop ro.usb.uvc.enabled",
+    "uname -r",
+    "modinfo -F version v4l2loopback"
+  ],
+  "tablet_model": "RugKing Pad 2 Pro",
+  "android_release": "16",
+  "android_sdk": "36",
+  "camera_service_summary": "== Service global info: ==\n\nNumber of camera devices: 2\nNumber of normal camera devices: 2\nNumber of public camera devices visible to API1: 2\n    Device 0 maps to \"0\"\n    Device 1 maps to \"1\"\nActive Camera Clients:\n[]\nAllowed user IDs: 0",
+  "public_camera_characteristics": [
+    {
+      "id": "0",
+      "facing": "Back",
+      "sensor_orientation": 90,
+      "selected_advertised_streams": [
+        "[34 1920 1080 OUTPUT ]",
+        "[34 1280 720 OUTPUT ]",
+        "[35 1920 1080 OUTPUT ]",
+        "[35 1280 720 OUTPUT ]"
+      ],
+      "advertised_ae_fps_ranges_dump": "[12 12 12 15 ]\n        [15 15 12 20 ]\n        [20 20 12 24 ]\n        [24 24 12 30 ]\n        [30 30 ]"
+    },
+    {
+      "id": "1",
+      "facing": "Front",
+      "sensor_orientation": 270,
+      "selected_advertised_streams": [
+        "[34 1920 1080 OUTPUT ]",
+        "[34 1280 720 OUTPUT ]",
+        "[35 1920 1080 OUTPUT ]",
+        "[35 1280 720 OUTPUT ]"
+      ],
+      "advertised_ae_fps_ranges_dump": "[10 15 15 15 ]\n        [10 20 20 20 ]\n        [10 30 15 30 ]\n        [30 30 ]"
+    }
+  ],
+  "device_as_webcam_package": "package:com.android.DeviceAsWebcam",
+  "ro_usb_uvc_enabled": "",
+  "host_kernel": "7.0.0-31-generic",
+  "v4l2loopback_version": "0.15.3",
+  "v4l2loopback_loaded": false,
+  "video_nodes": [],
+  "tools_in_path": {
+    "adb": "/usr/bin/adb",
+    "ffmpeg": "/usr/bin/ffmpeg",
+    "scrcpy": null,
+    "v4l2-ctl": null,
+    "v4l2loopback-ctl": null
+  }
+}
