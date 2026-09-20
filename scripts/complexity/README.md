@@ -12,8 +12,8 @@ python3 -m venv /tmp/uscreen-complexity-venv
 
 `--verbose` prints every function's source location, name and score. Exit 1
 means a score exceeds 9; exit 2 means the audit could not complete. Parse errors
-are failures, never permission to skip a file. CI runs the boundary/rule tests
-and the whole-project gate on pushes and pull requests.
+are failures, never permission to skip a file. The manually dispatched CI workflow runs the boundary/rule tests
+and the whole-project gate. Pushes and pull requests do not trigger CI.
 
 Python parser dependencies are pinned in `requirements.txt`. Kotlin uses the
 1.9.20 compiler's PSI parser, with pinned SHA-256 checksums for its Maven jars

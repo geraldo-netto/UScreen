@@ -131,9 +131,10 @@ The supported 128-participant ceiling and its correctness coverage remain.
 Performance controls should offer sensible defaults and explain their tradeoffs;
 users decide which settings are worthwhile on their systems. Measurements guide
 recommendations, while correctness and lifecycle tests establish supported use.
-The current helper selects its capacity automatically and has no explicit
-conversion-thread setting. T474 tracks a Linux-only Auto / 1–128 participant
-control; its availability does not require a large-machine benchmark.
+The helper measured on 2026-09-17 selected its capacity automatically. T474
+subsequently added a Linux-only Auto / 1–128 participant control; see the
+[current setting](../architecture.md#processes-and-settings). Its availability
+does not require a large-machine benchmark.
 
 ## mmap, DMA-BUF and other boundaries
 
