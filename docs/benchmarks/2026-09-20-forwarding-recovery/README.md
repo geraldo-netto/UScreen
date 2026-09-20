@@ -37,5 +37,9 @@ Windows-native coverage claim. Complexity check: 5,093 functions, none above 9.
 
 The source fix is validated with isolated fixtures; the already-running daemon
 was not restarted to exercise it. Real-device recovery described above used
-manual route restoration. Package activation is recorded separately when
-installed; no additional live ADB server reset is required for validation.
+manual route restoration. The updated Linux AppImage is installed for the next
+normal host start, with the prior T554 image retained for rollback. Release ABI
+and dependency checks passed; the installed AppImage's `--version` smoke check
+passed. The running service was left unchanged. [deployment.json](deployment.json)
+records package/daemon/helper hashes; no Android update or additional live ADB
+server reset was needed.
