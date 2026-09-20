@@ -5,6 +5,7 @@ pub mod android;
 pub mod camera;
 pub mod display;
 pub mod encoding;
+pub mod idle;
 pub mod model;
 pub mod negotiation;
 pub mod release;

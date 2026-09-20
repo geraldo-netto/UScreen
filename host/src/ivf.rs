@@ -14,6 +14,8 @@ pub(crate) struct IvfPacketizer {
     av1: av1::Av1State,
     sequences: crate::latency::LatencyTracker,
     generation: EncoderGeneration,
+    time_base: (u32, u32),
+    timestamp_us: Option<i64>,
 }
 impl IvfPacketizer {
     pub(crate) fn new(codec: Codec, sequences: crate::latency::LatencyTracker) -> Self {
@@ -23,10 +25,15 @@ impl IvfPacketizer {
             av1: Default::default(),
             sequences,
             generation: EncoderGeneration::new(),
+            time_base: (0, 0),
+            timestamp_us: None,
         }
     }
     pub(crate) fn codec_config(&self) -> Option<MediaBytes> {
         self.config.clone()
+    }
+    pub(crate) fn timestamp_us(&self) -> Option<i64> {
+        self.timestamp_us
     }
     pub(crate) async fn read_from(
         &mut self,
@@ -40,6 +47,10 @@ impl IvfPacketizer {
                 .await
                 .context("Truncated IVF header")?;
             self.config = Some(configuration(&header, self.codec)?);
+            self.time_base = (
+                u32::from_le_bytes(header[20..24].try_into().unwrap()),
+                u32::from_le_bytes(header[16..20].try_into().unwrap()),
+            );
             read = 32;
         }
         let mut header = [0; 12];
@@ -51,6 +62,11 @@ impl IvfPacketizer {
             .await
             .context("Truncated IVF frame header")?;
         let size = u32::from_le_bytes(header[..4].try_into().unwrap()) as usize;
+        self.timestamp_us = uscreen_config::idle::timestamp_us(
+            i128::from(u64::from_le_bytes(header[4..12].try_into().unwrap())),
+            self.time_base.0,
+            self.time_base.1,
+        );
         ensure!(
             (1..=MAX_FRAME_BYTES).contains(&size),
             "Invalid IVF packet size"

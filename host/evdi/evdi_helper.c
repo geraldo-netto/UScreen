@@ -251,6 +251,7 @@ static int set_helper_option(helper_options_t *options, const char *name, const 
     if (strcmp(name, "--edid") == 0) options->edid_path = value;
     else if (strcmp(name, "--capture-fifo") == 0) options->fifo_path = value;
     else if (strcmp(name, "--pipe-size-file") == 0) g_fifo.capacity_path = value;
+    else if (strcmp(name, "--idle-control-file") == 0) g_writer.idle_control = value;
     else if (strcmp(name, "--conversion-threads") == 0) g_conversion_threads = conversion_capacity(value);
     else return set_numeric_option(name, value);
     return 1;

@@ -87,6 +87,8 @@ pub struct FileConfig {
     pub encoder: String,
     /// Opt-in reuse of a historical measured profile, after fresh verification.
     pub profile_cache: bool,
+    /// Opt-in measured sparse cadence for the current encoder/decoder session.
+    pub adaptive_idle: bool,
     /// DRM render node used by VA-API encoders.
     pub vaapi_device: String,
     pub fps: u32,
@@ -169,6 +171,7 @@ impl Default for FileConfig {
             camera: Default::default(),
             encoder: "auto".into(),
             profile_cache: false,
+            adaptive_idle: false,
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,
@@ -328,6 +331,22 @@ impl FileConfig {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t492_adaptive_idle_preference_round_trips_without_changing_motion_rate() {
+        let config: super::FileConfig = toml::from_str("adaptive_idle = true\nfps = 30").unwrap();
+        let encoded: toml::Value = toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+        assert_eq!(
+            encoded.get("adaptive_idle").and_then(toml::Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(config.fps, 30);
+        let defaults: toml::Value =
+            toml::from_str(&toml::to_string(&super::FileConfig::default()).unwrap()).unwrap();
+        assert_eq!(
+            defaults.get("adaptive_idle").and_then(toml::Value::as_bool),
+            Some(false)
+        );
+    }
     use super::*;
 
     #[test]

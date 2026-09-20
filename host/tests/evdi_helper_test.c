@@ -1319,6 +1319,7 @@ static void test_t415_rounding(void) {
 
 #include "coverage_capture.c"
 #include "damage_regions.c"
+#include "idle_capture.c"
 
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
@@ -1327,6 +1328,7 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T492", test_t492_idle},
         {"T554", test_t554_regions},
         {"T497-callbacks", test_t497_callbacks},
         {"T497-main", test_t497_main},

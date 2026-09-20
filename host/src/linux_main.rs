@@ -1548,6 +1548,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         capture::CaptureConfig {
             helper_path: helper_path.clone(),
             profile_cache: file_cfg.profile_cache,
+            adaptive_idle: file_cfg.adaptive_idle,
             edid_path: cli.edid.clone(),
             encoder: encoder.clone(),
             decoder: None,

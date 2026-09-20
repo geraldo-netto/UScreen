@@ -2,6 +2,14 @@
 #include "writer.h"
 #include <time.h>
 #include <limits.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 /* Keep idle input for decoder watchdogs and CLI wall-clock IDR scheduling. */
 #define IDLE_KEEPALIVE_MS 200
@@ -11,6 +19,53 @@ static long long writer_now_us(void) {
     return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 static long long writer_now_ms(void) { return writer_now_us() / 1000; }
+
+static ssize_t read_idle_control(const char *path, char *text, size_t capacity) {
+    if (!path) return -1;
+    int file = open(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC);
+    if (file < 0) return -1;
+    struct stat info;
+    ssize_t count = -1;
+    if (fstat(file, &info) == 0 && S_ISREG(info.st_mode) && info.st_uid == geteuid()
+            && !(info.st_mode & (S_IWGRP | S_IWOTH))) count = read(file, text, capacity);
+    close(file);
+    return count;
+}
+
+/* Parse bounded unsigned fields; reject signs, overflow and trailing bytes. */
+static int idle_fields(char *text, uintmax_t fields[5]) {
+    for (int index = 0; index < 5; index++) {
+        if (!isdigit((unsigned char)*text)) return 0;
+        char *end;
+        errno = 0;
+        fields[index] = strtoumax(text, &end, 10);
+        if (errno == ERANGE || (*end != ' ' && *end != '\n')) return 0;
+        text = end + 1;
+    }
+    return *text == '\0';
+}
+
+static int idle_fifo_matches(int fifo, const uintmax_t fields[5]) {
+    struct stat info;
+    return fstat(fifo, &info) == 0 && fields[0] == info.st_dev && fields[1] == info.st_ino;
+}
+
+static int idle_control_value(char *text, ssize_t count, int fifo, long long now) {
+    if (count < 1 || count >= 160) return IDLE_KEEPALIVE_MS;
+    text[count] = '\0';
+    uintmax_t fields[5];
+    if (!idle_fields(text, fields) || fields[4] != 500) return IDLE_KEEPALIVE_MS;
+    if (fields[3] <= (uintmax_t)now || fields[3] - (uintmax_t)now > 2000)
+        return IDLE_KEEPALIVE_MS;
+    if (!idle_fifo_matches(fifo, fields)) return IDLE_KEEPALIVE_MS;
+    return 500;
+}
+
+static int writer_idle_ms(writer_context_t *writer) {
+    char text[160];
+    ssize_t count = read_idle_control(writer->idle_control, text, sizeof(text));
+    return idle_control_value(text, count, writer->fifo->fd, writer_now_ms());
+}
 
 static void record_latency(writer_context_t *writer, long long grab_us) {
     if (grab_us <= 0) return;
@@ -52,7 +107,7 @@ static int ensure_writer_fifo(writer_context_t *writer) {
 
 /* The exchange owns locking and publishes a generation-tagged lease. */
 static int claim_writer_frame(writer_context_t *writer, writer_state_t *state, int *size, int *fresh) {
-    long long due = state->last_write_ms + IDLE_KEEPALIVE_MS;
+    long long due = state->last_write_ms + writer_idle_ms(writer);
     struct timespec keepalive = {.tv_sec = due / 1000, .tv_nsec = (due % 1000) * 1000000L};
     const struct timespec *deadline = state->frame.have_frame ? &keepalive : NULL;
     int result = frame_exchange_claim(writer->frames, &state->frame, writer->running,
@@ -72,7 +127,7 @@ static int writer_frame_due(writer_context_t *writer, writer_state_t *state, int
        transmit no new information. The occasional keepalive keeps the
        encoder and the client's read timeout alive. */
     long long now_ms_write = writer_now_ms();
-    if (!fresh && (now_ms_write - state->last_write_ms) < IDLE_KEEPALIVE_MS) {
+    if (!fresh && (now_ms_write - state->last_write_ms) < writer_idle_ms(writer)) {
         frame_exchange_release(writer->frames);
         return 0;
     }

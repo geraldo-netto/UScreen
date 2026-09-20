@@ -28,6 +28,7 @@ const MAX_SAMPLES: usize = 1024;
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
 pub(crate) struct RenderSample {
+    pub sequence: u32,
     pub ordinal: u64,
     pub output: u64,
     pub at: tokio::time::Instant,
@@ -128,12 +129,13 @@ impl EncoderEvidence {
             .collect()
     }
 
-    fn acknowledge(&self, micros: u32) {
+    fn acknowledge(&self, sequence: u32, micros: u32) {
         let output = self.encoded();
         self.encoded_at_ack.store(output, Ordering::Relaxed);
         let ordinal = self.rendered.fetch_add(1, Ordering::Release) + 1;
         let mut samples = self.samples.lock().unwrap();
         samples.push_back(RenderSample {
+            sequence,
             ordinal,
             output,
             at: tokio::time::Instant::now(),
@@ -313,7 +315,7 @@ impl Inner {
         }
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
         if let Some(encoder) = encoder {
-            encoder.acknowledge(micros);
+            encoder.acknowledge(seq, micros);
         }
         self.sent.drain(..=pos);
         if self.sent.is_empty() {

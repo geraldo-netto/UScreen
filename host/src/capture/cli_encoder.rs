@@ -152,7 +152,11 @@ impl CliEncoder<'_> {
             "-fps_mode".into(),
             "passthrough".into(),
             "-force_key_frames".into(),
-            "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into(),
+            if self.config.adaptive_idle {
+                "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+0.9))".into()
+            } else {
+                "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1))".into()
+            },
         ]);
 
         let mut quality_args = Vec::new();
@@ -251,6 +255,12 @@ pub(super) enum Packetizer {
     Ivf(crate::ivf::IvfPacketizer),
 }
 impl Packetizer {
+    fn timestamp_us(&self) -> Option<i64> {
+        match self {
+            Self::AnnexB(p) => p.timestamp_us(),
+            Self::Ivf(p) => p.timestamp_us(),
+        }
+    }
     pub(super) fn new(codec: Codec, latency: crate::latency::LatencyTracker) -> Self {
         if codec.framed() {
             Self::Ivf(crate::ivf::IvfPacketizer::new(codec, latency))
@@ -275,6 +285,7 @@ impl Packetizer {
     }
 }
 
+#[cfg(test)]
 pub(super) async fn read_loop(
     stdout: impl tokio::io::AsyncRead + Unpin,
     tx: crate::video_queue::VideoSender,
@@ -282,6 +293,18 @@ pub(super) async fn read_loop(
     latency: crate::latency::LatencyTracker,
     codec: Codec,
     evidence: std::sync::Arc<crate::latency::EncoderEvidence>,
+) -> Result<()> {
+    read_loop_with_idle(stdout, tx, codec_config, latency, codec, evidence, None).await
+}
+
+pub(super) async fn read_loop_with_idle(
+    stdout: impl tokio::io::AsyncRead + Unpin,
+    tx: crate::video_queue::VideoSender,
+    codec_config: CodecConfig,
+    latency: crate::latency::LatencyTracker,
+    codec: Codec,
+    evidence: std::sync::Arc<crate::latency::EncoderEvidence>,
+    idle: Option<super::idle::Handle>,
 ) -> Result<()> {
     let _activity = latency.encoder_activity(evidence.clone());
     let mut total: u64 = 0;
@@ -302,22 +325,45 @@ pub(super) async fn read_loop(
             publish_initial_codec_config(&packetizer, &codec_config, &mut config_extracted, total);
         }
 
-        for data in access_units {
-            frames += 1;
-            if tx.receiver_count() > 0 {
-                latency.on_encoded_for(data.seq, &evidence);
-                let _ = tx.send(data);
-            } else {
-                // Decoder setup may fail before a video client can subscribe.
-                latency.on_encoder_output(&evidence);
-            }
-        }
+        let timestamp = (access_units.len() == 1)
+            .then(|| packetizer.timestamp_us())
+            .flatten();
+        frames += access_units.len() as u64;
+        publish_packets(
+            &tx,
+            &latency,
+            &evidence,
+            access_units,
+            idle.as_ref(),
+            timestamp,
+        );
         if n == 0 {
             return Ok(());
         }
         latency.maybe_report();
 
         report_encoder_throughput(&mut frames, &mut total, &mut last_log);
+    }
+}
+
+fn publish_packets(
+    tx: &crate::video_queue::VideoSender,
+    latency: &crate::latency::LatencyTracker,
+    evidence: &std::sync::Arc<crate::latency::EncoderEvidence>,
+    packets: Vec<crate::media::VideoPacket>,
+    idle: Option<&super::idle::Handle>,
+    timestamp: Option<i64>,
+) {
+    for packet in packets {
+        if let Some(idle) = idle {
+            idle.note(packet.seq, timestamp, packet.is_idr);
+        }
+        if tx.receiver_count() > 0 {
+            latency.on_encoded_for(packet.seq, evidence);
+            let _ = tx.send(packet);
+        } else {
+            latency.on_encoder_output(evidence);
+        }
     }
 }
 

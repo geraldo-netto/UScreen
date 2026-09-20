@@ -86,13 +86,20 @@ impl EncoderProcess {
             (w, h, config.fps, config.bitrate, config.quality),
             config.decoder.clone(),
         );
-        let handle = tokio::spawn(super::cli_encoder::read_loop(
+        let idle = super::idle::start(
+            config,
+            evidence.clone(),
+            output.latency.clone(),
+            output.tx.viewer_epoch(),
+        );
+        let handle = tokio::spawn(super::cli_encoder::read_loop_with_idle(
             stdout,
             output.tx,
             output.codec_config,
             output.latency,
             codec,
             evidence,
+            idle,
         ));
         Ok(EncoderTask { handle })
     }

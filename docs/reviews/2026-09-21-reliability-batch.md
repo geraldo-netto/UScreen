@@ -37,3 +37,60 @@ Raw red/green logs and coverage reports are retained locally under
 T567 (pre-existing forwarding-module formatting), and T568 (pending-frame
 accounting) remain open for later review. No live daemon, display, tablet,
 kernel module or installed package was restarted by this item.
+
+## Item 2 — adaptive idle capture
+
+T492 adds an experimental, default-off `adaptive_idle` preference in the host
+Video tab. It currently supports the Linux CLI encoder and automatic selection
+with a named Android decoder. Explicit encoder choices without a named decoder
+and the optional in-process encoder retain five idle updates/s. Fresh damage
+still wakes the writer immediately and remains subject to the user's motion FPS.
+
+Portable policy in `common/src/idle.rs` measures 16 compatible-cadence samples,
+then tries 16 sparse-cadence samples for the current encoder epoch. Admission
+requires consecutive frame identities, monotonic unreordered media timestamps,
+matching named-decoder receipts, ACK progress and periodic keyframes. Packet-ready
+to ACK must stay within 100 ms; media-timestamp-to-ACK timing must remain within
+20 ms of its baseline. The latter is a *relative change* measurement: it detects
+encoder/output queue growth without claiming an absolute raw-write-to-display
+latency or an optical presentation measurement. Missing evidence, clock jumps,
+slow ACKs, keyframe gaps or a 1.5-second stall restore five updates/s. Reconnect,
+encoder, decoder and stream changes require new evidence. No admission state is
+persisted. Every admitted new video viewer invalidates the running certificate,
+even across a reconnect with no skipped sequence; that session retains five
+updates/s until a new encoder epoch. `Selected.verified` is not used as a sparse-latency certificate.
+
+The Linux adapter publishes a private bounded record tied to the FIFO's device
+and inode, a live session token, and a 1.5-second monotonic lease. The helper
+rejects expired, malformed, overlong, overflowing, mismatched, symlinked or
+writable-by-others requests. Controller loss expires back to compatibility;
+normal cancellation removes only its own record and prevents further writes.
+The stock FFmpeg wall-time keyframe expression moves from 1.0 to 0.9 seconds
+when this option is enabled, allowing timestamp rounding before a sparse tick.
+No FFmpeg source change or additional Android thread is required.
+
+Permanent configuration and native-writer regressions were first observed red,
+then green. Retained cases cover fresh damage around idle deadlines, lease
+expiry, bounded invalid inputs, unchanged motion FPS, baseline/trial/fallback,
+timestamp conversion/reordering, slow clients, missing keys/receipts, history
+bounds and session retirement. Existing final-packet, late-join, timestamp and
+watchdog regressions remain in the normal suite.
+
+This option was not enabled on the active session. Native end-to-end sparse
+admission and sustained power measurements remain pending under T492; isolated
+writer counts and synthetic timing tests are not measured full-pipeline gains.
+
+Item-2 validation: 86 common, 19 host-library, 480 host-binary and 66 GUI unit
+tests passed, plus six isolated daemon/Wi-Fi/GUI integration tests. The optional
+in-process build and its 366-test suite passed; it retains the original idle
+cadence. Nine existing T448 framing/late-join tests also passed against bundled
+FFmpeg 6.1.6. Three existing default-build performance experiments remain ignored
+by their pre-existing attributes; none was removed or disabled by this change.
+All 119 C capture functions and all 68 functions in the explicit policy,
+controller, framing and video-queue coverage scope meet 80%. New/changed GUI and
+configuration/process wiring are included in the separate 188-function wiring
+report, which also passes the 80% gate after combining CLI and in-process
+counters. The final in-process capture rerun passed all 27 tests.
+Complexity checked 5,229 functions with none above 9. Local evidence is retained
+under `/tmp/uscreen-item2-*`; the source snapshots and reports identify their
+scopes and do not claim Windows/macOS native validation.

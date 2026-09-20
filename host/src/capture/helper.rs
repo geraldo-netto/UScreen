@@ -244,6 +244,10 @@ impl HelperProcess {
         }
 
         cmd.arg("--capture-fifo").arg(fifo);
+        if config.adaptive_idle && !cfg!(feature = "inproc-encoder") {
+            cmd.arg("--idle-control-file")
+                .arg(fifo.with_extension("idle"));
+        }
         cmd.arg("--pipe-size-file")
             .arg(uscreen_config::linux::pipe::request_path()?);
         if let Some(card) = config.card {

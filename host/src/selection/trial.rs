@@ -232,6 +232,7 @@ mod tests {
         let now = tokio::time::Instant::now();
         (0..count)
             .map(|index| RenderSample {
+                sequence: index as u32,
                 ordinal: index + 4,
                 output: index + 4,
                 at: now + Duration::from_millis(index * spacing),

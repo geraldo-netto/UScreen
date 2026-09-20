@@ -1,6 +1,27 @@
 use super::*;
 
 #[tokio::test]
+async fn t492_ivf_timestamps_preserve_sparse_gaps_and_reject_unknown_timebase() {
+    for denominator in [0u32, 30, 1_000_000] {
+        let mut data = header();
+        data[16..20].copy_from_slice(&denominator.to_le_bytes());
+        append_packet(&mut data, &[0x82, 0x49, 0x83, 0x42], 15);
+        let mut parser = IvfPacketizer::new(Codec::Vp9, Default::default());
+        assert_eq!(parser.timestamp_us(), None);
+        let (_, frames) = parser.read_from(&mut data.as_slice()).await.unwrap();
+        assert_eq!(frames.len(), 1);
+        assert_eq!(
+            parser.timestamp_us(),
+            match denominator {
+                0 => None,
+                30 => Some(500_000),
+                _ => Some(15),
+            }
+        );
+    }
+}
+
+#[tokio::test]
 async fn t497_ivf_configuration_is_absent_until_validated_and_survives_frames() {
     let mut parser = IvfPacketizer::new(Codec::Vp9, Default::default());
     assert!(parser.codec_config().is_none());

@@ -1,7 +1,7 @@
 //! T391: count-bounded fanout with one backing-storage budget per session.
 use crate::media::VideoPacket;
 use crate::media_storage::Budget;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
@@ -14,6 +14,7 @@ pub(crate) const MAX_CONFIG_BYTES: usize = 8 * 1024 * 1024;
 #[derive(Clone)]
 pub(crate) struct VideoSender {
     sender: broadcast::Sender<VideoPacket>,
+    viewer_epoch: Arc<AtomicU64>,
     budget: Arc<Budget>,
     needs_idr: Arc<Mutex<bool>>,
     idr_wanted: Arc<AtomicBool>,
@@ -27,6 +28,7 @@ pub(crate) fn channel(
     (
         VideoSender {
             sender,
+            viewer_epoch: Default::default(),
             budget: Budget::new(RETAINED_BYTES),
             needs_idr: Default::default(),
             idr_wanted,
@@ -45,7 +47,13 @@ impl VideoSender {
         self.budget.usage()
     }
 
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub(crate) fn viewer_epoch(&self) -> Arc<AtomicU64> {
+        self.viewer_epoch.clone()
+    }
+
     pub fn subscribe(&self) -> broadcast::Receiver<VideoPacket> {
+        self.viewer_epoch.fetch_add(1, Ordering::AcqRel);
         self.sender.subscribe()
     }
     pub fn receiver_count(&self) -> usize {

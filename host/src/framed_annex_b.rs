@@ -21,6 +21,8 @@ pub(crate) struct FramedAnnexB {
     header_count: usize,
     started: bool,
     previous_dts: Option<i64>,
+    time_base: Option<(u32, u32)>,
+    current_pts: Option<i64>,
     line: Vec<u8>,
     payload: Vec<u8>,
 }
@@ -34,6 +36,8 @@ impl FramedAnnexB {
             header_count: 0,
             started: false,
             previous_dts: None,
+            time_base: None,
+            current_pts: None,
             line: Vec::with_capacity(MAX_LINE),
             payload: Vec::new(),
         }
@@ -41,6 +45,11 @@ impl FramedAnnexB {
 
     pub(crate) fn codec_config(&self) -> Option<MediaBytes> {
         self.assembler.codec_config()
+    }
+
+    pub(crate) fn timestamp_us(&self) -> Option<i64> {
+        let (num, den) = self.time_base?;
+        uscreen_config::idle::timestamp_us(i128::from(self.current_pts?), num, den)
     }
 
     pub(crate) async fn read_from(
@@ -62,12 +71,13 @@ impl FramedAnnexB {
         }
         ensure!(self.headers == 15, "Incomplete encoded stream header");
         self.started = true;
-        let (size, checksum, dts) = packet_header(&self.line)?;
+        let (size, checksum, dts, pts) = packet_header(&self.line)?;
         ensure!(
             self.previous_dts.is_none_or(|previous| dts > previous),
             "Nonmonotonic encoded packet"
         );
         self.previous_dts = Some(dts);
+        self.current_pts = (dts == pts).then_some(pts);
         if self.payload.capacity() < size {
             self.payload.reserve_exact(size - self.payload.len());
         }
@@ -110,7 +120,7 @@ impl FramedAnnexB {
                 4
             }
             "#tb 0" => {
-                time_base(value)?;
+                self.time_base = Some(time_base(value)?);
                 8
             }
             "#software" | "#sar 0" => 0,
@@ -163,13 +173,11 @@ fn dimensions(value: &str) -> Result<()> {
     Ok(())
 }
 
-fn time_base(value: &str) -> Result<()> {
+fn time_base(value: &str) -> Result<(u32, u32)> {
     let (num, den) = value.split_once('/').context("Missing encoded time base")?;
-    ensure!(
-        num.parse::<u32>()? > 0 && den.parse::<u32>()? > 0,
-        "Invalid encoded time base"
-    );
-    Ok(())
+    let (num, den) = (num.parse::<u32>()?, den.parse::<u32>()?);
+    ensure!(num > 0 && den > 0, "Invalid encoded time base");
+    Ok((num, den))
 }
 
 fn hex(value: &str) -> Result<u32> {
@@ -192,13 +200,13 @@ fn extradata(value: &str) -> Result<()> {
     Ok(())
 }
 
-fn packet_header(line: &[u8]) -> Result<(usize, u32, i64)> {
+fn packet_header(line: &[u8]) -> Result<(usize, u32, i64, i64)> {
     let text = std::str::from_utf8(line)?;
     let mut fields = text.trim().split(',').map(str::trim);
     let mut next = || fields.next().context("Incomplete encoded packet header");
     ensure!(next()? == "0", "Unexpected encoded stream index");
     let dts = next()?.parse::<i64>()?;
-    let _pts = next()?.parse::<i64>()?;
+    let pts = next()?.parse::<i64>()?;
     ensure!(next()?.parse::<i64>()? >= 0, "Invalid encoded duration");
     let size = next()?.parse::<usize>()?;
     ensure!(
@@ -208,7 +216,7 @@ fn packet_header(line: &[u8]) -> Result<(usize, u32, i64)> {
     let checksum = hex(next()?)?;
     // Optional flags and side-data sizes are diagnostics, never framing or
     // random-access authority. Annex B supplies the actual configuration/IDR.
-    Ok((size, checksum, dts))
+    Ok((size, checksum, dts, pts))
 }
 
 pub(crate) fn adler(data: &[u8]) -> u32 {

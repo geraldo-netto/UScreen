@@ -5,6 +5,8 @@ mod config;
 mod encoding;
 mod fifo;
 mod helper;
+#[cfg(not(feature = "inproc-encoder"))]
+mod idle;
 mod placement;
 #[cfg(not(feature = "inproc-encoder"))]
 pub(crate) mod probe;

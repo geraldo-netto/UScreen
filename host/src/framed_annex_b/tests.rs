@@ -2,6 +2,30 @@ use super::*;
 use std::{sync::atomic::Ordering, time::Duration};
 use tokio::io::{AsyncWriteExt, BufReader};
 
+#[tokio::test]
+async fn t492_annex_b_exposes_only_unreordered_packet_timing() {
+    let mut parser = FramedAnnexB::new(Codec::H264, Default::default());
+    assert_eq!(parser.timestamp_us(), None);
+    let data = stream(Codec::H264, &pictures(Codec::H264));
+    let mut input = data.as_slice();
+    for index in 0..3 {
+        assert_eq!(parser.read_from(&mut input).await.unwrap().1.len(), 1);
+        assert_eq!(parser.timestamp_us(), Some(index));
+    }
+    let text = String::from_utf8_lossy(&data).replace("0, 0, 0, 0,", "0, 0, 1, 0,");
+    // Only mutate the ASCII framing; binary packet bytes stay unchanged.
+    let mut changed = data.clone();
+    let start = text.find("0, 0, 1, 0,").unwrap();
+    changed[start + 6] = b'1';
+    let mut parser = FramedAnnexB::new(Codec::H264, Default::default());
+    parser.read_from(&mut changed.as_slice()).await.unwrap();
+    assert_eq!(
+        parser.timestamp_us(),
+        None,
+        "T492: reordered timestamps cannot certify sparse capture"
+    );
+}
+
 #[test]
 fn t497_extradata_bounds_and_malformed_numbers_are_rejected() {
     let limit = crate::video_queue::MAX_CONFIG_BYTES;

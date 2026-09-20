@@ -911,10 +911,18 @@ impl App {
         ui.end_row();
     }
 
+    fn setting_adaptive_idle(&mut self, ui: &mut egui::Ui) {
+        ui.label("Idle capture");
+        ui.checkbox(&mut self.cfg.adaptive_idle, "Reduce idle updates when measured safe")
+            .on_hover_text("Experimental Linux CLI capture option. Automatic profiles only. Tests 2 idle updates/s for the current measured encoder and named Android decoder, with automatic fallback to 5. Motion keeps your selected FPS. Apply & restart to change.");
+        ui.end_row();
+    }
+
     fn show_video_settings(&mut self, ui: &mut egui::Ui) {
         self.setting_encoder(ui);
         if capabilities().daemon {
             self.setting_profile_cache(ui);
+            self.setting_adaptive_idle(ui);
         }
         self.setting_quality(ui);
         self.setting_bitrate(ui);
@@ -1526,6 +1534,39 @@ mod tests {
             let status = app.status.lock().unwrap().clone();
             pipe_settings::show(ui, &mut app.cfg.pipe_capacity_mib, &status);
         })
+    }
+
+    fn idle_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| app.setting_adaptive_idle(ui))
+    }
+
+    #[test]
+    fn t492_idle_option_is_explicit_and_keeps_motion_fps() {
+        let mut app = settings_test_app(Tab::Video);
+        app.cfg = app.saved_cfg.clone();
+        let fps = app.cfg.fps;
+        let ctx = egui::Context::default();
+        assert!(!app.cfg.adaptive_idle);
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Reduce idle updates when measured safe",
+            idle_test_frame,
+        );
+        assert!(app.cfg.adaptive_idle);
+        assert_eq!(app.cfg.fps, fps);
+        assert!(app.cfg.requires_restart_from(&app.saved_cfg));
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Reduce idle updates when measured safe",
+            idle_test_frame,
+        );
+        assert_eq!(app.cfg, app.saved_cfg);
     }
 
     fn conversion_test_frame(

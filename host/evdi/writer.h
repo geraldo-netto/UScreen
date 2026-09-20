@@ -11,6 +11,7 @@ typedef struct {
     fifo_writer_t *fifo;
     atomic_int *running;
     int fps;
+    const char *idle_control;
 } writer_context_t;
 void *writer_run(void *context);
 #endif
