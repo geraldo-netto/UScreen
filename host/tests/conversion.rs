@@ -76,3 +76,9 @@ fn t383_release_scalar_and_auto_vectorized_kernels_match_the_oracle() {
         &["-fno-tree-vectorize", "-fno-tree-slp-vectorize"],
     );
 }
+
+#[test]
+fn t554_regions_clip_fuzzed_bounds_preserve_pixels_and_follow_buffer_leases() {
+    run("regions");
+    run_with_flags("regions", &[]);
+}

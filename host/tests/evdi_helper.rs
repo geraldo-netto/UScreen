@@ -18,7 +18,7 @@ impl Harness {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
-        } else if matches!(case, "T082" | "T274" | "T340" | "T497") {
+        } else if matches!(case, "T082" | "T274" | "T340" | "T497" | "T554") {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler
@@ -87,6 +87,11 @@ impl Drop for Harness {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
     }
+}
+
+#[test]
+fn t554_capture_converts_only_chroma_blocks_intersecting_damage() {
+    Harness::build("T554").run("T554");
 }
 
 #[test]

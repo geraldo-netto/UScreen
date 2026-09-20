@@ -20,7 +20,7 @@ static void conversion_case(conv_pool_t *pool, int scale) {
     int width = 8 / scale;
     unsigned char dirty = 0x05;
     conv_job_t job = {source, actual, actual + width * width,
-        8, 8, 40, width, width, scale, 0, width / 2, &dirty};
+        8, 8, 40, width, width, scale, 0, width / 2, &dirty, NULL};
     conv_pool_convert(pool, &job);
     conv_pool_t serial = CONV_POOL_INITIALIZER;
     job.ydst = reference;

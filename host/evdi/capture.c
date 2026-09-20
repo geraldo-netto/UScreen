@@ -32,7 +32,8 @@ static void bgra_to_nv12(capture_context_t *capture, const unsigned char *src, u
                          const unsigned char *dirty) {
     conv_job_t frame = {src, dst, dst + (size_t)capture->frames->width * capture->frames->height,
         capture->mode_w, capture->mode_h, capture->mode_stride, capture->frames->width, capture->frames->height,
-        capture->scale, 0, capture->frames->height / 2, dirty};
+        capture->scale, 0, capture->frames->height / 2, dirty,
+        dirty ? capture->frames->spans_fill : NULL};
     conv_pool_convert(capture->conversion, &frame);
 }
 
@@ -40,14 +41,15 @@ static void mark_all_dirty(capture_context_t *capture) { frame_exchange_mark_all
 
 static void mark_damage(capture_context_t *capture, const struct evdi_rect *rects, int n) {
     for (int i = 0; i < n; i++)
-        frame_exchange_damage(capture->frames, rects[i].y1, rects[i].y2, capture->scale);
+        frame_exchange_damage_rect(capture->frames, rects[i].x1, rects[i].y1,
+                                    rects[i].x2, rects[i].y2, capture->scale);
 }
 
 static void publish_frame(capture_context_t *capture) {
     if (!capture->frames->buffers_ready || !capture->framebuffer)
         return;
 
-    /* Only the rows this particular buffer is missing. */
+    /* Only the chroma-aligned regions this particular buffer is missing. */
     bgra_to_nv12(capture, capture->framebuffer, capture->frames->fill, capture->frames->dirty_fill);
     frame_exchange_publish(capture->frames, capture->grab_us);
 }

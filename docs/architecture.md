@@ -23,8 +23,8 @@ from the existing implementation.
    supplies frames. Automatic placement uses `kscreen-doctor` only in a KDE
    Wayland session; other desktops manage placement through their own settings.
 2. **Capture.** The helper requests updates, grabs BGRA pixels, converts damaged
-   rows to NV12 (BT.709, limited range) and sends raw frames through a FIFO in
-   the runtime directory. After a partial write the helper quarantines that
+   chroma-aligned regions to NV12 (BT.709, limited range) and sends raw frames
+   through a FIFO in the runtime directory. After a partial write the helper quarantines that
    FIFO inode and reports `FIFO_RESET <device> <inode>`. The host retires the
    encoder reader and replaces the FIFO before encoding resumes. A retained,
    idle writer descriptor prevents EOF from racing ahead of the reset report;
@@ -98,7 +98,8 @@ lookup tradeoffs and allocation counts; these are not display-latency gains.
 The C helper is assembled from independently linked modules. `capture.c` owns
 the EVDI mode, registered BGRA framebuffer and event callbacks; callbacks receive
 that capture context through EVDI's `user_data`. `conversion.c` owns a worker
-pool whose jobs borrow input, output and dirty masks until conversion completes.
+pool whose jobs borrow input, output, dirty masks and horizontal spans until
+conversion completes.
 Native and scaled conversion retain their separate inner loops and BT.709 math.
 By default, the helper sizes its pool from startup CPU affinity (minus two,
 clamped to 1..128 participants including the caller). The Linux-only
@@ -107,8 +108,9 @@ independent of the affinity heuristic. Startup logs report policy, requested
 capacity and effective participants after any worker-creation failures.
 Dirty-work size limits the active
 jobs; empty masks skip dispatch, small updates stay on the caller, and selected
-workers divide dirty rows equally. Every buffer retains its own stale-row
-history. This is a per-helper work budget, not a global CPU-time quota; the
+workers divide dirty rows equally. Work size counts the actual span width;
+every buffer retains its own stale-region history. This is a per-helper work
+budget, not a global CPU-time quota; the
 [conversion measurements](benchmarks/2026-09-17-conversion.md) document thread,
 vectorization and multi-session tradeoffs.
 The Linux-only `pipe_capacity_mib` preference is published atomically in the
@@ -126,7 +128,18 @@ GUI status never opens the FIFO, so it cannot wake an encoder waiting for its
 writer or interfere with frame/EOF delivery.
 See [pipe capacity](pipe-buffer.md) for settings and host-limit instructions.
 
-`frame_exchange.c` owns three NV12 buffers with matching dirty-row histories.
+`frame_exchange.c` owns three NV12 buffers with matching dirty-row masks and
+horizontal spans. EVDI rectangles are clipped and expanded to complete scaled
+2×2 chroma blocks. Each dirty chroma row stores one conservative interval;
+disjoint rectangles on the same row also reconvert the gap between them.
+Mask bits determine whether a span is valid, so clearing a bit retires its
+interval. New damage merges into every buffer's history, and masks/spans travel
+with their pixel buffers through publication and writer claims. Initial buffers,
+mode changes and the existing 64-rectangle overflow fallback refresh all pixels.
+The [region replay](benchmarks/2026-09-20-damage-regions/README.md) measures local
+conversion savings and full-frame overhead. The FIFO still carries complete
+NV12 frames into FFmpeg; H.264, Android decoding and the wire contract are
+unchanged. This is not a changed-tile network protocol.
 Publishing swaps pointers; the writer claims an immutable lease containing the
 pointer, size, generation and capture timestamp. That lease spans pacing and
 every partial write. Mode retirement invalidates the generation and waits for

@@ -1,6 +1,7 @@
 #ifndef USCREEN_CONVERSION_H
 #define USCREEN_CONVERSION_H
 #include <pthread.h>
+#include "pixel_span.h"
 
 typedef struct {
     const unsigned char *src;   /* BGRA, stride-padded */
@@ -10,7 +11,9 @@ typedef struct {
     int ow, oh;                 /* destination dimensions (w/scale, h/scale) */
     int scale;                  /* 1 = no downscale */
     int cy0, cy1;               /* chroma-row range [cy0, cy1) this job owns */
-    const unsigned char *dirty; /* NULL = convert everything */
+    const unsigned char *dirty; /* NULL = all rows; otherwise one bit/chroma row */
+    const pixel_span_t *spans;  /* Optional per-chroma-row bounds, NULL = full width.
+                                * Borrowed, aligned and clipped by frame owner. */
 } conv_job_t;
 
 #define MAX_CONV_THREADS 128

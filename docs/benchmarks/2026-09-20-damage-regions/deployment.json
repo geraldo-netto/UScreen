@@ -1,0 +1,10 @@
+{
+  "image_sha256": "0996b7ca196a4988c936b91e7ca9b24674b98187b67abbb83542fac777101b6b",
+  "helper_sha256": "7550151bc674a7829c756c70d2e25dc9b4cddca1319a4406e86a6d35adc77cd8",
+  "previous_image_sha256": "57b42929cf2ad0e0c7a58428a3396c2714b97ba53e97ebfbc944ff4663de2455",
+  "backup": "/home/netto/.local/share/uscreen/appimage/UScreen-before-T554-57b42929cf2a.AppImage",
+  "installed_path": "/home/netto/.local/share/uscreen/appimage/UScreen.AppImage",
+  "running_display_helper_unchanged": true,
+  "restarted_display": false,
+  "android_changed": false
+}

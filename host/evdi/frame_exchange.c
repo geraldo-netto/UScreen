@@ -15,11 +15,19 @@ void frame_exchange_init(frame_exchange_t *frames) {
     pthread_condattr_destroy(&attributes);
 }
 
+static void full_spans(pixel_span_t *spans, int rows, int width) {
+    if (!spans) return;
+    for (int cy = 0; cy < rows; cy++) spans[cy] = (pixel_span_t){0, width};
+}
+
 void frame_exchange_mark_all(frame_exchange_t *frames) {
     if (!frames->dirty_fill) return;
     memset(frames->dirty_fill,   0xFF, (size_t)frames->dirty_bytes);
     memset(frames->dirty_latest, 0xFF, (size_t)frames->dirty_bytes);
     memset(frames->dirty_write,  0xFF, (size_t)frames->dirty_bytes);
+    full_spans(frames->spans_fill, frames->chroma_rows, frames->width);
+    full_spans(frames->spans_latest, frames->chroma_rows, frames->width);
+    full_spans(frames->spans_write, frames->chroma_rows, frames->width);
 }
 
 /* OR one bit range without revisiting every row of overlapping rectangles. */
@@ -34,21 +42,53 @@ static void mark_range(unsigned char *mask, int first, int end) {
     mask[last_byte] |= right;
 }
 
+/* Normalize in source space before rounding. Wider arithmetic also handles
+ * INT_MIN/INT_MAX damage reported outside a validated framebuffer. */
+static pixel_span_t chroma_range(int begin, int end, int scale, int limit) {
+    if (end < begin) { int swap = begin; begin = end; end = swap; }
+    if (begin == end) return (pixel_span_t){0};
+    int64_t first = begin, last = end, divisor = 2 * scale;
+    if (first < 0) first = 0;
+    if (last > (int64_t)limit * divisor) last = (int64_t)limit * divisor;
+    if (first >= last) return (pixel_span_t){0};
+    return (pixel_span_t){(int)(first / divisor), (int)((last + divisor - 1) / divisor)};
+}
+
+static void merge_spans(unsigned char *mask, pixel_span_t *spans, pixel_span_t rows, pixel_span_t x) {
+    if (!spans) return;
+    for (int cy = rows.begin; cy < rows.end; cy++) {
+        if (!(mask[cy / 8] & (1u << (cy % 8)))) spans[cy] = x;
+        if (x.begin < spans[cy].begin) spans[cy].begin = x.begin;
+        if (x.end > spans[cy].end) spans[cy].end = x.end;
+    }
+}
+
+static void mark_region(frame_exchange_t *frames, pixel_span_t rows, pixel_span_t x) {
+    merge_spans(frames->dirty_fill, frames->spans_fill, rows, x);
+    merge_spans(frames->dirty_latest, frames->spans_latest, rows, x);
+    merge_spans(frames->dirty_write, frames->spans_write, rows, x);
+    mark_range(frames->dirty_fill, rows.begin, rows.end);
+    mark_range(frames->dirty_latest, rows.begin, rows.end);
+    mark_range(frames->dirty_write, rows.begin, rows.end);
+}
+
 void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) {
-    if (!frames->dirty_fill || frames->chroma_rows <= 0) return;
-    if (y0 == y1) return; /* Empty half-open intervals contain no dirty row. */
-    if (y1 < y0) { int t = y0; y0 = y1; y1 = t; }
-    /* Source rows map onto output chroma rows through the scale: one
-       chroma row covers 2*scale source rows. */
-    int div = 2 * scale;
-    /* The driver may report an out-of-frame endpoint. Round in a wider
-       type before clipping so INT_MAX cannot overflow into a negative row. */
-    int c0 = y0 / div, c1 = (int)(((int64_t)y1 + div - 1) / div);
-    if (c0 < 0) c0 = 0;
-    if (c1 > frames->chroma_rows) c1 = frames->chroma_rows;
-    mark_range(frames->dirty_fill, c0, c1);
-    mark_range(frames->dirty_latest, c0, c1);
-    mark_range(frames->dirty_write, c0, c1);
+    if (!frames->dirty_fill || scale < 1 || scale > 4) return;
+    pixel_span_t rows = chroma_range(y0, y1, scale, frames->chroma_rows);
+    mark_region(frames, rows, (pixel_span_t){0, frames->width});
+}
+
+void frame_exchange_damage_rect(frame_exchange_t *frames, int x0, int y0, int x1, int y1, int scale) {
+    if (!frames->dirty_fill || scale < 1 || scale > 4) return;
+    pixel_span_t x = chroma_range(x0, x1, scale, frames->width / 2);
+    if (x.begin == x.end) return;
+    pixel_span_t rows = chroma_range(y0, y1, scale, frames->chroma_rows);
+    mark_region(frames, rows, (pixel_span_t){2 * x.begin, 2 * x.end});
+}
+
+static int histories_allocated(const frame_exchange_t *frames) {
+    return frames->dirty_fill && frames->dirty_latest && frames->dirty_write
+        && frames->spans_fill && frames->spans_latest && frames->spans_write;
 }
 
 void frame_exchange_resize(frame_exchange_t *frames, int width, int height) {
@@ -66,13 +106,15 @@ void frame_exchange_resize(frame_exchange_t *frames, int width, int height) {
     free(frames->dirty_fill);   frames->dirty_fill   = malloc((size_t)frames->dirty_bytes);
     free(frames->dirty_latest); frames->dirty_latest = malloc((size_t)frames->dirty_bytes);
     free(frames->dirty_write);  frames->dirty_write  = malloc((size_t)frames->dirty_bytes);
-    if (frames->dirty_fill && frames->dirty_latest && frames->dirty_write)
-        frame_exchange_mark_all(frames);
+    size_t spans_size = (size_t)frames->chroma_rows * sizeof(pixel_span_t);
+    free(frames->spans_fill);   frames->spans_fill = malloc(spans_size);
+    free(frames->spans_latest); frames->spans_latest = malloc(spans_size);
+    free(frames->spans_write);  frames->spans_write = malloc(spans_size);
+    if (histories_allocated(frames)) frame_exchange_mark_all(frames);
 }
 
 int frame_exchange_allocated(const frame_exchange_t *frames) {
-    return frames->fill && frames->latest && frames->write && frames->dirty_fill
-        && frames->dirty_latest && frames->dirty_write;
+    return frames->fill && frames->latest && frames->write && histories_allocated(frames);
 }
 
 int frame_exchange_retire(frame_exchange_t *frames) {
@@ -101,6 +143,9 @@ void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
     unsigned char *dirty = frames->dirty_latest;
     frames->dirty_latest = frames->dirty_fill;
     frames->dirty_fill = dirty;
+    pixel_span_t *spans = frames->spans_latest;
+    frames->spans_latest = frames->spans_fill;
+    frames->spans_fill = spans;
     frames->latest_valid = 1;
     frames->latest_grab_us = grabbed_us;
     pthread_cond_signal(&frames->ready);
@@ -143,6 +188,9 @@ int frame_exchange_claim(frame_exchange_t *frames, frame_cursor_t *cursor,
         unsigned char *dtmp = frames->dirty_write;
         frames->dirty_write = frames->dirty_latest;
         frames->dirty_latest = dtmp;
+        pixel_span_t *stmp = frames->spans_write;
+        frames->spans_write = frames->spans_latest;
+        frames->spans_latest = stmp;
         frames->latest_valid = 0;
         frames->write_grab_us = frames->latest_grab_us;
         cursor->have_frame = 1;
@@ -174,4 +222,7 @@ void frame_exchange_free(frame_exchange_t *frames) {
     free(frames->dirty_fill); frames->dirty_fill = NULL;
     free(frames->dirty_latest); frames->dirty_latest = NULL;
     free(frames->dirty_write); frames->dirty_write = NULL;
+    free(frames->spans_fill); frames->spans_fill = NULL;
+    free(frames->spans_latest); frames->spans_latest = NULL;
+    free(frames->spans_write); frames->spans_write = NULL;
 }

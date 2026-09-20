@@ -51,7 +51,7 @@ static void convert(struct lane *lane) {
     frame_exchange_t *f = &lane->frames;
     conv_job_t frame = {lane->source, f->fill, f->fill + f->width * f->height,
         lane->width, lane->height, lane->stride, f->width, f->height, lane->scale,
-        0, f->chroma_rows, f->dirty_fill};
+        0, f->chroma_rows, f->dirty_fill, NULL};
     conv_pool_convert(&lane->pool, &frame);
 }
 

@@ -66,7 +66,7 @@ static void check_conversion(conv_pool_t *pool, int scale, int pattern) {
     unsigned char mask[64];
     dirty_mask(mask, oh / 2, pattern);
     conv_job_t frame = {source, actual, actual + ow * oh, W, H, STRIDE, ow, oh, scale, 0, oh / 2,
-        pattern == 4 ? NULL : mask};
+        pattern == 4 ? NULL : mask, NULL};
     conv_pool_convert(pool, &frame);
     frame.ydst = expected; frame.uvdst = expected + ow * oh;
     reference(&frame);
@@ -150,7 +150,7 @@ static void sparse_dispatch(void) {
     assert(source && output);
     unsigned char dirty[16] = {0};
     conv_job_t job = {source, output, output + 512 * 256, 512, 256, 512 * 4,
-        512, 256, 1, 0, 128, dirty};
+        512, 256, 1, 0, 128, dirty, NULL};
     unsigned initial = pool.generation;
     conv_pool_convert(&pool, &job);
     assert(pool.generation == initial && "T383: empty work woke every worker");
@@ -178,7 +178,7 @@ static void density_dispatch(void) {
     memset(source, 173, W * H * 4);
     unsigned char dirty[H / 16];
     memset(dirty, 0xFF, sizeof(dirty));
-    conv_job_t job = {source, actual, actual + W * H, W, H, W * 4, W, H, 1, 0, H / 2, dirty};
+    conv_job_t job = {source, actual, actual + W * H, W, H, W * 4, W, H, 1, 0, H / 2, dirty, NULL};
     conv_job_t oracle = job;
     oracle.ydst = expected; oracle.uvdst = expected + W * H;
     conv_pool_convert(&pool, &job);
@@ -197,13 +197,20 @@ static void density_dispatch(void) {
     free(source); free(actual); free(expected);
 }
 
+#include "regions_test.c"
+
+static void equivalence_suite(void) { conversion_matrix(); damage_matrix(); }
+
 int main(int argc, char **argv) {
     assert(argc == 2);
-    if (strcmp(argv[1], "damage-extreme") == 0) extreme_damage();
-    else if (strcmp(argv[1], "damage-empty") == 0) empty_damage();
-    else if (strcmp(argv[1], "density") == 0) density_dispatch();
-    else if (strcmp(argv[1], "dispatch") == 0) sparse_dispatch();
-    else if (strcmp(argv[1], "large") == 0) large_pool();
-    else { assert(strcmp(argv[1], "equivalence") == 0); conversion_matrix(); damage_matrix(); }
-    return 0;
+    static const struct { const char *name; void (*run)(void); } cases[] = {
+        {"damage-extreme", extreme_damage}, {"damage-empty", empty_damage},
+        {"density", density_dispatch}, {"dispatch", sparse_dispatch},
+        {"large", large_pool}, {"equivalence", equivalence_suite}, {"regions", region_suite},
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        if (strcmp(argv[1], cases[i].name) == 0) { cases[i].run(); return 0; }
+    }
+    assert(0 && "unknown conversion test case");
+    return 1;
 }

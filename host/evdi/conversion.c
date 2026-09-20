@@ -6,6 +6,10 @@ static inline int row_is_dirty(const unsigned char *mask, int cy) {
     return mask == NULL || (mask[cy >> 3] & (1u << (cy & 7)));
 }
 
+static inline pixel_span_t row_span(const conv_job_t *job, int cy) {
+    return job->spans ? job->spans[cy] : (pixel_span_t){0, job->ow};
+}
+
 static inline unsigned char clamp_byte(int value) {
     if (value < 0) return 0;
     if (value > 255) return 255;
@@ -32,7 +36,8 @@ static inline void convert_strip_scaled(const conv_job_t *j, const int n) {
         unsigned char *yo0 = j->ydst + (size_t)(cy * 2) * ow;
         unsigned char *yo1 = yo0 + ow;
         unsigned char *uv  = j->uvdst + (size_t)cy * ow;
-        for (int ox = 0; ox < ow; ox += 2) {
+        pixel_span_t span = row_span(j, cy);
+        for (int ox = span.begin; ox < span.end; ox += 2) {
             int csb = 0, csg = 0, csr = 0;      /* chroma: whole 2n x 2n block */
             for (int q = 0; q < 4; q++) {       /* four output luma pixels */
                 int oxx = ox + (q & 1);
@@ -69,7 +74,8 @@ static inline void convert_strip(const conv_job_t *j) {
         unsigned char *yo0 = j->ydst + (size_t)y0 * w;
         unsigned char *yo1 = j->ydst + (size_t)y1 * w;
         unsigned char *uv  = j->uvdst + (size_t)cy * w;
-        for (int x = 0; x < w; x += 2) {
+        pixel_span_t span = row_span(j, cy);
+        for (int x = span.begin; x < span.end; x += 2) {
             const unsigned char *p;
             int b, g, r, sb, sg, sr;
             p = row0 + (size_t)x * 4;       b = p[0]; g = p[1]; r = p[2];
@@ -107,12 +113,22 @@ static int dirty_row_count(const conv_job_t *frame) {
     return rows;
 }
 
+static size_t dirty_source_pixels(const conv_job_t *frame) {
+    size_t width = 0;
+    for (int cy = frame->cy0; cy < frame->cy1; cy++) {
+        if (!row_is_dirty(frame->dirty, cy)) continue;
+        pixel_span_t span = row_span(frame, cy);
+        width += (size_t)(span.end - span.begin);
+    }
+    return width * 2 * frame->scale * frame->scale;
+}
+
 /* Explicit NULL masks retain fixed-width dispatch for callers measuring the
  * pool itself. Capture always supplies its per-buffer stale-row history. */
 static int job_count(const conv_pool_t *pool, const conv_job_t *frame) {
     if (!frame->dirty) return pool->count;
     int dirty_rows = dirty_row_count(frame);
-    size_t pixels = (size_t)dirty_rows * frame->ow * 2 * frame->scale * frame->scale;
+    size_t pixels = dirty_source_pixels(frame);
     /* Target 256 Ki source pixels per job, rounded up. Sparse damage stays on
      * the caller; large surfaces can use more than the former eight workers. */
     size_t count = (pixels + 262143) / 262144;

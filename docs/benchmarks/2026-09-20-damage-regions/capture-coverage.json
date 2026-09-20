@@ -1,0 +1,1299 @@
+{
+  "scopes": [
+    "host/evdi/"
+  ],
+  "minimum_percent": 80,
+  "passes": true,
+  "summary": {
+    "c": {
+      "functions": 114,
+      "passing": 114,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/evdi/capture.c",
+      "name": "capture_now_us",
+      "line": 13,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "capture_now_ms",
+      "line": 18,
+      "language": "c",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "cmp_int",
+      "line": 20,
+      "language": "c",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_dpms",
+      "line": 25,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "bgra_to_nv12",
+      "line": 31,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "mark_all_dirty",
+      "line": 40,
+      "language": "c",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "mark_damage",
+      "line": 42,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "publish_frame",
+      "line": 48,
+      "language": "c",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        50
+      ]
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "reject_mode",
+      "line": 57,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "validate_frame_format",
+      "line": 66,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "validate_mode_dimensions",
+      "line": 78,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "configure_mode_geometry",
+      "line": 91,
+      "language": "c",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "retire_mode_buffers",
+      "line": 118,
+      "language": "c",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "allocate_framebuffer",
+      "line": 139,
+      "language": "c",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        155
+      ]
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "allocate_stream_buffers",
+      "line": 161,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "mode_buffers_allocated",
+      "line": 173,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_mode_changed",
+      "line": 177,
+      "language": "c",
+      "covered": 28,
+      "total": 31,
+      "percent": 90.3225806451613,
+      "passes": true,
+      "missing": [
+        193,
+        194,
+        195
+      ]
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "grab_now",
+      "line": 225,
+      "language": "c",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_update_ready",
+      "line": 250,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_crtc_state",
+      "line": 275,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_cursor_set",
+      "line": 280,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "on_cursor_move",
+      "line": 285,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "capture_period_ms",
+      "line": 290,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "capture_poll_timeout",
+      "line": 296,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "request_capture_if_due",
+      "line": 332,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "recover_capture_if_stalled",
+      "line": 349,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "report_capture_stats",
+      "line": 366,
+      "language": "c",
+      "covered": 24,
+      "total": 24,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "poll_capture_events",
+      "line": 397,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "name": "capture_run",
+      "line": 416,
+      "language": "c",
+      "covered": 22,
+      "total": 23,
+      "percent": 95.65217391304348,
+      "passes": true,
+      "missing": [
+        445
+      ]
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "row_is_dirty",
+      "line": 5,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "row_span",
+      "line": 9,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "clamp_byte",
+      "line": 13,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "write_chroma",
+      "line": 20,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "convert_strip_scaled",
+      "line": 30,
+      "language": "c",
+      "covered": 29,
+      "total": 29,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "convert_strip",
+      "line": 66,
+      "language": "c",
+      "covered": 29,
+      "total": 29,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "convert_job",
+      "line": 100,
+      "language": "c",
+      "covered": 7,
+      "total": 8,
+      "percent": 87.5,
+      "passes": true,
+      "missing": [
+        106
+      ]
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "dirty_row_count",
+      "line": 110,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "dirty_source_pixels",
+      "line": 116,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "job_count",
+      "line": 128,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "conv_worker",
+      "line": 140,
+      "language": "c",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "conv_pool_start",
+      "line": 162,
+      "language": "c",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "job_end",
+      "line": 183,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "prepare_jobs",
+      "line": 192,
+      "language": "c",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "start_workers",
+      "line": 204,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "conv_pool_convert",
+      "line": 215,
+      "language": "c",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "conv_pool_stop",
+      "line": 229,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "name": "conv_pool_destroy",
+      "line": 240,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "handle_signal",
+      "line": 49,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "available_cpus",
+      "line": 56,
+      "language": "c",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        66
+      ]
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "conv_pool_init",
+      "line": 71,
+      "language": "c",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "choose_card_after",
+      "line": 83,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "find_card_after",
+      "line": 93,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "find_evdi_device_after",
+      "line": 107,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "find_evdi_device_in",
+      "line": 126,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "connector_status_connected",
+      "line": 130,
+      "language": "c",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "directory_has_connected_output",
+      "line": 142,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "card_connected_in",
+      "line": 155,
+      "language": "c",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "open_available_device_in",
+      "line": 170,
+      "language": "c",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "open_session_device_in",
+      "line": 192,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "request_evdi_device",
+      "line": 201,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "wait_for_available_device",
+      "line": 210,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "set_numeric_option",
+      "line": 224,
+      "language": "c",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "conversion_capacity",
+      "line": 243,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "set_helper_option",
+      "line": 250,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "parse_helper_options",
+      "line": 259,
+      "language": "c",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "initialize_helper_runtime",
+      "line": 267,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "acquire_capture_device_in",
+      "line": 279,
+      "language": "c",
+      "covered": 13,
+      "total": 16,
+      "percent": 81.25,
+      "passes": true,
+      "missing": [
+        290,
+        291,
+        307
+      ]
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "acquire_capture_device",
+      "line": 312,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "open_edid_file",
+      "line": 316,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "read_edid_file",
+      "line": 330,
+      "language": "c",
+      "covered": 22,
+      "total": 25,
+      "percent": 88.0,
+      "passes": true,
+      "missing": [
+        353,
+        354,
+        355
+      ]
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "start_capture_writer",
+      "line": 362,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "shutdown_capture",
+      "line": 377,
+      "language": "c",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "run_capture",
+      "line": 398,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "name": "main",
+      "line": 404,
+      "language": "c",
+      "covered": 25,
+      "total": 27,
+      "percent": 92.5925925925926,
+      "passes": true,
+      "missing": [
+        410,
+        411
+      ]
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "fifo_now_ms",
+      "line": 11,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "capacity_value",
+      "line": 19,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "requested_capacity",
+      "line": 30,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "report_capacity",
+      "line": 43,
+      "language": "c",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "update_capacity",
+      "line": 61,
+      "language": "c",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "release_retired_fifo",
+      "line": 75,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "fifo_writer_open",
+      "line": 82,
+      "language": "c",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "wait_fifo_writable",
+      "line": 127,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "retry_fifo_write",
+      "line": 138,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "write_fifo_bytes",
+      "line": 147,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "retire_partial_fifo",
+      "line": 164,
+      "language": "c",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "fifo_writer_write",
+      "line": 181,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "name": "fifo_writer_close",
+      "line": 199,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_init",
+      "line": 10,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "full_spans",
+      "line": 18,
+      "language": "c",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_mark_all",
+      "line": 23,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "mark_range",
+      "line": 34,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "chroma_range",
+      "line": 47,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "merge_spans",
+      "line": 57,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "mark_region",
+      "line": 66,
+      "language": "c",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_damage",
+      "line": 75,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_damage_rect",
+      "line": 81,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "histories_allocated",
+      "line": 89,
+      "language": "c",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_resize",
+      "line": 94,
+      "language": "c",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_allocated",
+      "line": 116,
+      "language": "c",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_retire",
+      "line": 120,
+      "language": "c",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_publish",
+      "line": 137,
+      "language": "c",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "wait_for_frame",
+      "line": 155,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_claim",
+      "line": 166,
+      "language": "c",
+      "covered": 32,
+      "total": 34,
+      "percent": 94.11764705882354,
+      "passes": true,
+      "missing": [
+        180,
+        181
+      ]
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_release",
+      "line": 209,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "name": "frame_exchange_free",
+      "line": 218,
+      "language": "c",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "writer_now_us",
+      "line": 8,
+      "language": "c",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "writer_now_ms",
+      "line": 13,
+      "language": "c",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "record_latency",
+      "line": 15,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "add_period",
+      "line": 32,
+      "language": "c",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "ensure_writer_fifo",
+      "line": 40,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "claim_writer_frame",
+      "line": 54,
+      "language": "c",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "writer_frame_due",
+      "line": 67,
+      "language": "c",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "pace_writer",
+      "line": 84,
+      "language": "c",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "name": "writer_run",
+      "line": 105,
+      "language": "c",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

@@ -321,8 +321,7 @@ static void stop_test_writer(pthread_t writer, int pipefd[2]) {
     close(pipefd[0]);
     if (g_fifo.fd >= 0) close(g_fifo.fd);
     free(g_capture.framebuffer);
-    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
-    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    frame_exchange_free(&g_frames);
     pthread_cond_destroy(&g_frames.ready);
 }
 
@@ -476,8 +475,7 @@ static void test_t082(void) {
         test_conversion(2 * scale + 1, 2 * scale + 1, scale);
     }
     free(g_capture.framebuffer);
-    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
-    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    frame_exchange_free(&g_frames);
     pthread_cond_destroy(&g_frames.ready);
 }
 
@@ -537,12 +535,7 @@ static void test_t013(void) {
     mode.height = 12;
     on_mode_changed(mode, &g_capture);
     free(g_capture.framebuffer);
-    free(g_frames.fill);
-    free(g_frames.latest);
-    free(g_frames.write);
-    free(g_frames.dirty_fill);
-    free(g_frames.dirty_latest);
-    free(g_frames.dirty_write);
+    frame_exchange_free(&g_frames);
     pthread_cond_destroy(&g_frames.ready);
 }
 
@@ -735,14 +728,13 @@ static void check_allocation_failure(int allocation, int changed_mode) {
     assert(!g_running && "T279: failed allocation must allow helper-exit recovery");
     assert(!g_capture.have_mode && !g_frames.buffers_ready && !g_capture.buffer_registered);
     free(g_capture.framebuffer);
-    free(g_frames.fill); free(g_frames.latest); free(g_frames.write);
-    free(g_frames.dirty_fill); free(g_frames.dirty_latest); free(g_frames.dirty_write);
+    frame_exchange_free(&g_frames);
     pthread_cond_destroy(&g_frames.ready);
 }
 
 static void test_t279(void) {
     for (int changed_mode = 0; changed_mode <= 1; changed_mode++) {
-        for (int allocation = 1; allocation <= 7; allocation++) {
+        for (int allocation = 1; allocation <= 10; allocation++) {
             pid_t child = fork();
             assert(child >= 0);
             if (child == 0) {
@@ -1326,6 +1318,7 @@ static void test_t415_rounding(void) {
 }
 
 #include "coverage_capture.c"
+#include "damage_regions.c"
 
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
@@ -1334,6 +1327,7 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T554", test_t554_regions},
         {"T497-callbacks", test_t497_callbacks},
         {"T497-main", test_t497_main},
         {"T497-bounds", test_t497_bounds},

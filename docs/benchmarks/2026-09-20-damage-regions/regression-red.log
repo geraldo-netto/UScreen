@@ -1,0 +1,21 @@
+   Compiling uscreen v1.2.3 (/backups/disk2/projects/uscreen/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.52s
+     Running tests/evdi_helper.rs (target/debug/deps/evdi_helper-9926c49f8b472e05)
+
+running 1 test
+test t554_capture_converts_only_chroma_blocks_intersecting_damage ... 
+thread 't554_capture_converts_only_chroma_blocks_intersecting_damage' (442146) panicked at host/tests/evdi_helper.rs:76:9:
+helper regression T554: signal: 6 (SIGABRT) (core dumped)
+helper-test: /backups/disk2/projects/uscreen/host/tests/damage_regions.c:34: t554_capture_rectangle: Assertion `frames.latest[y * W + x] == (inside ? 16 : 0xA5) && "T554: conversion overwrote luma outside horizontal damage"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    t554_capture_converts_only_chroma_blocks_intersecting_damage
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 36 filtered out; finished in 1.20s
+
+error: test failed, to rerun pass `-p uscreen --test evdi_helper`
