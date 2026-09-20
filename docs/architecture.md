@@ -288,6 +288,15 @@ and Wi-Fi reconnect commands; it does not serialize independent CLI invocations.
 Existing eligible devices remain available while their refresh is pending.
 Known physical identities keep the USB preference and stable primary selection.
 
+Every ten seconds, ready display routes also schedule bounded reverse-mapping
+verification through the same per-device mutation owner (T557). The portable
+`adb_reverse` policy parses the snapshot and rejects conflicting destinations
+before proposing missing routes. The host adapter restores only missing video
+and control mappings with `--no-rebind`, protecting a concurrent new destination.
+Repair keeps the current capture session, credentials and Android launch history;
+it does not relaunch the activity. Failures retry on the next recovery cadence.
+Camera forwarding has its own lifecycle and is outside this display repair.
+
 Pending extra runtimes belong to the monitor, not to command futures. Disconnect
 cancels that transport's work and retires its runtime independently; a retiring
 slot cannot be reused until cleanup joins. Promoting an extra to primary retires

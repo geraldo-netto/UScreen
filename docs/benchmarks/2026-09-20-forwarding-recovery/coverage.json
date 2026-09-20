@@ -1,0 +1,361 @@
+{
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/adb_reverse.rs",
+    "host/src/monitor/forwarding.rs",
+    "host/src/monitor.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 29,
+      "passing": 29,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/adb_reverse.rs",
+      "name": "parse",
+      "line": 6,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/adb_reverse.rs",
+      "name": "missing",
+      "line": 22,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "name": "check_forwarding",
+      "line": 7,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "name": "forwarding_ports",
+      "line": 28,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "name": "repair",
+      "line": 39,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "new",
+      "line": 80,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "event",
+      "line": 108,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "tick",
+      "line": 130,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "queue_inventory",
+      "line": 139,
+      "language": "rust",
+      "covered": 33,
+      "total": 35,
+      "percent": 94.28571428571429,
+      "passes": true,
+      "missing": [
+        161,
+        167
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "inventory_ready",
+      "line": 179,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "probe_ready",
+      "line": 199,
+      "language": "rust",
+      "covered": 10,
+      "total": 12,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        205,
+        206
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "revalidate_identity",
+      "line": 212,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "change_primary",
+      "line": 225,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "can_prepare",
+      "line": 249,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare",
+      "line": 259,
+      "language": "rust",
+      "covered": 21,
+      "total": 21,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare_primary",
+      "line": 282,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "available_slot",
+      "line": 307,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare_extra",
+      "line": 318,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "reconcile",
+      "line": 353,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "remove_gone",
+      "line": 375,
+      "language": "rust",
+      "covered": 10,
+      "total": 12,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        384,
+        385
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepared",
+      "line": 388,
+      "language": "rust",
+      "covered": 22,
+      "total": 24,
+      "percent": 91.66666666666667,
+      "passes": true,
+      "missing": [
+        408,
+        409
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "mutation_ready",
+      "line": 416,
+      "language": "rust",
+      "covered": 15,
+      "total": 16,
+      "percent": 93.75,
+      "passes": true,
+      "missing": [
+        427
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "redeliver",
+      "line": 435,
+      "language": "rust",
+      "covered": 16,
+      "total": 18,
+      "percent": 88.88888888888889,
+      "passes": true,
+      "missing": [
+        440,
+        448
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "primary_token",
+      "line": 457,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "extra_token",
+      "line": 473,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "publish",
+      "line": 486,
+      "language": "rust",
+      "covered": 24,
+      "total": 26,
+      "percent": 92.3076923076923,
+      "passes": true,
+      "missing": [
+        488,
+        512
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "stop",
+      "line": 516,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "apply_event",
+      "line": 536,
+      "language": "rust",
+      "covered": 9,
+      "total": 11,
+      "percent": 81.81818181818181,
+      "passes": true,
+      "missing": [
+        544,
+        545
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "run",
+      "line": 549,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

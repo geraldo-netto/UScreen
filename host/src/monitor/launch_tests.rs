@@ -202,3 +202,47 @@ async fn t445_synthetic_attachment_never_launches_a_real_android_activity() {
     assert_eq!(launches(&adb), 0);
     state.stop().await;
 }
+
+fn t557_adb(root: &std::path::Path) -> PathBuf {
+    let path = adb(root);
+    let original = std::fs::read_to_string(&path).unwrap();
+    let reverse = r#"if [ "$3" = reverse ]; then
+    if [ "$4" = --list ]; then cat "$0.maps" 2>/dev/null; exit 0; fi
+    if [ "$4" = --remove ]; then exit 0; fi
+    if [ "$4" = --no-rebind ]; then shift; fi
+    printf 'UsbFfs %s %s\n' "$4" "$5" >> "$0.maps"
+    exit 0
+fi"#;
+    let begin = original.find("if [ \"$3\" = reverse ]; then").unwrap();
+    let end = begin + original[begin..].find("\nfi").unwrap() + 3;
+    let script = format!("{}{}{}", &original[..begin], reverse, &original[end..]);
+    std::fs::write(&path, script).unwrap();
+    path
+}
+
+#[tokio::test]
+async fn t557_ready_attachment_repairs_lost_mappings_without_reopening_android() {
+    let root = tempfile::tempdir().unwrap();
+    let adb = t557_adb(root.path());
+    let mut state = super::tests::fixture();
+    state.config.adb = adb.to_str().unwrap().into();
+    state.config.auto_launch = true;
+    state.config.ports = (9010, 9011);
+    state.change_primary(&Some("USB".into()));
+    state.prepare_primary();
+    complete(&mut state, "USB").await;
+    assert!(state.ready.contains("USB"));
+    assert_eq!(launches(&adb), 1);
+    std::fs::remove_file(adb.with_extension("maps")).unwrap();
+    state.last_reconnect = Instant::now() - Duration::from_secs(11);
+    state.tick();
+    complete(&mut state, "USB").await;
+    let mappings = std::fs::read_to_string(adb.with_extension("maps")).unwrap_or_default();
+    assert!(
+        mappings.contains("tcp:8890 tcp:9010") && mappings.contains("tcp:8891 tcp:9011"),
+        "T557: ready attachment left both ADB reverse mappings missing: {mappings:?}"
+    );
+    assert_eq!(launches(&adb), 1, "T557: route repair reopened Android");
+    assert!(state.ready.contains("USB"));
+    state.stop().await;
+}

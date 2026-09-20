@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task::JoinSet;
 mod credentials;
+mod forwarding;
 mod launch_policy;
 mod preparation;
 mod retirement;
@@ -27,6 +28,7 @@ struct Pending {
 enum Mutation {
     Prepared { ready: bool, retry: RelaunchBackoff },
     Token,
+    Forwarding,
 }
 
 struct Inventory {
@@ -130,6 +132,7 @@ impl Monitor {
         self.queue_inventory(recover);
         if recover {
             self.last_reconnect = Instant::now();
+            self.check_forwarding();
         }
     }
 

@@ -1,5 +1,6 @@
 //! Shared policy with independently selectable storage and platform adapters.
 pub mod adb;
+pub mod adb_reverse;
 pub mod android;
 pub mod camera;
 pub mod display;
