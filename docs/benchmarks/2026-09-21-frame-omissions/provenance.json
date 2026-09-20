@@ -1,0 +1,19 @@
+{
+  "source_trace": "target/t560-profile/playback.pftrace",
+  "source_trace_sha256": "1d45c96285526a1cca7e59c468ef05957f9078b574295044c219b706ac50853f",
+  "trace_processor": "trace_processor_shell-58042408e6cc861f",
+  "source_summary": "../2026-09-20-live-playback/summary.json",
+  "app_pid": 22610,
+  "video_layer_suffix": "(BLAST)#788",
+  "method": "frame_slice neighbors and temporally adjacent codec queue/release calls; no inferred cross-device clock alignment",
+  "artifacts_sha256": {
+    "codec-input.csv.gz": "0204ea4ed87b6b595f2610ed564084a23cfdacc18bf30b479287b771e79353ca",
+    "codec-input.sql": "1b73e7f50d4b67c12dd9909a1fc12d9a91fea30fd74c50cae0488adee64c81d0",
+    "codec-release.csv.gz": "66eaaa38fbe7953b6e71035e764aa10ca5714bc56f7ffeb0906fc151261dc369",
+    "codec-release.sql": "abe90c2e30e417d62ffc02a120bd4e1cdfba154332e33c1f5ecb0c5e1865d2fd",
+    "correlation.json": "d05e3b14bd0b45a2f9e8f2aabd52ec8c8662eba339cd130c3e65f19be97cedd7",
+    "events.sql": "233c91f18632e088f95de55d8ea6087ccd00baeb27613e40d87c2f5534ab345f",
+    "neighbors.csv.gz": "52053dc0f76be8171f7f0e5519103717c5fd71e31d2e84b831636e66574dd225",
+    "slices.csv.gz": "76d1e785d3586f3efdd4188efed35e27ecaa386adf7c870fddd6de01c53d0230"
+  }
+}

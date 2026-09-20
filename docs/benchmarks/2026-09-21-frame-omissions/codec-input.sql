@@ -1,0 +1,1 @@
+SELECT s.ts,s.dur,s.name,t.tid,t.name AS thread FROM slice s JOIN thread_track tt ON s.track_id=tt.id JOIN thread t USING(utid) JOIN process p USING(upid) WHERE p.pid=22610 AND s.name LIKE 'CCodecBufferChannel::queue(%' ORDER BY s.ts;

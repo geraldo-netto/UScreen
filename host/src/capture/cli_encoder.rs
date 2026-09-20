@@ -10,6 +10,10 @@ mod framing_profile;
 #[path = "startup_packet_tests.rs"]
 mod startup_packet_tests;
 
+#[cfg(test)]
+#[path = "frame_timing_tests.rs"]
+mod frame_timing_tests;
+
 use super::{fifo_path_for, CaptureConfig};
 use crate::framed_annex_b::FramedAnnexB;
 use crate::media::Codec;
@@ -310,6 +314,7 @@ pub(super) async fn read_loop_with_idle(
     let mut total: u64 = 0;
     let mut frames: u64 = 0;
     let mut last_log = Instant::now();
+    let started = last_log;
     let mut stdout = tokio::io::BufReader::new(stdout);
     let mut packetizer = Packetizer::new(codec, latency.clone());
     let mut config_extracted = codec_config.current().is_some();
@@ -336,6 +341,7 @@ pub(super) async fn read_loop_with_idle(
             access_units,
             idle.as_ref(),
             timestamp,
+            started,
         );
         if n == 0 {
             return Ok(());
@@ -353,8 +359,10 @@ fn publish_packets(
     packets: Vec<crate::media::VideoPacket>,
     idle: Option<&super::idle::Handle>,
     timestamp: Option<i64>,
+    started: Instant,
 ) {
     for packet in packets {
+        trace_packet(&packet, evidence.epoch, timestamp, started);
         if let Some(idle) = idle {
             idle.note(packet.seq, timestamp, packet.is_idr);
         }
@@ -365,6 +373,20 @@ fn publish_packets(
             latency.on_encoder_output(evidence);
         }
     }
+}
+
+// TRACE is opt-in; tracing does not evaluate fields when this target is disabled.
+fn trace_packet(
+    packet: &crate::media::VideoPacket,
+    epoch: u64,
+    timestamp: Option<i64>,
+    started: Instant,
+) {
+    tracing::trace!(target: "uscreen::frame_timing",
+        encoder_epoch = epoch, sequence = packet.seq, media_pts_us = ?timestamp,
+        output_elapsed_us = started.elapsed().as_micros().min(u64::MAX as u128) as u64,
+        packet_bytes = packet.data.len(), keyframe = packet.is_idr,
+        "Packet ready");
 }
 
 fn publish_initial_codec_config(

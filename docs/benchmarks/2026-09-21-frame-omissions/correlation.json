@@ -1,0 +1,182 @@
+[
+  {
+    "frame": 149083,
+    "queued_ns": 21971943317322,
+    "previous_queue_ms": 46.409692,
+    "next_queue_ms": 4.987077,
+    "next_latch_ms": 8.045154,
+    "next_present_ms": 21.565731,
+    "codec_inputs": [
+      {
+        "sequence": 60952,
+        "relative_ms": -12.833846,
+        "duration_ms": 1.072577
+      },
+      {
+        "sequence": 60953,
+        "relative_ms": -7.089731,
+        "duration_ms": 0.941962
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -2.156538,
+        "duration_ms": 0.009154
+      },
+      {
+        "relative_ms": 3.184846,
+        "duration_ms": 0.010039
+      }
+    ]
+  },
+  {
+    "frame": 149095,
+    "queued_ns": 21972383276052,
+    "previous_queue_ms": 33.751576,
+    "next_queue_ms": 16.395808,
+    "next_latch_ms": 17.752808,
+    "next_present_ms": 31.613,
+    "codec_inputs": [
+      {
+        "sequence": 60964,
+        "relative_ms": -11.694538,
+        "duration_ms": 1.087385
+      },
+      {
+        "sequence": 60965,
+        "relative_ms": 4.844347,
+        "duration_ms": 1.0945
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -1.858884,
+        "duration_ms": 0.0095
+      },
+      {
+        "relative_ms": 14.697962,
+        "duration_ms": 0.010154
+      }
+    ]
+  },
+  {
+    "frame": 149239,
+    "queued_ns": 21977331564857,
+    "previous_queue_ms": 50.530847,
+    "next_queue_ms": 5.4305,
+    "next_latch_ms": 15.731769,
+    "next_present_ms": 29.848884,
+    "codec_inputs": [
+      {
+        "sequence": 61108,
+        "relative_ms": -11.075462,
+        "duration_ms": 1.059808
+      },
+      {
+        "sequence": 61109,
+        "relative_ms": -5.642923,
+        "duration_ms": 0.982077
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -1.765539,
+        "duration_ms": 0.00977
+      },
+      {
+        "relative_ms": 3.7245,
+        "duration_ms": 0.009769
+      }
+    ]
+  },
+  {
+    "frame": 149260,
+    "queued_ns": 21978119630356,
+    "previous_queue_ms": 48.140231,
+    "next_queue_ms": 5.587385,
+    "next_latch_ms": 10.644654,
+    "next_present_ms": 24.535615,
+    "codec_inputs": [
+      {
+        "sequence": 61129,
+        "relative_ms": -11.936731,
+        "duration_ms": 1.127885
+      },
+      {
+        "sequence": 61130,
+        "relative_ms": -8.074846,
+        "duration_ms": 0.861962
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -1.556769,
+        "duration_ms": 0.007962
+      },
+      {
+        "relative_ms": 3.450577,
+        "duration_ms": 0.009616
+      }
+    ]
+  },
+  {
+    "frame": 149449,
+    "queued_ns": 21984408807159,
+    "previous_queue_ms": 47.986038,
+    "next_queue_ms": 15.288385,
+    "next_latch_ms": 17.577077,
+    "next_present_ms": 30.870346,
+    "codec_inputs": [
+      {
+        "sequence": 61318,
+        "relative_ms": -10.271653,
+        "duration_ms": 1.047384
+      },
+      {
+        "sequence": 61319,
+        "relative_ms": 3.806347,
+        "duration_ms": 1.714961
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -1.764846,
+        "duration_ms": 0.009616
+      },
+      {
+        "relative_ms": 13.321731,
+        "duration_ms": 0.009385
+      }
+    ]
+  },
+  {
+    "frame": 149758,
+    "queued_ns": 21994704314113,
+    "previous_queue_ms": 24.437538,
+    "next_queue_ms": 13.749154,
+    "next_latch_ms": 14.564116,
+    "next_present_ms": 28.462423,
+    "codec_inputs": [
+      {
+        "sequence": 61627,
+        "relative_ms": -11.561384,
+        "duration_ms": 1.040115
+      },
+      {
+        "sequence": 61628,
+        "relative_ms": 2.69777,
+        "duration_ms": 1.1245
+      }
+    ],
+    "codec_releases": [
+      {
+        "relative_ms": -1.957576,
+        "duration_ms": 0.010692
+      },
+      {
+        "relative_ms": 11.668001,
+        "duration_ms": 0.009615
+      }
+    ]
+  }
+]

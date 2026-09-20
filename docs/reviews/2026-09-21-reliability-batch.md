@@ -112,3 +112,29 @@ to the historical report. T549 remains blocked on that missing event/action
 correlation. No unsupported lock workaround or behavioral fix is claimed.
 Documentation links and source paths were checked; this item changes no
 production behavior and needs no artificial regression test.
+
+## Item 4 — omitted-frame correlation and missing diagnostics
+
+The [six-event analysis](../benchmarks/2026-09-21-frame-omissions/README.md)
+shows every unlatched buffer followed by a newer Queue event before that
+successor's latch. Nearby input and output events both arrive in bursts; the
+trace cannot identify whether capture, encoding, transport or receiver
+scheduling introduced them. Callback ACKs and physical presentation remain
+separate measurements. No new Android thread or frame-order change was made.
+
+The diagnostic gap is fixed: opt-in `uscreen::frame_timing=trace` events expose
+packet-ready epoch/sequence/media timing and accepted render ACKs. Default
+logging stays at INFO. The permanent T561 test first failed with zero packet
+records, then passed with two correctly identified packets and one accepted
+ACK, rejecting wrong-decoder and duplicate observations. All 481 default host
+unit tests passed; three pre-existing performance experiments remain ignored.
+All 46 functions in the changed CLI-encoder/latency coverage scope meet 80%;
+the nine optional in-process latency regressions also pass. All six correlations
+were independently checked against T560’s committed frame-event CSV.
+Complexity checked 5,231 functions with none above 9. Local red/green logs,
+coverage snapshot and report remain under `/tmp/uscreen-item4-*`.
+
+T561 remains unresolved on a correlated native capture/encode/transport trace
+from a safe future normal startup; the historical host aggregates cannot be
+turned into missing per-frame evidence. This commit fixes observability and
+records the investigation, not an unproven frame-delivery defect.

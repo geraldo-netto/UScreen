@@ -130,6 +130,9 @@ impl EncoderEvidence {
     }
 
     fn acknowledge(&self, sequence: u32, micros: u32) {
+        tracing::trace!(target: "uscreen::frame_timing",
+            encoder_epoch = self.epoch, sequence, packet_ready_to_ack_us = micros,
+            "Render ACK received");
         let output = self.encoded();
         self.encoded_at_ack.store(output, Ordering::Relaxed);
         let ordinal = self.rendered.fetch_add(1, Ordering::Release) + 1;
