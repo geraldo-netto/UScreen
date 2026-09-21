@@ -3,6 +3,8 @@ use crate::model::FileConfig;
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 mod diff;
+#[cfg(test)]
+mod write_tests;
 
 pub fn config_home() -> Result<PathBuf> {
     #[cfg(windows)]
@@ -205,12 +207,9 @@ impl FileConfig {
             std::fs::create_dir_all(parent)?;
         }
         let text = toml::to_string_pretty(self).context("serialize config")?;
-        if let Ok(old) = std::fs::read_to_string(path) {
-            let changed = diff::changes(&old, &text);
-            if !changed.is_empty() {
-                tracing::info!("Config written: {}", changed.join(", "));
-            }
-        }
+        let changed = std::fs::read_to_string(path)
+            .map(|old| diff::changes(&old, &text))
+            .unwrap_or_default();
         // Write-then-rename: a reader must never see a half-written file.
         use std::io::Write;
         let mut tmp = tempfile::NamedTempFile::new_in(path.parent().context("config directory")?)?;
@@ -218,6 +217,9 @@ impl FileConfig {
             .context("write config file")?;
         tmp.as_file().sync_all()?;
         tmp.persist(path).context("replace config file")?;
+        if !changed.is_empty() {
+            tracing::info!("Config written: {}", changed.join(", "));
+        }
         Ok(())
     }
 }
