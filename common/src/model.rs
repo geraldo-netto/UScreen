@@ -89,6 +89,10 @@ pub struct FileConfig {
     pub profile_cache: bool,
     /// Opt-in measured sparse cadence for the current encoder/decoder session.
     pub adaptive_idle: bool,
+    /// Raw capture transport. Shared memory requires a validated native adapter.
+    pub raw_transport: crate::raw_frame::RawTransport,
+    /// Bounded shared slots: more tolerate retained encoder frames, costing RAM.
+    pub raw_slots: u32,
     /// DRM render node used by VA-API encoders.
     pub vaapi_device: String,
     pub fps: u32,
@@ -172,6 +176,8 @@ impl Default for FileConfig {
             encoder: "auto".into(),
             profile_cache: false,
             adaptive_idle: false,
+            raw_transport: Default::default(),
+            raw_slots: 4,
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,

@@ -38,6 +38,7 @@ static atomic_int g_running = 1;
 
 static conv_pool_t g_conversion = CONV_POOL_INITIALIZER;
 static capture_context_t g_capture = CAPTURE_INITIALIZER(&g_frames, &g_conversion, &g_running);
+static raw_ring_t g_raw_ring = RAW_RING_INITIALIZER;
 
 static fifo_writer_t g_fifo = FIFO_WRITER_INITIALIZER(&g_running, &g_frames.generation);
 
@@ -219,6 +220,7 @@ static evdi_handle wait_for_available_device(const char *root, int timeout_ms, i
 typedef struct {
     const char *edid_path;
     const char *fifo_path;
+    const char *socket_fd;
 } helper_options_t;
 
 static int set_numeric_option(const char *name, const char *value) {
@@ -250,6 +252,7 @@ static int conversion_capacity(const char *value) {
 static int set_helper_option(helper_options_t *options, const char *name, const char *value) {
     if (strcmp(name, "--edid") == 0) options->edid_path = value;
     else if (strcmp(name, "--capture-fifo") == 0) options->fifo_path = value;
+    else if (strcmp(name, "--capture-socket-fd") == 0) options->socket_fd = value;
     else if (strcmp(name, "--pipe-size-file") == 0) g_fifo.capacity_path = value;
     else if (strcmp(name, "--idle-control-file") == 0) g_writer.idle_control = value;
     else if (strcmp(name, "--conversion-threads") == 0) g_conversion_threads = conversion_capacity(value);
@@ -361,6 +364,10 @@ static unsigned char *read_edid_file(const char *edid_path, long *size) {
 }
 
 static int start_capture_writer(const char *fifo_path, pthread_t *writer) {
+    if (g_capture.raw_ring) {
+        conv_pool_init();
+        return 1;
+    }
     if (fifo_path) {
         g_fifo.path = fifo_path;
         g_writer.fps = g_capture.fps;
@@ -385,6 +392,7 @@ static void shutdown_capture(evdi_handle handle, pthread_t writer) {
     if (writer) pthread_join(writer, NULL);
     conv_pool_destroy(&g_conversion);
     fifo_writer_close(&g_fifo);
+    if (g_capture.raw_ring) raw_ring_close(g_capture.raw_ring);
     free(g_capture.framebuffer);
     frame_exchange_free(&g_frames);
 
@@ -402,17 +410,32 @@ static int run_capture(evdi_handle handle, pthread_t writer) {
     return status;
 }
 
+static int configure_raw_socket(const char *value) {
+    if (!value) return 1;
+    char *end;
+    errno = 0;
+    long fd = strtol(value, &end, 10);
+    if (errno || end == value || *end || fd < 0 || fd > INT_MAX) return 0;
+    if (!raw_ring_init(&g_raw_ring, (int)fd)) return 0;
+    g_capture.raw_ring = &g_raw_ring;
+    return 1;
+}
+
 int main(int argc, char *argv[]) {
     helper_options_t options = parse_helper_options(argc, argv);
     const char *edid_path = options.edid_path;
     const char *fifo_path = options.fifo_path;
 
     if (!edid_path) {
-        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--fps <n>] [--scale <1-4>] [--pipe-size-file <path>] [--conversion-threads <0-128>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s --edid <edid.bin> [--capture-fifo <path>] [--capture-socket-fd <inherited-fd>] [--fps <n>] [--scale <1-4>] [--pipe-size-file <path>] [--conversion-threads <0-128>]\n", argv[0]);
         return 1;
     }
 
     initialize_helper_runtime();
+    if (!configure_raw_socket(options.socket_fd)) {
+        fprintf(stderr, "[evdi-helper] Invalid shared capture socket\n");
+        return 1;
+    }
 
     /* File errors must fail before opening DRM cards or creating devices. */
     long edid_size;

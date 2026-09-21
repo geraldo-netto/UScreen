@@ -1,0 +1,16 @@
+{
+  "prepared_directory": "/home/netto/.local/share/uscreen/updates/T418-final",
+  "sha256": {
+    "UScreen.AppImage": "a1770c20984d48625785bbb3aaa47db1835083e83070d479d16e540be313e226",
+    "uscreen-1.2.3-AppImage-sources.tar.gz": "8ccd3665860ab5f71d83944f8444f4eb7362f8ac708ae0d57586a43528666cbe",
+    "uscreen.apk": "21ecabb00ec1553e5cde8fcab2f18416bfe82a22b06f0e684b86e60dd0a004c9"
+  },
+  "activation": "pending safe startup; live Xorg/EVDI/FFmpeg unchanged",
+  "live_daemon": 463278,
+  "live_helper": 463376,
+  "live_encoder": 463503,
+  "live_xorg": 2512,
+  "android_pid": 22610,
+  "fps": 30,
+  "encoder": "h264_vaapi_baseline"
+}

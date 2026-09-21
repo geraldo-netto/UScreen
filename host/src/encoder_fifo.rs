@@ -12,6 +12,9 @@ pub(crate) struct StopSignal {
     event: OwnedFd,
 }
 impl StopSignal {
+    pub fn as_raw_fd(&self) -> RawFd {
+        self.event.as_raw_fd()
+    }
     pub fn new() -> io::Result<Arc<Self>> {
         let event =
             descriptor(unsafe { libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_CLOEXEC) })?;

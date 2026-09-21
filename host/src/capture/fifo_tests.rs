@@ -182,6 +182,8 @@ fn manager(root: &Path) -> CaptureManager {
         edid_path: Some(root.join("unused.edid")),
         encoder: "libx264".into(),
         width: 1024,
+        // T418: these regressions specifically exercise partial FIFO writes.
+        raw_transport: uscreen_config::raw_frame::RawTransport::Fifo,
         height: 1024,
         fps: 20,
         width_mm: 200,

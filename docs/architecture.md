@@ -24,7 +24,9 @@ from the existing implementation.
    Wayland session; other desktops manage placement through their own settings.
 2. **Capture.** The helper requests updates, grabs BGRA pixels, converts damaged
    chroma-aligned regions to NV12 (BT.709, limited range) and sends raw frames
-   through a FIFO in the runtime directory. After a partial write the helper quarantines that
+   through a FIFO in the runtime directory for the stock FFmpeg CLI path.
+   Optional in-process libx264 defaults to the shared-slot adapter described below.
+   After a partial FIFO write the helper quarantines that
    FIFO inode and reports `FIFO_RESET <device> <inode>`. The host retires the
    encoder reader and replaces the FIFO before encoding resumes. A retained,
    idle writer descriptor prevents EOF from racing ahead of the reset report;
@@ -210,9 +212,34 @@ cannot remove a subsequently replaced FIFO. Partial-frame recovery creates and
 pins the replacement before atomically publishing it, then transfers ownership.
 This prevents inode reuse during recovery and keeps cleanup bound to the current
 generation. See the [T429 regressions](reviews/2026-09-18-fifo-ownership.md).
-Raw frames still have no in-band
+FIFO raw frames still have no in-band
 sequence, size or generation header; both processes must use this reset
 protocol rather than assuming a close/reopen establishes a frame boundary.
+
+T418 adds a separate shared raw-input adapter for the optional in-process
+encoder. `common::raw_frame` defines a portable, versioned packed-NV12 descriptor
+and bounded layout; Linux implements handoff through an inherited private
+`SOCK_SEQPACKET` pair and sealed-size memfds in `raw_socket`/`raw_memory` and
+`raw_ring.c`. This does not implement Windows or macOS native transport.
+The helper converts directly into a reserved slot; acquire/release atomics move
+it through FREE → WRITING → READY → READING → FREE. The receiver maps pixels
+read-only and wraps the lease in a stock read-only libavcodec `AVBufferRef`.
+Only the final buffer reference releases the slot, including references retained
+by the codec. New sessions and modes use a fresh nonce/generation and mapping;
+old leases keep their mapping alive. Descriptor, dimensions, stride, slot, size,
+sequence, generation and seals are checked before admitting pixels.
+
+Shared capture runs in the capture loop without the FIFO writer or pixel
+exchange allocations. A full ring retains a pending fresh update and coalesces
+intermediate captures; release notifications wake publication, with a bounded
+fallback when a nonblocking notification cannot be sent. Shared slots currently
+receive full-frame conversion, including idle publications; FIFO's per-buffer
+damage optimization is not applied to these independently retained slots (T570).
+Cancellation, peer death and partial startup retire owned descriptors and maps.
+The [T418 replay](benchmarks/2026-09-21-shared-capture/README.md) records the matched
+libx264 latency improvement and lifecycle regressions. `raw_transport=auto`
+defaults to shared memory only for that validated in-process encoder; the stock
+CLI/VAAPI path and automatic NVENC input keep FIFO.
 
 For the optional in-process encoder, `encoder_storage` owns the public stock
 libavcodec DR1 allocation callback and its synchronized allocation registry.

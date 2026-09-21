@@ -31,6 +31,10 @@ mod osk;
 mod persistence;
 #[cfg(test)]
 mod poll_probe;
+#[cfg(feature = "inproc-encoder")]
+mod raw_memory;
+#[cfg(feature = "inproc-encoder")]
+mod raw_socket;
 mod runtime;
 mod selection;
 mod session;
@@ -1549,6 +1553,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             helper_path: helper_path.clone(),
             profile_cache: file_cfg.profile_cache,
             adaptive_idle: file_cfg.adaptive_idle,
+            raw_transport: file_cfg.raw_transport,
+            raw_slots: file_cfg.raw_slots,
             edid_path: cli.edid.clone(),
             encoder: encoder.clone(),
             decoder: None,

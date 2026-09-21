@@ -1,11 +1,11 @@
 //! In-process H.264 encoding through libavcodec.
 //!
-//! The default path sends packed NV12 through a FIFO to stock FFmpeg. This
-//! optional path still reads that FIFO, but aligned frames are filled directly
-//! into writable AVFrame planes. Padded widths use reusable packed staging.
-//! Partial-read counts depend on pipe capacity and producer progress; neither
-//! requested read length nor moving libavcodec in process guarantees a syscall
-//! count or explains historical encoder CPU usage.
+//! The default CLI path sends packed NV12 through a FIFO to stock FFmpeg.
+//! This optional encoder accepts FIFO input or read-only shared slot leases.
+//! Automatic libx264 input uses the shared adapter validated by T418.
+//! FIFO aligned frames fill writable AVFrame planes; padded widths use staging.
+//! Shared AVBufferRefs retain each slot until the codec's final reference ends.
+//! Neither adapter changes FFmpeg itself or establishes hardware availability.
 //!
 //! In-process submission can request an IDR on the next captured frame. The
 //! CLI instead schedules periodic wall-clock IDRs. See the raw-input benchmark
@@ -20,6 +20,8 @@ use anyhow::{Context, Result};
 
 #[path = "encoder_frame.rs"]
 mod input_frame;
+#[path = "encoder_shared.rs"]
+mod shared;
 #[path = "encoder_storage.rs"]
 mod storage;
 
@@ -159,10 +161,10 @@ impl Encoder {
     }
 }
 
-/// Read complete NV12 frames from the helper FIFO and publish access units.
-/// The aligned path reads into encoder input planes; it still crosses the
-/// kernel FIFO boundary. Padding, cancellation and writer restart semantics
-/// belong to the input adapter, independently of codec submission.
+/// Read complete NV12 input frames or shared leases and publish access units.
+/// FIFO reads cross the kernel pipe boundary; shared leases retain producer
+/// slots through the final AVBufferRef. Padding, cancellation and generation
+/// ownership belong to the input adapter, independently of codec submission.
 // Blocking thread boundary takes owned session settings and channel handles.
 #[allow(clippy::too_many_arguments)]
 pub fn run(
@@ -178,23 +180,14 @@ pub fn run(
     idr_wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
     stop: std::sync::Arc<StopSignal>,
     latency: crate::latency::LatencyTracker,
+    raw_socket: Option<crate::raw_socket::Socket>,
+    raw_slots: u32,
 ) -> Result<()> {
     use std::sync::atomic::Ordering;
 
     let mut enc = Encoder::new(encoder_name, width, height, fps, bitrate_kbps, quality)?;
 
-    // Opened non-blocking on purpose. A plain open() on a FIFO blocks until a
-    // writer appears, and with no tablet attached the display stays off and the
-    // helper never writes — the task would sit in that open() ignoring the stop
-    // flag until the process exited. O_NONBLOCK returns immediately for a
-    // reader, and reads below poll for data while staying responsive to stop.
-    use std::os::unix::fs::OpenOptionsExt;
-    let fifo = std::fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
-        .open(fifo_path)
-        .with_context(|| format!("open {} for reading", fifo_path.display()))?;
-    let mut fifo = FifoReader::new(fifo);
+    let mut input = shared::Input::open(fifo_path, raw_socket, (width, height), raw_slots)?;
     tracing::info!(
         "In-process encoder running: {} at {}x{}",
         encoder_name,
@@ -202,16 +195,15 @@ pub fn run(
         height
     );
 
-    let mut raw_input = input_frame::RawInput::default();
     let generation = crate::media::EncoderGeneration::new();
     let evidence =
         latency.encoder_started(encoder_name, (width, height, fps, bitrate_kbps, quality));
 
     while !stop.requested() {
-        match raw_input.read(&mut enc.frame, &mut fifo, &stop) {
+        match input.read(&mut enc.frame, &stop) {
             Ok(true) => {}
             Ok(false) => break, // asked to stop mid-frame
-            Err(e) => return Err(e).context("read frame from capture FIFO"),
+            Err(e) => return Err(e).context("read raw capture frame"),
         }
 
         let force = idr_wanted.swap(false, Ordering::Relaxed);
@@ -247,6 +239,9 @@ fn refresh_codec_config(data: &[u8], encoder_name: &str, codec_config: &CodecCon
 #[cfg(test)]
 #[path = "encoder_packet_tests.rs"]
 mod packet_tests;
+#[cfg(test)]
+#[path = "raw_tests.rs"]
+mod raw_tests;
 
 #[cfg(test)]
 #[path = "encoder_storage_replay.rs"]
@@ -443,6 +438,8 @@ mod tests {
                 Arc::new(AtomicBool::new(false)),
                 stopped,
                 latency,
+                None,
+                4,
             )
         });
         let mut writer = std::fs::OpenOptions::new()

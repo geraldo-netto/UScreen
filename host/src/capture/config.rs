@@ -10,6 +10,8 @@ pub struct CaptureConfig {
     pub profile_cache: bool,
     /// Opt-in, current-session sparse cadence; native backend must validate it.
     pub adaptive_idle: bool,
+    pub raw_transport: uscreen_config::raw_frame::RawTransport,
+    pub raw_slots: u32,
     /// Control-side decoder request whose ACKs may certify this encoder generation.
     pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
     // The experimental in-process encoder does not create VAAPI contexts.
@@ -38,6 +40,22 @@ pub struct CaptureConfig {
     pub card: Option<u32>,
 }
 
+impl CaptureConfig {
+    /// Auto admits only the native adapter/codec combination measured in T418.
+    pub(super) fn shared_raw(&self) -> bool {
+        self.shared_raw_for(&self.encoder)
+    }
+
+    pub(super) fn shared_raw_for(&self, encoder: &str) -> bool {
+        use uscreen_config::raw_frame::RawTransport;
+        match self.raw_transport {
+            RawTransport::Fifo => false,
+            RawTransport::SharedMemory => true,
+            RawTransport::Auto => cfg!(feature = "inproc-encoder") && encoder == "libx264",
+        }
+    }
+}
+
 impl Default for CaptureConfig {
     fn default() -> Self {
         Self {
@@ -46,6 +64,8 @@ impl Default for CaptureConfig {
             encoder: String::from("h264_nvenc"),
             profile_cache: false,
             adaptive_idle: false,
+            raw_transport: Default::default(),
+            raw_slots: 4,
             decoder: None,
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
@@ -61,6 +81,29 @@ impl Default for CaptureConfig {
             ten_bit: false,
             instance: 0,
             card: None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn t418_auto_selects_only_measured_capability_and_preserves_fifo_override() {
+        use uscreen_config::raw_frame::RawTransport;
+        for encoder in ["libx264", "h264_nvenc", "h264_vaapi_baseline"] {
+            let mut config = CaptureConfig {
+                encoder: encoder.into(),
+                ..Default::default()
+            };
+            assert_eq!(
+                config.shared_raw(),
+                cfg!(feature = "inproc-encoder") && encoder == "libx264"
+            );
+            config.raw_transport = RawTransport::Fifo;
+            assert!(!config.shared_raw());
+            config.raw_transport = RawTransport::SharedMemory;
+            assert!(config.shared_raw()); // Unsupported builds reject it before resource creation.
         }
     }
 }

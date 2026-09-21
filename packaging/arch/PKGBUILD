@@ -22,7 +22,7 @@ build() {
   # libevdi built from upstream and shipped next to the helper (rpath $ORIGIN),
   # so the only thing the system must provide is the evdi kernel module.
   make -C "$srcdir/evdi-${_evdi#v}/library"
-  gcc -O3 -Ihost/evdi -o host/evdi/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c \
+  gcc -O3 -Ihost/evdi -o host/evdi/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/raw_ring.c host/evdi/writer.c \
       -L"$srcdir/evdi-${_evdi#v}/library" -levdi -lpthread -Wl,-rpath,'$ORIGIN'
 }
 

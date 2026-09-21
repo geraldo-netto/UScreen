@@ -65,6 +65,8 @@ pub(super) struct DetectedMode {
 pub(super) struct HelperProcess {
     pub(super) child: Option<Child>,
     pub(super) fifo: Option<fifo::Owned>,
+    #[cfg(feature = "inproc-encoder")]
+    pub(super) raw_socket: Option<crate::raw_socket::Socket>,
     stdout_task: Option<tokio::task::JoinHandle<()>>,
     /// Retained across restarts as a preference, never a reservation.
     pub(super) card: Option<u32>,
@@ -85,6 +87,8 @@ impl HelperProcess {
         Self {
             child: None,
             fifo: None,
+            #[cfg(feature = "inproc-encoder")]
+            raw_socket: None,
             stdout_task: None,
             card: None,
             mode_tx,
@@ -181,13 +185,17 @@ impl HelperProcess {
 
     pub(super) async fn start(&mut self, config: &CaptureConfig) -> Result<()> {
         crate::config::validate_encoder_for_build(&config.encoder)?;
+        if config.shared_raw() {
+            uscreen_config::raw_frame::Layout::new(2, 2, config.raw_slots)?;
+        }
+        anyhow::ensure!(!config.shared_raw() || cfg!(feature = "inproc-encoder"), "shared_memory raw transport requires --features inproc-encoder; use fifo with stock FFmpeg CLI/VAAPI");
         let fifo = fifo_path_for(config.instance)?;
         self.fifo = Some(fifo::Owned::create(&fifo)?);
         process::retire_orphan_capture(&fifo).await?;
-        let mut child = self
-            .command(config, &fifo)?
-            .spawn()
-            .context("Failed to spawn evdi-helper")?;
+        let mut command = self.command(config, &fifo)?;
+        #[cfg(feature = "inproc-encoder")]
+        self.attach_raw_socket(config, &mut command)?;
+        let mut child = command.spawn().context("Failed to spawn evdi-helper")?;
         let stdout = child
             .stdout
             .take()
@@ -212,6 +220,17 @@ impl HelperProcess {
             )?,
         )));
         self.child = Some(child);
+        Ok(())
+    }
+
+    #[cfg(feature = "inproc-encoder")]
+    fn attach_raw_socket(&mut self, config: &CaptureConfig, command: &mut Command) -> Result<()> {
+        self.raw_socket = None;
+        if config.shared_raw() {
+            let (parent, child) = crate::raw_socket::Socket::pair()?;
+            child.attach(command)?;
+            self.raw_socket = Some(parent);
+        }
         Ok(())
     }
 
@@ -370,6 +389,62 @@ mod coverage_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn t418_unavailable_or_invalid_transport_fails_before_resources() {
+        let mut helper = HelperProcess::new();
+        let mut config = CaptureConfig {
+            encoder: "libx264".into(),
+            helper_path: "/nonexistent-t418-helper".into(),
+            raw_transport: uscreen_config::raw_frame::RawTransport::SharedMemory,
+            ..Default::default()
+        };
+        config.raw_slots = 9;
+        assert!(helper
+            .start(&config)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("slot"));
+        assert!(helper.fifo.is_none() && helper.child.is_none());
+        #[cfg(not(feature = "inproc-encoder"))]
+        {
+            config.raw_slots = 4;
+            assert!(helper
+                .start(&config)
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("requires --features inproc-encoder"));
+            assert!(helper.fifo.is_none() && helper.child.is_none());
+        }
+    }
+
+    #[cfg(feature = "inproc-encoder")]
+    #[test]
+    fn t418_helper_transport_handoff_retains_only_parent_endpoint() {
+        use std::os::fd::AsRawFd;
+        let mut helper = HelperProcess::new();
+        let mut config = CaptureConfig {
+            raw_transport: uscreen_config::raw_frame::RawTransport::SharedMemory,
+            ..Default::default()
+        };
+        let mut command = Command::new("/unused-helper");
+        helper.attach_raw_socket(&config, &mut command).unwrap();
+        let parent = helper.raw_socket.clone().unwrap();
+        assert_ne!(
+            unsafe { libc::fcntl(parent.as_raw_fd(), libc::F_GETFD) } & libc::FD_CLOEXEC,
+            0
+        );
+        assert!(parent.receive().unwrap().is_none());
+        drop(command); // Partial startup retires the never-executed child endpoint.
+        assert!(parent.receive().is_err());
+        config.raw_transport = uscreen_config::raw_frame::RawTransport::Fifo;
+        helper
+            .attach_raw_socket(&config, &mut Command::new("/unused-helper"))
+            .unwrap();
+        assert!(helper.raw_socket.is_none());
+    }
     #[test]
     fn evdi_problem_reports_a_missing_module() {
         let dir = std::env::temp_dir().join("uscreen-test-evdi-absent");

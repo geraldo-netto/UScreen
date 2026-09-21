@@ -48,6 +48,10 @@ static void mark_damage(capture_context_t *capture, const struct evdi_rect *rect
 static void publish_frame(capture_context_t *capture) {
     if (!capture->frames->buffers_ready || !capture->framebuffer)
         return;
+    if (capture->raw_ring) {
+        capture->raw_pending = 1;
+        return;
+    }
 
     /* Only the chroma-aligned regions this particular buffer is missing. */
     bgra_to_nv12(capture, capture->framebuffer, capture->frames->fill, capture->frames->dirty_fill);
@@ -166,11 +170,17 @@ static void allocate_stream_buffers(capture_context_t *capture) {
     printf("STREAM_SIZE %d %d\n", capture->frames->width, capture->frames->height);
     fflush(stdout);
 
-    frame_exchange_resize(capture->frames, capture->frames->width, capture->frames->height);
+    if (capture->raw_ring) {
+        if (!raw_ring_resize(capture->raw_ring, capture->frames->width, capture->frames->height))
+            reject_mode(capture);
+    } else {
+        frame_exchange_resize(capture->frames, capture->frames->width, capture->frames->height);
+    }
 
 }
 
 static int mode_buffers_allocated(capture_context_t *capture) {
+    if (capture->raw_ring) return capture->framebuffer && !capture->capture_failed;
     return capture->framebuffer && frame_exchange_allocated(capture->frames);
 }
 
@@ -233,6 +243,10 @@ static void grab_now(capture_context_t *capture) {
     if (num_rects > 0) {
         capture->grab_count++;
         capture->grab_us = capture_now_us();
+        if (capture->raw_ring) {
+            publish_frame(capture);
+            return;
+        }
         /* Under the swap lock: the writer thread reassigns the mask pointers
            when it takes a frame, so touching them unlocked would race.
            If the driver returned more rectangles than we gave it room for,
@@ -396,7 +410,9 @@ static void report_capture_stats(capture_context_t *capture, long long now, long
 
 static int poll_capture_events(evdi_handle handle, struct evdi_event_context *evtctx,
                                struct pollfd *fd, int timeout_ms) {
-    int ret = poll(fd, 1, timeout_ms);
+    capture_context_t *capture = evtctx->user_data;
+    int count = capture && capture->raw_ring ? 2 : 1;
+    int ret = poll(fd, count, timeout_ms);
     if (ret < 0) {
         if (errno == EINTR) return 0;
         fprintf(stderr, "[evdi-helper] poll() error: %s\n", strerror(errno));
@@ -413,6 +429,51 @@ static int poll_capture_events(evdi_handle handle, struct evdi_event_context *ev
     return 1;
 }
 
+static int publish_shared_capture(capture_context_t *capture) {
+    if (!capture->have_mode || !capture->frames->buffers_ready) return 1;
+    long long now = capture_now_us();
+    long long interval = capture->raw_pending ? 1000000 / capture->fps : 200000;
+    if (now - capture->raw_sent_us < interval) return 1;
+    uint32_t slot;
+    unsigned char *pixels = raw_ring_acquire(capture->raw_ring, &slot);
+    if (!pixels) return 1; /* Keep latest unencoded update pending while all slots are leased. */
+    bgra_to_nv12(capture, capture->framebuffer, pixels, NULL);
+    int result = raw_ring_publish(capture->raw_ring, slot, capture->grab_us);
+    if (result < 0) return 0;
+    if (result > 0) {
+        capture->raw_sent_us = now;
+        capture->raw_pending = 0;
+    }
+    return 1;
+}
+
+static int service_shared_capture(capture_context_t *capture) {
+    if (!capture->raw_ring) return 1;
+    return raw_ring_service(capture->raw_ring) && publish_shared_capture(capture);
+}
+
+static int shared_poll_timeout(capture_context_t *capture, int timeout_ms) {
+    if (!capture->raw_ring || !capture->have_mode) return timeout_ms;
+    long long interval = capture->raw_pending ? 1000000 / capture->fps : 200000;
+    long long remaining = capture->raw_sent_us + interval - capture_now_us();
+    /* A full ring must not spin while libavcodec retains all slots. Release
+     * notifications wake poll immediately; 1 ms also covers a lost hint. */
+    int due = remaining <= 0 ? 1 : (int)((remaining + 999) / 1000);
+    return due < timeout_ms ? due : timeout_ms;
+}
+
+static int capture_tick(capture_context_t *capture, evdi_handle handle, long request_period_ms,
+                         long long *last_fallback_grab_ms, long long *last_stats_ms,
+                         long long *stats_grab_base) {
+    if (!capture->have_mode) return 1;
+    long long now = capture_now_ms();
+    request_capture_if_due(capture, handle, now, request_period_ms);
+    recover_capture_if_stalled(capture, now, last_fallback_grab_ms);
+    if (now - *last_stats_ms >= 5000)
+        report_capture_stats(capture, now, last_stats_ms, stats_grab_base);
+    return service_shared_capture(capture);
+}
+
 int capture_run(capture_context_t *capture, evdi_handle handle) {
     struct evdi_event_context evtctx = {
         .dpms_handler = on_dpms,
@@ -424,9 +485,11 @@ int capture_run(capture_context_t *capture, evdi_handle handle) {
         .user_data = capture,
     };
 
-    struct pollfd fds[1];
+    struct pollfd fds[2] = {0};
     fds[0].fd = evdi_get_event_ready(handle);
     fds[0].events = POLLIN;
+    fds[1].fd = capture->raw_ring ? capture->raw_ring->socket : -1;
+    fds[1].events = POLLIN;
 
     long long last_stats_ms = capture_now_ms();
     long long last_fallback_grab_ms = 0;
@@ -436,23 +499,15 @@ int capture_run(capture_context_t *capture, evdi_handle handle) {
 
     while ((*capture->running)) {
         int timeout_ms = capture_poll_timeout(capture, request_period_ms);
+        timeout_ms = shared_poll_timeout(capture, timeout_ms);
 
         int ret = poll_capture_events(handle, &evtctx, fds, timeout_ms);
         if (ret < 0) return 1;
         if (ret == 0) continue;
+        if (!service_shared_capture(capture)) return 1;
 
-        if (!capture->have_mode)
-            continue;
-
-        long long now = capture_now_ms();
-
-        request_capture_if_due(capture, handle, now, request_period_ms);
-
-        recover_capture_if_stalled(capture, now, &last_fallback_grab_ms);
-
-        if (now - last_stats_ms >= 5000) {
-            report_capture_stats(capture, now, &last_stats_ms, &stats_grab_base);
-        }
+        if (!capture_tick(capture, handle, request_period_ms, &last_fallback_grab_ms,
+                          &last_stats_ms, &stats_grab_base)) return 1;
     }
     return capture->capture_failed;
 }

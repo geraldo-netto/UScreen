@@ -189,6 +189,7 @@ impl CaptureManager {
             || settings.width_mm != self.config.width_mm
             || settings.height_mm != self.config.height_mm
             || settings.stream_scale != self.config.stream_scale
+            || self.config.shared_raw() != self.config.shared_raw_for(settings.effective_encoder())
     }
 
     fn stream_settings_changed(&self, settings: &EncoderSettings) -> bool {
@@ -202,15 +203,20 @@ impl CaptureManager {
 
     async fn apply_stream_settings(&mut self, run: &mut CaptureRun) {
         let s = run.settings_rx.borrow_and_update().clone();
-        // The physical size is baked into the EDID alongside the mode,
-        // so a change there needs a fresh helper too.
+        // Geometry and raw transport are selected when the helper starts.
         let needs_helper_restart = self.helper_settings_changed(&s) && self.helper.is_running();
         if needs_helper_restart {
             // fps is baked into the helper's pacing, and the
             // resolution into the EDID — restart with a fresh EDID
             info!(
-                "Display mode change: {}x{}@{} → {}x{}@{}",
-                self.config.width, self.config.height, self.config.fps, s.width, s.height, s.fps
+                shared_memory = self.config.shared_raw_for(s.effective_encoder()),
+                "Capture helper configuration change: {}x{}@{} → {}x{}@{}",
+                self.config.width,
+                self.config.height,
+                self.config.fps,
+                s.width,
+                s.height,
+                s.fps
             );
             self.helper.terminate().await;
             // Give the compositor a moment to process the unplug
@@ -370,6 +376,8 @@ impl CaptureManager {
         run: &mut CaptureRun,
     ) -> Result<Option<SessionChanges>> {
         let output = EncoderOutput {
+            #[cfg(feature = "inproc-encoder")]
+            raw_socket: self.helper.raw_socket.clone(),
             tx: tx.clone(),
             codec_config: self.codec_config.clone(),
             latency: self.latency.clone(),
@@ -666,3 +674,7 @@ mod fifo_tests;
 #[cfg(all(test, not(feature = "inproc-encoder")))]
 #[path = "capture/closed_settings_tests.rs"]
 mod closed_settings_tests;
+
+#[cfg(test)]
+#[path = "capture/raw_transport_tests.rs"]
+mod raw_transport_tests;

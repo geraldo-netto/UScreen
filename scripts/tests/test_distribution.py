@@ -55,7 +55,7 @@ class DistributionTest(unittest.TestCase):
                 write('host/evdi/evdi_helper.c', 'extern int uscreen_distribution_probe(void); int main(void) { return uscreen_distribution_probe(); }\n')
                 # T380: stub the other C units too; this fixture checks loader
                 # paths and packaging. evdi_modules tests the real module link.
-                for module in ['conversion', 'frame_exchange', 'fifo_writer', 'capture', 'writer']:
+                for module in ['conversion', 'frame_exchange', 'fifo_writer', 'capture', 'raw_ring', 'writer']:
                     write(f'host/evdi/{module}.c', '/* distribution fixture */\n')
                 library = root / "library's space/libevdi.so.1.15.0"
                 library.parent.mkdir()

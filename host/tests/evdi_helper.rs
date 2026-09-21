@@ -299,3 +299,11 @@ fn t497_capture_callbacks_startup_and_numeric_fuzz() {
         harness.run(case);
     }
 }
+
+#[test]
+fn t418_shared_capture_ownership_pacing_and_control_fuzz() {
+    let harness = Harness::build("T418");
+    for case in ["T418-ring", "T418-capture", "T418-startup"] {
+        harness.run(case);
+    }
+}

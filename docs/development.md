@@ -165,7 +165,7 @@ host/              Rust daemon
   src/kwin.rs        KWin D-Bus calls, through busctl or qdbus
   src/vdisplay.rs    EVDI discovery via sysfs
   src/edid.rs        EDID generation for the virtual display
-  evdi/              C helper: EVDI framebuffer capture → NV12 → FIFO
+  evdi/              C helper: EVDI capture → NV12 → FIFO or leased shared slots
     capture.c        EVDI callbacks, mode and framebuffer lifetime
     conversion.c     per-context workers and native/scaled BT.709 kernels
     frame_exchange.c triple buffers, dirty histories and generation-tagged leases
@@ -363,6 +363,28 @@ created. Tablet requests cannot switch a running optional build to these encoder
 has no hardware-frames context/render-node integration: use the default build
 for VAAPI, or select libx264/NVENC with the optional build. Compiling the feature
 does not establish hardware availability or validate every encoder on a device.
+
+Raw input is configurable in the host configuration (restart the daemon after
+editing):
+
+```toml
+raw_transport = "auto"
+raw_slots = 4
+```
+
+`auto` selects leased shared memory for the optional in-process `libx264`
+encoder, where a matched USB replay found consistently lower latency. The
+stock FFmpeg CLI build and automatic NVENC input retain FIFO. `fifo` explicitly
+restores the previous transport; `shared_memory` explicitly selects the Linux
+shared adapter in an in-process build. A CLI build rejects that explicit choice
+before starting capture. Shared NVENC capture remains unvalidated on hardware.
+`raw_slots` accepts 2–8 (default 4); more slots allow more retained input frames
+and consume more memory, without guaranteeing lower latency. Full slots coalesce
+pending capture updates instead of overwriting encoder-retained pixels. Switching
+encoders also reconfigures the helper when the automatic transport changes.
+See [T418 measurements and ownership](benchmarks/2026-09-21-shared-capture/README.md).
+These results do not compare software encoding against VAAPI or justify changing
+an existing hardware encoder selection.
 
 Keep FFmpeg unmodified. Use distribution packages and their matching development
 libraries; implement compatibility and encoder integration in UScreen's adapters

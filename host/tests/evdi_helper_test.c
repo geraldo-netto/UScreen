@@ -37,6 +37,7 @@ static int mock_pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, cons
 #define add_period frame_test_add_period
 #include "../evdi/frame_exchange.c"
 #include "../evdi/fifo_writer.c"
+#include "../evdi/raw_ring.c"
 #include "../evdi/capture.c"
 #undef add_period
 #include "../evdi/writer.c"
@@ -1320,6 +1321,7 @@ static void test_t415_rounding(void) {
 #include "coverage_capture.c"
 #include "damage_regions.c"
 #include "idle_capture.c"
+#include "shared_capture.c"
 
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
@@ -1328,6 +1330,9 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T418-ring", test_t418_ring},
+        {"T418-capture", test_t418_capture},
+        {"T418-startup", test_t418_startup},
         {"T492", test_t492_idle},
         {"T554", test_t554_regions},
         {"T497-callbacks", test_t497_callbacks},

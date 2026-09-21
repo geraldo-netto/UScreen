@@ -26,6 +26,7 @@ fn t380_independent_contexts_preserve_frame_and_callback_lifetimes() {
                 "frame_exchange.c",
                 "fifo_writer.c",
                 "capture.c",
+                "raw_ring.c",
                 "writer.c",
             ]
             .map(|name| root.join("evdi").join(name)),

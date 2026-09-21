@@ -11,6 +11,8 @@ pub(super) struct EncoderProcess {
 }
 
 pub(super) struct EncoderOutput {
+    #[cfg(feature = "inproc-encoder")]
+    pub(super) raw_socket: Option<crate::raw_socket::Socket>,
     pub(super) tx: crate::video_queue::VideoSender,
     pub(super) codec_config: CodecConfig,
     pub(super) latency: crate::latency::LatencyTracker,
@@ -125,6 +127,7 @@ impl EncoderProcess {
             );
         }
         let fifo = super::fifo_path_for(config.instance)?;
+        let raw_slots = config.raw_slots;
         let stop = crate::encoder_io::StopSignal::new()?;
         let stopc = stop.clone();
         let handle = tokio::task::spawn_blocking(move || {
@@ -141,6 +144,8 @@ impl EncoderProcess {
                 output.idr_wanted,
                 stopc,
                 output.latency,
+                output.raw_socket,
+                raw_slots,
             )
         });
         Ok(EncoderTask { handle, stop })

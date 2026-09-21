@@ -8,6 +8,7 @@ pub mod encoding;
 pub mod idle;
 pub mod model;
 pub mod negotiation;
+pub mod raw_frame;
 pub mod release;
 pub mod version;
 pub mod video;

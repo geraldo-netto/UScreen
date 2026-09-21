@@ -40,7 +40,7 @@ distrobox enter "$CONTAINER" -- bash -lc '
     exit 1
   }
   make -s -C target-deb12/evdi-src/library >/dev/null
-  gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/writer.c \
+  gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/raw_ring.c host/evdi/writer.c \
       -Ltarget-deb12/evdi-src/library -levdi -lpthread "-Wl,-rpath,\$ORIGIN"
   touch target-deb12/.build-ok
 ' uscreen-release "$PWD" "$EVDI_TAG" "$EVDI_COMMIT"

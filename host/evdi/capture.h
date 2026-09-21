@@ -3,6 +3,7 @@
 #include "evdi_lib.h"
 #include "frame_exchange.h"
 #include "conversion.h"
+#include "raw_ring.h"
 
 /* Event-loop-owned mode, registered framebuffer and capture statistics.
  * EVDI callbacks borrow this context via user_data and never outlive run().
@@ -38,6 +39,9 @@ typedef struct {
     int pipeline;
     long long last_request_ms;
     int buffer_registered;
+    raw_ring_t *raw_ring;
+    int raw_pending;
+    long long raw_sent_us;
 } capture_context_t;
 #define CAPTURE_INITIALIZER(exchange, pool, stop) { .frames = (exchange), \
     .conversion = (pool), .running = (stop), .handle = EVDI_INVALID_HANDLE, \
