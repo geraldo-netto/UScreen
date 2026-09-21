@@ -1,0 +1,16 @@
+{
+  "evidence_sha256": "088ec382e57d158437da3e76acc35aaf3d2d39934d119ce64a9b1d64eb9ee928",
+  "base_revision": "89589b1",
+  "sources": {
+    "host/gpu/capture.c": "76cd7fefa86f60093d45f98b529c34f19c5acd9b0a3be2f08899f83fe8dd0eba",
+    "host/gpu/cursor.c": "b4aac37cfc2500da17f588e7fe863cdb30761db48e2ab52701a1b477cbb869e1",
+    "host/gpu/encode.c": "359677afbb70007c85bad49b0b851fa2208d14f32ea6d486b072cdc627dbd046",
+    "host/gpu/gpu.h": "fa12d04e6ed4f9a46630a72cd1696b31de29d11ed0981d662fadcc97fb25167b",
+    "host/gpu/identity.c": "55b1b82ddb32c76fbaad82586626905e96f49cdaa8a040e5f0b5539890ef7a69",
+    "host/gpu/main.c": "1f485ac9b8a79ae722ec5edb35b7ee935077713499b5308f79b6c4c1700e8a00",
+    "host/gpu/options.c": "c587fcc1e920c6ab38912f31296a21e8f6e3a66c363eb23da2fb498c824c785b",
+    "host/gpu/options.h": "3090b9cea16116cf9336bd06b6bee553ec943667a19772ef0028fcef13d00507",
+    "host/gpu/output.c": "2711df1c1a40245bbf52bbf6fb10631ab1e8a3873660d0df05f94ff25301f2d9",
+    "host/src/capture/gpu.rs": "7a7fcaaf5697858c526a143044231ae45f8372d54a97d6cce54ad15ccf071a28"
+  }
+}

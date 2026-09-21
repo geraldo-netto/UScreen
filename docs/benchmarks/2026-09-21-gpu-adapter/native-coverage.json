@@ -1,0 +1,273 @@
+{
+  "functions": [
+    {
+      "file": "host/gpu/identity.c",
+      "name": "gpu_render_device",
+      "covered": 13,
+      "executable": 13,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/identity.c",
+      "name": "gpu_identity_load",
+      "covered": 8,
+      "executable": 8,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/identity.c",
+      "name": "gpu_output_matches",
+      "covered": 11,
+      "executable": 11,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/output.c",
+      "name": "gpu_emit_header",
+      "covered": 6,
+      "executable": 6,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/output.c",
+      "name": "gpu_emit_packet",
+      "covered": 8,
+      "executable": 8,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "check_transform",
+      "covered": 8,
+      "executable": 8,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "geometry",
+      "covered": 12,
+      "executable": 12,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "locate_output",
+      "covered": 17,
+      "executable": 17,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "check_geometry",
+      "covered": 9,
+      "executable": 9,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "export_pixmap",
+      "covered": 13,
+      "executable": 13,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "gpu_capture_open",
+      "covered": 16,
+      "executable": 16,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "pattern",
+      "covered": 7,
+      "executable": 7,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "gpu_capture_take",
+      "covered": 12,
+      "executable": 12,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "gpu_capture_release",
+      "covered": 5,
+      "executable": 5,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/capture.c",
+      "name": "gpu_capture_close",
+      "covered": 8,
+      "executable": 8,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/cursor.c",
+      "name": "intersects",
+      "covered": 4,
+      "executable": 4,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/cursor.c",
+      "name": "cursor_image",
+      "covered": 11,
+      "executable": 11,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/cursor.c",
+      "name": "composite",
+      "covered": 15,
+      "executable": 15,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/cursor.c",
+      "name": "gpu_cursor",
+      "covered": 6,
+      "executable": 6,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "gpu_av",
+      "covered": 5,
+      "executable": 5,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "import_rgb",
+      "covered": 18,
+      "executable": 18,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "frame_pool",
+      "covered": 9,
+      "executable": 9,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "codec_open",
+      "covered": 21,
+      "executable": 21,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "gpu_encoder_open",
+      "covered": 10,
+      "executable": 10,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "convert",
+      "covered": 12,
+      "executable": 12,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "drain",
+      "covered": 5,
+      "executable": 5,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "gpu_encode",
+      "covered": 10,
+      "executable": 10,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/encode.c",
+      "name": "gpu_encoder_close",
+      "covered": 7,
+      "executable": 7,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/main.c",
+      "name": "pace",
+      "covered": 4,
+      "executable": 4,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/main.c",
+      "name": "stream",
+      "covered": 13,
+      "executable": 14,
+      "percent": 92.86
+    },
+    {
+      "file": "host/gpu/main.c",
+      "name": "main",
+      "covered": 11,
+      "executable": 11,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_require",
+      "covered": 4,
+      "executable": 4,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_now_ns",
+      "covered": 3,
+      "executable": 3,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "number",
+      "covered": 5,
+      "executable": 5,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_parse",
+      "covered": 12,
+      "executable": 12,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_edid_valid",
+      "covered": 9,
+      "executable": 9,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_same_render_node",
+      "covered": 2,
+      "executable": 2,
+      "percent": 100.0
+    },
+    {
+      "file": "host/gpu/options.c",
+      "name": "gpu_identity_transform",
+      "covered": 5,
+      "executable": 5,
+      "percent": 100.0
+    }
+  ],
+  "passes": true,
+  "measured": 38,
+  "minimum_percent": 80
+}

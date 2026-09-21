@@ -5,9 +5,11 @@ collect matched before/after measurements, resource-count reductions and rejecte
 experiments, with their scope and current implementation status. There is no
 single matched upstream-versus-current total speedup measurement.
 
-The [GPU capture feasibility check](benchmarks/2026-09-21-gpu-capture.md) records
-native DRI3 export/VAAPI import results and current desktop limitations. It
-provides no measured latency gain and changes no capture default.
+The [GPU capture prototype](benchmarks/2026-09-21-gpu-adapter/README.md) follows
+the [initial feasibility check](benchmarks/2026-09-21-gpu-capture.md). Matched
+physical USB trials lower the measured processes' CPU use by 32.7% but increase
+source-update-to-render-ACK p50 from 28.72 to 37.43 ms. FIFO remains the default;
+cross-device imports that corrupt patterned frames are rejected.
 
 The current fork's first physical-device run is the
 [2026-09-17 single-tablet baseline](benchmarks/2026-09-17-device-baseline.md),

@@ -1,9 +1,16 @@
-# T575: GPU capture and VAAPI import feasibility
+# T575: initial GPU capture and VAAPI import feasibility
+
+Historical preliminary probes, superseded by the
+[implemented prototype and patterned physical USB measurements](2026-09-21-gpu-adapter/README.md).
+Those later checks found cross-device corruption missed by the uniform-color
+probe below. The prototype rejects cross-device import and remains opt-in
+because measured latency worsened.
 
 An alternative capture adapter can plausibly remove UScreen's CPU framebuffer
 read, RGB-to-NV12 conversion, raw FIFO transfer and hardware upload. Native
 DRI3 export and VAAPI import succeed on this machine. This is feasibility
-evidence, not an implemented streaming backend or a measured performance gain.
+evidence; these initial probes did not implement a streaming backend or measure
+a performance gain.
 
 The portable-host refactor T523 (`5afa47b`) completed before these probes.
 The live Linux/Android stream continued; no service restart, display mode
@@ -60,7 +67,7 @@ short-lived research executable with bounded subprocess timeouts, not a
 production resource-lifetime implementation. Development headers were downloaded
 and extracted under `/tmp`; no system package or bundled library was modified.
 
-## Recommended next experiment
+## Experiment proposed at the time
 
 Build an opt-in Linux `CaptureBackend` adapter that keeps native GPU handles
 inside the adapter and preserves the shared encoded-packet/session contract:
@@ -86,7 +93,8 @@ copies even when UScreen captures elsewhere. X11 copying and RGB conversion
 also write GPU surfaces. The defensible target is **avoiding application CPU
 readback/upload**, with measured latency benefit. Neither zero memory traffic
 nor full-pipeline zero-copy through ADB/Android follows from these probes.
-T575 remains open for this streaming experiment; no default changed.
+The subsequent T575 experiment is implemented and documented in the linked
+report above. FIFO remains the default.
 
 API references: [FFmpeg KMS capture](https://ffmpeg.org/ffmpeg-devices.html#kmsgrab),
 [FFmpeg 6.1 VAAPI mapping implementation](https://ffmpeg.org/doxygen/6.1/hwcontext__vaapi_8c_source.html),

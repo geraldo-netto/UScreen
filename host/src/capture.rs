@@ -4,6 +4,8 @@ mod cli_encoder;
 mod config;
 mod encoding;
 mod fifo;
+#[cfg(not(feature = "inproc-encoder"))]
+mod gpu;
 mod helper;
 #[cfg(not(feature = "inproc-encoder"))]
 mod idle;
@@ -45,10 +47,15 @@ pub struct CaptureManager {
 }
 impl CaptureManager {
     pub fn new(config: CaptureConfig) -> Self {
+        let encoder = EncoderProcess {
+            #[cfg(not(feature = "inproc-encoder"))]
+            gpu: gpu::Adapter::from_environment(),
+            ..Default::default()
+        };
         Self {
             config,
             helper: HelperProcess::new(),
-            encoder: EncoderProcess::default(),
+            encoder,
             codec_config: CodecConfig::default(),
             latency: crate::latency::LatencyTracker::new(),
             idr_wanted: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -62,7 +69,17 @@ impl CaptureManager {
     }
     async fn start_session_encoder(&mut self) -> Result<(u32, u32)> {
         self.helper.recover_fifo()?;
-        self.encoder.start(&self.config, self.active_mode()).await
+        let mode = self.active_mode();
+        #[cfg(not(feature = "inproc-encoder"))]
+        if let Some(child) = self
+            .encoder
+            .gpu
+            .try_start(&self.config, mode, self.helper.card)
+        {
+            self.encoder.child = Some(child);
+            return Ok(mode);
+        }
+        self.encoder.start(&self.config, mode).await
     }
     /// Which EVDI card the helper opened; None until it has.
     pub fn card_rx(&self) -> watch::Receiver<Option<u32>> {
@@ -389,6 +406,8 @@ impl CaptureManager {
 
         let mut settings_changed = false;
         let mut fifo_reset = false;
+        #[allow(unused_mut)]
+        let mut gpu_fallback = false;
         // Distinct from `settings_changed`: the mode moved under us, so the
         // encoder must be rebuilt but the helper and the virtual display
         // are fine and must not be torn down.
@@ -411,6 +430,8 @@ impl CaptureManager {
                 }
                 joined = &mut encode_task.handle => {
                     encode_finished = true;
+                    #[cfg(not(feature = "inproc-encoder"))]
+                    { gpu_fallback = self.encoder.gpu.encoder_finished(); }
                     match joined {
                         Ok(Ok(_)) => info!("Encoder finished"),
                         Ok(Err(e)) => warn!("Encoder error: {}. Restarting...", e),
@@ -516,6 +537,7 @@ impl CaptureManager {
             mode_changed,
             display_dropped,
             fifo_reset,
+            gpu_fallback,
         }))
     }
 
@@ -628,10 +650,11 @@ struct SessionChanges {
     mode_changed: bool,
     display_dropped: bool,
     fifo_reset: bool,
+    gpu_fallback: bool,
 }
 impl SessionChanges {
     fn keep_helper(self) -> bool {
-        self.settings_changed || self.mode_changed || self.fifo_reset
+        self.settings_changed || self.mode_changed || self.fifo_reset || self.gpu_fallback
     }
     fn crashed(self) -> bool {
         !self.keep_helper() && !self.display_dropped

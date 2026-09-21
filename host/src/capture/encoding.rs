@@ -8,6 +8,8 @@ use tokio::process::Child;
 #[derive(Default)]
 pub(super) struct EncoderProcess {
     pub(super) child: Option<Child>,
+    #[cfg(not(feature = "inproc-encoder"))]
+    pub(super) gpu: super::gpu::Adapter,
 }
 
 pub(super) struct EncoderOutput {
@@ -152,12 +154,16 @@ impl EncoderProcess {
     }
 
     pub(super) fn stop(&mut self) {
+        #[cfg(not(feature = "inproc-encoder"))]
+        self.gpu.stopped();
         if let Some(mut child) = self.child.take() {
             let _ = child.start_kill();
         }
     }
 
     pub(super) async fn shutdown(&mut self) {
+        #[cfg(not(feature = "inproc-encoder"))]
+        self.gpu.stopped();
         if let Some(mut child) = self.child.take() {
             process::terminate(&mut child, "ffmpeg").await;
         }

@@ -1,4 +1,4 @@
-.PHONY: all build build-helper install clean run android adb edid status stop list dist setup-system publish release-metadata
+.PHONY: all build build-helper build-gpu-helper test-gpu-helper install clean run android adb edid status stop list dist setup-system publish release-metadata
 
 VERSION = 1.2.3
 
@@ -11,6 +11,9 @@ recursive_prefix = $(if $(or $(findstring n,$(make_mode)),$(findstring q,$(make_
 # Expand indirectly and explicitly share the jobserver only for real builds.
 recursive_make = $(MAKE)
 CC = gcc
+GPU_PACKAGES = libavcodec libavutil libva libdrm x11 x11-xcb xrandr xfixes xrender xext xcb-dri3
+GPU_CFLAGS ?= $(shell pkg-config --cflags $(GPU_PACKAGES))
+GPU_LIBS ?= $(shell pkg-config --libs $(GPU_PACKAGES))
 ADB = adb
 # Release bundles pin the same libevdi as the portable build. Override its path when needed.
 LIBEVDI ?= $(shell $(CC) -print-file-name=libevdi.so.1.15.0)
@@ -19,6 +22,16 @@ BIN_DIR = $(value HOME)/.local/bin
 quote = '$(subst ','"'"',$(1))'
 
 all: build
+
+# Explicit prototype build. Use the stock FFmpeg SDK selected by PKG_CONFIG_PATH.
+# No GPU dependency is added to ordinary portable host builds.
+build-gpu-helper:
+	mkdir -p target
+	$(CC) -std=c11 -D_POSIX_C_SOURCE=200809L -O3 -Wall -Wextra -Werror $(GPU_CFLAGS) host/gpu/*.c -o target/uscreen-gpu-capture $(GPU_LIBS)
+
+test-gpu-helper: build-gpu-helper
+	$(CC) -std=c11 -D_POSIX_C_SOURCE=200809L -O1 -g -Wall -Wextra -Werror $(GPU_CFLAGS) host/tests/gpu_x11.c $(filter-out host/gpu/main.c,$(wildcard host/gpu/*.c)) -o target/gpu-x11-test $(GPU_LIBS)
+	xvfb-run -a -s '-screen 0 128x128x24' target/gpu-x11-test
 
 # Generic -O3 (no -march=native): release binaries must run on any x86-64 CPU
 build-helper:

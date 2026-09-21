@@ -209,7 +209,7 @@ async fn t498_encoder_restart_retires_reader_and_queued_frame_suffix() {
         io::{Read, Write},
         os::unix::fs::OpenOptionsExt,
     };
-    for cause in 0..3 {
+    for cause in 0..4 {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("frames");
         let mut manager = CaptureManager::new(Default::default());
@@ -238,6 +238,7 @@ async fn t498_encoder_restart_retires_reader_and_queued_frame_suffix() {
                     mode_changed: cause == 1,
                     fifo_reset: cause == 2,
                     display_dropped: false,
+                    gpu_fallback: cause == 3,
                 },
                 &mut run,
             )

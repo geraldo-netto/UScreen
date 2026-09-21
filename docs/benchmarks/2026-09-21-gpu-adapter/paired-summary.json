@@ -1,0 +1,182 @@
+[
+  {
+    "source_update_to_ack": {
+      "samples": 450,
+      "p50_ms": 27.709253500000003,
+      "p95_ms": 38.357625,
+      "max_ms": 55.844465
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.059142,
+      "p95_ms": 19.804023,
+      "max_ms": 28.405768
+    },
+    "unique_updates": 450,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "0-evdi-fifo"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 435,
+      "p50_ms": 37.034621,
+      "p95_ms": 54.438161,
+      "max_ms": 61.080525
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.1104755,
+      "p95_ms": 19.994992,
+      "max_ms": 24.447815
+    },
+    "unique_updates": 435,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "0-gpu-same"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 450,
+      "p50_ms": 28.724341,
+      "p95_ms": 38.66196,
+      "max_ms": 63.06908
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.0142365,
+      "p95_ms": 19.962978,
+      "max_ms": 32.635088
+    },
+    "unique_updates": 450,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "1-evdi-fifo"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 435,
+      "p50_ms": 38.243409,
+      "p95_ms": 52.893354,
+      "max_ms": 56.271708
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.1499765,
+      "p95_ms": 20.064947,
+      "max_ms": 22.189474
+    },
+    "unique_updates": 435,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "1-gpu-same"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 450,
+      "p50_ms": 28.8344015,
+      "p95_ms": 38.256779,
+      "max_ms": 67.134488
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.101334,
+      "p95_ms": 20.124289,
+      "max_ms": 31.011544
+    },
+    "unique_updates": 450,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "2-evdi-fifo"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 434,
+      "p50_ms": 37.120580000000004,
+      "p95_ms": 52.28929,
+      "max_ms": 57.730891
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 17.957423499999997,
+      "p95_ms": 19.845927,
+      "max_ms": 24.087479
+    },
+    "unique_updates": 434,
+    "scene_update_coverage": 0.9977011494252873,
+    "complete_acks": 480,
+    "trial": "2-gpu-same"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 450,
+      "p50_ms": 28.3238405,
+      "p95_ms": 37.56055,
+      "max_ms": 47.295404
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 17.9714785,
+      "p95_ms": 19.653481,
+      "max_ms": 26.064287
+    },
+    "unique_updates": 450,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "3-evdi-fifo"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 435,
+      "p50_ms": 37.43066,
+      "p95_ms": 52.864775,
+      "max_ms": 61.874919
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.107749,
+      "p95_ms": 20.139227,
+      "max_ms": 23.080941
+    },
+    "unique_updates": 435,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "3-gpu-same"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 450,
+      "p50_ms": 28.8072535,
+      "p95_ms": 38.180473,
+      "max_ms": 57.870212
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 17.9214,
+      "p95_ms": 20.022908,
+      "max_ms": 30.000501
+    },
+    "unique_updates": 450,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "4-evdi-fifo"
+  },
+  {
+    "source_update_to_ack": {
+      "samples": 436,
+      "p50_ms": 38.617568500000004,
+      "p95_ms": 54.109744,
+      "max_ms": 56.061606
+    },
+    "packet_to_ack": {
+      "samples": 450,
+      "p50_ms": 18.121724,
+      "p95_ms": 19.917522,
+      "max_ms": 22.75296
+    },
+    "unique_updates": 436,
+    "scene_update_coverage": 1.0,
+    "complete_acks": 480,
+    "trial": "4-gpu-same"
+  }
+]

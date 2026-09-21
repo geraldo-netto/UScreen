@@ -1,0 +1,610 @@
+{
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/capture.rs",
+    "host/src/capture/gpu.rs",
+    "host/src/capture/encoding.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 52,
+      "passing": 52,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "is_running",
+      "line": 26,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "start",
+      "line": 31,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "start",
+      "line": 43,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "start_with",
+      "line": 53,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "spawn_session",
+      "line": 72,
+      "language": "rust",
+      "covered": 34,
+      "total": 34,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "spawn_session",
+      "line": 112,
+      "language": "rust",
+      "covered": 38,
+      "total": 39,
+      "percent": 97.43589743589743,
+      "passes": true,
+      "missing": [
+        126
+      ]
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "stop",
+      "line": 156,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "shutdown",
+      "line": 164,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "abort",
+      "line": 180,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "finish",
+      "line": 186,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "name": "drop",
+      "line": 203,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "native_target",
+      "line": 13,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "default",
+      "line": 21,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "from_environment",
+      "line": 32,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "try_start",
+      "line": 41,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "try_start_using",
+      "line": 51,
+      "language": "rust",
+      "covered": 23,
+      "total": 23,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "start_with",
+      "line": 78,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "encoder_finished",
+      "line": 95,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "stopped",
+      "line": 105,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "supported_connector",
+      "line": 110,
+      "language": "rust",
+      "covered": 22,
+      "total": 22,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "name": "command",
+      "line": 137,
+      "language": "rust",
+      "covered": 21,
+      "total": 21,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "new",
+      "line": 49,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "start_helper",
+      "line": 64,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "active_mode",
+      "line": 67,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "start_session_encoder",
+      "line": 70,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "card_rx",
+      "line": 85,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "latency_tracker",
+      "line": 91,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "idr_request_flag",
+      "line": 98,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "codec_config",
+      "line": 102,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "while_active",
+      "line": 106,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "while_settings_current",
+      "line": 129,
+      "language": "rust",
+      "covered": 23,
+      "total": 24,
+      "percent": 95.83333333333333,
+      "passes": true,
+      "missing": [
+        149
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "stream_frames",
+      "line": 160,
+      "language": "rust",
+      "covered": 38,
+      "total": 38,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "helper_settings_changed",
+      "line": 202,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "stream_settings_changed",
+      "line": 212,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "apply_stream_settings",
+      "line": 221,
+      "language": "rust",
+      "covered": 24,
+      "total": 25,
+      "percent": 96.0,
+      "passes": true,
+      "missing": [
+        229
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "idle_until_screen_change",
+      "line": 260,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "ensure_capture_helper",
+      "line": 278,
+      "language": "rust",
+      "covered": 20,
+      "total": 21,
+      "percent": 95.23809523809524,
+      "passes": true,
+      "missing": [
+        291
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "prepare_capture_pipeline",
+      "line": 311,
+      "language": "rust",
+      "covered": 25,
+      "total": 26,
+      "percent": 96.15384615384616,
+      "passes": true,
+      "missing": [
+        332
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "ensure_session_encoder",
+      "line": 361,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "run_encoder_session",
+      "line": 390,
+      "language": "rust",
+      "covered": 93,
+      "total": 99,
+      "percent": 93.93939393939394,
+      "passes": true,
+      "missing": [
+        436,
+        438,
+        487,
+        488,
+        489,
+        492
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "finish_encoder_session",
+      "line": 544,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "stop",
+      "line": 570,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "shutdown",
+      "line": 581,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "stopped",
+      "line": 604,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "pause",
+      "line": 611,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "back_off",
+      "line": 620,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "explain_evdi_failure",
+      "line": 625,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "explain_evdi_failure_with",
+      "line": 629,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "adjust_backoff",
+      "line": 638,
+      "language": "rust",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        640
+      ]
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "keep_helper",
+      "line": 656,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "crashed",
+      "line": 659,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture.rs",
+      "name": "drop",
+      "line": 665,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

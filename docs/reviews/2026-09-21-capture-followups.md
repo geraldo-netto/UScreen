@@ -21,3 +21,12 @@ This verifies replay construction; it does not measure video latency.
 
 Implemented and validated; see [paired measurements and permanent coverage](../benchmarks/2026-09-21-shared-damage/README.md).
 T576 records a separately discovered historical benchmark source-copy defect.
+
+## T575 — optional native GPU capture
+
+Implemented and validated; see [paired USB measurements, correctness checks
+and coverage](../benchmarks/2026-09-21-gpu-adapter/README.md) and
+[build/activation instructions](../gpu-capture.md). FIFO remains the default:
+lower measured process CPU came with consistently higher video latency.
+T577–T580 retain the discovered input-identity, cross-device-layout,
+capture-cadence and redundant-conversion follow-ups.
