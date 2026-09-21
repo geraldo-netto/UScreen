@@ -5,6 +5,10 @@ collect matched before/after measurements, resource-count reductions and rejecte
 experiments, with their scope and current implementation status. There is no
 single matched upstream-versus-current total speedup measurement.
 
+The [GPU capture feasibility check](benchmarks/2026-09-21-gpu-capture.md) records
+native DRI3 export/VAAPI import results and current desktop limitations. It
+provides no measured latency gain and changes no capture default.
+
 The current fork's first physical-device run is the
 [2026-09-17 single-tablet baseline](benchmarks/2026-09-17-device-baseline.md),
 with [repeatable collection instructions](benchmarks/README.md) and raw samples.
