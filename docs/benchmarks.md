@@ -1,5 +1,10 @@
 # Benchmarks
 
+The [performance gains since the fork](benchmarks/2026-09-21-fork-performance.md)
+collect matched before/after measurements, resource-count reductions and rejected
+experiments, with their scope and current implementation status. There is no
+single matched upstream-versus-current total speedup measurement.
+
 The current fork's first physical-device run is the
 [2026-09-17 single-tablet baseline](benchmarks/2026-09-17-device-baseline.md),
 with [repeatable collection instructions](benchmarks/README.md) and raw samples.
