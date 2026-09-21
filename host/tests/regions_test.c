@@ -120,7 +120,7 @@ static void region_lifecycle(int scale) {
         frame_exchange_damage_rect(&f, far[0], far[1], far[2], far[3], scale);
         if (step == 35) frame_exchange_mark_all(&f);
         convert_region_frame(&pool, &f, job, expected);
-        frame_exchange_publish(&f, step);
+        frame_exchange_publish(&f, step, f.generation);
         if (lease.data) assert(memcmp(lease.data, held, SIZE) == 0 && "T554: conversion overwrote held writer pixels");
         if (step % 3 == 0) continue; /* Drop latest frames while writer holds an older lease. */
         frame_exchange_release(&f);

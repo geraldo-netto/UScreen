@@ -69,11 +69,23 @@ resume FIFO encoding without detaching the EVDI monitor. The FIFO reader is
 retired and its inode rotated before reuse. A new capture owner can try the
 explicit opt-in again.
 
+The retained Linux EVDI owner converts BGRA to NV12 only while its FIFO has a
+reader. GPU capture leaves that FIFO unread, so conversion workers stay asleep;
+EVDI continues requesting updates, grabbing pixels and acknowledging flips.
+On FIFO fallback, opening the reader wakes the capture loop through an eventfd
+and forces a complete conversion of the current framebuffer, even on a static
+desktop. Mode/reader generation checks discard conversions that cross a
+transition. The writer retains its existing 50 ms reader-discovery interval;
+fallback needs no new screen damage or EVDI detach. A failed eventfd allocation
+preserves continuous conversion and logs that fallback. The shared-memory raw-ring
+transport keeps its separate slot ownership and damage handling.
+
 This is **not full-pipeline zero-copy**. Stock EVDI retains monitor ownership
-and continues its CPU capture/conversion path; Xorg/EVDI and GPU conversion
+and continues CPU readback; Xorg/EVDI and GPU conversion
 still copy pixels, and USB/Android have their own buffers. T579 tracks
-damage-triggered capture to address latency; T580 tracks suppressing redundant
-EVDI conversion safely; T578 tracks explicit cross-device layout negotiation.
+damage-triggered capture to address latency; T578 tracks explicit cross-device
+layout negotiation. [T580 measurements](benchmarks/2026-09-21-fifo-demand/README.md)
+cover the redundant conversion removed from the retained EVDI owner.
 
 ## Repeatable validation
 
@@ -81,6 +93,10 @@ The normal Rust suite includes T575 eligibility, settings, ownership,
 cancellation, fallback, native argument bounds/fuzzing and actual encoded
 packet compatibility tests. `make test-gpu-helper` additionally verifies cursor
 cropping and codec error handling in an isolated Xvfb server.
+The normal EVDI helper suite also retains T580 regressions for absent/early
+readers, static-screen reconnect, resize, stale generations, immutable leases,
+generation wrap, eventfd failure and concurrent reader transitions. These run
+without a kernel EVDI device, with address/undefined/thread sanitizers.
 
 For a real GPU, `scripts/benchmarks/verify-gpu-capture.py --help` describes the
 explicit unused EVDI card/output fixture. It checks patterned colors at scales

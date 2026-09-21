@@ -7,6 +7,26 @@ use std::{path::PathBuf, process::Command};
 struct Harness(PathBuf);
 
 #[test]
+fn t580_no_fifo_reader_skips_conversion_but_keeps_evdi_acknowledgement() {
+    let harness = Harness::build("T580");
+    for case in [
+        "T580",
+        "T580-reconnect",
+        "T580-generation",
+        "T580-unavailable",
+        "T580-early",
+        "T580-transitions",
+    ] {
+        harness.run(case);
+    }
+}
+
+#[test]
+fn t580_fifo_reader_transitions_are_race_free() {
+    Harness::build("T580-tsan").run("T580-tsan");
+}
+
+#[test]
 fn t570_shared_slots_retain_damage_and_skip_idle_conversion() {
     let harness = Harness::build("T570");
     harness.run("T570");
@@ -26,13 +46,13 @@ impl Harness {
         let harness = Self(dir);
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/evdi_helper_test.c");
         let mut compiler = Command::new("cc");
-        if case == "T083" {
+        if matches!(case, "T083" | "T580-tsan") {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
         } else if matches!(
             case,
-            "T082" | "T274" | "T340" | "T497" | "T554" | "T492" | "T570"
+            "T082" | "T274" | "T340" | "T497" | "T554" | "T492" | "T570" | "T580"
         ) {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
@@ -62,7 +82,7 @@ impl Harness {
 
     fn run(&self, case: &str) -> String {
         let binary = self.0.join("helper-test");
-        let output = if case == "T083" {
+        let output = if matches!(case, "T083" | "T580-tsan") {
             // New kernels can place libraries inside GCC TSan's fixed shadow
             // range. Disable ASLR for this child only when permitted.
             let isolated = Command::new("setarch")

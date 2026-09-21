@@ -101,6 +101,7 @@ static int ensure_writer_fifo(writer_context_t *writer) {
             nanosleep(&idle, NULL);
             return 0;
         }
+        frame_exchange_reader(writer->frames, 1);
     }
     return 1;
 }
@@ -157,6 +158,14 @@ static void pace_writer(writer_state_t *state) {
     add_period(&state->next_allowed, state->period_ns);
 }
 
+static void write_writer_frame(writer_context_t *writer, const writer_state_t *state, int size, int fresh) {
+    size_t remaining = fifo_writer_write(writer->fifo, state->lease.data, (size_t)size, state->lease.generation);
+    frame_exchange_release(writer->frames);
+    if (writer->fifo->fd < 0) frame_exchange_reader(writer->frames, 0);
+    /* Repeated keepalives measure stale frame age, not capture latency. */
+    if (fresh && remaining == 0) record_latency(writer, state->lease.grabbed_us);
+}
+
 void *writer_run(void *arg) {
     writer_context_t *writer = arg;
     writer_state_t state = {
@@ -172,10 +181,7 @@ void *writer_run(void *arg) {
         if (claimed == 0) continue;
         if (!writer_frame_due(writer, &state, fresh)) continue;
         pace_writer(&state);
-        size_t remaining = fifo_writer_write(writer->fifo, state.lease.data, (size_t)size, state.lease.generation);
-        frame_exchange_release(writer->frames);
-        /* Repeated keepalives measure stale frame age, not capture latency. */
-        if (fresh && remaining == 0) record_latency(writer, state.lease.grabbed_us);
+        write_writer_frame(writer, &state, size, fresh);
     }
     return NULL;
 }

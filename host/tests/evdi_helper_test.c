@@ -10,6 +10,10 @@
 #include <sched.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <sys/eventfd.h>
+static int t580_eventfd_failure;
+static int mock_eventfd(unsigned int initial, int flags);
+#define eventfd mock_eventfd
 static int mock_fcntl(int, int, ...);
 #define fcntl mock_fcntl
 static DIR *mock_opendir(const char *);
@@ -54,8 +58,14 @@ static int mock_pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, cons
 #undef pthread_cond_timedwait
 #undef opendir
 #undef fcntl
+#undef eventfd
 #include <assert.h>
 #include <sys/wait.h>
+
+static int mock_eventfd(unsigned int initial, int flags) {
+    if (t580_eventfd_failure) { errno = EMFILE; return -1; }
+    return eventfd(initial, flags);
+}
 
 static int pipe_request_seen, pipe_divisor = 1, pipe_deny, pipe_default_attempt;
 static int mock_fcntl(int fd, int command, ...) {
@@ -926,7 +936,7 @@ static void test_t405_idle_writer(void) {
     assert(frame_exchange_allocated(&g_frames));
     memset(g_frames.fill, 42, (size_t)g_frames.size);
     g_frames.buffers_ready = 1;
-    frame_exchange_publish(&g_frames, 0);
+    frame_exchange_publish(&g_frames, 0, g_frames.generation);
     int ends[2];
     assert(pipe(ends) == 0);
     g_fifo.fd = ends[1];
@@ -1323,6 +1333,7 @@ static void test_t415_rounding(void) {
 #include "idle_capture.c"
 #include "shared_capture.c"
 #include "shared_damage.c"
+#include "fifo_demand.c"
 
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
@@ -1331,6 +1342,13 @@ int main(int argc, char **argv) {
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
+        {"T580", test_t580_no_reader},
+        {"T580-reconnect", test_t580_reconnect},
+        {"T580-tsan", test_t580_reconnect},
+        {"T580-generation", test_t580_generation},
+        {"T580-unavailable", test_t580_unavailable},
+        {"T580-early", test_t580_early_reader},
+        {"T580-transitions", test_t580_transitions},
         {"T418-ring", test_t418_ring},
         {"T570", test_t570_idle},
         {"T570-history", test_t570_histories},

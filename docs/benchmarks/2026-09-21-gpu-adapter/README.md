@@ -142,8 +142,9 @@ and [Rust coverage](coverage-final.json).
 ## Remaining work
 
 T579 tracks event-driven GPU capture: periodic polling is a plausible source
-of the added delay, not a demonstrated complete diagnosis. T580 tracks safely
-stopping redundant EVDI CPU conversion while retaining monitor ownership.
+of the added delay, not a demonstrated complete diagnosis. T580 subsequently
+[suppressed redundant EVDI CPU conversion](../2026-09-21-fifo-demand/README.md)
+while retaining monitor ownership; the measurements above predate that change.
 T578 tracks explicit cross-device modifiers/layout validation. T577 separately
 records existing input mapping's incorrect sysfs/RandR name assumption.
 

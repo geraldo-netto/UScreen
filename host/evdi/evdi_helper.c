@@ -369,6 +369,8 @@ static int start_capture_writer(const char *fifo_path, pthread_t *writer) {
         return 1;
     }
     if (fifo_path) {
+        if (!frame_exchange_enable_demand(&g_frames))
+            fprintf(stderr, "[evdi-helper] FIFO demand wakeup unavailable; retaining continuous conversion\n");
         g_fifo.path = fifo_path;
         g_writer.fps = g_capture.fps;
         conv_pool_init();   /* spawn NV12 conversion workers before first grab */

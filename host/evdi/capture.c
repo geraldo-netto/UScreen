@@ -61,10 +61,13 @@ static void publish_frame(capture_context_t *capture) {
         return;
     }
 
-    /* Only the chroma-aligned regions this particular buffer is missing. */
+    unsigned generation;
+    if (!frame_exchange_begin(capture->frames, &generation)) return;
+    /* Reconnecting FIFO readers need a full refresh, otherwise convert only
+     * the chroma-aligned regions this particular buffer is missing. */
     bgra_to_nv12(capture, capture->framebuffer, capture->frames->fill,
                  capture->frames->dirty_fill, capture->frames->spans_fill);
-    frame_exchange_publish(capture->frames, capture->grab_us);
+    frame_exchange_publish(capture->frames, capture->grab_us, generation);
 }
 
 static void reject_mode(capture_context_t *capture) {
@@ -413,10 +416,16 @@ static void report_capture_stats(capture_context_t *capture, long long now, long
     (*last_stats_ms) = now;
 }
 
+static int capture_wakeup_fd(const capture_context_t *capture) {
+    if (!capture) return -1;
+    if (capture->raw_ring) return capture->raw_ring->socket;
+    return capture->frames->demand_fd;
+}
+
 static int poll_capture_events(evdi_handle handle, struct evdi_event_context *evtctx,
                                struct pollfd *fd, int timeout_ms) {
     capture_context_t *capture = evtctx->user_data;
-    int count = capture && capture->raw_ring ? 2 : 1;
+    int count = capture_wakeup_fd(capture) >= 0 ? 2 : 1;
     int ret = poll(fd, count, timeout_ms);
     if (ret < 0) {
         if (errno == EINTR) return 0;
@@ -431,6 +440,7 @@ static int poll_capture_events(evdi_handle handle, struct evdi_event_context *ev
         /* update_ready / mode_changed handlers fire from here */
         evdi_handle_events(handle, evtctx);
     }
+    if (capture && frame_exchange_take_request(capture->frames)) publish_frame(capture);
     return 1;
 }
 
@@ -495,7 +505,7 @@ int capture_run(capture_context_t *capture, evdi_handle handle) {
     struct pollfd fds[2] = {0};
     fds[0].fd = evdi_get_event_ready(handle);
     fds[0].events = POLLIN;
-    fds[1].fd = capture->raw_ring ? capture->raw_ring->socket : -1;
+    fds[1].fd = capture_wakeup_fd(capture);
     fds[1].events = POLLIN;
 
     long long last_stats_ms = capture_now_ms();

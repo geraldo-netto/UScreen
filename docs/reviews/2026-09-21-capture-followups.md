@@ -28,5 +28,6 @@ Implemented and validated; see [paired USB measurements, correctness checks
 and coverage](../benchmarks/2026-09-21-gpu-adapter/README.md) and
 [build/activation instructions](../gpu-capture.md). FIFO remains the default:
 lower measured process CPU came with consistently higher video latency.
-T577–T580 retain the discovered input-identity, cross-device-layout,
-capture-cadence and redundant-conversion follow-ups.
+T577–T579 retain the discovered input-identity, cross-device-layout and
+capture-cadence follow-ups. T580 subsequently resolved redundant conversion;
+see [the separate CPU/fallback measurement](../benchmarks/2026-09-21-fifo-demand/README.md).

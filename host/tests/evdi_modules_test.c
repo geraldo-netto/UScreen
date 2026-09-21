@@ -71,7 +71,7 @@ static void leased_frame_history(void) {
     frame_lease_t lease;
     memset(frames.fill, 0x71, frames.size);
     unsigned char *published = frames.fill, *history = frames.dirty_fill;
-    frame_exchange_publish(&frames, 123);
+    frame_exchange_publish(&frames, 123, frames.generation);
     assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == 1);
     assert(lease.data == published && frames.dirty_write == history);
     assert(lease.size == 96 && lease.fresh && lease.grabbed_us == 123);
@@ -79,7 +79,7 @@ static void leased_frame_history(void) {
     frame_exchange_damage(&frames, 2, 4, 1);
     assert(history[0] == 2 && (frames.dirty_fill[0] & 2));
     memset(frames.fill, 0x22, frames.size);
-    frame_exchange_publish(&frames, 456);
+    frame_exchange_publish(&frames, 456, frames.generation);
     assert(lease.data[0] == 0x71 && "T380: publication overwrote writer lease");
     frame_exchange_release(&frames);
     assert(frame_exchange_claim(&frames, &cursor, &running, &deadline, &lease) == 1);

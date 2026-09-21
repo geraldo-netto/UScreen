@@ -125,6 +125,7 @@ static void t497_writer_startup(void) {
     assert(start_capture_writer("/unopened-t497-fifo", &writer));
     assert(pthread_join(writer, NULL) == 0 && g_fifo.fd == -1);
     conv_pool_destroy(&g_conversion);
+    frame_exchange_free(&g_frames);
     pthread_cond_destroy(&g_frames.ready);
 }
 

@@ -1,0 +1,59 @@
+{
+  "baseline_revision": "22f74cb0da9962585768838240698e96ba0c7011",
+  "sources": {
+    "host/evdi/fifo_writer.c": "af9c42ce08d807cd303a1627b048200438c50b5444905e3432aebb7ff57e3430",
+    "host/evdi/conversion.c": "9ce1d59ee7425b50891aa9194dd5c1152d95f55c0e13afabea80144ac027904d",
+    "host/evdi/evdi_helper.c": "68e4d3655cfa650b3b50622380707017cea9da9ba34317b43d0fff4214862f0f",
+    "host/evdi/writer.c": "9bcf7940f3412a76f4a20b98fc43f9c3abb62652aede7c9a4add8ecffb05ed0c",
+    "host/evdi/frame_exchange.c": "e0cdb589b6fb67105c6d65c1f528b35fb4c460629af4a420421e1b4ac51dfc8f",
+    "host/evdi/raw_ring.c": "7c01bf0e88cc615b149165c0900934b6fe988ad9526cea8e8e0fb0b8a4f40a09",
+    "host/evdi/capture.c": "57fa840b90f472939d26160c01fbc71a0c9cabc67b12992a20c720d5cd77ee69",
+    "host/evdi/pixel_damage.h": "277437b36fc1f14b4e89e8e57e0c222dfbd717f3c7e41ee528148c8dcf0cdea1",
+    "host/evdi/conversion.h": "afe669b42fa2cd5815983f8dc83b44f8dfdb1649c807e254e444b182e36b6112",
+    "host/evdi/frame_exchange.h": "527eb91a890245c30275eda652e9c55b49c2d9692adf54ebdcaf77d6faf49cb2",
+    "host/evdi/evdi_lib.h": "ece987245ac3939fe5f12fca894a29c7d586bdbf80796d3f6fa08a7c52bf9128",
+    "host/evdi/pixel_span.h": "3b3eee9b552650b565d3a36a8fec0017c5f0941837e950277516cf678dee31fe",
+    "host/evdi/capture.h": "f105046a229e9946ef50d4359c6e5d0b9e625309932e8db4d8eaa30f85a40c15",
+    "host/evdi/writer.h": "e39d03a68a7859af5445f4a0e84915f0cd9c4180c04246ff24de586812ee3d47",
+    "host/evdi/raw_ring.h": "b61dc599aefb08cf759dafa44bfbc6591f09dacab249170fc7cbf583d5fc09bd",
+    "host/evdi/fifo_writer.h": "0966473b8e6e2aa71a676ad027293be216ff38d5e2750bbaaebab92911119702",
+    "host/tests/fifo_demand.c": "55e7b470d37b89cd1efdd9b10ade099e8482560e484fdedc7345db0164ce9f33",
+    "host/tests/evdi_helper.rs": "56f71983dd021ae16aa1c86e9ff7b9857f0c973ead378e71158c728d8fd62461",
+    "scripts/benchmarks/fifo-demand.py": "039882314815545632415a3be903159488cf1dbd9b7e4cfd12f3622059ea61bb",
+    "scripts/benchmarks/gpu-scene.c": "5d1cc8f418cfca5e0c2a6422ba44e6c9283becd7b6c2e3167f660a37cd2223c7"
+  },
+  "evidence_sha256": "171ecf45c1aee0f63890141b52b94abc9749a05649933a4f96a7505cde44b2b6",
+  "evdi_cpu_median_seconds": {
+    "before": 0.7300000000000004,
+    "after": 0.46999999999999975,
+    "reduction_percent": 35.61643835616446
+  },
+  "coverage": {
+    "functions": 153,
+    "passing": 153
+  },
+  "native": {
+    "arguments": {
+      "before": "/tmp/uscreen-t580-build/before",
+      "after": "/tmp/uscreen-t580-build/after",
+      "gpu_helper": "/backups/disk2/projects/uscreen/target/uscreen-gpu-capture",
+      "render_node": "/dev/dri/renderD129",
+      "scene": "/tmp/uscreen-t575-implementation/gpu-scene",
+      "output_name": "DVI-I-3-2",
+      "edid": "/home/netto/.local/share/uscreen/edid/auto-v7-1280x800@30-218x136mm.bin",
+      "output": "/tmp/uscreen-t580-native",
+      "card": "2",
+      "x": "3200",
+      "frames": "480",
+      "pairs": "3"
+    },
+    "binaries": {
+      "before": "a61ec9580b876bd01d929403ca8838da8d7362e1db58254a068dc908a3bd6ea2",
+      "after": "2a94be991ad07d8c4fd953569435e063936576de10d74de7f23ddd1f40102af5",
+      "gpu_helper": "b56dd346fbb519a3c0146937257fa0eac5a5e2be93ae69d3408d5fb7322c95fd",
+      "scene": "8feef60ea98d6f80cd5512270045b86f79ac1e3ff62f49163e558e0014b09459"
+    },
+    "clock_ticks": 100,
+    "kernel": "7.0.0-31-generic"
+  }
+}

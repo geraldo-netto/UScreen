@@ -1,0 +1,74 @@
+[
+  {
+    "evdi_cpu_seconds": 0.7199999999999998,
+    "elapsed_seconds": 16.038317918006214,
+    "evdi_one_core_percent": 4.48924883320623,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.166893,
+    "pair": 0,
+    "variant": "before"
+  },
+  {
+    "evdi_cpu_seconds": 0.46999999999999975,
+    "elapsed_seconds": 16.03766260499833,
+    "evdi_one_core_percent": 2.9306016193002997,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.1664349999999999,
+    "fallback": {
+      "first_byte_ms": 40.69404900656082,
+      "full_frame_ms": 41.81287600658834,
+      "sha256": "c2ab24c41881f65d533f98d2205f0c27ab3e8feeb1e37ab5d468fc55f731b4aa",
+      "green_luma": 139
+    },
+    "pair": 0,
+    "variant": "after"
+  },
+  {
+    "evdi_cpu_seconds": 0.46999999999999975,
+    "elapsed_seconds": 16.03922026300279,
+    "evdi_one_core_percent": 2.9303170122561086,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.16787000000000063,
+    "fallback": {
+      "first_byte_ms": 8.675663993926719,
+      "full_frame_ms": 8.964063003077172,
+      "sha256": "c2ab24c41881f65d533f98d2205f0c27ab3e8feeb1e37ab5d468fc55f731b4aa",
+      "green_luma": 139
+    },
+    "pair": 1,
+    "variant": "after"
+  },
+  {
+    "evdi_cpu_seconds": 0.7400000000000002,
+    "elapsed_seconds": 16.035583056989708,
+    "evdi_one_core_percent": 4.6147370966810195,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.17338000000000164,
+    "pair": 1,
+    "variant": "before"
+  },
+  {
+    "evdi_cpu_seconds": 0.7300000000000004,
+    "elapsed_seconds": 16.039978084998438,
+    "evdi_one_core_percent": 4.5511284125926625,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.16519999999999513,
+    "pair": 2,
+    "variant": "before"
+  },
+  {
+    "evdi_cpu_seconds": 0.5099999999999998,
+    "elapsed_seconds": 16.038202808995266,
+    "evdi_one_core_percent": 3.179907412780431,
+    "gpu_frames": 480,
+    "gpu_cpu_seconds": 0.16786100000000204,
+    "fallback": {
+      "first_byte_ms": 38.3443390019238,
+      "full_frame_ms": 38.66358700906858,
+      "sha256": "3d70abb994fb8ee85ed38aeb4e0117ee776498ad399a8f6898935cb8752470a9",
+      "green_luma": 139
+    },
+    "pair": 2,
+    "variant": "after"
+  }
+]

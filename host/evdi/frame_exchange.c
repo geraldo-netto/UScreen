@@ -7,13 +7,57 @@
 #include <errno.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <sys/eventfd.h>
 
 void frame_exchange_init(frame_exchange_t *frames) {
+    frames->demand_fd = -1;
+    frames->reader_connected = frames->refresh_needed = 0;
     pthread_condattr_t attributes;
     pthread_condattr_init(&attributes);
     pthread_condattr_setclock(&attributes, CLOCK_MONOTONIC);
     pthread_cond_init(&frames->ready, &attributes);
     pthread_condattr_destroy(&attributes);
+}
+
+int frame_exchange_enable_demand(frame_exchange_t *frames) {
+    if (frames->demand_fd >= 0) return 1;
+    frames->demand_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    return frames->demand_fd >= 0;
+}
+
+void frame_exchange_reader(frame_exchange_t *frames, int connected) {
+    if (frames->demand_fd < 0) return;
+    pthread_mutex_lock(&frames->mutex);
+    if (frames->reader_connected != connected) {
+        frames->reader_connected = connected;
+        frames->refresh_needed = connected;
+        frames->latest_valid = 0;
+        frames->generation++;
+        uint64_t hint = 1;
+        /* EAGAIN means an unread hint already exists. The mutex protects state;
+         * the eventfd is only a wakeup, never the authority on reader demand. */
+        while (write(frames->demand_fd, &hint, sizeof(hint)) < 0 && errno == EINTR) {}
+    }
+    pthread_mutex_unlock(&frames->mutex);
+}
+
+int frame_exchange_take_request(frame_exchange_t *frames) {
+    if (frames->demand_fd < 0) return 0;
+    uint64_t hint;
+    while (read(frames->demand_fd, &hint, sizeof(hint)) < 0 && errno == EINTR) {}
+    pthread_mutex_lock(&frames->mutex);
+    int refresh = frames->reader_connected && frames->refresh_needed;
+    pthread_mutex_unlock(&frames->mutex);
+    return refresh;
+}
+
+int frame_exchange_begin(frame_exchange_t *frames, unsigned *generation) {
+    pthread_mutex_lock(&frames->mutex);
+    int wanted = frames->demand_fd < 0 || frames->reader_connected;
+    if (wanted && frames->refresh_needed) frame_exchange_mark_all(frames);
+    *generation = frames->generation;
+    pthread_mutex_unlock(&frames->mutex);
+    return wanted;
 }
 
 static void full_spans(pixel_span_t *spans, int rows, int width) {
@@ -99,9 +143,13 @@ int frame_exchange_retire(frame_exchange_t *frames) {
     return released;
 }
 
-void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
-    memset(frames->dirty_fill, 0, (size_t)frames->dirty_bytes);
+void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us, unsigned generation) {
     pthread_mutex_lock(&frames->mutex);
+    if (frames->generation != generation) {
+        pthread_mutex_unlock(&frames->mutex);
+        return;
+    }
+    memset(frames->dirty_fill, 0, (size_t)frames->dirty_bytes);
     unsigned char *data = frames->latest;
     frames->latest = frames->fill;
     frames->fill = data;
@@ -112,6 +160,7 @@ void frame_exchange_publish(frame_exchange_t *frames, long long grabbed_us) {
     frames->spans_latest = frames->spans_fill;
     frames->spans_fill = spans;
     frames->latest_valid = 1;
+    frames->refresh_needed = 0;
     frames->latest_grab_us = grabbed_us;
     pthread_cond_signal(&frames->ready);
     pthread_mutex_unlock(&frames->mutex);
@@ -181,6 +230,8 @@ void frame_exchange_release(frame_exchange_t *frames) {
 }
 
 void frame_exchange_free(frame_exchange_t *frames) {
+    if (frames->demand_fd >= 0) close(frames->demand_fd);
+    frames->demand_fd = -1;
     free(frames->fill); frames->fill = NULL;
     free(frames->latest); frames->latest = NULL;
     free(frames->write); frames->write = NULL;
