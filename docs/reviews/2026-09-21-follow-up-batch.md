@@ -22,3 +22,12 @@ remains at most 9. [Evidence](2026-09-21-follow-up-evidence/t566.tar.gz) retains
 red/green logs, source manifest and the scoped coverage report. Other methods
 in that common-only report are outside this change's measurement scope; it is
 not a replacement for the full-platform coverage gate.
+
+## T567 — normalize forwarding-module formatting
+
+`rustfmt` normalized the existing forwarding implementation and tests without
+changing behavior. The normal `scripts/format-rust.py --check` failed on this
+module before formatting and passes for every source root afterward. No
+artificial behavioral tests were added for the formatting-only change.
+The [before/after logs](2026-09-21-follow-up-evidence/t567.tar.gz) preserve the
+original drift and successful check.
