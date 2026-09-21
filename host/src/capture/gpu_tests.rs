@@ -151,7 +151,10 @@ async fn t575_successful_gpu_spawn_and_failed_retry_preserve_adapter_state() {
     assert!(adapter.active && !adapter.failed);
     assert!(child.wait_with_output().await.unwrap().status.success());
     adapter.stopped();
-    adapter.helper = Some("/missing/uscreen-gpu".into());
+    let directory = tempfile::tempdir().unwrap();
+    let missing_helper = directory.path().join("missing-uscreen-gpu");
+    assert!(!missing_helper.exists());
+    adapter.helper = Some(missing_helper);
     assert!(adapter
         .try_start_using(
             &configuration(),
@@ -163,15 +166,25 @@ async fn t575_successful_gpu_spawn_and_failed_retry_preserve_adapter_state() {
         .is_none());
     assert!(adapter.failed && !adapter.active);
     adapter.helper = Some("/bin/echo".into());
-    assert!(adapter
-        .try_start_using(
-            &configuration(),
-            (1280, 800),
-            Some(7),
-            &connectors(),
-            Desktop::X11
-        )
-        .is_none());
+    // T581: rejecting one retry must not clear the failure for a later attempt.
+    for attempt in 1..=3 {
+        assert!(
+            adapter
+                .try_start_using(
+                    &configuration(),
+                    (1280, 800),
+                    Some(7),
+                    &connectors(),
+                    Desktop::X11
+                )
+                .is_none(),
+            "T581: failed adapter spawned on retry {attempt}"
+        );
+        assert!(
+            adapter.failed && !adapter.active,
+            "T581: retry {attempt} changed the latched failure state"
+        );
+    }
 }
 
 #[tokio::test]
