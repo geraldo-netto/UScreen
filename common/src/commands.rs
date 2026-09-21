@@ -11,6 +11,8 @@ use std::time::Duration;
 mod windows;
 
 pub fn spawn_reaped(command: &mut std::process::Command) -> std::io::Result<u32> {
+    #[cfg(windows)]
+    windows::child_priority(command, 0);
     let mut child = command.spawn()?;
     let pid = child.id();
     std::thread::spawn(move || {
@@ -86,8 +88,10 @@ fn prepare_group(command: &mut Command) {
     let _ = command;
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(windows_sys::Win32::System::Threading::CREATE_SUSPENDED);
+        windows::child_priority(
+            command,
+            windows_sys::Win32::System::Threading::CREATE_SUSPENDED,
+        );
     }
 }
 

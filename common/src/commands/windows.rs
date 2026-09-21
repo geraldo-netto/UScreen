@@ -8,6 +8,12 @@ use windows_sys::Win32::{
 
 pub(super) struct Job(OwnedHandle);
 
+pub(super) fn child_priority(command: &mut std::process::Command, flags: u32) {
+    use std::os::windows::process::CommandExt;
+    let current = unsafe { GetPriorityClass(GetCurrentProcess()) };
+    command.creation_flags(flags | current);
+}
+
 fn checked(success: i32) -> io::Result<()> {
     if success == 0 {
         Err(io::Error::last_os_error())

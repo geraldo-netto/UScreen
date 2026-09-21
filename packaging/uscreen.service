@@ -5,6 +5,9 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
+# T582: fair CPU preference for the complete capture/encode/helper group.
+# The daemon applies the user's High/Normal preference at startup.
+CPUWeight=1000
 ExecStart=/usr/bin/uscreen start
 ExecStop=/usr/bin/uscreen stop
 # T268: longer than the CLI cleanup grace, bounded by the GUI action budget.

@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-21",
+  "kernel": "7.0.0-31-generic",
+  "source_base": "a51c80d48286c4f5a57057e1b29755db298c159b",
+  "installed_appimage_sha256": "5af9ba1264821061cc9a76751dbffc9c1d632a8a0f7a7aa565654485feacef8c",
+  "live_pipeline_pids": {
+    "daemon": 1160771,
+    "evdi_helper": 1160852,
+    "ffmpeg": 1160959
+  },
+  "live_settings": {
+    "fps": 30,
+    "dimensions": [
+      1280,
+      800
+    ],
+    "encoder": "h264_vaapi_baseline",
+    "render_node": "/dev/dri/renderD128"
+  },
+  "measurement_boundary": "live encoded packet-ready to Android render callback ACK at host; no optical or audio latency measurement",
+  "load_control": "no builds during six passive observation runs; displayed content not controlled; no stutter reproduced",
+  "synthetic_boundary": "two always-runnable Python workers on logical CPU 31, four seconds per pair, CPU weight 100/100 or 1000/100",
+  "native_validation": {
+    "linux": "tested",
+    "windows": "cross-compiled only; T583",
+    "macos": "standalone adapter cross-compiled only; T583; full application unavailable"
+  },
+  "evidence_sha256": "bff61e7ea413b1329d7003ae3e66349f1c1682c9126b1b1a70f7601521fb685b"
+}

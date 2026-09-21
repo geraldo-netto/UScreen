@@ -4,6 +4,7 @@ use super::*;
 fn app(store: ConfigStore) -> App {
     let cfg = store.load();
     App {
+        scheduling_status: "This process: High priority unavailable; using OS settings".into(),
         camera: camera_settings::Panel::default(),
         _status_worker: None,
         store,

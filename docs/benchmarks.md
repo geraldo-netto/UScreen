@@ -5,6 +5,11 @@ collect matched before/after measurements, resource-count reductions and rejecte
 experiments, with their scope and current implementation status. There is no
 single matched upstream-versus-current total speedup measurement.
 
+The [scheduling comparison](benchmarks/2026-09-21-scheduling/README.md) verifies
+High's greater CPU share under contention, but finds no consistent live video
+latency improvement. [High is the requested default](scheduling.md), with a
+Normal override and explicit OS/permission limitations.
+
 The [GPU capture prototype](benchmarks/2026-09-21-gpu-adapter/README.md) follows
 the [initial feasibility check](benchmarks/2026-09-21-gpu-capture.md). Matched
 physical USB trials lower the measured processes' CPU use by 32.7% but increase

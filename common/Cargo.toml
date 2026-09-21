@@ -11,7 +11,7 @@ platform = ["storage", "commands", "dep:libc", "dep:clap", "dep:getrandom"]
 # Preserve explicit feature selections made before the Windows extraction.
 platform-linux = ["platform"]
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(unix)'.dependencies]
 libc = { version = "0.2", optional = true }
 
 [target.'cfg(windows)'.dependencies]

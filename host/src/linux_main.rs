@@ -1531,6 +1531,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     ensure_single_daemon(&pid_path)?;
 
+    uscreen_config::scheduling::apply_configured();
+    uscreen_config::scheduling::apply_shared_adb(file_cfg.scheduling_priority);
+
     // Write PID file for clean stop/status
     let pid = std::process::id();
     std::fs::write(&pid_path, pid.to_string())?;

@@ -65,6 +65,7 @@ fn dispatch_action(
 }
 
 struct App {
+    scheduling_status: String,
     camera: camera_settings::Panel,
     _status_worker: Option<status_worker::StatusWorker>,
     store: ConfigStore,
@@ -152,7 +153,7 @@ fn check_for_update() -> Option<String> {
 }
 
 impl App {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, scheduling_status: String) -> Self {
         let cfg = FileConfig::load();
         let status = Arc::new(Mutex::new(Status::default()));
 
@@ -188,6 +189,7 @@ impl App {
         );
 
         Self {
+            scheduling_status,
             camera: camera_settings::Panel::default(),
             _status_worker: Some(worker),
             store: ConfigStore::default(),
@@ -949,9 +951,27 @@ impl App {
     }
 
     fn show_general_settings(&mut self, ui: &mut egui::Ui, status: &Status) {
+        self.setting_scheduling(ui);
         self.setting_security(ui);
         self.setting_updates(ui);
         self.setting_plug_and_play(ui, status);
+    }
+
+    fn setting_scheduling(&mut self, ui: &mut egui::Ui) {
+        use uscreen_config::scheduling::Priority;
+        ui.label("CPU scheduling");
+        ui.vertical(|ui| {
+            egui::ComboBox::from_id_salt("scheduling-priority")
+                .selected_text(format!("{:?}", self.cfg.scheduling_priority))
+                .show_ui(ui, |ui| {
+                    for priority in [Priority::High, Priority::Normal] {
+                        ui.selectable_value(&mut self.cfg.scheduling_priority, priority, format!("{priority:?}"));
+                    }
+                });
+            ui.small("High requests more CPU time under load. OS permissions can limit it; smoother playback is not guaranteed. Reopen settings to update this window's priority.");
+            ui.small(&self.scheduling_status);
+        });
+        ui.end_row();
     }
 
     fn show_settings(&mut self, ui: &mut egui::Ui, status: &Status) {
@@ -982,6 +1002,7 @@ impl App {
 }
 
 fn main() -> eframe::Result {
+    let scheduling_status = uscreen_config::scheduling::apply_configured();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             // Tall enough for the longest settings tab; anything shorter
@@ -1004,7 +1025,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "UScreen",
         options,
-        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+        Box::new(move |cc| Ok(Box::new(App::new(cc, scheduling_status)))),
     )
 }
 
@@ -1177,6 +1198,7 @@ mod tests {
             ..saved_cfg.clone()
         };
         App {
+            scheduling_status: "This process: High priority active".into(),
             camera: camera_settings::Panel::default(),
             _status_worker: None,
             store: ConfigStore::default(),
@@ -1544,6 +1566,38 @@ mod tests {
         events: Vec<egui::Event>,
     ) -> Vec<(String, egui::Rect)> {
         settings_test_frame(app, ctx, events, |app, ui| app.setting_adaptive_idle(ui))
+    }
+
+    fn scheduling_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| app.setting_scheduling(ui))
+    }
+
+    #[test]
+    fn t582_general_settings_allow_normal_and_high_priority() {
+        use uscreen_config::scheduling::Priority;
+        let mut app = settings_test_app(Tab::General);
+        let ctx = egui::Context::default();
+        assert_eq!(app.cfg.scheduling_priority, Priority::High);
+        let labels = scheduling_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels
+            .iter()
+            .any(|(text, _)| text.contains("High priority active")));
+        click_settings_text(&mut app, &ctx, "High", scheduling_test_frame);
+        click_settings_text(&mut app, &ctx, "Normal", scheduling_test_frame);
+        assert_eq!(app.cfg.scheduling_priority, Priority::Normal);
+        assert!(app.cfg.requires_restart_from(&app.saved_cfg));
+        click_settings_text(&mut app, &ctx, "Normal", scheduling_test_frame);
+        click_settings_text(&mut app, &ctx, "High", scheduling_test_frame);
+        assert_eq!(app.cfg.scheduling_priority, Priority::High);
+        app.scheduling_status = "This process: High priority unavailable; using OS settings".into();
+        let labels = scheduling_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels
+            .iter()
+            .any(|(text, _)| text.contains("priority unavailable")));
     }
 
     #[test]

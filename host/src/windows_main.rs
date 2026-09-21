@@ -5,6 +5,7 @@ use uscreen_config::cli::{Cli, Commands};
 
 pub(super) fn run() -> Result<()> {
     let cli = Cli::parse();
+    uscreen_config::scheduling::apply_configured();
     if matches!(cli.command, Some(Commands::Doctor)) {
         diagnostics();
     }

@@ -82,6 +82,8 @@ pub fn validated_pipe_capacity(value: u32) -> u32 {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct FileConfig {
+    /// Requested CPU scheduling preference; native permission can limit it.
+    pub scheduling_priority: crate::scheduling::Priority,
     /// Camera settings apply independently, without restarting the display.
     pub camera: crate::camera::CameraSettings,
     pub encoder: String,
@@ -172,6 +174,7 @@ pub struct FileConfig {
 impl Default for FileConfig {
     fn default() -> Self {
         Self {
+            scheduling_priority: Default::default(),
             camera: Default::default(),
             encoder: "auto".into(),
             profile_cache: false,

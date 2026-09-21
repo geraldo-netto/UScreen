@@ -1,0 +1,15 @@
+[
+  {
+    "file": "gui/src/main.rs",
+    "name": "setting_scheduling",
+    "line": 960,
+    "language": "rust",
+    "covered": 15,
+    "total": 16,
+    "percent": 93.75,
+    "passes": true,
+    "missing": [
+      961
+    ]
+  }
+]
