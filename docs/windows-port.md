@@ -1,6 +1,6 @@
 # Windows integration plan
 
-Status: staged implementation, updated 2026-09-19. Linux remains the supported
+Status: staged implementation, updated 2026-09-21. Linux remains the supported
 runtime. Windows capture, input, lifecycle and packaging are not implemented.
 The backend and release recommendations below remain pending decisions.
 
@@ -63,23 +63,33 @@ Work depending on an unanswered choice must wait for that choice.
 
 ## Architecture and reuse
 
-Retain the Android app and authenticated TCP/WebSocket protocol. Reuse
-configuration serialization, version parsing, latency accounting, stream
-framing and applicable GUI code. Preserve existing client compatibility,
-including the Android brightness and refresh preferences.
+The Android app and authenticated TCP/WebSocket protocol remain unchanged.
+T523 exposes attachment ownership, credentials, control/video transport, bounded
+queues, latency accounting, selection data and session orchestration through the
+portable host library. Linux uses that same implementation. Real loopback-socket
+tests cover authentication, wire bytes, render acknowledgements, attachment
+replacement, failed startup and worker retirement using injected adapters.
 
-Separate OS responsibilities behind focused interfaces: `VirtualDisplay`
-for owned monitor lifetime/configuration, `FrameSource` for capture,
-`InputSink` for injection, and session/process services for lifecycle and
-private runtime state. Platform capabilities should drive GUI and diagnostic
-availability. Keep Linux behavior covered throughout the extraction.
+`session::CaptureBackend` supplies shared capture resources and returns every
+owned native worker after both listeners bind. `input::backend::InputBackend`
+and `InputSink` separate controller handling from injection and native display
+mapping. Linux owns its EVDI card receiver inside the input adapter. Shared
+credentials use stock `getrandom`; socket buffer hints use stock `socket2`.
+Private credential persistence and process lifecycle remain platform services.
+
+These interfaces compile for GNU and MSVC Windows targets, but the Windows
+preview does not start a session or enable backend capabilities. Windows native
+display/capture/input adapters still need implementation and acceptance.
+Narrower `VirtualDisplay` and `FrameSource` interfaces remain design candidates
+for those adapters, not implemented cross-platform backends. Preserve existing
+Android brightness/refresh preferences and Linux regressions during that work.
 
 | Current implementation | Sources | Windows replacement |
 |---|---|---|
 | EVDI discovery, EDID attachment and capture helper | `host/src/vdisplay.rs`, `host/src/capture.rs`, `host/src/edid.rs`, `host/evdi/` | Integrate a virtual monitor through an IDD and capture its output. Scope creation and removal to UScreen-owned resources. |
 | Raw NV12 through native transfer adapters | `common/src/raw_frame.rs`, `host/src/encoder_shared.rs`, `host/src/raw_memory.rs`, `host/src/encoder_io.rs` | FIFO and the optional Linux sealed-memfd adapter implement input ownership and cancellation. Reuse the portable bounded descriptor contract and final-reference lease semantics; supply a Windows mapping/handle-transfer or framed pipe adapter. Linux memfd, Unix sockets and eventfd are not Windows implementations. |
-| uinput, KWin and X11 mapping | `host/src/input.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows pointer injection, display placement and monitor/DPI mapping. Evaluate on-screen keyboard behavior separately. |
-| Unix signals, `/proc`, UID checks and file permissions | `host/src/linux_main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs`, `host/src/stream.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling, private paths/ACLs, secure randomness and portable socket handling. |
+| uinput, KWin and X11 mapping | `host/src/input/linux.rs`, `host/src/input/mapping.rs`, `host/src/input/event_writer.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows pointer injection behind `InputBackend`/`InputSink`, display placement and monitor/DPI mapping. Evaluate on-screen keyboard behavior separately. |
+| Unix signals, `/proc`, UID checks and file permissions | `host/src/linux_main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling and private paths/ACLs. Shared transport no longer needs Unix socket calls or a Linux credential source. |
 | systemd, D-Bus tray and Linux setup/diagnostics | `gui/src/main.rs`, `host/src/tray.rs`, `host/src/doctor.rs` | Windows lifecycle, tray, optional autostart and diagnostics; normal operation in the interactive user session. |
 | VAAPI defaults and Linux build/packaging | `common/src/model.rs`, `host/src/capture.rs`, `host/src/encoder.rs`, `Makefile`, `scripts/`, `packaging/`, `.github/workflows/` | Windows encoder capability detection, build scripts, tests and installation artifacts. |
 

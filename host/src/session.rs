@@ -1,12 +1,20 @@
-//! Shared construction and ownership for primary and additional tablet sessions.
-//! Persistence and CLI policy belong to the daemon, not an individual pipeline.
-use crate::{capture, input, media, stream};
-use anyhow::Result;
+//! Linux construction of the shared session and native capture adapter.
+use crate::{capture, input, media};
 use std::sync::Arc;
+#[cfg(test)]
 use std::time::Duration;
-use tokio::sync::{watch, Notify};
+use tokio::sync::watch;
+#[cfg(test)]
 use tokio::task::JoinHandle;
-use tracing::{error, warn};
+use tracing::error;
+#[cfg(test)]
+pub(crate) use uscreen::session::start_servers;
+pub(crate) use uscreen::session::Runtime;
+#[cfg(test)]
+use uscreen::session::{forward_shutdown, spawn_display_gate, spawn_server};
+use uscreen::session::{
+    CaptureBackend, CaptureContext, CaptureResources, CaptureWorkers, Prepared,
+};
 
 pub(crate) struct Spec {
     pub capture: capture::CaptureConfig,
@@ -35,237 +43,75 @@ impl Spec {
         }
     }
 
-    fn input_config(&self) -> input::InputConfig {
-        input::InputConfig {
-            port: self.ports.1,
-            instance: self.capture.instance,
-            token: self.token.clone(),
-            codec: media::Codec::from_encoder(&self.capture.encoder)
-                .wire_name()
-                .into(),
-            virtual_width: self.capture.width,
-            virtual_height: self.capture.height,
-            touch: self.devices.0,
-            pen: self.devices.1,
-            pointer: self.devices.2,
-        }
-    }
-
-    /// No workers or sockets yet. Callers may snapshot settings for persistence
-    /// before any control message can change them (T292/T296).
     pub fn prepare(self, mode: watch::Sender<bool>) -> Prepared {
-        let (settings, settings_rx) = watch::channel(self.settings());
-        let tablet =
-            crate::attachment::Attachment::with_token(settings.clone(), self.token.clone());
-        let relaunch = Arc::new(Notify::new());
-        let input_config = self.input_config();
-        let capture = capture::CaptureManager::new(self.capture.clone());
-        let stream = stream::StreamServer::new(
-            stream::StreamConfig {
-                video_port: self.ports.0,
-                token: self.token,
-            },
-            capture.codec_config(),
-            capture.idr_request_flag(),
-        )
-        .with_attachment(tablet.clone());
-        let input = input::InputServer::new(
-            input_config,
-            Some(settings.clone()),
-            mode.clone(),
-            capture.latency_tracker(),
-            relaunch.clone(),
-            capture.card_rx(),
-            tablet.subscribe(),
-        )
-        .with_attachment(tablet.clone());
-        Prepared {
+        let settings = self.settings();
+        let manager = capture::CaptureManager::new(self.capture.clone());
+        let backend = Arc::new(input::LinuxBackend::new(manager.card_rx()));
+        uscreen::session::Spec {
             settings,
-            settings_rx,
-            tablet,
-            relaunch,
-            mode,
-            capture,
-            stream,
-            input,
             instance: self.capture.instance,
             ports: self.ports,
-            probe_config: self.capture,
+            token: self.token,
+            devices: self.devices,
         }
+        .prepare(
+            mode,
+            Box::new(LinuxCapture {
+                manager,
+                config: self.capture,
+            }),
+            backend,
+        )
     }
 }
 
-pub(crate) struct Prepared {
-    pub settings: watch::Sender<media::EncoderSettings>,
-    settings_rx: watch::Receiver<media::EncoderSettings>,
-    pub tablet: crate::attachment::Attachment,
-    pub relaunch: Arc<Notify>,
-    mode: watch::Sender<bool>,
-    capture: capture::CaptureManager,
-    #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
-    probe_config: capture::CaptureConfig,
-    stream: stream::StreamServer,
-    input: input::InputServer,
-    instance: u32,
-    ports: (u16, u16),
+struct LinuxCapture {
+    manager: capture::CaptureManager,
+    config: capture::CaptureConfig,
 }
-
-impl Prepared {
-    pub async fn start(self, daemon_stop: watch::Receiver<bool>) -> Result<Runtime> {
-        // Keep queues shallow; slow clients recover at an IDR instead of
-        // accumulating seconds of queued frames.
-        let (video, _) = crate::video_queue::channel(
-            crate::video_queue::QUEUE_PACKETS,
-            self.capture.idr_request_flag(),
-        );
-        let (stream, input) = start_servers(self.stream, self.input, video.clone()).await?;
-        let (gate_tx, gate_rx) = watch::channel(false);
-        let (stop_tx, stop_rx) = watch::channel(false);
-        let (capture_stop, capture_stop_rx) = watch::channel(false);
-        let settings_rx = self.settings_rx;
-        let gate = spawn_display_gate(gate_tx, self.tablet.subscribe(), self.mode.subscribe());
-        let stop = forward_shutdown(daemon_stop, stop_rx, capture_stop);
+impl CaptureBackend for LinuxCapture {
+    fn resources(&self) -> CaptureResources {
+        CaptureResources {
+            codec_config: self.manager.codec_config(),
+            idr_wanted: self.manager.idr_request_flag(),
+            latency: self.manager.latency_tracker(),
+        }
+    }
+    fn start(self: Box<Self>, context: CaptureContext) -> CaptureWorkers {
+        let Self {
+            mut manager,
+            config,
+        } = *self;
         #[cfg(not(feature = "inproc-encoder"))]
         let selector = crate::selection::spawn(
-            self.probe_config,
-            self.settings.clone(),
-            gate_rx.clone(),
-            capture_stop_rx.clone(),
-            self.capture.latency_tracker(),
-            self.tablet.clone(),
+            config.clone(),
+            context.settings,
+            context.display.clone(),
+            context.stop.clone(),
+            manager.latency_tracker(),
+            context.attachment,
         );
-        let mut manager = self.capture;
-        let instance = self.instance;
         let capture = tokio::spawn(async move {
             if let Err(error) = manager
-                .stream_frames(video, settings_rx, gate_rx, capture_stop_rx)
+                .stream_frames(
+                    context.video,
+                    context.settings_rx,
+                    context.display,
+                    context.stop,
+                )
                 .await
             {
-                error!("Capture manager {instance} failed: {error}");
+                error!("Capture manager {} failed: {error}", config.instance);
             }
         });
-        #[allow(unused_mut)]
-        let mut tasks = vec![stream, input, gate, stop];
-        #[cfg(not(feature = "inproc-encoder"))]
-        tasks.push(selector);
-        Ok(Runtime {
-            instance,
-            tablet_tx: self.tablet,
-            relaunch: self.relaunch,
-            stop_tx,
-            tasks,
+        CaptureWorkers {
             capture,
-            video_port: self.ports.0,
-            input_port: self.ports.1,
-        })
-    }
-}
-
-/// Own all session workers, including the gate and shutdown bridge. A startup
-/// failure occurs before workers spawn; teardown waits for capture child reaping.
-pub(crate) struct Runtime {
-    pub instance: u32,
-    pub tablet_tx: crate::attachment::Attachment,
-    pub relaunch: Arc<Notify>,
-    pub stop_tx: watch::Sender<bool>,
-    pub tasks: Vec<JoinHandle<()>>,
-    pub capture: JoinHandle<()>,
-    pub video_port: u16,
-    pub input_port: u16,
-}
-
-impl Runtime {
-    pub async fn stop(mut self) {
-        let _ = self.tablet_tx.send(false);
-        let _ = self.stop_tx.send(true);
-        if tokio::time::timeout(Duration::from_secs(5), &mut self.capture)
-            .await
-            .is_err()
-        {
-            warn!("Capture pipeline {} did not stop within 5s", self.instance);
-            self.capture.abort();
-            let _ = (&mut self.capture).await;
-        }
-        for task in &self.tasks {
-            task.abort();
-        }
-        for task in &mut self.tasks {
-            let _ = task.await;
+            #[cfg(not(feature = "inproc-encoder"))]
+            auxiliary: vec![selector],
+            #[cfg(feature = "inproc-encoder")]
+            auxiliary: vec![],
         }
     }
-}
-
-impl Drop for Runtime {
-    fn drop(&mut self) {
-        let _ = self.stop_tx.send(true);
-        self.capture.abort();
-        for task in &self.tasks {
-            task.abort();
-        }
-    }
-}
-
-fn forward_shutdown(
-    mut daemon: watch::Receiver<bool>,
-    mut local: watch::Receiver<bool>,
-    capture: watch::Sender<bool>,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
-        tokio::select! {
-            _ = daemon.wait_for(|stop| *stop) => {},
-            _ = local.wait_for(|stop| *stop) => {},
-        }
-        let _ = capture.send(true);
-    })
-}
-
-pub(crate) async fn start_servers(
-    stream: stream::StreamServer,
-    input: input::InputServer,
-    video: crate::video_queue::VideoSender,
-) -> Result<(JoinHandle<()>, JoinHandle<()>)> {
-    let video_listener = stream.bind().await?;
-    let input_listener = input.bind().await?;
-    let stream = spawn_server("Stream", async move {
-        stream.run_with_listener(video, video_listener).await
-    });
-    let input = spawn_server("Input", async move {
-        input.run_with_listener(input_listener).await
-    });
-    Ok((stream, input))
-}
-
-fn spawn_server(
-    name: &'static str,
-    run: impl std::future::Future<Output = Result<()>> + Send + 'static,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
-        if let Err(error) = run.await {
-            error!("{name} server failed: {error}");
-        }
-    })
-}
-
-fn spawn_display_gate(
-    gate: watch::Sender<bool>,
-    mut tablet: watch::Receiver<bool>,
-    mut mode: watch::Receiver<bool>,
-) -> JoinHandle<()> {
-    tokio::spawn(async move {
-        let mut last = false;
-        loop {
-            let attached = *tablet.borrow();
-            let active = attached && !*mode.borrow();
-            if active != last {
-                last = active;
-                let _ = gate.send(active);
-            }
-            tokio::select! {
-                r = tablet.changed() => if r.is_err() { break },
-                r = mode.changed() => if r.is_err() { break },
-            }
-        }
-    })
 }
 
 #[cfg(test)]

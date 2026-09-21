@@ -54,3 +54,44 @@ lint command line, all-target host Clippy passes; no source lint suppression was
 added. This is a scoped lint result, not an unqualified clean strict-lint claim.
 [Evidence](2026-09-21-follow-up-evidence/t568.tar.gz) includes red/green logs,
 the final source manifest, scoped coverage and lint/format/complexity results.
+
+## T523 — share host sessions and protocol ownership
+
+The host library exposes attachment credentials and retirement, control/video
+servers, bounded encoded storage, latency accounting, selection data and session
+orchestration on all host targets. Linux uses this library through a small
+capture adapter and its existing input backend. Native EVDI card identity now
+belongs to the Linux input adapter. The shared session binds both listeners
+before starting capture and owns every returned worker through shutdown.
+
+Token generation uses stock `getrandom`; the existing comparison algorithm
+remains shared. Native private-token persistence stays in platform services.
+Stock `socket2` replaces the transport's Unix-only send-buffer syscall with the
+same best-effort 128 KiB request. No wire format, encoder policy, display default
+or Android behavior changed.
+
+Five new portable integration tests cover credential rotation and retired
+leases, delayed ACK ownership, authenticated TCP/WebSocket bytes and render
+receipts, partial startup cleanup and cancellation of injected capture/input
+workers. The first interface test did not compile before extraction because
+the library did not expose these modules; that is an API-boundary check, not a
+claim of reproducing a behavioral defect. Existing Linux regressions remain in
+the normal suite. A bounded credential mismatch corpus and entropy-failure
+test cover the new portable entropy adapter.
+
+The default workspace run passes 778 tests, with three existing opt-in
+benchmarks ignored. GNU and MSVC all-target host checks pass. These compile
+checks do not validate native Windows capture, input, ACLs or lifecycle; Windows
+capabilities remain disabled and T493/T497 retain native validation requirements.
+
+The optional in-process host run passes 496 tests, with two existing opt-in
+benchmarks ignored. Combined default/optional coverage meets 80% for every
+changed or moved production function. The full Linux report still exposes the
+two pre-existing camera gaps tracked in T572; 58 Windows-only methods remain
+unmeasured in the all-platform report. Formatting and complexity pass (5,366
+functions, none above nine). Default and optional all-target host Clippy pass
+with only the existing T573 `manual_is_multiple_of` finding permitted on the
+command line. [Evidence](2026-09-21-follow-up-evidence/t523.tar.gz) retains both
+test logs, platform checks, source manifest and coverage reports. Native Linux
+display behavior was tested through existing isolated regressions; this
+refactor was not reloaded into the live display during these checks.

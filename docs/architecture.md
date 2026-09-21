@@ -265,9 +265,25 @@ runtime ACL/lease validation still needs a native Windows runner, and its
 application backend capabilities remain disabled. See the
 [T493 validation report](reviews/2026-09-19-windows-services.md).
 
+The `uscreen` library builds attachment ownership, authentication, control and
+video transport, bounded encoded queues, latency accounting and session
+orchestration for every host target. `session::CaptureBackend` supplies capture
+resources and returns owned workers; `input::backend::InputBackend` supplies
+injection and follows attachment/mode changes. Native display identity belongs
+to each adapter. Linux constructs these adapters around its existing capture
+manager and uinput implementation; other platforms must provide their own
+implementations before runtime capabilities can be enabled.
+
+Attachment credentials use the operating system CSPRNG through stock
+`getrandom`, with shared token comparison in `uscreen-config::credentials`.
+Private token persistence remains a platform responsibility. The video socket's
+best-effort send-buffer hint uses stock `socket2`, preserving the existing
+128 KiB request without Unix file descriptors in the shared transport.
+
 - `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
-  `session::Spec` prepares the same settings, capture and control/video servers
-  for every slot. Preparation exposes settings before producers start so the
+  The Linux `session::Spec` constructs native adapters and delegates to the
+  shared library's `session::Spec` for every slot. Preparation exposes settings
+  before producers start so the
   primary daemon can snapshot persistence and CLI overrides. Both listeners
   bind before any session worker starts. `session::Runtime` owns the capture,
   server, display-gate and shutdown tasks; stopping a slot waits for capture

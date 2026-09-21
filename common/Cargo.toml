@@ -7,7 +7,7 @@ edition = "2021"
 default = ["storage", "commands", "platform"]
 storage = ["dep:tempfile"]
 commands = ["dep:tempfile", "dep:tokio", "dep:libc"]
-platform = ["storage", "commands", "dep:libc", "dep:clap"]
+platform = ["storage", "commands", "dep:libc", "dep:clap", "dep:getrandom"]
 # Preserve explicit feature selections made before the Windows extraction.
 platform-linux = ["platform"]
 
@@ -24,6 +24,7 @@ windows-sys = { version = "0.61", features = [
 ] }
 
 [dependencies]
+getrandom = { version = "0.3", optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 serde_json = "1"
 semver = "1"

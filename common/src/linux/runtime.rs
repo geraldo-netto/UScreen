@@ -92,18 +92,7 @@ fn token_path() -> Result<PathBuf> {
     Ok(runtime_dir()?.join("token"))
 }
 
-/// 64 hex characters from the kernel RNG, without publishing or logging them.
-pub fn random_token() -> Result<String> {
-    use std::io::Read;
-    let mut raw = [0u8; 32];
-    std::fs::File::open("/dev/urandom")
-        .context("open /dev/urandom")?
-        .read_exact(&mut raw)
-        .context("read /dev/urandom")?;
-    let token: String = raw.iter().map(|b| format!("{:02x}", b)).collect();
-
-    Ok(token)
-}
+pub use crate::credentials::{random_token, token_matches};
 
 /// Create the initial private credential file; attachments rotate it thereafter.
 pub fn new_session_token() -> Result<String> {
@@ -119,22 +108,6 @@ pub fn new_session_token() -> Result<String> {
     use std::io::Write;
     f.write_all(token.as_bytes())?;
     Ok(token)
-}
-
-/// Compare a presented token with the expected one. Constant-time over the
-/// expected length, so timing does not leak how many leading characters were
-/// right — cheap insurance on a loopback socket.
-pub fn token_matches(expected: &str, presented: &str) -> bool {
-    let a = expected.as_bytes();
-    let b = presented.as_bytes();
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (x, y) in a.iter().zip(b) {
-        diff |= x ^ y;
-    }
-    diff == 0
 }
 
 #[cfg(test)]

@@ -14,6 +14,9 @@ pub mod version;
 pub mod video;
 pub use model::*;
 
+#[cfg(feature = "platform")]
+pub mod credentials;
+
 #[cfg(all(windows, feature = "storage"))]
 pub mod windows;
 

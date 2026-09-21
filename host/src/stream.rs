@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod wake_tests;
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod resources;
 
 use crate::media::CodecConfig;
@@ -26,7 +26,7 @@ const MAX_BACKLOG: usize = 2;
 /// Kernel send-buffer cap, in bytes. Roughly a couple of frames' worth at the
 /// rates this streams at — enough to absorb scheduling jitter, too small to
 /// hide a genuinely slow link.
-const SEND_BUFFER_BYTES: libc::c_int = 128 * 1024;
+const SEND_BUFFER_BYTES: usize = 128 * 1024;
 
 pub struct StreamConfig {
     pub video_port: u16,
@@ -73,7 +73,7 @@ impl StreamServer {
         }
     }
 
-    pub(crate) fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
+    pub fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
         self.attachment = Some(attachment);
         self
     }
@@ -177,7 +177,7 @@ impl StreamServer {
             let read = tokio::time::timeout(AUTH_TIMEOUT, socket.read_exact(&mut buf)).await;
             let ok = matches!(read, Ok(Ok(_)))
                 && std::str::from_utf8(&buf)
-                    .map(|t| crate::runtime::token_matches(expected, t))
+                    .map(|t| uscreen_config::credentials::token_matches(expected, t))
                     .unwrap_or(false);
             if !ok {
                 warn!(
@@ -244,23 +244,9 @@ impl StreamServer {
 
     /// Best-effort: a kernel that refuses the hint is not a reason to fail the
     /// connection, it just means latency behaves as it did before.
-    fn set_send_buffer(socket: &TcpStream, bytes: libc::c_int) {
-        use std::os::fd::AsRawFd;
-        let fd = socket.as_raw_fd();
-        let rc = unsafe {
-            libc::setsockopt(
-                fd,
-                libc::SOL_SOCKET,
-                libc::SO_SNDBUF,
-                &bytes as *const libc::c_int as *const libc::c_void,
-                std::mem::size_of::<libc::c_int>() as libc::socklen_t,
-            )
-        };
-        if rc != 0 {
-            warn!(
-                "Could not set SO_SNDBUF: {}",
-                std::io::Error::last_os_error()
-            );
+    fn set_send_buffer(socket: &TcpStream, bytes: usize) {
+        if let Err(error) = socket2::SockRef::from(socket).set_send_buffer_size(bytes) {
+            warn!("Could not set SO_SNDBUF: {error}");
         }
     }
 

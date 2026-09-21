@@ -5,14 +5,14 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
-pub(crate) const QUEUE_PACKETS: usize = 8;
-pub(crate) const RETAINED_BYTES: usize = 32 * 1024 * 1024;
+pub const QUEUE_PACKETS: usize = 8;
+pub const RETAINED_BYTES: usize = 32 * 1024 * 1024;
 // Android's wire length is at most 8 MiB + 1, including type and sequence.
-pub(crate) const MAX_FRAME_BYTES: usize = 8 * 1024 * 1024 - 4;
-pub(crate) const MAX_CONFIG_BYTES: usize = 8 * 1024 * 1024;
+pub const MAX_FRAME_BYTES: usize = 8 * 1024 * 1024 - 4;
+pub const MAX_CONFIG_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Clone)]
-pub(crate) struct VideoSender {
+pub struct VideoSender {
     sender: broadcast::Sender<VideoPacket>,
     viewer_epoch: Arc<AtomicU64>,
     budget: Arc<Budget>,
@@ -20,7 +20,7 @@ pub(crate) struct VideoSender {
     idr_wanted: Arc<AtomicBool>,
 }
 
-pub(crate) fn channel(
+pub fn channel(
     capacity: usize,
     idr_wanted: Arc<AtomicBool>,
 ) -> (VideoSender, broadcast::Receiver<VideoPacket>) {
@@ -48,7 +48,7 @@ impl VideoSender {
     }
 
     #[cfg(not(feature = "inproc-encoder"))]
-    pub(crate) fn viewer_epoch(&self) -> Arc<AtomicU64> {
+    pub fn viewer_epoch(&self) -> Arc<AtomicU64> {
         self.viewer_epoch.clone()
     }
 

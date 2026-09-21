@@ -1,12 +1,13 @@
 mod adb_inventory;
 #[cfg(test)]
+#[allow(dead_code)] // Shared counter helpers also serve library transport tests.
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
-mod attachment;
+use uscreen::attachment;
 use uscreen::camera;
 mod capture;
-mod config;
+use uscreen::config;
 mod desktop;
 mod device_tasks;
 mod discovery;
@@ -18,19 +19,17 @@ mod encoder;
 mod encoder_io;
 #[cfg(not(feature = "inproc-encoder"))]
 mod framed_annex_b;
-mod input;
+use uscreen::input;
 #[cfg(not(feature = "inproc-encoder"))]
 mod ivf;
-mod kscreen;
-mod kwin;
-mod latency;
-mod media;
-mod media_storage;
+use uscreen::kscreen;
+use uscreen::kwin;
+use uscreen::latency;
+use uscreen::media;
+use uscreen::media_storage;
 mod monitor;
-mod osk;
+use uscreen::osk;
 mod persistence;
-#[cfg(test)]
-mod poll_probe;
 #[cfg(feature = "inproc-encoder")]
 mod raw_memory;
 #[cfg(feature = "inproc-encoder")]
@@ -38,13 +37,14 @@ mod raw_socket;
 mod runtime;
 mod selection;
 mod session;
-mod stream;
+#[cfg(test)]
+use uscreen::stream;
 #[cfg(test)]
 mod test_logging;
 mod tray;
 mod update;
-mod vdisplay;
-mod video_queue;
+use uscreen::vdisplay;
+use uscreen::video_queue;
 
 use anyhow::{Context, Result};
 use clap::Parser;

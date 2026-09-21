@@ -1,12 +1,11 @@
 //! T391: immutable bytes retain their full backing-allocation charge across slices.
 use bytes::Bytes;
 use std::ops::Deref;
-#[cfg(test)]
 use std::ops::RangeBounds;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-pub(crate) struct Budget {
+pub struct Budget {
     limit: usize,
     used: AtomicUsize,
     peak: AtomicUsize,
@@ -35,7 +34,6 @@ impl Budget {
         })
     }
 
-    #[cfg(test)]
     pub fn usage(&self) -> (usize, usize) {
         (
             self.used.load(Ordering::Acquire),
@@ -72,9 +70,16 @@ struct Backing {
 /// The raw Bytes never escapes this wrapper: cloning or slicing preserves the
 /// backing identity and its charge, even when only one byte remains visible.
 #[derive(Clone)]
-pub(crate) struct MediaBytes {
+pub struct MediaBytes {
     data: Bytes,
     backing: Arc<Backing>,
+}
+
+#[cfg(not(feature = "inproc-encoder"))]
+impl Default for MediaBytes {
+    fn default() -> Self {
+        Self::owned(Bytes::new(), 0)
+    }
 }
 
 impl MediaBytes {
@@ -91,10 +96,9 @@ impl MediaBytes {
 
     #[cfg(not(feature = "inproc-encoder"))]
     pub fn new() -> Self {
-        Self::owned(Bytes::new(), 0)
+        Self::default()
     }
 
-    #[cfg(test)]
     pub fn from_static(data: &'static [u8]) -> Self {
         // Conservatively count static storage too; do not special-case tests.
         Self::owned(Bytes::from_static(data), data.len())
@@ -112,12 +116,6 @@ impl MediaBytes {
         Self::owned(Bytes::from_owner(owner), bytes)
     }
 
-    #[cfg(all(test, feature = "inproc-encoder"))]
-    pub fn from_benchmark_owner(owner: impl AsRef<[u8]> + Send + 'static, bytes: usize) -> Self {
-        Self::from_owner(owner, bytes)
-    }
-
-    #[cfg(test)]
     pub fn slice(&self, range: impl RangeBounds<usize>) -> Self {
         Self {
             data: self.data.slice(range),

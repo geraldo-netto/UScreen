@@ -1,15 +1,20 @@
 //! Control transport and controller ownership; platform work lives in adapters.
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod wake_tests;
 
-mod backend;
-#[cfg(test)]
+pub mod backend;
+#[cfg(all(test, target_os = "linux"))]
 mod batching_tests;
 mod config;
 #[cfg(test)]
 mod contracts;
+#[cfg(target_os = "linux")]
 mod event_writer;
+#[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+pub use linux::Backend as LinuxBackend;
+#[cfg(target_os = "linux")]
 mod mapping;
 mod settings;
 mod wire;
@@ -19,14 +24,13 @@ use anyhow::{Context, Result};
 use backend::{InputBackend, InputSink, PenSample};
 pub use config::InputConfig;
 use futures_util::{SinkExt, StreamExt};
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 use linux::*;
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 use mapping::*;
-#[cfg(test)]
-pub(crate) use settings::negotiated_geometry;
+pub use settings::negotiated_geometry;
 use settings::*;
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 use std::os::fd::AsRawFd;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -100,16 +104,13 @@ pub struct InputServer {
     /// token to the app again over adb (a manually launched app never got
     /// one).
     relaunch: Arc<tokio::sync::Notify>,
-    /// The EVDI card this tablet's helper opened, once known. The devices are
-    /// mapped onto that card's connector, not onto "the first EVDI output" -
-    /// with two tablets that would put both pens on one screen.
-    card_rx: watch::Receiver<Option<u32>>,
     /// Whether this tablet is attached at all. The virtual input devices
     /// exist exactly while it is.
     tablet_rx: watch::Receiver<bool>,
 }
 
 impl InputServer {
+    #[cfg(target_os = "linux")]
     pub fn new(
         config: InputConfig,
         settings_tx: Option<watch::Sender<EncoderSettings>>,
@@ -125,21 +126,20 @@ impl InputServer {
             mode_tx,
             latency,
             relaunch,
-            (card_rx, tablet_rx),
-            Arc::new(linux::Backend::default()),
+            tablet_rx,
+            Arc::new(linux::Backend::new(card_rx)),
         )
     }
 
-    fn with_backend(
+    pub fn with_backend(
         config: InputConfig,
         settings_tx: Option<watch::Sender<EncoderSettings>>,
         mode_tx: watch::Sender<bool>,
         latency: crate::latency::LatencyTracker,
         relaunch: Arc<tokio::sync::Notify>,
-        presence: (watch::Receiver<Option<u32>>, watch::Receiver<bool>),
+        tablet_rx: watch::Receiver<bool>,
         backend: Arc<dyn InputBackend>,
     ) -> Self {
-        let (card_rx, tablet_rx) = presence;
         Self {
             attachment: None,
             backend,
@@ -148,12 +148,11 @@ impl InputServer {
             mode_tx,
             latency,
             relaunch,
-            card_rx,
             tablet_rx,
         }
     }
 
-    pub(crate) fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
+    pub fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
         self.attachment = Some(attachment);
         self
     }
@@ -186,15 +185,11 @@ impl InputServer {
         let mut tasks = tokio::task::JoinSet::new();
         let slots = Arc::new(tokio::sync::Semaphore::new(16));
 
-        // Follow the tablet, the mode and the card for as long as the daemon
-        // runs. Attach creates the devices and maps them; detach destroys
-        // them; a mode or card switch moves them onto the other output and
-        // drops anything held at that moment — a finger or pen tip that was
-        // down would otherwise stay down on a screen no longer listening.
+        // The native adapter owns display identity and mapping. Follow attachment
+        // and mode until this server ends, releasing held input on transitions.
         tasks.spawn(self.backend.follow(
             self.tablet_rx.clone(),
             self.mode_tx.subscribe(),
-            self.card_rx.clone(),
             self.config.clone(),
         ));
 
@@ -558,7 +553,7 @@ async fn authenticate_input(
         let ok = match first {
             Ok(Some(Ok(Message::Text(text)))) => matches!(
                 serde_json::from_str::<InputEvent>(&text),
-                Ok(InputEvent::Auth { token }) if crate::runtime::token_matches(expected, &token)
+                Ok(InputEvent::Auth { token }) if uscreen_config::credentials::token_matches(expected, &token)
             ),
             _ => false,
         };
@@ -652,7 +647,7 @@ fn handle_event(
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     #[tokio::test]
     async fn t299_primary_selection_reaches_kwin_mapping_arguments() {
@@ -2097,8 +2092,8 @@ fi
         assert_eq!(
             (fallback.width_mm, fallback.height_mm),
             (
-                crate::edid::DEFAULT_WIDTH_MM,
-                crate::edid::DEFAULT_HEIGHT_MM
+                uscreen_config::display::DEFAULT_WIDTH_MM,
+                uscreen_config::display::DEFAULT_HEIGHT_MM
             )
         );
         for native in [(0, 0), (0, 2160), (4096, 0)] {

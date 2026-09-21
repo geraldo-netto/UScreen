@@ -1,6 +1,10 @@
 //! Fixed-porch display timing shared by configuration and EDID generation.
 use anyhow::Result;
 
+/// Fallback physical geometry until the authenticated tablet supplies its size.
+pub const DEFAULT_WIDTH_MM: u32 = 310;
+pub const DEFAULT_HEIGHT_MM: u32 = 194;
+
 pub const H_PORCHES: (u32, u32, u32) = (48, 32, 80);
 pub const V_PORCHES: (u32, u32, u32) = (3, 10, 25);
 

@@ -22,8 +22,8 @@ impl Fixture {
         }
         .prepare(mode);
         prepared
-            .capture
-            .codec_config()
+            .resources
+            .codec_config
             .publish(Some(crate::media_storage::MediaBytes::from_static(b"csd")));
         let video_listener = prepared.stream.bind().await.unwrap();
         let input_listener = prepared.input.bind().await.unwrap();

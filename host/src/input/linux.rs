@@ -12,14 +12,16 @@ use std::sync::{atomic::Ordering, Arc};
 use tokio::sync::watch;
 use tracing::{debug, info, warn};
 
-pub(super) struct Backend {
+pub struct Backend {
     devices: Arc<std::sync::Mutex<InjectDevices>>,
+    card: watch::Receiver<Option<u32>>,
 }
 
-impl Default for Backend {
-    fn default() -> Self {
+impl Backend {
+    pub fn new(card: watch::Receiver<Option<u32>>) -> Self {
         Self {
             devices: Arc::new(std::sync::Mutex::new(InjectDevices::empty())),
+            card,
         }
     }
 }
@@ -32,13 +34,12 @@ impl InputBackend for Backend {
         &self,
         tablet: watch::Receiver<bool>,
         mode: watch::Receiver<bool>,
-        card: watch::Receiver<Option<u32>>,
         config: InputConfig,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
         Box::pin(follow_input_devices(
             tablet,
             mode,
-            card,
+            self.card.clone(),
             self.devices.clone(),
             DeviceIdentity::for_instance(config.instance),
             config,

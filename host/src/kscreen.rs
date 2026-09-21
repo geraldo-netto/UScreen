@@ -4,7 +4,7 @@ use uscreen_config::commands::AsyncCommandExt;
 
 /// Preserve absent names distinctly: input mapping cannot invent a connector.
 #[derive(Clone, Debug)]
-pub(crate) struct Output {
+pub struct Output {
     pub id: u32,
     pub name: Option<String>,
     pub enabled: bool,
@@ -55,12 +55,12 @@ fn integer(value: &Value, path: &str) -> i64 {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum ParseError {
+pub enum ParseError {
     InvalidJson,
     MissingOutputs,
 }
 
-pub(crate) fn parse(bytes: &[u8]) -> Result<Vec<Output>, ParseError> {
+pub fn parse(bytes: &[u8]) -> Result<Vec<Output>, ParseError> {
     let value: Value = serde_json::from_slice(bytes).map_err(|_| ParseError::InvalidJson)?;
     let outputs = value
         .get("outputs")
@@ -69,7 +69,7 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<Vec<Output>, ParseError> {
     Ok(outputs.iter().map(Output::from_json).collect())
 }
 
-pub(crate) async fn fetch_with(
+pub async fn fetch_with(
     mut command: tokio::process::Command,
 ) -> std::io::Result<std::process::Output> {
     command.arg("-j").output_bounded().await
@@ -77,11 +77,11 @@ pub(crate) async fn fetch_with(
 
 /// Preserve the existing contract: parseable output remains usable even when
 /// the command exits nonzero. Consumers decide mapping/diagnostic policy.
-pub(crate) async fn outputs() -> Option<Vec<Output>> {
+pub async fn outputs() -> Option<Vec<Output>> {
     outputs_using(std::ffi::OsStr::new("kscreen-doctor")).await
 }
 
-pub(crate) async fn outputs_using(program: &std::ffi::OsStr) -> Option<Vec<Output>> {
+pub async fn outputs_using(program: &std::ffi::OsStr) -> Option<Vec<Output>> {
     parse(
         &fetch_with(tokio::process::Command::new(program))
             .await
@@ -91,10 +91,7 @@ pub(crate) async fn outputs_using(program: &std::ffi::OsStr) -> Option<Vec<Outpu
     .ok()
 }
 
-pub(crate) fn enabled_matching_output<'a>(
-    out: &'a Output,
-    names: &[String],
-) -> Option<(u32, &'a str)> {
+pub fn enabled_matching_output<'a>(out: &'a Output, names: &[String]) -> Option<(u32, &'a str)> {
     let name = out.label();
     if !names.iter().any(|candidate| candidate == name) {
         return None;
@@ -236,7 +233,7 @@ impl Scene {
     }
 }
 
-pub(crate) struct Placement {
+pub struct Placement {
     pub id: u32,
     pub x: i64,
     pub y: i64,
@@ -265,7 +262,7 @@ impl Placement {
     }
 }
 
-pub(crate) fn placement(
+pub fn placement(
     outputs: &[Output],
     evdi_names: &[String],
     position: crate::config::Position,

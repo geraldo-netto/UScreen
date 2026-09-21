@@ -31,7 +31,7 @@ mod pending_tests;
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
-pub(crate) struct RenderSample {
+pub struct RenderSample {
     pub sequence: u32,
     pub ordinal: u64,
     pub output: u64,
@@ -84,12 +84,10 @@ impl Default for LatencyTracker {
     }
 }
 
-#[cfg(not(feature = "inproc-encoder"))]
-pub(crate) struct EncoderActivity {
+pub struct EncoderActivity {
     encoder: Arc<EncoderEvidence>,
     activity: tokio::sync::watch::Sender<()>,
 }
-#[cfg(not(feature = "inproc-encoder"))]
 impl Drop for EncoderActivity {
     fn drop(&mut self) {
         self.encoder.active.store(false, Ordering::Release);
@@ -100,7 +98,7 @@ impl Drop for EncoderActivity {
 /// Acknowledgements stay tied to the encoder that produced the sequence.
 /// Delayed acknowledgements from a retired encoder cannot certify its successor.
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
-pub(crate) struct EncoderEvidence {
+pub struct EncoderEvidence {
     pub name: String,
     pub format: (u32, u32, u32, u32, u32),
     pub epoch: u64,
@@ -180,7 +178,6 @@ impl LatencyTracker {
         self.interaction.subscribe()
     }
 
-    #[cfg(any(test, feature = "inproc-encoder"))]
     pub fn encoder_started(
         &self,
         name: &str,
@@ -219,7 +216,6 @@ impl LatencyTracker {
         self.inner.lock().ok()?.encoder.clone()
     }
 
-    #[cfg(not(feature = "inproc-encoder"))]
     pub fn encoder_activity(&self, encoder: Arc<EncoderEvidence>) -> EncoderActivity {
         EncoderActivity {
             encoder,
@@ -232,7 +228,6 @@ impl LatencyTracker {
     }
 
     /// A complete encoded access unit is ready for broadcast.
-    #[cfg(test)]
     pub fn on_encoded(&self, seq: u32) {
         self.record_encoded(seq, None);
     }
@@ -271,7 +266,6 @@ impl LatencyTracker {
     }
 
     /// The host received the tablet's render-callback acknowledgement.
-    #[cfg(test)]
     pub fn on_rendered(&self, seq: u32, decode_us: i64) {
         self.on_rendered_from(seq, decode_us, None);
     }

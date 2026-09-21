@@ -7,7 +7,7 @@ pub use uscreen_config::video::Codec;
 /// Immutable current codec headers with race-free publication notifications.
 /// T405: publishers may run on native encoder threads without a Tokio runtime.
 #[derive(Clone)]
-pub(crate) struct CodecConfig(tokio::sync::watch::Sender<Option<Bytes>>);
+pub struct CodecConfig(tokio::sync::watch::Sender<Option<Bytes>>);
 
 impl Default for CodecConfig {
     fn default() -> Self {
@@ -58,11 +58,17 @@ pub struct EncoderGeneration {
     pub active: Arc<std::sync::atomic::AtomicBool>,
 }
 
-impl EncoderGeneration {
-    pub fn new() -> Self {
+impl Default for EncoderGeneration {
+    fn default() -> Self {
         Self {
             active: Arc::new(std::sync::atomic::AtomicBool::new(true)),
         }
+    }
+}
+
+impl EncoderGeneration {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
@@ -168,7 +174,7 @@ impl EncoderSettings {
             && caps.codecs.iter().any(|name| name == codec.wire_name())
     }
 
-    pub(crate) fn helper_geometry(&self) -> (u32, u32, u32, u32, u32, u32) {
+    pub fn helper_geometry(&self) -> (u32, u32, u32, u32, u32, u32) {
         (
             self.width,
             self.height,

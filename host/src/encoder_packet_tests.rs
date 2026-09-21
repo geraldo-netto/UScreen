@@ -171,7 +171,7 @@ fn own_packets(packets: Vec<ffmpeg_next::Packet>) -> Vec<MediaBytes> {
             // Only this fixture's freshly allocated packets are used here. A codec
             // may return an AVBufferRef view and retain other packet-owned buffers.
             let capacity = unsafe { (*(*packet.as_ptr()).buf).size };
-            MediaBytes::from_benchmark_owner(PacketOwner(packet), capacity)
+            MediaBytes::from_owner(PacketOwner(packet), capacity)
         })
         .collect()
 }

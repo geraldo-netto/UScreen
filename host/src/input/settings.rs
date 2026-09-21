@@ -117,8 +117,8 @@ pub(super) fn physical_dimensions(width: u32, height: u32) -> (u32, u32) {
         (width, height)
     } else {
         (
-            crate::edid::DEFAULT_WIDTH_MM,
-            crate::edid::DEFAULT_HEIGHT_MM,
+            uscreen_config::display::DEFAULT_WIDTH_MM,
+            uscreen_config::display::DEFAULT_HEIGHT_MM,
         )
     }
 }
@@ -147,7 +147,7 @@ pub(super) fn apply_tablet_resolution(
     rejection
 }
 
-pub(crate) fn negotiated_geometry(
+pub fn negotiated_geometry(
     current: &EncoderSettings,
     pixels: (u32, u32),
     millimetres: (u32, u32),

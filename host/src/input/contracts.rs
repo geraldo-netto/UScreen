@@ -134,7 +134,6 @@ impl InputBackend for FakeBackend {
         &self,
         _tablet: watch::Receiver<bool>,
         _mode: watch::Receiver<bool>,
-        _card: watch::Receiver<Option<u32>>,
         _config: InputConfig,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
         let (started, stopped) = (self.started.clone(), self.stopped.clone());
@@ -159,7 +158,7 @@ async fn t370_server_cancels_injected_backend_when_owner_ends() {
         watch::channel(false).0,
         crate::latency::LatencyTracker::new(),
         Arc::new(tokio::sync::Notify::new()),
-        (watch::channel(None).1, watch::channel(false).1),
+        watch::channel(false).1,
         Arc::new(FakeBackend {
             sink: Arc::new(Recorder::default()),
             started: started.clone(),
@@ -179,14 +178,25 @@ async fn t370_server_cancels_injected_backend_when_owner_ends() {
 }
 
 fn t281_attachment() -> crate::attachment::Attachment {
-    crate::session::Spec {
-        capture: Default::default(),
-        ports: (0, 0),
-        token: Some("initial-t281-token".into()),
-        devices: (false, false, false),
-    }
-    .prepare(watch::channel(false).0)
-    .tablet
+    crate::attachment::Attachment::with_token(
+        watch::channel(EncoderSettings {
+            encoder: "libx264".into(),
+            fps: 30,
+            bitrate: 20000,
+            width: 640,
+            height: 480,
+            quality: 18,
+            width_mm: 310,
+            height_mm: 194,
+            stream_scale: 1,
+            geometry_ready: false,
+            decoders: None,
+            decoder_epoch: 0,
+            selection: None,
+        })
+        .0,
+        Some("initial-t281-token".into()),
+    )
 }
 
 #[test]

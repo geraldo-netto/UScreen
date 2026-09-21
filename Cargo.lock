@@ -3740,6 +3740,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "simd-adler32",
+ "socket2",
  "tempfile",
  "tokio",
  "tokio-tungstenite",
@@ -3757,6 +3758,7 @@ version = "1.2.3"
 dependencies = [
  "anyhow",
  "clap",
+ "getrandom 0.3.4",
  "libc",
  "semver",
  "serde",

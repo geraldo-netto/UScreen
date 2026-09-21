@@ -20,7 +20,7 @@ struct Shared {
     settings: watch::Sender<EncoderSettings>,
 }
 #[derive(Clone)]
-pub(crate) struct Attachment(Arc<Shared>);
+pub struct Attachment(Arc<Shared>);
 impl Attachment {
     pub fn new(settings: watch::Sender<EncoderSettings>) -> Self {
         Self(Arc::new(Shared {
@@ -68,7 +68,7 @@ impl Attachment {
         let preserve = identity.is_some() && state.identity == identity;
         state
             .authentication
-            .rotate(preserve, crate::runtime::random_token);
+            .rotate(preserve, uscreen_config::credentials::random_token);
         state.transport = transport.filter(|_| identity.is_some());
         state.identity = identity;
         state.generation = state.generation.wrapping_add(1);
@@ -113,7 +113,7 @@ impl Attachment {
     }
 }
 
-pub(crate) struct Lease {
+pub struct Lease {
     #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
     identity: Option<String>,
     authentication: Authentication,
@@ -182,7 +182,7 @@ impl Lease {
         }
     }
 }
-pub(crate) struct Retirement {
+pub struct Retirement {
     changed: watch::Receiver<u64>,
     generation: u64,
 }
