@@ -95,6 +95,7 @@ static void test_t418_capture(void) {
     assert(shared_poll_timeout(&g_capture, 250) == 200);
     assert(publish_shared_capture(&g_capture) && ring.sequence == 1);
     memset(g_capture.framebuffer, 0xff, g_capture.fb_size);
+    mark_all_dirty(&g_capture);
     g_capture.raw_pending = 1;
     assert(shared_poll_timeout(&g_capture, 250) == 17);
     mock_monotonic_ms += 17;
@@ -106,6 +107,7 @@ static void test_t418_capture(void) {
         mock_monotonic_ms += 200; assert(publish_shared_capture(&g_capture));
     }
     memset(g_capture.framebuffer, 0, g_capture.fb_size);
+    mark_all_dirty(&g_capture);
     g_capture.raw_pending = 1;
     mock_monotonic_ms += 200;
     assert(publish_shared_capture(&g_capture) && g_capture.raw_pending);
@@ -137,4 +139,33 @@ static void test_t418_startup(void) {
     assert(start_capture_writer(NULL, &writer) && writer == 0);
     conv_pool_destroy(&g_conversion);
     raw_ring_close(&g_raw_ring); close(pair[1]);
+}
+
+/* T570: repeating an already converted slot must do no conversion work. */
+static void test_t570_idle(void) {
+    frame_exchange_t frames = FRAME_EXCHANGE_INITIALIZER;
+    conv_pool_t pool = CONV_POOL_INITIALIZER;
+    atomic_int running = 1;
+    capture_context_t capture = CAPTURE_INITIALIZER(&frames, &pool, &running);
+    raw_ring_t ring = RAW_RING_INITIALIZER;
+    int pair[2]; assert(socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_NONBLOCK, 0, pair) == 0);
+    assert(raw_ring_init(&ring, pair[0]));
+    frame_exchange_init(&frames);
+    capture.raw_ring = &ring;
+    on_mode_changed((struct evdi_mode){.width=64, .height=64, .refresh_rate=60,
+        .bits_per_pixel=32, .pixel_format=0x34325258}, &capture);
+    raw_ring_t hello = ring; hello.nonce = 57;
+    t418_control(&hello, pair[1], 4);
+    mock_monotonic_ms = 1000;
+    assert(service_shared_capture(&capture));
+    t418_drain(pair[1]);
+    atomic_store_explicit((_Atomic uint32_t *)ring.memory, RAW_FREE, memory_order_release);
+    mock_monotonic_ms += 200;
+    assert(publish_shared_capture(&capture) && ring.sequence == 2);
+    assert(pool.last_jobs == 0 && "T570: idle repeat must reuse immutable converted pixels");
+    raw_ring_close(&ring); close(pair[1]);
+    free(capture.framebuffer);
+    frame_exchange_free(&frames);
+    pthread_cond_destroy(&frames.ready); pthread_mutex_destroy(&frames.mutex);
+    conv_pool_destroy(&pool);
 }

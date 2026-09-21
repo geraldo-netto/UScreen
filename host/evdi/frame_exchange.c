@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "frame_exchange.h"
+#include "pixel_damage.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -30,59 +31,23 @@ void frame_exchange_mark_all(frame_exchange_t *frames) {
     full_spans(frames->spans_write, frames->chroma_rows, frames->width);
 }
 
-/* OR one bit range without revisiting every row of overlapping rectangles. */
-static void mark_range(unsigned char *mask, int first, int end) {
-    if (first >= end) return;
-    int begin_byte = first / 8, last_byte = (end - 1) / 8;
-    unsigned char left = (unsigned char)(0xFFu << (first & 7));
-    unsigned char right = (unsigned char)(0xFFu >> (7 - ((end - 1) & 7)));
-    if (begin_byte == last_byte) { mask[begin_byte] |= left & right; return; }
-    mask[begin_byte] |= left;
-    memset(mask + begin_byte + 1, 0xFF, (size_t)(last_byte - begin_byte - 1));
-    mask[last_byte] |= right;
-}
-
-/* Normalize in source space before rounding. Wider arithmetic also handles
- * INT_MIN/INT_MAX damage reported outside a validated framebuffer. */
-static pixel_span_t chroma_range(int begin, int end, int scale, int limit) {
-    if (end < begin) { int swap = begin; begin = end; end = swap; }
-    if (begin == end) return (pixel_span_t){0};
-    int64_t first = begin, last = end, divisor = 2 * scale;
-    if (first < 0) first = 0;
-    if (last > (int64_t)limit * divisor) last = (int64_t)limit * divisor;
-    if (first >= last) return (pixel_span_t){0};
-    return (pixel_span_t){(int)(first / divisor), (int)((last + divisor - 1) / divisor)};
-}
-
-static void merge_spans(unsigned char *mask, pixel_span_t *spans, pixel_span_t rows, pixel_span_t x) {
-    if (!spans) return;
-    for (int cy = rows.begin; cy < rows.end; cy++) {
-        if (!(mask[cy / 8] & (1u << (cy % 8)))) spans[cy] = x;
-        if (x.begin < spans[cy].begin) spans[cy].begin = x.begin;
-        if (x.end > spans[cy].end) spans[cy].end = x.end;
-    }
-}
-
 static void mark_region(frame_exchange_t *frames, pixel_span_t rows, pixel_span_t x) {
-    merge_spans(frames->dirty_fill, frames->spans_fill, rows, x);
-    merge_spans(frames->dirty_latest, frames->spans_latest, rows, x);
-    merge_spans(frames->dirty_write, frames->spans_write, rows, x);
-    mark_range(frames->dirty_fill, rows.begin, rows.end);
-    mark_range(frames->dirty_latest, rows.begin, rows.end);
-    mark_range(frames->dirty_write, rows.begin, rows.end);
+    pixel_damage_region(frames->dirty_fill, frames->spans_fill, rows, x);
+    pixel_damage_region(frames->dirty_latest, frames->spans_latest, rows, x);
+    pixel_damage_region(frames->dirty_write, frames->spans_write, rows, x);
 }
 
 void frame_exchange_damage(frame_exchange_t *frames, int y0, int y1, int scale) {
     if (!frames->dirty_fill || scale < 1 || scale > 4) return;
-    pixel_span_t rows = chroma_range(y0, y1, scale, frames->chroma_rows);
+    pixel_span_t rows = pixel_chroma_range(y0, y1, scale, frames->chroma_rows);
     mark_region(frames, rows, (pixel_span_t){0, frames->width});
 }
 
 void frame_exchange_damage_rect(frame_exchange_t *frames, int x0, int y0, int x1, int y1, int scale) {
     if (!frames->dirty_fill || scale < 1 || scale > 4) return;
-    pixel_span_t x = chroma_range(x0, x1, scale, frames->width / 2);
+    pixel_span_t x = pixel_chroma_range(x0, x1, scale, frames->width / 2);
     if (x.begin == x.end) return;
-    pixel_span_t rows = chroma_range(y0, y1, scale, frames->chroma_rows);
+    pixel_span_t rows = pixel_chroma_range(y0, y1, scale, frames->chroma_rows);
     mark_region(frames, rows, (pixel_span_t){2 * x.begin, 2 * x.end});
 }
 

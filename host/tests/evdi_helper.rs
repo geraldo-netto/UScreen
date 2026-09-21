@@ -7,6 +7,13 @@ use std::{path::PathBuf, process::Command};
 struct Harness(PathBuf);
 
 #[test]
+fn t570_shared_slots_retain_damage_and_skip_idle_conversion() {
+    let harness = Harness::build("T570");
+    harness.run("T570");
+    harness.run("T570-history");
+}
+
+#[test]
 fn t492_sparse_capture_lease_preserves_fresh_frame_wakeup() {
     Harness::build("T492").run("T492");
 }
@@ -23,7 +30,10 @@ impl Harness {
             compiler.args(["-fsanitize=thread", "-fno-pie", "-no-pie"]);
         } else if case == "T254" {
             compiler.args(["-fsanitize=undefined", "-fno-sanitize-recover=undefined"]);
-        } else if matches!(case, "T082" | "T274" | "T340" | "T497" | "T554" | "T492") {
+        } else if matches!(
+            case,
+            "T082" | "T274" | "T340" | "T497" | "T554" | "T492" | "T570"
+        ) {
             compiler.args(["-fsanitize=address,undefined", "-fno-pie", "-no-pie"]);
         }
         let output = compiler

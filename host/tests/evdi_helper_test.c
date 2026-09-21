@@ -274,7 +274,7 @@ static void test_conversion(int width, int height, int scale) {
     unsigned char *dest = malloc(size + 64);
     assert(source && dest);
     memset(dest, 0xa5, size + 64);
-    bgra_to_nv12(&g_capture, source, dest, NULL);
+    bgra_to_nv12(&g_capture, source, dest, NULL, NULL);
     for (size_t i = size; i < size + 64; i++)
         assert(dest[i] == 0xa5 && "T012: conversion wrote beyond packed NV12 buffer");
     for (size_t i = 0; i < pixels; i++)
@@ -759,12 +759,12 @@ static void test_t254(void) {
     g_capture.scale = 1;
     conv_pool_init();
     assert(g_conversion.count > 1);
-    bgra_to_nv12(&g_capture, source, destination, NULL);
+    bgra_to_nv12(&g_capture, source, destination, NULL, NULL);
     seed_test_pool_epoch(INT_MAX);
-    bgra_to_nv12(&g_capture, source, destination, NULL); /* UBSan catches signed overflow. */
+    bgra_to_nv12(&g_capture, source, destination, NULL, NULL); /* UBSan catches signed overflow. */
     seed_test_pool_epoch(UINT_MAX);
     memset(destination, 0, sizeof(destination));
-    bgra_to_nv12(&g_capture, source, destination, NULL);
+    bgra_to_nv12(&g_capture, source, destination, NULL, NULL);
     assert(g_conversion.generation == 0 && "T254: generation wraps to zero");
     for (size_t i = 0; i < sizeof(destination); i++)
         assert(destination[i] == (i < 64 ? 16 : 128) && "T254: all workers finish the wrapped frame");
@@ -850,7 +850,7 @@ static void t293_uniform_color(int red, int green, int blue, int scale) {
             pixel[0] = blue; pixel[1] = green; pixel[2] = red; pixel[3] = 255;
         }
     }
-    bgra_to_nv12(&g_capture, source, dest, NULL);
+    bgra_to_nv12(&g_capture, source, dest, NULL, NULL);
     /* Independent equations from ITU-R BT.709-6, section 3.2–3.4.
        Input RGB is full-range 8-bit; output Y/Cb/Cr is limited-range. */
     const double luma = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0;
@@ -1322,6 +1322,7 @@ static void test_t415_rounding(void) {
 #include "damage_regions.c"
 #include "idle_capture.c"
 #include "shared_capture.c"
+#include "shared_damage.c"
 
 int main(int argc, char **argv) {
     const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
@@ -1331,6 +1332,8 @@ int main(int argc, char **argv) {
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {
         {"T418-ring", test_t418_ring},
+        {"T570", test_t570_idle},
+        {"T570-history", test_t570_histories},
         {"T418-capture", test_t418_capture},
         {"T418-startup", test_t418_startup},
         {"T492", test_t492_idle},

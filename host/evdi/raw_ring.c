@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 #include "raw_ring.h"
+#include "pixel_damage.h"
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -61,6 +63,10 @@ static int raw_send(raw_ring_t *ring, uint32_t kind, uint32_t slot, uint64_t cap
 }
 
 static void raw_retire(raw_ring_t *ring) {
+    for (unsigned slot = 0; slot < RAW_MAX_SLOTS; slot++) {
+        free(ring->dirty[slot]); ring->dirty[slot] = NULL;
+        free(ring->spans[slot]); ring->spans[slot] = NULL;
+    }
     if (ring->memory) munmap(ring->memory, ring->bytes);
     if (ring->fd >= 0) close(ring->fd);
     ring->memory = NULL; ring->fd = -1;
@@ -79,7 +85,7 @@ int raw_ring_init(raw_ring_t *ring, int socket) {
 }
 
 static int raw_geometry(raw_ring_t *ring, uint32_t width, uint32_t height) {
-    if (ring->slots < 2 || ring->slots > 8) return 0;
+    if (ring->slots < 2 || ring->slots > RAW_MAX_SLOTS) return 0;
     if (width < 2 || width > 4096 || height < 2 || height > 4096) return 0;
     if ((width | height) & 1) return 0;
     ring->width = width; ring->height = height;
@@ -88,7 +94,44 @@ static int raw_geometry(raw_ring_t *ring, uint32_t width, uint32_t height) {
     return 1;
 }
 
+void raw_ring_mark_all(raw_ring_t *ring) {
+    for (unsigned slot = 0; slot < ring->slots; slot++) {
+        if (!ring->dirty[slot]) continue;
+        pixel_damage_region(ring->dirty[slot], ring->spans[slot],
+            (pixel_span_t){0, ring->height / 2}, (pixel_span_t){0, ring->width});
+    }
+}
+
+void raw_ring_damage(raw_ring_t *ring, int x0, int y0, int x1, int y1, int scale) {
+    if (scale < 1 || scale > 4) return;
+    pixel_span_t x = pixel_chroma_range(x0, x1, scale, ring->width / 2);
+    if (x.begin == x.end) return;
+    pixel_span_t rows = pixel_chroma_range(y0, y1, scale, ring->height / 2);
+    for (unsigned slot = 0; slot < ring->slots; slot++) {
+        if (!ring->dirty[slot]) continue;
+        pixel_damage_region(ring->dirty[slot], ring->spans[slot], rows,
+            (pixel_span_t){2 * x.begin, 2 * x.end});
+    }
+}
+
+void raw_ring_converted(raw_ring_t *ring, uint32_t slot) {
+    if (slot >= ring->slots || !ring->dirty[slot]) return;
+    memset(ring->dirty[slot], 0, (ring->height / 2 + 7) / 8);
+}
+
+static int raw_allocate_histories(raw_ring_t *ring) {
+    for (unsigned slot = 0; slot < ring->slots; slot++) {
+        ring->dirty[slot] = malloc((ring->height / 2 + 7) / 8);
+        ring->spans[slot] = malloc(ring->height / 2 * sizeof(pixel_span_t));
+        if (!ring->dirty[slot] || !ring->spans[slot]) return 0;
+        raw_ring_converted(ring, slot);
+    }
+    raw_ring_mark_all(ring);
+    return 1;
+}
+
 static int raw_allocate(raw_ring_t *ring) {
+    if (!raw_allocate_histories(ring)) return 0;
     ring->fd = memfd_create("uscreen-raw", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (ring->fd < 0) return 0;
     if (ftruncate(ring->fd, (off_t)ring->bytes) < 0) return 0;

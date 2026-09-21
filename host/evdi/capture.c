@@ -29,20 +29,28 @@ static void on_dpms(int dpms_mode, void *user_data) {
 }
 
 static void bgra_to_nv12(capture_context_t *capture, const unsigned char *src, unsigned char *dst,
-                         const unsigned char *dirty) {
+                         const unsigned char *dirty, const pixel_span_t *spans) {
     conv_job_t frame = {src, dst, dst + (size_t)capture->frames->width * capture->frames->height,
         capture->mode_w, capture->mode_h, capture->mode_stride, capture->frames->width, capture->frames->height,
         capture->scale, 0, capture->frames->height / 2, dirty,
-        dirty ? capture->frames->spans_fill : NULL};
+        spans};
     conv_pool_convert(capture->conversion, &frame);
 }
 
-static void mark_all_dirty(capture_context_t *capture) { frame_exchange_mark_all(capture->frames); }
+static void mark_all_dirty(capture_context_t *capture) {
+    if (capture->raw_ring) raw_ring_mark_all(capture->raw_ring);
+    else frame_exchange_mark_all(capture->frames);
+}
 
 static void mark_damage(capture_context_t *capture, const struct evdi_rect *rects, int n) {
-    for (int i = 0; i < n; i++)
-        frame_exchange_damage_rect(capture->frames, rects[i].x1, rects[i].y1,
-                                    rects[i].x2, rects[i].y2, capture->scale);
+    for (int i = 0; i < n; i++) {
+        if (capture->raw_ring)
+            raw_ring_damage(capture->raw_ring, rects[i].x1, rects[i].y1,
+                            rects[i].x2, rects[i].y2, capture->scale);
+        else
+            frame_exchange_damage_rect(capture->frames, rects[i].x1, rects[i].y1,
+                                        rects[i].x2, rects[i].y2, capture->scale);
+    }
 }
 
 static void publish_frame(capture_context_t *capture) {
@@ -54,7 +62,8 @@ static void publish_frame(capture_context_t *capture) {
     }
 
     /* Only the chroma-aligned regions this particular buffer is missing. */
-    bgra_to_nv12(capture, capture->framebuffer, capture->frames->fill, capture->frames->dirty_fill);
+    bgra_to_nv12(capture, capture->framebuffer, capture->frames->fill,
+                 capture->frames->dirty_fill, capture->frames->spans_fill);
     frame_exchange_publish(capture->frames, capture->grab_us);
 }
 
@@ -243,10 +252,6 @@ static void grab_now(capture_context_t *capture) {
     if (num_rects > 0) {
         capture->grab_count++;
         capture->grab_us = capture_now_us();
-        if (capture->raw_ring) {
-            publish_frame(capture);
-            return;
-        }
         /* Under the swap lock: the writer thread reassigns the mask pointers
            when it takes a frame, so touching them unlocked would race.
            If the driver returned more rectangles than we gave it room for,
@@ -437,7 +442,9 @@ static int publish_shared_capture(capture_context_t *capture) {
     uint32_t slot;
     unsigned char *pixels = raw_ring_acquire(capture->raw_ring, &slot);
     if (!pixels) return 1; /* Keep latest unencoded update pending while all slots are leased. */
-    bgra_to_nv12(capture, capture->framebuffer, pixels, NULL);
+    raw_ring_t *ring = capture->raw_ring;
+    bgra_to_nv12(capture, capture->framebuffer, pixels, ring->dirty[slot], ring->spans[slot]);
+    raw_ring_converted(ring, slot);
     int result = raw_ring_publish(capture->raw_ring, slot, capture->grab_us);
     if (result < 0) return 0;
     if (result > 0) {

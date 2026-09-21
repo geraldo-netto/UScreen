@@ -1,0 +1,26 @@
+{
+  "baseline": "7cac1657685aef6646a358a70acc3fc22d4c3c05",
+  "kernel": "7.0.0-31-generic",
+  "machine": "x86_64",
+  "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "sources": {
+    "host/evdi/fifo_writer.c": "af9c42ce08d807cd303a1627b048200438c50b5444905e3432aebb7ff57e3430",
+    "host/evdi/pixel_damage.h": "277437b36fc1f14b4e89e8e57e0c222dfbd717f3c7e41ee528148c8dcf0cdea1",
+    "host/evdi/conversion.h": "afe669b42fa2cd5815983f8dc83b44f8dfdb1649c807e254e444b182e36b6112",
+    "host/evdi/frame_exchange.h": "d8fd1a355800cdc8e942ad448fa949cff81073f82106b15a4393c845cc42db30",
+    "host/evdi/evdi_lib.h": "ece987245ac3939fe5f12fca894a29c7d586bdbf80796d3f6fa08a7c52bf9128",
+    "host/evdi/conversion.c": "9ce1d59ee7425b50891aa9194dd5c1152d95f55c0e13afabea80144ac027904d",
+    "host/evdi/evdi_helper.c": "43d2a3a699de7096ee4214e0850a2f51c8e8d0737441d0cf389b60e72b64ece1",
+    "host/evdi/writer.c": "3880276adcfc77a484ca9979c0ae4462aaecc6f3e98d2afaa911976a66e0c6de",
+    "host/evdi/frame_exchange.c": "a964e4d60ce954cbf0691ab126061152b5c44ad340a3fc8165b64191634fe9d4",
+    "host/evdi/pixel_span.h": "3b3eee9b552650b565d3a36a8fec0017c5f0941837e950277516cf678dee31fe",
+    "host/evdi/capture.h": "f105046a229e9946ef50d4359c6e5d0b9e625309932e8db4d8eaa30f85a40c15",
+    "host/evdi/writer.h": "e39d03a68a7859af5445f4a0e84915f0cd9c4180c04246ff24de586812ee3d47",
+    "host/evdi/raw_ring.c": "7c01bf0e88cc615b149165c0900934b6fe988ad9526cea8e8e0fb0b8a4f40a09",
+    "host/evdi/capture.c": "2373f173f237bd5779ba058a8cb5f7abde98e8cf87223dff048b227559c666e4",
+    "host/evdi/raw_ring.h": "b61dc599aefb08cf759dafa44bfbc6591f09dacab249170fc7cbf583d5fc09bd",
+    "host/evdi/fifo_writer.h": "0966473b8e6e2aa71a676ad027293be216ff38d5e2750bbaaebab92911119702",
+    "scripts/benchmarks/shared-damage.py": "a535e8c6e56d9ffd3e2c88ef8f41865490c1226ac2922bb2c11210516a64625e",
+    "scripts/benchmarks/shared-damage.c": "d15900888e424408e005d51097f8be8a1041241473fa5636771da98ffc453662"
+  }
+}

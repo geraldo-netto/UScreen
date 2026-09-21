@@ -16,3 +16,8 @@ A new `/tmp/uscreen-t569-replay` project built with the production Gradle wrappe
 JDK 17 and Android SDK 34: `:app:assembleDebug`, all 33 tasks executed, success.
 No manually copied dependencies. APK SHA-256: `89f37c2516caad68de1f8ff98cdb7ce656e13aa329e44c285a5d9f9d4ed5e886`.
 This verifies replay construction; it does not measure video latency.
+
+## T570 — shared capture damage histories
+
+Implemented and validated; see [paired measurements and permanent coverage](../benchmarks/2026-09-21-shared-damage/README.md).
+T576 records a separately discovered historical benchmark source-copy defect.
