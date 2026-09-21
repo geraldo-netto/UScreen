@@ -1,9 +1,11 @@
 # T563: pinned FFmpeg 6.1.6 in the Linux AppImage
 
-The AppImage now builds and uses its own FFmpeg/ffprobe 6.1.6. The installed
-image is ready for the next normal UScreen start. The existing desktop/tablet
-session still uses its extracted FFmpeg 5.1.9; no live EVDI restart was attempted.
-This is a packaging and compatibility result, not a measured speed improvement.
+The AppImage builds and uses its own FFmpeg/ffprobe 6.1.6. The original packaging
+validation below left the extracted 5.1.9 desktop session running. Subsequent
+authorized T418 deployment reloaded both applications and verified live 6.1.6
+VAAPI Baseline at 1280×800/30 FPS, decoder identity and resumed render ACKs
+without desktop loss; see [live acceptance](../2026-09-21-shared-capture/README.md#installed-update-and-live-acceptance-t565).
+Neither packaging nor that activation establishes a matched speed improvement.
 
 ## Build and codec policy
 
@@ -74,7 +76,7 @@ regressions; the earlier matrix does not establish live Android performance.
 T564 retains unavailable hardware validation; T565 retains live-session
 validation after a safe normal startup. No broad hardware campaign was reopened.
 
-## Installed artifact and activation boundary
+## Original T563 artifact and activation boundary
 
 The stable image was atomically replaced, with the prior image retained as
 `~/.local/share/uscreen/appimage/UScreen-before-T563-17d656cdd66d.AppImage`.

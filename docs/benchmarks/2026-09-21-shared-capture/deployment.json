@@ -5,12 +5,101 @@
     "uscreen-1.2.3-AppImage-sources.tar.gz": "8ccd3665860ab5f71d83944f8444f4eb7362f8ac708ae0d57586a43528666cbe",
     "uscreen.apk": "21ecabb00ec1553e5cde8fcab2f18416bfe82a22b06f0e684b86e60dd0a004c9"
   },
-  "activation": "pending safe startup; live Xorg/EVDI/FFmpeg unchanged",
-  "live_daemon": 463278,
-  "live_helper": 463376,
-  "live_encoder": 463503,
+  "activation": "installed and reloaded Linux daemon/GUI and Android; live render ACKs verified",
+  "live_daemon": 1036930,
+  "live_helper": 1036996,
+  "live_encoder": 1037128,
   "live_xorg": 2512,
-  "android_pid": 22610,
+  "android_pid": 20790,
   "fps": 30,
-  "encoder": "h264_vaapi_baseline"
+  "encoder": "h264_vaapi_baseline",
+  "verified_utc": "2026-09-21T07:00:24.139504+00:00",
+  "linux_gui_pid": 1036997,
+  "decoder": "c2.unisoc.avc.decoder",
+  "ffmpeg": "6.1.6",
+  "preferences_preserved": true,
+  "ack_windows": [
+    {
+      "p50_ms": 18.2,
+      "p95_ms": 21.9,
+      "max_ms": 55.3,
+      "samples": 78,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.6,
+      "p95_ms": 19.9,
+      "max_ms": 22.1,
+      "samples": 41,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.4,
+      "p95_ms": 22.0,
+      "max_ms": 24.6,
+      "samples": 45,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 17.9,
+      "p95_ms": 20.0,
+      "max_ms": 25.0,
+      "samples": 79,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.0,
+      "p95_ms": 19.6,
+      "max_ms": 21.8,
+      "samples": 109,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 17.7,
+      "p95_ms": 19.2,
+      "max_ms": 20.3,
+      "samples": 82,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.1,
+      "p95_ms": 19.6,
+      "max_ms": 27.1,
+      "samples": 58,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.5,
+      "p95_ms": 22.1,
+      "max_ms": 30.5,
+      "samples": 43,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.3,
+      "p95_ms": 20.2,
+      "max_ms": 20.4,
+      "samples": 42,
+      "in_flight": 1,
+      "aged_out": 0
+    },
+    {
+      "p50_ms": 18.1,
+      "p95_ms": 21.6,
+      "max_ms": 22.8,
+      "samples": 46,
+      "in_flight": 1,
+      "aged_out": 0
+    }
+  ],
+  "reconnect": "Initial client timeout while stock libevdi opened; subsequent client received configuration and resumed render ACKs",
+  "surface_history": "Latency query returned refresh period only; no optical/latch claim"
 }

@@ -144,9 +144,8 @@ release certificate; T418 does not change Android production sources. The Linux
 distribution remains the supported CLI build with bundled FFmpeg 6.1.6 and
 stock libevdi. Clean Debian 12 checks passed dependency closure, encoding,
 installation, idle daemon, GUI and independently extracted runtime lifetime.
-Live activation remains subject to T222's existing display-reattachment risk;
-package readiness is not a claim that the current live VAAPI session uses the
-optional shared-memory encoder.
+The separately authorized live activation below uses the supported CLI/VAAPI
+package. It does not activate the optional shared-memory software encoder.
 
 ## Reproduction
 
@@ -167,13 +166,29 @@ The tests and implementation do not establish a Windows/macOS shared-memory
 backend or hardware NVENC acceptance. Those require their native adapters and
 measurements; portable descriptor readiness does not enable their capabilities.
 
-## Prepared update
+## Installed update and live acceptance (T565)
 
-Final signed APK, AppImage and corresponding dependency sources are prepared in
-`~/.local/share/uscreen/updates/T418-final/`. [deployment.json](deployment.json)
-records SHA-256 identities and the unchanged live process identities. The final
-image passed the same clean-container smoke/lifetime checks. It was assembled
+Final signed APK, AppImage and corresponding dependency sources were installed
+and both applications reloaded on 2026-09-21 after explicit authorization.
+Prepared copies remain in `~/.local/share/uscreen/updates/T418-final/`.
+[deployment.json](deployment.json) records artifact hashes, new daemon/helper/
+encoder/GUI/Android identities and the unchanged Xorg PID. Installed APK and
+AppImage hashes match the tested artifacts; rollback copies were retained.
+The final image passed the clean-container smoke/lifetime checks and was assembled
 before these final validation/deployment notes were added.
+
+The running FFmpeg is 6.1.6. Settings remain 1280×800, 30 FPS, manual
+`h264_vaapi_baseline`, quality 18 and the saved bitrate; Android's resource
+manager identifies `c2.unisoc.avc.decoder`. Android cold launch completed and
+the Linux GUI is visible. The initial video connection waited through stock
+libevdi startup and timed out; a subsequent connection received configuration
+and resumed rendering. Ten consecutive approximately five-second reports cover
+623 accepted ACK samples, zero aged-out samples, p50 17.7–18.6 ms and p95
+19.2–22.1 ms. These are packet-ready-to-render-ACK observations, not matched
+performance comparisons or optical presentation measurements. The SurfaceFlinger
+query exposed a refresh period only; no physical-latch claim is inferred.
+See [activation.tar.gz](activation.tar.gz) for sanitized host and version logs.
+No Android lock or power action was used, and the desktop session stayed up.
 
 | Artifact | SHA-256 |
 |---|---|
