@@ -125,3 +125,44 @@ the initial contract failure, final test/check logs, source manifest and scoped
 coverage. Windows-native execution and per-function counters remain unavailable
 under T493/T497; cross-target compilation is not native acceptance. Display,
 input, camera and lifecycle capabilities remain disabled on Windows.
+
+## Final Linux and Android reload
+
+After T523 and T533, source commit `662eb35` was packaged with stock FFmpeg
+6.1.6 and stock libevdi 1.15.0. The C helper and Android APK sources were
+unchanged from the earlier accepted update. A clean Debian 12 AppImage smoke
+run passed dependency resolution, bundled encoder startup, user registration,
+GUI launch and independent daemon/GUI lifetime checks before installation.
+
+The latest AppImage and existing signed Android APK were reinstalled and both
+applications reloaded. Installed AppImage hash and pulled Android APK bytes
+match their build artifacts. Configuration stayed byte-identical: VAAPI
+constrained-baseline, 1280×800, 30 FPS, adaptive idle off. The same Xorg process
+(PID 2512, started September 20) survived; no module reload, desktop-session
+switch, Android lock, power action or ADB-server reset was used.
+
+Ten consecutive five-second host reporting windows contained 507 accepted
+render ACKs and zero aged-out entries. Their packet-ready-to-render-ACK medians
+ranged from 17.7 to 18.6 ms, with p95 from 19.9 to 23.9 ms. This confirms
+post-reload progress; the live desktop workload was uncontrolled, so these
+numbers are not a before/after speedup, capture-to-display latency or adaptive
+idle acceptance. Stock EVDI's known initial startup delay still occurred.
+
+| Installed artifact | SHA-256 |
+|---|---|
+| AppImage | `5af9ba1264821061cc9a76751dbffc9c1d632a8a0f7a7aa565654485feacef8c` |
+| Corresponding source archive | `799910c3ef4007bbbac32875bef6af1b75fa33052c77c5eabc6a962fbe2f98b5` |
+| Android APK | `21ecabb00ec1553e5cde8fcab2f18416bfe82a22b06f0e684b86e60dd0a004c9` |
+
+The preceding AppImage remains available as
+`~/.local/share/uscreen/appimage/UScreen.AppImage.before-followup-662eb35`.
+Source archive and APK are retained under
+`~/.local/share/uscreen/updates/followup-662eb35/`.
+[Activation evidence](2026-09-21-follow-up-evidence/final-activation.tar.gz)
+contains the clean-container checks, installation results, hashes and bounded
+ACK sample. Private configuration and credentials are excluded.
+
+T492 remains unresolved pending the requested fixed-workload tablet window or
+an explicit decision about deferring its sustained battery comparison. The
+separate [T575 GPU feasibility check](../benchmarks/2026-09-21-gpu-capture.md)
+does not enable a GPU capture backend or establish a latency gain.
