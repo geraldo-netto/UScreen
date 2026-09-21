@@ -16,6 +16,21 @@ SPEC.loader.exec_module(BENCH)
 
 
 class DecoderBenchmarkTests(unittest.TestCase):
+    def test_t569_generated_replay_preserves_json_number_dependency(self):
+        path = PATH.with_name('decoder-project.py')
+        spec = importlib.util.spec_from_file_location('decoder_project', path)
+        project = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(project)
+        with tempfile.TemporaryDirectory() as directory:
+            args = SimpleNamespace(directory=Path(directory) / 'replay', revision=None,
+                                   package='com.uscreen.decoderbench.candidate')
+            output = project.prepare(args)
+            dependency = (project.SOURCE / 'JsonNumbers.kt').read_bytes()
+            for folder in ['originals', 'app/src/main/java']:
+                generated = output / folder / 'JsonNumbers.kt'
+                self.assertTrue(generated.exists(), 'T569: replay must include JsonNumbers.kt')
+                self.assertEqual(generated.read_bytes(), dependency)
+
     def test_t479_selection_reaches_replay_as_exact_bounded_request(self):
         selection = json.loads((PATH.parents[2] / 'testdata/decoder-selection.json').read_text())
         args = BENCH.selection_args(SimpleNamespace(selection=selection))

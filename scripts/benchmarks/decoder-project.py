@@ -13,7 +13,7 @@ SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
           'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
           'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt', 'VideoCodec.kt',
-          'MediaProfiles.kt', 'MediaInventory.kt', 'DecoderSelection.kt']
+          'MediaProfiles.kt', 'MediaInventory.kt', 'DecoderSelection.kt', 'JsonNumbers.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET" />
 <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
