@@ -7,7 +7,19 @@ attached an EVDI display. LightDM subsequently started another Cinnamon
 session. The crash preceded UScreen's corrective resolution switch.
 The exact Xorg failure trigger and a safe mitigation remain unverified (T222).
 
-## Current disposition (2026-09-17)
+## Current disposition (2026-09-21)
+
+The maintainer reports that T222 no longer occurs and accepts closing or
+deferring it. It is deferred, without claiming an identified root cause or
+verified mitigation. The authorized T418 application reload detached and
+reattached EVDI, preserved Xorg PID 2512, and restored Android render ACKs at
+1280×800/30 FPS. See [activation evidence](../benchmarks/2026-09-21-shared-capture/README.md#installed-update-and-live-acceptance-t565).
+T222 no longer blocks ordinary authorized reloads or other implementation work.
+Reconsider on recurrence with fresh crash evidence and matching symbols; a
+future behavioral fix still needs permanent attach/gamma/detach regression
+coverage. The historical review and its then-missing evidence follow.
+
+## Historical disposition (2026-09-17)
 
 This report preserves the incident evidence and source locations at the reviewed
 commit; they are not line references to current code. T223 was subsequently
