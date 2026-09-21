@@ -1,6 +1,8 @@
 //! GUI platform boundary. Capability flags describe implemented operations.
 use std::path::PathBuf;
-pub(crate) use uscreen_config::platform::{capabilities, programs::command_exists};
+pub(crate) use uscreen_config::platform::capabilities;
+#[cfg(target_os = "linux")]
+pub(crate) use uscreen_config::platform::programs::command_exists;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]

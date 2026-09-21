@@ -280,6 +280,12 @@ Private token persistence remains a platform responsibility. The video socket's
 best-effort send-buffer hint uses stock `socket2`, preserving the existing
 128 KiB request without Unix file descriptors in the shared transport.
 
+`uscreen-config::diagnostics` separates executable/version evidence from backend
+implementation and runtime readiness. Its native probe uses platform discovery
+and bounded command services; Windows CLI and GUI consume the same report.
+The GUI collects versions through its cached background status worker, keeping
+dependency probes out of rendering and retaining explicit unsupported states.
+
 - `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
   The Linux `session::Spec` constructs native adapters and delegates to the
   shared library's `session::Spec` for every slot. Preparation exposes settings

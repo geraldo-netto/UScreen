@@ -28,6 +28,16 @@ assertions remain in the Linux suite. Local policy and library execution passed
 under Wine. The native CI workflow is configured but has not been run from this
 checkout; its mandatory ACL/lease tests must pass before T493 can close.
 
+T533 shares dependency diagnostics between `uscreen doctor` and the GUI status
+worker. ADB and FFmpeg report the discovered executable path and parsed version,
+or distinguish a missing program from an unverified failed/malformed check.
+Version commands use the platform process adapter with a two-second deadline
+per dependency. GUI results share the existing ten-second capability cache;
+the UI does not run commands while rendering. Backend flags report unsupported
+or implemented-but-unverified operations. Discovery never establishes tablet
+connection, driver initialization or encoder compatibility, and `doctor` still
+exits unsuccessfully while the Windows application backends are unavailable.
+
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.

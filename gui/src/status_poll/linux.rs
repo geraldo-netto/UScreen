@@ -15,6 +15,7 @@ impl Source for Platform {
             ffmpeg: command_exists("ffmpeg"),
             adb: command_exists("adb"),
             autostart: autostart_enabled(),
+            diagnostics: None,
         }
     }
 
@@ -25,6 +26,7 @@ impl Source for Platform {
             ffmpeg_ok: capabilities.ffmpeg,
             adb_ok: capabilities.adb,
             autostart: capabilities.autostart,
+            diagnostics: capabilities.diagnostics.clone(),
             daemon_running: pid.is_some(),
             daemon_pid: pid.unwrap_or_default(),
             evdi_count: std::fs::read_to_string("/sys/devices/evdi/count")

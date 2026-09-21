@@ -95,3 +95,33 @@ command line. [Evidence](2026-09-21-follow-up-evidence/t523.tar.gz) retains both
 test logs, platform checks, source manifest and coverage reports. Native Linux
 display behavior was tested through existing isolated regressions; this
 refactor was not reloaded into the live display during these checks.
+
+## T533 — distinguish dependency evidence and backend readiness
+
+Windows `doctor` and the GUI use the same shared diagnostic report. ADB and
+FFmpeg report executable paths and parsed versions; missing executables,
+failed or malformed version checks, unsupported backends and unverified runtime
+capabilities remain distinct. A found dependency never marks a tablet connected
+or an encoder usable. `doctor` retains its unsupported-backend failure exit.
+The GUI reuses its ten-second capability cache and background worker; each
+version command uses the platform process adapter with a two-second deadline.
+
+Permanent tests exercise missing commands without execution, Unicode paths,
+both version formats, command failures, non-UTF-8/oversized/malformed output,
+all 256 single-byte token mutations, subprocess failure/timeout and identical
+CLI/GUI evidence. Existing Windows CLI expectations remain and now also require
+FFmpeg/version/unverified-connection output. A Windows status regression forbids
+claiming a running daemon or connected tablet from version discovery. The
+initial portable contract test could not import the not-yet-created diagnostic
+module; this was an API check for new functionality, not a behavioral-bug red.
+
+The common/GUI normal suites pass 179 tests with none ignored. All 73 functions
+in the changed portable/Linux measurement scope meet 80% line coverage.
+Formatting, Linux Clippy and GNU/MSVC all-target host/GUI Clippy pass, retaining
+only the existing T573 parity-lint exception on the command line. Complexity
+remains at most nine. The shared policy also checks on WebAssembly without
+default features. [Evidence](2026-09-21-follow-up-evidence/t533.tar.gz) contains
+the initial contract failure, final test/check logs, source manifest and scoped
+coverage. Windows-native execution and per-function counters remain unavailable
+under T493/T497; cross-target compilation is not native acceptance. Display,
+input, camera and lifecycle capabilities remain disabled on Windows.

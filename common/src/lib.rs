@@ -17,6 +17,9 @@ pub use model::*;
 #[cfg(feature = "platform")]
 pub mod credentials;
 
+#[cfg(feature = "platform")]
+pub mod diagnostics;
+
 #[cfg(all(windows, feature = "storage"))]
 pub mod windows;
 

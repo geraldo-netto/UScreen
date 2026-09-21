@@ -58,6 +58,7 @@ fn t516_dynamic_inventory_requires_success_and_recovers() {
         .unwrap();
     let saved = std::fs::read(&path).unwrap();
     let capabilities = Capabilities {
+        diagnostics: None,
         adb: true,
         daemon_binary: false,
         ffmpeg: false,

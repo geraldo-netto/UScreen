@@ -1,10 +1,7 @@
 //! T494 compilation milestone: no capture/input/lifecycle backend is enabled.
 use anyhow::{bail, Result};
 use clap::Parser;
-use uscreen_config::{
-    cli::{Cli, Commands},
-    platform,
-};
+use uscreen_config::cli::{Cli, Commands};
 
 pub(super) fn run() -> Result<()> {
     let cli = Cli::parse();
@@ -20,11 +17,8 @@ fn diagnostics() {
         Ok(path) => println!("Configuration: {}", path.display()),
         Err(error) => println!("Configuration: unavailable ({error})"),
     }
-    let adb = if platform::programs::command_exists("adb") {
-        "found"
-    } else {
-        "not found"
-    };
-    println!("ADB: {adb} (discovery does not establish a device connection)");
-    println!("Display: unavailable\nInput: unavailable\nDaemon lifecycle: unavailable");
+    println!("UScreen version: {}", env!("CARGO_PKG_VERSION"));
+    for line in uscreen_config::diagnostics::collect().lines() {
+        println!("{line}");
+    }
 }

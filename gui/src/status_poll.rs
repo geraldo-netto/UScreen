@@ -13,6 +13,7 @@ struct Capabilities {
     ffmpeg: bool,
     adb: bool,
     autostart: bool,
+    diagnostics: Option<std::sync::Arc<uscreen_config::diagnostics::Report>>,
 }
 
 trait Source {
@@ -79,6 +80,7 @@ mod tests {
                 ffmpeg: self.installed,
                 adb: self.installed,
                 autostart: self.installed,
+                diagnostics: None,
             }
         }
         fn dynamic(&mut self, caps: &Capabilities) -> Status {

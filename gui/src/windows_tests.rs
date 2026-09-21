@@ -100,3 +100,16 @@ fn t495_daemon_discovery_uses_windows_executable_suffix() {
         Some(sibling)
     );
 }
+
+#[test]
+fn t533_dependency_versions_never_imply_a_running_or_connected_backend() {
+    let status = status_poll::StatusPoller::default().poll(true);
+    assert!(!status.daemon_running);
+    assert!(!status.tablet_connected);
+    let report = status.diagnostics.unwrap();
+    assert_eq!(report.tools.len(), 2);
+    assert!(report
+        .lines()
+        .iter()
+        .any(|line| line == "Display: unavailable (unsupported)"));
+}

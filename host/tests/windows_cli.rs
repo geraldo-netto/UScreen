@@ -50,8 +50,12 @@ fn t494_doctor_distinguishes_configuration_from_backend_support() {
     for expected in [
         "Configuration:",
         "ADB:",
+        "FFmpeg:",
+        "UScreen version:",
         "Display: unavailable",
         "Input: unavailable",
+        "Tablet connection: unverified",
+        "Encoder/decoder compatibility: unverified",
     ] {
         assert!(text.contains(expected), "T494: {text}");
     }

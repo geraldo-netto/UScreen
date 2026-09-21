@@ -5,6 +5,7 @@ mod camera_settings;
 mod conversion_settings;
 mod pipe_settings;
 mod platform;
+mod platform_diagnostics;
 mod settings;
 use platform::*;
 mod status_poll;
@@ -39,6 +40,7 @@ struct Status {
     uinput_ok: bool,
     pipe_capacities: Vec<(u32, Option<u32>)>,
     pipe_ceiling: Option<u32>,
+    diagnostics: Option<Arc<uscreen_config::diagnostics::Report>>,
 }
 
 fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
@@ -490,7 +492,7 @@ impl App {
 
     fn show_status(&mut self, ui: &mut egui::Ui, status: &Status) {
         if !capabilities().daemon {
-            ui.label("Daemon, display and input backends: unavailable");
+            platform_diagnostics::show(ui, status.diagnostics.as_deref(), capabilities());
             return;
         }
         // ----- Status -----
