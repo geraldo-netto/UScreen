@@ -25,6 +25,10 @@ const MAX_TRACKED: usize = 256;
 /// Samples kept for the percentile report. One report covers ~5s.
 const MAX_SAMPLES: usize = 1024;
 
+#[cfg(test)]
+#[path = "latency_pending_tests.rs"]
+mod pending_tests;
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
 pub(crate) struct RenderSample {
@@ -35,10 +39,15 @@ pub(crate) struct RenderSample {
     pub micros: u32,
 }
 
+struct EncodedOutput {
+    encoder: Arc<EncoderEvidence>,
+    ordinal: u64,
+}
+
 #[derive(Default)]
 struct Inner {
     /// (seq, time the complete access unit became ready for broadcast), oldest first.
-    sent: VecDeque<(u32, Instant, Option<Arc<EncoderEvidence>>)>,
+    sent: VecDeque<(u32, Instant, Option<EncodedOutput>)>,
     encoder: Option<Arc<EncoderEvidence>>,
     encoder_epoch: u64,
     discontinuous: bool,
@@ -129,12 +138,11 @@ impl EncoderEvidence {
             .collect()
     }
 
-    fn acknowledge(&self, sequence: u32, micros: u32) {
+    fn acknowledge(&self, sequence: u32, output: u64, micros: u32) {
         tracing::trace!(target: "uscreen::frame_timing",
             encoder_epoch = self.epoch, sequence, packet_ready_to_ack_us = micros,
             "Render ACK received");
-        let output = self.encoded();
-        self.encoded_at_ack.store(output, Ordering::Relaxed);
+        self.encoded_at_ack.fetch_max(output, Ordering::Relaxed);
         let ordinal = self.rendered.fetch_add(1, Ordering::Release) + 1;
         let mut samples = self.samples.lock().unwrap();
         samples.push_back(RenderSample {
@@ -229,8 +237,14 @@ impl LatencyTracker {
         self.record_encoded(seq, None);
     }
     pub fn on_encoded_for(&self, seq: u32, encoder: &Arc<EncoderEvidence>) {
-        encoder.encoded.fetch_add(1, Ordering::Relaxed);
-        self.record_encoded(seq, Some(encoder.clone()));
+        let output = encoder.encoded.fetch_add(1, Ordering::Relaxed) + 1;
+        self.record_encoded(
+            seq,
+            Some(EncodedOutput {
+                encoder: encoder.clone(),
+                ordinal: output,
+            }),
+        );
         self.activity.send_replace(());
     }
     #[cfg(not(feature = "inproc-encoder"))]
@@ -238,7 +252,7 @@ impl LatencyTracker {
         encoder.encoded.fetch_add(1, Ordering::Relaxed);
         self.activity.send_replace(());
     }
-    fn record_encoded(&self, seq: u32, encoder: Option<Arc<EncoderEvidence>>) {
+    fn record_encoded(&self, seq: u32, encoder: Option<EncodedOutput>) {
         let Ok(mut g) = self.inner.lock() else { return };
         if g.last_report.is_none() {
             g.last_report = Some(Instant::now());
@@ -312,13 +326,13 @@ impl Inner {
         let (_, at, encoder) = &self.sent[pos];
         if encoder
             .as_ref()
-            .is_some_and(|e| e.decoder_receipt.as_deref() != decoder)
+            .is_some_and(|output| output.encoder.decoder_receipt.as_deref() != decoder)
         {
             return None;
         }
         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;
-        if let Some(encoder) = encoder {
-            encoder.acknowledge(seq, micros);
+        if let Some(output) = encoder {
+            output.encoder.acknowledge(seq, output.ordinal, micros);
         }
         self.sent.drain(..=pos);
         if self.sent.is_empty() {

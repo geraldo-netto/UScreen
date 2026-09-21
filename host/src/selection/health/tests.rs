@@ -1,5 +1,30 @@
 use super::*;
 
+#[tokio::test(start_paused = true)]
+async fn t568_delayed_ack_cannot_disable_watchdog_after_output_stops() {
+    let latency = LatencyTracker::new();
+    let format = (640, 480, 60, 20000, 18);
+    let encoder = latency.encoder_started("libx264", format);
+    for sequence in 0..4 {
+        latency.on_encoded_for(sequence, &encoder);
+    }
+    latency.on_rendered(0, 100);
+    let key = Key {
+        format,
+        epoch: 0,
+        decoders: None,
+    };
+    assert!(
+        tokio::time::timeout(
+            STALL_WINDOW + Duration::from_secs(1),
+            failed(&latency, &key, "libx264", None),
+        )
+        .await
+        .is_ok(),
+        "T568: older ACK concealed three pending outputs from the watchdog"
+    );
+}
+
 #[test]
 fn t465_idle_content_and_isolated_frames_do_not_indicate_failure() {
     let latency = LatencyTracker::new();
