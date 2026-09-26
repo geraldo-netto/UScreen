@@ -122,6 +122,11 @@ impl AsyncWrite for OwnedInput {
     }
 
     fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut TaskContext<'_>) -> Poll<io::Result<()>> {
+        // T529: Windows stdio accepts bytes into a blocking worker first.
+        // Its shutdown is a no-op; flush observes the pending write result.
+        if let Some(stdin) = self.stdin.as_mut() {
+            std::task::ready!(Pin::new(stdin).poll_flush(cx))?;
+        }
         // Closing the real handle sends EOF on every platform. Keep the owner
         // alive while FFmpeg flushes its final packet and exits.
         drop(self.stdin.take());
