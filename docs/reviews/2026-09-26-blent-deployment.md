@@ -85,3 +85,18 @@ policy changes. No device performance or battery improvement is claimed.
 
 Artifact hashes and local deployment observations are retained in
 [deployment evidence](artifacts/2026-09-26-blent-deployment/).
+
+## T591 coverage attribution correction
+
+The original collection above is historical. Reprocessing its unchanged source
+snapshot and raw counters after fixing `cfg` interpretation gives 1,222 Linux
+functions: 1,212 pass, ten below 80%, none unmeasured. All 61 non-Linux functions
+remain visible and unmeasured in the full report. T590/T572 remain open; native
+Windows/macOS obligations remain T493/T497/T583.
+
+The old prefix expression missed `windows` after a feature predicate and every
+macOS-only guard. Permanent T591 regressions failed before the fix and pass after
+it. They cover reordered/nested guards, boolean alternatives, unknown features,
+module descendants, and rejection of foreign counters. Existing shared-module
+ownership regressions remain. All 58 coverage-tool tests pass; complexity audit
+measures 5,615 functions with none above nine. No application behavior changed.

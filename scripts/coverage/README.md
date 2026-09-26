@@ -82,12 +82,15 @@ cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/ble
 ```
 
 The scoped Linux gate writes `linux.json`. `all-platforms.json` retains every
-Windows-only function and fails until native Windows coverage is supplied to the
-combined reporter. Windows-only classification follows explicit `cfg(windows)`
-module/function guards, including guarded module descendants; shared references
-remain in the Linux gate. Missing Linux functions always fail. This is a scoped
-gate, not a claim that Windows is covered. CI uploads the manifest, raw counters,
-reports and logs as coverage artifacts.
+foreign-platform function and fails until native coverage is supplied to the
+combined reporter. Classification evaluates explicit `cfg` target predicates,
+including nested `all`/`any`/`not`, regardless of argument order. Only code
+provably unavailable on Linux leaves the Linux gate; unknown feature predicates
+and shared module references stay in scope. Guarded module descendants inherit
+the restriction. Missing Linux functions always fail, and foreign-platform
+counters are rejected from a Linux collection. This gate does not establish
+Windows or macOS runtime support or coverage (T493/T497/T583). CI uploads the
+manifest, raw counters, reports and logs as coverage artifacts.
 
 ## Combined native reports
 
