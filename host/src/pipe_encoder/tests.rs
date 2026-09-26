@@ -46,6 +46,10 @@ fn t529_encoder_fixture() {
             std::fs::write(root.join("escaped"), b"escaped").unwrap();
         }
         "exit" => std::process::exit(7),
+        "discard" => {
+            let mut prefix = [0; 2];
+            std::io::stdin().read_exact(&mut prefix).unwrap();
+        }
         "drain" => {
             std::io::copy(&mut std::io::stdin(), &mut std::io::sink()).unwrap();
         }
@@ -238,6 +242,27 @@ async fn t529_owned_input_flush_and_shutdown_are_repeatable() {
     assert_eq!(
         input.write_all(b"late").await.unwrap_err().kind(),
         io::ErrorKind::BrokenPipe
+    );
+}
+
+#[tokio::test]
+async fn t529_shutdown_reports_an_unfinished_native_write_even_after_zero_exit() {
+    let root = tempfile::tempdir().unwrap();
+    let mut encoder = Encoder::spawn(
+        &mut fixture("discard", root.path()),
+        (512, 512),
+        Duration::from_secs(2),
+    )
+    .unwrap();
+    ready(root.path()).await;
+    let written = encoder
+        .input
+        .write_frame((512, 512), &vec![128; 512 * 512 * 3 / 2])
+        .await;
+    let finished = encoder.input.shutdown().await;
+    assert!(
+        written.and(finished).is_err(),
+        "T529: a zero exit concealed an unfinished frame write"
     );
 }
 
