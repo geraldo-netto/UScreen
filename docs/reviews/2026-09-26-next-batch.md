@@ -187,3 +187,17 @@ strict workspace Clippy passes. The normal benchmark test collection passes
 [idle/keyframe timing](artifacts/2026-09-26-next-batch/t579-idle-summary.json),
 [coverage](artifacts/2026-09-26-next-batch/t579-coverage.json), and
 [GCOV counters](artifacts/2026-09-26-next-batch/t579-gcov.tar.gz).
+
+## T574 — current status versus historical measurements
+
+Historical damage-conversion, idle-writer, raw-input, codec and GPU reports now
+identify their measurement date and link implemented behavior/acceptance.
+Current commands use Blent identities. Original measurements, unavailable native
+hardware, and the distinction between implemented policy and physical acceptance
+are preserved. The TODO ledger reflects completed camera coverage and current
+package/trace/ownership names. T584 is explicitly declined; Windows obligations
+remain, and no macOS application support is claimed.
+
+Local Markdown targets exist, original license/header identity tests pass, and
+the final [complexity gate](artifacts/2026-09-26-next-batch/complexity.log.gz) reports
+no function above nine. Documentation-only corrections require no artificial tests.

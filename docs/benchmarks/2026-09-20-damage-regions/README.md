@@ -1,5 +1,11 @@
 # Changed-region conversion — 2026-09-20
 
+Current status (2026-09-26): horizontal-span conversion is implemented and active
+in the deployed Blent helper. See [shared capture activation](../2026-09-21-shared-capture/README.md)
+and [current deployment](../../reviews/2026-09-26-blent-deployment.md).
+T222 is deferred and does not block ordinary restarts. Measurements and deployment
+steps below describe the original September 20 experiment.
+
 T554 narrows BGRA-to-NV12 conversion to the horizontal area covered by EVDI
 rectangles, rounded outward to complete scaled 2×2 chroma blocks. Previously,
 any damage in a row caused conversion across its full width. Clean rows and
@@ -81,7 +87,7 @@ CPU, active jobs and checksum. This bounded local replay does not reopen T382's
 declined multi-tablet/large-machine campaign. Reproduce from repository root:
 
 ```sh
-python3 scripts/benchmarks/damage_regions.py /tmp/uscreen-region-replay
+python3 scripts/benchmarks/damage_regions.py /tmp/blent-region-replay
 ```
 
 The output directory must be new. `--baseline` selects a pre-region revision;
@@ -122,9 +128,9 @@ The production helper also compiles at `-O3 -Wall -Wextra -Werror` against the
 installed bundled libevdi, and a help-only invocation prints usage (the private helper returns status 1). The system
 has no development `-levdi` linker name, so that isolated link used the existing
 bundled library explicitly. No daemon, helper, encoder, display mode or ADB connection was restarted during
-these measurements. The running display used the previous helper; T556 tracks
-safe activation and live validation of the new host build. T222 remains the
-blocker for deliberately restarting the active EVDI display. Android needs no
+these measurements. At that time the running display used the previous helper, and T556 tracked
+activation. T222 was then treated as a restart blocker; that historical
+disposition was superseded by the accepted deferral and later activation. Android needs no
 update for this host-only optimization.
 
 
@@ -134,6 +140,6 @@ and dependency checks pass; the AppImage's CLI help smoke test exits successfull
 The new image is installed at the existing user launcher path, with the old
 image retained as a rollback copy. [deployment.json](deployment.json) records
 both hashes and paths. Readback confirms that the live daemon, helper and
-encoder still use the same executable hashes as before installation. The new
-conversion becomes active at the next safe host start; it is not active in the
-current display session. No service restart or Android installation was made.
+encoder still use the same executable hashes as before installation. The conversion was not active in the September 20 display session. No service
+restart or Android installation was made during that experiment; subsequent
+activation and deployment are linked above.

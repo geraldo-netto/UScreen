@@ -1,5 +1,9 @@
 # T575: implemented X11 GPU capture prototype
 
+Current follow-up: [T579 damage-cadence measurements](../../reviews/2026-09-26-next-batch.md#t579--damage-triggered-gpu-capture)
+add an opt-in event mode. The measurements below remain the historical periodic
+prototype results; they are not measurements of that later mode.
+
 **Keep FIFO as the default.** The GPU prototype lowers measured process CPU,
 but source-update-to-render-ACK latency worsened in every dephased pair.
 Cross-device implicit-layout imports also corrupt nonuniform images on this
@@ -7,7 +11,7 @@ machine, so the implemented adapter rejects them before emitting a stream.
 
 The prototype, its [build/activation instructions](../../gpu-capture.md) and
 permanent tests are committed. It is explicitly enabled with
-`USCREEN_X11_GPU_HELPER`, not automatically included in the AppImage or enabled
+`BLENT_X11_GPU_HELPER`, not automatically included in the AppImage or enabled
 on the user's live installation. Stock FFmpeg 6.1.6 and libevdi are unchanged.
 T569 supplied the clean Android replay APK used here; T570 established the
 shared damage histories that subsequent capture work can reuse.

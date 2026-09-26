@@ -100,3 +100,12 @@ cost, or the receiver array's current capacity. No memory or latency improvement
 is inferred. The signed release is non-debuggable and lacks shell profiling
 opt-in; T589 now tracks an instrumented variant and fixed workloads rather than
 a missing-device blocker. Further pool/trim policy changes remain evidence-led.
+
+## Instrumented packet-path follow-up
+
+T589 subsequently added a separate profiling variant and completed three native
+ART trials covering packet growth, retained capacity, reader recreation, slow
+consumers and camera packet writes. See [measured results and limitations](2026-09-26-next-batch.md#t589--android-packet-allocation-profiling).
+These supplement the historical PSS snapshots above; they do not establish
+whole-pipeline latency or battery gains. T594 tracks a measured comparison of
+bounded camera scratch reuse; no extra production trimming/pooling is enabled.
