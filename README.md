@@ -188,8 +188,10 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   been validated; maintainer testing of that setup is outside the current scope (T382).
 - **Input devices** — `input_touch`, `input_pen`, `input_pointer`: which
   virtual devices the desktop sees while a tablet is attached. All on by
-  default; turn off what you do not use (on Cinnamon/GNOME under X11 a
-  touchscreen device can hide the mouse cursor). The pointer requires Pen;
+  default; turn off what you do not use. On Cinnamon/X11, Blent keeps the
+  mouse visible while its touchscreen exists, including during touch input.
+  Other desktops retain their own cursor policy; an unavailable Cinnamon
+  policy produces a daemon warning. The virtual pointer requires Pen;
   disabling Pen preserves the pointer preference for when Pen is enabled again.
 - **Wi-Fi** — `blent wifi` once, with the cable in: it switches the tablet
   over, remembers the address and reconnects to it by itself whenever the

@@ -50,6 +50,8 @@ fn isolated() {
             .env("HOME", root)
             .env("XDG_CONFIG_HOME", root)
             .env("XDG_RUNTIME_DIR", root)
+            .env("XDG_CURRENT_DESKTOP", "test")
+            .env_remove("DBUS_SESSION_BUS_ADDRESS")
             .output()
             .unwrap();
         assert!(

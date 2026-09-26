@@ -12,6 +12,8 @@ use std::sync::{atomic::Ordering, Arc};
 use tokio::sync::watch;
 use tracing::{debug, info, warn};
 
+mod cursor;
+
 pub struct Backend {
     devices: Arc<std::sync::Mutex<InjectDevices>>,
     card: watch::Receiver<Option<u32>>,
@@ -588,6 +590,8 @@ impl DeviceOwner {
         cfg: &InputConfig,
         ident: &DeviceIdentity,
     ) -> usize {
+        // Arm before uinput creation: Muffin hides the pointer in device-added.
+        cursor::prepare(cfg.touch, &ident.touch).await;
         let (c, i) = (cfg.clone(), ident.clone());
         // Device creation sleeps to let udev settle, so it
         // runs off the async runtime.

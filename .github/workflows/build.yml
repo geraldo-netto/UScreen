@@ -32,8 +32,11 @@ jobs:
             libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
             libclang-dev libavcodec-dev libavformat-dev libavutil-dev \
             libavfilter-dev libavdevice-dev libswresample-dev libswscale-dev \
-            libdrm-dev rpm fakeroot ffmpeg xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin python3-xlib python3-tk python3-numpy python3-pil python3-venv
+            libdrm-dev rpm fakeroot ffmpeg nodejs xvfb xauth x11-utils dbus-x11 at-spi2-core libglib2.0-bin python3-xlib python3-tk python3-numpy python3-pil python3-venv
           sudo apt-get install -y libevdi-dev
+
+      - name: Check Cinnamon cursor lifecycle (T604)
+        run: python3 -m unittest discover -s scripts/tests -p test_cinnamon_cursor.py
 
       - name: Cache cargo
         uses: actions/cache@v4

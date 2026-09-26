@@ -78,6 +78,12 @@ from the existing implementation.
    `input_touch`, `input_pen` and `input_pointer` control creation; the pointer
    also requires the pen. KDE Wayland mapping uses KWin D-Bus; X11 uses
    `xinput`/`xrandr`. Other desktops need their own mapping facilities.
+   Before touch creation on Cinnamon/X11, the Linux adapter installs a scoped
+   cursor-visibility policy through Cinnamon D-Bus. It keeps the physical mouse
+   visible during touch use and removes its signal handlers when that exact
+   touchscreen disappears. Failed creation expires pending handlers after ten
+   seconds; an unavailable desktop policy warns without disabling touch.
+   This changes no saved desktop settings and injects no mouse events.
 7. **Latency loop.** Every video frame has a sequence number, echoed after the
    Android render callback. Host p50/p95 measure encoded-packet readiness to
    acknowledgement receipt, including the return path and excluding capture,
