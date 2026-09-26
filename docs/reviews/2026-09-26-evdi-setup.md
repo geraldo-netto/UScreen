@@ -61,10 +61,9 @@ Three interleaved read-only pairs on the current layout:
 Captured outputs were byte-identical. Three short 250 ms idle controls emitted
 none of these messages. The queries changed no display settings or EVDI
 connections. This is a small stable-layout observation, not a startup or overall
-CPU benchmark. `map_x11_devices` currently forces `--prop` on up to forty retries
-at 250 ms spacing, so a cached-query policy is worth testing. T622 requires
-late-connection/EDID freshness and ownership regressions plus native reconnect
-validation before changing that behavior.
+CPU benchmark. At the T615 baseline, `map_x11_devices` forced `--prop` on up to forty retries
+at 250 ms spacing, so a cached-query policy is worth testing. T622 subsequently introduced cached queries with bounded stale-topology refresh;
+see [implementation and native reconnect evidence](2026-09-26-xrandr-mapping.md).
 
 An earlier ten-minute kernel window, including normal activity/reload, also
 contained 34 grab-without-ready pairs and 25 already-requested warnings.

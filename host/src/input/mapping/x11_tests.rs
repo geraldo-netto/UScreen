@@ -135,3 +135,120 @@ fn t577_edid_parser_rejects_bounded_invalid_lengths_and_checksums() {
         );
     }
 }
+
+fn tool(root: &std::path::Path, name: &str, body: &str) -> String {
+    use std::os::unix::fs::PermissionsExt;
+    let path = root.join(name);
+    std::fs::write(
+        &path,
+        format!("#!/usr/bin/python3\nimport pathlib, sys\nroot=pathlib.Path({root:?})\n{body}\n"),
+    )
+    .unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+    path.to_str().unwrap().into()
+}
+
+fn input_tool(root: &std::path::Path, delay: usize) -> String {
+    tool(
+        root,
+        "xinput",
+        &format!(
+            r#"
+if sys.argv[1] == 'list':
+ p=root/'lists'; n=int(p.read_text())+1 if p.exists() else 1; p.write_text(str(n))
+ if n >= {delay}:
+  print('Blent Touch id=10 [slave pointer]')
+  print('Blent Touch 2 id=20 [slave pointer]')
+else:
+ with (root/'mapped').open('a') as f: f.write(' '.join(sys.argv[1:])+'\n')
+"#
+        ),
+    )
+}
+
+#[tokio::test]
+async fn t622_late_input_does_not_force_stable_output_probes() {
+    let root = tempfile::tempdir().unwrap();
+    let owned = connector(1, "DVI-I-1", 1280);
+    std::fs::write(
+        root.path().join("outputs"),
+        output("DVI-I-2-1", false, &owned.edid),
+    )
+    .unwrap();
+    let randr = tool(
+        root.path(),
+        "xrandr",
+        r#"
+with (root/'queries').open('a') as f: f.write(' '.join(sys.argv[1:])+'\n')
+print((root/'outputs').read_text())
+"#,
+    );
+    map_x11_devices(
+        false,
+        &DeviceIdentity::for_instance(0),
+        Some(1),
+        1,
+        &input_tool(root.path(), 3),
+        &randr,
+        Some(&[owned]),
+    )
+    .await;
+    let queries = std::fs::read_to_string(root.path().join("queries")).unwrap();
+    assert_eq!(
+        queries.lines().collect::<Vec<_>>(),
+        vec!["--current --prop"; 3],
+        "T622 waiting for input must not re-probe stable connectors"
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("mapped")).unwrap(),
+        "map-to-output 10 DVI-I-2-1\n"
+    );
+}
+
+#[tokio::test]
+async fn t622_stale_topology_refreshes_until_owned_edid_appears() {
+    let root = tempfile::tempdir().unwrap();
+    let owned = connector(1, "DVI-I-1", 1280);
+    std::fs::write(
+        root.path().join("wanted"),
+        output("DVI-I-2-1", false, &owned.edid),
+    )
+    .unwrap();
+    std::fs::write(
+        root.path().join("foreign"),
+        output("DVI-I-3-1", false, &edid(1920)),
+    )
+    .unwrap();
+    let randr = tool(
+        root.path(),
+        "xrandr",
+        r#"
+with (root/'queries').open('a') as f: f.write(' '.join(sys.argv[1:])+'\n')
+p=root/'refreshes'; n=int(p.read_text()) if p.exists() else 0
+if '--current' not in sys.argv:
+ n+=1; p.write_text(str(n))
+print((root/('wanted' if n >= 2 else 'foreign')).read_text())
+"#,
+    );
+    map_x11_devices(
+        false,
+        &DeviceIdentity::for_instance(0),
+        Some(1),
+        1,
+        &input_tool(root.path(), 1),
+        &randr,
+        Some(&[owned]),
+    )
+    .await;
+    let queries = std::fs::read_to_string(root.path().join("queries")).unwrap();
+    assert_eq!(queries.lines().filter(|q| *q == "--prop").count(), 2);
+    assert_eq!(
+        queries.lines().filter(|q| *q == "--current --prop").count(),
+        5,
+        "T622 retry cached resources between explicit stale-topology refreshes"
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("mapped")).unwrap(),
+        "map-to-output 10 DVI-I-2-1\n"
+    );
+}

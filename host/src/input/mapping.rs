@@ -217,23 +217,13 @@ pub(super) async fn map_x11_devices(
         if attempt > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         }
-        // Refresh on every retry: the helper may still be enabling its card.
         let current = crate::vdisplay::evdi_connectors();
         let connectors = fixed_connectors.unwrap_or(&current);
-        let Some(randr) = x11_query(
-            xrandr,
-            &["--prop"],
-            "xrandr",
-            "xrandr could not query this X11 session",
-        )
-        .await
-        else {
-            return;
-        };
-        let text = String::from_utf8_lossy(&randr.stdout);
-        let active = x11_active_outputs(&text);
-        let Some(output) = x11_target_output(pen_only, &active, connectors, card) else {
-            continue;
+        let output = x11_mapping_output(pen_only, card, xrandr, connectors, attempt).await;
+        let output = match output {
+            Ok(Some(output)) => output,
+            Ok(None) => continue,
+            Err(()) => return,
         };
         let Some(devices) = x11_query(
             xinput,
@@ -249,7 +239,7 @@ pub(super) async fn map_x11_devices(
             &String::from_utf8_lossy(&devices.stdout),
             ident,
             xinput,
-            output,
+            &output,
             expected,
         )
         .await
@@ -258,6 +248,49 @@ pub(super) async fn map_x11_devices(
         }
     }
     warn!("X11 output or input devices not ready after 10s; check xrandr providers and xinput");
+}
+
+/// Cached resources suffice while only input devices are arriving. Missing or
+/// stale EDID ownership triggers an explicit refresh at most once per second.
+async fn x11_mapping_output(
+    pen_only: bool,
+    card: Option<u32>,
+    xrandr: &str,
+    connectors: &[crate::vdisplay::EvdiConnector],
+    attempt: u32,
+) -> Result<Option<String>, ()> {
+    let cached = x11_read_target(pen_only, card, xrandr, connectors, true).await?;
+    if cached.is_some() || !attempt.is_multiple_of(4) {
+        return Ok(cached);
+    }
+    x11_read_target(pen_only, card, xrandr, connectors, false).await
+}
+
+async fn x11_read_target(
+    pen_only: bool,
+    card: Option<u32>,
+    xrandr: &str,
+    connectors: &[crate::vdisplay::EvdiConnector],
+    current: bool,
+) -> Result<Option<String>, ()> {
+    let args: &[&str] = if current {
+        &["--current", "--prop"]
+    } else {
+        &["--prop"]
+    };
+    let report = x11_query(
+        xrandr,
+        args,
+        "xrandr",
+        "xrandr could not query this X11 session",
+    )
+    .await
+    .ok_or(())?;
+    let text = String::from_utf8_lossy(&report.stdout);
+    Ok(
+        x11_target_output(pen_only, &x11_active_outputs(&text), connectors, card)
+            .map(str::to_owned),
+    )
 }
 
 pub(super) async fn x11_query(
