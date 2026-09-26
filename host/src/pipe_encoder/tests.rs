@@ -155,23 +155,23 @@ async fn t529_partial_pipe_timeout_and_cancellation_retire_encoder() {
         .unwrap();
         ready(root.path()).await;
         let frame = vec![128; 512 * 512 * 3 / 2];
+        // Windows' asynchronous pipe can accept an entire pending buffer before
+        // backpressure. Bound the attempt count; require retirement once the
+        // stagnant reader prevents progress, independent of native pipe size.
+        let blocked = async {
+            for _ in 0..4 {
+                encoder.input.write_frame((512, 512), &frame).await?;
+            }
+            panic!("T529: stagnant reader accepted every bounded frame");
+            #[allow(unreachable_code)]
+            Ok::<_, io::Error>(())
+        };
         if cancel {
-            assert!(tokio::time::timeout(
-                Duration::from_millis(100),
-                encoder.input.write_frame((512, 512), &frame)
-            )
-            .await
-            .is_err());
+            assert!(tokio::time::timeout(Duration::from_millis(100), blocked)
+                .await
+                .is_err());
         } else {
-            assert_eq!(
-                encoder
-                    .input
-                    .write_frame((512, 512), &frame)
-                    .await
-                    .unwrap_err()
-                    .kind(),
-                io::ErrorKind::TimedOut
-            );
+            assert_eq!(blocked.await.unwrap_err().kind(), io::ErrorKind::TimedOut);
         }
         assert_eq!(
             std::fs::read(root.path().join("partial")).unwrap(),
