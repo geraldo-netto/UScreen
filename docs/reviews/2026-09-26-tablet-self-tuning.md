@@ -131,3 +131,10 @@ failed combined winner; immediate known-good restoration; no camera side effects
 Test portable policy independently, then validate Linux/Android adapters on the
 actual tablet. T603 closes the requested research; no optimizer or cache-default
 change is included in this commit.
+
+Follow-up [T600 measurements](2026-09-26-full-daemon-thread-budgets.md) support
+prioritizing encoder workers: one worker reduced measured host CPU and codec
+wakeup/futex volume at 1280×800; runtime-worker reduction alone showed no
+consistent benefit. T612 tracks incorporating this evidence into the existing
+selector. Keep calibration unprivileged; these diagnostic traces are research
+evidence, not a runtime requirement.

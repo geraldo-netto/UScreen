@@ -1,0 +1,14 @@
+{
+  "behavior_source_commit": "f2b6f55",
+  "note": "All comparative runs use the T604 daemon. T610 hardening was built only after all timed/native lifecycle trials.",
+  "sha256": {
+    "/tmp/blent-investigation/t600-fixed/runtime/usr/bin/blent": "fdfb0e9c2b571cbdc572c6c594eea38070be4feeef90b94c7d5a7fc75b47aff4",
+    "/tmp/blent-investigation/t600-fixed/runtime/usr/bin/evdi_helper": "da2884a33ae35845c99e9904f485008148d12176a15c24fefee5a73a2b973aa6",
+    "/tmp/blent-investigation/t600-fixed/runtime/usr/libexec/ffmpeg": "643ab790095816900e48a6ecb2ed7aca19fdb6bd230dadcd3c7df1757231edc5",
+    "/tmp/blent-t585/t579-scene": "4b5017aab2dc253fcb9453518bdaea126e69ec8ecea171c4129a707afc432bfe",
+    "scripts/benchmarks/gpu-scene.c": "5d1cc8f418cfca5e0c2a6422ba44e6c9283becd7b6c2e3167f660a37cd2223c7"
+  },
+  "config_sha256": "d55283c1646056b9e5c5401dc5221610e46dd7a3cae19c8408e88c1efb41b858",
+  "scene_source": "scripts/benchmarks/gpu-scene.c",
+  "kernel": "7.0.0-31-generic"
+}
