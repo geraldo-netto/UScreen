@@ -20,6 +20,19 @@ from Xlib import X, display
 
 
 class VisibilityIntegrityTests(unittest.TestCase):
+    def test_t643_early_xvfb_exit_preserves_startup_error(self):
+        real_popen = subprocess.Popen
+        def failing_server(command, **kwargs):
+            return real_popen([sys.executable, '-c',
+                               "import sys; sys.stderr.write('T643 fixture startup error\\n'); sys.exit(23)"], **kwargs)
+        fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+        try:
+            with patch('subprocess.Popen', side_effect=failing_server):
+                with self.assertRaisesRegex(AssertionError, 'T643 fixture startup error'):
+                    fixture.setUp()
+        finally:
+            fixture.doCleanups()
+
     def test_t424_plot_refuses_invalid_data_before_reading_series(self):
         path = Path(__file__).resolve().parents[1] / 'benchmarks' / 'plot-baseline.py'
         spec = importlib.util.spec_from_file_location('baseline_plot', path)
@@ -123,18 +136,32 @@ class VisibilityIntegrityTests(unittest.TestCase):
 
 class XVisibilityTests(unittest.TestCase):
     """Use only a private Xvfb, never the user's desktop or EVDI."""
-    def setUp(self):
+    def start_private_server(self):
+        log = tempfile.TemporaryFile(mode='w+')
+        self.addCleanup(log.close)
         read_fd, write_fd = os.pipe()
         try:
             server = subprocess.Popen(['Xvfb', '-displayfd', str(write_fd), '-screen', '0', '1600x1000x24',
                                        '-nolisten', 'tcp', '-ac'], pass_fds=(write_fd,),
-                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                      stdout=subprocess.DEVNULL, stderr=log)
             self.addCleanup(self.stop_server, server)
-            self.assertTrue(select.select([read_fd], [], [], 5)[0], 'T424: private Xvfb startup timed out')
-            name = ':' + os.read(read_fd, 100).decode().strip()
+            os.close(write_fd)
+            write_fd = None
+            ready = select.select([read_fd], [], [], 5)[0]
+            log.seek(0)
+            error = log.read(65536)
+            self.assertTrue(ready, 'T424: private Xvfb startup timed out: ' + error)
+            number = os.read(read_fd, 100).decode().strip()
+            self.assertTrue(number.isascii() and number.isdigit(),
+                            'T643: Xvfb did not publish a private display: ' + error)
+            return ':' + number
         finally:
             os.close(read_fd)
-            os.close(write_fd)
+            if write_fd is not None:
+                os.close(write_fd)
+
+    def setUp(self):
+        name = self.start_private_server()
         self.display = display.Display(name)
         self.display_name = name
         self.addCleanup(self.display.close)
