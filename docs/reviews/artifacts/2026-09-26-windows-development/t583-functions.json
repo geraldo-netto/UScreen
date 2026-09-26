@@ -1,0 +1,46 @@
+{
+  "run": "https://github.com/geraldo-netto/UScreen/actions/runs/36263320613",
+  "revision": "47efa7a682f2a53b72aa65faa33498e8a1d7cb88",
+  "platform": "Windows Server 2022 x64, native MSVC",
+  "sources": {
+    "common/src/scheduling/windows.rs": "841bc0c142fa089cc173f1fbff1525f4765212d74714ba6f9b2ca66a1bdc9eaf",
+    "common/src/commands/windows.rs": "c5e7e68834be287c47b69f544c99f1e250d6e93e4d822e50ff3ca994fdf44659"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "common/src/scheduling/windows.rs",
+      "name": "apply_current",
+      "line": 10,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/scheduling/windows.rs",
+      "name": "apply_process",
+      "line": 14,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "child_priority",
+      "line": 11,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}
