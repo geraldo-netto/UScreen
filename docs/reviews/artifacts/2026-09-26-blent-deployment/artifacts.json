@@ -1,0 +1,21 @@
+{
+  "source_revision": "d41095232656b4bea30ca101f07385680399d62a",
+  "artifacts": {
+    "dist/blent-1.2.3-x86_64.AppImage": {
+      "sha256": "9f7b1b0b37a6e1a0a0ea3dc9828cd2f9136a85c12bcb73a5368cacd98e2c780c",
+      "bytes": 333670904
+    },
+    "dist/blent-1.2.3-linux-x86_64.tar.gz": {
+      "sha256": "d2a06fa9624d110b7a7e5a2ba3dd29306b9070bac210a5240168edf5e3e032ea",
+      "bytes": 307036103
+    },
+    "dist/blent-1.2.3-AppImage-sources.tar.gz": {
+      "sha256": "11958c00aeaf4482da35cc73c224130caa1e086c187a57b474a6c36f22dd5c96",
+      "bytes": 296337274
+    },
+    "android/app/build/outputs/apk/release/app-release.apk": {
+      "sha256": "4a9c8e578ba45ba2410fd924ea4fde0ea16b8cdd780ff5e22dbb9e1181bb8d80",
+      "bytes": 1625162
+    }
+  }
+}
