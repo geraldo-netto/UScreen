@@ -40,6 +40,17 @@ impl Directory {
         if created == 0 && unsafe { GetLastError() } != ERROR_ALREADY_EXISTS {
             checked(created).context("create private Windows directory")?;
         }
+        Self::open(path)
+    }
+
+    /// Validate and pin existing state without creating it during status probes.
+    pub fn open(path: &Path) -> Result<Self> {
+        anyhow::ensure!(
+            path.is_absolute(),
+            "private directory path must be absolute"
+        );
+        let user = User::current()?;
+        let wide = wide(path.as_os_str())?;
         let file = open_directory(&wide)?;
         let attributes = file.metadata()?.file_attributes();
         anyhow::ensure!(

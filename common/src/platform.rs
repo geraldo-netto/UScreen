@@ -26,7 +26,7 @@ pub const fn capabilities() -> Capabilities {
     let linux = cfg!(target_os = "linux");
     Capabilities {
         camera: linux,
-        daemon: linux,
+        daemon: linux || cfg!(windows),
         display: linux,
         input: linux,
         system_setup: linux,
@@ -62,13 +62,13 @@ mod tests {
     fn t493_capabilities_never_imply_an_unimplemented_backend() {
         let caps = capabilities();
         assert_eq!(caps.camera, cfg!(target_os = "linux"));
-        assert_eq!(caps.daemon, cfg!(target_os = "linux"));
-        assert_eq!(caps.display, caps.daemon);
-        assert_eq!(caps.input, caps.daemon);
-        assert_eq!(caps.system_setup, caps.daemon);
-        assert_eq!(caps.autostart, caps.daemon);
-        assert_eq!(caps.pipe_capacity, caps.daemon);
-        assert_eq!(caps.conversion_pool, caps.daemon);
+        assert_eq!(caps.daemon, cfg!(any(target_os = "linux", windows)));
+        assert_eq!(caps.display, cfg!(target_os = "linux"));
+        assert_eq!(caps.input, cfg!(target_os = "linux"));
+        assert_eq!(caps.system_setup, cfg!(target_os = "linux"));
+        assert_eq!(caps.autostart, cfg!(target_os = "linux"));
+        assert_eq!(caps.pipe_capacity, cfg!(target_os = "linux"));
+        assert_eq!(caps.conversion_pool, cfg!(target_os = "linux"));
         assert_eq!(
             executable_name("blent"),
             if cfg!(windows) { "blent.exe" } else { "blent" }

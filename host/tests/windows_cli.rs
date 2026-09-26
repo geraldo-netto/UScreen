@@ -1,11 +1,13 @@
-//! T494: compilation is a diagnostics milestone, never a working backend claim.
+//! T494/T524: lifecycle readiness never implies display/input backend support.
 #![cfg(windows)]
+use blent_config::commands::SyncCommandExt;
 use std::process::{Command, Output};
+use std::time::Duration;
 
 fn invoke(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_blent"))
         .args(args)
-        .output()
+        .output_timeout(Duration::from_secs(8))
         .unwrap()
 }
 
@@ -21,23 +23,15 @@ fn t494_help_and_version_are_available() {
 #[test]
 fn t494_windows_actions_report_unsupported_without_side_effects() {
     let root = tempfile::tempdir().unwrap();
-    for args in [
-        vec![],
-        vec!["start"],
-        vec!["stop"],
-        vec!["status"],
-        vec!["list-displays"],
-        vec!["wifi"],
-        vec!["wifi", "--off"],
-    ] {
+    for args in [vec!["list-displays"], vec!["wifi"], vec!["wifi", "--off"]] {
         let result = Command::new(env!("CARGO_BIN_EXE_blent"))
             .args(args)
             .current_dir(root.path())
             .env("XDG_RUNTIME_DIR", root.path())
-            .output()
+            .output_timeout(Duration::from_secs(8))
             .unwrap();
         assert!(!result.status.success());
-        assert!(String::from_utf8_lossy(&result.stderr).contains("not implemented on Windows"));
+        assert!(String::from_utf8_lossy(&result.stderr).contains("unsupported on Windows"));
     }
     assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
 }
@@ -45,7 +39,7 @@ fn t494_windows_actions_report_unsupported_without_side_effects() {
 #[test]
 fn t494_doctor_distinguishes_configuration_from_backend_support() {
     let result = invoke(&["doctor"]);
-    assert!(!result.status.success());
+    assert!(result.status.success());
     let text = String::from_utf8_lossy(&result.stdout);
     for expected in [
         "Configuration:",

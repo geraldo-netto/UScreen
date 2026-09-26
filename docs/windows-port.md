@@ -1,7 +1,8 @@
 # Windows integration plan
 
 Status: staged implementation, updated 2026-09-26. Linux remains the supported
-runtime. Windows capture, input, lifecycle and packaging are not implemented.
+runtime for streaming. Windows daemon lifecycle is implemented; capture, input,
+connection integration and packaging remain unavailable.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
@@ -11,21 +12,22 @@ The initial [cross-compilation review](reviews/2026-09-19-windows-cross-compilat
 recorded GNU/MSVC failures at `63b332e`. The subsequent
 [T494 daemon boundary](reviews/2026-09-19-windows-cli.md) builds a Windows GNU
 command-line diagnostics executable and passes MSVC target checking. Help and
-version work; runtime commands return explicit unsupported errors. This is a
-compilation preview, not a functioning second-screen server or a selected
-release toolchain.
+version work. That historical milestone rejected runtime commands; T524 now
+adds interactive daemon lifecycle. Windows remains a second-screen preview,
+with capture/input/connection commands explicitly unsupported.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
 primitives. [T493 native acceptance](reviews/2026-09-26-windows-foundation.md)
 passes after T634 directory pinning and T637 explicit file ownership fixes. All
-46 Windows foundation functions meet the per-function coverage threshold;
+46 Windows foundation functions in that snapshot meet the per-function threshold;
 these primitives do not enable a Windows application backend.
 
 The [T495 GUI boundary](reviews/2026-09-19-windows-gui.md) also builds for GNU
 and checks on MSVC. Its Windows preview saves shared settings and hides Linux
-setup/capacity controls; unavailable lifecycle actions fail explicitly. Automated
-headless UI tests and a real window launch passed under Wine, not native Windows.
+setup/capacity controls. T524 enables daemon start/stop/restart and identity-based
+status, while keeping display/input unavailable. The original headless UI and
+window checks used Wine; subsequent native MSVC suites cover the lifecycle adapters.
 
 T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/windows.yml).
 Shell-free command fixtures run as Windows executables; Linux process-group
@@ -51,6 +53,15 @@ regressions. Its 17 transport/process functions meet native coverage; FFmpeg
 arguments and framing are shared with Linux. Capture/ADB session integration
 still waits for T525/T528, so this does not enable Windows display support.
 
+[T524 lifecycle](reviews/2026-09-26-windows-lifecycle.md) runs a foreground daemon
+with `blent start` (also the default command), stops it through `blent stop`, and
+reports its verified identity through `blent status`. GUI start waits for readiness;
+restart requires successful stop. A private lease serializes startup, random tokens
+rotate on startup, and graceful retirement removes owned token/session state.
+After forced termination, the next start or stop reclaims abandoned state under
+the same exclusive lease. Cleanup errors remain errors and cannot skip independent
+token retirement. No Windows service, autostart, tray or display driver is installed.
+
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
 or distinguish a missing program from an unverified failed/malformed check.
@@ -58,8 +69,9 @@ Version commands use the platform process adapter with a two-second deadline
 per dependency. GUI results share the existing ten-second capability cache;
 the UI does not run commands while rendering. Backend flags report unsupported
 or implemented-but-unverified operations. Discovery never establishes tablet
-connection, driver initialization or encoder compatibility, and `doctor` still
-exits unsuccessfully while the Windows application backends are unavailable.
+connection, driver initialization or encoder compatibility. `doctor` now returns
+successful diagnostic execution while explicitly listing unsupported backends;
+that exit status does not mean streaming is supported.
 
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;

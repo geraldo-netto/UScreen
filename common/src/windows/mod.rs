@@ -6,3 +6,6 @@ pub mod process;
 pub mod programs;
 pub mod runtime;
 mod security;
+
+#[cfg(feature = "platform")]
+pub mod lifecycle;

@@ -12,6 +12,11 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
 
+    /// Private runtime directory override for isolated Windows instances.
+    #[cfg(windows)]
+    #[arg(long, hide = true)]
+    pub runtime_dir: Option<PathBuf>,
+
     /// Explicit EDID override. By default an EDID is generated at runtime
     /// for the configured (or tablet-reported) resolution.
     #[arg(long = "edid")]
