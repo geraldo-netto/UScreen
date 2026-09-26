@@ -139,6 +139,49 @@ fn t493_runtime_directory_is_private_and_pinned() {
 }
 
 #[test]
+fn t634_directory_removal_waits_for_the_last_owner() {
+    use blent_config::windows::private::Directory;
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("private café 東京");
+    let first = Directory::create(&path).unwrap();
+    let second = Directory::create(&path).unwrap();
+    assert!(
+        std::fs::remove_dir(&path).is_err(),
+        "T634: active directory was removed"
+    );
+    drop(first);
+    assert!(std::fs::rename(&path, root.path().join("moved")).is_err());
+    assert!(
+        std::fs::remove_dir(&path).is_err(),
+        "T634: remaining owner lost its pin"
+    );
+    drop(second);
+    std::fs::remove_dir(&path).unwrap();
+}
+
+#[test]
+fn t634_directory_rejects_an_existing_delete_handle() {
+    use blent_config::windows::private::Directory;
+    use std::os::windows::fs::OpenOptionsExt;
+    use windows_sys::Win32::Storage::FileSystem::*;
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("private");
+    drop(Directory::create(&path).unwrap());
+    let deleting = std::fs::OpenOptions::new()
+        .access_mode(DELETE)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+        .open(&path)
+        .unwrap();
+    assert!(
+        Directory::create(&path).is_err(),
+        "T634: accepted a conflicting delete owner"
+    );
+    drop(deleting);
+    assert!(Directory::create(&path).is_ok());
+}
+
+#[test]
 fn t493_runtime_rejects_relative_files_and_inherited_permissions() {
     use blent_config::windows::private::Directory;
     let root = tempfile::tempdir().unwrap();

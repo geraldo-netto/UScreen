@@ -66,7 +66,9 @@ fn open_directory(path: &[u16]) -> Result<std::fs::File> {
     let raw = unsafe {
         CreateFileW(
             path.as_ptr(),
-            READ_CONTROL | FILE_READ_ATTRIBUTES,
+            // T634: metadata-only access bypasses normal share checks. Directory
+            // read access makes omitting FILE_SHARE_DELETE pin this object.
+            READ_CONTROL | FILE_READ_ATTRIBUTES | FILE_LIST_DIRECTORY,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             std::ptr::null(),
             OPEN_EXISTING,
