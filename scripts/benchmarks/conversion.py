@@ -16,11 +16,16 @@ ROOT = Path(__file__).resolve().parents[2]
 DAMAGE = ['empty', 'sparse', 'overlap', 'full']
 
 
-def build(folder, reference, scalar=False):
+def build(folder, reference, scalar=False, dimensions=None):
     folder.mkdir()
     sources = copy_sources(ROOT, folder, reference)
     binary = folder / 'conversion'
     extra = ['-fno-tree-vectorize', '-fno-tree-slp-vectorize'] if scalar else []
+    if dimensions is not None:
+        width, height = dimensions
+        if not all(2 <= size <= 8192 and size % 2 == 0 for size in dimensions):
+            raise ValueError('conversion dimensions must be even and within 2..8192')
+        extra += [f'-DWIDTH={width}', f'-DHEIGHT={height}']
     extra += build_flags(folder)
     if 'last_jobs' in (folder / 'conversion.h').read_text():
         extra.append('-DBLENT_ADAPTIVE_POOL')

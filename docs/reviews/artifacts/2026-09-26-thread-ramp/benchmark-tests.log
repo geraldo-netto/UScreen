@@ -1,0 +1,8 @@
+.........................{'scene': 'static', 'codec': 'avc', 'rate': 1, 'trials': 2, 'mean_current_ma': 360.0, 'per_trial_mean_current_ma': [360.0, 360.0], 'gauge_net_charge_mah': [1.5, 1.5], 'integrated_net_charge_mah': [1.5, 1.5]}
+{'presented_in_surface_history': 9}
+0 motion 60 libx264 2 ACKs
+......................................................................................
+----------------------------------------------------------------------
+Ran 111 tests in 3.662s
+
+OK

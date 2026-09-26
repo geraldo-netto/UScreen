@@ -11,8 +11,12 @@
 #include <sys/resource.h>
 #include <time.h>
 
+#ifndef WIDTH
 #define WIDTH 1920
+#endif
+#ifndef HEIGHT
 #define HEIGHT 1080
+#endif
 #define MAX_SESSIONS 4
 #define MAX_SAMPLES 256
 
