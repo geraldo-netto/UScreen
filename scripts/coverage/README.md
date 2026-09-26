@@ -1,10 +1,12 @@
 # Per-function coverage (T497)
 
-T497 remains open for broader native Windows counters and a current combined
-report. Historical scoped Linux Rust, Android, capture C and essential-script
-reports passed; changed sources require fresh measurements. T493 now has native
-Windows evidence for all 46 foundation functions. The full cross-platform
-requirement does **not** yet pass. See the [measured scope and limits](../../docs/reviews/2026-09-19-function-coverage.md).
+The accepted gate combines native Linux and Windows Rust, Android, capture C
+and essential-script counters. Require **80% executable lines for every maintained
+function/method**, plus permanent bounded invalid-value and out-of-bounds tests.
+Missing counters, changed source bytes and empty platform scopes fail. See the
+[current evidence](../../docs/reviews/2026-09-26-function-coverage.md); the
+[2026-09-19 report](../../docs/reviews/2026-09-19-function-coverage.md) is historical.
+
 The requirement covers Rust applications, the Android app, the C EVDI helper,
 and essential installation, EVDI setup and packaging scripts. Benchmarks in any
 language (including their Rust example adapters) and nonessential development
@@ -75,9 +77,9 @@ With the snapshot described below and a new evidence directory, run both normal
 workspace configurations against unchanged production sources:
 
 ```sh
-CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-default.XXXXXX)" \
+CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-default.XXXXXX)/target" \
   cargo llvm-cov --locked --workspace --lcov --output-path /tmp/blent-default.lcov
-CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-features.XXXXXX)" \
+CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-features.XXXXXX)/target" \
   cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/blent-all-features.lcov
 /tmp/blent-coverage-venv/bin/python scripts/coverage/rust_check.py \
   --manifest /tmp/blent-coverage-manifest.json \
@@ -171,3 +173,45 @@ cross-compilation as native Windows coverage. The Windows workflow preserves
 LF source bytes and uploads LCOV plus SHA-256 source fingerprints. Windows
 relative backslashes are accepted by the importer; absolute drive paths require
 an explicit source prefix. Source bytes must match exactly before combining.
+
+
+## Combined native gate
+
+`build.yml` joins Linux, Android and the reusable native Windows workflow before
+running the combined gate. Windows collection includes common, host **and GUI**
+sources, tests and SHA-256 fingerprints. Both Linux configurations use separate,
+fresh LLVM target directories, including when Cargo build caches are restored.
+
+To combine downloaded artifacts in the same layout as CI:
+
+```sh
+/tmp/blent-coverage-venv/bin/python scripts/coverage/report.py check \
+  --manifest evidence/host/blent-rust-coverage/manifest.json \
+  --lcov evidence/host/blent-rust-coverage/default.lcov \
+  --lcov evidence/host/blent-rust-coverage/all-features.lcov \
+  --lcov evidence/windows/windows-common.lcov \
+  --native-sources evidence/windows/windows-sources.json \
+  --jacoco evidence/android/jacoco.xml \
+  --gcov evidence/host/blent-capture-coverage/native \
+  --python-json evidence/host/blent-script-coverage/python.json \
+  --python-calls evidence/host/blent-script-coverage/calls \
+  --shell evidence/host/blent-script-coverage/shell \
+  --rust-platform linux --rust-platform windows \
+  --output evidence/combined.json
+```
+
+Windows scope requires nonempty native fingerprints covering every maintained Rust
+counter file; test fixtures retain their existing inventory exclusion. Missing, partial or mismatched attestation fails. Native collection
+must execute on Windows; GNU linking and Wine never replace it.
+
+`--rust-platform` is explicit and recorded in the report. Only functions provably
+unavailable on every selected platform leave that gate; unknown predicates remain
+in scope. Excluded functions remain in `excluded_platform_functions` with their
+missing counters. The single Darwin scheduling function belongs to declined T584;
+Linux/Windows results do not imply macOS support. Omitting this option retains all
+platforms and fails when Darwin counters are missing.
+
+Archived recipe tests use synthetic `<archived recipe: ...>` code filenames.
+They still execute their unchanged security assertions, while coverage no longer
+mistakes archived ASTs for nonexistent production files. A permanent native Python
+reporting regression verifies this boundary; no production counters are ignored.

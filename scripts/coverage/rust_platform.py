@@ -27,33 +27,34 @@ def combine(operator, values):
     return None if None in values else not decisive
 
 
-def predicate(nodes):
+def predicate(nodes, platform="linux"):
     text = ''.join(node.text.decode() for node in nodes)
-    known = {'windows': False, 'unix': True}
+    known = {'windows': platform == 'windows', 'unix': platform != 'windows'}
     if text in known:
         return known[text]
     if len(nodes) == 3 and nodes[0].text in {b'target_os', b'target_family'}:
-        expected = b'"linux"' if nodes[0].text == b'target_os' else b'"unix"'
+        family = 'windows' if platform == 'windows' else 'unix'
+        expected = ('"' + (platform if nodes[0].text == b'target_os' else family) + '"').encode()
         return nodes[2].text == expected
     if len(nodes) == 2 and nodes[0].text in {b'all', b'any', b'not'}:
-        return combine(nodes[0].text.decode(), [predicate(group) for group in arguments(nodes[1])])
+        return combine(nodes[0].text.decode(), [predicate(group, platform) for group in arguments(nodes[1])])
     return None
 
 
 @cache
-def unavailable(text):
+def unavailable(text, platform="linux"):
     for node in walk(parse(text, 'rust')):
         if node.type != 'attribute' or node.named_children[0].text != b'cfg':
             continue
         tree = node.named_children[-1]
-        if predicate(tree.children[1:-1]) is False:
+        if predicate(tree.children[1:-1], platform) is False:
             return True
     return False
 
 
-def guarded(node):
+def guarded(node, platform="linux"):
     while node is not None:
-        if unavailable(attributes(node)):
+        if unavailable(attributes(node), platform):
             return True
         node = node.parent
     return False

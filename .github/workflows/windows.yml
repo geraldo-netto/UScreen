@@ -2,6 +2,7 @@ name: Windows compilation preview
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -53,8 +54,8 @@ jobs:
           cargo install cargo-llvm-cov --version 0.8.7 --locked
       - name: Measure native Windows service contracts
         run: |
-          python -c "import hashlib,json,pathlib; root=pathlib.Path('.'); paths=sorted(list(root.glob('common/src/**/*.rs'))+list(root.glob('host/src/**/*.rs'))); pathlib.Path('windows-sources.json').write_text(json.dumps({p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},indent=2))"
-          cargo llvm-cov --locked -p blent-config -p blent --remap-path-prefix --lcov --output-path windows-common.lcov
+          python -c "import hashlib,json,pathlib; root=pathlib.Path('.'); paths=sorted(list(root.glob('common/src/**/*.rs'))+list(root.glob('host/src/**/*.rs'))+list(root.glob('gui/src/**/*.rs'))); pathlib.Path('windows-sources.json').write_text(json.dumps({p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},indent=2))"
+          cargo llvm-cov --locked --workspace --remap-path-prefix --lcov --output-path windows-common.lcov
       - name: Preserve native counters and source revision
         if: always()
         uses: actions/upload-artifact@v4

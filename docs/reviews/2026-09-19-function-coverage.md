@@ -1,5 +1,8 @@
 # Per-function coverage and retained tests — 2026-09-19
 
+Historical snapshot; current validation is recorded in
+[the 2026-09-26 report](2026-09-26-function-coverage.md).
+
 T497 establishes a minimum of **80% executable-line coverage for each production
 function/method**, rather than an aggregate project percentage. The Linux,
 Android, C and essential-script scopes pass. Native Windows coverage remains

@@ -105,6 +105,8 @@ def generate(args):
     manifest = json.loads(args.manifest.read_text())
     validate_snapshot(ROOT, manifest)
     data = native_lines(args, ROOT)
+    from platform_scope import attest_native
+    attest_native(ROOT, args.native_sources, data, args.rust_platform)
     if args.shell:
         from shell import merge
         merge(ROOT, args.shell, manifest, data)
@@ -112,7 +114,10 @@ def generate(args):
     from calls import read_calls
     observed = read_calls(args.python_calls) if args.python_calls else set()
     rows = collect(manifest, data, kotlin, args.scope, observed)
-    report = dict(minimum_percent=80, scopes=args.scope or ['Rust applications, Android app, C EVDI helper and essential installation/packaging scripts; benchmarks excluded'],
+    from platform_scope import apply
+    rows, excluded = apply(ROOT, manifest, rows, args.rust_platform)
+    report = dict(rust_platforms=args.rust_platform or ['all'], excluded_platform_functions=excluded,
+                  minimum_percent=80, scopes=args.scope or ['Rust applications, Android app, C EVDI helper and essential installation/packaging scripts; benchmarks excluded'],
                   passes=all(row['passes'] for row in rows), summary=summary(rows), functions=rows)
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report['summary'], indent=2))
@@ -136,6 +141,10 @@ def arguments():
     report.add_argument('--kotlin-source', type=Path, default=Path('android/app/src/main/java'))
     report.add_argument('--prefix', type=Path, help='source root used inside a build container')
     report.add_argument('--scope', action='append', default=[], help='explicit source prefix; recorded in report')
+    report.add_argument('--rust-platform', choices=['linux', 'windows'], action='append', default=[],
+                        help='explicit supported Rust target scope; excluded functions remain in report')
+    report.add_argument('--native-sources', type=Path, action='append', default=[],
+                        help='verify source hashes accompanying each imported native collection')
     report.add_argument('--report-only', action='store_true', help='write gaps without claiming the gate passed')
     return parser.parse_args()
 

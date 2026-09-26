@@ -60,8 +60,8 @@ jobs:
         run: |
           mkdir -p '${{ runner.temp }}/blent-rust-coverage'
           '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/blent-rust-coverage/manifest.json'
-          cargo llvm-cov --locked --workspace --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/default.lcov'
-          cargo llvm-cov --locked --workspace --all-features --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/all-features.lcov'
+          CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d)/target" cargo llvm-cov --locked --workspace --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/default.lcov'
+          CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d)/target" cargo llvm-cov --locked --workspace --all-features --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/all-features.lcov'
           '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/rust_check.py \
             --manifest '${{ runner.temp }}/blent-rust-coverage/manifest.json' \
             --lcov '${{ runner.temp }}/blent-rust-coverage/default.lcov' \
@@ -151,3 +151,55 @@ jobs:
         with:
           name: blent-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  native-windows:
+    name: Native Windows tests and counters
+    uses: ./.github/workflows/windows.yml
+
+  coverage-gate:
+    name: Every maintained function meets 80 percent
+    needs: [build-host, build-android, native-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Install strict source and coverage readers
+        run: |
+          python3 -m venv '${{ runner.temp }}/coverage-tools'
+          '${{ runner.temp }}/coverage-tools/bin/python' -m pip install -r scripts/coverage/requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: host-coverage
+          path: evidence/host
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-coverage
+          path: evidence/android
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-common-coverage-*
+          path: evidence/windows
+          merge-multiple: true
+      - name: Enforce the combined native gate (T497)
+        run: |
+          '${{ runner.temp }}/coverage-tools/bin/python' scripts/coverage/report.py check \
+            --manifest evidence/host/blent-rust-coverage/manifest.json \
+            --lcov evidence/host/blent-rust-coverage/default.lcov \
+            --lcov evidence/host/blent-rust-coverage/all-features.lcov \
+            --lcov evidence/windows/windows-common.lcov \
+            --native-sources evidence/windows/windows-sources.json \
+            --jacoco evidence/android/jacoco.xml \
+            --gcov evidence/host/blent-capture-coverage/native \
+            --python-json evidence/host/blent-script-coverage/python.json \
+            --python-calls evidence/host/blent-script-coverage/calls \
+            --shell evidence/host/blent-script-coverage/shell \
+            --rust-platform linux --rust-platform windows \
+            --output evidence/combined.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: combined-function-coverage
+          path: evidence/combined.json

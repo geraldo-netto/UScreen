@@ -30,7 +30,7 @@ class ProfilingRecipeTokenTests(unittest.TestCase):
                         break
                     statements.append(node)
                 module = ast.fix_missing_locations(ast.Module(body=helpers + statements, type_ignores=[]))
-                exec(compile(module, name, 'exec'), scope)
+                exec(compile(module, f'<archived recipe: {name}>', 'exec'), scope)
                 call = fake_process.run.call_args
                 self.assertIsNotNone(call)
                 self.assertNotIn(token, repr(call.args), 'T606: token leaked into host process argv')

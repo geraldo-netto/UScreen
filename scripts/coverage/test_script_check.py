@@ -17,6 +17,23 @@ from script_check import environment, python_report, snapshot
 
 
 class CollectionTest(unittest.TestCase):
+    def test_t497_archived_recipe_execution_keeps_native_reporting_valid(self):
+        with tempfile.TemporaryDirectory() as name:
+            directory = Path(name)
+            root = Path(__file__).resolve().parents[2]
+            (directory/'manifest.json').write_text(json.dumps(snapshot(root)))
+            env = environment(directory, root)
+            command = [sys.executable, '-m', 'unittest', 'discover',
+                       '-s', str(root/'scripts/tests'), '-p', 'test_profiling_recipe_tokens.py']
+            output = subprocess.run(command, cwd=root, env=env, capture_output=True)
+            self.assertEqual(output.returncode, 0, output.stderr.decode())
+            python_report(directory, root, env)
+            report = json.loads((directory/'python.json').read_text())
+            self.assertTrue(report['files'])
+            self.assertFalse(any(Path(path).name in {'scheduler.py', 'profile.py'}
+                                 for path in report['files']))
+
+
     def test_t497_installer_command_overrides_preserve_native_origins(self):
         from shell import merge
         with tempfile.TemporaryDirectory() as name:

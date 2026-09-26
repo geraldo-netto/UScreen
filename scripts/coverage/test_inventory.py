@@ -8,6 +8,20 @@ from model import result
 
 
 class InventoryTest(unittest.TestCase):
+    def test_t497_combined_inventory_keeps_inline_capture_header_functions(self):
+        import subprocess
+        from report import snapshot
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            header = root/'host/evdi/geometry.h'
+            header.parent.mkdir(parents=True)
+            header.write_text('static inline int clipped(int value) { return value < 0 ? 0 : value; }\n')
+            manifest = snapshot(root)
+            self.assertIn('host/evdi/geometry.h', manifest['sources'])
+            self.assertEqual([function['name'] for function in manifest['functions']], ['clipped'])
+
+
     def test_t497_application_scope_excludes_benchmarks_in_every_language(self):
         for name in ['host/src/main.rs', 'common/src/lib.rs', 'host/evdi/evdi_helper.c', 'android/app/src/main/java/com/blent/MainActivity.kt',
                      'scripts/install.sh', 'scripts/setup-evdi.sh', 'scripts/ci/verify-portability.py',

@@ -11,14 +11,14 @@ from readers import lcov
 
 SCOPES = ['common/src/', 'host/src/', 'gui/src/']
 
-def platform_inventory(root, manifest):
+def platform_inventory(root, manifest, platform="linux"):
     references, functions = {}, set()
     for name in manifest['sources']:
         path = Path(name)
         if path.suffix != '.rs':
             continue
         for node in walk(parse((root/path).read_text(), 'rust')):
-            record_node(root, path, node, references, functions)
+            record_node(root, path, node, references, functions, platform)
     foreign = set()
     while True:
         found = {path for path, owners in references.items()
@@ -28,13 +28,13 @@ def platform_inventory(root, manifest):
         foreign.update(found)
 
 
-def record_node(root, path, node, references, functions):
-    if node.type == 'function_item' and guarded(node):
+def record_node(root, path, node, references, functions, platform="linux"):
+    if node.type == 'function_item' and guarded(node, platform):
         functions.add((str(path), node.start_point.row + 1))
     if node.type == 'mod_item':
         destination = module_path(root, path, node)
         if destination is not None:
-            references.setdefault(str(destination.relative_to(root.resolve())), []).append((str(path), guarded(node)))
+            references.setdefault(str(destination.relative_to(root.resolve())), []).append((str(path), guarded(node, platform)))
 
 
 def reports(root, manifest, data):

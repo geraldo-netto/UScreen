@@ -43,7 +43,8 @@ succeeded. This historical failure was fixed by T634. Later native run
 [36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
 at `44b939e` passed the full suite, expanded ACL/token/junction acceptance and
 all 46 foundation-function coverage gates. T583 scheduling acceptance passed;
-T497 retains broader host/GUI and combined coverage work.
+T497 now passes the [combined per-function gate](reviews/2026-09-26-function-coverage.md),
+including native host/GUI lifecycle counters.
 This CI uses Windows Server 2022; Windows 11 VM acceptance remains separate.
 See [build and native evidence](reviews/2026-09-26-windows-build-boundary.md).
 
