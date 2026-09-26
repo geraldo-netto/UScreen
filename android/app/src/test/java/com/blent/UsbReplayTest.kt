@@ -69,15 +69,57 @@ class UsbReplayTest {
         try {
             synchronized(stats) {
                 callback.start()
-                val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
-                while (callback.state != Thread.State.BLOCKED && System.nanoTime() < deadline) Thread.yield()
-                assertEquals(Thread.State.BLOCKED, callback.state)
+                assertTrue(awaitBlockedOn(callback, stats))
                 // Completion must never observe the final render before its ACK obligation.
                 assertEquals(1, (field(replay, "pending") as java.util.concurrent.atomic.AtomicInteger).get())
             }
         } finally { callback.join(2000); surface.release() }
         assertFalse(callback.isAlive)
         assertEquals(1, stats.count())
+    }
+
+    private fun awaitBlockedOn(worker: Thread, monitor: Any, timeoutMillis: Long = 2000): Boolean {
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        val expected = Thread.currentThread().id to System.identityHashCode(monitor)
+        while (System.nanoTime() < deadline) {
+            if (blockingMonitor(worker) == expected) return true
+            Thread.yield()
+        }
+        return false
+    }
+
+    private fun blockingMonitor(worker: Thread): Pair<Long, Int>? {
+        // Host-JVM test diagnostics; java.management is absent from Android's compile API.
+        val factory = Class.forName("java.lang.management.ManagementFactory")
+        val threads = factory.getMethod("getThreadMXBean").invoke(null)
+        val info = Class.forName("java.lang.management.ThreadMXBean")
+            .getMethod("getThreadInfo", java.lang.Long.TYPE).invoke(threads, worker.id) ?: return null
+        if (info.javaClass.getMethod("getThreadState").invoke(info) != Thread.State.BLOCKED) return null
+        val lock = info.javaClass.getMethod("getLockInfo").invoke(info) ?: return null
+        return (info.javaClass.getMethod("getLockOwnerId").invoke(info) as Long) to
+            (lock.javaClass.getMethod("getIdentityHashCode").invoke(lock) as Int)
+    }
+
+    @Test fun t641_unrelatedMonitorCannotSatisfyAckPublicationBarrier() {
+        val unrelated = Any()
+        val target = Any()
+        val entered = java.util.concurrent.CountDownLatch(1)
+        val worker = Thread {
+            entered.countDown()
+            synchronized(unrelated) { /* Simulate a class-loader monitor before publication. */ }
+            synchronized(target) { /* Reach the actual observation barrier afterward. */ }
+        }
+        try {
+            synchronized(target) {
+                synchronized(unrelated) {
+                    worker.start()
+                    assertTrue(entered.await(2, TimeUnit.SECONDS))
+                    assertFalse("T641: unrelated monitor accepted as ACK barrier", awaitBlockedOn(worker, target, 50))
+                }
+                assertTrue(awaitBlockedOn(worker, target))
+            }
+        } finally { worker.join(2000) }
+        assertFalse(worker.isAlive)
     }
 
     @Test fun t571_deadlineCannotReportMissingRenderOrUndrainedAckAsComplete() {
