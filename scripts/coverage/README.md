@@ -75,13 +75,22 @@ With the snapshot described below and a new evidence directory, run both normal
 workspace configurations against unchanged production sources:
 
 ```sh
-cargo llvm-cov --locked --workspace --lcov --output-path /tmp/blent-default.lcov
-cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/blent-all-features.lcov
+CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-default.XXXXXX)" \
+  cargo llvm-cov --locked --workspace --lcov --output-path /tmp/blent-default.lcov
+CARGO_LLVM_COV_TARGET_DIR="$(mktemp -d /tmp/blent-llvm-features.XXXXXX)" \
+  cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/blent-all-features.lcov
 /tmp/blent-coverage-venv/bin/python scripts/coverage/rust_check.py \
   --manifest /tmp/blent-coverage-manifest.json \
   --lcov /tmp/blent-default.lcov --lcov /tmp/blent-all-features.lcov \
   --output /tmp/blent-rust-coverage
 ```
+
+T638: collect each source revision in a fresh LLVM target directory. Reusing
+old instrumented executables can merge obsolete function/line mappings even
+when current source fingerprints match. Do not repair such counters by dropping
+uncovered lines; discard the contaminated report and recollect. The Windows CI
+jobs use fresh runners and separate coverage outputs. Preserve fingerprints from
+before compilation and reject later source changes as usual.
 
 The scoped Linux gate writes `linux.json`. `all-platforms.json` retains every
 foreign-platform function and fails until native coverage is supplied to the

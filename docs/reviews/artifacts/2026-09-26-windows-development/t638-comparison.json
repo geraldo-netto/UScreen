@@ -1,0 +1,225 @@
+{
+  "revision": "205f1efa44956fa8a2cd35694da52117c77bdba8",
+  "sources": {
+    "common/src/commands.rs": "ec9f5e6821a11ae9fb3ea69188c8d109eca7c714a46232504c6d155fbc4b3c5c",
+    "common/src/commands/owned.rs": "da2bc29cb7005fffbb7aa2f7b851c9a0f7f87a8d2d5e6e6b88a87b1688ef03c5",
+    "host/src/ffmpeg_args.rs": "61a81949b427a034e0ba2e562d96beb60c2fdc33434eefe6a061c99b466d2509",
+    "host/src/pipe_encoder.rs": "754665cade0c94f7c6d8c252a1f24d828b4280c4a2d1660bfb34d689cc5b6608",
+    "host/src/capture/cli_encoder.rs": "8a0a82592f409b7919be42b6a0cb30f55060126b3a2a5ff347d06fa33b401557"
+  },
+  "invalid_reused_object_report": [
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 44,
+      "language": "rust",
+      "covered": 2,
+      "total": 3,
+      "percent": 66.66666666666667,
+      "passes": false,
+      "missing": [
+        44
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "new",
+      "line": 56,
+      "language": "rust",
+      "covered": 4,
+      "total": 6,
+      "percent": 66.66666666666667,
+      "passes": false,
+      "missing": [
+        57,
+        60
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "prepare_group",
+      "line": 83,
+      "language": "rust",
+      "covered": 3,
+      "total": 5,
+      "percent": 60.0,
+      "passes": false,
+      "missing": [
+        85,
+        96
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "terminate_group",
+      "line": 100,
+      "language": "rust",
+      "covered": 6,
+      "total": 10,
+      "percent": 60.0,
+      "passes": false,
+      "missing": [
+        103,
+        104,
+        109,
+        113
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "drop",
+      "line": 137,
+      "language": "rust",
+      "covered": 5,
+      "total": 7,
+      "percent": 71.42857142857143,
+      "passes": false,
+      "missing": [
+        138,
+        139
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_timeout",
+      "line": 147,
+      "language": "rust",
+      "covered": 17,
+      "total": 23,
+      "percent": 73.91304347826087,
+      "passes": false,
+      "missing": [
+        149,
+        150,
+        163,
+        166,
+        171,
+        176
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 182,
+      "language": "rust",
+      "covered": 2,
+      "total": 3,
+      "percent": 66.66666666666667,
+      "passes": false,
+      "missing": [
+        182
+      ]
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_input_timeout",
+      "line": 201,
+      "language": "rust",
+      "covered": 27,
+      "total": 35,
+      "percent": 77.14285714285714,
+      "passes": false,
+      "missing": [
+        208,
+        209,
+        211,
+        216,
+        230,
+        231,
+        234,
+        235
+      ]
+    }
+  ],
+  "fresh_objects": [
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 44,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "new",
+      "line": 56,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "prepare_group",
+      "line": 83,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "terminate_group",
+      "line": 100,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "drop",
+      "line": 137,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_timeout",
+      "line": 147,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 182,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_input_timeout",
+      "line": 201,
+      "language": "rust",
+      "covered": 28,
+      "total": 28,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ],
+  "fresh_gate": true
+}
