@@ -50,6 +50,29 @@ class ControlBackpressureTest {
         fun recover(): Socket = connect().also { it.open(); it.greet() }
     }
 
+    @Test fun t629_openAndReconnectPublishPhysicalSizeAfterAuthentication() {
+        val connection = Connection()
+        val capture = connection.capture
+        try {
+            for ((widthMm, heightMm) in listOf(218 to 136, 0 to 136, 218 to 0)) {
+                capture.setNativeResolution(1280, 800, widthMm, heightMm)
+                val socket = connection.recover()
+                assertEquals(listOf("auth", "resolution"), socket.types().take(2))
+                val resolution = socket.accepted.single { it.getString("type") == "resolution" }
+                assertEquals(1280, resolution.getInt("width"))
+                assertEquals(800, resolution.getInt("height"))
+                if (widthMm > 0 && heightMm > 0) {
+                    assertEquals(widthMm, resolution.getInt("width_mm"))
+                    assertEquals(heightMm, resolution.getInt("height_mm"))
+                } else {
+                    assertFalse(resolution.has("width_mm"))
+                    assertFalse(resolution.has("height_mm"))
+                }
+                capture.disconnect()
+            }
+        } finally { capture.disconnect() }
+    }
+
     @Test fun t388_route_is_authenticated_generation_scoped_and_unknown_for_old_hosts() {
         val connection = Connection()
         val capture = connection.capture
