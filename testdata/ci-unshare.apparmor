@@ -1,0 +1,6 @@
+# T640: disposable GitHub runner only; allow the existing isolated test launcher.
+abi <abi/4.0>,
+include <tunables/global>
+profile unshare /usr/bin/unshare flags=(unconfined) {
+  userns,
+}

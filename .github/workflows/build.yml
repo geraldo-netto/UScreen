@@ -10,6 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Allow and verify private test namespaces (T640)
+        run: |
+          sudo apparmor_parser -r testdata/ci-unshare.apparmor
+          unshare --user --map-root-user --mount --pid --fork true
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:

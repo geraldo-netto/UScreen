@@ -56,6 +56,16 @@ def fixture(root, selection, stale):
 
 
 class BuildOutputTest(unittest.TestCase):
+    def test_t640_linux_ci_checks_private_namespaces_before_collection(self):
+        workflow = (REPO / '.github/workflows/build.yml').read_text()
+        preflight = 'unshare --user --map-root-user --mount --pid --fork true'
+        self.assertIn(preflight, workflow, 'T640: CI must prove private namespace support')
+        self.assertLess(workflow.index(preflight), workflow.index('cargo llvm-cov'))
+        self.assertIn('sudo apparmor_parser -r testdata/ci-unshare.apparmor', workflow)
+        profile = (REPO / 'testdata/ci-unshare.apparmor').read_text()
+        self.assertIn('profile unshare /usr/bin/unshare flags=(unconfined)', profile)
+        self.assertIn('userns,', profile)
+
     def test_t639_android_ci_avoids_retired_sdk_tools(self):
         workflow = (REPO / '.github/workflows/build.yml').read_text()
         steps = re.split(r'(?m)^      - ', workflow)
