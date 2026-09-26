@@ -31,6 +31,19 @@ jobs:
       - name: Build the preview with every feature selected
         # Linux libavcodec remains target-gated; this does not enable Windows capture.
         run: cargo build --locked --workspace --all-features
+      - name: Install native coverage tools
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-llvm-cov --version 0.8.7 --locked
+      - name: Measure native Windows service contracts
+        run: cargo llvm-cov --locked -p blent-config --remap-path-prefix --lcov --output-path windows-common.lcov
+      - name: Preserve native counters and source revision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-common-coverage-${{ github.sha }}
+          path: windows-common.lcov
+          if-no-files-found: warn
 
   cross-gnu:
     name: Linux to Windows GNU build
