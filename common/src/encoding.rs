@@ -166,7 +166,14 @@ impl Profile {
                 "cq",
             ),
             Backend::Vaapi => (&[("rc_mode", "CQP")], "qp"),
-            Backend::X264 => (&[("preset", "ultrafast"), ("tune", "zerolatency")], "crf"),
+            Backend::X264 => (
+                &[
+                    ("preset", "ultrafast"),
+                    ("tune", "zerolatency"),
+                    ("threads", "1"),
+                ],
+                "crf",
+            ),
             Backend::Aom => (
                 &[
                     ("usage", "realtime"),
@@ -261,6 +268,30 @@ impl Profile {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t613_x264_defaults_to_one_worker_in_both_adapters() {
+        for encoder in ENCODERS {
+            let profile = Profile::new(encoder.name, 60, 20000, 18).unwrap();
+            let expected = (encoder.backend == Backend::X264).then_some("1");
+            let cli = profile.cli_options(false);
+            assert_eq!(
+                cli.iter()
+                    .find(|(key, _)| key == "-threads")
+                    .map(|(_, value)| value.as_str()),
+                expected
+            );
+            if let Ok(options) = profile.inproc_options() {
+                assert_eq!(
+                    options
+                        .iter()
+                        .find(|(key, _)| *key == "threads")
+                        .map(|(_, value)| value.as_str()),
+                    expected
+                );
+            }
+        }
+    }
 
     #[test]
     fn t433_av1_profiles_use_framed_stock_cli_and_reject_inproc() {

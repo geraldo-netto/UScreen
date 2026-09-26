@@ -180,3 +180,8 @@ guides this priority; ordinary calibration must not require privileged tracing.
 Do not add new runtime/conversion defaults, a second optimizer or a new transport
 stack on the basis of these results. The T603 tuning proposal can use these
 measurements when its bounded selector work is separately implemented.
+
+Subsequent maintainer decision: T613 applies one libx264 encoding worker as
+the temporary shared-policy default. This is a later change based on these
+measurements; the original comparison and its unchanged-default statement above
+remain historical. T612 auto-tuning and the rest of the queue are paused.

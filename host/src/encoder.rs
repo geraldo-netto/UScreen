@@ -268,7 +268,9 @@ mod tests {
                 let expected = if name.ends_with("_nvenc") {
                     format!("preset p1 tune ull zerolatency 1 delay 0 rc vbr multipass 0 rc-lookahead 0 forced-idr 1 cq {quality} bufsize {nvbuf}")
                 } else {
-                    format!("preset ultrafast tune zerolatency crf {quality} bufsize {swbuf}")
+                    format!(
+                        "preset ultrafast tune zerolatency threads 1 crf {quality} bufsize {swbuf}"
+                    )
                 };
                 let pairs = expected.split_whitespace().collect::<Vec<_>>();
                 let expected = pairs

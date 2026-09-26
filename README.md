@@ -134,7 +134,9 @@ stylus-capability matrix; support depends on the host, client and versions.
 | [spacedesk](https://manual.spacedesk.net/AndroidUSBCableConnection.html) | no; Windows primary machine | virtual extended display | native app; direct Android USB is supported |
 
 Blent supports NVENC and VAAPI hardware encoding and a **software** libx264
-fallback. Consult each alternative's own documentation for its current
+fallback. Libx264 defaults to one encoding worker, based on the measured
+1280×800 CPU/latency improvement; automatic codec selection remains available.
+Consult each alternative's own documentation for its current
 encoder, pen and licensing details.
 
 ## Settings
