@@ -56,7 +56,17 @@ fn stop(path: &Path, child: &mut Daemon) {
         .output_timeout(Duration::from_secs(12))
         .unwrap();
     assert!(output.status.success(), "T524: {output:?}");
-    assert!(child.0.wait().unwrap().success());
+    blent_config::lifecycle::wait_until(Duration::from_secs(5), || {
+        Ok(child
+            .0
+            .try_wait()?
+            .map(|status| {
+                assert!(status.success());
+                true
+            })
+            .unwrap_or(false))
+    })
+    .unwrap();
     for name in [
         "token",
         "sessions.json",
@@ -175,4 +185,20 @@ fn t524_doctor_and_unsupported_operations_report_backend_truth() {
     assert!(!unsupported.status.success());
     assert!(String::from_utf8_lossy(&unsupported.stderr).contains("unsupported"));
     assert!(!path.exists());
+}
+
+#[test]
+fn t524_default_invocation_uses_the_same_owned_lifecycle() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("runtime");
+    let mut child = Daemon(
+        Command::new(env!("CARGO_BIN_EXE_blent"))
+            .arg("--runtime-dir")
+            .arg(&path)
+            .stdout(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    wait_ready(&path, &mut child);
+    stop(&path, &mut child);
 }
