@@ -1701,7 +1701,12 @@ fi
         let mapped = std::fs::read_to_string(root.join("mapped")).unwrap();
         assert_eq!(
             mapped.lines().collect::<Vec<_>>(),
-            ["map-to-output 10 eDP-1", "list-props 10 ", "map-to-output 11 eDP-1", "list-props 11 "]
+            [
+                "map-to-output 10 eDP-1",
+                "list-props 10 ",
+                "map-to-output 11 eDP-1",
+                "list-props 11 "
+            ]
         );
         std::fs::remove_dir_all(root).unwrap();
     }

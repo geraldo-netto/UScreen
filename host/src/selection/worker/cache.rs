@@ -147,7 +147,11 @@ impl Cache {
 impl Record {
     fn worker_evidence_valid(&self) -> bool {
         self.workers <= blent_config::encoder_workers::MAX_WORKERS
-            && self.observation.resources.as_ref().is_none_or(|value| value.valid())
+            && self
+                .observation
+                .resources
+                .as_ref()
+                .is_none_or(|value| value.valid())
             && (self.workers <= 1 || self.observation.resources.is_some())
     }
 

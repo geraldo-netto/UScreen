@@ -44,7 +44,11 @@ pub struct CaptureConfig {
 
 impl CaptureConfig {
     pub(crate) fn worker_count(&self) -> u32 {
-        if self.encoder_workers > 0 { self.encoder_workers } else { self.selected_workers.max(1) }
+        if self.encoder_workers > 0 {
+            self.encoder_workers
+        } else {
+            self.selected_workers.max(1)
+        }
     }
 
     /// Auto admits only the native adapter/codec combination measured in T418.

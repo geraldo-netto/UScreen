@@ -28,10 +28,17 @@ mod tests {
         assert!(Process.sample(0).is_none());
         let valid = "1 (name with spaces) S 0 0 0 0 0 0 0 0 0 0 2 3 0 0 0 0 0 0 7 0 10";
         let counter = parse(valid, 100, 4096).unwrap();
-        assert_eq!((counter.identity, counter.cpu_us, counter.rss_bytes), (7, 50_000, 40960));
+        assert_eq!(
+            (counter.identity, counter.cpu_us, counter.rss_bytes),
+            (7, 50_000, 40960)
+        );
         assert!(parse(valid, 0, 4096).is_none());
         assert!(parse(valid, 100, u64::MAX).is_none());
-        for end in 0..valid.len() { let _ = parse(&valid[..end], 100, 4096); }
-        for byte in 0..=127 { assert!(parse(&char::from(byte).to_string().repeat(128), 100, 4096).is_none()); }
+        for end in 0..valid.len() {
+            let _ = parse(&valid[..end], 100, 4096);
+        }
+        for byte in 0..=127 {
+            assert!(parse(&char::from(byte).to_string().repeat(128), 100, 4096).is_none());
+        }
     }
 }

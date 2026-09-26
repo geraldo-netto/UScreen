@@ -52,10 +52,15 @@ async fn run(config: &CaptureConfig) -> Result<Measurement> {
     let ((), (times, sample)) = tokio::try_join!(feed(stdin, w, h), drain(stdout, codec, started))?;
     ensure!(child.wait().await?.success(), "Encoder probe failed");
     let mut measured = summarize(&config.encoder, &times)?;
-    measured.workers_requested = if config.encoder == "libx264" { config.worker_count() } else { 0 };
+    measured.workers_requested = if config.encoder == "libx264" {
+        config.worker_count()
+    } else {
+        0
+    };
     if let Some(sample) = sample {
         if config.encoder == "libx264" {
-            measured.workers_effective = blent_config::encoder_workers::effective_x264(&sample.data);
+            measured.workers_effective =
+                blent_config::encoder_workers::effective_x264(&sample.data);
         }
         measured.stream = super::probe_format::inspect(codec, w, h, &sample)
             .await

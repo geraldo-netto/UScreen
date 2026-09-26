@@ -224,7 +224,10 @@ pub(super) async fn map_x11_devices(
         let output = x11_mapping_output(pen_only, card, xrandr, connectors, attempt).await;
         let output = match output {
             Ok(Some(output)) => output,
-            Ok(None) => { cache = Default::default(); continue; },
+            Ok(None) => {
+                cache = Default::default();
+                continue;
+            }
             Err(()) => return,
         };
         let Some(devices) = x11_query(
@@ -291,8 +294,12 @@ async fn x11_read_target(
     .ok_or(())?;
     let text = String::from_utf8_lossy(&report.stdout);
     Ok(
-        x11_target_output(pen_only, &x11_active_outputs(&text), connectors, card)
-            .map(|name| x11_cache::Target { name: name.into(), topology: text.to_string() }),
+        x11_target_output(pen_only, &x11_active_outputs(&text), connectors, card).map(|name| {
+            x11_cache::Target {
+                name: name.into(),
+                topology: text.to_string(),
+            }
+        }),
     )
 }
 

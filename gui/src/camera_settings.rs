@@ -29,9 +29,12 @@ impl Panel {
                 self.preview.show(ui, frame);
                 profile(ui, options);
             });
-            egui::CollapsingHeader::new("Advanced camera settings").id_salt("camera-advanced")
+            egui::CollapsingHeader::new("Advanced camera settings")
+                .id_salt("camera-advanced")
                 .show(ui, |ui| {
-                    super::settings_grid(ui, "camera-advanced-grid", |ui| advanced_profile(ui, options));
+                    super::settings_grid(ui, "camera-advanced-grid", |ui| {
+                        advanced_profile(ui, options)
+                    });
                 });
         });
     }
@@ -40,7 +43,9 @@ impl Panel {
         ui.label(egui::RichText::new("Camera sharing").strong());
         let state = self.state();
         ui.label(state_label(&state));
-        if let Some(error) = &self.error { ui.colored_label(egui::Color32::RED, error); }
+        if let Some(error) = &self.error {
+            ui.colored_label(egui::Color32::RED, error);
+        }
         self.buttons(ui, options, &state);
         ui.label(egui::RichText::new("Start/Restart camera applies these settings. Apply only saves preferences. Camera changes never restart display sharing.").weak().size(11.0));
         ui.label(egui::RichText::new("Keep this window open while sharing. Select Blent Front or Blent Rear in your video call; only the selected lens is live.").weak().size(11.0));

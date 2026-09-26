@@ -159,8 +159,14 @@ exit 1
     #[test]
     fn t612_cli_worker_override_preserves_saved_preference() {
         use super::*;
-        let saved = config::FileConfig { encoder_workers: 64, ..Default::default() };
-        assert_eq!(effective_config(&Cli::try_parse_from(["blent"]).unwrap(), &saved).encoder_workers, 64);
+        let saved = config::FileConfig {
+            encoder_workers: 64,
+            ..Default::default()
+        };
+        assert_eq!(
+            effective_config(&Cli::try_parse_from(["blent"]).unwrap(), &saved).encoder_workers,
+            64
+        );
         for (value, expected) in [("auto", 0), ("2", 2), ("128", 128)] {
             let cli = Cli::try_parse_from(["blent", "--encoder-workers", value]).unwrap();
             assert_eq!(effective_config(&cli, &saved).encoder_workers, expected);

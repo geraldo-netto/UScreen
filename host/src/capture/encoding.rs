@@ -89,7 +89,11 @@ impl EncoderProcess {
             &config.encoder,
             (w, h, config.fps, config.bitrate, config.quality),
             config.decoder.clone(),
-            if config.encoder == "libx264" { config.worker_count() } else { 0 },
+            if config.encoder == "libx264" {
+                config.worker_count()
+            } else {
+                0
+            },
             self.child.as_ref().and_then(|child| child.id()),
         );
         let idle = super::idle::start(

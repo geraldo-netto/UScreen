@@ -212,12 +212,19 @@ fn t497_setup_and_lifecycle_actions_use_private_stub_commands() {
     );
     wait_for_work(&mut app);
     assert_eq!(app.message, "System setup complete");
-    for (running, expected) in [(false, "Display service starting…"), (true, "Display service stopped")] {
+    for (running, expected) in [
+        (false, "Display service starting…"),
+        (true, "Display service stopped"),
+    ] {
         app.status.lock().unwrap().daemon_running = running;
         click_settings_text(
             &mut app,
             &ctx,
-            if running { "Stop display & input" } else { "Start display & input" },
+            if running {
+                "Stop display & input"
+            } else {
+                "Start display & input"
+            },
             setup_frame,
         );
         wait_for_work(&mut app);

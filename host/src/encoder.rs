@@ -49,9 +49,18 @@ impl Encoder {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn with_workers(name: &str, width: u32, height: u32, fps: u32, bitrate_kbps: u32, quality: u32, workers: u32) -> Result<Self> {
+    pub fn with_workers(
+        name: &str,
+        width: u32,
+        height: u32,
+        fps: u32,
+        bitrate_kbps: u32,
+        quality: u32,
+        workers: u32,
+    ) -> Result<Self> {
         crate::config::validate_encoder_for_build(name)?;
-        let profile = blent_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?.with_workers(workers)?;
+        let profile = blent_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?
+            .with_workers(workers)?;
         ffmpeg_next::init().context("initialise libavcodec")?;
 
         let codec = ffmpeg_next::encoder::find_by_name(name)
@@ -192,7 +201,15 @@ pub fn run(
 ) -> Result<()> {
     use std::sync::atomic::Ordering;
 
-    let mut enc = Encoder::with_workers(encoder_name, width, height, fps, bitrate_kbps, quality, workers)?;
+    let mut enc = Encoder::with_workers(
+        encoder_name,
+        width,
+        height,
+        fps,
+        bitrate_kbps,
+        quality,
+        workers,
+    )?;
 
     let mut input = shared::Input::open(fifo_path, raw_socket, (width, height), raw_slots)?;
     tracing::info!(

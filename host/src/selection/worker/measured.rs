@@ -3,25 +3,32 @@ use super::*;
 use crate::selection::trial::Observation;
 
 fn shortlist(mut candidates: Vec<Candidate>, fps: u32) -> Vec<Candidate> {
-    let Some(reference) = quality_reference(&candidates)
-    else {
+    let Some(reference) = quality_reference(&candidates) else {
         return Vec::new();
     };
     candidates.retain(|c| quality_capacity(c, reference, fps));
     // Keep the known fallback and profile comparison ahead of exploratory codecs.
-    candidates.sort_by_key(|c| (match c.measurement.encoder.as_str() {
-        "libx264" => 0,
-        "h264_vaapi_baseline" => 1,
-        _ => 2,
-    }, c.measurement.workers_requested));
+    candidates.sort_by_key(|c| {
+        (
+            match c.measurement.encoder.as_str() {
+                "libx264" => 0,
+                "h264_vaapi_baseline" => 1,
+                _ => 2,
+            },
+            c.measurement.workers_requested,
+        )
+    });
     candidates.truncate(4);
     candidates
 }
 
 pub(super) fn quality_reference(candidates: &[Candidate]) -> Option<f64> {
-    candidates.iter().filter(|c| c.measurement.encoder == "libx264")
+    candidates
+        .iter()
+        .filter(|c| c.measurement.encoder == "libx264")
         .min_by_key(|c| c.measurement.workers_requested)
-        .and_then(|c| c.measurement.quality_db).filter(|q| q.is_finite())
+        .and_then(|c| c.measurement.quality_db)
+        .filter(|q| q.is_finite())
 }
 
 pub(super) fn quality_capacity(candidate: &Candidate, reference: f64, fps: u32) -> bool {
@@ -60,7 +67,10 @@ fn prefer(candidate: &Candidate, previous: &Candidate) -> bool {
 }
 
 fn resources_acceptable(current: &Observation, previous: &Observation) -> bool {
-    current.resources.as_ref().zip(previous.resources.as_ref())
+    current
+        .resources
+        .as_ref()
+        .zip(previous.resources.as_ref())
         .is_some_and(|(current, previous)| current.acceptable(previous))
 }
 
@@ -99,7 +109,9 @@ async fn benchmark_with<F: Future<Output = Option<Observation>>>(
 ) -> Vec<Candidate> {
     let key = Key::new(snapshot);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(36);
-    let require_one = candidates.iter().any(|c| c.measurement.workers_requested == 1);
+    let require_one = candidates
+        .iter()
+        .any(|c| c.measurement.workers_requested == 1);
     let mut measured = Vec::new();
     for candidate in shortlist(candidates, snapshot.fps) {
         record_trial(
@@ -134,7 +146,11 @@ async fn benchmark_with<F: Future<Output = Option<Observation>>>(
 }
 
 fn retain_valid_budgets(measured: &mut Vec<Candidate>, require_one: bool) {
-    if require_one && !measured.iter().any(|c| c.measurement.workers_requested == 1) {
+    if require_one
+        && !measured
+            .iter()
+            .any(|c| c.measurement.workers_requested == 1)
+    {
         measured.retain(|c| c.measurement.workers_requested <= 1);
     }
 }
@@ -246,15 +262,29 @@ mod tests {
             let tx = tx.clone();
             let tracker = tracker.clone();
             let snapshot = snapshot.clone();
-            async move { benchmark(&tx, &snapshot, &tracker, vec![candidate("libx264", true, 120.0, 1)]).await }
+            async move {
+                benchmark(
+                    &tx,
+                    &snapshot,
+                    &tracker,
+                    vec![candidate("libx264", true, 120.0, 1)],
+                )
+                .await
+            }
         });
         tokio::task::yield_now().await;
         tokio::time::advance(Duration::from_secs(7)).await;
-        assert!(tx.borrow().selection.is_none(), "T627: trial budget started before capture was ready");
+        assert!(
+            tx.borrow().selection.is_none(),
+            "T627: trial budget started before capture was ready"
+        );
         assert!(!work.is_finished());
         let evidence = tracker.encoder_started("libx264", Key::new(&snapshot).format);
         tokio::task::yield_now().await;
-        assert!(tx.borrow().selection.is_none(), "spawning an encoder is not captured output");
+        assert!(
+            tx.borrow().selection.is_none(),
+            "spawning an encoder is not captured output"
+        );
         tracker.on_encoded_for(tracker.next_sequence(), &evidence);
         tokio::task::yield_now().await;
         assert!(tx.borrow().selection.is_some());
@@ -278,10 +308,22 @@ mod tests {
         assert_eq!(rows[0].measurement.workers_requested, 1);
         two.observation.as_mut().unwrap().resources = None;
         assert!(!prefer(&two, &one));
-        one.observation.as_mut().unwrap().resources = Some(Usage { cpu_us_per_frame: 1000.0, peak_rss_bytes: 100_000 });
-        two.observation.as_mut().unwrap().resources = Some(Usage { cpu_us_per_frame: 1050.0, peak_rss_bytes: 110_000 });
+        one.observation.as_mut().unwrap().resources = Some(Usage {
+            cpu_us_per_frame: 1000.0,
+            peak_rss_bytes: 100_000,
+        });
+        two.observation.as_mut().unwrap().resources = Some(Usage {
+            cpu_us_per_frame: 1050.0,
+            peak_rss_bytes: 110_000,
+        });
         assert!(prefer(&two, &one));
-        two.observation.as_mut().unwrap().resources.as_mut().unwrap().peak_rss_bytes = 121_000;
+        two.observation
+            .as_mut()
+            .unwrap()
+            .resources
+            .as_mut()
+            .unwrap()
+            .peak_rss_bytes = 121_000;
         assert!(!prefer(&two, &one));
         two.measurement.quality_db = Some(1.0);
         assert_eq!(shortlist(vec![one, two], 60).len(), 1);
@@ -359,7 +401,10 @@ mod tests {
     fn measured(name: &str, latency: u32) -> Candidate {
         let mut row = candidate(name, true, 120.0, 1);
         row.observation = Some(Observation {
-            resources: Some(crate::selection::resources::Usage { cpu_us_per_frame: 1000.0, peak_rss_bytes: 100_000 }),
+            resources: Some(crate::selection::resources::Usage {
+                cpu_us_per_frame: 1000.0,
+                peak_rss_bytes: 100_000,
+            }),
             p50_us: latency,
             p95_us: latency,
             p99_us: latency,

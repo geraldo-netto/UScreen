@@ -551,7 +551,11 @@ impl App {
         }
         ui.horizontal(|ui| {
             let big = egui::vec2(ui.available_width(), 34.0);
-            let label = if running { "Stop display & input" } else { "Start display & input" };
+            let label = if running {
+                "Stop display & input"
+            } else {
+                "Start display & input"
+            };
             if ui
                 .add_sized(
                     big,
@@ -931,9 +935,12 @@ impl App {
             self.setting_resolution(ui);
         });
         ui.add_space(10.0);
-        egui::CollapsingHeader::new("Advanced video settings").id_salt("video-advanced")
+        egui::CollapsingHeader::new("Advanced video settings")
+            .id_salt("video-advanced")
             .show(ui, |ui| {
-                settings_grid(ui, "video-advanced-grid", |ui| self.show_advanced_video_settings(ui));
+                settings_grid(ui, "video-advanced-grid", |ui| {
+                    self.show_advanced_video_settings(ui)
+                });
             });
     }
 
@@ -1011,17 +1018,20 @@ impl App {
         }
         // Each tab retains its own grid ID and remembered column widths.
         settings_grid(ui, ("settings", self.tab), |ui| match self.tab {
-                Tab::Display => self.show_display_settings(ui),
-                Tab::General => self.show_general_settings(ui, status),
-                _ => {},
-            });
+            Tab::Display => self.show_display_settings(ui),
+            Tab::General => self.show_general_settings(ui, status),
+            _ => {}
+        });
     }
 }
 
 // Shared native layout keeps wrapping and column budgets consistent across tabs.
 fn settings_grid(ui: &mut egui::Ui, id: impl std::hash::Hash, render: impl FnOnce(&mut egui::Ui)) {
     let width = (ui.available_width() - 16.0) / 2.0;
-    egui::Grid::new(id).num_columns(2).spacing([16.0, 10.0]).max_col_width(width)
+    egui::Grid::new(id)
+        .num_columns(2)
+        .spacing([16.0, 10.0])
+        .max_col_width(width)
         .show(ui, |ui| {
             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
             render(ui);
@@ -1217,13 +1227,18 @@ mod tests {
         let before = app.cfg.clone();
         let labels = video_test_frame(&mut app, &ctx, vec![]);
         assert!(labels.iter().any(|(text, _)| text == "Encoder"));
-        assert!(!labels.iter().any(|(text, _)| text == "Capture pipe buffer"), "T611: advanced capacity is exposed before disclosure");
+        assert!(
+            !labels.iter().any(|(text, _)| text == "Capture pipe buffer"),
+            "T611: advanced capacity is exposed before disclosure"
+        );
         click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
         let labels = video_test_frame(&mut app, &ctx, vec![]);
         assert!(labels.iter().any(|(text, _)| text == "Capture pipe buffer"));
         assert_eq!(app.cfg, before);
         click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
-        assert!(!video_test_frame(&mut app, &ctx, vec![]).iter().any(|(text, _)| text == "Capture pipe buffer"));
+        assert!(!video_test_frame(&mut app, &ctx, vec![])
+            .iter()
+            .any(|(text, _)| text == "Capture pipe buffer"));
     }
 
     #[test]
@@ -1232,19 +1247,33 @@ mod tests {
             let mut app = settings_test_app(tab);
             let ctx = egui::Context::default();
             ctx.style_mut(|style| style.animation_time = 0.0);
-            let frame = |app: &mut App, events| sized_window_frame(app, &ctx, events, egui::vec2(380.0, 2000.0));
+            let frame = |app: &mut App, events| {
+                sized_window_frame(app, &ctx, events, egui::vec2(380.0, 2000.0))
+            };
             frame(&mut app, vec![]);
             let text = frame(&mut app, vec![]);
             if let Some((_, rect)) = text.iter().find(|(text, _)| text.starts_with("Advanced ")) {
                 let pos = rect.center();
                 for pressed in [true, false] {
-                    frame(&mut app, vec![egui::Event::PointerMoved(pos), egui::Event::PointerButton {
-                        pos, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE,
-                    }]);
+                    frame(
+                        &mut app,
+                        vec![
+                            egui::Event::PointerMoved(pos),
+                            egui::Event::PointerButton {
+                                pos,
+                                button: egui::PointerButton::Primary,
+                                pressed,
+                                modifiers: egui::Modifiers::NONE,
+                            },
+                        ],
+                    );
                 }
             }
             for (label, rect) in frame(&mut app, vec![]) {
-                assert!(rect.right() <= 380.0, "T611: clipped label {label:?} at {rect:?}");
+                assert!(
+                    rect.right() <= 380.0,
+                    "T611: clipped label {label:?} at {rect:?}"
+                );
             }
         }
     }
@@ -1438,7 +1467,11 @@ mod tests {
         settings_test_frame(app, ctx, events, render)
     }
 
-    fn window_test_frame(app: &mut App, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {
+    fn window_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
         sized_window_frame(app, ctx, events, egui::vec2(700.0, 900.0))
     }
 
@@ -1450,10 +1483,7 @@ mod tests {
     ) -> Vec<(String, egui::Rect)> {
         let output = ctx.run(
             egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    size,
-                )),
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
                 events,
                 ..Default::default()
             },
@@ -1601,7 +1631,11 @@ mod tests {
         assert!(app.cfg.input_pointer);
     }
 
-    fn video_test_frame(app: &mut App, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {
+    fn video_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
         sized_window_frame(app, ctx, events, egui::vec2(700.0, 2000.0))
     }
 
@@ -1822,12 +1856,7 @@ mod tests {
             assert_eq!(app.cfg.pipe_capacity_mib, mib);
             assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
         }
-        click_settings_text(
-            &mut app,
-            &ctx,
-            "Linux pipe limits",
-            pipe_test_frame,
-        );
+        click_settings_text(&mut app, &ctx, "Linux pipe limits", pipe_test_frame);
         let text = pipe_test_frame(&mut app, &ctx, vec![]);
         for expected in [
             "Tablet 1 effective capacity: 1 MiB",
@@ -1952,7 +1981,12 @@ mod tests {
         app.camera.backend = Some(Box::new(Backend(calls.clone())));
         let ctx = egui::Context::default();
         ctx.style_mut(|style| style.animation_time = 0.0);
-        click_settings_text(&mut app, &ctx, "Advanced camera settings", camera_test_frame);
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Advanced camera settings",
+            camera_test_frame,
+        );
         click_settings_text(&mut app, &ctx, "Rear", camera_test_frame);
         click_settings_text(&mut app, &ctx, "0°", camera_test_frame);
         click_settings_text(&mut app, &ctx, "180°", camera_test_frame);

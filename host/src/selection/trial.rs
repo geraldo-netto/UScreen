@@ -11,16 +11,19 @@ pub(super) async fn capture_ready(tracker: &LatencyTracker, key: &Key) -> bool {
     let mut updates = tracker.activity_updates();
     tokio::time::timeout(Duration::from_secs(15), async {
         loop {
-            if tracker.encoder_evidence().is_some_and(|e| {
-                e.active() && e.format == key.format && e.encoded() > 0
-            }) {
+            if tracker
+                .encoder_evidence()
+                .is_some_and(|e| e.active() && e.format == key.format && e.encoded() > 0)
+            {
                 return true;
             }
             if updates.changed().await.is_err() {
                 return false;
             }
         }
-    }).await.unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false)
 }
 
 /// Each candidate receives its own bounded window. Never merge encoder epochs.
@@ -38,8 +41,16 @@ pub(super) async fn observe(
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
             if let Some(evidence) = tracker.encoder_evidence().filter(|e| e.workers == workers) {
-                resources.poll(evidence.epoch, evidence.process_id, evidence.rendered(), started.elapsed(), &super::resources::linux::Process);
-                if let Some(mut result) = observations(&evidence, key, encoder, decoder, before, started) {
+                resources.poll(
+                    evidence.epoch,
+                    evidence.process_id,
+                    evidence.rendered(),
+                    started.elapsed(),
+                    &super::resources::linux::Process,
+                );
+                if let Some(mut result) =
+                    observations(&evidence, key, encoder, decoder, before, started)
+                {
                     result.resources = resources.finish();
                     return Some(result);
                 }
@@ -179,18 +190,35 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn t627_capture_readiness_rejects_missing_retired_and_wrong_format_output() {
-        let key = Key { format: (640, 480, 60, 20_000, 18), epoch: 1, decoders: None };
+        let key = Key {
+            format: (640, 480, 60, 20_000, 18),
+            epoch: 1,
+            decoders: None,
+        };
         for state in 0..4 {
             let tracker = LatencyTracker::new();
             if state > 0 {
-                let format = if state == 1 { (1280, 800, 60, 20_000, 18) } else { key.format };
+                let format = if state == 1 {
+                    (1280, 800, 60, 20_000, 18)
+                } else {
+                    key.format
+                };
                 let evidence = tracker.encoder_started("libx264", format);
                 tracker.on_encoded_for(1, &evidence);
-                if state == 2 { drop(tracker.encoder_activity(evidence)); }
+                if state == 2 {
+                    drop(tracker.encoder_activity(evidence));
+                }
             }
             let started = tokio::time::Instant::now();
             assert_eq!(capture_ready(&tracker, &key).await, state == 3);
-            assert_eq!(started.elapsed(), if state == 3 { Duration::ZERO } else { Duration::from_secs(15) });
+            assert_eq!(
+                started.elapsed(),
+                if state == 3 {
+                    Duration::ZERO
+                } else {
+                    Duration::from_secs(15)
+                }
+            );
         }
     }
 

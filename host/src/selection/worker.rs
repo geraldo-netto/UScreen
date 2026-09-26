@@ -231,7 +231,13 @@ fn publish_choice(
             verified: false,
             decoder: decoder.clone(),
         });
-        tracing::info!(encoder, workers, ?decoder, reason, "Automatic encoder selection");
+        tracing::info!(
+            encoder,
+            workers,
+            ?decoder,
+            reason,
+            "Automatic encoder selection"
+        );
         true
     })
 }
@@ -247,7 +253,13 @@ async fn rendered(
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
-            if matches_evidence(latency.encoder_evidence().filter(|e| e.workers == workers), key, name, previous, decoder) {
+            if matches_evidence(
+                latency.encoder_evidence().filter(|e| e.workers == workers),
+                key,
+                name,
+                previous,
+                decoder,
+            ) {
                 return true;
             }
             if updates.changed().await.is_err() {
@@ -300,16 +312,21 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
         for workers in probe_budgets(base, snapshot, encoder.name) {
             let mut config = probe_config(base, snapshot, encoder.name);
             config.selected_workers = workers;
-            let Ok(result) = tokio::time::timeout_at(deadline, probe::measure(&config)).await else {
+            let Ok(result) = tokio::time::timeout_at(deadline, probe::measure(&config)).await
+            else {
                 break 'probes;
             };
             match result {
                 Ok(measurement) => {
-                    if let Some(candidate) = compatible_candidate(snapshot, measurement, base.ten_bit) {
+                    if let Some(candidate) =
+                        compatible_candidate(snapshot, measurement, base.ten_bit)
+                    {
                         candidates.push(candidate);
                     }
                 }
-                Err(error) => tracing::info!(encoder = encoder.name, workers, %error, "Automatic encoder probe rejected candidate"),
+                Err(error) => {
+                    tracing::info!(encoder = encoder.name, workers, %error, "Automatic encoder probe rejected candidate")
+                }
             }
         }
     }
@@ -320,7 +337,9 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
 fn probe_budgets(base: &CaptureConfig, settings: &EncoderSettings, name: &str) -> Vec<u32> {
     let requested = if settings.decoders.as_ref().is_some_and(|d| d.protocol == 2) {
         base.encoder_workers
-    } else { base.encoder_workers.max(1) };
+    } else {
+        base.encoder_workers.max(1)
+    };
     blent_config::encoder_workers::candidates(name, requested)
 }
 
