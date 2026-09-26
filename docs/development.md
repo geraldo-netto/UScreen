@@ -72,8 +72,14 @@ The Android app:
 ```bash
 cd android
 ./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 ```
+
+`make android-install` uses the same `-r -g` flags: replace the matching-signed
+app and grant its declared runtime permissions. This currently grants Camera;
+it does not start capture. Android still controls special access, USB consent
+and signature permissions. Manual APK installation uses Android's normal
+permission prompts; revoked permissions remain subject to the app's checks.
 
 Or open `android/` in Android Studio.
 

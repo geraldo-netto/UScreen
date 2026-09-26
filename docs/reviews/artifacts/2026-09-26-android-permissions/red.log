@@ -1,0 +1,26 @@
+F
+======================================================================
+FAIL: test_t619_android_install_grants_runtime_permissions_without_starting_camera (__main__.MakeTest.test_t619_android_install_grants_runtime_permissions_without_starting_camera)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/uscreen/scripts/tests/test_make.py", line 140, in test_t619_android_install_grants_runtime_permissions_without_starting_camera
+    self.assertEqual((root / 'adb-arguments').read_text().splitlines(),
+AssertionError: Lists differ: ['install', '-r', 'android/app/build/outputs/apk/debug/app-debug.apk'] != ['install', '-r', '-g', 'android/app/build/outputs/apk/debug/app-debug.apk']
+
+First differing element 2:
+'android/app/build/outputs/apk/debug/app-debug.apk'
+'-g'
+
+Second list contains 1 additional elements.
+First extra element 3:
+'android/app/build/outputs/apk/debug/app-debug.apk'
+
+- ['install', '-r', 'android/app/build/outputs/apk/debug/app-debug.apk']
++ ['install', '-r', '-g', 'android/app/build/outputs/apk/debug/app-debug.apk']
+?                  ++++++
+ : T619: install must grant declared runtime permissions, with no launch/broadcast
+
+----------------------------------------------------------------------
+Ran 1 test in 0.003s
+
+FAILED (failures=1)

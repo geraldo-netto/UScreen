@@ -1,0 +1,8 @@
+{
+  "camera_permission_granted": true,
+  "active_camera_clients": [],
+  "installed_runtime_permissions": [
+    "android.permission.CAMERA"
+  ],
+  "method": "pm grant on existing verified signed APK; future Make/doctor installs use -r -g"
+}

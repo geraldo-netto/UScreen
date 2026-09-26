@@ -1,0 +1,27 @@
+{
+  "install": "Installed at /home/netto/.local/share/blent/appimage/Blent.AppImage\nAutostart preference is unchanged; enable it in Blent settings.",
+  "encoders": [
+    {
+      "pid": 822280,
+      "threads": 4,
+      "size": "1280x800",
+      "encoder_workers": 1
+    },
+    {
+      "pid": 822280,
+      "threads": 4,
+      "size": "1280x800",
+      "encoder_workers": 1
+    },
+    {
+      "pid": 822280,
+      "threads": 4,
+      "size": "1280x800",
+      "encoder_workers": 1
+    }
+  ],
+  "cursor": "(true, 'true')",
+  "config_unchanged": true,
+  "config_sha256": "896c60bf79cc7b99ee4ef11c00b7adce726afc54cf67d868a9299d6e76f03d56",
+  "image_sha256": "71385a129134cf0ad9d2a90c138505b1e80328c4ccf4a458f30c589d84545279"
+}

@@ -74,7 +74,7 @@ android:
 	@echo "✓ APK: android/app/build/outputs/apk/debug/app-debug.apk"
 
 android-install: android
-	$(ADB) install -r android/app/build/outputs/apk/debug/app-debug.apk
+	$(ADB) install -r -g android/app/build/outputs/apk/debug/app-debug.apk
 	@echo "✓ APK installed on device"
 
 edid:

@@ -127,6 +127,20 @@ class MakeTest(unittest.TestCase):
                                  'T261: failed make install removed working binaries')
             self.assertEqual(list(installed.glob('.blent-*')), [])
 
+    def test_t619_android_install_grants_runtime_permissions_without_starting_camera(self):
+        with tempfile.TemporaryDirectory(prefix='blent-android-install-') as tmp:
+            root = Path(tmp)
+            (root / 'Makefile').write_text((REPO / 'Makefile').read_text())
+            adb = root / 'adb'
+            adb.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > adb-arguments\n')
+            adb.chmod(0o755)
+            result = subprocess.run(['make', '-o', 'android', 'android-install', 'ADB=./adb'],
+                                    cwd=root, env=self.make_environment(), capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((root / 'adb-arguments').read_text().splitlines(),
+                             ['install', '-r', '-g', 'android/app/build/outputs/apk/debug/app-debug.apk'],
+                             'T619: install must grant declared runtime permissions, with no launch/broadcast')
+
     def test_t220_parallel_build_passes_open_jobserver(self):
         result = self.run_build()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

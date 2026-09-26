@@ -570,7 +570,7 @@ async fn check_tablet_session(
                 "io.github.geraldo_netto.blent not installed",
             );
             r.hint(&format!(
-                "download blent.apk from {} then: adb -s {} install -r blent.apk",
+                "download blent.apk from {} then: adb -s {} install -r -g blent.apk",
                 crate::update::RELEASES_PAGE,
                 session.serial
             ));
