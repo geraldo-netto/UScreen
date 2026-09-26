@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #include "conversion.h"
 #include "frame_exchange.h"
+#include "conversion_exchange.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -49,14 +50,15 @@ static void mark_work(struct lane *lane) {
 
 static void convert(struct lane *lane) {
     frame_exchange_t *f = &lane->frames;
-    conv_job_t frame = {lane->source, f->fill, f->fill + f->width * f->height,
-        lane->width, lane->height, lane->stride, f->width, f->height, lane->scale,
-        0, f->chroma_rows, f->dirty_fill, NULL};
+    conv_job_t frame = {.src=lane->source, .ydst=f->fill, .uvdst=f->fill + f->width * f->height,
+        .w=lane->width, .h=lane->height, .stride=lane->width * 4,
+        .ow=f->width, .oh=f->height, .scale=lane->scale,
+        .cy0=0, .cy1=f->chroma_rows, .dirty=f->dirty_fill};
     conv_pool_convert(&lane->pool, &frame);
 }
 
 static void rotate(struct lane *lane) {
-    frame_exchange_publish(&lane->frames, 0);
+    replay_publish(&lane->frames);
     atomic_int running = 1;
     frame_lease_t lease;
     assert(frame_exchange_claim(&lane->frames, &lane->cursor, &running, &(struct timespec){0}, &lease) == 1);

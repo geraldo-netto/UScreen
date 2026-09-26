@@ -10,21 +10,18 @@ import platform
 import subprocess
 import tempfile
 
+from conversion_sources import build_flags, copy_sources
+
 ROOT = Path(__file__).resolve().parents[2]
-MODULES = ['conversion.c', 'conversion.h', 'frame_exchange.c', 'frame_exchange.h']
 DAMAGE = ['empty', 'sparse', 'overlap', 'full']
 
 
 def build(folder, reference, scalar=False):
     folder.mkdir()
-    sources = {}
-    for name in MODULES:
-        rel = 'host/evdi/' + name
-        data = subprocess.check_output(['git', 'show', f'{reference}:{rel}'], cwd=ROOT) if reference else (ROOT / rel).read_bytes()
-        (folder / name).write_bytes(data)
-        sources[rel] = hashlib.sha256(data).hexdigest()
+    sources = copy_sources(ROOT, folder, reference)
     binary = folder / 'conversion'
     extra = ['-fno-tree-vectorize', '-fno-tree-slp-vectorize'] if scalar else []
+    extra += build_flags(folder)
     if 'last_jobs' in (folder / 'conversion.h').read_text():
         extra.append('-DBLENT_ADAPTIVE_POOL')
     subprocess.run(['cc', *extra, '-std=c11', '-O3', '-Wall', '-Wextra', '-Werror', '-pthread', '-I', str(folder),

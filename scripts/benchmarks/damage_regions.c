@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #include "conversion.h"
 #include "frame_exchange.h"
+#include "conversion_exchange.h"
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -38,7 +39,7 @@ static void convert(struct replay *r) {
 }
 
 static void rotate(struct replay *r) {
-    frame_exchange_publish(&r->frames, 0);
+    replay_publish(&r->frames);
     atomic_int running = 1;
     frame_lease_t lease;
     assert(frame_exchange_claim(&r->frames, &r->cursor, &running, &(struct timespec){0}, &lease) == 1);

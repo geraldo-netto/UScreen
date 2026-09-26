@@ -7,19 +7,19 @@ from pathlib import Path
 import platform
 import subprocess
 
+from conversion_sources import build_flags, copy_sources
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def build(directory, baseline):
     old = directory / 'baseline'
     old.mkdir()
-    for name in ['conversion.c', 'conversion.h', 'frame_exchange.c', 'frame_exchange.h']:
-        content = subprocess.check_output(['git', 'show', f'{baseline}:host/evdi/{name}'], cwd=ROOT)
-        (old / name).write_bytes(content)
+    copy_sources(ROOT, old, baseline)
     variants = [('row', old, ['-DROW_BASELINE']), ('span', ROOT / 'host/evdi', [])]
     for variant, sources, flags in variants:
         subprocess.run(['cc', '-std=c11', '-O3', '-pthread', '-Wall', '-Wextra', '-Werror',
-                        *flags, '-I', str(sources), str(ROOT / 'scripts/benchmarks/damage_regions.c'),
+                        *flags, *build_flags(sources), '-I', str(sources), str(ROOT / 'scripts/benchmarks/damage_regions.c'),
                         str(sources / 'conversion.c'), str(sources / 'frame_exchange.c'),
                         '-o', str(directory / variant)], check=True)
 
