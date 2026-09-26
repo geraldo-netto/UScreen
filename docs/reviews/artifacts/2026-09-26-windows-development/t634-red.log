@@ -1,0 +1,44 @@
+2026-09-26T18:23:36.1918036Z ^[[1m^[[92m     Running^[[0m tests\windows_platform.rs (target\debug\deps\windows_platform-c82989a485b28dc8.exe)
+2026-09-26T18:23:36.2020336Z 
+2026-09-26T18:23:36.2020705Z running 12 tests
+2026-09-26T18:23:39.2351544Z test t493_async_cancel_retires_descendants ... ok
+2026-09-26T18:23:43.2552542Z test t493_async_timeout_retires_descendants ... ok
+2026-09-26T18:23:43.2554761Z test t493_child ... ok
+2026-09-26T18:23:43.2583929Z test t493_owned_process_checks_identity_before_retirement ... ok
+2026-09-26T18:23:43.2640831Z test t493_runtime_directory_is_private_and_pinned ... FAILED
+2026-09-26T18:23:43.2879270Z test t493_runtime_lease_rejects_second_owner_and_corrupt_records ... ok
+2026-09-26T18:23:43.2897712Z test t493_runtime_rejects_relative_files_and_inherited_permissions ... ok
+2026-09-26T18:23:47.3019925Z test t493_sync_timeout_retires_descendants ... ok
+2026-09-26T18:23:47.3139274Z test t493_windows_config_does_not_depend_on_unix_environment ... ok
+2026-09-26T18:23:47.3300845Z test t493_windows_store_round_trips_unicode_and_spaces ... ok
+2026-09-26T18:23:47.3314801Z test t634_directory_rejects_an_existing_delete_handle ... FAILED
+2026-09-26T18:23:47.3328377Z test t634_directory_removal_waits_for_the_last_owner ... FAILED
+2026-09-26T18:23:47.3329056Z 
+2026-09-26T18:23:47.3329197Z failures:
+2026-09-26T18:23:47.3329360Z 
+2026-09-26T18:23:47.3329620Z ---- t493_runtime_directory_is_private_and_pinned stdout ----
+2026-09-26T18:23:47.3330024Z 
+2026-09-26T18:23:47.3330557Z thread 't493_runtime_directory_is_private_and_pinned' (7772) panicked at common\tests\windows_platform.rs:135:5:
+2026-09-26T18:23:47.3331607Z assertion failed: std::fs::rename(&path, root.path().join("moved")).is_err()
+2026-09-26T18:23:47.3332458Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-09-26T18:23:47.3333030Z 
+2026-09-26T18:23:47.3333294Z ---- t634_directory_rejects_an_existing_delete_handle stdout ----
+2026-09-26T18:23:47.3333751Z 
+2026-09-26T18:23:47.3334352Z thread 't634_directory_rejects_an_existing_delete_handle' (2824) panicked at common\tests\windows_platform.rs:176:5:
+2026-09-26T18:23:47.3335308Z T634: accepted a conflicting delete owner
+2026-09-26T18:23:47.3335625Z 
+2026-09-26T18:23:47.3335891Z ---- t634_directory_removal_waits_for_the_last_owner stdout ----
+2026-09-26T18:23:47.3336317Z 
+2026-09-26T18:23:47.3336850Z thread 't634_directory_removal_waits_for_the_last_owner' (5872) panicked at common\tests\windows_platform.rs:148:5:
+2026-09-26T18:23:47.3337688Z T634: active directory was removed
+2026-09-26T18:23:47.3337967Z 
+2026-09-26T18:23:47.3337973Z 
+2026-09-26T18:23:47.3338078Z failures:
+2026-09-26T18:23:47.3338406Z     t493_runtime_directory_is_private_and_pinned
+2026-09-26T18:23:47.3338946Z     t634_directory_rejects_an_existing_delete_handle
+2026-09-26T18:23:47.3339751Z     t634_directory_removal_waits_for_the_last_owner
+2026-09-26T18:23:47.3340119Z 
+2026-09-26T18:23:47.3340579Z test result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.13s
+2026-09-26T18:23:47.3341220Z 
+2026-09-26T18:23:47.3347881Z ^[[1m^[[91merror^[[0m: test failed, to rerun pass `-p blent-config --test windows_platform`
+2026-09-26T18:23:47.4289221Z ##[error]Process completed with exit code 1.

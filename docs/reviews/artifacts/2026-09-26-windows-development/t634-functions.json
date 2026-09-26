@@ -1,0 +1,45 @@
+{
+  "run": "https://github.com/geraldo-netto/UScreen/actions/runs/36263320613",
+  "revision": "47efa7a682f2a53b72aa65faa33498e8a1d7cb88",
+  "platform": "Windows Server 2022 x64, native MSVC",
+  "sources": {
+    "common/src/windows/private.rs": "f934423535fc20d2e85ba3f550b6289268e694f9afe4671c7fc2a494b58cbe71"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "create",
+      "line": 26,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "path",
+      "line": 60,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "open_directory",
+      "line": 65,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}
