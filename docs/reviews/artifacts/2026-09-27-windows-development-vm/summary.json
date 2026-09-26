@@ -1,0 +1,40 @@
+{
+  "collected_utc": "2026-09-26T23:27:44.307315+00:00",
+  "source_revision": "9330d93a295cbe348c253f82caf105a16333775f",
+  "portable_tests": {
+    "passed": 47,
+    "exit_code": 0
+  },
+  "workspace_tests": {
+    "passed": 221,
+    "exit_code": 0
+  },
+  "all_features_build_exit_code": 0,
+  "ordinary_user_lifecycle": {
+    "passed": 7,
+    "exit_code": 0,
+    "administrator": false
+  },
+  "native_acceptance": {
+    "xbox_policy": "Denied",
+    "secure_boot": true,
+    "search_disabled": true,
+    "architecture": "64-bit",
+    "build": "26200",
+    "elevation_policy_verified": true,
+    "clock_offset_seconds": -1,
+    "shell_policy": "Allowed",
+    "tpm_ready": true,
+    "checked_utc": "2026-09-26T23:25:11.0334096Z",
+    "tpm_present": true,
+    "os": "Microsoft Windows 11 Enterprise Evaluation",
+    "autologon_enabled": true
+  },
+  "activation": {
+    "hresult": "0x800704EC",
+    "process_id": 0,
+    "applocker_event": 8022
+  },
+  "vm_retained": true,
+  "physical_gpu_usb_tablet_acceptance": false
+}

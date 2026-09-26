@@ -31,6 +31,11 @@ jobs:
           $binary = Get-ChildItem $destination -Recurse -Filter ffmpeg.exe
           if (@($binary).Count -ne 1) { throw 'Expected one FFmpeg executable' }
           $binary.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Check development VM registry and native package policies (T633)
+        shell: powershell
+        run: |
+          ./scripts/tests/windows_vm_policy.ps1
+          ./scripts/tests/windows_vm_tools.ps1
       - name: Test portable policy without platform features
         run: cargo test --locked -p blent-config --no-default-features
       - name: T631 reject the Linux camera probe on Windows

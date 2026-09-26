@@ -5,7 +5,8 @@ Rust applications, Android main app, C EVDI helper and essential installation,
 EVDI setup and packaging scripts. Each function/method must independently reach
 80% executable-line coverage. Aggregate percentages cannot satisfy that rule.
 
-The source-matched combined gate passes **2,230 of 2,230 functions/methods**:
+The archived source-matched **local** combined gate passed
+**2,230 of 2,230 functions/methods**:
 
 | Scope | Functions meeting ≥80% |
 | --- | ---: |
@@ -15,13 +16,22 @@ The source-matched combined gate passes **2,230 of 2,230 functions/methods**:
 | Essential Python | 61 |
 | Essential shell | 60 |
 
-Linux Rust independently passes 1,283 functions. All 80 Windows-specific
+The local Linux Rust measurement passed 1,283 functions. All 80 Windows-specific
 production functions pass native coverage, with a minimum of 80%.
 [Native run 36271915764](https://github.com/geraldo-netto/UScreen/actions/runs/36271915764)
 collected revision `f5cb33cea4e198b025bb0a3a1aa5fbb0dcf42cee` on Windows Server 2022;
 its application source fingerprints match the T524 implementation. Windows 11
 VM acceptance is tracked separately under T633. Historical measurements do not
 substitute for current source fingerprints.
+
+The subsequent [CI run 36276441908, attempt 2](https://github.com/geraldo-netto/UScreen/actions/runs/36276441908/attempts/2)
+at `9330d93` passed both Linux Rust test configurations but failed the Linux
+coverage gate: `evdi_cards` measured 12/25 lines (48%) and `evdi_connectors`
+17/30 (56.67%) in `host/src/vdisplay.rs`. T645 tracks deterministic sysfs coverage
+on runners without host EVDI devices. Android and native Windows gates passed;
+the combined CI gate was skipped. The archived local result is not evidence of
+a passing remote gate. T644's earlier Xvfb startup failure did not recur in this
+attempt, but its cause remains unresolved.
 
 ## Collection and permanent contracts
 

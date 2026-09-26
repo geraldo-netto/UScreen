@@ -1,0 +1,9 @@
+{
+  "scripts/dev/windows-vm/minimal.ps1": "cf97114cc60e7fb92c2890876a7d773a89a640958415b7143ddc50b28d22864e",
+  "scripts/dev/windows-vm/guest_status.py": "0b5e58913b8cbddf2abc0978638edeef0f65adce030c7e59b51361c21366308c",
+  "scripts/dev/windows-vm/run-native.ps1": "0cdcaca98e3556a4f2d6a7cbf468452336bbc3397386fda4db002992983f03e7",
+  "scripts/tests/windows_vm_policy.ps1": "74846bded32919d167032ea5bbbd6c0d6bc61f5b02cce925196fbe3c0deaaabb",
+  "scripts/tests/windows_vm_tools.ps1": "10375dd0a741b3221579750d84d16fbedcd16da9ef8c7b8666e5321f3d6ebfbb",
+  "scripts/tests/test_windows_vm_status.py": "68013183b6fe433bafc3cdf28b3be486a18aeb684f8f3d59ddf896480b647d84",
+  "scripts/tests/windows_vm_acceptance.ps1": "bd56ae22d2c0381c2bb3d76b7efff377ccb25fedb8287d77ef4131030ad2f854"
+}

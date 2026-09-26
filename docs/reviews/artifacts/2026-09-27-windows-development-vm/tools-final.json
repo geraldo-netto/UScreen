@@ -1,0 +1,5 @@
+{
+  "exitcode": 0,
+  "out": "{\r\n    \"display_version\":  \"25H2\",\r\n    \"revision\":  \"9330d93a295cbe348c253f82caf105a16333775f\",\r\n    \"build_tools\":  \"17.14.37710.0\",\r\n    \"sdk\":  [\r\n                \"10.0.26100.0\"\r\n            ],\r\n    \"cargo\":  \"cargo 1.98.1 (797e8a9bc 2026-08-05)\",\r\n    \"git\":  \"git version 2.55.0.windows.5\",\r\n    \"rust\":  \"rustc 1.98.1 (48a229cea 2026-09-01)\",\r\n    \"ffmpeg\":  \"ffmpeg version 8.1.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers\"\r\n}\r\n",
+  "err": ""
+}

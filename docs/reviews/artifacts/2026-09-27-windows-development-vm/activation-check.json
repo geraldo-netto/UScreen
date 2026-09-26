@@ -1,0 +1,11 @@
+{
+  "process": 0,
+  "result_hex": "0x800704EC",
+  "started": "2026-09-26T23:12:53.0017788+02:00",
+  "completed": "2026-09-26T23:12:53.2886902+02:00",
+  "result": -2147023636,
+  "application": "Microsoft.XboxGameCallableUI_cw5n1h2txyewy!Microsoft.XboxGameCallableUI",
+  "search_taskbar": 2,
+  "administrator": false,
+  "user": "BLENT-WIN11\\blentdev"
+}

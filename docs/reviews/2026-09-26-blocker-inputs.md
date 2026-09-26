@@ -32,20 +32,19 @@ at `44b939e` passed the full native workspace suite and MSVC/GNU builds. T493's
 46 Windows foundation functions each meet the 80% executable-line threshold,
 including ACLs, leases, token privacy, junction rejection and child retirement.
 T583 scheduling and owned-child propagation/denial acceptance also passed.
-This CI uses Windows Server 2022; Windows 11 VM repetition remains T633.
+This CI uses Windows Server 2022. The retained Windows 11 VM now also passes
+native portable/workspace tests, the all-features build and ordinary-user
+lifecycle acceptance. [T633's final environment and evidence](2026-09-26-windows-development-vm.md)
+cover TPM/Secure Boot, consumer-app removal, actual Xbox activation denial,
+Search/indexing, the corrected clock and automatic login enabled at the
+maintainer's request.
 
-KVM, UEFI and TPM emulator startup passed. As of 19:30 UTC, the official ISO was
-still downloading (about 4.1 of 6.6 GiB physically written), so Windows and the
-minimal package policies were **not yet installed/validated**. T633 tracks
-completion. Retain the VM, disk, firmware/TPM state and setup files after testing,
-as requested. The guest bootstrap runs portable tests, full native workspace
-tests and an all-features build before reporting readiness. The active user
-service `blent-windows-vm.service` waits for the download, verifies Microsoft’s
-SHA-256 and starts unattended installation once. Its private setup scripts and
-status live outside the repository; a repeated installation is refused. Open
-**Blent Windows 11 Dev** from the Linux application menu and inspect
-`~/.local/share/blent-dev/windows-vm/provision-status.json`. The setup service
-does not enable Blent display/input/camera sharing.
+The VM, disk, firmware/TPM state and private setup remain retained. The user
+service `blent-windows-vm.service` starts the existing disk; its installation
+marker refuses a repeated installation. Open **Blent Windows 11 Dev** from the
+Linux application menu, or inspect
+`~/.local/share/blent-dev/windows-vm/provision-status.json`. This development
+service does not enable Blent display/input/camera sharing.
 
 ## Input map
 
@@ -54,13 +53,13 @@ does not enable Blent display/input/camera sharing.
 | T628 | Resolved; nothing needed. | Primary/backup metadata corrected and matching certificate verified; key material preserved. |
 | T621 | Devices are now provisioned with the correct names and exclusive capabilities. Permit a fresh short camera test; the earlier 30-second authorization was used. | Actual webcam-consumer frames, blank retirement and reconnect; decoder timing alone is insufficient. |
 | T578 | Choose a separate graphics-stack test window or prioritize an explicit linear/exportable-surface implementation. | Current X server exposes DRI3 1.0; cross-GPU implicit import is corrupt. A validated explicit-layout path is needed before removing the fallback guard. A Windows VM does not solve this Linux graphics limitation. |
-| T583 | Resolved; nothing needed. | Native priority, child propagation and denied-handle checks pass, with 100% affected-function coverage. Win11 repetition remains T633; no macOS work required. |
+| T583 | Resolved; nothing needed. | Native priority, child propagation and denied-handle checks pass, with 100% affected-function coverage. Windows 11 native acceptance also passed under T633; no macOS work required. |
 | T561 | A short normal sharing/trace window with the tablet available. No forced lock or special EVDI detach is needed. | Correlate capture/encode/transport sequence timing to establish the historical omission cause before changing pacing. |
 | T549 | Timestamp and preceding action if the lock recurs, or a coordinated reproduction window when you can manually unlock. | Correlate power/activity/keyguard records; the historical caller is unknown. Do not force-lock the live session to create evidence. |
 | T564 | Access to compatible NVIDIA NVENC and/or VP9/AV1 VAAPI encoding hardware/drivers. | Bounded tests using the bundled FFmpeg. The current GPU/software VM does not supply these missing encoder capabilities. |
 | T540 | Be present to unplug/replug the physical USB cable during an explicitly authorized camera test. | Release, inactive black output and explicit selection after reconnect. Combine with T621 once devices exist. |
 | T538 | Exact hub and charger models, and which device/cable connects to each port; then a stable test below full battery. | Establish a working data/power arrangement and sustained net charging. Advertised current and brief near-full samples do not prove it. |
-| T493, T497 | Resolved; nothing needed. | Native foundation and host/GUI lifecycle acceptance pass. Current combined gate passes all 2,230 maintained functions/methods across the accepted scopes; see the current coverage report. |
+| T493, T497 | Resolved; nothing needed. | Native foundation and host/GUI lifecycle acceptance pass. The archived local combined gate passed all 2,230 maintained functions/methods. Remote Linux reproducibility remains open under T645; see the coverage report. |
 | T520 | **Answered: Windows 11 x64 first.** | Resolved and removed from TODO; target encoded in the support/build plan. |
 | T522 | A Windows PC/tester with the existing tablet, Windows build/GPU details and a USB test window; administrator access only for the chosen driver installation. | Physical GPU/display/input, lock/sleep/reconnect and cleanup acceptance. A basic VM covers isolated contracts, not this complete result. |
 | T524 | Resolved; nothing needed. | Native start/stop/restart/status, single-instance ownership and cleanup acceptance pass. Capture/input remain unsupported. |

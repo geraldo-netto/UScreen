@@ -1,0 +1,16 @@
+E
+======================================================================
+ERROR: test_t633_lost_open_reply_cannot_block_guest_status_writer (test_windows_vm_status.StatusTests.test_t633_lost_open_reply_cannot_block_guest_status_writer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_windows_vm_status.py", line 34, in test_t633_lost_open_reply_cannot_block_guest_status_writer
+    self.assertEqual(agent.write_status(), 'written')
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/backups/disk2/projects/blent/scripts/tests/test_windows_vm_status.py", line 25, in write_status
+    raise PermissionError('status file remains open in QGA')
+PermissionError: status file remains open in QGA
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (errors=1)
