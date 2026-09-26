@@ -1,6 +1,6 @@
 // T604: Cinnamon hides the mouse on touchscreen addition/use. Keep it visible
 // only while this Blent touchscreen exists; device removal retires every hook.
-(function (name) {
+(function (name, allowExisting) {
     const {Clutter, GLib, Meta} = imports.gi;
     const seat = Clutter.get_default_backend().get_default_seat();
     const tracker = Meta.CursorTracker.get_for_display(global.display);
@@ -33,6 +33,8 @@
         cleanup();
         return GLib.SOURCE_REMOVE;
     });
-    seat.list_devices().forEach(adopt);
+    // Creation must wait for its new device; an old same-name device may retire.
+    // Existing-device adoption is only for explicit live recovery.
+    if (allowExisting) seat.list_devices().forEach(adopt);
     return true;
-})(__BLENT_DEVICE__)
+})(__BLENT_DEVICE__, __BLENT_EXISTING__)

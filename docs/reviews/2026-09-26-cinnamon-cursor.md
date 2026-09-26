@@ -50,3 +50,23 @@ Curated [evidence](artifacts/2026-09-26-followup/t604/) includes the red/green
 logs, function coverage, native checks and hashes. Private source snapshots,
 coverage data, build logs, previous/new AppImages and deployment recipe are
 saved under `~/.local/share/blent/profiles/2026-09-26-followup/t604/`.
+
+## T610: delayed removal during reconnect
+
+Review found a second ordering case: Cinnamon can still list the retiring
+same-name touchscreen when preparation for its replacement runs. Adopting that
+old object can retire the new policy on the old removal notification.
+
+Production preparation now waits for a newly added device. Existing-device
+adoption remains an explicit live-recovery mode of the script, never selected
+by the creation path. Two permanent cases reproduce old removal both before
+and after replacement addition; they fail against T604 and pass after T610.
+All original lifecycle and live-recovery regressions remain intact.
+
+All 70 input tests pass again; the four Rust policy functions retain 100%
+executable-line coverage. The complexity check reports 5,739 functions and no
+score above nine. The updated release/AppImage was deployed; two native starts
+adopted the new touchscreen and immediately repaired hide attempts. Configuration
+bytes remain unchanged. [T610 evidence](artifacts/2026-09-26-followup/t610/)
+retains red/green output, coverage, native results and build identity; complete
+build/source/package evidence is in the matching private profile directory.

@@ -22,7 +22,11 @@ fn t604_policy_is_scoped_to_enabled_cinnamon_x11_touch() {
     ] {
         let rendered = script(name);
         assert!(!rendered.contains("__BLENT_DEVICE__"));
-        assert!(rendered.ends_with(&format!(")({})\n", serde_json::to_string(name).unwrap())));
+        assert!(!rendered.contains("__BLENT_EXISTING__"));
+        assert!(rendered.ends_with(&format!(
+            ")({}, false)\n",
+            serde_json::to_string(name).unwrap()
+        )));
     }
 }
 

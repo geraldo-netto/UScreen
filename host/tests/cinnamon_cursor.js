@@ -13,7 +13,7 @@ class Signals {
         }
     }
 }
-function fixture(visible = true, existing = []) {
+function fixture(visible = true, existing = [], allowExisting = true) {
     const tracker = new Signals(); tracker.visible = visible; tracker.writes = 0;
     tracker.get_pointer_visible = () => tracker.visible;
     tracker.set_pointer_visible = value => {
@@ -28,7 +28,7 @@ function fixture(visible = true, existing = []) {
     const context = { imports: { gi: { GLib, Clutter: { InputDeviceType: { TOUCHSCREEN_DEVICE: 2 },
         get_default_backend: () => ({ get_default_seat: () => seat }) },
         Meta: { CursorTracker: { get_for_display: () => tracker } } } }, global: { display: {} } };
-    assert.equal(vm.runInNewContext(source.replace('__BLENT_DEVICE__', JSON.stringify('Blent Touch')), context), true);
+    assert.equal(vm.runInNewContext(source.replace('__BLENT_DEVICE__', JSON.stringify('Blent Touch')).replace('__BLENT_EXISTING__', String(allowExisting)), context), true);
     return { tracker, seat, timers, context };
 }
 function device(name = 'Blent Touch', type = 2) { return { get_device_name: () => name, get_device_type: () => type }; }
@@ -54,10 +54,22 @@ for (const foreign of [device('Other Touch'), device('Blent Touch', 1)]) {
 }
 // Multiple tablets remain independent when one retires.
 const f = fixture(); const first = device(); const second = device('Blent Touch 2');
-assert.equal(vm.runInNewContext(source.replace('__BLENT_DEVICE__', JSON.stringify('Blent Touch 2')), f.context), true);
+assert.equal(vm.runInNewContext(source.replace('__BLENT_DEVICE__', JSON.stringify('Blent Touch 2')).replace('__BLENT_EXISTING__', 'true'), f.context), true);
 add(f, first); add(f, second); assert.equal(f.tracker.visible, true);
 f.seat.emit('device-removed', first);
 f.tracker.set_pointer_visible(false); assert.equal(f.tracker.visible, true);
 f.seat.emit('device-removed', second); clean(f);
 assert(f.tracker.writes < 10, 'visibility callback recursively spins');
 console.log('T604 cursor lifecycle scenarios passed');
+
+// T610: creation must ignore a retiring same-name device in Cinnamon's snapshot.
+for (const removeFirst of [true, false]) {
+    const old = device(); const next = device();
+    const pending = fixture(true, [old], false);
+    if (removeFirst) pending.seat.emit('device-removed', old);
+    add(pending, next);
+    if (!removeFirst) pending.seat.emit('device-removed', old);
+    pending.tracker.set_pointer_visible(false);
+    assert.equal(pending.tracker.visible, true, 'T610: stale device retired replacement policy');
+    pending.seat.emit('device-removed', next); clean(pending);
+}
