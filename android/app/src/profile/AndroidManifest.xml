@@ -3,5 +3,7 @@
         <profileable android:shell="true" />
         <activity android:name=".AllocationProfileActivity" android:exported="true"
             android:permission="android.permission.DUMP" android:excludeFromRecents="true" />
+        <activity android:name=".CameraChunkProfileActivity" android:exported="true"
+            android:permission="android.permission.DUMP" android:excludeFromRecents="true" />
     </application>
 </manifest>

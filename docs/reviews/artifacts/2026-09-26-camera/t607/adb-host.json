@@ -1,0 +1,286 @@
+{
+  "rows": [
+    {
+      "chunk": 8192,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1548897152,
+      "cpu_ns": 26911544
+    },
+    {
+      "chunk": 12288,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1360490299,
+      "cpu_ns": 21033834
+    },
+    {
+      "chunk": 16384,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1406187750,
+      "cpu_ns": 20640553
+    },
+    {
+      "chunk": 32768,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1438669263,
+      "cpu_ns": 20213836
+    },
+    {
+      "chunk": 65536,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1389703791,
+      "cpu_ns": 20450366
+    },
+    {
+      "chunk": 12288,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1420584330,
+      "cpu_ns": 20805262
+    },
+    {
+      "chunk": 16384,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1451172393,
+      "cpu_ns": 20454571
+    },
+    {
+      "chunk": 32768,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1455677401,
+      "cpu_ns": 22380598
+    },
+    {
+      "chunk": 65536,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1417348993,
+      "cpu_ns": 21459140
+    },
+    {
+      "chunk": 8192,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1316699140,
+      "cpu_ns": 19176894
+    },
+    {
+      "chunk": 16384,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1410329121,
+      "cpu_ns": 20590218
+    },
+    {
+      "chunk": 32768,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1428051327,
+      "cpu_ns": 21237913
+    },
+    {
+      "chunk": 65536,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1409398133,
+      "cpu_ns": 22010997
+    },
+    {
+      "chunk": 8192,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1361211510,
+      "cpu_ns": 20409284
+    },
+    {
+      "chunk": 12288,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1430737168,
+      "cpu_ns": 21263890
+    },
+    {
+      "chunk": 32768,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1447458523,
+      "cpu_ns": 19205568
+    },
+    {
+      "chunk": 65536,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1428600947,
+      "cpu_ns": 20699862
+    },
+    {
+      "chunk": 8192,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1426596982,
+      "cpu_ns": 19872665
+    },
+    {
+      "chunk": 12288,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1436887688,
+      "cpu_ns": 20090790
+    },
+    {
+      "chunk": 16384,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1425322687,
+      "cpu_ns": 20948264
+    },
+    {
+      "chunk": 65536,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1433009848,
+      "cpu_ns": 19738891
+    },
+    {
+      "chunk": 8192,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1418651556,
+      "cpu_ns": 20980737
+    },
+    {
+      "chunk": 12288,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1438596902,
+      "cpu_ns": 22019309
+    },
+    {
+      "chunk": 16384,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1411367243,
+      "cpu_ns": 21661852
+    },
+    {
+      "chunk": 32768,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1440906767,
+      "cpu_ns": 21779977
+    },
+    {
+      "chunk": 8192,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1338794653,
+      "cpu_ns": 21147665
+    },
+    {
+      "chunk": 12288,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1401343402,
+      "cpu_ns": 21583121
+    },
+    {
+      "chunk": 16384,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1473731171,
+      "cpu_ns": 21830930
+    },
+    {
+      "chunk": 32768,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1398850522,
+      "cpu_ns": 21794342
+    },
+    {
+      "chunk": 65536,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1438360443,
+      "cpu_ns": 20412684
+    },
+    {
+      "chunk": 12288,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1478882351,
+      "cpu_ns": 19725370
+    },
+    {
+      "chunk": 16384,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1387019047,
+      "cpu_ns": 21966290
+    },
+    {
+      "chunk": 32768,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1461427534,
+      "cpu_ns": 21304848
+    },
+    {
+      "chunk": 65536,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1375078622,
+      "cpu_ns": 20503857
+    },
+    {
+      "chunk": 8192,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1440364475,
+      "cpu_ns": 20172783
+    },
+    {
+      "chunk": 16384,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1400215381,
+      "cpu_ns": 19943662
+    },
+    {
+      "chunk": 32768,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1380052067,
+      "cpu_ns": 20573226
+    },
+    {
+      "chunk": 65536,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1380061045,
+      "cpu_ns": 20890338
+    },
+    {
+      "chunk": 8192,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1402523938,
+      "cpu_ns": 20688195
+    },
+    {
+      "chunk": 12288,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1396654934,
+      "cpu_ns": 20125596
+    }
+  ],
+  "max_rss_kib": 21136,
+  "fixture_sha256": "1b87e586af1c914369decc57cd5d1dfbc08da2c0a7d253e12779cbf1048fb07f"
+}

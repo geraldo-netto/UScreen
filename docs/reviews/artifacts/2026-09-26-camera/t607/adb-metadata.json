@@ -1,0 +1,8 @@
+{
+  "traced": false,
+  "sources": {
+    "android/app/src/main/java/com/blent/CameraWire.kt": "69a1e86e6b4401a69562ee4bfda0f00a9bb814ce5c948c34a00c0c8cc298e9a1",
+    "scripts/benchmarks/android-allocations/CameraChunkProfileActivity.kt": "904f3424a1b07dead21630df7ffffc2d8d08f4e3633b7516de660244daa5f4cf"
+  },
+  "apk_sha256": "f71b93837e84ba6b77bdaebb9b55330dfea62c82bcea19c83b15ccf40114fe98"
+}

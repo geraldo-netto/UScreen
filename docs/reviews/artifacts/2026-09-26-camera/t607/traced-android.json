@@ -1,0 +1,326 @@
+{
+  "source": "144a4d304f3be0d01d630de9c467129b440c99b402a29101d964c86b9a009209:profile",
+  "rows": [
+    {
+      "chunk": 8192,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1603909306,
+      "cpu_ns": 1083374747,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 194.34779686975642
+    },
+    {
+      "chunk": 16384,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1343591423,
+      "cpu_ns": 472139554,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 232.0022550486317
+    },
+    {
+      "chunk": 32768,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1481676037,
+      "cpu_ns": 562802062,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 210.38083374226832
+    },
+    {
+      "chunk": 65536,
+      "trial": 0,
+      "packets": 3000,
+      "elapsed_ns": 1424270460,
+      "cpu_ns": 575810656,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 218.8602858476753
+    },
+    {
+      "chunk": 16384,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1409267999,
+      "cpu_ns": 553297868,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 221.19017832036928
+    },
+    {
+      "chunk": 32768,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1398155499,
+      "cpu_ns": 551842508,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 222.9481915444657
+    },
+    {
+      "chunk": 65536,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1253858922,
+      "cpu_ns": 403353516,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 248.6055125745638
+    },
+    {
+      "chunk": 8192,
+      "trial": 1,
+      "packets": 3000,
+      "elapsed_ns": 1355969730,
+      "cpu_ns": 420685087,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 229.88436474905674
+    },
+    {
+      "chunk": 32768,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1399673845,
+      "cpu_ns": 531349745,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 222.70634056178994
+    },
+    {
+      "chunk": 65536,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1475256884,
+      "cpu_ns": 496224769,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 211.29624500027074
+    },
+    {
+      "chunk": 8192,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1406675229,
+      "cpu_ns": 528664552,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 221.59787388990839
+    },
+    {
+      "chunk": 16384,
+      "trial": 2,
+      "packets": 3000,
+      "elapsed_ns": 1360643846,
+      "cpu_ns": 499759006,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 229.09466052882144
+    },
+    {
+      "chunk": 65536,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1439480191,
+      "cpu_ns": 526752003,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 216.5477801979701
+    },
+    {
+      "chunk": 8192,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1425342730,
+      "cpu_ns": 487446626,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 218.69563960942924
+    },
+    {
+      "chunk": 16384,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1263758461,
+      "cpu_ns": 387515592,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 246.65808350223975
+    },
+    {
+      "chunk": 32768,
+      "trial": 3,
+      "packets": 3000,
+      "elapsed_ns": 1374686691,
+      "cpu_ns": 519270985,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 226.75438850233257
+    },
+    {
+      "chunk": 8192,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1420749538,
+      "cpu_ns": 532093421,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 219.40266856521757
+    },
+    {
+      "chunk": 16384,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1395866114,
+      "cpu_ns": 539815091,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 223.3138528642583
+    },
+    {
+      "chunk": 32768,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1446075230,
+      "cpu_ns": 543694024,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 215.56018216286023
+    },
+    {
+      "chunk": 65536,
+      "trial": 4,
+      "packets": 3000,
+      "elapsed_ns": 1423689191,
+      "cpu_ns": 518437169,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 218.949642921044
+    },
+    {
+      "chunk": 16384,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1398868383,
+      "cpu_ns": 481477276,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 222.83457385139857
+    },
+    {
+      "chunk": 32768,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1391995499,
+      "cpu_ns": 407338777,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 223.9348045478127
+    },
+    {
+      "chunk": 65536,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1422831576,
+      "cpu_ns": 490111904,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 219.08161532113763
+    },
+    {
+      "chunk": 8192,
+      "trial": 5,
+      "packets": 3000,
+      "elapsed_ns": 1447962845,
+      "cpu_ns": 521179614,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 215.27917037125354
+    },
+    {
+      "chunk": 32768,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1360508076,
+      "cpu_ns": 435672066,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 229.11752270994972
+    },
+    {
+      "chunk": 65536,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1302697960,
+      "cpu_ns": 430166442,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 239.2851217791114
+    },
+    {
+      "chunk": 8192,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1412618038,
+      "cpu_ns": 497750105,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 220.66562341319897
+    },
+    {
+      "chunk": 16384,
+      "trial": 6,
+      "packets": 3000,
+      "elapsed_ns": 1405324922,
+      "cpu_ns": 538781990,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 221.81079629355636
+    },
+    {
+      "chunk": 65536,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1511125422,
+      "cpu_ns": 542369037,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 206.2808523116753
+    },
+    {
+      "chunk": 8192,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1418285191,
+      "cpu_ns": 511901927,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 219.783892533078
+    },
+    {
+      "chunk": 16384,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1399465576,
+      "cpu_ns": 533722774,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 222.739483804209
+    },
+    {
+      "chunk": 32768,
+      "trial": 7,
+      "packets": 3000,
+      "elapsed_ns": 1442018460,
+      "cpu_ns": 508012876,
+      "wire_bytes": 38964530,
+      "acknowledged_packets": 3000,
+      "mbps": 216.16660857448386
+    }
+  ],
+  "scope": "encoded H264 payloads, maximum-throughput TCP/ADB replay, sensor off"
+}
