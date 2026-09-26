@@ -1,0 +1,542 @@
+[
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "min_ms": 7.501585,
+      "mean_ms": 33.52406159776536,
+      "p50_ms": 33.356442,
+      "p95_ms": 35.099897,
+      "max_ms": 59.136443
+    },
+    "source_to_capture": {
+      "min_ms": 0.793832,
+      "mean_ms": 9.96939642,
+      "p50_ms": 4.2645695,
+      "p95_ms": 30.541377,
+      "max_ms": 34.123371
+    },
+    "capture_to_packet": {
+      "min_ms": 2.367646,
+      "mean_ms": 3.38646366,
+      "p50_ms": 3.292322,
+      "p95_ms": 4.18741,
+      "max_ms": 6.456455
+    },
+    "source_to_ack": {
+      "samples": 146,
+      "p50_ms": 25.624034,
+      "p95_ms": 50.590011,
+      "max_ms": 57.300329
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.127378999999998,
+      "p95_ms": 19.866721,
+      "max_ms": 25.91287
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 609,
+      "input_ns": 98931347,
+      "output_ns": 5904769459,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "0-gpu-same",
+    "cadence": {
+      "min_ms": 33.31398,
+      "mean_ms": 33.33335560893855,
+      "p50_ms": 33.333167,
+      "p95_ms": 33.342365,
+      "max_ms": 33.351123
+    },
+    "source_to_capture": {
+      "min_ms": 0.630003,
+      "mean_ms": 17.15004488,
+      "p50_ms": 17.330237500000003,
+      "p95_ms": 32.81448,
+      "max_ms": 33.992478
+    },
+    "capture_to_packet": {
+      "min_ms": 2.363829,
+      "mean_ms": 3.0104491533333335,
+      "p50_ms": 3.001522,
+      "p95_ms": 3.887177,
+      "max_ms": 6.74196
+    },
+    "source_to_ack": {
+      "samples": 145,
+      "p50_ms": 36.539883,
+      "p95_ms": 52.526842,
+      "max_ms": 55.30187
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 17.990243,
+      "p95_ms": 19.807387,
+      "max_ms": 20.874198
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 590,
+      "input_ns": 103276009,
+      "output_ns": 5884735988,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "min_ms": 3.648874,
+      "mean_ms": 33.52804546368715,
+      "p50_ms": 33.344959,
+      "p95_ms": 35.127158,
+      "max_ms": 66.055566
+    },
+    "source_to_capture": {
+      "min_ms": 0.211931,
+      "mean_ms": 10.818245126666667,
+      "p50_ms": 7.6000499999999995,
+      "p95_ms": 29.436219,
+      "max_ms": 34.064226
+    },
+    "capture_to_packet": {
+      "min_ms": 2.346636,
+      "mean_ms": 3.41278622,
+      "p50_ms": 3.371646,
+      "p95_ms": 4.180988,
+      "max_ms": 8.241811
+    },
+    "source_to_ack": {
+      "samples": 145,
+      "p50_ms": 27.699257,
+      "p95_ms": 50.191476,
+      "max_ms": 57.91451
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.357385,
+      "p95_ms": 20.100514,
+      "max_ms": 21.356623
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 616,
+      "input_ns": 107840002,
+      "output_ns": 5938431001,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "1-gpu-same",
+    "cadence": {
+      "min_ms": 32.582788,
+      "mean_ms": 33.333414793296086,
+      "p50_ms": 33.334027,
+      "p95_ms": 33.347663,
+      "max_ms": 34.081157
+    },
+    "source_to_capture": {
+      "min_ms": -0.008526,
+      "mean_ms": 16.984096546666667,
+      "p50_ms": 16.9914785,
+      "p95_ms": 32.541238,
+      "max_ms": 33.691781
+    },
+    "capture_to_packet": {
+      "min_ms": 2.728487,
+      "mean_ms": 3.9118975133333334,
+      "p50_ms": 3.8667925,
+      "p95_ms": 4.854165,
+      "max_ms": 6.862423
+    },
+    "source_to_ack": {
+      "samples": 145,
+      "p50_ms": 37.666959,
+      "p95_ms": 53.920494,
+      "max_ms": 56.147097
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.191497499999997,
+      "p95_ms": 20.03653,
+      "max_ms": 23.931472
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 598,
+      "input_ns": 97970342,
+      "output_ns": 5880732104,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "min_ms": 8.956277,
+      "mean_ms": 33.90583803351955,
+      "p50_ms": 34.204816,
+      "p95_ms": 34.981614,
+      "max_ms": 36.394738
+    },
+    "source_to_capture": {
+      "min_ms": 0.811204,
+      "mean_ms": 8.3165321,
+      "p50_ms": 2.0757649999999996,
+      "p95_ms": 29.543646,
+      "max_ms": 34.122847
+    },
+    "capture_to_packet": {
+      "min_ms": 2.408175,
+      "mean_ms": 3.33259902,
+      "p50_ms": 3.0874544999999998,
+      "p95_ms": 4.255492,
+      "max_ms": 7.040649
+    },
+    "source_to_ack": {
+      "samples": 147,
+      "p50_ms": 24.123604,
+      "p95_ms": 50.717915,
+      "max_ms": 56.915636
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.010334999999998,
+      "p95_ms": 19.732108,
+      "max_ms": 27.69122
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 629,
+      "input_ns": 100802840,
+      "output_ns": 5977795874,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-29",
+    "trial": "2-gpu-same",
+    "cadence": {
+      "min_ms": 32.231365,
+      "mean_ms": 33.3333406424581,
+      "p50_ms": 33.333645,
+      "p95_ms": 33.350809,
+      "max_ms": 34.462978
+    },
+    "source_to_capture": {
+      "min_ms": 0.3395,
+      "mean_ms": 17.06812534,
+      "p50_ms": 17.059855499999998,
+      "p95_ms": 32.544594,
+      "max_ms": 33.72258
+    },
+    "capture_to_packet": {
+      "min_ms": 2.507187,
+      "mean_ms": 4.029865906666667,
+      "p50_ms": 3.998653,
+      "p95_ms": 5.157122,
+      "max_ms": 5.72781
+    },
+    "source_to_ack": {
+      "samples": 145,
+      "p50_ms": 37.918005,
+      "p95_ms": 53.04803,
+      "max_ms": 59.309304
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.048911,
+      "p95_ms": 20.166643,
+      "max_ms": 22.657729
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 601,
+      "input_ns": 105860618,
+      "output_ns": 5878396610,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "min_ms": 32.953545,
+      "mean_ms": 33.33409751396648,
+      "p50_ms": 33.333412,
+      "p95_ms": 33.374813,
+      "max_ms": 33.85315
+    },
+    "source_to_capture": {
+      "min_ms": 22.14982,
+      "mean_ms": 22.251258906666667,
+      "p50_ms": 22.2477355,
+      "p95_ms": 22.3195,
+      "max_ms": 22.364548
+    },
+    "capture_to_packet": {
+      "min_ms": 2.952352,
+      "mean_ms": 3.9410742333333335,
+      "p50_ms": 3.9316625,
+      "p95_ms": 4.441152,
+      "max_ms": 8.732724
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 44.2762955,
+      "p95_ms": 46.556231,
+      "max_ms": 52.562953
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.0393155,
+      "p95_ms": 20.209143,
+      "max_ms": 26.663413
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 601,
+      "input_ns": 106843655,
+      "output_ns": 5883574613,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "0-gpu-same",
+    "cadence": {
+      "min_ms": 33.297402,
+      "mean_ms": 33.333288905027935,
+      "p50_ms": 33.333282,
+      "p95_ms": 33.345917,
+      "max_ms": 33.382909
+    },
+    "source_to_capture": {
+      "min_ms": 3.837049,
+      "mean_ms": 4.297863406666667,
+      "p50_ms": 4.3038405,
+      "p95_ms": 4.361217,
+      "max_ms": 4.3838
+    },
+    "capture_to_packet": {
+      "min_ms": 2.903878,
+      "mean_ms": 3.976631993333333,
+      "p50_ms": 4.074044,
+      "p95_ms": 4.569391,
+      "max_ms": 6.42848
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 26.719437,
+      "p95_ms": 28.721008,
+      "max_ms": 30.563946
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.479996999999997,
+      "p95_ms": 20.059974,
+      "max_ms": 22.949333
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 603,
+      "input_ns": 100020077,
+      "output_ns": 5874542373,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "min_ms": 31.276207,
+      "mean_ms": 33.33374594972067,
+      "p50_ms": 33.33304,
+      "p95_ms": 33.653332,
+      "max_ms": 35.217389
+    },
+    "source_to_capture": {
+      "min_ms": 10.780529,
+      "mean_ms": 11.430808046666666,
+      "p50_ms": 11.41748,
+      "p95_ms": 11.693491,
+      "max_ms": 12.080141
+    },
+    "capture_to_packet": {
+      "min_ms": 2.510023,
+      "mean_ms": 3.8154301999999998,
+      "p50_ms": 3.8654444999999997,
+      "p95_ms": 4.169474,
+      "max_ms": 5.986361
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 33.142340000000004,
+      "p95_ms": 35.210465,
+      "max_ms": 37.878234
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 17.8202395,
+      "p95_ms": 19.91944,
+      "max_ms": 21.631274
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 588,
+      "input_ns": 96509921,
+      "output_ns": 5877016950,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "1-gpu-same",
+    "cadence": {
+      "min_ms": 32.312889,
+      "mean_ms": 33.3333357821229,
+      "p50_ms": 33.33345,
+      "p95_ms": 33.349452,
+      "max_ms": 34.370303
+    },
+    "source_to_capture": {
+      "min_ms": 22.38679,
+      "mean_ms": 22.487994566666668,
+      "p50_ms": 22.467115,
+      "p95_ms": 22.550387,
+      "max_ms": 23.435966
+    },
+    "capture_to_packet": {
+      "min_ms": 2.881364,
+      "mean_ms": 4.031959793333334,
+      "p50_ms": 4.025444,
+      "p95_ms": 4.466671,
+      "max_ms": 8.40658
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 44.4670435,
+      "p95_ms": 47.160884,
+      "max_ms": 59.662784
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 17.9986855,
+      "p95_ms": 20.162472,
+      "max_ms": 33.378839
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 594,
+      "input_ns": 100412962,
+      "output_ns": 5874984802,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "min_ms": 17.819071,
+      "mean_ms": 33.33384383240224,
+      "p50_ms": 33.332628,
+      "p95_ms": 37.374304,
+      "max_ms": 48.906752
+    },
+    "source_to_capture": {
+      "min_ms": 3.36412,
+      "mean_ms": 3.78973804,
+      "p50_ms": 3.472446,
+      "p95_ms": 4.986971,
+      "max_ms": 11.520314
+    },
+    "capture_to_packet": {
+      "min_ms": 2.340133,
+      "mean_ms": 3.4679724666666667,
+      "p50_ms": 3.2317235,
+      "p95_ms": 5.081144,
+      "max_ms": 10.343259
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 24.6808925,
+      "p95_ms": 30.318796,
+      "max_ms": 38.417529
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.0044015,
+      "p95_ms": 20.179514,
+      "max_ms": 22.406276
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 603,
+      "input_ns": 105767422,
+      "output_ns": 5872727937,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  },
+  {
+    "campaign": "phase-quiet-30",
+    "trial": "2-gpu-same",
+    "cadence": {
+      "min_ms": 33.318681,
+      "mean_ms": 33.333352787709494,
+      "p50_ms": 33.332848,
+      "p95_ms": 33.346756,
+      "max_ms": 33.351385
+    },
+    "source_to_capture": {
+      "min_ms": 8.895499,
+      "mean_ms": 13.23127448,
+      "p50_ms": 13.268974,
+      "p95_ms": 13.333675,
+      "max_ms": 13.363101
+    },
+    "capture_to_packet": {
+      "min_ms": 2.46228,
+      "mean_ms": 4.02103958,
+      "p50_ms": 3.9149145,
+      "p95_ms": 4.296451,
+      "max_ms": 24.496455
+    },
+    "source_to_ack": {
+      "samples": 150,
+      "p50_ms": 35.3615115,
+      "p95_ms": 37.466292,
+      "max_ms": 57.159763
+    },
+    "packet_to_ack": {
+      "samples": 150,
+      "p50_ms": 18.2716855,
+      "p95_ms": 20.028281,
+      "max_ms": 22.521902
+    },
+    "cache": {
+      "input_calls": 180,
+      "output_calls": 599,
+      "input_ns": 104343492,
+      "output_ns": 5877199960,
+      "timing_cache_hits": 360,
+      "timing_cache_misses": 0
+    }
+  }
+]

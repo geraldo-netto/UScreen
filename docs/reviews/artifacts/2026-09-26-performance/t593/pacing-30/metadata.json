@@ -1,0 +1,42 @@
+{
+  "arguments": {
+    "serial": "8002RH1010011900",
+    "helper": "/tmp/blent-performance/gpu-pacing-probe",
+    "ffmpeg": "/tmp/blent-t585/runtime/test-bin/ffmpeg",
+    "evdi_helper": "/backups/disk2/projects/uscreen/dist/blent-1.2.3/bin/evdi_helper",
+    "scene": "/tmp/blent-t585/t579-scene",
+    "output_name": "DVI-I-3-2",
+    "same_gpu": "/dev/dri/renderD129",
+    "cross_gpu": "/dev/dri/renderD128",
+    "edid": "/tmp/blent-next.edid",
+    "output": "/tmp/blent-performance/pacing-30",
+    "card": "2",
+    "x": "5120",
+    "frames": "180",
+    "trials": "3",
+    "scene_fps": "30",
+    "variants": "['gpu-same', 'gpu-damage']"
+  },
+  "sources": {
+    "host/gpu/options.h": "50595166863a139bb279a9842c84a7cfc34be3499b98f59455e626ad85469ce1",
+    "host/gpu/events.c": "b6cb542858b57912902b0d09b6d38f2c11737f1028d4038786710d64f5a9934b",
+    "host/gpu/main.c": "c0a1a9fd94e4ee3d7496d588cc96c2cf5f4c0b13772519d3d5ac4eb82115552f",
+    "host/gpu/output.c": "21e0cf26d5b0402edb844a94ce1b571471b3e91aa7234d7ea4030a1d55e15663",
+    "host/gpu/identity.c": "55b1b82ddb32c76fbaad82586626905e96f49cdaa8a040e5f0b5539890ef7a69",
+    "host/gpu/gpu.h": "41259069d87a535715379bbbf546f949171e3aa8506f90f3ea1417ea01797382",
+    "host/gpu/cursor.c": "b4aac37cfc2500da17f588e7fe863cdb30761db48e2ab52701a1b477cbb869e1",
+    "host/gpu/encode.c": "dbbb3128eba4e2330db336ac9893ac9d283e22e87513576c1f075bfe069961cd",
+    "host/gpu/cadence.c": "722ff163a7841597f0bc3aeab8187b7a0293178fc9d6c35356264da5f04d416e",
+    "host/gpu/options.c": "c587fcc1e920c6ab38912f31296a21e8f6e3a66c363eb23da2fb498c824c785b",
+    "host/gpu/capture.c": "85ddd0e4735529af989b42d866bd4ba1b9d00cee6946f13db38f7fe3332f1d92",
+    "scripts/benchmarks/gpu-capture.py": "ba6c9aebb3a4d50bf1a6e3996e473b3f9bc165741c4e9b44aa85fa7d896357b9",
+    "scripts/benchmarks/gpu-scene.c": "5d1cc8f418cfca5e0c2a6422ba44e6c9283becd7b6c2e3167f660a37cd2223c7"
+  },
+  "binaries": {
+    "helper": "cbbc84e3c782a0b0ebcedc6262a70dc4ac486234a62f729e23fdbc81a41730f3",
+    "evdi_helper": "0e0a6e977b82420d213cb59fd9415f4655a61831452a2b34aea5b993c43cd80c",
+    "scene": "4b5017aab2dc253fcb9453518bdaea126e69ec8ecea171c4129a707afc432bfe"
+  },
+  "kernel": "7.0.0-31-generic",
+  "ffmpeg": "ffmpeg version 6.1.6 Copyright (c) 2000-2026 the FFmpeg developers"
+}

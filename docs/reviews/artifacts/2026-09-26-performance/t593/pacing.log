@@ -1,0 +1,24 @@
+0 gpu-same 180 ACKs
+0 gpu-damage 180 ACKs
+1 gpu-damage 180 ACKs
+1 gpu-same 180 ACKs
+2 gpu-same 180 ACKs
+2 gpu-damage 180 ACKs
+0-gpu-damage {"samples": 147, "p50_ms": 30.621249, "p95_ms": 52.956347, "max_ms": 56.972778}
+0-gpu-same {"samples": 145, "p50_ms": 38.13322, "p95_ms": 52.636897, "max_ms": 55.04747}
+1-gpu-damage {"samples": 147, "p50_ms": 26.972923, "p95_ms": 55.0962, "max_ms": 62.74239}
+1-gpu-same {"samples": 144, "p50_ms": 36.888684, "p95_ms": 51.890073, "max_ms": 58.122286}
+2-gpu-damage {"samples": 145, "p50_ms": 36.208597, "p95_ms": 60.443279, "max_ms": 67.505414}
+2-gpu-same {"samples": 141, "p50_ms": 38.65576, "p95_ms": 57.317621, "max_ms": 70.07182}
+0 gpu-same 180 ACKs
+0 gpu-damage 180 ACKs
+1 gpu-damage 180 ACKs
+1 gpu-same 180 ACKs
+2 gpu-same 180 ACKs
+2 gpu-damage 180 ACKs
+0-gpu-damage {"samples": 150, "p50_ms": 45.914826500000004, "p95_ms": 53.984912, "max_ms": 59.631587}
+0-gpu-same {"samples": 150, "p50_ms": 55.561004499999996, "p95_ms": 57.775163, "max_ms": 60.867038}
+1-gpu-damage {"samples": 150, "p50_ms": 40.065691, "p95_ms": 51.063356, "max_ms": 54.679419}
+1-gpu-same {"samples": 150, "p50_ms": 33.9868765, "p95_ms": 35.922075, "max_ms": 38.138077}
+2-gpu-damage {"samples": 150, "p50_ms": 40.073699, "p95_ms": 51.573604, "max_ms": 56.684408}
+2-gpu-same {"samples": 150, "p50_ms": 36.000890999999996, "p95_ms": 37.832293, "max_ms": 40.255879}
