@@ -21,6 +21,12 @@ async fn encode(path: &std::path::Path, encoder: &str) -> std::process::Output {
         .collect::<Vec<_>>();
     let start = args.iter().position(|arg| arg == "-i").unwrap() + 2;
     let mut output = args[start..args.len() - 3].to_vec();
+    // T588: this fixture measures timestamps and exact picture identity. Older
+    // libvpx versions quantize even these flat markers beyond the two-level
+    // bound; retain production timing options but make VP9 markers lossless.
+    if encoder == "libvpx-vp9" {
+        output.extend(["-lossless", "1", "-crf", "0"].map(Into::into));
+    }
     output.extend(["-f".into(), "nut".into(), path.as_os_str().to_owned()]);
     Command::new("ffmpeg")
         .args([
@@ -138,4 +144,25 @@ async fn verify_stream(encoder: &str) {
         "T421: sparse wall-time keyframe schedule changed"
     );
     verify_frames(&path).await;
+}
+
+// T588: timing markers must survive the fixture codec exactly. Production
+// lossy quality is covered by encoder-option tests, not a two-level pixel bound.
+#[tokio::test]
+async fn t588_vp9_timing_fixture_preserves_every_luma_sample() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join("lossless-timing.nut");
+    assert!(encode(&path, "libvpx-vp9").await.status.success());
+    let decoded = Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(path)
+        .args(["-fps_mode", "passthrough", "-pix_fmt", "nv12", "-f", "rawvideo", "pipe:1"])
+        .output_bounded().await.unwrap();
+    assert!(decoded.status.success());
+    assert_eq!(decoded.stdout.len(), 40 * 64 * 64 * 3 / 2);
+    for (index, frame) in decoded.stdout.chunks_exact(64 * 64 * 3 / 2).enumerate() {
+        assert!(frame[..64 * 64].iter().all(|&value| value == 16 + index as u8 * 4),
+            "T588: lossy encoding corrupted timing marker {index}");
+        assert!(frame[64 * 64..].iter().all(|&value| value == 128));
+    }
 }
