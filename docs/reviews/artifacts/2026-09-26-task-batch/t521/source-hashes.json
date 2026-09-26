@@ -1,0 +1,20 @@
+{
+  "25.5.2": {
+    "commit": "3a1871fd2349c4c243a27e05a12c0babcda7dfef",
+    "sha256": {
+      "LICENSE": "c2285c867ddc9b88f43b4f8fa2c77a9eec66207166c1217b37353a2ccd62ac03",
+      "Virtual Display Driver (HDR)/MttVDD/Driver.cpp": "d320a69bb13f7ba7e79adbb03c999c41a09948c5d17ecf3e1ed55aacc1d8df0b",
+      "Virtual Display Driver (HDR)/MttVDD/MttVDD.inf": "c2e5a5b34d840b77977c82fed9a2ed9036a71dfd257ec0d7b1bb9b84516aa523",
+      "Virtual Display Driver (HDR)/vdd_settings.xml": "c023e471dd760b1f2e17e38e1eb6139b05b6e5fad2952f9f34de678fda981723"
+    }
+  },
+  "25.7.23": {
+    "commit": "d437ebc9b44a14ce6e5cc9c8b7f6beb08d6faf77",
+    "sha256": {
+      "LICENSE": "c2285c867ddc9b88f43b4f8fa2c77a9eec66207166c1217b37353a2ccd62ac03",
+      "Virtual Display Driver (HDR)/MttVDD/Driver.cpp": "d320a69bb13f7ba7e79adbb03c999c41a09948c5d17ecf3e1ed55aacc1d8df0b",
+      "Virtual Display Driver (HDR)/MttVDD/MttVDD.inf": "c2e5a5b34d840b77977c82fed9a2ed9036a71dfd257ec0d7b1bb9b84516aa523",
+      "Virtual Display Driver (HDR)/vdd_settings.xml": "c023e471dd760b1f2e17e38e1eb6139b05b6e5fad2952f9f34de678fda981723"
+    }
+  }
+}
