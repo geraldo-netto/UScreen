@@ -1,0 +1,10 @@
+{
+  "kernel": "7.0.0-31-generic",
+  "kernel_evdi": "1.14.15",
+  "devices": "2",
+  "loglevel": "4",
+  "library": "libevdi.so.1.15.0",
+  "library_sha256": "5ec8b7614074dd10dce5ba4b668203c70e77bf698da6614d839324955aead96a",
+  "query_outputs_identical": true,
+  "library_reported_version": "1.15.0"
+}

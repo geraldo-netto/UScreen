@@ -1,0 +1,64 @@
+[40594.680968] morpheus kernel: evdi: [I] (card1) Opened by Task 760746 (evdi_helper) of process 760746 (evdi_helper)
+[40594.681171] morpheus kernel: evdi: [I] (card1) Added i2c adapter bus number 19
+[40594.681174] morpheus kernel: evdi: [I] (card1) Connected with Task 760746 (evdi_helper) of process 760746 (evdi_helper)
+[40594.681177] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.687337] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.687350] morpheus kernel: evdi: [I] (card1) Edid property set
+[40594.699061] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.699073] morpheus kernel: evdi: [I] (card1) Edid property set
+[40594.699084] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.699092] morpheus kernel: evdi: [I] (card1) Edid property set
+[40594.749064] morpheus kernel: evdi: [W] evdi_gem_mmap:490 Don't allow imported objects to be mapped: owner: amdgpu
+[40594.749097] morpheus kernel: evdi: [I] (card1) Notifying display power state: on
+[40594.749102] morpheus kernel: evdi: [I] (card1) Notifying mode changed: 1280x800@60; bpp 32; pixel format XR24 little-endian (0x34325258)
+[40594.749105] morpheus kernel: evdi: [I] (card1) Notifying display power state: on
+[40594.879627] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.879642] morpheus kernel: evdi: [I] (card1) Edid property set
+[40594.963012] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40594.963029] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.035471] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.035485] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.039890] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.039901] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.043991] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.044001] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.057428] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.057441] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.062062] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.062074] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.066953] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.066963] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.073924] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.073935] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.078361] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.078371] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.082960] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.082970] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.099963] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.099977] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.099984] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.099987] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.099992] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.099996] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.100001] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.100003] morpheus kernel: evdi: [W] evdi_painter_i2c_data_notify:1469 Ignored ddc/ci data for address 0x50
+[40595.344585] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.344598] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.372193] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.372211] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.376775] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.376785] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.381597] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.381608] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.389814] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.389825] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.394478] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.394489] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.399022] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.399032] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.411860] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.411874] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.416786] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.416796] morpheus kernel: evdi: [I] (card1) Edid property set
+[40595.421533] morpheus kernel: evdi: [I] (card1) Connector state: connected
+[40595.421545] morpheus kernel: evdi: [I] (card1) Edid property set

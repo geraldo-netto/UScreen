@@ -1,0 +1,18 @@
+{
+  "evdi_gem.c": {
+    "url": "https://raw.githubusercontent.com/DisplayLink/evdi/3dafd623f5c59ce6fe53f0662107d3e88f868de3/module/evdi_gem.c",
+    "sha256": "1d468680f9955eb9acffe86ef8003f8c8b45a3d162280180d11ceb14f92b70c3"
+  },
+  "evdi_connector.c": {
+    "url": "https://raw.githubusercontent.com/DisplayLink/evdi/3dafd623f5c59ce6fe53f0662107d3e88f868de3/module/evdi_connector.c",
+    "sha256": "14a94fcc3bea088c3daf32b65b6f40bc9a8032e39731be49e9ef1437385696bd"
+  },
+  "evdi_painter.c": {
+    "url": "https://raw.githubusercontent.com/DisplayLink/evdi/3dafd623f5c59ce6fe53f0662107d3e88f868de3/module/evdi_painter.c",
+    "sha256": "41510c435ab9e1c6a3f413ccd510461fe10f08c1eacffcb972046e50169ada88"
+  },
+  "evdi_i2c.c": {
+    "url": "https://raw.githubusercontent.com/DisplayLink/evdi/3dafd623f5c59ce6fe53f0662107d3e88f868de3/module/evdi_i2c.c",
+    "sha256": "6efb4737387f453887e4b947bf45c1530307ff3a745e0b6c43c4fd17289f4005"
+  }
+}

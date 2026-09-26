@@ -1,0 +1,128 @@
+[
+  {
+    "mode": "idle",
+    "wall_ms": 250.0671070010867,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "query",
+    "wall_ms": 15.798590000486001,
+    "counts": {
+      "connector": 1,
+      "edid": 1,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "current",
+    "wall_ms": 10.702640000090469,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "idle",
+    "wall_ms": 250.06608699914068,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "query",
+    "wall_ms": 21.23310000024503,
+    "counts": {
+      "connector": 1,
+      "edid": 1,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "current",
+    "wall_ms": 11.451237005530857,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "idle",
+    "wall_ms": 250.07884699880378,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "query",
+    "wall_ms": 18.760184000711888,
+    "counts": {
+      "connector": 1,
+      "edid": 1,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  },
+  {
+    "mode": "current",
+    "wall_ms": 13.901108999561984,
+    "counts": {
+      "connector": 0,
+      "edid": 0,
+      "import_reject": 0,
+      "ddcci": 0,
+      "connected_by": 0,
+      "double_connect": 0,
+      "update_pending": 0,
+      "grab_without_ready": 0
+    }
+  }
+]
