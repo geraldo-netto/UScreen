@@ -114,6 +114,10 @@ void gpu_encode(gpu_encoder *e, gpu_capture *capture, const gpu_options *options
     AVFrame *frame = av_frame_alloc(); gpu_require(frame != NULL, "frame allocation");
     gpu_av(av_hwframe_get_buffer(e->frames, frame, 0), "acquire NV12 surface");
     frame->pts = timestamp;
+    if (capture->damage && gpu_refresh_due(e->last_refresh_us, timestamp)) {
+        frame->pict_type = AV_PICTURE_TYPE_I;
+        e->last_refresh_us = timestamp;
+    }
     convert(e, frame);
     gpu_capture_release(capture);
     gpu_av(avcodec_send_frame(e->codec, frame), "submit owned NV12 frame");

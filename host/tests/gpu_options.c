@@ -60,10 +60,23 @@ int main(void) {
     bounds(args);
     edid();
     transforms();
+    /* T579: damage obeys maximum FPS; idle never starves the decoder. */
+    for (unsigned fps = 1; fps <= 240; fps++) {
+        uint64_t period = 1000000000 / fps;
+        assert(gpu_capture_deadline(123, fps, 1) == 123 + period);
+        assert(gpu_capture_deadline(123, fps, 0) == 123 + (period > 200000000 ? period : 200000000));
+    }
+    assert(gpu_intersects(-20, 10, 30, 40, -5, 15, 1, 1));
+    assert(!gpu_intersects(-20, 10, 30, 40, 10, 15, 1, 1));
+    assert(!gpu_intersects(0, 0, 10, 10, -5, -5, 5, 5));
+    assert(gpu_intersects(INT32_MAX - 1, 0, 10, 10, INT32_MAX, 0, 1, 1));
     assert(gpu_same_render_node(129, 129));
     assert(!gpu_same_render_node(129, 128));
     assert(!gpu_same_render_node(0, 0));
     assert(!gpu_same_render_node(UINT64_MAX, 129));
+    assert(gpu_refresh_due(0, 1));
+    assert(!gpu_refresh_due(1, 900000));
+    assert(gpu_refresh_due(1, 900001));
     assert(gpu_now_ns() > 0);
     return 0;
 }

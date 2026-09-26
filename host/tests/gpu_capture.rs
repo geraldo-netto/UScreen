@@ -19,6 +19,7 @@ fn t575_native_bounds_and_connector_identity_survive_invalid_input() {
             "-no-pie",
         ])
         .arg(root.join("gpu/options.c"))
+        .arg(root.join("gpu/cadence.c"))
         .arg(root.join("tests/gpu_options.c"))
         .arg("-o")
         .arg(&binary)

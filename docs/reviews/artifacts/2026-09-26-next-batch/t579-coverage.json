@@ -1,0 +1,65 @@
+[
+  {
+    "file": "host/gpu/cadence.c",
+    "name": "gpu_capture_deadline",
+    "covered": 4,
+    "total": 4,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/cadence.c",
+    "name": "gpu_intersects",
+    "covered": 3,
+    "total": 3,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/cadence.c",
+    "name": "gpu_refresh_due",
+    "covered": 2,
+    "total": 2,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "damaged",
+    "covered": 10,
+    "total": 10,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "events",
+    "covered": 6,
+    "total": 6,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "gpu_events_close",
+    "covered": 4,
+    "total": 4,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "gpu_events_open",
+    "covered": 13,
+    "total": 13,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "gpu_events_wait",
+    "covered": 13,
+    "total": 13,
+    "percent": 100.0
+  },
+  {
+    "file": "host/gpu/events.c",
+    "name": "sample_pointer",
+    "covered": 7,
+    "total": 7,
+    "percent": 100.0
+  }
+]

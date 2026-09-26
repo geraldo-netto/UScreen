@@ -5,6 +5,8 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/sync.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/Xfixes.h>
 #include <va/va.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/hwcontext.h>
@@ -21,6 +23,9 @@ typedef struct {
     RROutput output;
     RRCrtc crtc;
     int x, y, width, height, leased;
+    Damage damage;
+    XserverRegion region;
+    int damage_event, cursor_event, dirty, pointer_x, pointer_y;
     int dma_fd;
     int render_fd;
     uint32_t stride, bytes;
@@ -31,6 +36,7 @@ typedef struct {
     AVBufferRef *device, *frames;
     AVCodecContext *codec;
     AVPacket *packet;
+    int64_t last_refresh_us;
     VADisplay va;
     VASurfaceID rgb;
     VAConfigID config;
@@ -43,6 +49,9 @@ void gpu_capture_take(gpu_capture *capture, const gpu_options *options, unsigned
 void gpu_capture_release(gpu_capture *capture);
 void gpu_capture_close(gpu_capture *capture);
 void gpu_cursor(gpu_capture *capture);
+void gpu_events_open(gpu_capture *capture, const gpu_options *options);
+void gpu_events_wait(gpu_capture *capture, uint64_t previous, unsigned fps);
+void gpu_events_close(gpu_capture *capture);
 void gpu_identity_load(gpu_capture *capture, const gpu_options *options);
 void gpu_render_device(gpu_capture *capture, const gpu_options *options);
 int gpu_output_matches(gpu_capture *capture, const gpu_options *options, RROutput output, const char *name);

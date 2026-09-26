@@ -42,8 +42,9 @@ def stop(process):
 
 def encoder_command(args, variant, policy):
     if variant.startswith('gpu'):
-        node = args.same_gpu if variant == 'gpu-same' else args.cross_gpu
-        return [str(args.helper), args.output_name, node, '1280', '800', '1', '30', '18', '60000', str(args.frames), 'desktop']
+        node = args.cross_gpu if variant == 'gpu-cross' else args.same_gpu
+        cadence = 'damage' if variant == 'gpu-damage' else 'periodic'
+        return ['env', 'BLENT_GPU_CADENCE=' + cadence, str(args.helper), args.output_name, node, '1280', '800', '1', '30', '18', '60000', str(args.frames), 'desktop']
     command = PIPELINE.command(policy, dict(width=1280, height=800, fps=30), args.cross_gpu)
     command[0] = args.ffmpeg
     command[command.index('-i') + 1] = str(args.output / 'capture.fifo')
@@ -92,7 +93,7 @@ def finish(args, connection, acks):
         time.sleep(.01)
     if len({row['sequence'] for row in acks.rows}) != args.frames:
         raise RuntimeError('missing or duplicate physical render ACK')
-    # Retain T571's completion-race workaround, plus complete identity coverage.
+    # Allow decoder cooldown after complete identity coverage (T571).
     time.sleep(.1)
     connection.sendall(struct.pack('!I', 2))
     deadline = time.monotonic() + 5
@@ -251,7 +252,7 @@ def main():
     parser.add_argument('--trials', type=int, choices=range(1, 10), default=5)
     parser.add_argument('--scene-fps', type=int, choices=range(1, 61), default=29,
                         help='29 decorrelates source updates from the 30 FPS capture cadence')
-    parser.add_argument('--variants', nargs='+', choices=['evdi-fifo', 'gpu-same', 'gpu-cross'],
+    parser.add_argument('--variants', nargs='+', choices=['evdi-fifo', 'gpu-same', 'gpu-damage', 'gpu-cross'],
                         default=['evdi-fifo', 'gpu-same'])
     run(parser.parse_args())
 

@@ -4,6 +4,7 @@
 #include <X11/Xutil.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -41,6 +42,42 @@ static Cursor cursor(Display *display, Window root) {
     return cursor;
 }
 
+/* T579: native event plumbing on a private X server, without GPU imports. */
+static void cadence(gpu_capture *c) {
+    gpu_options options = {.fps=30};
+    setenv("BLENT_GPU_CADENCE", "damage", 1);
+    gpu_events_open(c, &options);
+    XSync(c->display, False);
+    gpu_events_wait(c, 0, 30); /* Drain initial full damage and pointer state. */
+    uint64_t start = gpu_now_ns();
+    gpu_events_wait(c, start, 30);
+    assert(gpu_now_ns() - start >= 190000000); /* Idle refresh, no busy loop. */
+    GC root_gc = XCreateGC(c->display, c->root, 0, NULL);
+    XSetForeground(c->display, root_gc, 0x778899);
+    XFillRectangle(c->display, c->root, root_gc, c->x, c->y, 4, 4);
+    XSync(c->display, False);
+    start = gpu_now_ns();
+    gpu_events_wait(c, start - 40000000, 30);
+    assert(gpu_now_ns() - start < 150000000); /* Damage bypasses idle deadline. */
+    XWarpPointer(c->display, None, c->root, 0, 0, 0, 0, 24, 24);
+    XSync(c->display, False);
+    start = gpu_now_ns();
+    gpu_events_wait(c, start - 40000000, 30);
+    assert(gpu_now_ns() - start < 150000000); /* Cursor-only motion. */
+    XFillRectangle(c->display, c->root, root_gc, 110, 110, 4, 4);
+    XSync(c->display, False);
+    start = gpu_now_ns();
+    gpu_events_wait(c, start, 30);
+    assert(gpu_now_ns() - start >= 190000000); /* Foreign output damage ignored. */
+    pid_t child = fork(); assert(child >= 0);
+    if (!child) { c->leased = 1; gpu_events_wait(c, 0, 30); _exit(0); }
+    int status; assert(waitpid(child, &status, 0) == child);
+    assert(WIFEXITED(status) && WEXITSTATUS(status) == 2);
+    XFreeGC(c->display, root_gc);
+    gpu_events_close(c);
+    unsetenv("BLENT_GPU_CADENCE");
+}
+
 int main(void) {
     codec_error();
     gpu_capture c = {.x=20, .y=20, .width=32, .height=24};
@@ -54,6 +91,7 @@ int main(void) {
     fill(&c); gpu_cursor(&c); verify(&c, 1);
     XWarpPointer(c.display, None, c.root, 0, 0, 0, 0, 100, 100); XSync(c.display, False);
     fill(&c); gpu_cursor(&c); verify(&c, 0);
+    cadence(&c);
     XFreeCursor(c.display, shape); XFreeGC(c.display, c.gc);
     XFreePixmap(c.display, c.pixmap); XCloseDisplay(c.display);
     return 0;

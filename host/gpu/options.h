@@ -13,4 +13,7 @@ gpu_options gpu_parse(int argc, char **argv);
 int gpu_edid_valid(const unsigned char *bytes, size_t length);
 int gpu_same_render_node(uint64_t producer, uint64_t consumer);
 int gpu_identity_transform(const int32_t matrix[9]);
+uint64_t gpu_capture_deadline(uint64_t previous, unsigned fps, int dirty);
+int gpu_intersects(int x, int y, int width, int height, int rx, int ry, int rw, int rh);
+int gpu_refresh_due(int64_t previous, int64_t now);
 #endif

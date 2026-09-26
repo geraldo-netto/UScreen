@@ -131,3 +131,59 @@ No system timeout, lock-screen or global stay-awake preference was changed.
 Evidence: [regression failure](artifacts/2026-09-26-next-batch/t595-red.log.gz),
 [passing profile tests](artifacts/2026-09-26-next-batch/t595-green.log.gz), and
 [native power/activity/APK readback](artifacts/2026-09-26-next-batch/t595-native.json).
+
+## T579 — damage-triggered GPU capture
+
+The opt-in Linux helper now accepts `BLENT_GPU_CADENCE=damage`; absence or
+`periodic` retains periodic GPU capture, and ordinary Blent still defaults to
+FIFO. Native XDamage handling coalesces damage within the owned output, bounds
+queue draining, and uses at most 8 ms pointer polling for cursor-only motion.
+Idle capture refreshes at 5 FPS, limited by the configured maximum FPS. Cursor
+shape changes and motion elsewhere can cause extra captures. No native handles
+enter shared UI/configuration/wire contracts.
+
+The timing/rectangle policy has no X11 dependency. Every wait checks that the
+previous GPU consumer released its lease. Existing native deadlines and FIFO
+fallback remain. Sparse cadence requests an intra frame on a 0.9-second wall-clock
+threshold, rather than stretching a frame-count GOP to six seconds.
+
+Three alternating triples at each source rate compare FIFO, periodic GPU and
+damage GPU through the same physical USB decoder. Each trial has 180 pictures,
+with 30 warmup pictures excluded from latency summaries. Decoded barcodes match
+source timestamps; all 3,240 pictures receive their exact render ACK, with a
+further 60/60 ACKs in the sparse-scene check. Same stock FFmpeg 6.1.6, QP 18,
+1280×800, 30 FPS target, tablet decoder and binary hashes across the paired trials.
+GPU capture uses X11's renderD129; FIFO uses the existing renderD128 encoder.
+
+| Source Hz | Path | Median trial p50, ms | Median trial p95, ms | Capture/encoder CPU seconds per elapsed second |
+| ---: | --- | ---: | ---: | ---: |
+| 29 | FIFO | 56.94 | 59.68 | 0.0880 |
+| 29 | Periodic GPU | 37.89 | 52.67 | 0.0467 |
+| 29 | Damage GPU | 23.33 | 27.67 | 0.0484 |
+| 30 | FIFO | 68.88 | 71.08 | 0.0921 |
+| 30 | Periodic GPU | 41.53 | 43.76 | 0.0469 |
+| 30 | Damage GPU | 37.98 | 54.70 | 0.0439 |
+
+Damage improves both latency percentiles in all three 29 Hz pairs. At 30 Hz it
+improves two p50 pairs but worsens all three p95 pairs against periodic GPU.
+There is no consistent all-rate latency gain; keep it opt-in. T593 records the
+matched-rate tail follow-up. FIFO timing differs from the historical September
+21 setup; these are new paired observations on an active, unpinned workstation,
+not a controlled cross-date regression attribution. CPU excludes compositor,
+other applications and Android; no battery or optical-latency claim is made.
+
+The 1 Hz scene produces 60 encoded/ACKed frames over 11.71 seconds, maximum
+frame gap 201.2 ms. Twelve keyframes have gaps 909.7–1001.3 ms. The temporary
+unused monitor and ADB mappings retire; the original display remains attached
+and Blent is restored afterward.
+
+Normal Rust sanitizer policy/bounds tests and isolated Xvfb tests pass. All nine
+new native policy/event functions have 100% measured executable-line coverage;
+strict workspace Clippy passes. The normal benchmark test collection passes
+111 tests. Retained [native streams, commands and exact source copies](artifacts/2026-09-26-next-batch/t579-native.tar.gz),
+[binary hashes](artifacts/2026-09-26-next-batch/t579-binaries.json),
+[29 Hz summary](artifacts/2026-09-26-next-batch/t579-29-summary.json),
+[30 Hz summary](artifacts/2026-09-26-next-batch/t579-30-summary.json),
+[idle/keyframe timing](artifacts/2026-09-26-next-batch/t579-idle-summary.json),
+[coverage](artifacts/2026-09-26-next-batch/t579-coverage.json), and
+[GCOV counters](artifacts/2026-09-26-next-batch/t579-gcov.tar.gz).

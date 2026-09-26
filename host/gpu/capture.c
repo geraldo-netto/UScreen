@@ -94,6 +94,7 @@ void gpu_capture_open(gpu_capture *c, const gpu_options *options) {
     c->gc = XCreateGC(c->display, c->pixmap, GCSubwindowMode | GCGraphicsExposures, &values);
     c->fence = XSyncCreateFence(c->display, c->pixmap, False);
     export_pixmap(c);
+    gpu_events_open(c, options);
 }
 
 static void pattern(gpu_capture *c, unsigned sequence) {
@@ -130,6 +131,7 @@ void gpu_capture_release(gpu_capture *c) {
 
 void gpu_capture_close(gpu_capture *c) {
     gpu_require(!c->leased, "capture retirement after GPU completion");
+    gpu_events_close(c);
     close(c->dma_fd);
     close(c->render_fd);
     XSyncDestroyFence(c->display, c->fence);

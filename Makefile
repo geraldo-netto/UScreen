@@ -11,7 +11,7 @@ recursive_prefix = $(if $(or $(findstring n,$(make_mode)),$(findstring q,$(make_
 # Expand indirectly and explicitly share the jobserver only for real builds.
 recursive_make = $(MAKE)
 CC = gcc
-GPU_PACKAGES = libavcodec libavutil libva libdrm x11 x11-xcb xrandr xfixes xrender xext xcb-dri3
+GPU_PACKAGES = libavcodec libavutil libva libdrm x11 x11-xcb xrandr xfixes xdamage xrender xext xcb-dri3
 GPU_CFLAGS ?= $(shell pkg-config --cflags $(GPU_PACKAGES))
 GPU_LIBS ?= $(shell pkg-config --libs $(GPU_PACKAGES))
 ADB = adb
