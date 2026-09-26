@@ -38,7 +38,7 @@ async fn ack(
     seq: u32,
     pts: i64,
 ) {
-    handle.note(seq, Some(pts), seq % 2 == 0);
+    handle.note(seq, Some(pts), seq.is_multiple_of(2));
     tracker.on_encoded_for(seq, evidence);
     tokio::time::advance(Duration::from_millis(10)).await;
     tracker.on_rendered_from(

@@ -20,7 +20,7 @@ fn sample(sequence: u32, pts_us: i64) -> Sample {
         pts_us,
         ready_us: pts_us as u64 + 100_000,
         ack_us: pts_us as u64 + 110_000,
-        keyframe: sequence % 2 == 0,
+        keyframe: sequence.is_multiple_of(2),
     }
 }
 

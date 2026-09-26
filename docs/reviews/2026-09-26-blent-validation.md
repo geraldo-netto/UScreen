@@ -27,3 +27,10 @@ Reproduce in either supported validation environment:
 ```sh
 cargo test --locked --release -p blent --bin blent capture::cli_encoder::timestamp_tests -- --nocapture
 ```
+
+## T573: strict workspace lint
+
+Normalized two test-only parity checks to `is_multiple_of(2)`. Clippy on the
+repository's Rust 1.90.0 validation toolchain reproduced `manual_is_multiple_of`
+before the change. `cargo clippy --locked --workspace --all-targets --all-features
+-- -D warnings` passes afterward. No production behavior changed.
