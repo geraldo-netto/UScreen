@@ -91,3 +91,18 @@ regressions and Linux/Android observations. They are not a human usability study
 a TalkBack/desktop screen-reader certification, a Windows/macOS runtime result,
 or another native camera/V4L consumer trial. T592 remains skipped for missing
 stylus; T621 and other native platform prerequisites remain explicit in TODO.md.
+
+## Before and after screenshots
+
+[Interactive comparison](artifacts/2026-09-26-task-batch/t611/before-after/index.html)
+provides desktop, Android settings and Android connection views. These are
+actual application captures at matching dimensions, taken after implementation:
+the desktop before build was rebuilt from `fa1bfba`, and Android before used the
+saved signed pre-redesign APK. After shows `c696f78`. Android was restored to the
+current signed release after capture, with app data preserved and camera off.
+
+| View | Before | After |
+| --- | --- | --- |
+| Desktop, 440×760 | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/desktop-before.png) | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/desktop-after.png) |
+| Android settings, 1280×800 | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/android-before-settings.png) | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/android-after-settings.png) |
+| Android connection, 1280×800 | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/android-before-waiting.png) | [Screenshot](artifacts/2026-09-26-task-batch/t611/before-after/android-after-waiting.png) |
