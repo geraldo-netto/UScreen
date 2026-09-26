@@ -17,8 +17,9 @@ release toolchain.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
-primitives. T493 remains blocked on native ACL/lease validation; these
-primitives do not enable a Windows application backend.
+primitives. T493 is open for the reproduced native runtime-directory pinning
+failure and remaining acceptance/coverage; these primitives do not enable a
+Windows application backend.
 
 The [T495 GUI boundary](reviews/2026-09-19-windows-gui.md) also builds for GNU
 and checks on MSVC. Its Windows preview saves shared settings and hides Linux
@@ -29,11 +30,15 @@ T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/window
 Shell-free command fixtures run as Windows executables; Linux process-group
 assertions remain in the Linux suite. Local policy and library execution passed
 under Wine. The native CI workflow is available. Historical [run 35528506377](https://github.com/geraldo-netto/UScreen/actions/runs/35528506377)
-failed before ACL/lease tests at `2b91e77`. The current
-[run 36259429008](https://github.com/geraldo-netto/UScreen/actions/runs/36259429008)
-at `3bcb11f` passed portable policy, but both MSVC and GNU workspace compilation
-failed because the Linux camera benchmark is not platform-gated (T631).
-Mandatory ACL/lease tests still need a successful native run before T493 closes.
+failed before ACL/lease tests at `2b91e77`; run 36259429008 at `3bcb11f` exposed
+the Linux camera-probe build boundary, subsequently fixed by T631.
+[Run 36261150896](https://github.com/geraldo-netto/UScreen/actions/runs/36261150896)
+at `e92835f` passed both T631 regressions and full GNU linking. Native MSVC
+workspace tests compiled and ran: 9 of 10 Windows platform tests passed, but the
+runtime-directory pinning test failed because renaming the held directory
+succeeded. T493 retains that regression and the remaining acceptance/coverage.
+This CI uses Windows Server 2022; Windows 11 VM acceptance remains separate.
+See [build and native evidence](reviews/2026-09-26-windows-build-boundary.md).
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,

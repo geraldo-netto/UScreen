@@ -27,3 +27,14 @@ Local full GNU linking could not run because the host lacks MinGW's `dlltool`;
 the Windows workflow installs the required linker. Native CI results remain
 separate from this local compile evidence. Windows capture remains unsupported;
 native ACL/lifecycle, scheduling and coverage acceptance remain T493/T583/T497.
+
+## Native follow-up
+
+[Run 36261150896](https://github.com/geraldo-netto/UScreen/actions/runs/36261150896)
+at `e92835f` passed both new T631 regressions and the full GNU workspace link.
+MSVC workspace compilation succeeded and native tests executed. The remaining
+CI failure is T493 runtime-directory pinning, not camera-probe compilation:
+9 of 10 Windows platform tests passed; renaming the held directory unexpectedly
+succeeded. The [failure output](artifacts/2026-09-26-windows-development/t493-native-pinning-failure.log)
+is retained and the original regression is unchanged. Native all-features build
+was not reached after this test failure.
