@@ -1,0 +1,144 @@
+{
+  "observations": [
+    {
+      "encoder": "libx264",
+      "workers": 1,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 4057.9710144927535,
+          "peak_rss_bytes": 82894848
+        },
+        "p50_us": 16534,
+        "p95_us": 18463,
+        "p99_us": 22328,
+        "ack_fps": 32.689887431912,
+        "delivery_permille": 1000,
+        "startup_us": 295635,
+        "samples": 67
+      }
+    },
+    {
+      "encoder": "libx264",
+      "workers": 2,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 2686.5671641791046,
+          "peak_rss_bytes": 85151744
+        },
+        "p50_us": 17015,
+        "p95_us": 18491,
+        "p99_us": 21732,
+        "ack_fps": 32.58037874758417,
+        "delivery_permille": 1000,
+        "startup_us": 136004,
+        "samples": 67
+      }
+    },
+    {
+      "encoder": "libx264",
+      "workers": 4,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 2666.6666666666665,
+          "peak_rss_bytes": 88702976
+        },
+        "p50_us": 17323,
+        "p95_us": 18863,
+        "p99_us": 19230,
+        "ack_fps": 29.46634595588955,
+        "delivery_permille": 1000,
+        "startup_us": 178944,
+        "samples": 60
+      }
+    },
+    {
+      "encoder": "h264_vaapi_baseline",
+      "workers": 0,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 2428.5714285714284,
+          "peak_rss_bytes": 124813312
+        },
+        "p50_us": 17983,
+        "p95_us": 20209,
+        "p99_us": 29466,
+        "ack_fps": 34.45426439304387,
+        "delivery_permille": 1000,
+        "startup_us": 257248,
+        "samples": 70
+      }
+    },
+    {
+      "encoder": "libx264",
+      "workers": 1,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 1578.9473684210527,
+          "peak_rss_bytes": 81969152
+        },
+        "p50_us": 16515,
+        "p95_us": 18660,
+        "p99_us": 30635,
+        "ack_fps": 37.48583562089521,
+        "delivery_permille": 1000,
+        "startup_us": 197524,
+        "samples": 76
+      }
+    },
+    {
+      "encoder": "libx264",
+      "workers": 1,
+      "observation": {
+        "resources": {
+          "cpu_us_per_frame": 2027.027027027027,
+          "peak_rss_bytes": 82665472
+        },
+        "p50_us": 16457,
+        "p95_us": 18151,
+        "p99_us": 37961,
+        "ack_fps": 36.25197261322382,
+        "delivery_permille": 1000,
+        "startup_us": 136226,
+        "samples": 74
+      }
+    }
+  ],
+  "encoder_epochs": {
+    "1": {
+      "packets": 1,
+      "acks": 0
+    },
+    "2": {
+      "packets": 70,
+      "acks": 70
+    },
+    "3": {
+      "packets": 70,
+      "acks": 70
+    },
+    "4": {
+      "packets": 63,
+      "acks": 63
+    },
+    "5": {
+      "packets": 73,
+      "acks": 73
+    },
+    "6": {
+      "packets": 80,
+      "acks": 79
+    },
+    "7": {
+      "packets": 77,
+      "acks": 77
+    },
+    "8": {
+      "packets": 772,
+      "acks": 771
+    }
+  },
+  "rejected_receipts_before": 620,
+  "rejected_receipts_after": 0,
+  "winner_workers": 1,
+  "limits": "Uncontrolled desktop content; this bounded correctness acceptance does not establish general performance gains."
+}

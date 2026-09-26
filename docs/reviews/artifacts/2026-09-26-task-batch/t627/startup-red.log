@@ -1,0 +1,19 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.02s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test selection::worker::measured::tests::t627_live_trials_wait_for_matching_capture_output_before_spending_window ... 
+thread 'selection::worker::measured::tests::t627_live_trials_wait_for_matching_capture_output_before_spending_window' (168091) panicked at host/src/selection/worker/measured.rs:249:9:
+T627: trial budget started before capture was ready
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    selection::worker::measured::tests::t627_live_trials_wait_for_matching_capture_output_before_spending_window
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 384 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --bin blent`

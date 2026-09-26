@@ -1,0 +1,11 @@
+{
+  "unchanged_rust_source_files": 242,
+  "recollected_sources": [
+    "host/src/selection/trial.rs",
+    "host/src/selection/worker.rs",
+    "host/src/selection/worker/measured.rs"
+  ],
+  "prior": "T612 final-manifest.json.gz + attested.lcov.gz",
+  "current": "T627 manifest.json + host.lcov",
+  "rule": "Only byte-identical sources retain prior counters; all counters for changed sources replaced."
+}

@@ -71,6 +71,10 @@ pub(super) async fn benchmark(
     candidates: Vec<Candidate>,
 ) -> Vec<Candidate> {
     let key = Key::new(snapshot);
+    if !super::super::trial::capture_ready(latency, &key).await {
+        tracing::info!("Automatic trials skipped: capture did not become ready within 15s");
+        return Vec::new();
+    }
     benchmark_with(settings, snapshot, candidates, |candidate| {
         let key = &key;
         async move {
@@ -232,6 +236,36 @@ pub(super) fn reason(candidate: &Candidate) -> Option<String> {
 mod tests {
     use super::super::tests::candidate;
     use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn t627_live_trials_wait_for_matching_capture_output_before_spending_window() {
+        let snapshot = super::super::tests::settings();
+        let (tx, _rx) = watch::channel(snapshot.clone());
+        let tracker = LatencyTracker::new();
+        let work = tokio::spawn({
+            let tx = tx.clone();
+            let tracker = tracker.clone();
+            let snapshot = snapshot.clone();
+            async move { benchmark(&tx, &snapshot, &tracker, vec![candidate("libx264", true, 120.0, 1)]).await }
+        });
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(7)).await;
+        assert!(tx.borrow().selection.is_none(), "T627: trial budget started before capture was ready");
+        assert!(!work.is_finished());
+        let evidence = tracker.encoder_started("libx264", Key::new(&snapshot).format);
+        tokio::task::yield_now().await;
+        assert!(tx.borrow().selection.is_none(), "spawning an encoder is not captured output");
+        tracker.on_encoded_for(tracker.next_sequence(), &evidence);
+        tokio::task::yield_now().await;
+        assert!(tx.borrow().selection.is_some());
+        for _ in 0..18 {
+            let seq = tracker.next_sequence();
+            tracker.on_encoded_for(seq, &evidence);
+            tracker.on_rendered(seq, 100);
+            tokio::time::advance(Duration::from_millis(200)).await;
+        }
+        assert_eq!(work.await.unwrap().len(), 1);
+    }
 
     #[test]
     fn t612_worker_trials_start_with_one_and_require_resource_evidence() {

@@ -231,7 +231,7 @@ fn publish_choice(
             verified: false,
             decoder: decoder.clone(),
         });
-        tracing::info!(encoder, reason, "Automatic encoder selection");
+        tracing::info!(encoder, workers, ?decoder, reason, "Automatic encoder selection");
         true
     })
 }

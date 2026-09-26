@@ -16,6 +16,32 @@ import org.robolectric.annotation.Config
 @Config(sdk = [27, 34], shadows = [StartupCodecShadow::class])
 class FramedDecoderTest {
     @Suppress("UNCHECKED_CAST")
+    @Test fun t627_surfaceSetupPreservesNegotiatedDecoderAndReceiptAcrossReconnect() {
+        StartupCodecShadow.stage = ""
+        val receiver = VideoReceiver { error("T627 must not connect") }
+        val surface = Surface(SurfaceTexture(1))
+        val choice = DecoderSelection("c2.unisoc.avc.decoder", "h264", "constrained-baseline", 40, 8, false, 120)
+        val method = VideoReceiver::class.java.getDeclaredMethod("ensureSurfaceCodec", Long::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+        val attempted = mutableListOf<DecoderFormat>()
+        receiver.decoder.createCodec = { attempted.add(it); MediaCodec.createDecoderByType(it.mimeType) }
+        try {
+            for (selected in listOf(choice, choice, null)) {
+                receiver.setStreamFormat(DecoderFormat("video/avc", 1280, 800, 60, selection = selected))
+                (field("pendingSurface").get(receiver) as AtomicReference<Surface?>).set(surface)
+                (field("surfaceReady").get(receiver) as AtomicBoolean).set(true)
+                field("isRunning").set(receiver, true)
+                val generation = (field("sessionGeneration").get(receiver) as java.util.concurrent.atomic.AtomicLong).get()
+                assertEquals(true, method.invoke(receiver, generation))
+                assertEquals("T627: live surface setup discarded the negotiated decoder", selected, attempted.last().selection)
+                assertEquals(selected?.receipt(), receiver.decoder.configuredSelectionReceipt)
+                receiver.stop()
+            }
+            assertEquals(3, attempted.size)
+        } finally { receiver.stop(); surface.release() }
+    }
+
+    @Suppress("UNCHECKED_CAST")
     @Test fun t497_surfaceCodecRequiresCurrentReadySurfaceAndReusesItsOwner() {
         StartupCodecShadow.stage = ""
         val receiver = VideoReceiver { error("T497 must not connect") }

@@ -6,6 +6,23 @@ use blent_config::negotiation::DecoderChoice;
 use std::{future::Future, time::Duration};
 use tokio::sync::watch;
 
+/// Capture startup has its own bound; it must not consume a candidate's window.
+pub(super) async fn capture_ready(tracker: &LatencyTracker, key: &Key) -> bool {
+    let mut updates = tracker.activity_updates();
+    tokio::time::timeout(Duration::from_secs(15), async {
+        loop {
+            if tracker.encoder_evidence().is_some_and(|e| {
+                e.active() && e.format == key.format && e.encoded() > 0
+            }) {
+                return true;
+            }
+            if updates.changed().await.is_err() {
+                return false;
+            }
+        }
+    }).await.unwrap_or(false)
+}
+
 /// Each candidate receives its own bounded window. Never merge encoder epochs.
 pub(super) async fn observe(
     tracker: &LatencyTracker,
@@ -159,6 +176,23 @@ impl Observation {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[tokio::test(start_paused = true)]
+    async fn t627_capture_readiness_rejects_missing_retired_and_wrong_format_output() {
+        let key = Key { format: (640, 480, 60, 20_000, 18), epoch: 1, decoders: None };
+        for state in 0..4 {
+            let tracker = LatencyTracker::new();
+            if state > 0 {
+                let format = if state == 1 { (1280, 800, 60, 20_000, 18) } else { key.format };
+                let evidence = tracker.encoder_started("libx264", format);
+                tracker.on_encoded_for(1, &evidence);
+                if state == 2 { drop(tracker.encoder_activity(evidence)); }
+            }
+            let started = tokio::time::Instant::now();
+            assert_eq!(capture_ready(&tracker, &key).await, state == 3);
+            assert_eq!(started.elapsed(), if state == 3 { Duration::ZERO } else { Duration::from_secs(15) });
+        }
+    }
 
     async fn acknowledge(
         tracker: &LatencyTracker,

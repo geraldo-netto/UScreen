@@ -1,0 +1,14 @@
+diff --git a/host/src/latency.rs b/host/src/latency.rs
+index e5dcc2d..1d12e31 100644
+--- a/host/src/latency.rs
++++ b/host/src/latency.rs
+@@ -337,6 +337,9 @@ impl Inner {
+             .as_ref()
+             .is_some_and(|output| output.encoder.decoder_receipt.as_deref() != decoder)
+         {
++            tracing::trace!(target: "blent::frame_timing", sequence = seq,
++                expected = ?encoder.as_ref().and_then(|output| output.encoder.decoder_receipt.as_deref()),
++                received = ?decoder, "Render ACK configuration mismatch");
+             return None;
+         }
+         let micros = at.elapsed().as_micros().min(u32::MAX as u128) as u32;

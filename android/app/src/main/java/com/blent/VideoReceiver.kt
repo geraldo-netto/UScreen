@@ -241,7 +241,7 @@ class VideoReceiver(createSocket: () -> Socket = { Socket() }) {
             if (!isCurrent(generation)) return false
             if (decoder.mediaCodec != null || VideoCodec.framed(mimeType)) return true
             val surface = pendingSurface.get()?.takeIf { it.isValid } ?: return false
-            surface to DecoderFormat(mimeType, formatWidth, formatHeight, streamFps)
+            surface to DecoderFormat(mimeType, formatWidth, formatHeight, streamFps, selection = decoderSelection)
         }
         return decoder.setupCodec(surface, parameters) {
             isCurrent(generation) && surfaceReady.get() && pendingSurface.get() === surface
