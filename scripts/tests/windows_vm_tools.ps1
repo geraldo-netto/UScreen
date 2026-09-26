@@ -12,3 +12,5 @@ try {
     }
     Write-Output 'PASS: native stderr is logged and exit codes determine success'
 } finally { Remove-Item $directory -Recurse -Force }
+# T646: the expected failure above is fixture data, not this suite's result.
+$global:LASTEXITCODE=0
