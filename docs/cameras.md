@@ -132,6 +132,19 @@ old socket, camera and codec, then starts a fresh decoder/encoder generation.
 Stop, permission changes, lifecycle cancellation and non-transport failures do
 not trigger retries. Retry exhaustion leaves sharing off with an error.
 
+Adaptive camera bitrate defaults on. The requested bitrate is the ceiling;
+`--min-bitrate` / `camera.min_bitrate` defaults to 1000 kbit/s (effective floor
+is capped by the ceiling). Three pressure samples and a one-second cooldown
+reduce the target by 25%; a transport failure reduces the next attempt's target
+immediately. Five seconds of healthy feedback permit a 10% increase (at least
+64 kbit/s), capped at the ceiling. Neutral feedback interrupts the healthy run.
+Use the Camera tab checkbox or `--adaptive-bitrate false` for a fixed target.
+Lower targets can reduce quality; hardware encoders need not meet them exactly.
+
+[Native recovery measurements and graph](reviews/2026-09-26-camera-freshness.md)
+show the tested boundaries. The 150 ms admission budget does not promise a
+150 ms recovery time or camera-to-consumer latency.
+
 ## Backend boundary
 
 `common/src/camera.rs` defines the portable settings, state and `CameraBackend`

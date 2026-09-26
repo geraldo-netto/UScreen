@@ -133,8 +133,19 @@ fn profile(ui: &mut egui::Ui, options: &mut CameraProfile) {
     ui.label("Frame rate");
     ui.add(egui::Slider::new(&mut options.fps, 5..=30).suffix(" FPS"));
     ui.end_row();
-    ui.label("Camera bitrate");
+    ui.label("Camera bitrate ceiling");
     ui.add(egui::Slider::new(&mut options.bitrate, 256..=20000).suffix(" kbit/s"));
+    ui.end_row();
+    ui.label("Adaptive camera bitrate");
+    ui.checkbox(
+        &mut options.adaptive_bitrate,
+        "Reduce bitrate when the route falls behind",
+    );
+    ui.end_row();
+    ui.label("Camera bitrate floor");
+    ui.add_enabled(options.adaptive_bitrate,
+        egui::Slider::new(&mut options.min_bitrate, 256..=20000).suffix(" kbit/s"))
+        .on_hover_text("Effective floor is capped by the requested ceiling. Lower rates may reduce picture quality.");
     ui.end_row();
     ui.label("Freshness budget");
     ui.add(egui::Slider::new(&mut options.freshness_ms, 50..=2000).suffix(" ms"))

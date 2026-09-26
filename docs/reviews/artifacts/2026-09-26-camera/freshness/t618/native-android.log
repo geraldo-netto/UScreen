@@ -1,0 +1,73 @@
+--------- beginning of main
+09-26 15:04:12.873 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:04:14.062 17440 17653 I BlentCamera: accepted=30 queueAgeUs=0 feedbackUs=3019 ageBasis=relative-encoder-queue
+09-26 15:04:15.059 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=3321 ageBasis=relative-encoder-queue
+09-26 15:04:16.063 17440 17653 I BlentCamera: accepted=90 queueAgeUs=0 feedbackUs=3231 ageBasis=relative-encoder-queue
+09-26 15:04:17.070 17440 17653 I BlentCamera: accepted=120 queueAgeUs=0 feedbackUs=2911 ageBasis=relative-encoder-queue
+09-26 15:04:18.074 17440 17653 I BlentCamera: accepted=150 queueAgeUs=0 feedbackUs=2861 ageBasis=relative-encoder-queue
+09-26 15:04:19.076 17440 17653 I BlentCamera: accepted=180 queueAgeUs=0 feedbackUs=2664 ageBasis=relative-encoder-queue
+09-26 15:04:20.075 17440 17653 I BlentCamera: accepted=210 queueAgeUs=0 feedbackUs=2942 ageBasis=relative-encoder-queue
+09-26 15:04:21.077 17440 17653 I BlentCamera: accepted=240 queueAgeUs=0 feedbackUs=2542 ageBasis=relative-encoder-queue
+09-26 15:04:22.079 17440 17653 I BlentCamera: accepted=270 queueAgeUs=0 feedbackUs=2124 ageBasis=relative-encoder-queue
+09-26 15:04:22.883 17440 17440 I BlentCamera: retryBitrateKbps=2250
+09-26 15:04:22.883 17440 17440 I BlentCamera: transportRetry=1
+09-26 15:06:27.885 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:29.111 17440 17653 I BlentCamera: bitrateKbps=2250
+09-26 15:06:29.154 17440 17440 I BlentCamera: retryBitrateKbps=1687
+09-26 15:06:29.155 17440 17440 I BlentCamera: transportRetry=1
+09-26 15:06:29.559 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:30.809 17440 17653 I BlentCamera: accepted=30 queueAgeUs=3572 feedbackUs=42340 ageBasis=relative-encoder-queue
+09-26 15:06:31.806 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=43143 ageBasis=relative-encoder-queue
+09-26 15:06:32.803 17440 17653 I BlentCamera: accepted=90 queueAgeUs=0 feedbackUs=42718 ageBasis=relative-encoder-queue
+09-26 15:06:33.897 17440 17653 I BlentCamera: accepted=120 queueAgeUs=82094 feedbackUs=42316 ageBasis=relative-encoder-queue
+09-26 15:06:33.945 17440 17653 I BlentCamera: bitrateKbps=1265
+09-26 15:06:33.992 17440 17440 I BlentCamera: retryBitrateKbps=1000
+09-26 15:06:33.992 17440 17440 I BlentCamera: transportRetry=2
+09-26 15:06:34.653 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:35.927 17440 17653 I BlentCamera: accepted=30 queueAgeUs=36183 feedbackUs=43483 ageBasis=relative-encoder-queue
+09-26 15:06:36.853 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=2175 ageBasis=relative-encoder-queue
+09-26 15:06:37.866 17440 17653 I BlentCamera: accepted=90 queueAgeUs=10878 feedbackUs=1550 ageBasis=relative-encoder-queue
+09-26 15:06:37.888 17440 17440 I BlentCamera: retryBitrateKbps=1000
+09-26 15:06:38.229 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:39.367 17440 17653 I BlentCamera: bitrateKbps=2250
+09-26 15:06:39.411 17440 17440 I BlentCamera: retryBitrateKbps=1687
+09-26 15:06:39.411 17440 17440 I BlentCamera: transportRetry=1
+09-26 15:06:39.824 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:40.294 17440 17440 I BlentCamera: retryBitrateKbps=1265
+09-26 15:06:40.294 17440 17440 I BlentCamera: transportRetry=2
+09-26 15:06:40.960 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:06:42.184 17440 17653 I BlentCamera: accepted=30 queueAgeUs=0 feedbackUs=42946 ageBasis=relative-encoder-queue
+09-26 15:06:43.187 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=43933 ageBasis=relative-encoder-queue
+09-26 15:06:44.190 17440 17653 I BlentCamera: accepted=90 queueAgeUs=0 feedbackUs=43451 ageBasis=relative-encoder-queue
+09-26 15:06:45.161 17440 17653 I BlentCamera: accepted=120 queueAgeUs=0 feedbackUs=2436 ageBasis=relative-encoder-queue
+09-26 15:06:46.240 17440 17653 I BlentCamera: accepted=150 queueAgeUs=67639 feedbackUs=1527 ageBasis=relative-encoder-queue
+09-26 15:06:47.163 17440 17653 I BlentCamera: accepted=180 queueAgeUs=0 feedbackUs=1959 ageBasis=relative-encoder-queue
+09-26 15:06:48.197 17440 17653 I BlentCamera: accepted=210 queueAgeUs=0 feedbackUs=43414 ageBasis=relative-encoder-queue
+09-26 15:06:48.230 17440 17440 I BlentCamera: retryBitrateKbps=1000
+09-26 15:07:24.659 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:07:25.839 17440 17653 I BlentCamera: accepted=30 queueAgeUs=0 feedbackUs=2488 ageBasis=relative-encoder-queue
+09-26 15:07:26.847 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=2858 ageBasis=relative-encoder-queue
+09-26 15:07:27.849 17440 17653 I BlentCamera: accepted=90 queueAgeUs=0 feedbackUs=2500 ageBasis=relative-encoder-queue
+09-26 15:07:28.848 17440 17653 I BlentCamera: accepted=120 queueAgeUs=0 feedbackUs=2587 ageBasis=relative-encoder-queue
+09-26 15:07:29.851 17440 17653 I BlentCamera: accepted=150 queueAgeUs=0 feedbackUs=2435 ageBasis=relative-encoder-queue
+09-26 15:07:30.855 17440 17653 I BlentCamera: accepted=180 queueAgeUs=0 feedbackUs=2788 ageBasis=relative-encoder-queue
+09-26 15:07:31.860 17440 17653 I BlentCamera: accepted=210 queueAgeUs=0 feedbackUs=2387 ageBasis=relative-encoder-queue
+09-26 15:07:32.866 17440 17653 I BlentCamera: accepted=240 queueAgeUs=0 feedbackUs=2779 ageBasis=relative-encoder-queue
+09-26 15:07:33.863 17440 17653 I BlentCamera: accepted=270 queueAgeUs=0 feedbackUs=2221 ageBasis=relative-encoder-queue
+09-26 15:07:34.666 17440 17440 I BlentCamera: retryBitrateKbps=2250
+09-26 15:07:34.666 17440 17440 I BlentCamera: transportRetry=1
+09-26 15:07:35.007 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:07:36.172 17440 17653 I BlentCamera: accepted=30 queueAgeUs=0 feedbackUs=2230 ageBasis=relative-encoder-queue
+09-26 15:07:37.024 17440 17440 I BlentCamera: retryBitrateKbps=2250
+09-26 15:07:37.024 17440 17440 I BlentCamera: transportRetry=1
+09-26 15:07:37.427 17440 17653 I BlentCamera: timestampSource=0 age=relative-encoder-queue
+09-26 15:07:38.611 17440 17653 I BlentCamera: accepted=30 queueAgeUs=0 feedbackUs=1863 ageBasis=relative-encoder-queue
+09-26 15:07:39.615 17440 17653 I BlentCamera: accepted=60 queueAgeUs=0 feedbackUs=2230 ageBasis=relative-encoder-queue
+09-26 15:07:40.622 17440 17653 I BlentCamera: accepted=90 queueAgeUs=0 feedbackUs=2854 ageBasis=relative-encoder-queue
+09-26 15:07:41.626 17440 17653 I BlentCamera: accepted=120 queueAgeUs=0 feedbackUs=3119 ageBasis=relative-encoder-queue
+09-26 15:07:42.628 17440 17653 I BlentCamera: accepted=150 queueAgeUs=0 feedbackUs=1939 ageBasis=relative-encoder-queue
+09-26 15:07:42.793 17440 17653 I BlentCamera: bitrateKbps=2475
+09-26 15:07:43.628 17440 17653 I BlentCamera: accepted=180 queueAgeUs=0 feedbackUs=3195 ageBasis=relative-encoder-queue
+09-26 15:07:44.631 17440 17653 I BlentCamera: accepted=210 queueAgeUs=0 feedbackUs=2771 ageBasis=relative-encoder-queue
+09-26 15:07:45.032 17440 17440 I BlentCamera: retryBitrateKbps=1856
+09-26 15:07:45.032 17440 17440 I BlentCamera: transportRetry=2

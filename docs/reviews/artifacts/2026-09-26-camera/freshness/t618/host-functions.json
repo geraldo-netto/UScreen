@@ -1,0 +1,245 @@
+{
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/camera.rs",
+    "host/src/camera/bridge.rs",
+    "gui/src/camera_settings.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 20,
+      "passing": 20,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/camera.rs",
+      "name": "default",
+      "line": 86,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/camera.rs",
+      "name": "validate",
+      "line": 105,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/camera.rs",
+      "name": "validate_freshness",
+      "line": 131,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/camera.rs",
+      "name": "frame_bytes",
+      "line": 143,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "default",
+      "line": 13,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "show",
+      "line": 24,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "state",
+      "line": 40,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "buttons",
+      "line": 46,
+      "language": "rust",
+      "covered": 33,
+      "total": 34,
+      "percent": 97.05882352941177,
+      "passes": true,
+      "missing": [
+        85
+      ]
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "start",
+      "line": 89,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "create_backend",
+      "line": 102,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "state_label",
+      "line": 111,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "profile",
+      "line": 124,
+      "language": "rust",
+      "covered": 39,
+      "total": 39,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "rotation",
+      "line": 166,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "resolution",
+      "line": 178,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "name": "device",
+      "line": 199,
+      "language": "rust",
+      "covered": 15,
+      "total": 16,
+      "percent": 93.75,
+      "passes": true,
+      "missing": [
+        211
+      ]
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "output",
+      "line": 17,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "create",
+      "line": 31,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "invite",
+      "line": 53,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "close",
+      "line": 91,
+      "language": "rust",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        99
+      ]
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "name": "owns_mapping",
+      "line": 104,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

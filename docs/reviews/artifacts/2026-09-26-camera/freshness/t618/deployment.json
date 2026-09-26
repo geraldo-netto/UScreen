@@ -1,0 +1,21 @@
+{
+  "config_existing_bytes_preserved_after_removing_new_defaults": true,
+  "old_config_sha256": "d55283c1646056b9e5c5401dc5221610e46dd7a3cae19c8408e88c1efb41b858",
+  "new_config_sha256": "896c60bf79cc7b99ee4ef11c00b7adce726afc54cf67d868a9299d6e76f03d56",
+  "camera_defaults": {
+    "lens": "front",
+    "background": false,
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "bitrate": 3000,
+    "adaptive_bitrate": true,
+    "min_bitrate": 1000,
+    "freshness_ms": 150,
+    "rotation": 0,
+    "mirror": false
+  },
+  "image_sha256": "58a3e540925156ba3e9402b938778438b046836ed4bbefcf1a094c741a4a808a",
+  "cursor": "(true, 'true')",
+  "service": "active"
+}

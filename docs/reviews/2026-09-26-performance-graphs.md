@@ -49,3 +49,11 @@ an image-quality cost. No production UDP/WebRTC stack was added.
 All plots have PNG and standalone SVG versions. Their Python generators and
 underlying measurements are retained in the repository. Artifact integrity is
 listed in [SHA256SUMS](artifacts/2026-09-26-camera/SHA256SUMS).
+
+## Camera freshness recovery
+
+[Real-tablet camera recovery](2026-09-26-camera-freshness.md#t618--bounded-rate-adaptation-and-native-acceptance)
+compares a clean ten-second run with one injected feedback stall. It measures
+host-decoded frame arrivals, not presentation latency or an old/new throughput gain.
+
+![Camera recovery](artifacts/2026-09-26-camera/freshness/t618/native-recovery.png)

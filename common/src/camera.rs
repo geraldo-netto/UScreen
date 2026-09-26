@@ -45,6 +45,12 @@ pub struct CameraProfile {
     /// Camera H.264 target bitrate in kbit/s; independent of display bitrate.
     #[cfg_attr(feature = "platform", arg(long, default_value_t = 3000))]
     pub bitrate: u32,
+    /// Lower the camera target under congestion, then recover slowly.
+    #[cfg_attr(feature = "platform", arg(long, default_value_t = true, action = clap::ArgAction::Set))]
+    pub adaptive_bitrate: bool,
+    /// Adaptive floor in kbit/s, capped by the requested bitrate.
+    #[cfg_attr(feature = "platform", arg(long, default_value_t = 1000))]
+    pub min_bitrate: u32,
     /// Extra encoder-queue age and transport budget; not glass-to-glass latency.
     #[cfg_attr(feature = "platform", arg(long, default_value_t = 150))]
     pub freshness_ms: u32,
@@ -87,6 +93,8 @@ impl Default for CameraProfile {
             fps: 30,
             bitrate: 3000,
             freshness_ms: 150,
+            adaptive_bitrate: true,
+            min_bitrate: 1000,
             mirror: false,
             rotation: 0,
         }
@@ -122,6 +130,10 @@ impl CameraProfile {
 
     fn validate_freshness(&self) -> Result<()> {
         ensure!(
+            (256..=20000).contains(&self.min_bitrate),
+            "camera minimum bitrate must be 256–20000 kbit/s"
+        );
+        ensure!(
             (50..=2000).contains(&self.freshness_ms),
             "camera freshness must be 50–2000 ms"
         );
@@ -152,6 +164,28 @@ mod tests {
             panic!()
         };
         options
+    }
+
+    #[test]
+    fn t618_adaptive_rate_bounds_and_fixed_override() {
+        for value in [0, 255, 256, 1000, 20000, 20001, u32::MAX] {
+            let mut candidate = options();
+            candidate.min_bitrate = value;
+            assert_eq!(candidate.validate().is_ok(), (256..=20000).contains(&value));
+        }
+        let cli = Cli::parse_from([
+            "blent",
+            "cameras",
+            "--adaptive-bitrate",
+            "false",
+            "--min-bitrate",
+            "256",
+        ]);
+        let Some(Commands::Cameras(profile)) = cli.command else {
+            panic!()
+        };
+        assert!(!profile.adaptive_bitrate);
+        assert_eq!(profile.min_bitrate, 256);
     }
 
     #[test]

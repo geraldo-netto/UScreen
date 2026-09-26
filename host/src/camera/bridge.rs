@@ -71,8 +71,8 @@ impl Bridge {
             blent_config::camera::Lens::Rear => 1,
         };
         let command = format!(
-            "am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port {port} --ei width {} --ei height {} --ei fps {} --ei lens {lens} --ez background {} --ei bitrate {} --ei freshness_ms {}\n",
-            options.width, options.height, options.fps, options.background, options.bitrate, options.freshness_ms,
+            "am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port {port} --ei width {} --ei height {} --ei fps {} --ei lens {lens} --ez background {} --ei bitrate {} --ei freshness_ms {} --ez adaptive_bitrate {} --ei min_bitrate {}\n",
+            options.width, options.height, options.fps, options.background, options.bitrate, options.freshness_ms, options.adaptive_bitrate, options.min_bitrate,
         );
         let result = Command::new(&self.adb)
             .args(["-s", &self.serial, "shell"])

@@ -26,7 +26,7 @@ import org.robolectric.shadows.*
 
 @Implements(MediaCodec::class)
 class CameraEncoderShadow : ShadowMediaCodec() {
-    companion object { var step = 0; var releases = 0; var afterPacket: () -> Unit = {}; var frames: List<Triple<Long, Long, Int>> = emptyList(); var nowUs = 0L; var syncRequests = 0 }
+    companion object { var step = 0; var releases = 0; var afterPacket: () -> Unit = {}; var frames: List<Triple<Long, Long, Int>> = emptyList(); var nowUs = 0L; var syncRequests = 0; val bitrates = mutableListOf<Int>() }
     @Implementation fun createInputSurface() = Surface(SurfaceTexture(0))
     @Implementation fun dequeueOutputBuffer(info: MediaCodec.BufferInfo, timeout: Long): Int {
         if (frames.isNotEmpty() && step in 1..frames.size) {
@@ -43,6 +43,7 @@ class CameraEncoderShadow : ShadowMediaCodec() {
     }
     @Implementation fun setParameters(parameters: android.os.Bundle) {
         if (parameters.containsKey(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME)) syncRequests++
+        if (parameters.containsKey(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE)) bitrates.add(parameters.getInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE))
     }
     @Implementation fun getOutputBuffer(index: Int): ByteBuffer = ByteBuffer.wrap(byteArrayOf(9, 1, 2, 3, 9))
     @Implementation override fun getOutputFormat(): MediaFormat = MediaFormat().apply {
@@ -129,7 +130,7 @@ class CameraCaptureTest {
         capture = CameraCapture(context)
         CameraEncoderShadow.step = 0; CameraEncoderShadow.releases = 0
         CameraEncoderShadow.afterPacket = {}
-        CameraEncoderShadow.frames = emptyList(); CameraEncoderShadow.nowUs = 0; CameraEncoderShadow.syncRequests = 0
+        CameraEncoderShadow.frames = emptyList(); CameraEncoderShadow.nowUs = 0; CameraEncoderShadow.syncRequests = 0; CameraEncoderShadow.bitrates.clear()
         CameraManagerCaptureShadow.failure = 0; CameraDeviceCaptureShadow.failSession = false
         CameraManagerCaptureShadow.beforeOpen = {}; CameraDeviceCaptureShadow.beforeSession = {}
         CameraManagerCaptureShadow.created = null; CameraDeviceCaptureShadow.created = null
@@ -146,23 +147,28 @@ class CameraCaptureTest {
         org.robolectric.shadow.api.Shadow.extract<CameraManagerCaptureShadow>(manager).addCamera(id, metadata)
     }
 
-    private fun exercise(lens: CameraLens = CameraLens.REAR, cancelAt: String? = null): Pair<Throwable?, List<ByteArray>> {
+    private fun exercise(lens: CameraLens = CameraLens.REAR, cancelAt: String? = null, failFeedback: Boolean = false): Pair<Throwable?, List<ByteArray>> {
         val executor = Executors.newFixedThreadPool(2)
         val packets = mutableListOf<ByteArray>()
         ServerSocket(0).use { server ->
             server.soTimeout = 2000
             val reader = executor.submit {
-                try {
-                    server.accept().use { peer ->
-                        peer.soTimeout = 2000
-                        val input = java.io.DataInputStream(peer.getInputStream())
-                        input.readFully(ByteArray(74)); peer.getOutputStream().write("OK".toByteArray())
-                        while (true) {
-                            packets.add(ByteArray(input.readInt()).also { input.readFully(it) })
-                            java.io.DataOutputStream(peer.getOutputStream()).writeLong(packets.size.toLong())
+                repeat(if (failFeedback) 2 else 1) { connection ->
+                    try {
+                        server.accept().use { peer ->
+                            CameraEncoderShadow.step = 0
+                            peer.soTimeout = 2000
+                            val input = java.io.DataInputStream(peer.getInputStream())
+                            input.readFully(ByteArray(74)); peer.getOutputStream().write("OK".toByteArray())
+                            var sequence = 0L
+                            while (true) {
+                                packets.add(ByteArray(input.readInt()).also { input.readFully(it) })
+                                if (failFeedback && connection == 0) break
+                                java.io.DataOutputStream(peer.getOutputStream()).writeLong(++sequence)
+                            }
                         }
-                    }
-                } catch (_: java.io.IOException) {}
+                    } catch (_: java.io.IOException) {}
+                }
             }
             val resources = CameraResources()
             val captureJob = Job()
@@ -192,6 +198,30 @@ class CameraCaptureTest {
             Shadows.shadowOf(Looper.getMainLooper()).idle()
             Thread.sleep(5)
         }
+    }
+
+    @Test fun t618_transportRetryStartsNewConfigurationAndFeedbackSequence() {
+        addCamera("rear-id", CameraCharacteristics.LENS_FACING_BACK)
+        val (failure, packets) = exercise(failFeedback = true)
+        assertEquals("Camera encoder stopped", failure?.message)
+        assertEquals(3, packets.size)
+        assertArrayEquals(packets[0], packets[1])
+        assertEquals(1, sessionCloses)
+        assertEquals(1, deviceCloses)
+        assertTrue(ShadowLog.getLogsForTag("BlentCamera").any { it.msg.contains("retryBitrateKbps=2250") })
+    }
+
+    @Test fun t618_sustainedQueuePressureLowersCodecTarget() {
+        capture = CameraCapture(RuntimeEnvironment.getApplication()) { CameraEncoderShadow.nowUs }
+        addCamera("rear-id", CameraCharacteristics.LENS_FACING_BACK)
+        CameraEncoderShadow.frames = listOf(
+            Triple(0L, 0L, MediaCodec.BUFFER_FLAG_KEY_FRAME),
+            Triple(33_000L, 1_100_000L, 0),
+            Triple(66_000L, 1_200_000L, 0),
+            Triple(100_000L, 1_300_000L, 0),
+            Triple(1_400_000L, 1_410_000L, MediaCodec.BUFFER_FLAG_KEY_FRAME))
+        assertEquals("Camera encoder stopped", exercise().first?.message)
+        assertEquals("T618 sustained pressure left bitrate unchanged", listOf(2_250_000), CameraEncoderShadow.bitrates)
     }
 
     @Test fun t616_staleGapDiscardsDependentFramesUntilFreshKeyframe() {

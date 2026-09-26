@@ -20,10 +20,20 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val handler = Handler(Looper.getMainLooper())
 
-    suspend fun run(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing =
-        CameraRecovery.run(resources) { owned -> stream(endpoint, lens, displayRotation, owned) }
+    suspend fun run(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing {
+        val rate = CameraRate(endpoint.bitrate, endpoint.minBitrate, endpoint.adaptiveBitrate, endpoint.freshnessMs * 1000L)
+        CameraRecovery.run(resources) { owned ->
+            try { stream(endpoint, lens, displayRotation, owned, rate) }
+            catch (error: CameraTransportException) {
+                rate.congested(nowUs())
+                android.util.Log.i("BlentCamera", "retryBitrateKbps=${rate.current}")
+                throw error
+            }
+        }
+    }
 
-    suspend fun stream(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing =
+    private suspend fun stream(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int,
+        resources: CameraResources, rate: CameraRate): Nothing =
         withContext(Dispatchers.IO) {
             val id = cameraId(lens)
             val metadata = manager.getCameraCharacteristics(id)
@@ -32,14 +42,14 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
             val rotation = rotation(sensor, displayRotation, lens)
             android.util.Log.i("BlentCamera", "timestampSource=${metadata.get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE)} age=relative-encoder-queue")
             val sink = CameraWire.connect(endpoint, lens, rotation, resources)
-            val codec = encoder(endpoint, resources)
+            val codec = encoder(endpoint.copy(bitrate = rate.current), resources)
             val surface = codec.createInputSurface()
             resources.own { surface.release() }
             codec.start()
             val camera = withTimeout(5000) { open(id).also { device -> resources.own { device.close() } } }
             val session = withTimeout(5000) { session(camera, surface).also { configured -> resources.own { configured.close() } } }
             repeat(camera, session, surface, frameRate(metadata, endpoint.fps))
-            drain(codec, sink, endpoint.freshnessMs)
+            drain(codec, sink, endpoint.freshnessMs, rate)
         }
 
     private fun cameraId(lens: CameraLens): String {
@@ -102,7 +112,7 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
         session.setRepeatingRequest(request, null, handler)
     }
 
-    private suspend fun drain(codec: MediaCodec, sink: CameraLink, freshnessMs: Int): Nothing {
+    private suspend fun drain(codec: MediaCodec, sink: CameraLink, freshnessMs: Int, rate: CameraRate): Nothing {
         val info = MediaCodec.BufferInfo()
         val clock = CameraFrameClock()
         val freshness = CameraFreshness(freshnessMs * 1000L)
@@ -111,25 +121,25 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
             currentCoroutineContext().ensureActive()
             val index = codec.dequeueOutputBuffer(info, 10_000)
             when {
-                index >= 0 -> { sendBuffer(codec, sink, info, index, clock, freshness); progress = android.os.SystemClock.elapsedRealtime() }
+                index >= 0 -> { sendBuffer(codec, sink, info, index, clock, freshness, rate); progress = android.os.SystemClock.elapsedRealtime() }
                 index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> sendConfiguration(codec.outputFormat, sink)
             }
             check(android.os.SystemClock.elapsedRealtime() - progress < 5000) { "Camera encoder stopped producing frames" }
         }
     }
 
-    private fun sendBuffer(codec: MediaCodec, sink: CameraLink, info: MediaCodec.BufferInfo, index: Int, clock: CameraFrameClock, freshness: CameraFreshness) {
+    private fun sendBuffer(codec: MediaCodec, sink: CameraLink, info: MediaCodec.BufferInfo, index: Int, clock: CameraFrameClock, freshness: CameraFreshness, rate: CameraRate) {
         try {
             if (info.size > 0) {
                 val buffer = requireNotNull(codec.getOutputBuffer(index))
-                sendFrame(codec, sink, buffer, info, clock, freshness)
+                sendFrame(codec, sink, buffer, info, clock, freshness, rate)
             }
             check(info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM == 0) { "Camera encoder stopped" }
         } finally { codec.releaseOutputBuffer(index, false) }
     }
 
     private fun sendFrame(codec: MediaCodec, sink: CameraLink, buffer: java.nio.ByteBuffer,
-        info: MediaCodec.BufferInfo, clock: CameraFrameClock, freshness: CameraFreshness) {
+        info: MediaCodec.BufferInfo, clock: CameraFrameClock, freshness: CameraFreshness, rate: CameraRate) {
         if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
             sink.send(buffer, info.offset, info.size, 0)
             return
@@ -137,14 +147,22 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
         val now = nowUs()
         val age = clock.ageUs(info.presentationTimeUs, now)
         val key = info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0
-        when (freshness.choose(age, key, now)) {
+        val feedback = when (freshness.choose(age, key, now)) {
             CameraFreshness.Decision.SEND -> sink.send(buffer, info.offset, info.size, age)
-            CameraFreshness.Decision.DROP -> Unit
+            CameraFreshness.Decision.DROP -> 0L
             CameraFreshness.Decision.REQUEST_SYNC -> {
                 android.util.Log.i("BlentCamera", "freshnessGap dropped=${freshness.dropped} queueAgeUs=$age")
                 codec.setParameters(android.os.Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
+                0L
             }
         }
+        updateBitrate(codec, rate.observe(age + feedback, nowUs()))
+    }
+
+    private fun updateBitrate(codec: MediaCodec, bitrate: Int?) {
+        if (bitrate == null) return
+        codec.setParameters(android.os.Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE, bitrate * 1000) })
+        android.util.Log.i("BlentCamera", "bitrateKbps=$bitrate")
     }
 
     private fun sendConfiguration(format: MediaFormat, sink: CameraLink) {

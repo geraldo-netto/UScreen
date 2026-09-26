@@ -1,0 +1,13 @@
+{
+  "active_camera_clients": [],
+  "closed_devices": [
+    0,
+    1
+  ],
+  "apk_sha256": "9034463b5e3760d951310fa37aab54737b1f31a8b29bc7fa35ecca9e9c2deeb3",
+  "probe_sha256": "241f753b0a96fcb66a7f3cae8af367702b44693b6023d188705d849cd669aede",
+  "v4l2_validation": "Unavailable: no /dev/video nodes; loading v4l2loopback requires privileged authorization",
+  "sensor_timestamp_source": "UNKNOWN (0)",
+  "log_tag_restored": true,
+  "native_permission_first_run": "Prompt included; first-frame timing 7290 ms excluded from warm comparison"
+}

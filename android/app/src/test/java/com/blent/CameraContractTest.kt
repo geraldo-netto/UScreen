@@ -59,6 +59,11 @@ class CameraContractTest {
         CameraInvitations.endpoint.value = null
     }
 
+    @Test fun t618_adaptiveMinimumIsBounded() {
+        for (value in listOf(Int.MIN_VALUE, 255, 256, 1000, 20000, 20001, Int.MAX_VALUE))
+            assertEquals(value in 256..20000, endpoint().copy(minBitrate = value).valid())
+    }
+
     @Test fun t539_wireAndBoundedInvalidInputPreserveSourceBuffer() {
         val buffer = Buffer()
         CameraWire.greeting(buffer, endpoint().token, CameraLens.REAR, 3)

@@ -1,0 +1,6 @@
+inject feedback stall at 2007 ms
+[vost#0:0/rawvideo @ 0x5677f6106500] Error submitting a packet to the muxer: Broken pipe
+[out#0/rawvideo @ 0x5677f6078480] Error muxing a packet
+[out#0/rawvideo @ 0x5677f6078480] Error writing trailer: Broken pipe
+[out#0/rawvideo @ 0x5677f6078480] Error closing file: Broken pipe
+camera generation ended: Err(unexpected end of file)
