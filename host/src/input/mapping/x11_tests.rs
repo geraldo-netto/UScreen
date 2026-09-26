@@ -159,7 +159,7 @@ if sys.argv[1] == 'list':
  if n >= {delay}:
   print('Blent Touch id=10 [slave pointer]')
   print('Blent Touch 2 id=20 [slave pointer]')
-else:
+elif sys.argv[1] != 'list-props':
  with (root/'mapped').open('a') as f: f.write(' '.join(sys.argv[1:])+'\n')
 "#
         ),
@@ -251,4 +251,32 @@ print((root/('wanted' if n >= 2 else 'foreign')).read_text())
         std::fs::read_to_string(root.path().join("mapped")).unwrap(),
         "map-to-output 10 DVI-I-2-1\n"
     );
+}
+
+#[tokio::test]
+async fn t625_late_pen_does_not_remap_verified_touch_and_pointer() {
+    let root = tempfile::tempdir().unwrap();
+    let owned = connector(1, "DVI-I-1", 1280);
+    std::fs::write(root.path().join("outputs"), output("DVI-I-2-1", false, &owned.edid)).unwrap();
+    let randr = tool(root.path(), "xrandr", "print((root/'outputs').read_text())");
+    let input = tool(root.path(), "xinput", r#"
+if sys.argv[1] == 'list':
+ p=root/'lists'; n=int(p.read_text())+1 if p.exists() else 1; p.write_text(str(n))
+ print('Blent Touch id=10 [slave pointer]')
+ print('Blent Pointer id=11 [slave pointer]')
+ print('Blent Pen id=12 [slave pointer]')
+ print('Blent Touch 2 id=20 [slave pointer]')
+elif sys.argv[1] == 'list-props':
+ print('Device Node (123): "/dev/input/event'+sys.argv[2]+'"')
+ print('Coordinate Transformation Matrix (124): 1, 0, 0, 0, 1, 0, 0, 0, 1')
+else:
+ with (root/'mapped').open('a') as f: f.write(' '.join(sys.argv[1:])+'\n')
+ if sys.argv[2]=='12' and int((root/'lists').read_text()) < 3: sys.exit(1)
+"#);
+    map_x11_devices(false, &DeviceIdentity::for_instance(0), Some(1), 3, &input, &randr, Some(&[owned])).await;
+    let mapped = std::fs::read_to_string(root.path().join("mapped")).unwrap();
+    assert_eq!(mapped.matches("map-to-output 10 ").count(), 1, "T625: stable touch was remapped while waiting for pen");
+    assert_eq!(mapped.matches("map-to-output 11 ").count(), 1);
+    assert_eq!(mapped.matches("map-to-output 12 ").count(), 3);
+    assert!(!mapped.contains("map-to-output 20 "));
 }

@@ -1,0 +1,21 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.36s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 1 test
+test input::mapping::x11_tests::t625_late_pen_does_not_remap_verified_touch_and_pointer ... 
+thread 'input::mapping::x11_tests::t625_late_pen_does_not_remap_verified_touch_and_pointer' (189594) panicked at host/src/input/mapping/x11_tests.rs:278:5:
+assertion `left == right` failed: T625: stable touch was remapped while waiting for pen
+  left: 3
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    input::mapping::x11_tests::t625_late_pen_does_not_remap_verified_touch_and_pointer
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 162 filtered out; finished in 0.74s
+
+error: test failed, to rerun pass `-p blent --lib`

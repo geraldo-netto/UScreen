@@ -3,6 +3,7 @@ use super::linux::{DeviceIdentity, KWIN_INPUT_IFACE};
 use blent_config::commands::AsyncCommandExt;
 use tracing::{info, warn};
 mod x11;
+mod x11_cache;
 use x11::{x11_active_outputs, x11_target_output};
 
 pub(super) async fn primary_non_evdi_output() -> Option<String> {
@@ -213,6 +214,7 @@ pub(super) async fn map_x11_devices(
     xrandr: &str,
     fixed_connectors: Option<&[crate::vdisplay::EvdiConnector]>,
 ) {
+    let mut cache = x11_cache::Mappings::default();
     for attempt in 0..40 {
         if attempt > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(250)).await;
@@ -222,7 +224,7 @@ pub(super) async fn map_x11_devices(
         let output = x11_mapping_output(pen_only, card, xrandr, connectors, attempt).await;
         let output = match output {
             Ok(Some(output)) => output,
-            Ok(None) => continue,
+            Ok(None) => { cache = Default::default(); continue; },
             Err(()) => return,
         };
         let Some(devices) = x11_query(
@@ -241,6 +243,7 @@ pub(super) async fn map_x11_devices(
             xinput,
             &output,
             expected,
+            &mut cache,
         )
         .await
         {
@@ -258,7 +261,7 @@ async fn x11_mapping_output(
     xrandr: &str,
     connectors: &[crate::vdisplay::EvdiConnector],
     attempt: u32,
-) -> Result<Option<String>, ()> {
+) -> Result<Option<x11_cache::Target>, ()> {
     let cached = x11_read_target(pen_only, card, xrandr, connectors, true).await?;
     if cached.is_some() || !attempt.is_multiple_of(4) {
         return Ok(cached);
@@ -272,7 +275,7 @@ async fn x11_read_target(
     xrandr: &str,
     connectors: &[crate::vdisplay::EvdiConnector],
     current: bool,
-) -> Result<Option<String>, ()> {
+) -> Result<Option<x11_cache::Target>, ()> {
     let args: &[&str] = if current {
         &["--current", "--prop"]
     } else {
@@ -289,7 +292,7 @@ async fn x11_read_target(
     let text = String::from_utf8_lossy(&report.stdout);
     Ok(
         x11_target_output(pen_only, &x11_active_outputs(&text), connectors, card)
-            .map(str::to_owned),
+            .map(|name| x11_cache::Target { name: name.into(), topology: text.to_string() }),
     )
 }
 
@@ -338,27 +341,24 @@ pub(super) fn x11_list_entry<'a, 'b>(
     Some((id, name.trim(), kind))
 }
 
-pub(super) async fn map_x11_list(
+async fn map_x11_list(
     text: &str,
     ident: &DeviceIdentity,
     xinput: &str,
-    output: &str,
+    output: &x11_cache::Target,
     expected: usize,
+    cache: &mut x11_cache::Mappings,
 ) -> bool {
+    cache.prepare(&output.topology, text, ident);
     let mut mapped = std::collections::HashSet::new();
     let mut failed = false;
     for line in text.lines() {
         let Some((id, name, kind)) = x11_list_entry(line, ident) else {
             continue;
         };
-        let ok = tokio::process::Command::new(xinput)
-            .args(["map-to-output", id, output])
-            .output_bounded()
-            .await
-            .is_ok_and(|out| out.status.success());
+        let ok = cache.map(xinput, id, name, &output.name).await;
         if ok {
             mapped.insert(kind);
-            info!("Mapped '{}' (X11 id {}) to {}", name, id, output);
         } else {
             failed = true;
         }

@@ -1,0 +1,10 @@
+{
+  "xrandr --current --prop": 78,
+  "xrandr --prop": 11,
+  "xinput list --short": 39,
+  "xinput map-to-output 21 DVI-I-2-1": 1,
+  "xinput list-props 21": 39,
+  "xinput map-to-output 23 DVI-I-2-1": 1,
+  "xinput list-props 23": 39,
+  "xinput map-to-output 22 DVI-I-2-1": 39
+}

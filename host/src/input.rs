@@ -1677,9 +1677,13 @@ fi
             mapped.lines().collect::<Vec<_>>(),
             [
                 "map-to-output 20 DVI-I-2-1",
+                "list-props 20 ",
                 "map-to-output 21 DVI-I-2-1",
+                "list-props 21 ",
                 "map-to-output 22 DVI-I-2-1",
-                "map-to-output 23 DVI-I-2-1"
+                "list-props 22 ",
+                "map-to-output 23 DVI-I-2-1",
+                "list-props 23 "
             ]
         );
         std::fs::remove_file(root.join("mapped")).unwrap();
@@ -1697,7 +1701,7 @@ fi
         let mapped = std::fs::read_to_string(root.join("mapped")).unwrap();
         assert_eq!(
             mapped.lines().collect::<Vec<_>>(),
-            ["map-to-output 10 eDP-1", "map-to-output 11 eDP-1"]
+            ["map-to-output 10 eDP-1", "list-props 10 ", "map-to-output 11 eDP-1", "list-props 11 "]
         );
         std::fs::remove_dir_all(root).unwrap();
     }
