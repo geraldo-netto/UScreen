@@ -17,9 +17,10 @@ release toolchain.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
-primitives. T493 is open for the reproduced native runtime-directory pinning
-failure and remaining acceptance/coverage; these primitives do not enable a
-Windows application backend.
+primitives. [T493 native acceptance](reviews/2026-09-26-windows-foundation.md)
+passes after T634 directory pinning and T637 explicit file ownership fixes. All
+46 Windows foundation functions meet the per-function coverage threshold;
+these primitives do not enable a Windows application backend.
 
 The [T495 GUI boundary](reviews/2026-09-19-windows-gui.md) also builds for GNU
 and checks on MSVC. Its Windows preview saves shared settings and hides Linux
@@ -36,7 +37,11 @@ the Linux camera-probe build boundary, subsequently fixed by T631.
 at `e92835f` passed both T631 regressions and full GNU linking. Native MSVC
 workspace tests compiled and ran: 9 of 10 Windows platform tests passed, but the
 runtime-directory pinning test failed because renaming the held directory
-succeeded. T493 retains that regression and the remaining acceptance/coverage.
+succeeded. This historical failure was fixed by T634. Later native run
+[36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+at `44b939e` passed the full suite, expanded ACL/token/junction acceptance and
+all 46 foundation-function coverage gates. T583 scheduling acceptance passed;
+T497 retains broader host/GUI and combined coverage work.
 This CI uses Windows Server 2022; Windows 11 VM acceptance remains separate.
 See [build and native evidence](reviews/2026-09-26-windows-build-boundary.md).
 

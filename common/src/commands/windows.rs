@@ -89,3 +89,35 @@ fn resume_thread(id: u32, owner: u32) -> io::Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t493_resume_rejects_missing_and_different_thread_owners() {
+        assert!(resume_thread(0, std::process::id()).is_err());
+        let current = unsafe { GetCurrentThreadId() };
+        let error = resume_thread(current, 0).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+        assert_eq!(error.to_string(), "child thread ownership changed");
+    }
+
+    #[test]
+    fn t493_resume_rejects_a_retired_child() {
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "commands::windows::tests::t493_resume_rejects_missing_and_different_thread_owners",
+            ])
+            .spawn()
+            .unwrap();
+        let pid = child.id();
+        assert!(child.wait().unwrap().success());
+        // Retain the process handle: Windows cannot recycle this child's PID.
+        let error = resume_child(pid).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::NotFound);
+        assert_eq!(error.to_string(), "suspended child thread disappeared");
+        drop(child);
+    }
+}

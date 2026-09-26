@@ -26,17 +26,17 @@ Windows desktop/kernel. GPU/display-driver/physical USB acceptance remains a
 separate hardware exercise. GPU or USB passthrough would require explicit device
 allocation and validation; do not detach hardware used by the Linux session.
 
-T631 is fixed. [Run 36261150896](https://github.com/geraldo-netto/UScreen/actions/runs/36261150896)
-at `e92835f` passed the native unsupported-probe regression and full GNU linking.
-Native MSVC workspace tests compiled and ran: the Windows service suite passed
-9 of 10 tests, but runtime-directory pinning failed because a held directory
-could still be renamed (T493). The process-priority round trip also passed;
-child/denial acceptance and counters remain T583. This CI uses Windows Server
-2022; Windows 11 VM acceptance remains separate. A native runner is available.
+T631 and the native pinning/ownership failures (T634/T637) are fixed.
+[Run 36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+at `44b939e` passed the full native workspace suite and MSVC/GNU builds. T493's
+46 Windows foundation functions each meet the 80% executable-line threshold,
+including ACLs, leases, token privacy, junction rejection and child retirement.
+T583 scheduling and owned-child propagation/denial acceptance also passed.
+This CI uses Windows Server 2022; Windows 11 VM repetition remains T633.
 
 KVM, UEFI and TPM emulator startup passed. As of 18:10 UTC, the official ISO was
 still downloading (about 0.9 of 6.6 GiB physically written), so Windows and the
-minimal package policies were **not yet installed/validated**. T633 tracks completion. The active user
+minimal package policies were **not yet installed/validated**. T633 tracks completion. Retain the VM, disk, firmware/TPM state and setup files after testing, as requested. The guest bootstrap runs portable tests, full native workspace tests and an all-features build before reporting readiness. The active user
 service `blent-windows-vm.service` waits for the download, verifies Microsoft’s
 SHA-256 and starts unattended installation once. Its private setup scripts and
 status live outside the repository; a repeated installation is refused. Open
@@ -48,23 +48,23 @@ does not enable Blent display/input/camera sharing.
 
 | ID(s) | Input needed from the maintainer | Work or evidence still required |
 | --- | --- | --- |
-| T628 | Nothing currently; already open. | Verify primary/backup signing metadata and correct only stale package prose, preserving key material. |
+| T628 | Resolved; nothing needed. | Primary/backup metadata corrected and matching certificate verified; key material preserved. |
 | T621 | Devices are now provisioned with the correct names and exclusive capabilities. Permit a fresh short camera test; the earlier 30-second authorization was used. | Actual webcam-consumer frames, blank retirement and reconnect; decoder timing alone is insufficient. |
 | T578 | Choose a separate graphics-stack test window or prioritize an explicit linear/exportable-surface implementation. | Current X server exposes DRI3 1.0; cross-GPU implicit import is corrupt. A validated explicit-layout path is needed before removing the fallback guard. A Windows VM does not solve this Linux graphics limitation. |
-| T583 | No additional scope decision; Windows VM/CI can provide the environment. | Native priority round trip passed; child/denial tests and counters remain. No macOS work is required. |
+| T583 | Resolved; nothing needed. | Native priority, child propagation and denied-handle checks pass, with 100% affected-function coverage. Win11 repetition remains T633; no macOS work required. |
 | T561 | A short normal sharing/trace window with the tablet available. No forced lock or special EVDI detach is needed. | Correlate capture/encode/transport sequence timing to establish the historical omission cause before changing pacing. |
 | T549 | Timestamp and preceding action if the lock recurs, or a coordinated reproduction window when you can manually unlock. | Correlate power/activity/keyguard records; the historical caller is unknown. Do not force-lock the live session to create evidence. |
 | T564 | Access to compatible NVIDIA NVENC and/or VP9/AV1 VAAPI encoding hardware/drivers. | Bounded tests using the bundled FFmpeg. The current GPU/software VM does not supply these missing encoder capabilities. |
 | T540 | Be present to unplug/replug the physical USB cable during an explicitly authorized camera test. | Release, inactive black output and explicit selection after reconnect. Combine with T621 once devices exist. |
 | T538 | Exact hub and charger models, and which device/cable connects to each port; then a stable test below full battery. | Establish a working data/power arrangement and sustained net charging. Advertised current and brief near-full samples do not prove it. |
-| T493, T497 | No further decision for isolated tests; VM/CI work can proceed. | Fix the reproduced native runtime-directory pinning failure, then complete ACL/lease/process acceptance and per-function coverage/fuzzing. T497 depends on T493; VM boot or a GNU build alone closes neither. |
+| T493, T497 | T493 resolved; no new decision for T497. | Native foundation acceptance and all 46 Windows functions pass. T497 remains open for broader host/GUI counters and a current combined report. |
 | T520 | **Answered: Windows 11 x64 first.** | Resolved and removed from TODO; target encoded in the support/build plan. |
 | T522 | A Windows PC/tester with the existing tablet, Windows build/GPU details and a USB test window; administrator access only for the chosen driver installation. | Physical GPU/display/input, lock/sleep/reconnect and cleanup acceptance. A basic VM covers isolated contracts, not this complete result. |
-| T524 | Nothing beyond the accepted target/environment. | Implement lifecycle after T493's native ownership/private-state checks. |
+| T524 | Nothing beyond the accepted target/environment. | Native ownership/private-state prerequisite T493 passed; lifecycle implementation is open. |
 | T525 | Tablet/USB availability when connection acceptance is ready. | Implement ADB transport after T524; physical acceptance under T522. |
 | T527 | Driver strategy: validated upstream ownership extension/exclusive instance, or a Blent-owned IDD. An owned driver also needs an agreed signing/maintenance/distribution owner. | Current upstream VDD is a lab candidate only: its global count/reload interface cannot retire only Blent-owned outputs. Do not buy a certificate before deciding this route. |
 | T528 | No independent preference after T527's driver decision. | Implement and validate capture on the selected output; lifecycle, mode changes and device loss remain mandatory. |
-| T529 | Nothing now. | Windows transfer-adapter work is open after the target decision; complete stream integration after T525/T528. |
+| T529 | Nothing now. | Current queue: native encoder-pipe acceptance after completed T583/T493. Complete capture/connection integration after T525/T528. |
 | T530 | Compatible GPU access under T522. | T529 first, then actual hardware initialization/measurements and fallback. Advertised encoder names are insufficient. |
 | T531, T532 | Nothing now. | Tray waits for T524/T525 status/lifecycle; autostart waits for T524 single-instance handling. |
 | T534 | Installer format and dependency distribution. Suggested starting point: per-user EXE installer, pinned ADB/FFmpeg bundled, separately installed driver. Confirm publisher/signing route before distribution. | Functioning milestones, redistribution notices, reproducible package checks, upgrade/uninstall ownership and T522 evidence. This suggestion is not an accepted decision. |

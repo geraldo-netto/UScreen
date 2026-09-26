@@ -1,7 +1,9 @@
 # Per-function coverage (T497)
 
-T497 remains blocked on native Windows evidence. Linux Rust, Android, capture C
-and essential scripts meet the per-function threshold; the full cross-platform
+T497 remains open for broader native Windows counters and a current combined
+report. Historical scoped Linux Rust, Android, capture C and essential-script
+reports passed; changed sources require fresh measurements. T493 now has native
+Windows evidence for all 46 foundation functions. The full cross-platform
 requirement does **not** yet pass. See the [measured scope and limits](../../docs/reviews/2026-09-19-function-coverage.md).
 The requirement covers Rust applications, the Android app, the C EVDI helper,
 and essential installation, EVDI setup and packaging scripts. Benchmarks in any
@@ -152,7 +154,11 @@ real user runtime directory; setting a private HOME alone does not isolate that
 case. These tests may use the existing isolated CI container when its explicit
 private-namespace marker is present. A namespace setup failure fails the test.
 
-Native Windows ACL/instance-ownership evidence is still blocked under T493.
-Wine loses the protected-DACL flag and cannot validate the required positive
-cases. Keep these tests and unmeasured functions visible; do not treat a Linux
-report or Windows cross-compilation as native Windows coverage.
+Native Windows ACL/instance-ownership acceptance passed under T493; see the
+[retained native counters](../../docs/reviews/2026-09-26-windows-foundation.md).
+Wine loses the protected-DACL flag and remains unsuitable for these positive
+cases. Keep unmeasured functions visible; do not treat Linux counters or Windows
+cross-compilation as native Windows coverage. The Windows workflow preserves
+LF source bytes and uploads LCOV plus SHA-256 source fingerprints. Windows
+relative backslashes are accepted by the importer; absolute drive paths require
+an explicit source prefix. Source bytes must match exactly before combining.

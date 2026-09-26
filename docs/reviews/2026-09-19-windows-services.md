@@ -1,7 +1,8 @@
 # T493: Windows shared-service foundation
 
-The first Windows services are implemented, but T493 remains blocked on
-native Windows validation of directory security and single-instance state.
+Historical implementation review from 2026-09-19. Native acceptance subsequently
+passed on 2026-09-26; see [T493 completion](2026-09-26-windows-foundation.md).
+The Wine-only limitations below describe the earlier evidence.
 Linux remains the supported runtime. No installed application was replaced.
 
 ## Implemented boundary
