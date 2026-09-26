@@ -40,6 +40,9 @@ Write-Output 'PASS: packaged app denials cover actual publishers and preserve sh
 # T633: exercise Windows' actual package evaluator. PowerShell -like accepts
 # partial wildcards that this native AppLocker path does not match.
 Import-Module AppLocker
+# T646: Server 2022 defers the policy-model assembly until a native cmdlet runs.
+# Read local policy to initialize it; this does not apply any machine policy.
+Get-AppLockerPolicy -Local | Out-Null
 $nativePolicy=[Microsoft.Security.ApplicationId.PolicyManagement.PolicyModel.AppLockerPolicy]::FromXml($policy.OuterXml)
 $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User
 foreach ($case in $cases) {
