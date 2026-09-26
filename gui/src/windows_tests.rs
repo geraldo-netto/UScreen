@@ -113,3 +113,12 @@ fn t533_dependency_versions_never_imply_a_running_or_connected_backend() {
         .iter()
         .any(|line| line == "Display: unavailable (unsupported)"));
 }
+
+#[test]
+fn t497_windows_pipe_capacity_is_explicitly_unsupported_for_all_bounds() {
+    for value in [0, 1, 2, 4, 16, 128, 1024, u32::MAX] {
+        assert!(platform::publish_pipe(value)
+            .unwrap_err()
+            .contains("not implemented on Windows"));
+    }
+}
