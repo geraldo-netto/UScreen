@@ -1,0 +1,12 @@
+{
+  "scripts/benchmarks/camera-socket.py": "9edaad5a14bc7c7269e0dd84ce5fed40fa780446e39fc03f2bd83fcdc341ad30",
+  "scripts/benchmarks/camera_datagram.py": "40d7ec223eca31af7f74c58c67cde05eff51f1aa0ef048769e7c441b47acef84",
+  "scripts/benchmarks/camera-fixture.py": "68b4ddab59cc0abcc282bb004a12003f97cb5c0ba8ae7e9ced2bbb8970e5032e",
+  "scripts/benchmarks/camera-chunks.py": "51555e46f78bf6b37a5262eeaecf6d894d55e2250a16391079d0016db287dad7",
+  "scripts/benchmarks/camera-transport-run.py": "fa1a1e332ee33185453e1ba8728a0c1abe915099ade0d5fc3a8d22ec5a2006d4",
+  "scripts/benchmarks/camera-transport-graphs.py": "3b432e990a16c0277f46fd127a9cffd03d49a843efdd56448b11f48b16af5d93",
+  "scripts/benchmarks/camera-transport.py": "8ce9dbc777a81c59c4b1f7b79715d619fdd0c49431b9d140d3b127dfe4f13777",
+  "scripts/benchmarks/camera-chunk-graphs.py": "a3fab1af8cba06fd32e3c98f009281e07a6e803380178c1a5a85b66ae3a66bbd",
+  "scripts/benchmarks/camera-transport-quality.py": "3a41394b05fe61fdeabb1a957ba838fc84aa314327bc289771a32dd05ad67d43",
+  "scripts/benchmarks/camera-socket-run.py": "5b59f70489214f005e96f9ea4aaefd9075262d1212acb4a071c7f71cd97bfa46"
+}

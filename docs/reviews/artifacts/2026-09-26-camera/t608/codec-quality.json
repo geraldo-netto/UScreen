@@ -1,0 +1,7 @@
+{
+  "reference": "decoded 3 Mb/s fixture, luma after FFmpeg gray conversion",
+  "candidate": "decoded 1 Mb/s fixture",
+  "frames": 300,
+  "mse": 19.48443460146586,
+  "psnr_db": 35.23392552896044
+}
