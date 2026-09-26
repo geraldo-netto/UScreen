@@ -26,6 +26,9 @@ $secureBoot=Confirm-SecureBootUEFI
 if (-not $tpm.TpmPresent -or -not $tpm.TpmReady -or -not $secureBoot) { throw 'T633: TPM/Secure Boot unavailable' }
 $identity=Get-Service AppIDSvc
 if ($identity.Status -ne 'Running') { throw 'T633: application identity enforcement unavailable' }
+# T647: build success alone cannot certify that the retained VM can fetch code.
+$addresses=@(Resolve-DnsName github.com -Type A -DnsOnly -ErrorAction Stop | Where-Object IPAddress)
+if ($addresses.Count -eq 0) { throw 'T647: development repository DNS resolution failed' }
 $xml=Join-Path $env:TEMP ('Blent acceptance '+[guid]::NewGuid().ToString('N')+'.xml')
 try {
     Get-AppLockerPolicy -Effective -Xml | Set-Content $xml
@@ -42,4 +45,5 @@ $os=Get-CimInstance Win32_OperatingSystem
 @{clock_offset_seconds=$offset; os=$os.Caption; build=$os.BuildNumber; architecture=$os.OSArchitecture;
   tpm_present=$tpm.TpmPresent; tpm_ready=$tpm.TpmReady; secure_boot=$secureBoot;
   search_disabled=$true; autologon_enabled=$true; elevation_policy_verified=$true;
-  xbox_policy='Denied'; shell_policy='Allowed'; checked_utc=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json
+  xbox_policy='Denied'; shell_policy='Allowed'; repository_dns_verified=$true;
+  checked_utc=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json

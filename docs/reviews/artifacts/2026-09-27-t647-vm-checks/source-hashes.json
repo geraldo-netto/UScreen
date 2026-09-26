@@ -1,0 +1,4 @@
+{
+  "scripts/tests/windows_vm_acceptance.ps1": "fa05ba102c1babced546fd904f68178ca3dee614405970cd21c6f6e41d819f35",
+  "scripts/tests/windows_vm_dns.ps1": "e85547118a02ab2570a814a83bd42cf359181d58740ab373c0009665f03a45a7"
+}

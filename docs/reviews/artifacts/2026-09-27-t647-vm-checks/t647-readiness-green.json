@@ -1,0 +1,5 @@
+{
+  "exitcode": 0,
+  "out": "PASS: resolver failure and empty DNS results both prevent VM readiness\r\n",
+  "err": ""
+}

@@ -55,7 +55,12 @@ VM configuration, elevation, and a logged-in `blentdev` profile. Run
 `scripts/tests/windows_vm_acceptance.ps1 -ReferenceUnixSeconds <host-epoch>`
 through guest control using a fresh Unix timestamp from the Linux host. It checks
 clock alignment, Search/indexing, automatic login, UAC, TPM/Secure Boot and native
-package decisions. The private QEMU launcher must use `-rtc base=localtime` for
+package decisions, plus GitHub DNS resolution. DNS failure or empty address
+results prevent a ready result (T647). The permanent negative tests run as
+`scripts/tests/windows_vm_dns.ps1 -ReferenceUnixSeconds <host-epoch>` in the
+same configured VM; follow them with normal acceptance using a fresh timestamp.
+They replace resolution only inside the test scope and do not change DNS settings.
+The private QEMU launcher must use `-rtc base=localtime` for
 this Windows configuration; the retained clock regression failed with the
 default UTC RTC. Repeat acceptance after a normal stop/start of the existing VM.
 Do not run this suite on a general CI runner or apply the VM policies there.

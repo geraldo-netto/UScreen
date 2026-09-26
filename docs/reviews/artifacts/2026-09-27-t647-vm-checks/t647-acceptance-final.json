@@ -1,0 +1,5 @@
+{
+  "exitcode": 0,
+  "out": "{\r\n    \"repository_dns_verified\":  true,\r\n    \"xbox_policy\":  \"Denied\",\r\n    \"secure_boot\":  true,\r\n    \"search_disabled\":  true,\r\n    \"architecture\":  \"64-bit\",\r\n    \"build\":  \"26200\",\r\n    \"elevation_policy_verified\":  true,\r\n    \"clock_offset_seconds\":  -1,\r\n    \"shell_policy\":  \"Allowed\",\r\n    \"tpm_ready\":  true,\r\n    \"checked_utc\":  \"2026-09-26T23:46:17.8185489Z\",\r\n    \"tpm_present\":  true,\r\n    \"os\":  \"Microsoft Windows 11 Enterprise Evaluation\",\r\n    \"autologon_enabled\":  true\r\n}\r\n",
+  "err": ""
+}
