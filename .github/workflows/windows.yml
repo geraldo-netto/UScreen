@@ -12,6 +12,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 25
     steps:
+      - name: Preserve source bytes for native coverage fingerprints
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Test portable policy without platform features

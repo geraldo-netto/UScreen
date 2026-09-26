@@ -9,6 +9,7 @@ pub mod config;
 pub mod latency;
 pub mod media;
 pub mod media_storage;
+pub mod raw_transfer;
 #[path = "selection_types.rs"]
 pub mod selection;
 pub mod video_queue;
