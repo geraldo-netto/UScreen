@@ -96,7 +96,7 @@ confirms the current tablet already negotiates 480 Mb/s, measures ADB payload
 throughput and verifies all 2,960 replay pictures. Charging and sustained battery
 results remain separate from data-link compatibility.
 
-Historical results inherited from the [upstream project](https://github.com/majmichu1/UScreen),
+Historical results inherited from the upstream project (historical upstream),
 retained with their original numbers. They describe one host and one tablet,
 not measurements rerun on this fork. The initial series covers 1.0.0–1.1.0;
 the CPU/capture sections also contain explicitly labeled 1.2.0 follow-ups.
@@ -241,7 +241,7 @@ T387 adds `ControlLoadTest`, a normal automated test with a repeatable synthetic
 input workload. Run it with:
 
 ```sh
-./android/gradlew -p android testDebugUnitTest --tests com.uscreen.ControlLoadTest --rerun-tasks
+./android/gradlew -p android testDebugUnitTest --tests com.blent.ControlLoadTest --rerun-tasks
 ```
 
 The test replays up to 4,800 stylus MotionEvents, each with three historical
@@ -257,7 +257,7 @@ or allocation thresholds. Per-message JSON remains unchanged.
 hashes, JDK, host and method. In that replay the draining case accepted 20,401
 messages; the stalled case accepted 80, refused one and retired the connection
 at a peak measured queue of 8,112 bytes. This fake limit is not a production
-queue policy: UScreen retains OkHttp's existing queue bound.
+queue policy: Blent retains OkHttp's existing queue bound.
 
 The artifact's allocation count is the test thread's JVM allocation during the
 replay, including synthetic MotionEvents and fake transport encoding. Its GC
@@ -269,7 +269,7 @@ network and thermal validation remains scoped to T388. The broader T382
 campaign is closed as `wont_fix`; maintainer multi-tablet testing is outside
 the current scope.
 
-Runtime `ControlStatisticsSnapshot` summaries in `UScreenTouch` logcat provide
+Runtime `ControlStatisticsSnapshot` summaries in `BlentTouch` logcat provide
 accepted/refused counts, current/peak queue bytes and sample-age count/sum/max.
 The counters use scalar storage and exclude tokens and input coordinates.
 Measure ART allocation/GC with Perfetto or the Android profiler alongside these
@@ -329,7 +329,7 @@ test binary, and measurement is enabled only on the calling test thread.
 Run the current replay safely without opening a display or input device:
 
 ```sh
-cargo test --locked --release -p uscreen --bin uscreen t384_ -- --nocapture
+cargo test --locked --release -p blent --bin blent t384_ -- --nocapture
 ```
 
 To reproduce the instrumented baseline, apply the committed
@@ -343,7 +343,7 @@ git archive 5bbeb5b | tar -x -C "$baseline_dir"
 (
   cd "$baseline_dir"
   git apply "$baseline_patch"
-  cargo test --locked --release -p uscreen --bin uscreen t384_ -- --nocapture
+  cargo test --locked --release -p blent --bin blent t384_ -- --nocapture
 )
 ```
 

@@ -84,7 +84,7 @@ def rect_trial():
 
 def rect_observations(root, value):
     write(root/'result.json', value)
-    (root/'memory-com.uscreen.rectbench.txt').write_text('TOTAL PSS: 2048 TOTAL RSS: 4096 TOTAL SWAP PSS: 0')
+    (root/'memory-com.blent.rectbench.txt').write_text('TOTAL PSS: 2048 TOTAL RSS: 4096 TOTAL SWAP PSS: 0')
     samples = [dict(app=dict(pid=1, start_ticks=10, ticks=100 + index * 50, at_ns=index * 1_000_000_000))
                for index in range(7)]
     (root/'resources.jsonl').write_text('\n'.join(map(json.dumps, samples)))
@@ -151,7 +151,7 @@ class ReportTests(unittest.TestCase):
             self.assertIsNone(module.surface_metrics(root, value))
             (root/'resources.jsonl').write_text('{}\n')
             self.assertEqual(module.service_cpu(root, 100), {})
-            (root/'memory-com.uscreen.rectbench.txt').write_text('missing')
+            (root/'memory-com.blent.rectbench.txt').write_text('missing')
             with self.assertRaisesRegex(ValueError, 'missing memory'): module.memory(root)
             for change in [dict(completed=False), dict(verified=True)]:
                 write(root/'result.json', dict(value, **change))

@@ -24,7 +24,7 @@ struct Sandbox(PathBuf);
 impl Sandbox {
     fn new(name: &str) -> Self {
         let root =
-            std::env::temp_dir().join(format!("uscreen-tooling-{}-{name}", std::process::id()));
+            std::env::temp_dir().join(format!("blent-tooling-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(&root).unwrap();
         Self(root)
@@ -55,6 +55,19 @@ impl Drop for Sandbox {
 }
 fn repo() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()
+}
+
+#[test]
+fn t585_blent_identities_preserve_original_notices() {
+    let output = Command::new("python3")
+        .arg(repo().join("scripts/tests/test_identity.py"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 #[test]
@@ -104,7 +117,7 @@ fn t342_build_outputs_are_ignored_but_sources_are_visible() {
         .status
         .success());
     for tree in ["target", "target-deb12", "target-portability"] {
-        let path = sandbox.write(&format!("{tree}/release/uscreen"), "generated output");
+        let path = sandbox.write(&format!("{tree}/release/blent"), "generated output");
         assert!(
             Command::new("git")
                 .args(["-c", "core.excludesFile=/dev/null"])
@@ -162,8 +175,8 @@ fn t489_private_signing_and_local_outputs_stay_out_of_git() {
         ("scripts/tests/__pycache__/fixture.pyo", true),
         ("android/.kotlin/session", true),
         ("android/app/release/app-release.aab", true),
-        ("UScreen.AppImage", true),
-        ("UScreen.AppDir/AppRun", true),
+        ("Blent.AppImage", true),
+        ("Blent.AppDir/AppRun", true),
         ("host/evdi/conversion.o", true),
         ("host/evdi/libconversion.a", true),
         ("hs_err_pid1234.log", true),
@@ -213,7 +226,7 @@ fn t034_ci_propagates_helper_build_failure_and_ships_helper() {
         "CI swallowed helper compilation failure"
     );
     let artifacts = yaml
-        .split("name: uscreen-linux-x86_64")
+        .split("name: blent-linux-x86_64")
         .nth(1)
         .unwrap()
         .split("build-android:")
@@ -230,8 +243,8 @@ fn t035_setup_installs_udev_rule_and_two_boot_devices() {
     sandbox.script(
         "bin/sudo",
         r#"#!/bin/sh
-printf '%s\n' "$*" >> "$USCREEN_TEST_LOG"
-if [ "$1" = tee ]; then cat >> "$USCREEN_TEST_LOG"; fi
+printf '%s\n' "$*" >> "$BLENT_TEST_LOG"
+if [ "$1" = tee ]; then cat >> "$BLENT_TEST_LOG"; fi
 "#,
     );
     let log = sandbox.0.join("commands");
@@ -239,7 +252,7 @@ if [ "$1" = tee ]; then cat >> "$USCREEN_TEST_LOG"; fi
         .arg("setup-system")
         .current_dir(repo())
         .env("PATH", sandbox.path())
-        .env("USCREEN_TEST_LOG", &log)
+        .env("BLENT_TEST_LOG", &log)
         .output()
         .unwrap();
     assert!(
@@ -249,7 +262,7 @@ if [ "$1" = tee ]; then cat >> "$USCREEN_TEST_LOG"; fi
     );
     let commands = std::fs::read_to_string(log).unwrap();
     assert!(commands.contains("initial_device_count=2"), "{commands}");
-    assert!(commands.contains("install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules"), "{commands}");
+    assert!(commands.contains("install -Dm644 packaging/60-blent-uinput.rules /etc/udev/rules.d/60-blent-uinput.rules"), "{commands}");
     assert!(commands.contains("udevadm control --reload"));
     assert!(commands.contains("udevadm trigger --name-match=uinput"));
 }
@@ -359,15 +372,15 @@ fn t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files() {
     );
     sandbox.script(
         "bin/make",
-        "#!/bin/sh\nprintf 'build\\n' >> \"$USCREEN_TEST_LOG\"\n",
+        "#!/bin/sh\nprintf 'build\\n' >> \"$BLENT_TEST_LOG\"\n",
     );
     let log = sandbox.0.join("builds");
     // A lone stale daemon, complete but outdated binaries, then a release bundle.
-    sandbox.write("target/release/uscreen", "old");
+    sandbox.write("target/release/blent", "old");
     for expected in [1, 2, 2] {
         let output = Command::new(&script)
             .env("PATH", sandbox.path())
-            .env("USCREEN_TEST_LOG", &log)
+            .env("BLENT_TEST_LOG", &log)
             .output()
             .unwrap();
         assert!(output.status.success());
@@ -379,11 +392,11 @@ fn t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files() {
             count, expected,
             "source install skipped incremental rebuild"
         );
-        sandbox.write("target/release/uscreen-gui", "old");
+        sandbox.write("target/release/blent-gui", "old");
         sandbox.write("host/evdi/evdi_helper", "old");
         sandbox.write("host/src/main.rs", "new source");
         if expected == 2 {
-            sandbox.write("bin/uscreen", "release");
+            sandbox.write("bin/blent", "release");
         }
     }
 }
@@ -398,10 +411,10 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
         sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
         sandbox.script("bin/gtk-update-icon-cache", "#!/bin/sh\nexit 0\n");
         sandbox.script("bin/kbuildsycoca6", "#!/bin/sh\nexit 0\n");
-        for name in ["uscreen", "uscreen-gui", "evdi_helper"] {
+        for name in ["blent", "blent-gui", "evdi_helper"] {
             sandbox.script(
                 &format!("target/release/{name}"),
-                "#!/bin/sh\nprintf '%s' \"$0\" > \"$USCREEN_TEST_LAUNCHED\"\n",
+                "#!/bin/sh\nprintf '%s' \"$0\" > \"$BLENT_TEST_LAUNCHED\"\n",
             );
         }
         sandbox.script("host/evdi/evdi_helper", "#!/bin/sh\nexit 0\n");
@@ -442,12 +455,12 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
             "T141 {installer}: {}",
             String::from_utf8_lossy(&output.stderr)
         );
-        let desktop = home.join(".local/share/applications/uscreen.desktop");
+        let desktop = home.join(".local/share/applications/blent.desktop");
         let marker = sandbox.0.join("launched");
         let output = Command::new("gio")
             .arg("launch")
             .arg(&desktop)
-            .env("USCREEN_TEST_LAUNCHED", &marker)
+            .env("BLENT_TEST_LAUNCHED", &marker)
             .output()
             .unwrap();
         assert!(
@@ -461,7 +474,7 @@ fn t141_installers_launch_desktop_paths_with_reserved_characters() {
         }
         assert_eq!(
             std::fs::read_to_string(marker).unwrap(),
-            home.join(".local/bin/uscreen-gui").to_str().unwrap()
+            home.join(".local/bin/blent-gui").to_str().unwrap()
         );
     }
 }
@@ -475,7 +488,7 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
     );
     let makefile = std::fs::read_to_string(repo().join("Makefile")).unwrap();
     sandbox.write("Makefile", &makefile);
-    for name in ["uscreen", "uscreen-gui"] {
+    for name in ["blent", "blent-gui"] {
         sandbox.script(
             &format!("target/release/{name}"),
             "#!/bin/sh\necho installed\n",
@@ -483,16 +496,16 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
     }
     sandbox.script("host/evdi/evdi_helper", "#!/bin/sh\nexit 0\n");
     sandbox.write(
-        "scripts/uscreen.desktop",
-        &std::fs::read_to_string(repo().join("scripts/uscreen.desktop")).unwrap(),
+        "scripts/blent.desktop",
+        &std::fs::read_to_string(repo().join("scripts/blent.desktop")).unwrap(),
     );
     sandbox.write(
-        "scripts/uscreen.service",
-        &std::fs::read_to_string(repo().join("scripts/uscreen.service")).unwrap(),
+        "scripts/blent.service",
+        &std::fs::read_to_string(repo().join("scripts/blent.service")).unwrap(),
     );
     sandbox.write(
-        "scripts/uscreen-service-autostart.desktop",
-        &std::fs::read_to_string(repo().join("scripts/uscreen-service-autostart.desktop")).unwrap(),
+        "scripts/blent-service-autostart.desktop",
+        &std::fs::read_to_string(repo().join("scripts/blent-service-autostart.desktop")).unwrap(),
     );
     sandbox.script(
         "scripts/write-desktop-entry.sh",
@@ -503,7 +516,7 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         &std::fs::read_to_string(repo().join("scripts/write-systemd-service.sh")).unwrap(),
     );
     sandbox.script("bin/systemctl", "#!/bin/sh\nexit 0\n");
-    sandbox.script("bin/uscreen-gui", "#!/bin/sh\necho stale\n");
+    sandbox.script("bin/blent-gui", "#!/bin/sh\necho stale\n");
     let output = Command::new("make")
         .args(["-o", "build", "install"])
         .current_dir(&sandbox.0)
@@ -519,8 +532,7 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
         String::from_utf8_lossy(&output.stderr)
     );
     let desktop =
-        std::fs::read_to_string(sandbox.0.join(".local/share/applications/uscreen.desktop"))
-            .unwrap();
+        std::fs::read_to_string(sandbox.0.join(".local/share/applications/blent.desktop")).unwrap();
     let exec = desktop
         .lines()
         .find_map(|line| line.strip_prefix("Exec="))
@@ -553,8 +565,8 @@ fn t097_make_setup_creates_missing_configuration_directories() {
     );
     sandbox.write("sys/devices/evdi/count", "2");
     sandbox.write(
-        "packaging/60-uscreen-uinput.rules",
-        &std::fs::read_to_string(repo().join("packaging/60-uscreen-uinput.rules")).unwrap(),
+        "packaging/60-blent-uinput.rules",
+        &std::fs::read_to_string(repo().join("packaging/60-blent-uinput.rules")).unwrap(),
     );
     sandbox.script("bin/sudo", "#!/bin/sh\nexec \"$@\"\n");
     for name in ["modprobe", "udevadm"] {
@@ -571,11 +583,11 @@ fn t097_make_setup_creates_missing_configuration_directories() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(sandbox.0.join("etc/modprobe.d/uscreen-evdi.conf").is_file());
-    assert!(sandbox.0.join("etc/modules-load.d/uscreen.conf").is_file());
+    assert!(sandbox.0.join("etc/modprobe.d/blent-evdi.conf").is_file());
+    assert!(sandbox.0.join("etc/modules-load.d/blent.conf").is_file());
     assert!(sandbox
         .0
-        .join("etc/udev/rules.d/60-uscreen-uinput.rules")
+        .join("etc/udev/rules.d/60-blent-uinput.rules")
         .is_file());
 }
 

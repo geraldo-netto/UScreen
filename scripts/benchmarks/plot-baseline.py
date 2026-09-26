@@ -83,7 +83,7 @@ def plot(folder, output):
         shade(axes, phases, meta['start_utc'])
         draw_traces(axes, charge, cpu, latency)
         visibility = 'verified' if guarded else 'unverified'
-        fig.suptitle(f'UScreen {meta["source_commit"][:7]} — {meta.get("geometry", "geometry unrecorded")} '
+        fig.suptitle(f'Blent {meta["source_commit"][:7]} — {meta.get("geometry", "geometry unrecorded")} '
                      f'— visibility {visibility}')
         fig.savefig(output, dpi=160)
     finally:

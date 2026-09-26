@@ -1,4 +1,4 @@
-# Installing UScreen for Linux
+# Installing Blent for Linux
 
 Build the Linux daemon/GUI/helper and Android app from the same checkout.
 As of 2026-09-17 this fork has no published releases; start with
@@ -26,10 +26,10 @@ attachment or tablet operation.
 
 | Artifact | Installation |
 | --- | --- |
-| `uscreen-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: make executable and launch; see [AppImage setup, extraction and migration](appimage-plan.md) |
-| `uscreen-<ver>-1.x86_64.rpm` | openSUSE: `sudo zypper install ./uscreen-*.rpm`; Fedora: supply the required FFmpeg package (the build workflow uses RPM Fusion), then `sudo dnf install --allowerasing ./uscreen-*.rpm` |
-| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch family: install AUR `evdi-dkms` first, extract the recipe and run `makepkg -si` |
-| `uscreen-<ver>-linux-x86_64.tar.gz` | Other compatible Linux setups: extract and inspect/run `./scripts/install.sh`; unsupported package managers need manual dependency installation |
+| `blent-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: make executable and launch; see [AppImage setup, extraction and migration](appimage-plan.md) |
+| `blent-<ver>-1.x86_64.rpm` | openSUSE: `sudo zypper install ./blent-*.rpm`; Fedora: supply the required FFmpeg package (the build workflow uses RPM Fusion), then `sudo dnf install --allowerasing ./blent-*.rpm` |
+| `blent-<ver>-PKGBUILD.tar.gz` | Arch family: install AUR `evdi-dkms` first, extract the recipe and run `makepkg -si` |
+| `blent-<ver>-linux-x86_64.tar.gz` | Other compatible Linux setups: extract and inspect/run `./scripts/install.sh`; unsupported package managers need manual dependency installation |
 
 Review the package transaction, especially `dnf --allowerasing`, which permits
 removing conflicting packages. AppImage replaces the Debian release asset and
@@ -88,7 +88,7 @@ requirement even when the bundle supplies its userspace library.
 
 ## Start the host
 
-Enable **Start UScreen with the desktop** in the GUI for automatic login startup,
+Enable **Start Blent with the desktop** in the GUI for automatic login startup,
 including on Cinnamon. It enables/disables the available route and starts/stops
 the current daemon.
 
@@ -96,7 +96,7 @@ On a systemd desktop that activates `graphical-session.target`, the unit alone
 can also be enabled and started from a terminal:
 
 ```bash
-systemctl --user enable --now uscreen
+systemctl --user enable --now blent
 ```
 
 The full tarball/source installer enables the user service and creates a desktop
@@ -106,16 +106,16 @@ reports the selected route and does not start the daemon during installation.
 `make install` installs user files while preserving the autostart preference;
 it also repairs the login entry for an already enabled service.
 
-Both routes use `XDG_CONFIG_HOME/autostart/uscreen.desktop` (default
-`~/.config/autostart/uscreen.desktop`) on desktops implementing the
+Both routes use `XDG_CONFIG_HOME/autostart/blent.desktop` (default
+`~/.config/autostart/blent.desktop`) on desktops implementing the
 [XDG autostart specification](https://specifications.freedesktop.org/autostart/latest/).
-With systemd, that entry starts `uscreen.service`, even when the desktop does not
+With systemd, that entry starts `blent.service`, even when the desktop does not
 activate `graphical-session.target`. If the target already started the service,
 systemd keeps the same daemon. Enabling the systemd route replaces any direct
 fallback entry with this service entry. Use the GUI setting to disable both the
 unit and its login entry; `systemctl disable` alone does not remove an XDG entry.
 Without systemd, the entry runs a direct daemon without service restart
-supervision. `uscreen start` also runs a foreground session from a terminal.
+supervision. `blent start` also runs a foreground session from a terminal.
 If systemctl still reports an enabled unit while its manager is unreachable,
 autostart changes report an error; restore the user manager before switching
 routes or disabling that unit.
@@ -127,20 +127,20 @@ in [`/etc/conf.d/modules`](https://github.com/OpenRC/openrc/blob/master/conf.d/m
 add these modules to the existing list using your distribution's service setup.
 The installer writes modprobe options and a udev rule. A device manager without
 udev-compatible rules needs its own `/dev/uinput` access configuration; verify
-module availability and permissions with `uscreen doctor` before streaming.
+module availability and permissions with `blent doctor` before streaming.
 
 Both user installers share the same paths: launchers and icons go under
 `XDG_DATA_HOME` (default `~/.local/share`), and the user unit goes under
 `XDG_CONFIG_HOME/systemd/user` (default `~/.config/systemd/user`). Empty or
-relative XDG values use those defaults, matching UScreen's configuration-path
+relative XDG values use those defaults, matching Blent's configuration-path
 policy. Program binaries remain in `~/.local/bin`; these XDG overrides do not
 change that location. Native packages use their system-wide package paths.
 For a custom program directory, use `make install BIN_DIR=/absolute/path`.
 The generated launcher and user service both refer to that selected directory,
 including the service's helper and stop commands.
 
-If `~/.local/bin` is not on PATH yet, use `~/.local/bin/uscreen` or add the
-directory to your shell's PATH. Run `uscreen doctor` to inspect the setup.
+If `~/.local/bin` is not on PATH yet, use `~/.local/bin/blent` or add the
+directory to your shell's PATH. Run `blent doctor` to inspect the setup.
 New configurations use [automatic encoder selection](video-codecs.md#automatic-selection)
 after tablet negotiation, with `libx264` fallback. Existing explicit preferences
 remain unchanged; choose a supported encoder or `auto` in Linux settings.
@@ -162,7 +162,7 @@ See [release integrity](../SECURITY.md#release-integrity) for signing limitation
    output if the desktop does not do so automatically. KDE Wayland has the
    most automation; see [compatibility](compatibility.md) for mapping limits.
 
-UScreen defaults to 50% brightness and a 60 Hz display-mode preference only
+Blent defaults to 50% brightness and a 60 Hz display-mode preference only
 while its window is in use. Change these in the app's gear menu; they do not
 change other apps' system display settings. Stream FPS is a separate control.
 

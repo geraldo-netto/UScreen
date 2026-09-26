@@ -125,7 +125,7 @@ static int compare(const void *a, const void *b) {
 }
 
 static int last_jobs(const conv_pool_t *pool) {
-#ifdef USCREEN_ADAPTIVE_POOL
+#ifdef BLENT_ADAPTIVE_POOL
     return pool->last_jobs;
 #else
     return pool->count;

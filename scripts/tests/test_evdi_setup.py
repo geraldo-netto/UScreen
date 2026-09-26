@@ -12,7 +12,7 @@ REPO = Path(__file__).resolve().parents[2]
 MOCK = r'''#!/usr/bin/env python3
 from pathlib import Path
 import json, os, sys
-root = Path(os.environ['USCREEN_SETUP_FIXTURE'])
+root = Path(os.environ['BLENT_SETUP_FIXTURE'])
 name, args = Path(sys.argv[0]).name, sys.argv[1:]
 with (root / 'commands').open('a') as log:
     log.write(json.dumps([name] + args) + '\n')
@@ -47,15 +47,15 @@ def setup_program(entry):
     if entry == 'deb':
         return (REPO / 'packaging/deb/postinst').read_text(), ['configure', '1.2.2']
     if entry == 'rpm':
-        source = (REPO / 'packaging/rpm/uscreen.spec').read_text()
+        source = (REPO / 'packaging/rpm/blent.spec').read_text()
         return source.split('\n%post\n')[1].split('\n%files\n')[0], ['2']
-    source = (REPO / 'packaging/arch/uscreen.install').read_text()
+    source = (REPO / 'packaging/arch/blent.install').read_text()
     return source + '\n' + entry + '\n', []
 
 
 class EvdiSetupTest(unittest.TestCase):
     def run_setup(self, entry, count, failure=''):
-        with tempfile.TemporaryDirectory(prefix='uscreen-evdi-setup-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-evdi-setup-') as tmp:
             root = Path(tmp)
             (root / 'bin').mkdir()
             if count is not None:
@@ -69,12 +69,12 @@ class EvdiSetupTest(unittest.TestCase):
             # Map the installed, architecture-independent script into the source fixture.
             source = source.replace('%{_datadir}', '/usr/share')
             source = '''sh() {
-    [[ $1 == /usr/share/uscreen/setup-evdi.sh ]] || return 91
-    command sh "$USCREEN_SETUP_SCRIPT" "${@:2}"
+    [[ $1 == /usr/share/blent/setup-evdi.sh ]] || return 91
+    command sh "$BLENT_SETUP_SCRIPT" "${@:2}"
 }
 ''' + source
-            env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_SETUP_FIXTURE=tmp,
-                       USCREEN_SETUP_SCRIPT=str(REPO / 'scripts/setup-evdi.sh'))
+            env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', BLENT_SETUP_FIXTURE=tmp,
+                       BLENT_SETUP_SCRIPT=str(REPO / 'scripts/setup-evdi.sh'))
             if failure:
                 env[failure] = '1'
             result = run_shell(source, args, env=env, cwd=REPO, capture_output=True, text=True, timeout=5)

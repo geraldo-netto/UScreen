@@ -34,13 +34,11 @@ pub fn apply_configured() -> String {
     let priority = crate::FileConfig::load().scheduling_priority;
     match apply_current(priority) {
         Ok(effective) => {
-            eprintln!("UScreen scheduling: {priority:?}; {effective}");
+            eprintln!("Blent scheduling: {priority:?}; {effective}");
             format!("This process: {priority:?} priority active")
         }
         Err(error) => {
-            eprintln!(
-                "UScreen scheduling: {priority:?} request unavailable: {error:#}; continuing"
-            );
+            eprintln!("Blent scheduling: {priority:?} request unavailable: {error:#}; continuing");
             format!("This process: {priority:?} priority unavailable; using OS settings")
         }
     }

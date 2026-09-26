@@ -15,7 +15,7 @@ def desktop(font):
     image = Image.new('RGB', (WIDTH, HEIGHT), '#151b25')
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, WIDTH, 42), fill='#303949')
-    draw.text((24, 8), 'UScreen synthetic desktop / codec research', font=font, fill='white')
+    draw.text((24, 8), 'Blent synthetic desktop / codec research', font=font, fill='white')
     lines = ['fn render(frame: &Frame) -> Result<()> {', '    let sequence = frame.sequence();',
              '    queue_pixels(frame.data(), sequence)?;', '    Ok(())', '}',
              '0123456789  abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',

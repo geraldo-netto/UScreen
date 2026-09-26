@@ -135,8 +135,7 @@ mod tests {
     use clap::Parser;
 
     fn options() -> CameraOptions {
-        let Some(Commands::Cameras(options)) = Cli::parse_from(["uscreen", "cameras"]).command
-        else {
+        let Some(Commands::Cameras(options)) = Cli::parse_from(["blent", "cameras"]).command else {
             panic!()
         };
         options

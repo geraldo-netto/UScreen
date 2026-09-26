@@ -18,8 +18,8 @@ cleanup() {
     rm -rf "$GUI_SMOKE_ROOT"
 }
 trap cleanup EXIT
-mkdir -p "$GUI_SMOKE_ROOT/config/uscreen"
-printf 'check_updates = false\n' > "$GUI_SMOKE_ROOT/config/uscreen/config.toml"
+mkdir -p "$GUI_SMOKE_ROOT/config/blent"
+printf 'check_updates = false\n' > "$GUI_SMOKE_ROOT/config/blent/config.toml"
 export XDG_CONFIG_HOME="$GUI_SMOKE_ROOT/config"
 export WINIT_UNIX_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1
 unset WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS
@@ -34,12 +34,12 @@ done
 [[ -s "$GUI_SMOKE_ROOT/display" ]]
 read -r display_number < "$GUI_SMOKE_ROOT/display"
 export DISPLAY=:$display_number
-uscreen-gui > "$GUI_SMOKE_ROOT/gui.log" 2>&1 &
+blent-gui > "$GUI_SMOKE_ROOT/gui.log" 2>&1 &
 GUI_PID=$!
 sleep 3
 cat "$GUI_SMOKE_ROOT/gui.log"
 kill -0 "$GUI_PID"
 xwininfo -root -tree > "$GUI_SMOKE_ROOT/windows"
 cat "$GUI_SMOKE_ROOT/windows"
-grep -q '"UScreen"' "$GUI_SMOKE_ROOT/windows"
+grep -q '"Blent"' "$GUI_SMOKE_ROOT/windows"
 if grep -q 'panicked' "$GUI_SMOKE_ROOT/gui.log"; then exit 1; fi

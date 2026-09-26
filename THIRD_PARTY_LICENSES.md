@@ -10,7 +10,7 @@
 - The AppImage builds unmodified FFmpeg 6.1.6 from upstream source with GPL
   components enabled, including libx264. It also bundles libvpx/libaom and uses
   MIT-licensed NV codec headers. The installed AppImage's
-  `usr/share/doc/uscreen/bundled` directory contains the exact dependency
+  `usr/share/doc/blent/bundled` directory contains the exact dependency
   notices and manifests. Its required matching `AppImage-sources.tar.gz`
   asset contains the FFmpeg/header archives, build configuration and exact
   Debian sources for bundled external codec libraries. See

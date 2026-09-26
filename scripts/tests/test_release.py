@@ -13,7 +13,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 class ReleaseTest(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='uscreen-release-')
+        self.tmp = tempfile.TemporaryDirectory(prefix='blent-release-')
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
         self.root = self.base / 'project'
@@ -22,7 +22,7 @@ class ReleaseTest(unittest.TestCase):
         self.bin.mkdir()
         self.env = dict(os.environ, PATH=f'{self.bin}:{os.environ["PATH"]}',
                         GH_TOKEN='dummy-release-secret', RELEASE_DATE='2026-09-16',
-                        USCREEN_TEST_ROOT=str(self.base))
+                        BLENT_TEST_ROOT=str(self.base))
         self.write('Makefile', 'VERSION = 1.2.3\n')
         for file in ['host/Cargo.toml', 'gui/Cargo.toml', 'common/Cargo.toml']:
             self.write(file, 'version = "1.2.3"\n')
@@ -33,7 +33,7 @@ class ReleaseTest(unittest.TestCase):
         self.write('.gitignore', 'dist/\n')
         self.write('scripts/update-release-metadata.sh', '#!/bin/sh\nexit 0\n', True)
         for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
-            self.write(name, '#!/bin/sh\ntouch "$USCREEN_TEST_ROOT/build-called"\nexit 42\n', True)
+            self.write(name, '#!/bin/sh\ntouch "$BLENT_TEST_ROOT/build-called"\nexit 42\n', True)
         self.write('scripts/publish-release.sh', (REPO / 'scripts/publish-release.sh').read_text(), True)
         for name in ['scripts/verify-release-apk.py', 'docs/release-certificate.pem']:
             self.write(name, (REPO / name).read_text())
@@ -75,7 +75,7 @@ class ReleaseTest(unittest.TestCase):
 
     def test_t262_metadata_requires_literal_versions_and_date(self):
         self.enable_uploads()
-        self.write('scripts/build-release.sh', '#!/bin/sh\ntouch "$USCREEN_TEST_ROOT/build-called"\nexit 42\n', True)
+        self.write('scripts/build-release.sh', '#!/bin/sh\ntouch "$BLENT_TEST_ROOT/build-called"\nexit 42\n', True)
         cases = [(name, '1.2.3', '1x2x3') for name in
                  ['host/Cargo.toml', 'gui/Cargo.toml', 'common/Cargo.toml',
                   'android/app/build.gradle.kts', 'packaging/arch/PKGBUILD', 'CHANGELOG.md']]
@@ -96,9 +96,9 @@ class ReleaseTest(unittest.TestCase):
     def enable_uploads(self):
         for name in ['scripts/build-release.sh', 'packaging/build-packages.sh']:
             self.write(name, '#!/bin/sh\nexit 0\n', True)
-        for name in ['uscreen-1.2.3-linux-x86_64.tar.gz', 'uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz',
-                     'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz',
-                     'uscreen-1.2.3/uscreen.apk']:
+        for name in ['blent-1.2.3-linux-x86_64.tar.gz', 'blent-1.2.3-x86_64.AppImage', 'blent-1.2.3-AppImage-sources.tar.gz',
+                     'blent-1.2.3-1.x86_64.rpm', 'blent-1.2.3-PKGBUILD.tar.gz',
+                     'blent-1.2.3/blent.apk']:
             self.write('dist/' + name, 'asset ' + name)
         self.git('add', '.')
         self.git('commit', '-qm', 'mock builds')
@@ -111,23 +111,23 @@ class ReleaseTest(unittest.TestCase):
         self.env['PYTHONPATH'] = str(self.base)
         real_python = shutil.which('python3')
         wrapper = self.bin / 'python3'
-        wrapper.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "$USCREEN_TEST_ROOT/argv"\nexec {real_python} "$@"\n')
+        wrapper.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "$BLENT_TEST_ROOT/argv"\nexec {real_python} "$@"\n')
         wrapper.chmod(0o755)
         curl = self.bin / 'curl'
-        curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$USCREEN_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
+        curl.write_text("""#!/bin/sh\nprintf '%s\\n' "$@" >> "$BLENT_TEST_ROOT/argv"\nprintf '{"name":"asset","state":"uploaded"}\\n'\n""")
         curl.chmod(0o755)
 
     def test_t308_release_replaces_deb_with_appimage_and_dependency_sources(self):
         import json
         self.enable_uploads()
-        for name in ['uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz']:
+        for name in ['blent-1.2.3-x86_64.AppImage', 'blent-1.2.3-AppImage-sources.tar.gz']:
             self.write('dist/' + name, 'offline fixture')
         result = self.publish()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         assets = json.loads((self.base / 'api-state').read_text())['assets']
         names = {asset['name'] for asset in assets}
-        self.assertIn('uscreen-1.2.3-x86_64.AppImage', names)
-        self.assertIn('uscreen-1.2.3-AppImage-sources.tar.gz', names)
+        self.assertIn('blent-1.2.3-x86_64.AppImage', names)
+        self.assertIn('blent-1.2.3-AppImage-sources.tar.gz', names)
         self.assertFalse(any(name.endswith('.deb') for name in names))
 
     def test_t250_wrong_certificate_prevents_all_release_api_writes(self):
@@ -146,7 +146,7 @@ class ReleaseTest(unittest.TestCase):
             for index in range(7):
                 with self.subTest(failure=failure, index=index):
                     (self.base / 'api-state').unlink(missing_ok=True)
-                    self.env.update(USCREEN_TEST_FAILURE=failure, USCREEN_TEST_FAIL_INDEX=str(index))
+                    self.env.update(BLENT_TEST_FAILURE=failure, BLENT_TEST_FAIL_INDEX=str(index))
                     result = self.publish()
                     self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
                     state = json.loads((self.base / 'api-state').read_text())
@@ -175,7 +175,7 @@ class ReleaseTest(unittest.TestCase):
         for failure in ['digest', 'missing']:
             with self.subTest(failure=failure):
                 (self.base / 'api-state').unlink(missing_ok=True)
-                self.env['USCREEN_TEST_FAILURE'] = failure
+                self.env['BLENT_TEST_FAILURE'] = failure
                 result = self.publish()
                 self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertFalse(json.loads((self.base / 'api-state').read_text())['published'])
@@ -222,22 +222,20 @@ class ReleaseTest(unittest.TestCase):
         files = [
             'README.md', 'CHANGELOG.md', 'CITATION.cff', 'host/src/update.rs',
             'common/src/release.rs',
-            'gui/src/main.rs', 'scripts/uscreen.service', 'scripts/publish-release.sh',
-            'packaging/arch/PKGBUILD', 'packaging/deb/control', 'packaging/rpm/uscreen.spec',
-            'android/app/src/main/java/com/uscreen/UpdateCheck.kt',
-            'android/app/src/main/java/com/uscreen/MainActivity.kt',
+            'gui/src/main.rs', 'scripts/blent.service', 'scripts/publish-release.sh',
+            'packaging/arch/PKGBUILD', 'packaging/deb/control', 'packaging/rpm/blent.spec',
+            'android/app/src/main/java/com/blent/UpdateCheck.kt',
+            'android/app/src/main/java/com/blent/MainActivity.kt',
         ]
         files.extend(str(path.relative_to(REPO)) for path in (REPO / 'docs').iterdir() if path.is_file())
-        # Numbered upstream reports and explicit provenance remain valid citations.
-        historical = r'https://github\.com/majmichu1/UScreen/(?:issues|discussions)/\d+[^\s)"<>]*'
+        # T585: keep authorship notices without original repository hyperlinks.
         for name in files:
             with self.subTest(file=name):
-                text = re.sub(historical, '', (REPO / name).read_text())
-                text = text.replace('[upstream project](https://github.com/majmichu1/UScreen)', '')
-                self.assertNotIn('majmichu1/UScreen', text)
-                self.assertNotIn('majmichu1.github.io/UScreen', text)
+                text = (REPO / name).read_text()
+                self.assertNotIn('github.com/majmichu1/', text)
+                self.assertNotIn('majmichu1.github.io/', text)
         for name in ['common/src/release.rs',
-                     'android/app/src/main/java/com/uscreen/UpdateCheck.kt']:
+                     'android/app/src/main/java/com/blent/UpdateCheck.kt']:
             self.assertIn('https://api.github.com/repos/geraldo-netto/UScreen/releases/latest',
                           (REPO / name).read_text())
         self.assertIn('https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz',
@@ -267,7 +265,7 @@ class MetadataTest(unittest.TestCase):
     FILES = ['docs/index.html', 'docs/llms.txt', 'docs/sitemap.xml', 'CITATION.cff']
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='uscreen-metadata-')
+        self.tmp = tempfile.TemporaryDirectory(prefix='blent-metadata-')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         for name in self.FILES + ['scripts/update-release-metadata.sh']:
@@ -322,10 +320,10 @@ class MetadataTest(unittest.TestCase):
 <p id="release-status">No published fork release.</p>
 <span id="source-version">1.2.3</span>
 <time datetime="2026-09-17">2026-09-17</time>
-uscreen-1.2.3-x86_64.AppImage
-uscreen-1.2.3-1.x86_64.rpm
-uscreen-1.2.3-PKGBUILD.tar.gz
-uscreen-1.2.3-linux-x86_64.tar.gz
+blent-1.2.3-x86_64.AppImage
+blent-1.2.3-1.x86_64.rpm
+blent-1.2.3-PKGBUILD.tar.gz
+blent-1.2.3-linux-x86_64.tar.gz
 ''')
         (self.root / 'docs/llms.txt').write_text(
             'Current version: 1.2.3 (unreleased). Metadata updated: 2026-09-17.\n'

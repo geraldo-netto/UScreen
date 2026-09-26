@@ -29,7 +29,7 @@ def replay_probe(folder, program):
 
 class CodecLatencyTests(unittest.TestCase):
     def probe(self, program):
-        with tempfile.TemporaryDirectory(prefix='uscreen-t430-') as directory:
+        with tempfile.TemporaryDirectory(prefix='blent-t430-') as directory:
             child = subprocess.Popen([sys.executable, '-B', __file__, directory, program],
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      text=True, start_new_session=True)

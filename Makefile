@@ -27,7 +27,7 @@ all: build
 # No GPU dependency is added to ordinary portable host builds.
 build-gpu-helper:
 	mkdir -p target
-	$(CC) -std=c11 -D_POSIX_C_SOURCE=200809L -O3 -Wall -Wextra -Werror $(GPU_CFLAGS) host/gpu/*.c -o target/uscreen-gpu-capture $(GPU_LIBS)
+	$(CC) -std=c11 -D_POSIX_C_SOURCE=200809L -O3 -Wall -Wextra -Werror $(GPU_CFLAGS) host/gpu/*.c -o target/blent-gpu-capture $(GPU_LIBS)
 
 test-gpu-helper: build-gpu-helper
 	$(CC) -std=c11 -D_POSIX_C_SOURCE=200809L -O1 -g -Wall -Wextra -Werror $(GPU_CFLAGS) host/tests/gpu_x11.c $(filter-out host/gpu/main.c,$(wildcard host/gpu/*.c)) -o target/gpu-x11-test $(GPU_LIBS)
@@ -40,19 +40,19 @@ build-helper:
 
 build: build-helper
 	$(recursive_prefix)$(CARGO) build --release --target-dir $(call quote,$(CURDIR)/target)
-	@printf '✓ Binaries: %s/uscreen and uscreen-gui\n' $(call quote,$(CURDIR)/target/release)
+	@printf '✓ Binaries: %s/blent and blent-gui\n' $(call quote,$(CURDIR)/target/release)
 
-install: export USCREEN_INSTALL_BIN_DIR = $(BIN_DIR)
+install: export BLENT_INSTALL_BIN_DIR = $(BIN_DIR)
 install: build
-	bash scripts/install.sh --user-install "$$USCREEN_INSTALL_BIN_DIR"
+	bash scripts/install.sh --user-install "$$BLENT_INSTALL_BIN_DIR"
 
 # One-time system setup (needs sudo): pre-create an EVDI device at boot so
 # the daemon never needs root, and load the required modules.
 setup-system:
 	sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
-	echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/uscreen-evdi.conf
-	printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf
-	sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
+	echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/blent-evdi.conf
+	printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/blent.conf
+	sudo install -Dm644 packaging/60-blent-uinput.rules /etc/udev/rules.d/60-blent-uinput.rules
 	sudo udevadm control --reload
 	sudo udevadm trigger --name-match=uinput
 	sudo modprobe uinput || true
@@ -62,7 +62,7 @@ setup-system:
 run: build
 	sudo modprobe -q evdi || true
 	sudo modprobe -q uinput || true
-	./target/release/uscreen start
+	./target/release/blent start
 
 adb:
 	$(ADB) reverse tcp:8890 tcp:8890
@@ -83,13 +83,13 @@ edid:
 	@echo "✓ EDID generated: edid/s9ultra.bin"
 
 list:
-	./target/release/uscreen list-displays
+	./target/release/blent list-displays
 
 status:
-	./target/release/uscreen status
+	./target/release/blent status
 
 stop:
-	./target/release/uscreen stop
+	./target/release/blent stop
 
 # Release tarball: prebuilt binaries + installer. Upload to GitHub releases
 # together with the release APK (android/app/build/outputs/apk/release/).
@@ -108,7 +108,7 @@ dist:
 	@# Portable binaries (built against Debian 12 glibc) when the build
 	@# container exists; otherwise a local build, which only runs on
 	@# distributions at least as new as this machine.
-	@$(recursive_prefix)build_container="$${USCREEN_BUILD_CONTAINER:-uscreen-build}"; \
+	@$(recursive_prefix)build_container="$${BLENT_BUILD_CONTAINER:-blent-build}"; \
 	if distrobox list 2>/dev/null | grep -Fq " $$build_container "; then \
 		./scripts/build-release.sh && ./packaging/build-packages.sh; \
 	else \
@@ -117,14 +117,14 @@ dist:
 	fi
 
 dist-local: build
-	rm -rf dist/uscreen-$(VERSION)
-	rm -f dist/uscreen-$(VERSION)-linux-x86_64.tar.gz
-	./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper $(call quote,$(LIBEVDI)) dist/uscreen-$(VERSION)
+	rm -rf dist/blent-$(VERSION)
+	rm -f dist/blent-$(VERSION)-linux-x86_64.tar.gz
+	./scripts/stage-linux-bundle.sh target/release host/evdi/evdi_helper $(call quote,$(LIBEVDI)) dist/blent-$(VERSION)
 	./android/gradlew -p android assembleRelease -q
 	python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
-	cp android/app/build/outputs/apk/release/app-release.apk dist/uscreen-$(VERSION)/uscreen.apk
-	tar -C dist -czf dist/uscreen-$(VERSION)-linux-x86_64.tar.gz uscreen-$(VERSION)
-	@echo "✓ Release: dist/uscreen-$(VERSION)-linux-x86_64.tar.gz"
+	cp android/app/build/outputs/apk/release/app-release.apk dist/blent-$(VERSION)/blent.apk
+	tar -C dist -czf dist/blent-$(VERSION)-linux-x86_64.tar.gz blent-$(VERSION)
+	@echo "✓ Release: dist/blent-$(VERSION)-linux-x86_64.tar.gz"
 
 clean:
 	$(CARGO) clean --target-dir $(call quote,$(CURDIR)/target)

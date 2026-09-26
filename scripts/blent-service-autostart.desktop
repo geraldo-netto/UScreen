@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Blent
+Comment=Start the Blent service with the desktop
+# T536: Cinnamon may not activate graphical-session.target. Starting the same
+# unit here is idempotent when the target has already started it.
+Exec=/usr/bin/env systemctl --user start blent.service
+Icon=blent
+Terminal=false
+StartupNotify=false
+NoDisplay=true

@@ -43,7 +43,7 @@ def host_cpu(before, after, hz):
         value = cpu_delta(prior.get(proc['pid'], {}), proc, seconds, hz)
         if value is not None:
             result[proc['role']] = result.get(proc['role'], 0) + value
-    pipeline = [result.get(role) for role in ['uscreen', 'evdi_helper', 'ffmpeg']]
+    pipeline = [result.get(role) for role in ['blent', 'evdi_helper', 'ffmpeg']]
     if all(value is not None for value in pipeline):
         result['pipeline_total'] = sum(pipeline)
     return result

@@ -1,33 +1,33 @@
 //! T493: Windows paths and owned subprocess trees, without a tablet or shell.
 #![cfg(all(windows, feature = "storage", feature = "commands"))]
+use blent_config::commands::{AsyncCommandExt, SyncCommandExt};
 use std::path::Path;
 use std::process::Command;
 use std::time::{Duration, Instant};
-use uscreen_config::commands::{AsyncCommandExt, SyncCommandExt};
 
 fn fixture(role: &str, directory: &Path) -> Command {
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
         .args(["--exact", "t493_child", "--nocapture"])
-        .env("USCREEN_T493_ROLE", role)
-        .env("USCREEN_T493_DIR", directory);
+        .env("BLENT_T493_ROLE", role)
+        .env("BLENT_T493_DIR", directory);
     command
 }
 
 #[test]
 fn t493_child() {
-    let Ok(role) = std::env::var("USCREEN_T493_ROLE") else {
+    let Ok(role) = std::env::var("BLENT_T493_ROLE") else {
         return;
     };
-    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T493_DIR").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("BLENT_T493_DIR").unwrap());
     match role.as_str() {
         "path" => {
-            let path = uscreen_config::config_path().unwrap();
+            let path = blent_config::config_path().unwrap();
             assert!(
                 path.is_absolute(),
                 "T493: relative Windows configuration path: {path:?}"
             );
-            assert!(path.ends_with("uscreen/config.toml"));
+            assert!(path.ends_with("blent/config.toml"));
         }
         "parent" => {
             let mut child = fixture("worker", &root).spawn().unwrap();
@@ -115,7 +115,7 @@ async fn t493_async_cancel_retires_descendants() {
 fn t493_windows_store_round_trips_unicode_and_spaces() {
     let root = tempfile::tempdir().unwrap();
     let store =
-        uscreen_config::storage::ConfigStore::new(root.path().join("space café 東京/config.toml"));
+        blent_config::storage::ConfigStore::new(root.path().join("space café 東京/config.toml"));
     let saved = store
         .update(|config| {
             config.fps = 30;
@@ -127,7 +127,7 @@ fn t493_windows_store_round_trips_unicode_and_spaces() {
 
 #[test]
 fn t493_runtime_directory_is_private_and_pinned() {
-    use uscreen_config::windows::private::Directory;
+    use blent_config::windows::private::Directory;
     let root = tempfile::tempdir().unwrap();
     let path = root.path().join("private café 東京");
     let directory = Directory::create(&path).unwrap();
@@ -140,7 +140,7 @@ fn t493_runtime_directory_is_private_and_pinned() {
 
 #[test]
 fn t493_runtime_rejects_relative_files_and_inherited_permissions() {
-    use uscreen_config::windows::private::Directory;
+    use blent_config::windows::private::Directory;
     let root = tempfile::tempdir().unwrap();
     assert!(Directory::create(Path::new("relative")).is_err());
     let file = root.path().join("file");
@@ -154,7 +154,7 @@ fn t493_runtime_rejects_relative_files_and_inherited_permissions() {
 
 #[test]
 fn t493_owned_process_checks_identity_before_retirement() {
-    use uscreen_config::windows::process::Identity;
+    use blent_config::windows::process::Identity;
     assert!(Identity::read(0).is_err());
     let current = Identity::read(std::process::id()).unwrap();
     assert!(current.is_current());
@@ -174,7 +174,7 @@ fn t493_owned_process_checks_identity_before_retirement() {
 
 #[test]
 fn t493_runtime_lease_rejects_second_owner_and_corrupt_records() {
-    use uscreen_config::windows::{
+    use blent_config::windows::{
         private::Directory,
         runtime::{self, Lease},
     };

@@ -10,4 +10,4 @@ fn main() -> anyhow::Result<()> {
 }
 
 #[cfg(not(any(target_os = "linux", windows)))]
-compile_error!("UScreen currently builds for Linux and the Windows diagnostics preview");
+compile_error!("Blent currently builds for Linux and the Windows diagnostics preview");

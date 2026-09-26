@@ -26,7 +26,7 @@ import autostart_fixture
 
 class AppImageTest(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix='uscreen-image space-')
+        self.temp = tempfile.TemporaryDirectory(prefix='blent-image space-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.app = self.root / 'source.AppDir'
@@ -34,9 +34,9 @@ class AppImageTest(unittest.TestCase):
         self.write(self.app / 'AppRun', (REPO / 'packaging/appimage/AppRun').read_text())
         self.env = dict(os.environ, HOME=str(self.root / 'home'), APPDIR=str(self.app),
                         XDG_DATA_HOME=str(self.root / 'data % $'), XDG_CONFIG_HOME=str(self.root / 'config'),
-                        USCREEN_TEST_OUTPUT=str(self.root / 'output'))
+                        BLENT_TEST_OUTPUT=str(self.root / 'output'))
         self.env.pop('APPIMAGE', None)
-        self.env.pop('USCREEN_APPIMAGE_LAUNCHER', None)
+        self.env.pop('BLENT_APPIMAGE_LAUNCHER', None)
         self.env.pop('LD_LIBRARY_PATH', None)
 
     def write(self, path, text):
@@ -50,12 +50,12 @@ class AppImageTest(unittest.TestCase):
                               capture_output=True, text=True, timeout=20)
 
     def test_t308_dispatch_uses_stable_outer_path_without_global_loader_overrides(self):
-        script = '#!/bin/sh\nprintf "%s\\n" "$0" "$USCREEN_APPIMAGE_LAUNCHER" "$APPIMAGE_EXTRACT_AND_RUN" "${LD_LIBRARY_PATH-unset}" "$@"\n'
-        for name in ('uscreen', 'uscreen-gui', 'bash'):
+        script = '#!/bin/sh\nprintf "%s\\n" "$0" "$BLENT_APPIMAGE_LAUNCHER" "$APPIMAGE_EXTRACT_AND_RUN" "${LD_LIBRARY_PATH-unset}" "$@"\n'
+        for name in ('blent', 'blent-gui', 'bash'):
             self.write(self.app / 'usr/bin' / name, script)
         outer = self.write(self.root / 'outer %h.AppImage', '#!/bin/sh\nexit 0\n')
-        for arguments, program in [((), 'uscreen-gui'), (('--gui', 'arg'), 'uscreen-gui'),
-                                   (('--daemon', 'status'), 'uscreen'), (('status',), 'uscreen'),
+        for arguments, program in [((), 'blent-gui'), (('--gui', 'arg'), 'blent-gui'),
+                                   (('--daemon', 'status'), 'blent'), (('status',), 'blent'),
                                    (('--install-user',), 'bash')]:
             with self.subTest(arguments=arguments):
                 result = self.invoke(*arguments, env=dict(self.env, APPIMAGE=str(outer)))
@@ -67,22 +67,22 @@ class AppImageTest(unittest.TestCase):
     def installer_fixture(self):
         build.stage_metadata(REPO, self.app)
         (self.app / 'usr/bin/bash').symlink_to('/bin/bash')
-        self.write(self.app / 'usr/bin/uscreen', '#!/bin/sh\nprintf "%s\\n" "${USCREEN_TEST_STATE-uscreen is not running}"\n')
+        self.write(self.app / 'usr/bin/blent', '#!/bin/sh\nprintf "%s\\n" "${BLENT_TEST_STATE-blent is not running}"\n')
         self.write(self.app / 'usr/bin/systemctl', '#!/bin/sh\nexit 0\n')
 
     def test_t308_user_registration_has_stable_quoted_paths_and_preserves_settings(self):
         self.installer_fixture()
         result = self.invoke('--install-user')
         self.assertEqual(result.returncode, 0, result.stderr)
-        launcher = Path(self.env['XDG_DATA_HOME']) / 'uscreen/appimage/UScreen.AppDir/AppRun'
-        unit = (Path(self.env['XDG_CONFIG_HOME']) / 'systemd/user/uscreen.service').read_text()
-        self.assertIn('# USCREEN_APPIMAGE_PATH_HEX=' + str(launcher).encode().hex(), unit)
+        launcher = Path(self.env['XDG_DATA_HOME']) / 'blent/appimage/Blent.AppDir/AppRun'
+        unit = (Path(self.env['XDG_CONFIG_HOME']) / 'systemd/user/blent.service').read_text()
+        self.assertIn('# BLENT_APPIMAGE_PATH_HEX=' + str(launcher).encode().hex(), unit)
         self.assertNotIn(str(self.app), unit)
         self.assertIn(str(launcher).replace('%', '%%'), unit)
-        desktop = (Path(self.env['XDG_DATA_HOME']) / 'applications/uscreen.desktop').read_text()
+        desktop = (Path(self.env['XDG_DATA_HOME']) / 'applications/blent.desktop').read_text()
         self.assertIn('"--gui"', desktop)
         self.assertTrue(launcher.is_file())
-        link = Path(self.env['HOME']) / '.local/bin/uscreen'
+        link = Path(self.env['HOME']) / '.local/bin/blent'
         self.assertTrue(link.is_symlink())
         link.unlink()
         link.mkdir()
@@ -93,7 +93,7 @@ class AppImageTest(unittest.TestCase):
 
     def test_t308_registration_rejects_running_daemon_and_unknown_options(self):
         self.installer_fixture()
-        running = self.invoke('--install-user', env=dict(self.env, USCREEN_TEST_STATE='uscreen is running (PID: 123)'))
+        running = self.invoke('--install-user', env=dict(self.env, BLENT_TEST_STATE='blent is running (PID: 123)'))
         self.assertNotEqual(running.returncode, 0)
         self.assertFalse(Path(self.env['XDG_DATA_HOME']).exists())
         self.assertNotEqual(self.invoke('--install-user', '--unknown').returncode, 0)
@@ -102,17 +102,17 @@ class AppImageTest(unittest.TestCase):
 
     def test_t551_gui_upgrade_uses_registered_distribution_and_retains_rollback(self):
         self.installer_fixture()
-        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        gui = Path(self.env['HOME']) / '.local/bin/blent-gui'
         legacy = '#!/bin/sh\nprintf "legacy GUI\\n"\n'
         self.write(gui, legacy)
-        self.write(self.app / 'usr/bin/uscreen-gui', '#!/bin/sh\nprintf "%s\\n" "new GUI" "$@"\n')
-        destination = Path(self.env['XDG_DATA_HOME']) / 'uscreen/appimage'
+        self.write(self.app / 'usr/bin/blent-gui', '#!/bin/sh\nprintf "%s\\n" "new GUI" "$@"\n')
+        destination = Path(self.env['XDG_DATA_HOME']) / 'blent/appimage'
         for _ in range(2):
             result = self.invoke('--install-user')
             self.assertEqual(result.returncode, 0, result.stderr)
             output = subprocess.check_output([gui, 'space value', '$HOME'], env=self.env, text=True)
             self.assertEqual(output.splitlines(), ['new GUI', 'space value', '$HOME'], 'T551: stale GUI')
-        backups = list(destination.glob('gui-backup.*/uscreen-gui'))
+        backups = list(destination.glob('gui-backup.*/blent-gui'))
         self.assertEqual(len(backups), 1)
         self.assertEqual(backups[0].read_text(), legacy)
         outer = self.write(self.root / 'image with spaces.AppImage', '#!/bin/sh\nprintf "%s\\n" "image GUI" "$@"\n')
@@ -126,14 +126,14 @@ class AppImageTest(unittest.TestCase):
     def test_t551_gui_registration_preserves_unrelated_symlink_target_and_rejects_directory(self):
         self.installer_fixture()
         target = self.write(self.root / 'unrelated program', '#!/bin/sh\nexit 17\n')
-        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        gui = Path(self.env['HOME']) / '.local/bin/blent-gui'
         gui.parent.mkdir(parents=True)
         gui.symlink_to(target)
         result = self.invoke('--install-user')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(target.read_text(), '#!/bin/sh\nexit 17\n')
         self.assertNotEqual(gui.resolve(), target)
-        backups = list((Path(self.env['XDG_DATA_HOME'])/'uscreen/appimage').glob('gui-backup.*/uscreen-gui'))
+        backups = list((Path(self.env['XDG_DATA_HOME'])/'blent/appimage').glob('gui-backup.*/blent-gui'))
         self.assertEqual(len(backups), 1)
         self.assertEqual(backups[0].readlink(), target)
         gui.unlink()
@@ -144,7 +144,7 @@ class AppImageTest(unittest.TestCase):
 
     def test_t551_failed_gui_link_restores_the_previous_launcher(self):
         self.installer_fixture()
-        gui = Path(self.env['HOME']) / '.local/bin/uscreen-gui'
+        gui = Path(self.env['HOME']) / '.local/bin/blent-gui'
         self.write(gui, '#!/bin/sh\nprintf "previous GUI\\n"\n')
         self.write(self.app / 'usr/bin/ln', '#!/bin/sh\n[ "$1" != -sT ] || exit 1\nexec /usr/bin/ln "$@"\n')
         result = self.invoke('--install-user')
@@ -158,7 +158,7 @@ class AppImageTest(unittest.TestCase):
         result = self.invoke('--install-user', env=env)
         self.assertEqual(result.returncode, 0, result.stderr)
         outer.unlink()
-        installed = Path(self.env['HOME']) / '.local/share/uscreen/appimage/UScreen.AppImage'
+        installed = Path(self.env['HOME']) / '.local/share/blent/appimage/Blent.AppImage'
         self.assertEqual(subprocess.check_output([installed], text=True), 'stable image\n')
 
     def test_t308_stock_wrappers_reject_unknown_programs_and_preserve_arguments(self):
@@ -225,7 +225,7 @@ class AppImageTest(unittest.TestCase):
         daemon = """#!/usr/bin/env python3
 import os,time
 from pathlib import Path
-root=Path(os.environ['USCREEN_TEST_OUTPUT'])
+root=Path(os.environ['BLENT_TEST_OUTPUT'])
 root.write_text(os.environ['APPDIR'])
 while not root.with_suffix('.stop').exists(): time.sleep(0.01)
 root.with_suffix('.alive').write_text(str(Path(os.environ['APPDIR']).is_dir()))
@@ -233,19 +233,19 @@ root.with_suffix('.alive').write_text(str(Path(os.environ['APPDIR']).is_dir()))
         gui = """#!/usr/bin/env python3
 import os,subprocess,time
 from pathlib import Path
-subprocess.Popen([os.environ['USCREEN_APPIMAGE_LAUNCHER'], 'start'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-root=Path(os.environ['USCREEN_TEST_OUTPUT'])
+subprocess.Popen([os.environ['BLENT_APPIMAGE_LAUNCHER'], 'start'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+root=Path(os.environ['BLENT_TEST_OUTPUT'])
 for _ in range(1000):
     if root.exists(): break
     time.sleep(0.01)
 else: raise SystemExit('daemon did not start')
 root.with_suffix('.gui').write_text(os.environ['APPDIR'])
 """
-        self.write(self.app / 'usr/bin/uscreen', daemon)
-        self.write(self.app / 'usr/bin/uscreen-gui', gui)
-        env = dict(self.env, USCREEN_TEST_TEMPLATE=str(self.app))
+        self.write(self.app / 'usr/bin/blent', daemon)
+        self.write(self.app / 'usr/bin/blent-gui', gui)
+        env = dict(self.env, BLENT_TEST_TEMPLATE=str(self.app))
         result = subprocess.run([outer], env=env, capture_output=True, text=True, timeout=20)
-        output = Path(self.env['USCREEN_TEST_OUTPUT'])
+        output = Path(self.env['BLENT_TEST_OUTPUT'])
         try:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(Path(output.with_suffix('.gui').read_text()).exists())
@@ -261,17 +261,17 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
     def test_t308_autostart_redirect_and_nested_destination(self):
         self.installer_fixture()
         self.write(self.app / 'usr/bin/systemctl', '#!/bin/sh\nexit 1\n')
-        entry = Path(self.env['XDG_CONFIG_HOME']) / 'autostart/uscreen.desktop'
-        self.write(entry, '[Desktop Entry]\nType=Application\nExec=/old/uscreen start\nHidden=true\n')
+        entry = Path(self.env['XDG_CONFIG_HOME']) / 'autostart/blent.desktop'
+        self.write(entry, '[Desktop Entry]\nType=Application\nExec=/old/blent start\nHidden=true\n')
         result = self.invoke('--install-user')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('Hidden=true', entry.read_text())
-        self.assertNotIn('/old/uscreen', entry.read_text())
+        self.assertNotIn('/old/blent', entry.read_text())
         self.write(self.app / 'usr/bin/systemctl', '#!/bin/sh\nexit 0\n')
         self.assertEqual(self.invoke('--install-user').returncode, 0)
         # T536 keeps a service login trigger, replacing the obsolete direct
         # launch (and its Hidden=true), so only the installed service can run.
-        self.assertEqual(entry.read_text(), (REPO / 'scripts/uscreen-service-autostart.desktop').read_text())
+        self.assertEqual(entry.read_text(), (REPO / 'scripts/blent-service-autostart.desktop').read_text())
         result = self.invoke('--install-user', env=dict(self.env, XDG_DATA_HOME=str(self.app / 'nested')))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('outside', result.stderr)
@@ -280,7 +280,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
         self.installer_fixture()
         state = autostart_fixture.manager(self.root, self.env, self.app / 'usr/bin/systemctl')
         self.env['PATH'] = str(self.app / 'usr/bin') + ':/usr/bin:/bin'
-        entry = Path(self.env['XDG_CONFIG_HOME']) / 'autostart/uscreen.desktop'
+        entry = Path(self.env['XDG_CONFIG_HOME']) / 'autostart/blent.desktop'
         for enabled in [False, True]:
             if enabled:
                 (state / 'enabled').touch()
@@ -389,7 +389,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
     def test_t308_interrupted_install_preserves_previous_directory(self):
         self.installer_fixture()
         self.assertEqual(self.invoke('--install-user').returncode, 0)
-        installed = Path(self.env['XDG_DATA_HOME']) / 'uscreen/appimage/UScreen.AppDir'
+        installed = Path(self.env['XDG_DATA_HOME']) / 'blent/appimage/Blent.AppDir'
         sentinel = installed / 'sentinel'
         sentinel.write_text('previous installation')
         self.write(self.app / 'usr/bin/mv', '#!/bin/sh\ncase "$2" in */.appdir.*) exit 17 ;; esac\nexec /usr/bin/mv "$@"\n')
@@ -488,7 +488,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
 
     def t497_bundle(self):
         bundle = self.root/'bundle'
-        for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+        for name in ['blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
             self.write(bundle/'bin'/name, 'fixture binary')
         programs = [self.write(self.root/'pinned/bin'/name, 'fixture stock') for name in ['ffmpeg', 'ffprobe']]
         programs.append(self.write(self.root/'stock/adb', 'fixture stock'))
@@ -521,7 +521,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
                                evdi_source=self.root/'evdi', source_cache=self.root/'cache', tool_cache=self.root/'tools',
                                ffmpeg_prefix=self.root/'pinned', ffmpeg_cache=self.root/'ffmpeg-cache', ffmpeg_jobs=2)
         self.write(args.output/'appimage-work/stale', 'stale')
-        image = args.output/'uscreen-1.2.3-x86_64.AppImage'
+        image = args.output/'blent-1.2.3-x86_64.AppImage'
         self.write(image, 'old image')
         tool = self.write(self.root/'appimagetool', '#!/bin/sh\nfor last do :; done\nprintf image > "$last"\nprintf "%s\\n" "$@" > "$0.args"\n')
         def collect(_repo, _paths, destination, _notices, _evdi, _cache, prefix):
@@ -533,7 +533,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
             build.build(args)
         self.assertFalse((args.output/'appimage-work/stale').exists())
         self.assertEqual(image.read_text(), 'image')
-        with tarfile.open(args.output/'uscreen-1.2.3-AppImage-sources.tar.gz') as archive:
+        with tarfile.open(args.output/'blent-1.2.3-AppImage-sources.tar.gz') as archive:
             self.assertEqual(archive.extractfile('sources/LICENSE').read(), b'source fixture')
         self.assertIn('--runtime-file\n' + str(self.root/'runtime'), tool.with_suffix('.args').read_text())
 

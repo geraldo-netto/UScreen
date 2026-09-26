@@ -1,10 +1,10 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.os.Build
 import android.view.Surface
-import com.uscreen.*
+import com.blent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.LockSupport
 import org.json.JSONObject

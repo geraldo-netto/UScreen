@@ -3,13 +3,13 @@
 # Local builds can require newer glibc versions. This ABI check does not
 # establish runtime dependency, GPU, kernel or compositor compatibility.
 #
-# Needs a distrobox container named "uscreen-build" made from debian:12 with
+# Needs a distrobox container named "blent-build" made from debian:12 with
 # build-essential, pkg-config, libdrm-dev, the X11/Wayland dev packages for
 # the GUI, git, dpkg-dev, fakeroot, rpm and rustup.
 # The host also needs Python 3 and binutils for the bundle ABI check.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-CONTAINER="${USCREEN_BUILD_CONTAINER:-uscreen-build}"
+CONTAINER="${BLENT_BUILD_CONTAINER:-blent-build}"
 VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
 EVDI_TAG="v1.15.0"
 # Immutable upstream revision: validate cached and freshly cloned source alike.
@@ -43,18 +43,18 @@ distrobox enter "$CONTAINER" -- bash -lc '
   gcc -O3 -Ihost/evdi -o target-deb12/evdi_helper host/evdi/evdi_helper.c host/evdi/conversion.c host/evdi/frame_exchange.c host/evdi/fifo_writer.c host/evdi/capture.c host/evdi/raw_ring.c host/evdi/writer.c \
       -Ltarget-deb12/evdi-src/library -levdi -lpthread "-Wl,-rpath,\$ORIGIN"
   touch target-deb12/.build-ok
-' uscreen-release "$PWD" "$EVDI_TAG" "$EVDI_COMMIT"
+' blent-release "$PWD" "$EVDI_TAG" "$EVDI_COMMIT"
 [ -f target-deb12/.build-ok ] || { echo "!! build inside $CONTAINER failed"; exit 1; }
 
 # Same layout as `make dist-local`, from the portable binaries.
-D="dist/uscreen-$VERSION"
+D="dist/blent-$VERSION"
 rm -rf "$D"
 ./scripts/stage-linux-bundle.sh target-deb12/release target-deb12/evdi_helper target-deb12/evdi-src/library/libevdi.so.1.15.0 "$D"
 python3 scripts/ci/verify-portability.py "$D/bin"
 ./android/gradlew -p android assembleRelease -q
 python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
-cp android/app/build/outputs/apk/release/app-release.apk "$D/uscreen.apk"
-tar -C dist -czf "dist/uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION"
+cp android/app/build/outputs/apk/release/app-release.apk "$D/blent.apk"
+tar -C dist -czf "dist/blent-$VERSION-linux-x86_64.tar.gz" "blent-$VERSION"
 
 echo "  helper runpath: $(readelf -d "$D/bin/evdi_helper" | grep -i runpath | grep -oE "\[.*\]")"
-echo "✓ dist/uscreen-$VERSION-linux-x86_64.tar.gz (portable)"
+echo "✓ dist/blent-$VERSION-linux-x86_64.tar.gz (portable)"

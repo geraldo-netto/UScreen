@@ -26,10 +26,10 @@ def stage(repo, bundle, appdir, ffmpeg_prefix):
     binary.mkdir(parents=True)
     library = appdir / 'usr/lib'
     library.mkdir()
-    for name in ('uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0'):
+    for name in ('blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0'):
         copy(bundle / 'bin' / name, binary / name)
     (binary / 'libevdi.so.1').symlink_to('libevdi.so.1.15.0')
-    programs = [binary / name for name in ('uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0')]
+    programs = [binary / name for name in ('blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0')]
     stock = stage_stock(appdir, ffmpeg_prefix)
     copy(Path('/bin/bash'), binary / 'bash')
     programs.extend([binary / 'bash', *stock])
@@ -40,7 +40,7 @@ def stage(repo, bundle, appdir, ffmpeg_prefix):
     (library / 'libevdi.so.1').unlink(missing_ok=True)
     dependencies.pop('libevdi.so.1', None)
     ffmpeg_bundle.isolate_codecs(appdir, dependencies)
-    for name in ('uscreen', 'uscreen-gui', 'evdi_helper', 'bash'):
+    for name in ('blent', 'blent-gui', 'evdi_helper', 'bash'):
         elf.set_app_rpath(binary / name, helper=name == 'evdi_helper')
         elf.check_loaded(binary / name)
     stage_metadata(repo, appdir)
@@ -68,18 +68,18 @@ def stage_stock(appdir, ffmpeg_prefix):
 def stage_metadata(repo, appdir):
     source = repo / 'packaging/appimage'
     copy(source / 'AppRun', appdir / 'AppRun', 0o755)
-    share = appdir / 'usr/share/uscreen'
+    share = appdir / 'usr/share/blent'
     copy(source / 'install-appimage.sh', share / 'install-appimage.sh', 0o755)
-    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'uscreen.service',
-                 'uscreen-service-autostart.desktop'):
+    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'blent.service',
+                 'blent-service-autostart.desktop'):
         copy(repo / 'scripts' / name, share / name)
-    copy(repo / 'scripts/uscreen.desktop', share / 'uscreen.desktop')
-    desktop = (repo / 'scripts/uscreen.desktop').read_text().replace('Exec=uscreen-gui', 'Exec=AppRun')
-    (appdir / 'uscreen.desktop').write_text(desktop)
-    icon = repo / 'packaging/icons/uscreen.svg'
-    copy(icon, appdir / 'uscreen.svg')
-    copy(icon, appdir / 'usr/share/icons/hicolor/scalable/apps/uscreen.svg')
-    subprocess.run([str(repo / 'scripts/copy-distribution-docs.sh'), str(appdir / 'usr/share/doc/uscreen')],
+    copy(repo / 'scripts/blent.desktop', share / 'blent.desktop')
+    desktop = (repo / 'scripts/blent.desktop').read_text().replace('Exec=blent-gui', 'Exec=AppRun')
+    (appdir / 'blent.desktop').write_text(desktop)
+    icon = repo / 'packaging/icons/blent.svg'
+    copy(icon, appdir / 'blent.svg')
+    copy(icon, appdir / 'usr/share/icons/hicolor/scalable/apps/blent.svg')
+    subprocess.run([str(repo / 'scripts/copy-distribution-docs.sh'), str(appdir / 'usr/share/doc/blent')],
                    cwd=repo, check=True)
 
 
@@ -88,23 +88,23 @@ def build(args):
     bundle, output = args.bundle.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     for suffix in ('x86_64.AppImage', 'AppImage-sources.tar.gz'):
-        (output / f'uscreen-{args.version}-{suffix}').unlink(missing_ok=True)
+        (output / f'blent-{args.version}-{suffix}').unlink(missing_ok=True)
     work = output / 'appimage-work'
     if work.exists():
         shutil.rmtree(work)
     work.mkdir()
-    appdir = work / 'UScreen.AppDir'
+    appdir = work / 'Blent.AppDir'
     ffmpeg_prefix = args.ffmpeg_prefix or ffmpeg_bundle.prepare(args.ffmpeg_cache.resolve(), args.ffmpeg_jobs)
     paths = stage(repo, bundle, appdir, ffmpeg_prefix.resolve())
     source_dir = work / 'sources'
-    sources.collect(repo, paths, source_dir, appdir / 'usr/share/doc/uscreen/bundled',
+    sources.collect(repo, paths, source_dir, appdir / 'usr/share/doc/blent/bundled',
                     args.evdi_source, args.source_cache.resolve(), ffmpeg_prefix.resolve())
-    with tarfile.open(output / f'uscreen-{args.version}-AppImage-sources.tar.gz', 'w:gz') as archive:
+    with tarfile.open(output / f'blent-{args.version}-AppImage-sources.tar.gz', 'w:gz') as archive:
         archive.add(source_dir, arcname='sources')
     pinned = tools.prepare(args.tool_cache)
     subprocess.run([str(pinned['appimagetool']), '--appimage-extract-and-run', '--no-appstream',
                     '--runtime-file', str(pinned['runtime-x86_64']), '--mksquashfs-opt', '-processors',
-                    '--mksquashfs-opt', '2', str(appdir), str(output / f'uscreen-{args.version}-x86_64.AppImage')],
+                    '--mksquashfs-opt', '2', str(appdir), str(output / f'blent-{args.version}-x86_64.AppImage')],
                    check=True, env=dict(os.environ, ARCH='x86_64'))
 
 

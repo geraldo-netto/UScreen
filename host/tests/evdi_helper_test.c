@@ -359,7 +359,7 @@ static void assert_stalled_write_exits(int reader, int cancel) {
 }
 
 static void test_stalled_fifo(int cancel) {
-    char root[] = "/tmp/uscreen-fifo-test-XXXXXX";
+    char root[] = "/tmp/blent-fifo-test-XXXXXX";
     assert(mkdtemp(root));
     char path[4096];
     snprintf(path, sizeof(path), "%s/capture.fifo", root);
@@ -434,7 +434,7 @@ static void assert_external_card_preserved(const char *root) {
 }
 
 static void test_t108(void) {
-    char root[] = "/tmp/uscreen-card-lease-test-XXXXXX";
+    char root[] = "/tmp/blent-card-lease-test-XXXXXX";
     assert(mkdtemp(root));
     snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
     make_test_card(root, 0); make_test_card(root, 2);
@@ -821,7 +821,7 @@ static void test_t050(void) {
 }
 
 static void test_t051(void) {
-    char root[] = "/tmp/uscreen-card-test-XXXXXX";
+    char root[] = "/tmp/blent-card-test-XXXXXX";
     assert(mkdtemp(root));
     const char *paths[] = {"evdi.9", "evdi.9/drm", "evdi.9/drm/card9",
                            "evdi.0", "evdi.0/drm", "evdi.0/drm/card0"};
@@ -984,7 +984,7 @@ static void test_t290(void) {
 }
 
 static void t340_startup_case(int bytes) {
-    char root[] = "/tmp/uscreen-t340-XXXXXX";
+    char root[] = "/tmp/blent-t340-XXXXXX";
     assert(mkdtemp(root));
     snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
     char path[4096];
@@ -1016,7 +1016,7 @@ static void test_t340_oversized(void) { t340_startup_case(32769); }
 static void test_t340_readable(void) { t340_startup_case(128); }
 
 static void t341_regular_edid(void) {
-    char root[] = "/tmp/uscreen-t341-regular-XXXXXX", path[4096], link[4096];
+    char root[] = "/tmp/blent-t341-regular-XXXXXX", path[4096], link[4096];
     assert(mkdtemp(root));
     snprintf(path, sizeof(path), "%s/custom edid.bin", root);
     snprintf(link, sizeof(link), "%s/linked edid.bin", root);
@@ -1043,7 +1043,7 @@ static void t341_regular_edid(void) {
 
 static void test_t341(void) {
     t341_regular_edid();
-    char root[] = "/tmp/uscreen-t341-XXXXXX", path[4096];
+    char root[] = "/tmp/blent-t341-XXXXXX", path[4096];
     assert(mkdtemp(root));
     snprintf(path, sizeof(path), "%s/edid", root);
     assert(mkfifo(path, 0600) == 0);
@@ -1065,7 +1065,7 @@ static void test_t341(void) {
 }
 
 static void t343_regular_destination(void) {
-    char path[] = "/tmp/uscreen-t343-file-XXXXXX";
+    char path[] = "/tmp/blent-t343-file-XXXXXX";
     const char original[] = "existing file contents";
     int file = mkstemp(path);
     assert(file >= 0);
@@ -1086,7 +1086,7 @@ static void t343_regular_destination(void) {
 }
 
 static void t343_fifo_destination(void) {
-    char root[] = "/tmp/uscreen-t343-fifo-XXXXXX", path[4096], link[4096];
+    char root[] = "/tmp/blent-t343-fifo-XXXXXX", path[4096], link[4096];
     assert(mkdtemp(root));
     snprintf(path, sizeof(path), "%s/capture pipe", root);
     snprintf(link, sizeof(link), "%s/linked pipe", root);
@@ -1134,7 +1134,7 @@ static int t330_command_lease(int argc, char **argv, const char *root) {
 
 /* T226: no encoder may see new bytes appended to a retired partial frame. */
 static void test_t226(void) {
-    char root[] = "/tmp/uscreen-t226-XXXXXX", path[4096], fresh[4096];
+    char root[] = "/tmp/blent-t226-XXXXXX", path[4096], fresh[4096];
     assert(mkdtemp(root));
     snprintf(path, sizeof(path), "%s/frames", root);
     snprintf(fresh, sizeof(fresh), "%s/new", root);
@@ -1250,7 +1250,7 @@ static void t415_request(const char *path, const char *text) {
 }
 
 static void test_t415_open(void) {
-    char root[] = "/tmp/uscreen-t415-XXXXXX", fifo[256], request[256];
+    char root[] = "/tmp/blent-t415-XXXXXX", fifo[256], request[256];
     assert(mkdtemp(root));
     snprintf(fifo, sizeof(fifo), "%s/frames", root);
     snprintf(request, sizeof(request), "%s/request", root);
@@ -1282,7 +1282,7 @@ static void test_t415_open(void) {
  * exercise real Linux EBUSY/rounding below a 1 MiB system ceiling. Bytes and
  * open/write/read/resize behavior remain real; production requests stay MiB. */
 static void test_t415_live(void) {
-    char root[] = "/tmp/uscreen-t415-live-XXXXXX", path[256];
+    char root[] = "/tmp/blent-t415-live-XXXXXX", path[256];
     assert(mkdtemp(root));
     snprintf(path, sizeof(path), "%s/request", root);
     int ends[2]; assert(pipe(ends) == 0);
@@ -1315,7 +1315,7 @@ static void test_t415_live(void) {
 }
 
 static void test_t415_rounding(void) {
-    char request[] = "/tmp/uscreen-t415-request-XXXXXX";
+    char request[] = "/tmp/blent-t415-request-XXXXXX";
     int file = mkstemp(request); assert(file >= 0); close(file);
     t415_request(request, "2\n");
     int ends[2]; assert(pipe(ends) == 0);
@@ -1336,9 +1336,9 @@ static void test_t415_rounding(void) {
 #include "fifo_demand.c"
 
 int main(int argc, char **argv) {
-    const char *fifo_fixture = getenv("USCREEN_T226_ROOT");
+    const char *fifo_fixture = getenv("BLENT_T226_ROOT");
     if (fifo_fixture) return t226_command(argc, argv, fifo_fixture);
-    const char *root = getenv("USCREEN_T330_DRM");
+    const char *root = getenv("BLENT_T330_DRM");
     if (root) return t330_command_lease(argc, argv, root);
     assert(argc == 2);
     static const struct { const char *id; void (*run)(void); } cases[] = {

@@ -1,6 +1,6 @@
 //! Shared access to the compositor's output inventory.
+use blent_config::commands::AsyncCommandExt;
 use serde_json::Value;
-use uscreen_config::commands::AsyncCommandExt;
 
 /// Preserve absent names distinctly: input mapping cannot invent a connector.
 #[derive(Clone, Debug)]

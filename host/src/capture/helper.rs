@@ -47,9 +47,9 @@ fn evdi_setup_problem_in(dir: &std::path::Path) -> Option<String> {
         "No EVDI device exists and /sys/devices/evdi/add is root-only, so one cannot be \
          created. Fix it for this boot with:\n    echo 1 | sudo tee /sys/devices/evdi/add\n\
          and for every boot with:\n    echo 'options evdi initial_device_count=2' | sudo tee \
-         /etc/modprobe.d/uscreen-evdi.conf\n\
+         /etc/modprobe.d/blent-evdi.conf\n\
          This boot setting applies after reboot; preserve the loaded module.\n\
-         Then run: uscreen doctor"
+         Then run: blent doctor"
             .to_string(),
     )
 }
@@ -186,7 +186,7 @@ impl HelperProcess {
     pub(super) async fn start(&mut self, config: &CaptureConfig) -> Result<()> {
         crate::config::validate_encoder_for_build(&config.encoder)?;
         if config.shared_raw() {
-            uscreen_config::raw_frame::Layout::new(2, 2, config.raw_slots)?;
+            blent_config::raw_frame::Layout::new(2, 2, config.raw_slots)?;
         }
         anyhow::ensure!(!config.shared_raw() || cfg!(feature = "inproc-encoder"), "shared_memory raw transport requires --features inproc-encoder; use fifo with stock FFmpeg CLI/VAAPI");
         let fifo = fifo_path_for(config.instance)?;
@@ -214,7 +214,7 @@ impl HelperProcess {
             self.mode_tx.clone(),
             self.stream_tx.clone(),
             self.fifo_reset_tx.clone(),
-            uscreen_config::linux::pipe::ReportFile::new(
+            blent_config::linux::pipe::ReportFile::new(
                 fifo,
                 child.id().context("helper has no PID")?,
             )?,
@@ -268,7 +268,7 @@ impl HelperProcess {
                 .arg(fifo.with_extension("idle"));
         }
         cmd.arg("--pipe-size-file")
-            .arg(uscreen_config::linux::pipe::request_path()?);
+            .arg(blent_config::linux::pipe::request_path()?);
         if let Some(card) = config.card {
             cmd.args(["--card", &card.to_string()]);
         } else if let Some(previous) = self.card {
@@ -310,7 +310,7 @@ impl HelperProcess {
         mode_tx: watch::Sender<Option<DetectedMode>>,
         stream_tx: watch::Sender<Option<(u32, u32)>>,
         fifo_reset_tx: watch::Sender<Option<fifo::Identity>>,
-        pipe_report: uscreen_config::linux::pipe::ReportFile,
+        pipe_report: blent_config::linux::pipe::ReportFile,
     ) {
         while let Ok(Some(line)) = lines.next_line().await {
             if let Err(error) = pipe_report.observe(&line) {
@@ -396,7 +396,7 @@ mod tests {
         let mut config = CaptureConfig {
             encoder: "libx264".into(),
             helper_path: "/nonexistent-t418-helper".into(),
-            raw_transport: uscreen_config::raw_frame::RawTransport::SharedMemory,
+            raw_transport: blent_config::raw_frame::RawTransport::SharedMemory,
             ..Default::default()
         };
         config.raw_slots = 9;
@@ -426,7 +426,7 @@ mod tests {
         use std::os::fd::AsRawFd;
         let mut helper = HelperProcess::new();
         let mut config = CaptureConfig {
-            raw_transport: uscreen_config::raw_frame::RawTransport::SharedMemory,
+            raw_transport: blent_config::raw_frame::RawTransport::SharedMemory,
             ..Default::default()
         };
         let mut command = Command::new("/unused-helper");
@@ -439,7 +439,7 @@ mod tests {
         assert!(parent.receive().unwrap().is_none());
         drop(command); // Partial startup retires the never-executed child endpoint.
         assert!(parent.receive().is_err());
-        config.raw_transport = uscreen_config::raw_frame::RawTransport::Fifo;
+        config.raw_transport = blent_config::raw_frame::RawTransport::Fifo;
         helper
             .attach_raw_socket(&config, &mut Command::new("/unused-helper"))
             .unwrap();
@@ -447,7 +447,7 @@ mod tests {
     }
     #[test]
     fn evdi_problem_reports_a_missing_module() {
-        let dir = std::env::temp_dir().join("uscreen-test-evdi-absent");
+        let dir = std::env::temp_dir().join("blent-test-evdi-absent");
         let _ = std::fs::remove_dir_all(&dir);
         let msg = evdi_setup_problem_in(&dir).expect("absent module is a problem");
         assert!(msg.contains("not loaded"), "got: {msg}");
@@ -456,7 +456,7 @@ mod tests {
     fn evdi_problem_reports_a_module_with_no_devices() {
         // The state the Arch report landed in: module resident, count 0, and
         // /sys/devices/evdi/add writable only by root.
-        let dir = std::env::temp_dir().join("uscreen-test-evdi-empty");
+        let dir = std::env::temp_dir().join("blent-test-evdi-empty");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("count"), "0\n").unwrap();
         let msg = evdi_setup_problem_in(&dir).expect("no devices is a problem");
@@ -471,7 +471,7 @@ mod tests {
     }
     #[test]
     fn evdi_problem_stays_quiet_when_a_device_exists() {
-        let dir = std::env::temp_dir().join("uscreen-test-evdi-ok");
+        let dir = std::env::temp_dir().join("blent-test-evdi-ok");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("count"), "1\n").unwrap();
         assert!(

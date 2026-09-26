@@ -20,7 +20,7 @@ ARTIFACTS = {
 
 def cache_dir():
     base = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache')
-    result = base / 'uscreen-complexity'
+    result = base / 'blent-complexity'
     result.mkdir(parents=True, exist_ok=True)
     return result
 

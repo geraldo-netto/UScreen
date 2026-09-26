@@ -8,7 +8,7 @@ use std::{
 };
 
 pub fn desktop_path() -> Result<PathBuf> {
-    Ok(config_home()?.join("autostart/uscreen.desktop"))
+    Ok(config_home()?.join("autostart/blent.desktop"))
 }
 
 pub fn systemd_available() -> bool {
@@ -22,7 +22,7 @@ pub fn systemd_available() -> bool {
             "-p",
             "LoadState",
             "--value",
-            "uscreen.service",
+            "blent.service",
         ])
         .output_bounded()
         .is_ok_and(|out| out.status.success() && out.stdout.trim_ascii() == b"loaded")
@@ -30,7 +30,7 @@ pub fn systemd_available() -> bool {
 
 fn systemd_enabled() -> bool {
     Command::new("systemctl")
-        .args(["--user", "is-enabled", "uscreen.service"])
+        .args(["--user", "is-enabled", "blent.service"])
         .output_bounded()
         .is_ok_and(|out| out.status.success() && out.stdout.trim_ascii() == b"enabled")
 }
@@ -82,7 +82,7 @@ pub fn desktop_entry(binary: &Path) -> Result<String> {
             .context("desktop autostart needs a UTF-8 executable path")?,
     );
     let mut entry = String::new();
-    for line in include_str!("../../../scripts/uscreen-autostart.desktop").lines() {
+    for line in include_str!("../../../scripts/blent-autostart.desktop").lines() {
         if line.starts_with("Exec=") {
             entry.push_str(&format!("Exec=/usr/bin/env {argument} \"start\"\n"));
         } else {
@@ -116,7 +116,7 @@ pub fn set_enabled(on: bool, binary: &Path) -> Result<()> {
     if systemd_available() {
         let verb = if on { "enable" } else { "disable" };
         let out = Command::new("systemctl")
-            .args(["--user", verb, "uscreen.service"])
+            .args(["--user", verb, "blent.service"])
             .output_bounded()
             .context("configure systemd autostart")?;
         anyhow::ensure!(
@@ -128,14 +128,14 @@ pub fn set_enabled(on: bool, binary: &Path) -> Result<()> {
         // login paths start the same unit, so systemd keeps a single daemon.
         return if on {
             write_desktop_entry(include_str!(
-                "../../../scripts/uscreen-service-autostart.desktop"
+                "../../../scripts/blent-service-autostart.desktop"
             ))
         } else {
             remove_desktop_entry()
         };
     }
     if std::env::var_os(super::appimage::LAUNCHER).is_some() && systemd_enabled() {
-        anyhow::bail!("Another UScreen distribution owns autostart; stop it and run the AppImage with --install-user before changing this preference");
+        anyhow::bail!("Another Blent distribution owns autostart; stop it and run the AppImage with --install-user before changing this preference");
     }
     anyhow::ensure!(!systemd_enabled(), "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart");
     if on {
@@ -158,7 +158,7 @@ mod tests {
             .join("program space 'quote' \"double\" \\ $HOME %h `tick`\n\t");
         std::fs::write(
             &bin,
-            "#!/bin/sh\nprintf '%s\\n' \"$0\" \"$@\" > \"$USCREEN_T231_LAUNCH\"\n",
+            "#!/bin/sh\nprintf '%s\\n' \"$0\" \"$@\" > \"$BLENT_T231_LAUNCH\"\n",
         )
         .unwrap();
         std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -166,7 +166,7 @@ mod tests {
         let shell = Command::new("bash")
             .arg(repo.join("scripts/write-desktop-entry.sh"))
             .arg(&bin)
-            .arg(repo.join("scripts/uscreen-autostart.desktop"))
+            .arg(repo.join("scripts/blent-autostart.desktop"))
             .arg("start")
             .output()
             .unwrap();
@@ -182,13 +182,13 @@ mod tests {
             "T231: installer/GUI entries diverged"
         );
         assert!(desktop_enabled(&entry));
-        let path = root.path().join("uscreen.desktop");
+        let path = root.path().join("blent.desktop");
         std::fs::write(&path, entry).unwrap();
         let marker = root.path().join("launched");
         let result = Command::new("gio")
             .args(["launch"])
             .arg(path)
-            .env("USCREEN_T231_LAUNCH", &marker)
+            .env("BLENT_T231_LAUNCH", &marker)
             .output()
             .unwrap();
         assert!(
@@ -208,11 +208,11 @@ mod tests {
 
     #[test]
     fn t231_hidden_and_incomplete_entries_do_not_report_enabled() {
-        let valid = "[Desktop Entry]\nType=Application\nExec=uscreen start\n";
+        let valid = "[Desktop Entry]\nType=Application\nExec=blent start\n";
         assert!(desktop_enabled(valid));
         for invalid in [
             String::new(),
-            "[Other]\nType=Application\nExec=uscreen start".into(),
+            "[Other]\nType=Application\nExec=blent start".into(),
             "[Desktop Entry]\nType=Application\nExec=\n".into(),
             format!("{valid}Hidden=true\n"),
         ] {

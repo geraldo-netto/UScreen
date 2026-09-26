@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import org.json.JSONObject
 

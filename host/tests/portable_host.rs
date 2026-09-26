@@ -1,6 +1,6 @@
 //! T523: reusable protocol ownership must not require a native display backend.
+use blent::{attachment::Attachment, latency::LatencyTracker, media::EncoderSettings};
 use tokio::sync::watch;
-use uscreen::{attachment::Attachment, latency::LatencyTracker, media::EncoderSettings};
 
 #[tokio::test]
 async fn t523_attachment_replacement_retires_shared_protocol_ownership() {
@@ -32,7 +32,7 @@ fn t523_shared_video_ownership_preserves_delayed_ack_progress() {
     assert_eq!(evidence.unrendered_output(), 2);
     drop(owner);
     assert!(!evidence.active());
-    assert!(!uscreen_config::platform::capabilities().display || cfg!(target_os = "linux"));
+    assert!(!blent_config::platform::capabilities().display || cfg!(target_os = "linux"));
 }
 
 fn settings() -> EncoderSettings {

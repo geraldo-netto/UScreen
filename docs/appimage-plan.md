@@ -9,21 +9,21 @@ change does not announce a published fork release.
 On Linux x86-64 with glibc 2.36 or newer:
 
 ```bash
-chmod +x uscreen-1.2.3-x86_64.AppImage
-./uscreen-1.2.3-x86_64.AppImage               # GUI
-./uscreen-1.2.3-x86_64.AppImage status        # daemon CLI
-./uscreen-1.2.3-x86_64.AppImage --daemon --help
+chmod +x blent-1.2.3-x86_64.AppImage
+./blent-1.2.3-x86_64.AppImage               # GUI
+./blent-1.2.3-x86_64.AppImage status        # daemon CLI
+./blent-1.2.3-x86_64.AppImage --daemon --help
 ```
 
-Stop any running UScreen daemon before explicitly registering this distribution:
+Stop any running Blent daemon before explicitly registering this distribution:
 
 ```bash
-./uscreen-1.2.3-x86_64.AppImage --install-user
+./blent-1.2.3-x86_64.AppImage --install-user
 ```
 
-Registration copies the image to `$XDG_DATA_HOME/uscreen/appimage/UScreen.AppImage`
+Registration copies the image to `$XDG_DATA_HOME/blent/appimage/Blent.AppImage`
 (default `~/.local/share`), writes a user service and desktop launcher, and creates
-`~/.local/bin/uscreen`. The installed image wrapper enables extract-and-run,
+`~/.local/bin/blent`. The installed image wrapper enables extract-and-run,
 so it also works on hosts without FUSE. It preserves application preferences and existing
 autostart intent; enable or disable autostart in the GUI. Existing desktop
 autostart paths are redirected to the installed image. When the user service is
@@ -32,14 +32,14 @@ starts that same service even on desktops without `graphical-session.target`.
 Registration does not start streaming,
 activate EVDI, enable autostart, uninstall packages or alter system configuration.
 
-Registration also routes `~/.local/bin/uscreen-gui` to the same distribution.
+Registration also routes `~/.local/bin/blent-gui` to the same distribution.
 An older GUI executable or link is retained under
-`$XDG_DATA_HOME/uscreen/appimage/gui-backup.*/uscreen-gui` for rollback; symlink
+`$XDG_DATA_HOME/blent/appimage/gui-backup.*/blent-gui` for rollback; symlink
 targets are not changed. Repeated registration reuses the managed launcher.
 Both image and extracted-directory registration preserve literal arguments and
 paths containing spaces or shell metacharacters.
 
-Update by stopping UScreen and registering the new image the same way. Close the
+Update by stopping Blent and registering the new image the same way. Close the
 old GUI and reopen the installed launcher. Keep the installed image in place:
 a running portable GUI reports a missing launcher if its outer image was moved.
 The GUI will use a systemd service only when its installation marker matches the
@@ -50,14 +50,14 @@ current AppImage path; otherwise it starts its own foreground daemon process.
 The [runtime supports extraction](https://docs.appimage.org/user-guide/troubleshooting/fuse.html):
 
 ```bash
-./uscreen-1.2.3-x86_64.AppImage --appimage-extract-and-run
+./blent-1.2.3-x86_64.AppImage --appimage-extract-and-run
 # Or retain an editable directory:
-./uscreen-1.2.3-x86_64.AppImage --appimage-extract
+./blent-1.2.3-x86_64.AppImage --appimage-extract
 ./squashfs-root/AppRun --install-user
 ```
 
 Registration from a manually extracted directory copies it to
-`$XDG_DATA_HOME/uscreen/appimage/UScreen.AppDir`. Registration from automatic
+`$XDG_DATA_HOME/blent/appimage/Blent.AppDir`. Registration from automatic
 extract-and-run copies the original image. The launcher propagates extraction
 mode to children. Every independently launched daemon invokes the outer image
 again and owns its own runtime lifetime; closing the GUI cannot unmount the
@@ -84,7 +84,7 @@ the existing compatibility, quality, measured timing and render-progress checks;
 installing a newer codec library does not prove that AV1 or HEVC is fastest.
 The generic x86-64 build retains runtime CPU dispatch rather than requiring
 the build machine's instruction set. Stock source receives no codec patches;
-UScreen supplies its existing low-latency runtime options.
+Blent supplies its existing low-latency runtime options.
 The bundled libx265 software encoder also preserves the existing HEVC framing
 regressions; it is not an additional automatic-selection candidate.
 
@@ -99,7 +99,7 @@ The host still supplies its matching glibc/loader, GPU implementations and kerne
 interfaces. EVDI/DKMS for the running kernel, graphics drivers, `/dev/uinput`, USB
 permissions and any Xorg/compositor integration remain host setup. Follow
 [installation prerequisites](installation.md); the bundle includes the explicit
-`usr/share/uscreen/setup-evdi.sh` tool. Core host utilities and a Linux desktop
+`usr/share/blent/setup-evdi.sh` tool. Core host utilities and a Linux desktop
 session are required. No package smoke check deliberately attaches EVDI.
 
 When migrating from `.deb`, stop the existing daemon, close its GUI and register
@@ -121,11 +121,11 @@ built prefix may be supplied with `--ffmpeg-prefix`, but its recipe, executable
 hashes, versions and encoder inventory must pass verification. Downloaded source
 archives are cached under `--ffmpeg-cache`; each build gets its own working tree.
 
-The required `uscreen-<version>-AppImage-sources.tar.gz` asset contains exact
+The required `blent-<version>-AppImage-sources.tar.gz` asset contains exact
 Debian corresponding-source archives and descriptors, Rust dependency sources,
 the pinned libevdi source, upstream FFmpeg/NV header archives with their build
 manifest, and AppImage runtime source. Debian archive checksums
-are verified against their source descriptors. `usr/share/doc/uscreen/bundled`
+are verified against their source descriptors. `usr/share/doc/blent/bundled`
 contains dependency copyright files and a version/license/source manifest.
 Project source is supplied by the matching release tag. Keep the source asset,
 notices and matching project source alongside any redistribution.

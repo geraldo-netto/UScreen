@@ -26,8 +26,8 @@ fn group_path(text: &str) -> Result<&str> {
 
 fn owned_unit(path: &str, pid: u32) -> Option<&str> {
     let unit = path.rsplit('/').next()?;
-    let private = format!("uscreen-priority-{pid}.scope");
-    (unit == "uscreen.service" || unit == private).then_some(unit)
+    let private = format!("blent-priority-{pid}.scope");
+    (unit == "blent.service" || unit == private).then_some(unit)
 }
 
 fn scope_arguments(pid: u32, weight: u32) -> Vec<String> {
@@ -40,7 +40,7 @@ fn scope_arguments(pid: u32, weight: u32) -> Vec<String> {
         "org.freedesktop.systemd1.Manager",
         "StartTransientUnit",
         "ssa(sv)a(sa(sv))",
-        &format!("uscreen-priority-{pid}.scope"),
+        &format!("blent-priority-{pid}.scope"),
         "fail",
         "3",
         "PIDs",

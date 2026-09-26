@@ -13,7 +13,7 @@ import test_packages
 
 class VersionFixtureTest(unittest.TestCase):
     def test_t302_next_release_keeps_distribution_coverage(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-next-release-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-next-release-') as tmp:
             root = Path(tmp)
             test_notices.NoticeTest().copy_sources(root)
             for name, key in [('Makefile', 'VERSION'), ('packaging/arch/PKGBUILD', 'pkgver')]:

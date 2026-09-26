@@ -16,7 +16,7 @@ fn t455_inprocess_runtime_fixtures_survive_shared_umask() {
         "capture::inproc_tests::t322_cancelled_inprocess_session_releases_fifo",
     ] {
         let output = std::process::Command::new("/bin/sh")
-            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t455"])
+            .args(["-c", "umask 0002; exec \"$@\"", "blent-t455"])
             .arg(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
             .output()
@@ -32,7 +32,7 @@ fn t455_inprocess_runtime_fixtures_survive_shared_umask() {
 
 #[tokio::test]
 async fn t284_vaapi_is_rejected_before_fifo_or_helper_creation() {
-    if std::env::var_os("USCREEN_T284_CHILD").is_none() {
+    if std::env::var_os("BLENT_T284_CHILD").is_none() {
         let root = private_runtime_root();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
@@ -40,7 +40,7 @@ async fn t284_vaapi_is_rejected_before_fifo_or_helper_creation() {
                 "capture::inproc_tests::t284_vaapi_is_rejected_before_fifo_or_helper_creation",
                 "--nocapture",
             ])
-            .env("USCREEN_T284_CHILD", "1")
+            .env("BLENT_T284_CHILD", "1")
             .env("XDG_RUNTIME_DIR", root.path())
             .output()
             .unwrap();
@@ -149,8 +149,8 @@ async fn cancel_waiting_encoder() -> (bool, bool) {
 
 #[test]
 fn t322_cancelled_inprocess_session_releases_fifo() {
-    if std::env::var_os("USCREEN_T322_CHILD").is_none() {
-        use uscreen_config::commands::SyncCommandExt;
+    if std::env::var_os("BLENT_T322_CHILD").is_none() {
+        use blent_config::commands::SyncCommandExt;
         let root = private_runtime_root();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
@@ -158,7 +158,7 @@ fn t322_cancelled_inprocess_session_releases_fifo() {
                 "capture::inproc_tests::t322_cancelled_inprocess_session_releases_fifo",
                 "--nocapture",
             ])
-            .env("USCREEN_T322_CHILD", "1")
+            .env("BLENT_T322_CHILD", "1")
             .env("XDG_RUNTIME_DIR", root.path())
             .output_timeout(std::time::Duration::from_secs(10))
             .unwrap();

@@ -22,26 +22,26 @@ import sources
 
 class FFmpegBundleTests(unittest.TestCase):
     def setUp(self):
-        temporary = tempfile.TemporaryDirectory(prefix='uscreen ffmpeg-')
+        temporary = tempfile.TemporaryDirectory(prefix='blent ffmpeg-')
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
 
     def library(self, directory, identity):
         directory.mkdir(parents=True)
         source = directory / 'fixture.c'
-        source.write_text(f'int uscreen_codec_identity(void) {{ return {identity}; }}\n')
+        source.write_text(f'int blent_codec_identity(void) {{ return {identity}; }}\n')
         subprocess.run(['cc', '-shared', '-fPIC', '-Wl,-soname,libx264.so.164',
                         str(source), '-o', str(directory / 'libx264.so.164')], check=True)
 
     def test_t563_bundled_codecs_win_over_conflicting_host_library(self):
         app = self.root / 'AppDir'
-        private = app / 'usr/lib/uscreen-ffmpeg'
+        private = app / 'usr/lib/blent-ffmpeg'
         hostile = self.root / 'host libraries'
         self.library(private, 31)
         self.library(hostile, 81)
         source = self.root / 'main.c'
-        source.write_text('#include <stdio.h>\nint uscreen_codec_identity(void);\n'
-                          'int main(void) { printf("%d\\n", uscreen_codec_identity()); return 0; }\n')
+        source.write_text('#include <stdio.h>\nint blent_codec_identity(void);\n'
+                          'int main(void) { printf("%d\\n", blent_codec_identity()); return 0; }\n')
         (app / 'usr/libexec').mkdir(parents=True)
         (app / 'usr/bin').mkdir()
         binary = app / 'usr/libexec/ffmpeg'
@@ -182,7 +182,7 @@ class FFmpegBundleTests(unittest.TestCase):
             (library/name).write_text(name)
         codec.isolate_codecs(app, dict.fromkeys(names))
         for name in names[:4]:
-            self.assertEqual((library/'uscreen-ffmpeg'/name).read_text(), name)
+            self.assertEqual((library/'blent-ffmpeg'/name).read_text(), name)
             self.assertFalse((library/name).exists())
         for name in names[4:]:
             self.assertTrue((library/name).is_file())

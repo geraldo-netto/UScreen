@@ -149,7 +149,7 @@ def prepare(cache, jobs=2):
 
 
 def isolate_codecs(appdir, dependencies):
-    private = appdir / 'usr/lib/uscreen-ffmpeg'
+    private = appdir / 'usr/lib/blent-ffmpeg'
     private.mkdir()
     for name in dependencies:
         if CODEC_LIBRARY.fullmatch(name):

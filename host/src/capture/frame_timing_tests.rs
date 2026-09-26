@@ -2,10 +2,10 @@ use super::*;
 
 #[tokio::test]
 async fn t561_frame_logs_correlate_packets_and_only_accepted_acks() {
-    if std::env::var_os("USCREEN_T561_FRAME_LOG_TEST").is_none() {
+    if std::env::var_os("BLENT_T561_FRAME_LOG_TEST").is_none() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "capture::cli_encoder::frame_timing_tests::t561_frame_logs_correlate_packets_and_only_accepted_acks", "--nocapture"])
-            .env("USCREEN_T561_FRAME_LOG_TEST", "1").output().unwrap();
+            .env("BLENT_T561_FRAME_LOG_TEST", "1").output().unwrap();
         assert!(
             output.status.success(),
             "{}{}",

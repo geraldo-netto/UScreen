@@ -11,7 +11,7 @@ struct State {
     authentication: Authentication,
     identity: Option<String>,
     generation: u64,
-    transport: Option<uscreen_config::adb::Transport>,
+    transport: Option<blent_config::adb::Transport>,
 }
 struct Shared {
     state: Mutex<State>,
@@ -62,13 +62,13 @@ impl Attachment {
     pub fn begin_with_transport(
         &self,
         identity: Option<String>,
-        transport: Option<uscreen_config::adb::Transport>,
+        transport: Option<blent_config::adb::Transport>,
     ) {
         let mut state = self.0.state.lock().unwrap();
         let preserve = identity.is_some() && state.identity == identity;
         state
             .authentication
-            .rotate(preserve, uscreen_config::credentials::random_token);
+            .rotate(preserve, blent_config::credentials::random_token);
         state.transport = transport.filter(|_| identity.is_some());
         state.identity = identity;
         state.generation = state.generation.wrapping_add(1);
@@ -119,7 +119,7 @@ pub struct Lease {
     authentication: Authentication,
     attachment: Attachment,
     generation: u64,
-    transport: Option<uscreen_config::adb::Transport>,
+    transport: Option<blent_config::adb::Transport>,
     changed: watch::Receiver<u64>,
 }
 impl Lease {
@@ -160,8 +160,8 @@ impl Lease {
     /// Immutable accepted route: never read a replacement tablet's transport.
     pub fn transport(&self) -> Option<&'static str> {
         self.transport.map(|route| match route {
-            uscreen_config::adb::Transport::Usb => "usb",
-            uscreen_config::adb::Transport::Network => "network",
+            blent_config::adb::Transport::Usb => "usb",
+            blent_config::adb::Transport::Network => "network",
         })
     }
 

@@ -37,8 +37,8 @@ class InvocationTest(unittest.TestCase):
             (root/'a.py').write_text('def used(): return 7\n')
             manifest = root/'manifest.json'
             manifest.write_text(json.dumps(dict(sources={'a.py': fingerprint(root/'a.py')})))
-            env = dict(USCREEN_COVERAGE_ROOT=str(root), USCREEN_COVERAGE_MANIFEST=str(manifest),
-                       USCREEN_PYTHON_CALLS=str(root/'calls'))
+            env = dict(BLENT_COVERAGE_ROOT=str(root), BLENT_COVERAGE_MANIFEST=str(manifest),
+                       BLENT_PYTHON_CALLS=str(root/'calls'))
             with patch.dict(os.environ, env), patch('calls.sys.setprofile') as main, \
                     patch('calls.threading.setprofile') as thread, patch('calls.atexit.register') as shutdown:
                 observer = start()

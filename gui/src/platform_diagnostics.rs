@@ -1,9 +1,9 @@
 //! Present shared diagnostic evidence; probes run in the cached status worker.
-use eframe::egui;
-use uscreen_config::{
+use blent_config::{
     diagnostics::{backend_lines, Report},
     platform::Capabilities,
 };
+use eframe::egui;
 
 pub(crate) fn show(ui: &mut egui::Ui, report: Option<&Report>, capabilities: Capabilities) {
     let lines = match report {
@@ -21,7 +21,7 @@ pub(crate) fn show(ui: &mut egui::Ui, report: Option<&Report>, capabilities: Cap
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uscreen_config::diagnostics::{Dependency, State, Tool};
+    use blent_config::diagnostics::{Dependency, State, Tool};
 
     fn labels(shape: &egui::Shape, output: &mut Vec<String>) {
         match shape {

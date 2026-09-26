@@ -12,11 +12,11 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-int uscreen_test_uinput_active(void) { return 497; }
+int blent_test_uinput_active(void) { return 497; }
 
 static int open_fixture(int directory, const char *path, int flags, mode_t mode) {
     if (!strcmp(path, "/dev/uinput")) {
-        path = getenv("USCREEN_T497_UINPUT_FILE");
+        path = getenv("BLENT_T497_UINPUT_FILE");
         if (!path) { errno = ENOENT; return -1; }
     }
     return syscall(SYS_openat, directory, path, flags, mode);
@@ -61,7 +61,7 @@ int openat64(int directory, const char *path, int flags, ...) {
 }
 
 static int owned_descriptor(int fd) {
-    const char *path = getenv("USCREEN_T497_UINPUT_FILE");
+    const char *path = getenv("BLENT_T497_UINPUT_FILE");
     struct stat actual, expected;
     return path && !stat(path, &expected) && !fstat(fd, &actual) &&
         actual.st_dev == expected.st_dev && actual.st_ino == expected.st_ino;
@@ -84,9 +84,9 @@ static void record(FILE *log, unsigned long request, uintptr_t argument) {
 
 static int fake_ioctl(int fd, unsigned long request, uintptr_t argument) {
     if (!owned_descriptor(fd)) { errno = EBADF; return -1; }
-    const char *failure = getenv("USCREEN_T497_UINPUT_FAIL");
+    const char *failure = getenv("BLENT_T497_UINPUT_FAIL");
     if (failure && strtoul(failure, NULL, 10) == request) { errno = EINVAL; return -1; }
-    const char *path = getenv("USCREEN_T497_UINPUT_LOG");
+    const char *path = getenv("BLENT_T497_UINPUT_LOG");
     if (!path) { errno = ENOENT; return -1; }
     FILE *log = fopen(path, "a");
     if (!log) return -1;

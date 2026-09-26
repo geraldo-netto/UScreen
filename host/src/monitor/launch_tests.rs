@@ -182,7 +182,7 @@ async fn t445_synthetic_attachment_never_launches_a_real_android_activity() {
     if !is_fake_serial("fake:t445") {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "monitor::launch_tests::t445_synthetic_attachment_never_launches_a_real_android_activity", "--nocapture"])
-            .env("USCREEN_FAKE_TABLET", "fake:t445").output().unwrap();
+            .env("BLENT_FAKE_TABLET", "fake:t445").output().unwrap();
         assert!(
             output.status.success(),
             "{}{}",

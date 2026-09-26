@@ -23,7 +23,7 @@ experimental helper or its development dependencies automatically. A manually
 built helper must be able to locate its runtime codec libraries; do not mix
 arbitrary libraries into the production AppImage.
 
-Set `USCREEN_X11_GPU_HELPER=/absolute/path/to/uscreen-gpu-capture` in the
+Set `BLENT_X11_GPU_HELPER=/absolute/path/to/blent-gpu-capture` in the
 environment of a host process built with this change. The variable must reach
 the daemon, not just the GUI. The value is an executable path, with no shell
 expansion or command arguments. Remove the variable and restart that host
@@ -106,7 +106,7 @@ and requires a same-device and different-device render node.
 
 `gpu-capture.py` and `summarize-gpu-capture.py` under the same directory perform
 the separate physical USB replay. This temporarily uses the benchmark Android
-activity and restores UScreen afterward. Supply an unused EVDI output and a
+activity and restores Blent afterward. Supply an unused EVDI output and a
 matching replay APK; the currently documented decoder choice is specific to
 the measured tablet. Compare decoded source identities and complete ACKs, not
 just frame counts. A 29 Hz source with 30 FPS capture reduces equal-cadence

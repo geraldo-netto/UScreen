@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 /** Synthetic delivery batching, independent of codec/frame contents. */
 internal object ReplayPacing {

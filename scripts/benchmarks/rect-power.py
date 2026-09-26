@@ -47,7 +47,7 @@ def case(args, index, specification):
     folder.mkdir()
     config = power_config(args.seconds)
     (folder / 'power.pbtxt').write_text(config)
-    remote = f'/data/misc/perfetto-traces/uscreen-t419-power-{index:02d}.pftrace'
+    remote = f'/data/misc/perfetto-traces/blent-t419-power-{index:02d}.pftrace'
     started = capture(args.serial, 'shell', 'perfetto', '--txt', '--background-wait',
                       '-c', '-', '-o', remote, input=config)
     pid = int(started.stdout.strip())

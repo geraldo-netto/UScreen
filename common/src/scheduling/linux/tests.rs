@@ -3,14 +3,14 @@ use super::*;
 #[test]
 fn t582_requests_cover_owned_groups_without_boosting_an_editor() {
     for unit in [
-        include_str!("../../../../scripts/uscreen.service"),
-        include_str!("../../../../packaging/uscreen.service"),
+        include_str!("../../../../scripts/blent.service"),
+        include_str!("../../../../packaging/blent.service"),
     ] {
         assert!(unit.lines().any(|line| line == "CPUWeight=1000"));
         assert!(!unit.contains("CPUSchedulingPolicy=fifo"));
     }
     for (priority, expected) in [(Priority::Normal, 100), (Priority::High, 1000)] {
-        for unit in ["uscreen.service", "uscreen-priority-123.scope"] {
+        for unit in ["blent.service", "blent-priority-123.scope"] {
             request(
                 123,
                 priority,
@@ -46,12 +46,12 @@ fn t582_requests_cover_owned_groups_without_boosting_an_editor() {
         )
         .unwrap();
     }
-    assert!(owned_unit("/user/uscreen-priority-124.scope", 123).is_none());
-    assert!(owned_unit("/user/uscreen.service/other", 123).is_none());
+    assert!(owned_unit("/user/blent-priority-124.scope", 123).is_none());
+    assert!(owned_unit("/user/blent.service/other", 123).is_none());
     assert!(request(
         123,
         Priority::High,
-        "0::/user/uscreen.service",
+        "0::/user/blent.service",
         |_, _| anyhow::bail!("denied")
     )
     .is_err());
@@ -64,9 +64,9 @@ fn t582_requests_cover_owned_groups_without_boosting_an_editor() {
 #[test]
 fn t582_group_input_and_effective_weight_are_validated() {
     let root = tempfile::tempdir().unwrap();
-    let group = root.path().join("user/uscreen.service");
+    let group = root.path().join("user/blent.service");
     std::fs::create_dir_all(&group).unwrap();
-    let text = "0::/user/uscreen.service\n";
+    let text = "0::/user/blent.service\n";
     assert!(verify(root.path(), text, Priority::High).is_err());
     for value in ["", "oops", "0", "100", "10000"] {
         std::fs::write(group.join("cpu.weight"), value).unwrap();
@@ -133,7 +133,7 @@ fn t582_only_the_same_user_and_exact_adb_server_are_eligible() {
 
 #[test]
 fn t582_native_scope_keeps_all_threads_and_new_children_together() {
-    const CHILD: &str = "USCREEN_T582_ISOLATED_CHILD";
+    const CHILD: &str = "BLENT_T582_ISOLATED_CHILD";
     if std::env::var_os(CHILD).is_some() {
         let directory = tempfile::tempdir().unwrap();
         std::env::set_var("XDG_CONFIG_HOME", directory.path());
@@ -231,7 +231,7 @@ fn isolated_adb(directory: &Path) {
     let _ = child.wait();
     result.unwrap();
     assert!(
-        group.contains(&format!("uscreen-priority-{}.scope", child.id())),
+        group.contains(&format!("blent-priority-{}.scope", child.id())),
         "T582 fixture remained in {group}"
     );
     std::env::set_var("PATH", directory.join("missing"));

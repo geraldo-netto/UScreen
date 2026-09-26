@@ -1,18 +1,18 @@
-# UScreen for Linux — Android Tablet as a USB Second Monitor
+# Blent for Linux — Android Tablet as a USB Second Monitor
 
-**UScreen is an open-source SuperDisplay alternative for Linux.** It turns an
+**Blent is an open-source SuperDisplay alternative for Linux.** It turns an
 Android 8.1+ tablet into a real extended USB display and a pressure-sensitive
 graphics tablet, with touch, S Pen pressure, tilt, eraser and stylus-button
 support.
 
-This fork is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
-based on the [upstream project](https://github.com/majmichu1/UScreen) by majmichu1.
-Historical benchmarks and linked compatibility reports describe upstream releases.
+Blent is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
+Original UScreen copyright (c) 2026 majmichu1; retained under the MIT license.
+Historical benchmarks and compatibility reports describe upstream releases.
 As of 2026-09-17 this fork has no published release. The source still reports
 version 1.2.3; identify fork builds by their commit as well as that version.
 The current development work is on `configurable-input-devices`.
 
-UScreen uses a direct ADB-over-USB connection — no Wi-Fi, USB tethering,
+Blent uses a direct ADB-over-USB connection — no Wi-Fi, USB tethering,
 dummy HDMI plug or cloud account required. Screen and input data travel
 between your computer and tablet over USB, or over your local network when
 you enable the optional Wi-Fi fallback. They are not sent to a cloud service.
@@ -29,7 +29,7 @@ before setup. Packaging recipes target several Linux distribution families.
 · [FAQ](#faq)
 · [Website source](docs/index.html)
 
-## Why UScreen?
+## Why Blent?
 
 - **A real second monitor, not a mirror.** A virtual display is created
   through the EVDI kernel module; the tablet appears in your display settings
@@ -62,12 +62,12 @@ or produced from the checkout you intend to install:
 
 | file | distribution |
 | --- | --- |
-| `uscreen-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: `chmod +x uscreen-*.AppImage`; see [launch and user installation](docs/appimage-plan.md) |
-| `uscreen-<ver>-1.x86_64.rpm` | openSUSE (`zypper install`), Fedora (RPM Fusion first, then `dnf install --allowerasing`) |
-| `uscreen-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
-| `uscreen-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
+| `blent-<ver>-x86_64.AppImage` | Linux x86-64/glibc 2.36+: `chmod +x blent-*.AppImage`; see [launch and user installation](docs/appimage-plan.md) |
+| `blent-<ver>-1.x86_64.rpm` | openSUSE (`zypper install`), Fedora (RPM Fusion first, then `dnf install --allowerasing`) |
+| `blent-<ver>-PKGBUILD.tar.gz` | Arch and derivatives — install AUR `evdi-dkms` first; extract, `makepkg -si` |
+| `blent-<ver>-linux-x86_64.tar.gz` | compatible Linux x86-64/glibc systems — extract, inspect `./scripts/install.sh` |
 
-Enable **Start UScreen with the desktop** in the GUI for automatic login startup,
+Enable **Start Blent with the desktop** in the GUI for automatic login startup,
 including on Cinnamon. The full installer enables autostart
 through a user service or an XDG desktop entry; `make install` preserves that
 preference. The GUI can toggle either route. Read
@@ -77,15 +77,15 @@ Cinnamon remains an unresolved crash risk (T222).
 
 **2. Tablet** — install the APK from the same checkout (for a debug build,
 `android/app/build/outputs/apk/debug/app-debug.apk`; release bundles use
-`uscreen.apk`). Enable USB debugging in Developer options.
+`blent.apk`). Enable USB debugging in Developer options.
 
 **3. Plug in.** The daemon sets up forwarding and launches the app by default. Check
-desktop display settings and input mapping; `uscreen doctor` helps diagnose
+desktop display settings and input mapping; `blent doctor` helps diagnose
 setup problems. It cannot establish that every configuration is safe or supported.
 
 Update both halves together: since 1.1.0 they share a session token.
 
-If UScreen replaced a second monitor for you, a star on the repo and a
+If Blent replaced a second monitor for you, a star on the repo and a
 [compatibility report](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml)
 help the next Linux user find it.
 
@@ -94,8 +94,8 @@ help the next Linux user find it.
 | host | tablet | result |
 | --- | --- | --- |
 | Bazzite, KDE Plasma 6 Wayland, NVIDIA RTX 5060 | Galaxy Tab S9 Ultra, Android 14 | works — reference setup, all benchmarks |
-| Arch Linux, KDE Plasma Wayland | — | works — externally verified on a real system twice: the v1.0.2 installer ([report](https://github.com/majmichu1/UScreen/issues/2#issuecomment-5478643599)) and the v1.1.0 PKGBUILD via `makepkg -si`, with menu entry, tray and settings working out of the box ([report](https://github.com/majmichu1/UScreen/issues/3#issuecomment-5494961262)) |
-| Fedora 44, KDE Plasma | Galaxy Tab S9 FE | works — "near perfectly", external report ([discussion #7](https://github.com/majmichu1/UScreen/discussions/7)) |
+| Arch Linux, KDE Plasma Wayland | — | works — externally verified on a real system twice: the v1.0.2 installer (report (historical upstream)) and the v1.1.0 PKGBUILD via `makepkg -si`, with menu entry, tray and settings working out of the box (report (historical upstream)) |
+| Fedora 44, KDE Plasma | Galaxy Tab S9 FE | works — "near perfectly", external report (discussion #7 (historical upstream)) |
 | Debian 12 · Fedora 42 · openSUSE Tumbleweed | — | packages install and run (container-tested, no tablet) |
 
 Android 8.1+ is the minimum; codec, profile, resolution and frame-rate support
@@ -127,32 +127,32 @@ stylus-capability matrix; support depends on the host, client and versions.
 
 | Project | Linux host | Display setup | Android connection |
 | --- | --- | --- | --- |
-| UScreen | yes | EVDI virtual output; see [known limitations](docs/compatibility.md#current-fork-limitations) | native app, adb over USB; optional ADB over Wi-Fi |
+| Blent | yes | EVDI virtual output; see [known limitations](docs/compatibility.md#current-fork-limitations) | native app, adb over USB; optional ADB over Wi-Fi |
 | [SuperDisplay](https://superdisplay.app/help/) | no; Windows host | virtual extended display | native app, USB or Wi-Fi |
 | [Weylus](https://github.com/H-M-H/Weylus#readme) | yes | capture a screen/window; configure a separate output for extension | browser over a network or `adb reverse` |
 | [Sunshine](https://docs.lizardbyte.dev/projects/sunshine/latest/) + [Moonlight](https://github.com/moonlight-stream/moonlight-android) | yes | stream a host display; output provisioning depends on the host setup | native client over a network |
 | [spacedesk](https://manual.spacedesk.net/AndroidUSBCableConnection.html) | no; Windows primary machine | virtual extended display | native app; direct Android USB is supported |
 
-UScreen supports NVENC and VAAPI hardware encoding and a **software** libx264
+Blent supports NVENC and VAAPI hardware encoding and a **software** libx264
 fallback. Consult each alternative's own documentation for its current
 encoder, pen and licensing details.
 
 ## Settings
 
-Host settings live in `~/.config/uscreen/config.toml`; edit them with
-`uscreen-gui` or override supported settings with CLI flags. The tablet’s ⚙
+Host settings live in `~/.config/blent/config.toml`; edit them with
+`blent-gui` or override supported settings with CLI flags. The tablet’s ⚙
 sheet stores app preferences locally; **Apply** sends its shared streaming
 settings to the host. Brightness/refresh preferences take effect immediately.
 The tray controls the running daemon.
 When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
-`$XDG_CONFIG_HOME/uscreen/config.toml`. Empty or relative values use the default.
+`$XDG_CONFIG_HOME/blent/config.toml`. Empty or relative values use the default.
 
 - **Graphics tablet mode** — flip *Graphics tablet* on the tablet: nothing is
   streamed and the pen drives your own screen. Input latency remains. Switch back
   the same way. The connection overlay clears after the authenticated control
   greeting; it returns when the control connection is lost.
 - **Tablet display** — brightness defaults to 50%, and the app requests 60 Hz.
-  Adjust either in the gear menu; preferences persist and affect UScreen only.
+  Adjust either in the gear menu; preferences persist and affect Blent only.
   Other apps retain normal system settings. Refresh selection uses the closest
   supported rate at the current display resolution; **System default** clears
   the request, and Android may override it. Stream FPS is separate.
@@ -191,9 +191,9 @@ When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
   default; turn off what you do not use (on Cinnamon/GNOME under X11 a
   touchscreen device can hide the mouse cursor). The pointer requires Pen;
   disabling Pen preserves the pointer preference for when Pen is enabled again.
-- **Wi-Fi** — `uscreen wifi` once, with the cable in: it switches the tablet
+- **Wi-Fi** — `blent wifi` once, with the cable in: it switches the tablet
   over, remembers the address and reconnects to it by itself whenever the
-  cable is out. `uscreen wifi --off` forgets the address and disconnects; it
+  cable is out. `blent wifi --off` forgets the address and disconnects; it
   does not disable the tablet's network adb listener. See [SECURITY.md](SECURITY.md).
   USB preference also recognizes network ADB endpoints and mDNS wireless
   identifiers. See [benchmarks](docs/benchmarks.md)

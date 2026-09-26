@@ -96,7 +96,7 @@ async fn t575_gpu_command_preserves_user_settings_without_shell_parsing() {
     assert!(child.wait_with_output().await.unwrap().status.success());
     assert!(adapter
         .start_with(
-            OsStr::new("/missing/uscreen-gpu-capture"),
+            OsStr::new("/missing/blent-gpu-capture"),
             &config,
             (640, 400),
             Some(7),
@@ -129,7 +129,7 @@ fn t575_gpu_failure_falls_back_once_without_detaching_monitor() {
     let environment = Adapter::from_environment();
     assert_eq!(
         environment.helper,
-        std::env::var_os("USCREEN_X11_GPU_HELPER").map(PathBuf::from)
+        std::env::var_os("BLENT_X11_GPU_HELPER").map(PathBuf::from)
     );
 }
 
@@ -152,7 +152,7 @@ async fn t575_successful_gpu_spawn_and_failed_retry_preserve_adapter_state() {
     assert!(child.wait_with_output().await.unwrap().status.success());
     adapter.stopped();
     let directory = tempfile::tempdir().unwrap();
-    let missing_helper = directory.path().join("missing-uscreen-gpu");
+    let missing_helper = directory.path().join("missing-blent-gpu");
     assert!(!missing_helper.exists());
     adapter.helper = Some(missing_helper);
     assert!(adapter

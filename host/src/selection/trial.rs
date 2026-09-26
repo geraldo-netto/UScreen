@@ -2,9 +2,9 @@
 use super::Key;
 use crate::latency::RenderSample;
 use crate::latency::{EncoderEvidence, LatencyTracker};
+use blent_config::negotiation::DecoderChoice;
 use std::{future::Future, time::Duration};
 use tokio::sync::watch;
-use uscreen_config::negotiation::DecoderChoice;
 
 /// Each candidate receives its own bounded window. Never merge encoder epochs.
 pub(super) async fn observe(

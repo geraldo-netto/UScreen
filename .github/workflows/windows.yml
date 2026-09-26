@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Test portable policy without platform features
-        run: cargo test --locked -p uscreen-config --no-default-features
+        run: cargo test --locked -p blent-config --no-default-features
       - name: Test native paths, ACLs, leases, jobs and preview applications
         # T493 security/lease tests remain mandatory; Wine cannot replace them.
         run: cargo test --locked --workspace

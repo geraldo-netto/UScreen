@@ -553,7 +553,7 @@ async fn authenticate_input(
         let ok = match first {
             Ok(Some(Ok(Message::Text(text)))) => matches!(
                 serde_json::from_str::<InputEvent>(&text),
-                Ok(InputEvent::Auth { token }) if uscreen_config::credentials::token_matches(expected, &token)
+                Ok(InputEvent::Auth { token }) if blent_config::credentials::token_matches(expected, &token)
             ),
             _ => false,
         };
@@ -652,7 +652,7 @@ mod tests {
     #[tokio::test]
     async fn t299_primary_selection_reaches_kwin_mapping_arguments() {
         const NAME: &str = "input::tests::t299_primary_selection_reaches_kwin_mapping_arguments";
-        if std::env::var_os("USCREEN_T299_CHILD").is_none() {
+        if std::env::var_os("BLENT_T299_CHILD").is_none() {
             run_t299_mapping_fixture(NAME);
             return;
         }
@@ -665,8 +665,7 @@ mod tests {
             )
             .await
         );
-        let trace =
-            std::fs::read_to_string(std::env::var_os("USCREEN_T299_TRACE").unwrap()).unwrap();
+        let trace = std::fs::read_to_string(std::env::var_os("BLENT_T299_TRACE").unwrap()).unwrap();
         assert!(
             trace.contains("outputName s HDMI-A-1"),
             "T299: wrong mapping arguments: {trace}"
@@ -686,12 +685,12 @@ printf '%s' '{"outputs":[{"name":"eDP-1","enabled":true,"priority":2},{"name":"H
             (
                 "busctl",
                 r#"#!/bin/sh
-printf '%s\n' "$*" >> "$USCREEN_T299_TRACE"
-if [ "$2" = set-property ]; then printf '%s' "$8" > "$USCREEN_T299_VALUE"; exit 0; fi
+printf '%s\n' "$*" >> "$BLENT_T299_TRACE"
+if [ "$2" = set-property ]; then printf '%s' "$8" > "$BLENT_T299_VALUE"; exit 0; fi
 case "$6" in
  available) printf 'b true\n';;
- name) printf 's "UScreen Pen"\n';;
- outputName) printf 's "%s"\n' "$(/bin/cat "$USCREEN_T299_VALUE")";;
+ name) printf 's "Blent Pen"\n';;
+ outputName) printf 's "%s"\n' "$(/bin/cat "$BLENT_T299_VALUE")";;
  *) exit 43;;
 esac
 "#,
@@ -704,10 +703,10 @@ esac
         }
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
-            .env("USCREEN_T299_CHILD", "1")
+            .env("BLENT_T299_CHILD", "1")
             .env("PATH", dir.path())
-            .env("USCREEN_T299_TRACE", dir.path().join("trace"))
-            .env("USCREEN_T299_VALUE", dir.path().join("value"))
+            .env("BLENT_T299_TRACE", dir.path().join("trace"))
+            .env("BLENT_T299_VALUE", dir.path().join("value"))
             .output()
             .unwrap();
         assert!(
@@ -1623,14 +1622,14 @@ esac
     #[tokio::test]
     async fn t029_x11_maps_only_this_tablets_devices_and_card() {
         use std::os::unix::fs::PermissionsExt;
-        let root = std::env::temp_dir().join(format!("uscreen-x11-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("blent-x11-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();
         let xinput = root.join("xinput");
         let xrandr = root.join("xrandr");
         std::fs::write(&xinput, r#"#!/bin/sh
 cd "$(dirname "$0")"
 if [ "$1" = list ]; then
-    printf '%s\n' '↳ UScreen Touch id=10 [slave pointer]' '↳ UScreen Pen Pen (0) id=11 [slave pointer]' '↳ UScreen Touch 2 id=20 [slave pointer]' '↳ UScreen Pen 2 Pen (0) id=21 [slave pointer]' '↳ UScreen Pen 2 Eraser (0) id=22 [slave pointer]' '↳ UScreen Pointer 2 id=23 [slave pointer]'
+    printf '%s\n' '↳ Blent Touch id=10 [slave pointer]' '↳ Blent Pen Pen (0) id=11 [slave pointer]' '↳ Blent Touch 2 id=20 [slave pointer]' '↳ Blent Pen 2 Pen (0) id=21 [slave pointer]' '↳ Blent Pen 2 Eraser (0) id=22 [slave pointer]' '↳ Blent Pointer 2 id=23 [slave pointer]'
 else
     printf '%s %s %s\n' "$1" "$2" "$3" >> mapped
 fi
@@ -1943,7 +1942,7 @@ fi
 
     #[tokio::test]
     async fn t388_greeting_reports_accepted_route_and_omits_unknown() {
-        use uscreen_config::adb::Transport;
+        use blent_config::adb::Transport;
         for (route, expected) in [
             (Some(Transport::Usb), Some("usb")),
             (Some(Transport::Network), Some("network")),
@@ -2092,8 +2091,8 @@ fi
         assert_eq!(
             (fallback.width_mm, fallback.height_mm),
             (
-                uscreen_config::display::DEFAULT_WIDTH_MM,
-                uscreen_config::display::DEFAULT_HEIGHT_MM
+                blent_config::display::DEFAULT_WIDTH_MM,
+                blent_config::display::DEFAULT_HEIGHT_MM
             )
         );
         for native in [(0, 0), (0, 2160), (4096, 0)] {

@@ -14,7 +14,7 @@ pub fn daemon_is_running(pid: u32) -> bool {
         return false;
     }
     let base = PathBuf::from(format!("/proc/{pid}"));
-    if std::fs::read_to_string(base.join("comm")).map_or(true, |name| name.trim() != "uscreen") {
+    if std::fs::read_to_string(base.join("comm")).map_or(true, |name| name.trim() != "blent") {
         return false;
     }
     // A zombie has finished cleanup but may not yet have been reaped by its

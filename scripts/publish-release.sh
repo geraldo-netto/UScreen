@@ -6,7 +6,7 @@
 # script would rather fail than publish half a release.
 #
 # Needs GH_TOKEN in the environment (never passed on a command line) and the
-# uscreen-build container for portable binaries.
+# blent-build container for portable binaries.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION="$(sed -n 's/^VERSION = //p' Makefile)"
@@ -69,12 +69,12 @@ check_release_sources
 # The complete set. Add here when a release gains a file; the check below
 # keeps every future release honest about it.
 ASSETS=(
-  "dist/uscreen-$VERSION-linux-x86_64.tar.gz:application/gzip"
-  "dist/uscreen-$VERSION-x86_64.AppImage:application/octet-stream"
-  "dist/uscreen-$VERSION-AppImage-sources.tar.gz:application/gzip"
-  "dist/uscreen-$VERSION-1.x86_64.rpm:application/x-rpm"
-  "dist/uscreen-$VERSION-PKGBUILD.tar.gz:application/gzip"
-  "dist/uscreen-$VERSION/uscreen.apk:application/vnd.android.package-archive"
+  "dist/blent-$VERSION-linux-x86_64.tar.gz:application/gzip"
+  "dist/blent-$VERSION-x86_64.AppImage:application/octet-stream"
+  "dist/blent-$VERSION-AppImage-sources.tar.gz:application/gzip"
+  "dist/blent-$VERSION-1.x86_64.rpm:application/x-rpm"
+  "dist/blent-$VERSION-PKGBUILD.tar.gz:application/gzip"
+  "dist/blent-$VERSION/blent.apk:application/vnd.android.package-archive"
 )
 for a in "${ASSETS[@]}"; do
   f="${a%%:*}"
@@ -82,12 +82,12 @@ for a in "${ASSETS[@]}"; do
 done
 echo "All $(( ${#ASSETS[@]} )) files present."
 
-python3 scripts/verify-release-apk.py "dist/uscreen-$VERSION/uscreen.apk"
+python3 scripts/verify-release-apk.py "dist/blent-$VERSION/blent.apk"
 
 # Checksums for everything above, published alongside.
-( cd dist && sha256sum "uscreen-$VERSION-linux-x86_64.tar.gz" "uscreen-$VERSION-x86_64.AppImage" "uscreen-$VERSION-AppImage-sources.tar.gz" \
-    "uscreen-$VERSION-1.x86_64.rpm" "uscreen-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \
-  && cp "uscreen-$VERSION/uscreen.apk" . && sha256sum uscreen.apk >> SHA256SUMS && rm uscreen.apk )
+( cd dist && sha256sum "blent-$VERSION-linux-x86_64.tar.gz" "blent-$VERSION-x86_64.AppImage" "blent-$VERSION-AppImage-sources.tar.gz" \
+    "blent-$VERSION-1.x86_64.rpm" "blent-$VERSION-PKGBUILD.tar.gz" > SHA256SUMS \
+  && cp "blent-$VERSION/blent.apk" . && sha256sum blent.apk >> SHA256SUMS && rm blent.apk )
 ASSETS+=("dist/SHA256SUMS:text/plain")
 
 check_release_refs
@@ -98,7 +98,7 @@ check_release_sources
 
 # The release title is what shows up in feeds and search results, so it says
 # what the project is rather than just the tag.
-TITLE="UScreen $VERSION — USB second monitor for Linux with S Pen support"
+TITLE="Blent $VERSION — USB second monitor for Linux with S Pen support"
 
 python3 - "$NOTES" "$VERSION" "$TITLE" "$REPO" "${ASSETS[@]}" <<'PY'
 import hashlib, json, os, pathlib, sys, urllib.parse, urllib.request

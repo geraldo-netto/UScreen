@@ -16,7 +16,7 @@ pub(crate) struct Measurement {
     pub first_us: u64,
     pub p95_us: u64,
     pub fps: f64,
-    pub stream: Option<uscreen_config::negotiation::StreamProfile>,
+    pub stream: Option<blent_config::negotiation::StreamProfile>,
     /// First deterministic probe frame only; not a perceptual/full-corpus score.
     pub quality_db: Option<f64>,
 }
@@ -198,7 +198,7 @@ mod tests {
         };
         assert!(measure(&config).await.is_err());
         config.encoder = "vp9_vaapi".into();
-        config.vaapi_device = "/nonexistent/uscreen-t434-render-node".into();
+        config.vaapi_device = "/nonexistent/blent-t434-render-node".into();
         assert!(measure(&config).await.is_err());
     }
 

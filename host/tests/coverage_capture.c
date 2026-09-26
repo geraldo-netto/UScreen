@@ -60,7 +60,7 @@ static void test_t497_callbacks(void) {
 }
 
 static void test_t497_main(void) {
-    char root[] = "/tmp/uscreen-t497-main-XXXXXX", edid[4096];
+    char root[] = "/tmp/blent-t497-main-XXXXXX", edid[4096];
     assert(mkdtemp(root));
     snprintf(mock_card_root, sizeof(mock_card_root), "%s", root);
     make_test_card(root, 17);

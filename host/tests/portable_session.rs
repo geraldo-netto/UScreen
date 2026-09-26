@@ -1,4 +1,13 @@
 //! T523: real protocol sockets with injected capture/input, independent of OS devices.
+use blent::{
+    input::{
+        backend::{InputBackend, InputSink, PenSample},
+        InputConfig,
+    },
+    media::{EncoderGeneration, EncoderSettings, VideoPacket},
+    media_storage::MediaBytes,
+    session::{CaptureBackend, CaptureContext, CaptureResources, CaptureWorkers, Prepared, Spec},
+};
 use futures_util::{SinkExt, StreamExt};
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -11,15 +20,6 @@ use tokio::{
     sync::{mpsc, watch},
 };
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use uscreen::{
-    input::{
-        backend::{InputBackend, InputSink, PenSample},
-        InputConfig,
-    },
-    media::{EncoderGeneration, EncoderSettings, VideoPacket},
-    media_storage::MediaBytes,
-    session::{CaptureBackend, CaptureContext, CaptureResources, CaptureWorkers, Prepared, Spec},
-};
 
 #[derive(Default)]
 struct State {

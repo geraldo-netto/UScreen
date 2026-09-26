@@ -9,12 +9,12 @@ const TEST: &str =
 fn isolated() {
     let directory = tempfile::tempdir().unwrap();
     let tool = directory.path().join("curl");
-    std::fs::write(&tool, "#!/bin/sh\n[ ! -f \"$USCREEN_T497_UPDATE/fail\" ] || exit 42\n/bin/cat \"$USCREEN_T497_UPDATE/reply\"\n").unwrap();
+    std::fs::write(&tool, "#!/bin/sh\n[ ! -f \"$BLENT_T497_UPDATE/fail\" ] || exit 42\n/bin/cat \"$BLENT_T497_UPDATE/reply\"\n").unwrap();
     std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o700)).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", TEST, "--nocapture"])
         .env("PATH", directory.path())
-        .env("USCREEN_T497_UPDATE", directory.path())
+        .env("BLENT_T497_UPDATE", directory.path())
         .output()
         .unwrap();
     assert!(
@@ -58,7 +58,7 @@ async fn malformed(root: &Path) {
 
 #[tokio::test]
 async fn t497_polling_retains_last_release_during_network_failure() {
-    let Ok(directory) = std::env::var("USCREEN_T497_UPDATE") else {
+    let Ok(directory) = std::env::var("BLENT_T497_UPDATE") else {
         isolated();
         return;
     };

@@ -31,7 +31,7 @@ def build(folder):
     (folder / 'src/main.rs').write_text('\n'.join('mod ' + name + ';' for name in modules) +
         '\nfn main() { encoder::benchmark(&std::env::args().skip(1).collect::<Vec<_>>()).unwrap(); }\n')
     (folder / 'Cargo.toml').write_text('''[package]
-name = "uscreen-shared-encode-bench"
+name = "blent-shared-encode-bench"
 version = "0.0.0"
 edition = "2021"
 [features]
@@ -46,7 +46,7 @@ tempfile = "3"
 tracing = "0.1"
 tokio = { version = "1", features = ["full"] }
 ffmpeg-next = "9"
-uscreen-config = { path = ''' + json.dumps(str(ROOT / 'common')) + ' }\n')
+blent-config = { path = ''' + json.dumps(str(ROOT / 'common')) + ' }\n')
     subprocess.run(['cargo', 'build', '--offline', '--release'], cwd=folder, check=True)
     subprocess.run(['cc', '-O3', '-pthread', '-I', str(ROOT / 'host/evdi'),
         str(ROOT / 'scripts/benchmarks/shared-encode-producer.c'),
@@ -56,7 +56,7 @@ uscreen-config = { path = ''' + json.dumps(str(ROOT / 'common')) + ' }\n')
 
 
 def run(args):
-    binary = args.directory / 'target/release/uscreen-shared-encode-bench'
+    binary = args.directory / 'target/release/blent-shared-encode-bench'
     rows = []
     for repeat in range(args.repeats):
         for mode in (['fifo', 'shared'] if repeat % 2 == 0 else ['shared', 'fifo']):

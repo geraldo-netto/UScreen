@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(
-    name = "uscreen",
+    name = "blent",
     version,
     about = "USB second-screen server (Linux runtime; Windows build preview)"
 )]
@@ -72,9 +72,9 @@ fn parse_conversion_threads(value: &str) -> Result<u32, String> {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Start the uscreen daemon
+    /// Start the blent daemon
     Start,
-    /// Stop the uscreen daemon
+    /// Stop the blent daemon
     Stop,
     /// Show daemon status
     Status,
@@ -98,7 +98,7 @@ mod camera_tests {
 
     #[test]
     fn t539_camera_command_is_separate_from_display_startup() {
-        let result = Cli::try_parse_from(["uscreen", "cameras"]);
+        let result = Cli::try_parse_from(["blent", "cameras"]);
         assert!(
             result.is_ok(),
             "T539 camera command unavailable: {:?}",

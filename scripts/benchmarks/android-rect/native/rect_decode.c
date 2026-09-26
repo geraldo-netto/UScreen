@@ -7,12 +7,12 @@
 #include <EGL/eglext.h>
 uint64_t rect_rgb_hash(const unsigned char *data, size_t pixels, size_t stride);
 
-jlong Java_com_uscreen_benchmark_RectNative_create(JNIEnv *env, jobject self) {
+jlong Java_com_blent_benchmark_RectNative_create(JNIEnv *env, jobject self) {
     (void)env; (void)self;
     return (jlong)(intptr_t)ZSTD_createDCtx();
 }
 
-void Java_com_uscreen_benchmark_RectNative_destroy(JNIEnv *env, jobject self, jlong context) {
+void Java_com_blent_benchmark_RectNative_destroy(JNIEnv *env, jobject self, jlong context) {
     (void)env; (void)self;
     ZSTD_freeDCtx((ZSTD_DCtx *)(intptr_t)context);
 }
@@ -25,7 +25,7 @@ static int valid_decode(jlong context, jint expected) {
     return context && expected > 0 && expected <= 3072000;
 }
 
-jboolean Java_com_uscreen_benchmark_RectNative_decode(
+jboolean Java_com_blent_benchmark_RectNative_decode(
         JNIEnv *env, jobject self, jlong context, jint codec, jobject input,
         jint offset, jint bytes, jobject output, jint expected) {
     (void)self;
@@ -44,7 +44,7 @@ jboolean Java_com_uscreen_benchmark_RectNative_decode(
 }
 
 /* Full RGB verification of an RGBA readback; intentionally outside timed trials. */
-jlong Java_com_uscreen_benchmark_RectNative_rgbHash(
+jlong Java_com_blent_benchmark_RectNative_rgbHash(
         JNIEnv *env, jobject self, jobject buffer, jint pixels) {
     (void)self;
     if (pixels <= 0 || pixels > 1024000) return 0;
@@ -54,7 +54,7 @@ jlong Java_com_uscreen_benchmark_RectNative_rgbHash(
     return (jlong)rect_rgb_hash(data, (size_t)pixels, 4);
 }
 
-jboolean Java_com_uscreen_benchmark_RectNative_enableTimestamps(
+jboolean Java_com_blent_benchmark_RectNative_enableTimestamps(
         JNIEnv *env, jobject self, jlong display, jlong surface) {
     (void)env; (void)self;
     PFNEGLGETFRAMETIMESTAMPSUPPORTEDANDROIDPROC supported =
@@ -66,7 +66,7 @@ jboolean Java_com_uscreen_benchmark_RectNative_enableTimestamps(
     return eglSurfaceAttrib(d, s, EGL_TIMESTAMPS_ANDROID, EGL_TRUE);
 }
 
-jlong Java_com_uscreen_benchmark_RectNative_nextFrame(
+jlong Java_com_blent_benchmark_RectNative_nextFrame(
         JNIEnv *env, jobject self, jlong display, jlong surface) {
     (void)env; (void)self;
     PFNEGLGETNEXTFRAMEIDANDROIDPROC next =
@@ -76,7 +76,7 @@ jlong Java_com_uscreen_benchmark_RectNative_nextFrame(
     return (jlong)id;
 }
 
-jlong Java_com_uscreen_benchmark_RectNative_presented(
+jlong Java_com_blent_benchmark_RectNative_presented(
         JNIEnv *env, jobject self, jlong display, jlong surface, jlong id) {
     (void)env; (void)self;
     PFNEGLGETFRAMETIMESTAMPSANDROIDPROC query =

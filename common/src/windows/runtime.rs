@@ -10,7 +10,7 @@ use windows_sys::Win32::Security::Cryptography::{
 };
 
 pub fn directory() -> Result<Directory> {
-    Directory::create(&super::paths::local()?.join("uscreen"))
+    Directory::create(&super::paths::local()?.join("blent"))
 }
 
 pub fn runtime_dir() -> Result<PathBuf> {
@@ -55,7 +55,7 @@ impl Lease {
             .write(true)
             .open(directory.path().join("daemon.lock"))?;
         lock.try_lock()
-            .context("another UScreen instance owns this runtime")?;
+            .context("another Blent instance owns this runtime")?;
         let identity = Identity::read(std::process::id())?;
         let mut record = tempfile::NamedTempFile::new_in(directory.path())?;
         serde_json::to_writer(&mut record, &identity)?;

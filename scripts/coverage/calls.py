@@ -49,9 +49,9 @@ class Calls:
 
 
 def start():
-    root = Path(os.environ['USCREEN_COVERAGE_ROOT'])
-    manifest = json.loads(Path(os.environ['USCREEN_COVERAGE_MANIFEST']).read_text())
-    calls = Calls(root, manifest['sources'], Path(os.environ['USCREEN_PYTHON_CALLS']))
+    root = Path(os.environ['BLENT_COVERAGE_ROOT'])
+    manifest = json.loads(Path(os.environ['BLENT_COVERAGE_MANIFEST']).read_text())
+    calls = Calls(root, manifest['sources'], Path(os.environ['BLENT_PYTHON_CALLS']))
     sys.setprofile(calls.observe)
     threading.setprofile(calls.observe)
     atexit.register(calls.save)

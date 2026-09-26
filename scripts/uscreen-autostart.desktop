@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=UScreen
-Comment=Start the UScreen daemon with the desktop
-Exec=uscreen start
-Icon=uscreen
-Terminal=false
-StartupNotify=false
-NoDisplay=true

@@ -1,11 +1,11 @@
 //! T308: isolate launcher environment and service probes from the login session.
 #![cfg(all(target_os = "linux", feature = "platform"))]
+use blent_config::linux::appimage;
 use std::{os::unix::fs::PermissionsExt, process::Command};
-use uscreen_config::linux::appimage;
 
 #[test]
 fn t308_service_binding_child() {
-    let Ok(expected) = std::env::var("USCREEN_T308_EXPECT") else {
+    let Ok(expected) = std::env::var("BLENT_T308_EXPECT") else {
         return;
     };
     assert_eq!(appimage::permits_service(), expected == "true");
@@ -20,18 +20,18 @@ fn t308_services_match_only_the_current_stable_distribution() {
     let systemctl = root.path().join("systemctl");
     std::fs::write(
         &systemctl,
-        "#!/bin/sh\nprintf '%s\\n' \"$USCREEN_T308_UNIT\"\nexit \"$USCREEN_T308_EXIT\"\n",
+        "#!/bin/sh\nprintf '%s\\n' \"$BLENT_T308_UNIT\"\nexit \"$BLENT_T308_EXIT\"\n",
     )
     .unwrap();
     std::fs::set_permissions(&systemctl, std::fs::Permissions::from_mode(0o700)).unwrap();
-    let unit = root.path().join("uscreen.service");
+    let unit = root.path().join("blent.service");
     for (launcher, text, exit, expected) in [
         (None, String::new(), "0", true),
         (Some(image.as_path()), appimage::marker(&image), "0", true),
         (Some(image.as_path()), appimage::marker(&image), "1", false),
         (
             Some(image.as_path()),
-            "[Service]\nExecStart=/usr/bin/uscreen".into(),
+            "[Service]\nExecStart=/usr/bin/blent".into(),
             "0",
             false,
         ),
@@ -47,9 +47,9 @@ fn t308_services_match_only_the_current_stable_distribution() {
         command
             .args(["--exact", "t308_service_binding_child", "--nocapture"])
             .env("PATH", root.path())
-            .env("USCREEN_T308_UNIT", &unit)
-            .env("USCREEN_T308_EXIT", exit)
-            .env("USCREEN_T308_EXPECT", expected.to_string())
+            .env("BLENT_T308_UNIT", &unit)
+            .env("BLENT_T308_EXIT", exit)
+            .env("BLENT_T308_EXPECT", expected.to_string())
             .env_remove(appimage::LAUNCHER);
         if let Some(launcher) = launcher {
             command.env(appimage::LAUNCHER, launcher);
@@ -66,11 +66,11 @@ fn t308_services_match_only_the_current_stable_distribution() {
 
 #[test]
 fn t308_autostart_child() {
-    let Ok(mode) = std::env::var("USCREEN_T308_AUTOSTART") else {
+    let Ok(mode) = std::env::var("BLENT_T308_AUTOSTART") else {
         return;
     };
-    let binary = std::path::Path::new("/fixture/uscreen.AppImage");
-    use uscreen_config::linux::autostart;
+    let binary = std::path::Path::new("/fixture/blent.AppImage");
+    use blent_config::linux::autostart;
     match mode.as_str() {
         "managed" => {
             assert!(autostart::systemd_available());
@@ -84,14 +84,14 @@ fn t308_autostart_child() {
             assert!(autostart::enabled());
             assert!(std::fs::read_to_string(autostart::desktop_path().unwrap())
                 .unwrap()
-                .contains("/fixture/uscreen.AppImage"));
+                .contains("/fixture/blent.AppImage"));
             autostart::set_enabled(false, binary).unwrap();
             assert!(!autostart::enabled());
         }
         "other" => assert!(autostart::set_enabled(true, binary)
             .unwrap_err()
             .to_string()
-            .contains("Another UScreen distribution")),
+            .contains("Another Blent distribution")),
         "unreachable" => assert!(autostart::set_enabled(true, binary)
             .unwrap_err()
             .to_string()
@@ -111,7 +111,7 @@ fn t308_registration_controls_only_its_service_and_preserves_direct_autostart() 
         let image = root.path().join("outer.AppImage");
         std::fs::write(&image, "#!/bin/sh\nexit 0\n").unwrap();
         std::fs::set_permissions(&image, std::fs::Permissions::from_mode(0o700)).unwrap();
-        let unit = root.path().join("uscreen.service");
+        let unit = root.path().join("blent.service");
         let marker = if mode == "other" {
             String::new()
         } else {
@@ -121,10 +121,10 @@ fn t308_registration_controls_only_its_service_and_preserves_direct_autostart() 
         let systemctl = root.path().join("systemctl");
         std::fs::write(&systemctl, r#"#!/bin/sh
 case "$*" in
-    *FragmentPath*) printf '%s\n' "$USCREEN_T308_UNIT" ;;
-    *LoadState*) case "$USCREEN_T308_AUTOSTART" in direct|unreachable) exit 1 ;; *) echo loaded ;; esac ;;
-    *is-enabled*) if [ "$USCREEN_T308_AUTOSTART" = direct ]; then exit 1; fi; echo enabled ;;
-    *enable*) if [ "$USCREEN_T308_AUTOSTART" = denied ]; then echo denied >&2; exit 1; fi ;;
+    *FragmentPath*) printf '%s\n' "$BLENT_T308_UNIT" ;;
+    *LoadState*) case "$BLENT_T308_AUTOSTART" in direct|unreachable) exit 1 ;; *) echo loaded ;; esac ;;
+    *is-enabled*) if [ "$BLENT_T308_AUTOSTART" = direct ]; then exit 1; fi; echo enabled ;;
+    *enable*) if [ "$BLENT_T308_AUTOSTART" = denied ]; then echo denied >&2; exit 1; fi ;;
 esac
 "#).unwrap();
         std::fs::set_permissions(&systemctl, std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -134,8 +134,8 @@ esac
             .env("PATH", root.path())
             .env("HOME", root.path())
             .env("XDG_CONFIG_HOME", root.path().join("config"))
-            .env("USCREEN_T308_UNIT", &unit)
-            .env("USCREEN_T308_AUTOSTART", mode)
+            .env("BLENT_T308_UNIT", &unit)
+            .env("BLENT_T308_AUTOSTART", mode)
             .env_remove(appimage::LAUNCHER);
         if mode != "unreachable" {
             command.env(appimage::LAUNCHER, image);

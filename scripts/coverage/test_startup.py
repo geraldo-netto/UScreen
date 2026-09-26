@@ -15,14 +15,14 @@ class StartupTest(unittest.TestCase):
             start()
             lines.assert_not_called()
             calls.assert_not_called()
-            with patch.dict(os.environ, USCREEN_PYTHON_CALLS='fixture'):
+            with patch.dict(os.environ, BLENT_PYTHON_CALLS='fixture'):
                 start()
             lines.assert_called_once_with()
             calls.assert_called_once_with()
 
     def test_t497_failed_line_collection_aborts_before_invocation_collection(self):
         error = io.StringIO()
-        with patch.dict(os.environ, USCREEN_PYTHON_CALLS='fixture'), contextlib.redirect_stderr(error), \
+        with patch.dict(os.environ, BLENT_PYTHON_CALLS='fixture'), contextlib.redirect_stderr(error), \
                 patch('coverage.process_startup', side_effect=ValueError('broken manifest')), \
                 patch('calls.start') as calls, patch('startup.os._exit', side_effect=SystemExit(86)):
             with self.assertRaises(SystemExit) as result: start()

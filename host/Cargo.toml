@@ -1,5 +1,5 @@
 [package]
-name = "uscreen"
+name = "blent"
 version = "1.2.3"
 edition = "2021"
 description = "Low-latency USB display server - turns your Android tablet into a second monitor"
@@ -13,7 +13,7 @@ description = "Low-latency USB display server - turns your Android tablet into a
 inproc-encoder = ["ffmpeg-next"]
 
 [dependencies]
-uscreen-config = { path = "../common" }
+blent-config = { path = "../common" }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 tracing = "0.1"

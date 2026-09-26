@@ -132,7 +132,7 @@ static int raw_allocate_histories(raw_ring_t *ring) {
 
 static int raw_allocate(raw_ring_t *ring) {
     if (!raw_allocate_histories(ring)) return 0;
-    ring->fd = memfd_create("uscreen-raw", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    ring->fd = memfd_create("blent-raw", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (ring->fd < 0) return 0;
     if (ftruncate(ring->fd, (off_t)ring->bytes) < 0) return 0;
     int seals = F_SEAL_GROW | F_SEAL_SHRINK | F_SEAL_SEAL;

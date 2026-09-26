@@ -26,7 +26,7 @@ def build(folder, reference, scalar=False):
     binary = folder / 'conversion'
     extra = ['-fno-tree-vectorize', '-fno-tree-slp-vectorize'] if scalar else []
     if 'last_jobs' in (folder / 'conversion.h').read_text():
-        extra.append('-DUSCREEN_ADAPTIVE_POOL')
+        extra.append('-DBLENT_ADAPTIVE_POOL')
     subprocess.run(['cc', *extra, '-std=c11', '-O3', '-Wall', '-Wextra', '-Werror', '-pthread', '-I', str(folder),
                     str(ROOT / 'scripts/benchmarks/conversion.c'), str(folder / 'conversion.c'),
                     str(folder / 'frame_exchange.c'), '-o', str(binary)], check=True)
@@ -99,7 +99,7 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.samples <= 256 or args.trials < 1:
         parser.error('samples must be 1..256 and trials positive')
-    with tempfile.TemporaryDirectory(prefix='uscreen-conversion-') as folder:
+    with tempfile.TemporaryDirectory(prefix='blent-conversion-') as folder:
         result = run(args, Path(folder))
     args.output.write_text(json.dumps(result, indent=2) + '\n')
 

@@ -12,7 +12,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 BASE = '0533724'
 MANIFEST = '''[package]
-name = "uscreen-timing-replay"
+name = "blent-timing-replay"
 version = "0.0.0"
 edition = "2021"
 [dependencies]
@@ -37,7 +37,7 @@ def build(folder, variant):
     subprocess.run(['cargo', 'build', '--offline', '--release'], cwd=folder,
                    env=dict(os.environ, CARGO_TARGET_DIR=str(folder / 'target')), check=True)
     binary = folder / 'timing'
-    shutil.copy2(folder / 'target/release/uscreen-timing-replay', binary)
+    shutil.copy2(folder / 'target/release/blent-timing-replay', binary)
     return binary
 
 

@@ -9,20 +9,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build reproducible test and release environment
-        run: docker build -t uscreen-ci packaging/ci
+        run: docker build -t blent-ci packaging/ci
       - name: Run every workspace regression in Debian 12
         # TSan's existing setarch fallback needs personality(2) inside Docker.
         run: >-
           docker run --rm --security-opt seccomp=unconfined
-          -v "$PWD:/work" -v uscreen-cargo:/usr/local/cargo/registry
-          -v uscreen-target:/build -e CARGO_TARGET_DIR=/build
-          -e USCREEN_TEST_PRIVATE_PID_NAMESPACE=1
-          uscreen-ci cargo test --locked --release --workspace
+          -v "$PWD:/work" -v blent-cargo:/usr/local/cargo/registry
+          -v blent-target:/build -e CARGO_TARGET_DIR=/build
+          -e BLENT_TEST_PRIVATE_PID_NAMESPACE=1
+          blent-ci cargo test --locked --release --workspace
       - name: Build portable Linux package fixtures
         run: >-
           docker run --rm -v "$PWD:/work"
-          -v uscreen-cargo:/usr/local/cargo/registry -v uscreen-target:/build
-          -e CARGO_TARGET_DIR=/build uscreen-ci scripts/ci/build-artifacts.sh
+          -v blent-cargo:/usr/local/cargo/registry -v blent-target:/build
+          -e CARGO_TARGET_DIR=/build blent-ci scripts/ci/build-artifacts.sh
       - uses: actions/upload-artifact@v4
         with:
           name: portability-packages

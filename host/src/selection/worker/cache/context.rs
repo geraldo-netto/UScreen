@@ -1,8 +1,8 @@
 use super::*;
 use crate::{attachment::Attachment, capture::CaptureConfig};
+use blent_config::commands::SyncCommandExt;
 use sha2::{Digest, Sha256};
 use std::path::Path;
-use uscreen_config::commands::SyncCommandExt;
 
 impl Cache {
     pub async fn open(
@@ -21,7 +21,7 @@ impl Cache {
         let cache = tokio::task::spawn_blocking(move || {
             let stamp = host_stamp(&base)?;
             let fingerprint = fingerprint(&identity, &stamp, &snapshot, &base)?;
-            let path = uscreen_config::config_path()
+            let path = blent_config::config_path()
                 .ok()?
                 .with_file_name("profile-cache.json");
             Some(Self {
@@ -86,7 +86,7 @@ fn hash_file(digest: &mut Sha256, path: &Path) -> Option<()> {
 
 fn host_stamp(base: &CaptureConfig) -> Option<String> {
     let mut digest = Sha256::new();
-    let ffmpeg = uscreen_config::linux::programs::find_in("ffmpeg", &std::env::var_os("PATH")?)?;
+    let ffmpeg = blent_config::linux::programs::find_in("ffmpeg", &std::env::var_os("PATH")?)?;
     for path in [
         std::env::current_exe().ok()?,
         ffmpeg.clone(),
@@ -106,7 +106,7 @@ fn host_stamp(base: &CaptureConfig) -> Option<String> {
     }
     digest.update(version.stdout);
     digest.update(
-        uscreen_config::FileConfig::load()
+        blent_config::FileConfig::load()
             .pipe_capacity_mib
             .to_le_bytes(),
     );

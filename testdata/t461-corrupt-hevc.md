@@ -1,7 +1,7 @@
 # T461 decoder-error fixture
 
 The first three complete access units of the T422 `vaapi-cbr` experiment,
-1280×800 8-bit HEVC Main, generated from UScreen's synthetic motion corpus with
+1280×800 8-bit HEVC Main, generated from Blent's synthetic motion corpus with
 stock FFmpeg 6.1.1 / Mesa 26.2.2 on Navi 23. No encoded bytes were modified.
 The third picture emits `cu_qp_delta 99 is outside the valid range [-26, 25]`.
 Default FFmpeg software decoding returns three raw frames and exit zero despite

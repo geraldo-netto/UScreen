@@ -64,7 +64,7 @@ def main():
     args = parser.parse_args()
     if args.trials < 1 or not 1 <= args.frames <= 4096:
         parser.error('trials must be positive; frames must be in 1..4096')
-    with tempfile.TemporaryDirectory(prefix='uscreen-pipe-') as directory:
+    with tempfile.TemporaryDirectory(prefix='blent-pipe-') as directory:
         run(args, Path(directory) / 'transport')
 
 

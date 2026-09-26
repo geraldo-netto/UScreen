@@ -6,7 +6,7 @@ import tempfile
 
 
 def run(source, args=(), **options):
-    with tempfile.TemporaryDirectory(prefix='uscreen-shell-fixture-') as name:
+    with tempfile.TemporaryDirectory(prefix='blent-shell-fixture-') as name:
         script = Path(name)/'fixture.sh'
         script.write_text(re.sub(r'(?ms)^\[\(\) \{.*?^\}', test_override, source))
         return subprocess.run(['bash', str(script), *map(str, args)], **options)

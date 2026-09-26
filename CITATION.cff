@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "Cite this fork repository and the exact commit used. The source version alone does not identify an unreleased fork build."
-title: "UScreen for Linux"
+title: "Blent for Linux"
 abstract: "Open-source SuperDisplay alternative for Linux: an Android tablet as a USB second monitor and graphics tablet with S Pen pressure and tilt."
 authors:
   - name: "majmichu1"

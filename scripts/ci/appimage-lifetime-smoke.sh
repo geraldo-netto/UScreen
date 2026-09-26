@@ -16,8 +16,8 @@ cleanup() {
 trap cleanup EXIT
 export XDG_CONFIG_HOME="$ROOT/config" LIBGL_ALWAYS_SOFTWARE=1 WINIT_UNIX_BACKEND=x11
 unset DBUS_SESSION_BUS_ADDRESS WAYLAND_DISPLAY
-mkdir -p "$XDG_CONFIG_HOME/uscreen"
-printf 'check_updates = false\ninput_touch = false\ninput_pen = false\ninput_pointer = false\nauto_launch_app = false\n' > "$XDG_CONFIG_HOME/uscreen/config.toml"
+mkdir -p "$XDG_CONFIG_HOME/blent"
+printf 'check_updates = false\ninput_touch = false\ninput_pen = false\ninput_pointer = false\nauto_launch_app = false\n' > "$XDG_CONFIG_HOME/blent/config.toml"
 printf '#!/bin/sh\ntouch "$0.called"\nexit 97\n' > "$ROOT/helper"
 chmod +x "$ROOT/helper"
 "$IMAGE" --appimage-extract-and-run --daemon --encoder libx264 --helper "$ROOT/helper" > "$ROOT/daemon.log" 2>&1 &
@@ -37,10 +37,10 @@ export DISPLAY=:$display
 GUI=$!
 for _ in {1..100}; do
     kill -0 "$GUI"
-    if xwininfo -root -tree | grep -q '"UScreen"'; then break; fi
+    if xwininfo -root -tree | grep -q '"Blent"'; then break; fi
     sleep 0.1
 done
-xwininfo -root -tree | grep '"UScreen"'
+xwininfo -root -tree | grep '"Blent"'
 kill "$GUI"
 wait "$GUI" || true
 GUI=

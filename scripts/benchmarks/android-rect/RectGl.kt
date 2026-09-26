@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import android.opengl.EGL14 as E
 import android.opengl.GLES30 as G

@@ -44,7 +44,7 @@ pub(super) async fn failed(
     latency: &LatencyTracker,
     key: &Key,
     name: &str,
-    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
+    decoder: Option<&blent_config::negotiation::DecoderChoice>,
 ) {
     let mut updates = latency.activity_updates();
     let mut progress = Progress::default();

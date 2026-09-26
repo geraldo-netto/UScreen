@@ -12,7 +12,7 @@ allprojects { project ->
             tasks.withType(Test).configureEach {
                 jacoco {
                     includeNoLocationClasses = true
-                    includes = ['com.uscreen.*']
+                    includes = ['com.blent.*']
                     excludes = ['jdk.internal.*']
                 }
             }

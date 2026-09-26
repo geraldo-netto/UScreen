@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 /** T419: bounded long replay storage; no growth with an untrusted duration. */
 internal object RectLimits {

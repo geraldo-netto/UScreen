@@ -13,7 +13,7 @@ pub(super) fn fixture_programs(root: &std::path::Path) {
 #include <signal.h>
 #include <unistd.h>
 int main(void) {
-    if (getenv("USCREEN_IGNORE_TERM")) signal(SIGTERM, SIG_IGN);
+    if (getenv("BLENT_IGNORE_TERM")) signal(SIGTERM, SIG_IGN);
     puts("ready"); fflush(stdout);
     for (;;) pause();
 }
@@ -48,7 +48,7 @@ pub(super) async fn fixture_child(
         .stdout(Stdio::piped())
         .kill_on_drop(true);
     if ignore_term {
-        command.env("USCREEN_IGNORE_TERM", "1");
+        command.env("BLENT_IGNORE_TERM", "1");
     }
     let mut child = command.spawn().unwrap();
     let mut lines = BufReader::new(child.stdout.take().unwrap()).lines();
@@ -76,7 +76,7 @@ async fn t245_retirement_waits_for_term_resistant_children() {
 
 #[tokio::test]
 async fn t245_changed_or_foreign_process_identity_is_never_signalled() {
-    use uscreen_config::linux::processes::{retire, Process};
+    use blent_config::linux::processes::{retire, Process};
     let dir = tempfile::tempdir().unwrap();
     fixture_programs(dir.path());
     let fifo = dir.path().join("capture.fifo");

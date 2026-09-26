@@ -1,8 +1,8 @@
 # T419 rectangle rendering research
 
-This is a separate, shell-only `com.uscreen.rectbench` APK. It combines the
+This is a separate, shell-only `com.blent.rectbench` APK. It combines the
 existing production-decoder replay with an experimental RGB888 rectangle
-renderer. It neither replaces UScreen nor negotiates a new production codec.
+renderer. It neither replaces Blent nor negotiates a new production codec.
 The local-fixture comparison excludes host capture, live compression and USB
 video delivery. See the [benchmark report](../../../docs/benchmarks/2026-09-19-rectangle-renderer.md)
 for measured boundaries and results.
@@ -50,7 +50,7 @@ From the repository root, supply the real scratch and NDK paths:
 
 ```sh
 python3 scripts/benchmarks/rect-project.py \
-  --directory /tmp/uscreen-rect-replay \
+  --directory /tmp/blent-rect-replay \
   --ndk /path/to/android-sdk/ndk/27.3.13750724 \
   --native-sources /path/to/native
 ```
@@ -76,22 +76,22 @@ movement. The photo case is not natural video footage.
 
 ```sh
 python3 scripts/benchmarks/rect-fixtures.py \
-  --output /tmp/uscreen-rect-fixtures \
+  --output /tmp/blent-rect-fixtures \
   --font /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf \
   --photo /path/to/nasa-blue-marble.jpg
-python3 scripts/benchmarks/rect-quality.py /tmp/uscreen-rect-fixtures
-adb -s DEVICE_SERIAL install -r /tmp/uscreen-rect-replay/app/build/outputs/apk/debug/app-debug.apk
+python3 scripts/benchmarks/rect-quality.py /tmp/blent-rect-fixtures
+adb -s DEVICE_SERIAL install -r /tmp/blent-rect-replay/app/build/outputs/apk/debug/app-debug.apk
 python3 scripts/benchmarks/rect-device.py \
-  --serial DEVICE_SERIAL --fixtures /tmp/uscreen-rect-fixtures \
-  --provenance /tmp/uscreen-rect-replay/provenance.json \
-  --output /tmp/uscreen-rect-verification --codecs 1 2 \
+  --serial DEVICE_SERIAL --fixtures /tmp/blent-rect-fixtures \
+  --provenance /tmp/blent-rect-replay/provenance.json \
+  --output /tmp/blent-rect-verification --codecs 1 2 \
   --seconds 2 --warmup 0 --repeats 1 --verify
 ```
 
-Run the device experiment only while the tablet is available and UScreen is
+Run the device experiment only while the tablet is available and Blent is
 foreground. The replay cancels on touch, focus loss, pause or surface loss;
 the driver stops on an incomplete trial and never relaunches another app to
-steal focus. No capture display is attached and no UScreen preference changes.
+steal focus. No capture display is attached and no Blent preference changes.
 
 Omit `--verify` for timing; defaults are three alternating-order rounds with
 20 measured seconds and four warmup seconds per case. Codec IDs are `0` for
@@ -112,13 +112,13 @@ the earlier fixed-storage short-trial memory results.
 
 ```sh
 python3 scripts/benchmarks/rect-power.py \
-  --serial DEVICE_SERIAL --fixtures /tmp/uscreen-rect-fixtures \
-  --provenance /tmp/uscreen-rect-replay/provenance.json \
-  --output /tmp/uscreen-rect-power --seconds 480
-python3 scripts/benchmarks/rect-power-report.py /tmp/uscreen-rect-power \
+  --serial DEVICE_SERIAL --fixtures /tmp/blent-rect-fixtures \
+  --provenance /tmp/blent-rect-replay/provenance.json \
+  --output /tmp/blent-rect-power --seconds 480
+python3 scripts/benchmarks/rect-power-report.py /tmp/blent-rect-power \
   --processor /path/to/trace_processor_shell
-python3 scripts/benchmarks/plot-rect-power.py /tmp/uscreen-rect-power/summary.json \
-  --output /tmp/uscreen-rect-power-plots
+python3 scripts/benchmarks/plot-rect-power.py /tmp/blent-rect-power/summary.json \
+  --output /tmp/blent-rect-power-plots
 ```
 
 Use the new long-duration APK built from current sources. USB remains connected;

@@ -4,10 +4,10 @@ From the repository root, using Python 3.12 and JDK 17 (Python 3.12/JDK 21
 also work locally):
 
 ```sh
-python3 -m venv /tmp/uscreen-complexity-venv
-/tmp/uscreen-complexity-venv/bin/pip install -r scripts/complexity/requirements.txt
-/tmp/uscreen-complexity-venv/bin/python -m unittest discover -s scripts/complexity -p 'test_*.py'
-/tmp/uscreen-complexity-venv/bin/python scripts/complexity/check.py
+python3 -m venv /tmp/blent-complexity-venv
+/tmp/blent-complexity-venv/bin/pip install -r scripts/complexity/requirements.txt
+/tmp/blent-complexity-venv/bin/python -m unittest discover -s scripts/complexity -p 'test_*.py'
+/tmp/blent-complexity-venv/bin/python scripts/complexity/check.py
 ```
 
 `--verbose` prints every function's source location, name and score. Exit 1
@@ -18,7 +18,7 @@ and the whole-project gate. Pushes and pull requests do not trigger CI.
 Python parser dependencies are pinned in `requirements.txt`. Kotlin uses the
 1.9.20 compiler's PSI parser, with pinned SHA-256 checksums for its Maven jars
 in `kotlin.py`. The first run downloads those jars from Maven Central into
-`$XDG_CACHE_HOME/uscreen-complexity` (default `~/.cache/uscreen-complexity`).
+`$XDG_CACHE_HOME/blent-complexity` (default `~/.cache/blent-complexity`).
 Subsequent runs reuse verified jars and a checker jar keyed by source hash.
 No Sonar implementation is vendored or required at runtime.
 

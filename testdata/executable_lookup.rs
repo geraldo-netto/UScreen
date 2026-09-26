@@ -1,6 +1,6 @@
 // T232: exercise each production consumer with the same isolated PATH.
 pub fn check(lookup: fn(&str) -> bool, test_name: &str) {
-    if std::env::var_os("USCREEN_T232_CHILD").is_some() {
+    if std::env::var_os("BLENT_T232_CHILD").is_some() {
         for (name, expected) in [
             ("adb", true), ("shadowed", true), ("directory", false),
             ("plain", false), ("missing", false), ("which", false),
@@ -25,7 +25,7 @@ pub fn check(lookup: fn(&str) -> bool, test_name: &str) {
     }
     let result = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", test_name, "--nocapture"])
-        .env("USCREEN_T232_CHILD", "1")
+        .env("BLENT_T232_CHILD", "1")
         .env("PATH", std::env::join_paths([first, second]).unwrap())
         .output().unwrap();
     assert!(result.status.success(), "T232: {}{}",

@@ -35,8 +35,8 @@ class CaptureGateTest(unittest.TestCase):
                 env = options['env']
                 executable = base/'fixture'
                 args = [str(source), str(driver), '-o', str(executable)]
-                self.assertEqual(compiler.compile_with_profile(env['USCREEN_REAL_CC'], args,
-                    Path(env['USCREEN_C_COVERAGE']), root), 0)
+                self.assertEqual(compiler.compile_with_profile(env['BLENT_REAL_CC'], args,
+                    Path(env['BLENT_C_COVERAGE']), root), 0)
                 return execute([executable], check=True)
 
             with patch.object(capture_check, 'ROOT', root), patch.object(subprocess, 'run', side_effect=run), \

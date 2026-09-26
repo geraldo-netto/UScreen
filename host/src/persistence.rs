@@ -1,12 +1,12 @@
 //! One daemon-owned filesystem worker; a bounded queue admits at most one
 //! waiting transaction. Settings/mode watch channels coalesce later updates.
 use anyhow::{Context, Result};
+use blent_config::{model::FileConfig, storage::ConfigStore};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 use tokio::sync::{mpsc, oneshot};
-use uscreen_config::{model::FileConfig, storage::ConfigStore};
 
 type Edit = Box<dyn FnOnce(&mut FileConfig) -> Result<()> + Send>;
 enum Message {
@@ -52,7 +52,7 @@ impl Worker {
         let cancelled = Arc::new(AtomicBool::new(false));
         let stop = cancelled.clone();
         let thread = std::thread::Builder::new()
-            .name("uscreen-config".into())
+            .name("blent-config".into())
             .spawn(move || run(store, stop, receiver))?;
         Ok(Self {
             writer: Writer(sender),

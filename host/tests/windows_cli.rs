@@ -3,7 +3,7 @@
 use std::process::{Command, Output};
 
 fn invoke(args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_uscreen"))
+    Command::new(env!("CARGO_BIN_EXE_blent"))
         .args(args)
         .output()
         .unwrap()
@@ -14,7 +14,7 @@ fn t494_help_and_version_are_available() {
     for arg in ["--help", "--version"] {
         let result = invoke(&[arg]);
         assert!(result.status.success());
-        assert!(String::from_utf8_lossy(&result.stdout).contains("uscreen"));
+        assert!(String::from_utf8_lossy(&result.stdout).contains("blent"));
     }
 }
 
@@ -30,7 +30,7 @@ fn t494_windows_actions_report_unsupported_without_side_effects() {
         vec!["wifi"],
         vec!["wifi", "--off"],
     ] {
-        let result = Command::new(env!("CARGO_BIN_EXE_uscreen"))
+        let result = Command::new(env!("CARGO_BIN_EXE_blent"))
             .args(args)
             .current_dir(root.path())
             .env("XDG_RUNTIME_DIR", root.path())
@@ -51,7 +51,7 @@ fn t494_doctor_distinguishes_configuration_from_backend_support() {
         "Configuration:",
         "ADB:",
         "FFmpeg:",
-        "UScreen version:",
+        "Blent version:",
         "Display: unavailable",
         "Input: unavailable",
         "Tablet connection: unverified",

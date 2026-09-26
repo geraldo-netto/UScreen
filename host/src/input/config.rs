@@ -87,7 +87,7 @@ fn decoder_fields(
 ) -> (
     Option<u32>,
     Option<String>,
-    Option<uscreen_config::negotiation::DecoderChoice>,
+    Option<blent_config::negotiation::DecoderChoice>,
 ) {
     match settings {
         Some(s) => (

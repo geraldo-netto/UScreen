@@ -10,8 +10,8 @@ version, source and limitations; a successful build is not hardware validation.
 
 Use the [fork issue tracker](https://github.com/geraldo-netto/UScreen/issues).
 Explain the expected result, actual result and reproducible steps. Include
-`uscreen doctor` output and relevant logs: `journalctl --user -u uscreen -n 200`
-for a service launch, or `~/.local/share/uscreen/daemon.log` for a direct GUI
+`blent doctor` output and relevant logs: `journalctl --user -u blent -n 200`
+for a service launch, or `~/.local/share/blent/daemon.log` for a direct GUI
 launch. Remove tokens, device serials and personal details before posting.
 For a foreground debug run, stop the existing daemon first and follow
 [troubleshooting](docs/troubleshooting.md#black-screen-on-the-tablet); starting
@@ -73,7 +73,7 @@ the platform entry point's `include!`.
 For optional encoder changes, also run:
 
 ```bash
-cargo test --release -p uscreen --features inproc-encoder --bin uscreen
+cargo test --release -p blent --features inproc-encoder --bin blent
 ```
 
 Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
@@ -104,7 +104,7 @@ from real-device testing and list remaining limitations.
 
 ### Windows compilation preview
 
-Run `cargo test --locked -p uscreen-config --no-default-features` first, then
+Run `cargo test --locked -p blent-config --no-default-features` first, then
 `cargo test --locked --workspace` on native Windows. The Windows CI workflow
 runs both, including mandatory ACL, runtime lease and owned-process tests.
 Linux-only EVDI/process-group/desktop fixtures remain on Linux. GNU cross-builds

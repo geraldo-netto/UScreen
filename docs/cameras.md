@@ -1,13 +1,13 @@
-# Tablet cameras in UScreen host
+# Tablet cameras in Blent host
 
 The host **Cameras** tab controls camera sharing: Front/Rear, resolution, frame
 rate, bitrate, clockwise rotation (0°, 90°, 180° or 270°), mirroring and whether sharing continues while the tablet app is
 hidden or its screen is locked. Android shows status and its required camera
 permission prompt; it has no camera configuration controls.
 
-Choose a lens and press **Start camera**. Open UScreen on the tablet and grant
+Choose a lens and press **Start camera**. Open Blent on the tablet and grant
 camera permission if requested. In Google Meet or another application, select
-**UScreen Front** or **UScreen Rear**, matching the host selection. Both ordinary
+**Blent Front** or **Blent Rear**, matching the host selection. Both ordinary
 Linux webcams exist while sharing runs, but only the selected lens is live;
 the inactive endpoint is black. A browser's webcam picker does not switch lenses.
 
@@ -30,7 +30,7 @@ an error, correct its cause and press Start/Restart to retry.
 
 **Continue while hidden or locked** defaults off. When enabled, Android starts a
 camera foreground service with a persistent notification and holds a CPU wake
-lock until capture ends. Start with UScreen visible on the tablet; Android's
+lock until capture ends. Start with Blent visible on the tablet; Android's
 [camera service restrictions](https://developer.android.com/develop/background-work/services/fgs/service-types#camera)
 require foreground permission to initiate this service. Once running, the
 Activity may hide or the screen may lock. Lock/sleep actions can require a
@@ -50,7 +50,7 @@ Load two dedicated devices before starting the command:
 
 ```sh
 sudo modprobe v4l2loopback devices=2 video_nr=20,21 \
-  card_label="UScreen Front,UScreen Rear" exclusive_caps=1,1
+  card_label="Blent Front,Blent Rear" exclusive_caps=1,1
 ```
 
 If the module is already loaded with different options, close its consumers
@@ -67,8 +67,8 @@ its ADB serial when multiple tablets are connected. Refresh/reopen a browser's
 camera picker if it cached devices before sharing started. A full Stop may end
 a browser’s capture track; select the webcam again after a later Start.
 
-For an unreleased checkout, build with `cargo build -p uscreen-gui` and run
-`./target/debug/uscreen-gui`. Building the checkout does not update an older
+For an unreleased checkout, build with `cargo build -p blent-gui` and run
+`./target/debug/blent-gui`. Building the checkout does not update an older
 installed AppImage automatically.
 
 ## Diagnostic command and profile limits
@@ -76,7 +76,7 @@ installed AppImage automatically.
 The CLI remains available for headless diagnostics, with the same pipeline:
 
 ```sh
-uscreen cameras --lens rear --background --serial TABLET_SERIAL \
+blent cameras --lens rear --background --serial TABLET_SERIAL \
   --width 1280 --height 720 --fps 30 --bitrate 3000 --rotation 180 \
   --front-device /dev/video20 --rear-device /dev/video21
 ```
@@ -95,7 +95,7 @@ Larger profiles cost USB bandwidth, decoding/encoding work and tablet power.
 The desktop uses one persistent FFmpeg producer per virtual camera and an
 FFmpeg decoder for the selected camera. Android uses Camera2 and MediaCodec.
 A dedicated authenticated local TCP connection crosses a temporary ADB reverse
-mapping, independent of the display and pen connections. Its `USCAM001` header
+mapping, independent of the display and pen connections. Its `BLCAM001` header
 contains the session credential, lens identity and rotation, followed by bounded
 big-endian length-prefixed H.264 packets. Packets are capped at 2 MiB; connection,
 read/write and encoder-progress deadlines bound stalled sessions. Each new lens
@@ -122,7 +122,7 @@ The following observations describe the earlier standalone-helper version.
 
 On 2026-09-20, the connected RugKing Pad 2 Pro (Android 16) delivered both rear
 ID `0` and front ID `1` through Chrome 153's real `getUserMedia` API at 1280x720.
-Chrome enumerated **UScreen Front** and **UScreen Rear** as separate devices.
+Chrome enumerated **Blent Front** and **Blent Rear** as separate devices.
 Switching, Off, background/resume, restarting capture and restarting the desktop
 sidecar were exercised. The inactive device was black, returning to the app
 left sharing off, and stopping the sidecar released both Android cameras while

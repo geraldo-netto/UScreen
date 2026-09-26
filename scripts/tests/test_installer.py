@@ -95,7 +95,7 @@ install_distro_deps "$1"
         system.mkdir()
         if prebuilt:
             (project / 'bin').mkdir()
-            (project / 'bin/uscreen').write_text('fixture')
+            (project / 'bin/blent').write_text('fixture')
         if library:
             base = project if library.startswith('bin/') else system
             path = base / library
@@ -141,26 +141,26 @@ install_distro_deps "$1"
                                  'T229: library availability did not match the build/load route')
 
     def test_t345_installed_binaries_are_executable(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-executable-install-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-executable-install-') as tmp:
             source, installed = self.upgrade_fixture(Path(tmp))
-            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+            for name in ['blent', 'blent-gui', 'evdi_helper']:
                 (source / name).chmod(0o644)
             result = self.install_fixture(source, installed)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            for name in ['uscreen', 'evdi_helper', 'uscreen-gui']:
+            for name in ['blent', 'evdi_helper', 'blent-gui']:
                 with self.subTest(binary=name):
                     launched = subprocess.run([str(installed / name)], capture_output=True, text=True)
                     self.assertEqual(launched.returncode, 0, launched.stdout + launched.stderr)
 
     def test_t249_upgrade_preserves_a_running_library_mapping(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-upgrade-') as tmp:
             root = Path(tmp)
             project = root / 'release'
             source = project / 'bin'
             installed = root / 'installed bin'
             source.mkdir(parents=True)
             installed.mkdir()
-            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+            for name in ['blent', 'blent-gui', 'evdi_helper']:
                 (source / name).write_text('#!/bin/sh\nexit 0\n')
             library = 'libevdi.so.1.15.0'
             (source / library).write_bytes(b'N' * 4096)
@@ -180,35 +180,35 @@ install_distro_deps "$1"
 
     def test_t261_failed_upgrade_preserves_installed_executables(self):
         for failure in ['missing-helper', 'failed-copy']:
-            with self.subTest(failure=failure), tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(prefix='blent-upgrade-') as tmp:
                 source, installed = self.upgrade_fixture(Path(tmp))
                 if failure == 'missing-helper':
                     (source / 'evdi_helper').unlink()
-                stub = 'cp() { case "$1" in */uscreen-gui) return 77 ;; *) command cp "$@" ;; esac; }\n' if failure == 'failed-copy' else ''
+                stub = 'cp() { case "$1" in */blent-gui) return 77 ;; *) command cp "$@" ;; esac; }\n' if failure == 'failed-copy' else ''
                 result = self.install_fixture(source, installed, stub)
                 self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-                for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+                for name in ['blent', 'blent-gui', 'evdi_helper']:
                     self.assertEqual((installed / name).read_text(), 'old-' + name,
                                      'T261: failed staging replaced an installed executable')
-                self.assertEqual(list(installed.glob('.uscreen-*')), [])
+                self.assertEqual(list(installed.glob('.blent-*')), [])
 
     def test_t261_omitted_optional_gui_keeps_existing_installation(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-upgrade-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-upgrade-') as tmp:
             source, installed = self.upgrade_fixture(Path(tmp))
-            (source / 'uscreen-gui').unlink()
+            (source / 'blent-gui').unlink()
             result = self.install_fixture(source, installed)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual((installed / 'uscreen-gui').read_text(), 'old-uscreen-gui')
-            for name in ['uscreen', 'evdi_helper']:
+            self.assertEqual((installed / 'blent-gui').read_text(), 'old-blent-gui')
+            for name in ['blent', 'evdi_helper']:
                 self.assertEqual((installed / name).read_text(), '#!/bin/sh\nexit 0\n')
-            self.assertEqual(list(installed.glob('.uscreen-*')), [])
+            self.assertEqual(list(installed.glob('.blent-*')), [])
 
     def upgrade_fixture(self, root):
         source = root / 'release' / 'bin'
         installed = root / 'installed bin'
         source.mkdir(parents=True)
         installed.mkdir()
-        for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+        for name in ['blent', 'blent-gui', 'evdi_helper']:
             (source / name).write_text('#!/bin/sh\nexit 0\n')
             (installed / name).write_text('old-' + name)
         return source, installed

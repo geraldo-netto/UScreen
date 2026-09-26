@@ -5,9 +5,9 @@ use crate::Status;
 pub(super) struct Platform {}
 impl Source for Platform {
     fn capabilities(&mut self) -> Capabilities {
-        let diagnostics = std::sync::Arc::new(uscreen_config::diagnostics::collect());
+        let diagnostics = std::sync::Arc::new(blent_config::diagnostics::collect());
         Capabilities {
-            daemon_binary: crate::find_uscreen_bin().is_some(),
+            daemon_binary: crate::find_blent_bin().is_some(),
             ffmpeg: diagnostics.tools[1].verified(),
             adb: diagnostics.tools[0].verified(),
             autostart: crate::autostart_enabled(),

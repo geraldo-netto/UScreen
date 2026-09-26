@@ -3,14 +3,14 @@ use super::*;
 use std::os::unix::fs::{FileTypeExt, MetadataExt, PermissionsExt};
 
 fn isolated(name: &str) -> bool {
-    if std::env::var_os("USCREEN_T429_RUNTIME").is_none() {
+    if std::env::var_os("BLENT_T429_RUNTIME").is_none() {
         let root = tempfile::Builder::new()
             .permissions(std::fs::Permissions::from_mode(0o700))
             .tempdir()
             .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
-            .env("USCREEN_T429_RUNTIME", "1")
+            .env("BLENT_T429_RUNTIME", "1")
             .env("XDG_RUNTIME_DIR", root.path())
             .env("HOME", root.path())
             .output()

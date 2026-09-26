@@ -1,5 +1,5 @@
-#ifndef USCREEN_CONVERSION_H
-#define USCREEN_CONVERSION_H
+#ifndef BLENT_CONVERSION_H
+#define BLENT_CONVERSION_H
 #include <pthread.h>
 #include "pixel_span.h"
 

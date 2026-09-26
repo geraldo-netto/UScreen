@@ -56,15 +56,15 @@ def validate_dimensions(width, height, refresh, width_mm, height_mm):
         raise ValueError("EDID physical dimensions must fit 12 bits and be positive")
 
 
-def make_edid(width, height, refresh=60, name="UScreen", width_mm=310, height_mm=194):
+def make_edid(width, height, refresh=60, name="Blent", width_mm=310, height_mm=194):
     validate_dimensions(width, height, refresh, width_mm, height_mm)
     edid = bytearray(128)
 
     # Header
     edid[0:8] = b'\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00'
 
-    # Manufacturer ID (USC = UScreen)
-    edid[8], edid[9] = encode_manufacturer_id("USC")
+    # Manufacturer ID (BLN = Blent)
+    edid[8], edid[9] = encode_manufacturer_id("BLN")
 
     # Product code
     edid[10] = 0x01

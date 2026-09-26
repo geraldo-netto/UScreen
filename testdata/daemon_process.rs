@@ -21,7 +21,7 @@ impl Fixture {
     pub fn new() -> Self {
         let root = tempfile::tempdir().unwrap();
         let source = root.path().join("daemon.c");
-        let program = root.path().join("uscreen");
+        let program = root.path().join("blent");
         std::fs::write(&source, "#include <stdio.h>\n#include <unistd.h>\nint main(void) { puts(\"ready\"); fflush(stdout); for (;;) pause(); }\n").unwrap();
         assert!(std::process::Command::new("cc").arg(source).arg("-o").arg(&program).status().unwrap().success());
         Self { root, program }

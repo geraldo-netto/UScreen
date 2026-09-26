@@ -12,7 +12,7 @@ fn isolated() {
         .unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T497_MONITOR", "1")
+        .env("BLENT_T497_MONITOR", "1")
         .env("HOME", root.path())
         .env("XDG_RUNTIME_DIR", root.path())
         .env("XDG_CONFIG_HOME", root.path())
@@ -25,12 +25,12 @@ fn isolated() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(!root.path().join("uscreen/capture.fifo").exists());
+    assert!(!root.path().join("blent/capture.fifo").exists());
 }
 
 #[tokio::test]
 async fn t497_reconnected_inventory_and_failed_extra_admission_preserve_state() {
-    if std::env::var_os("USCREEN_T497_MONITOR").is_none() {
+    if std::env::var_os("BLENT_T497_MONITOR").is_none() {
         isolated();
         return;
     }

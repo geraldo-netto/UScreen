@@ -14,7 +14,7 @@ def recover(folder):
     meta = json.loads((folder / 'metadata.json').read_text())
     events = [json.loads(line) for line in (folder / 'phases.jsonl').read_text().splitlines()]
     end = events[-1]['utc'] if events[-1]['event'] == 'complete' else time.time()
-    args = ['journalctl', '--user', '-u', 'uscreen', '-o', 'json', '--no-pager',
+    args = ['journalctl', '--user', '-u', 'blent', '-o', 'json', '--no-pager',
             '--since', f'@{meta["start_utc"]}', '--until', f'@{end}']
     result = subprocess.run(args, text=True, capture_output=True, check=True, timeout=30)
     pattern = re.compile(r'Latency |of which tablet|Encoder: \d|evdi-helper.*(grabs/s|cycle:|capture|Incomplete|Mode:)|FIFO_RESET|Client lagged|Capture manager failed')

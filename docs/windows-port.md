@@ -28,7 +28,7 @@ assertions remain in the Linux suite. Local policy and library execution passed
 under Wine. The native CI workflow is configured but has not been run from this
 checkout; its mandatory ACL/lease tests must pass before T493 can close.
 
-T533 shares dependency diagnostics between `uscreen doctor` and the GUI status
+T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
 or distinguish a missing program from an unverified failed/malformed check.
 Version commands use the platform process adapter with a two-second deadline
@@ -96,7 +96,7 @@ Android brightness/refresh preferences and Linux regressions during that work.
 
 | Current implementation | Sources | Windows replacement |
 |---|---|---|
-| EVDI discovery, EDID attachment and capture helper | `host/src/vdisplay.rs`, `host/src/capture.rs`, `host/src/edid.rs`, `host/evdi/` | Integrate a virtual monitor through an IDD and capture its output. Scope creation and removal to UScreen-owned resources. |
+| EVDI discovery, EDID attachment and capture helper | `host/src/vdisplay.rs`, `host/src/capture.rs`, `host/src/edid.rs`, `host/evdi/` | Integrate a virtual monitor through an IDD and capture its output. Scope creation and removal to Blent-owned resources. |
 | Raw NV12 through native transfer adapters | `common/src/raw_frame.rs`, `host/src/encoder_shared.rs`, `host/src/raw_memory.rs`, `host/src/encoder_io.rs` | FIFO and the optional Linux sealed-memfd adapter implement input ownership and cancellation. Reuse the portable bounded descriptor contract and final-reference lease semantics; supply a Windows mapping/handle-transfer or framed pipe adapter. Linux memfd, Unix sockets and eventfd are not Windows implementations. |
 | uinput, KWin and X11 mapping | `host/src/input/linux.rs`, `host/src/input/mapping.rs`, `host/src/input/event_writer.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows pointer injection behind `InputBackend`/`InputSink`, display placement and monitor/DPI mapping. Evaluate on-screen keyboard behavior separately. |
 | Unix signals, `/proc`, UID checks and file permissions | `host/src/linux_main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling and private paths/ACLs. Shared transport no longer needs Unix socket calls or a Linux credential source. |
@@ -155,7 +155,7 @@ This milestone does not require a virtual-display driver.
 ### 4. Support the extended display and stream
 
 - Detect the chosen driver/version and diagnose missing/incompatible setups.
-- Create or claim a UScreen output through the validated interface. Configure
+- Create or claim a Blent output through the validated interface. Configure
   resolution, refresh and placement without changing other applications'
   virtual monitors.
 - Capture, convert and transfer frames to the encoder. Start with the FFmpeg

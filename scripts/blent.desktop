@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Blent
+Comment=Use your Android tablet as a USB second display
+Exec=blent-gui
+Icon=blent
+StartupWMClass=blent
+Terminal=false
+Categories=Utility;Settings;
+Keywords=display;tablet;second screen;monitor;

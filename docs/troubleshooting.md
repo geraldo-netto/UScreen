@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Start with `uscreen doctor`. It checks configuration, tools, devices, adb and
+Start with `blent doctor`. It checks configuration, tools, devices, adb and
 selected desktop/decoder state; its suggestions are diagnostics, not proof
 that every desktop or encoding combination is supported. Include the exact
 fork commit as well as host/app version numbers in a report.
@@ -18,7 +18,7 @@ device now and configure two at the next module load:
 
 ```bash
 echo 1 | sudo tee /sys/devices/evdi/add
-echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/uscreen-evdi.conf
+echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/blent-evdi.conf
 ```
 
 Use GUI system setup to add missing capacity for a larger tablet count.
@@ -29,16 +29,16 @@ reload behavior remains tracked as T269 in [TODO.md](https://github.com/geraldo-
 ## "Failed to open /dev/uinput"
 
 Check whether the module is loaded and the current desktop seat has access.
-From a source checkout, when the UScreen udev rule is missing:
+From a source checkout, when the Blent udev rule is missing:
 
 ```bash
 sudo modprobe uinput
-sudo install -Dm644 packaging/60-uscreen-uinput.rules /etc/udev/rules.d/60-uscreen-uinput.rules
+sudo install -Dm644 packaging/60-blent-uinput.rules /etc/udev/rules.d/60-blent-uinput.rules
 sudo udevadm control --reload
 sudo udevadm trigger --name-match=uinput
 ```
 
-Run UScreen as the logged-in desktop user; do not use a root daemon as a
+Run Blent as the logged-in desktop user; do not use a root daemon as a
 permission workaround.
 
 ## The app keeps opening and closing / "did not authenticate"
@@ -52,17 +52,17 @@ cable triggers a fresh attempt. Do not include session tokens in public logs.
 
 ## Black screen on the tablet
 
-1. Check `uscreen status` and `adb devices`.
+1. Check `blent status` and `adb devices`.
 2. Check `adb -s TABLET_ID reverse --list` for that tablet's assigned ports
    (8890/8891 by default for the first slot).
-3. For a service launch, inspect `journalctl --user -u uscreen -n 200`.
-   Direct GUI launches log to `~/.local/share/uscreen/daemon.log`.
+3. For a service launch, inspect `journalctl --user -u blent -n 200`.
+   Direct GUI launches log to `~/.local/share/blent/daemon.log`.
 4. Check the selected encoder and desktop Display settings. The virtual
    output may be disabled, or FFmpeg may lack the selected encoder.
 
 For a foreground debug run, first stop the service with
-`systemctl --user stop uscreen` (or stop an unmanaged daemon with
-`uscreen stop`), then run `RUST_LOG=uscreen=debug uscreen start`. This can
+`systemctl --user stop blent` (or stop an unmanaged daemon with
+`blent stop`), then run `RUST_LOG=blent=debug blent start`. This can
 attach an EVDI display; it is not a read-only diagnostic. Do not deliberately
 repeat a session-crashing attachment on your working desktop; see below.
 
@@ -97,7 +97,7 @@ reproduction needs an isolated session.
 
 ## The on-screen keyboard pops up or remains disabled
 
-UScreen suppresses KDE's virtual keyboard while its touch devices exist and
+Blent suppresses KDE's virtual keyboard while its touch devices exist and
 attempts to restore the saved setting afterward. An invalid/missing recovery
 value can prevent restoration (T334). If it remains disabled, restore the
 desired setting in System Settings → Virtual Keyboard; simply restarting the
@@ -107,14 +107,14 @@ daemon is not a guaranteed recovery.
 
 The historical locked-radio test had a median close to USB, but much longer
 tail delays. Your network may differ. See [benchmarks.md](benchmarks.md).
-Use USB when those delays are disruptive. `uscreen wifi --off` does not close
+Use USB when those delays are disruptive. `blent wifi --off` does not close
 the tablet's adb network listener; see [SECURITY.md](../SECURITY.md).
 
 ## A required GLIBC version is not found
 
 The binary or one of its libraries was built against a newer glibc than the
 runtime provides. The portable workflow targets glibc 2.36; local builds may
-need newer versions regardless of the displayed UScreen version. Use a build
+need newer versions regardless of the displayed Blent version. Use a build
 matching your distribution, or rebuild with the documented portable toolchain.
 Do not replace the system glibc to satisfy an application binary.
 
@@ -130,5 +130,5 @@ card/connector state in reports without removing another application's display.
 ## Getting more help
 
 Open a [fork issue](https://github.com/geraldo-netto/UScreen/issues) with the
-build commit, `uscreen doctor` output and relevant log excerpt. Remove tokens,
+build commit, `blent doctor` output and relevant log excerpt. Remove tokens,
 device serials and other personal information before posting.

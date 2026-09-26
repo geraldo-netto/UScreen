@@ -1,6 +1,6 @@
 //! Portable settings/UI; only create_backend selects a native implementation.
+use blent_config::camera::{CameraBackend, CameraProfile, CameraState, Lens};
 use eframe::egui;
-use uscreen_config::camera::{CameraBackend, CameraProfile, CameraState, Lens};
 
 pub(super) struct Panel {
     pub(super) backend: Option<Box<dyn CameraBackend>>,
@@ -29,7 +29,7 @@ impl Panel {
             if let Some(error) = &self.error { ui.colored_label(egui::Color32::RED, error); }
             self.buttons(ui, options, &state);
             ui.label(egui::RichText::new("Start/Restart camera applies these settings. Apply only saves preferences. Camera changes never restart display sharing.").weak().size(11.0));
-            ui.label(egui::RichText::new("Keep this host window open while sharing. Select UScreen Front or UScreen Rear in your video call; only the selected lens is live.").weak().size(11.0));
+            ui.label(egui::RichText::new("Keep this host window open while sharing. Select Blent Front or Blent Rear in your video call; only the selected lens is live.").weak().size(11.0));
         });
         ui.end_row();
         let frame = self.backend.as_ref().and_then(|backend| backend.preview());
@@ -59,7 +59,7 @@ impl Panel {
             };
             if ui
                 .add_enabled(
-                    uscreen_config::platform::capabilities().camera,
+                    blent_config::platform::capabilities().camera,
                     egui::Button::new(label),
                 )
                 .clicked()
@@ -81,7 +81,7 @@ impl Panel {
             ui.ctx()
                 .request_repaint_after(std::time::Duration::from_millis(200));
         }
-        if !uscreen_config::platform::capabilities().camera {
+        if !blent_config::platform::capabilities().camera {
             ui.label("Camera backend is not implemented on this operating system.");
         }
     }
@@ -101,7 +101,7 @@ impl Panel {
 
 fn create_backend() -> Result<Box<dyn CameraBackend>, String> {
     #[cfg(target_os = "linux")]
-    return uscreen::camera_control::Controller::new(uscreen::camera::run_controlled)
+    return blent::camera_control::Controller::new(blent::camera::run_controlled)
         .map(|controller| Box::new(controller) as Box<dyn CameraBackend>)
         .map_err(|e| e.to_string());
     #[cfg(not(target_os = "linux"))]
@@ -113,7 +113,7 @@ fn state_label(state: &CameraState) -> String {
         CameraState::Stopped => "Stopped".into(),
         CameraState::Starting => "Starting camera…".into(),
         CameraState::Waiting => {
-            "Waiting for video. Open UScreen on the tablet and allow camera access.".into()
+            "Waiting for video. Open Blent on the tablet and allow camera access.".into()
         }
         CameraState::Streaming => "Camera video is reaching the host".into(),
         CameraState::Stopping => "Stopping camera…".into(),
@@ -142,7 +142,7 @@ fn profile(ui: &mut egui::Ui, options: &mut CameraProfile) {
     ui.label("Tablet background");
     ui.vertical(|ui| {
         ui.checkbox(&mut options.background, "Continue while hidden or locked");
-        ui.label(egui::RichText::new("Start with UScreen visible on the tablet. Background sharing keeps its camera service and CPU awake; higher resolution/FPS uses more power.").weak().size(11.0));
+        ui.label(egui::RichText::new("Start with Blent visible on the tablet. Background sharing keeps its camera service and CPU awake; higher resolution/FPS uses more power.").weak().size(11.0));
     });
     ui.end_row();
     device(ui, options);
@@ -211,7 +211,7 @@ mod tests {
         profiles: Rc<RefCell<Vec<CameraProfile>>>,
     }
     impl CameraBackend for Fixture {
-        fn start(&self, options: CameraProfile) -> uscreen_config::camera::BackendResult {
+        fn start(&self, options: CameraProfile) -> blent_config::camera::BackendResult {
             self.profiles.borrow_mut().push(options);
             *self.state.borrow_mut() = CameraState::Streaming;
             Ok(())
@@ -222,7 +222,7 @@ mod tests {
         fn state(&self) -> CameraState {
             self.state.borrow().clone()
         }
-        fn preview(&self) -> Option<std::sync::Arc<uscreen_config::camera::CameraPreview>> {
+        fn preview(&self) -> Option<std::sync::Arc<blent_config::camera::CameraPreview>> {
             None
         }
     }

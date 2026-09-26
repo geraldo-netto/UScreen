@@ -169,7 +169,7 @@ async fn t390_device_jobs_cancel_without_ever_starting_queued_work() {
 }
 
 fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
-    if std::env::var_os("USCREEN_T390_ROOT").is_some() {
+    if std::env::var_os("BLENT_T390_ROOT").is_some() {
         unsafe {
             libc::alarm(15);
             assert_eq!(libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0), 0);
@@ -189,11 +189,11 @@ fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
             &format!("discovery_tests::{name}"),
             "--nocapture",
         ])
-        .env("USCREEN_T390_ROOT", root.path())
+        .env("BLENT_T390_ROOT", root.path())
         .env("HOME", root.path())
         .env("XDG_RUNTIME_DIR", root.path().join("runtime"))
         .env("XDG_CONFIG_HOME", root.path().join("config"))
-        .env_remove("USCREEN_FAKE_TABLET")
+        .env_remove("BLENT_FAKE_TABLET")
         .output()
         .unwrap();
     assert!(
@@ -209,14 +209,14 @@ fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
 #[test]
 fn t435_shared_umask_keeps_monitor_fixture_private() {
     use std::os::unix::process::CommandExt;
-    if std::env::var_os("USCREEN_T435_CHILD").is_none() {
+    if std::env::var_os("BLENT_T435_CHILD").is_none() {
         let mut command = std::process::Command::new(std::env::current_exe().unwrap());
         command
             .args([
                 "--exact",
                 "discovery_tests::t435_shared_umask_keeps_monitor_fixture_private",
             ])
-            .env("USCREEN_T435_CHILD", "1");
+            .env("BLENT_T435_CHILD", "1");
         unsafe {
             command.pre_exec(|| {
                 libc::umask(0o002);
@@ -250,7 +250,7 @@ if [ "$4" = getprop ]; then
     fi
     echo "$2-identity"
 fi
-if [ "$4" = pm ]; then echo package:/app/uscreen.apk; fi
+if [ "$4" = pm ]; then echo package:/app/blent.apk; fi
 if [ "$3" = reverse ]; then printf '%s\n' "$*" >> "$0.reverse"; fi
 exit 0
 "#).unwrap();
@@ -265,7 +265,7 @@ async fn t390_initial_discovery_connects_fast_tablet_before_slow_probe() {
     {
         return;
     }
-    let root = PathBuf::from(std::env::var_os("USCREEN_T390_ROOT").unwrap());
+    let root = PathBuf::from(std::env::var_os("BLENT_T390_ROOT").unwrap());
     let adb = discovery_adb(&root);
     let (mode, _) = watch::channel(false);
     let (stop, stop_rx) = watch::channel(false);
@@ -492,7 +492,7 @@ async fn t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled() {
     {
         return;
     }
-    let root = PathBuf::from(std::env::var_os("USCREEN_T390_ROOT").unwrap());
+    let root = PathBuf::from(std::env::var_os("BLENT_T390_ROOT").unwrap());
     for count in [1, 2, 4] {
         scaling_case(&root, count).await;
     }

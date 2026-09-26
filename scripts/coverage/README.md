@@ -19,15 +19,15 @@ this is a scoped result, not a whole-project percentage.
 Install the reporting tools in an isolated environment:
 
 ```sh
-python3 -m venv /tmp/uscreen-coverage-venv
-/tmp/uscreen-coverage-venv/bin/python -m pip install -r scripts/coverage/requirements.txt
-/tmp/uscreen-coverage-venv/bin/python -m unittest discover -s scripts/coverage -p 'test_*.py'
+python3 -m venv /tmp/blent-coverage-venv
+/tmp/blent-coverage-venv/bin/python -m pip install -r scripts/coverage/requirements.txt
+/tmp/blent-coverage-venv/bin/python -m unittest discover -s scripts/coverage -p 'test_*.py'
 ```
 
 ## Capture C gate
 
 ```sh
-/tmp/uscreen-coverage-venv/bin/python scripts/coverage/capture_check.py /tmp/uscreen-capture-coverage
+/tmp/blent-coverage-venv/bin/python scripts/coverage/capture_check.py /tmp/blent-capture-coverage
 ```
 
 Use a new output directory for each run. The command runs the normal helper,
@@ -41,7 +41,7 @@ attach a virtual display or validate the unresolved Xorg crash in T222.
 ## Python and shell collection
 
 ```sh
-/tmp/uscreen-coverage-venv/bin/python scripts/coverage/script_check.py /tmp/uscreen-script-coverage
+/tmp/blent-coverage-venv/bin/python scripts/coverage/script_check.py /tmp/blent-script-coverage
 ```
 
 This runs the normal isolated tooling regressions and Python test suites,
@@ -73,12 +73,12 @@ With the snapshot described below and a new evidence directory, run both normal
 workspace configurations against unchanged production sources:
 
 ```sh
-cargo llvm-cov --locked --workspace --lcov --output-path /tmp/uscreen-default.lcov
-cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/uscreen-all-features.lcov
-/tmp/uscreen-coverage-venv/bin/python scripts/coverage/rust_check.py \
-  --manifest /tmp/uscreen-coverage-manifest.json \
-  --lcov /tmp/uscreen-default.lcov --lcov /tmp/uscreen-all-features.lcov \
-  --output /tmp/uscreen-rust-coverage
+cargo llvm-cov --locked --workspace --lcov --output-path /tmp/blent-default.lcov
+cargo llvm-cov --locked --workspace --all-features --lcov --output-path /tmp/blent-all-features.lcov
+/tmp/blent-coverage-venv/bin/python scripts/coverage/rust_check.py \
+  --manifest /tmp/blent-coverage-manifest.json \
+  --lcov /tmp/blent-default.lcov --lcov /tmp/blent-all-features.lcov \
+  --output /tmp/blent-rust-coverage
 ```
 
 The scoped Linux gate writes `linux.json`. `all-platforms.json` retains every
@@ -94,7 +94,7 @@ reports and logs as coverage artifacts.
 Before measuring, create a source snapshot:
 
 ```sh
-/tmp/uscreen-coverage-venv/bin/python scripts/coverage/report.py snapshot /tmp/uscreen-coverage-manifest.json
+/tmp/blent-coverage-venv/bin/python scripts/coverage/report.py snapshot /tmp/blent-coverage-manifest.json
 ```
 
 Keep sources unchanged until the measurements and report are complete. Collect
@@ -112,10 +112,10 @@ The Android XML is written to
 Enforce the method gate with:
 
 ```sh
-/tmp/uscreen-coverage-venv/bin/python scripts/coverage/report.py check \
-  --manifest /tmp/uscreen-coverage-manifest.json \
+/tmp/blent-coverage-venv/bin/python scripts/coverage/report.py check \
+  --manifest /tmp/blent-coverage-manifest.json \
   --jacoco android/app/build/reports/jacoco/profileCoverage/profileCoverage.xml \
-  --scope android/app/src/main/ --output /tmp/uscreen-android-coverage.json
+  --scope android/app/src/main/ --output /tmp/blent-android-coverage.json
 ```
 
 This does not install an APK or use a physical tablet. Its scope is the main
@@ -139,7 +139,7 @@ Compose filters, excluding generated scaffolding; see its
 
 The Linux daemon lifecycle regression requires a private PID namespace. It uses
 `unshare` by default. The portability CI container supplies its own namespace and
-sets `USCREEN_TEST_PRIVATE_PID_NAMESPACE=1`; do not set that variable in a normal
+sets `BLENT_TEST_PRIVATE_PID_NAMESPACE=1`; do not set that variable in a normal
 desktop session. The regression starts only its own isolated daemon, uses fake
 ADB/helper commands and signals its owned child directly.
 

@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn t537_profile_cache_test_preserves_external_configuration() {
     let root = tempfile::tempdir().unwrap();
-    let config = root.path().join("uscreen/config.toml");
+    let config = root.path().join("blent/config.toml");
     std::fs::create_dir_all(config.parent().unwrap()).unwrap();
     let original = b"# T537 external user preferences\nwidth = 1280\nprofile_cache = false\n";
     std::fs::write(&config, original).unwrap();
@@ -185,7 +185,7 @@ fn t497_setup_errors_preserve_the_program_failure() {
 
 #[test]
 fn t497_setup_and_lifecycle_actions_use_private_stub_commands() {
-    if std::env::var_os("USCREEN_T497_GUI_ACTIONS").is_none() {
+    if std::env::var_os("BLENT_T497_GUI_ACTIONS").is_none() {
         isolated_actions();
         return;
     }
@@ -234,7 +234,7 @@ fn autostart_actions(app: &mut App, ctx: &egui::Context) {
         (true, "Autostart off"),
     ] {
         app.status.lock().unwrap().autostart = enabled;
-        click_settings_text(app, ctx, "Start UScreen with the desktop", autostart_frame);
+        click_settings_text(app, ctx, "Start Blent with the desktop", autostart_frame);
         wait_for_work(app);
         assert_eq!(app.message, message);
     }
@@ -243,14 +243,14 @@ fn autostart_actions(app: &mut App, ctx: &egui::Context) {
 fn isolated_actions() {
     let sandbox = Sandbox::new();
     let log = sandbox.0.join("actions");
-    sandbox.script("pkexec", "echo setup >> \"$USCREEN_T497_GUI_ACTIONS\"");
+    sandbox.script("pkexec", "echo setup >> \"$BLENT_T497_GUI_ACTIONS\"");
     sandbox.script(
         "systemctl",
-        "printf '%s\\n' \"$*\" >> \"$USCREEN_T497_GUI_ACTIONS\"; case \"$*\" in *LoadState*) echo loaded;; esac",
+        "printf '%s\\n' \"$*\" >> \"$BLENT_T497_GUI_ACTIONS\"; case \"$*\" in *LoadState*) echo loaded;; esac",
     );
     sandbox.script(
-        "uscreen",
-        "printf '%s\\n' \"$*\" >> \"$USCREEN_T497_GUI_ACTIONS\"",
+        "blent",
+        "printf '%s\\n' \"$*\" >> \"$BLENT_T497_GUI_ACTIONS\"",
     );
     sandbox.script(
         "curl",
@@ -262,13 +262,13 @@ fn isolated_actions() {
             "tests::coverage::t497_setup_and_lifecycle_actions_use_private_stub_commands",
             "--nocapture",
         ])
-        .env("USCREEN_T497_GUI_ACTIONS", &log)
+        .env("BLENT_T497_GUI_ACTIONS", &log)
         .env("PATH", &sandbox.0)
         .env("HOME", &sandbox.0)
         .env("XDG_CONFIG_HOME", &sandbox.0)
         .env_remove("APPIMAGE")
         .env_remove("APPDIR")
-        .env_remove(uscreen_config::linux::appimage::LAUNCHER)
+        .env_remove(blent_config::linux::appimage::LAUNCHER)
         .output()
         .unwrap();
     assert!(
@@ -280,11 +280,11 @@ fn isolated_actions() {
     let actions = std::fs::read_to_string(log).unwrap();
     for expected in [
         "setup",
-        "--user start uscreen.service",
-        "--user stop uscreen.service",
-        "--user restart uscreen.service",
-        "--user enable uscreen.service",
-        "--user disable uscreen.service",
+        "--user start blent.service",
+        "--user stop blent.service",
+        "--user restart blent.service",
+        "--user enable blent.service",
+        "--user disable blent.service",
     ] {
         assert!(
             actions.contains(expected),

@@ -39,14 +39,14 @@ def environment(directory):
     command = [sys.executable, str(Path(__file__).with_name('compiler.py'))]
     wrapper.write_text('#!/bin/sh\nexec ' + shlex.join(command) + ' "$@"\n')
     wrapper.chmod(0o700)
-    return dict(os.environ, USCREEN_C_COVERAGE=str(directory/'native'), USCREEN_REAL_CC=compiler,
+    return dict(os.environ, BLENT_C_COVERAGE=str(directory/'native'), BLENT_REAL_CC=compiler,
                 PATH=str(wrappers) + os.pathsep + os.environ.get('PATH', ''))
 
 
 def run(directory):
     directory = directory.resolve()
     functions, sources = prepare(directory)
-    command = ['cargo', 'test', '--locked', '-p', 'uscreen']
+    command = ['cargo', 'test', '--locked', '-p', 'blent']
     for target in ['evdi_helper', 'conversion', 'evdi_modules', 'frame_retirement']:
         command.extend(['--test', target])
     with (directory/'tests.log').open('w') as log:

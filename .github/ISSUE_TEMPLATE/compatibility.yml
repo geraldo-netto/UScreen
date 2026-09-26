@@ -4,7 +4,7 @@ labels: [compatibility]
 body:
   - type: markdown
     attributes:
-      value: "Describe the tested build and its limitations so this report can inform docs/compatibility.md. `uscreen doctor` supplies many details; redact tokens, serials and personal data."
+      value: "Describe the tested build and its limitations so this report can inform docs/compatibility.md. `blent doctor` supplies many details; redact tokens, serials and personal data."
   - type: dropdown
     id: result
     attributes:
@@ -39,7 +39,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: UScreen version, fork commit and installation method
+      label: Blent version, fork commit and installation method
       placeholder: "1.2.3, commit ..., source build or package provenance"
     validations:
       required: true

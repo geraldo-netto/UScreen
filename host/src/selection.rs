@@ -1,6 +1,6 @@
 //! Linux encoder selection workers; portable selection data lives in the library.
 #[cfg(not(feature = "inproc-encoder"))]
-pub(crate) use uscreen::selection::{Key, Selected};
+pub(crate) use blent::selection::{Key, Selected};
 
 #[cfg(not(feature = "inproc-encoder"))]
 mod health;

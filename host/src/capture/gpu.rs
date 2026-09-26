@@ -33,7 +33,7 @@ impl Adapter {
         Self {
             // An explicit executable path is the prototype opt-in. Absence is
             // the ordinary FIFO path; no process-wide environment mutation.
-            helper: std::env::var_os("USCREEN_X11_GPU_HELPER").map(PathBuf::from),
+            helper: std::env::var_os("BLENT_X11_GPU_HELPER").map(PathBuf::from),
             ..Default::default()
         }
     }

@@ -20,7 +20,7 @@ class CopyTest(unittest.TestCase):
             manifest = root/'manifest.json'
             manifest.write_text(json.dumps(dict(sources={'a.py': fingerprint(root/'a.py')})))
             registry = Mock()
-            with patch.dict(os.environ, USCREEN_COVERAGE_ROOT=str(root), USCREEN_COVERAGE_MANIFEST=str(manifest)):
+            with patch.dict(os.environ, BLENT_COVERAGE_ROOT=str(root), BLENT_COVERAGE_MANIFEST=str(manifest)):
                 copies.coverage_init(registry, {})
             plugin = registry.add_file_tracer.call_args.args[0]
             self.assertEqual(plugin.file_reporter(str(root/'a.py')), 'python')
@@ -39,10 +39,10 @@ class CopyTest(unittest.TestCase):
             manifest.write_text(json.dumps({'sources': {'fixture.py': fingerprint(original)}}))
             config = root/'coverage.ini'
             config.write_text(f'[run]\nplugins = copies\nsource = {source}\ndata_file = {root}/.coverage\n')
-            env = dict(os.environ, USCREEN_COVERAGE_ROOT=str(source), USCREEN_COVERAGE_MANIFEST=str(manifest),
+            env = dict(os.environ, BLENT_COVERAGE_ROOT=str(source), BLENT_COVERAGE_MANIFEST=str(manifest),
                        PYTHONPATH=str(Path(__file__).parent.resolve()))
             env.pop('COVERAGE_PROCESS_START', None)
-            env.pop('USCREEN_PYTHON_CALLS', None)
+            env.pop('BLENT_PYTHON_CALLS', None)
             command = [sys.executable, '-m', 'coverage']
             subprocess.run([*command, 'run', '--rcfile='+str(config), str(duplicate)], env=env, check=True)
             duplicate.unlink()

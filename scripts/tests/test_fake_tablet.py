@@ -171,7 +171,7 @@ class RuntimePaths(unittest.TestCase):
                 expected = paths.get(expected, expected)
                 with mock.patch.dict(os.environ, env, clear=True), \
                         mock.patch.object(os.path, 'isdir', side_effect=lambda path: path in exists):
-                    self.assertEqual(tablet.runtime_dir(), os.path.join(os.path.realpath(expected), 'uscreen'))
+                    self.assertEqual(tablet.runtime_dir(), os.path.join(os.path.realpath(expected), 'blent'))
 
     def test_t242_runtime_base_alias_resolves_like_the_host(self):
         import os
@@ -183,7 +183,7 @@ class RuntimePaths(unittest.TestCase):
             alias = Path(root) / 'alias'
             alias.symlink_to(base, target_is_directory=True)
             with mock.patch.dict(os.environ, {'XDG_RUNTIME_DIR': str(alias)}):
-                self.assertEqual(tablet.runtime_dir(), str(base / 'uscreen'))
+                self.assertEqual(tablet.runtime_dir(), str(base / 'blent'))
 
 class AttachmentTokenTest(unittest.TestCase):
     def test_t444_slot_uses_its_own_credential(self):

@@ -102,7 +102,7 @@ pub struct EncoderEvidence {
     pub name: String,
     pub format: (u32, u32, u32, u32, u32),
     pub epoch: u64,
-    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    pub decoder: Option<blent_config::negotiation::DecoderChoice>,
     decoder_receipt: Option<String>,
     rendered: std::sync::atomic::AtomicU64,
     encoded: std::sync::atomic::AtomicU64,
@@ -137,7 +137,7 @@ impl EncoderEvidence {
     }
 
     fn acknowledge(&self, sequence: u32, output: u64, micros: u32) {
-        tracing::trace!(target: "uscreen::frame_timing",
+        tracing::trace!(target: "blent::frame_timing",
             encoder_epoch = self.epoch, sequence, packet_ready_to_ack_us = micros,
             "Render ACK received");
         self.encoded_at_ack.fetch_max(output, Ordering::Relaxed);
@@ -190,7 +190,7 @@ impl LatencyTracker {
         &self,
         name: &str,
         format: (u32, u32, u32, u32, u32),
-        decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+        decoder: Option<blent_config::negotiation::DecoderChoice>,
     ) -> Arc<EncoderEvidence> {
         let mut state = self.inner.lock().unwrap();
         state.encoder_epoch = state.encoder_epoch.wrapping_add(1);
@@ -418,10 +418,10 @@ mod tests {
 
     #[test]
     fn t497_pre_subscriber_logs_keep_decode_units_and_retired_storage_peak() {
-        if std::env::var_os("USCREEN_T497_LOG_FACADE").is_none() {
+        if std::env::var_os("BLENT_T497_LOG_FACADE").is_none() {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "latency::tests::t497_pre_subscriber_logs_keep_decode_units_and_retired_storage_peak", "--nocapture"])
-                .env("USCREEN_T497_LOG_FACADE", "1").output().unwrap();
+                .env("BLENT_T497_LOG_FACADE", "1").output().unwrap();
             assert!(
                 output.status.success(),
                 "{}{}",

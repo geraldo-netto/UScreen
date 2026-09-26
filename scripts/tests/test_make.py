@@ -29,8 +29,8 @@ class MakeTest(unittest.TestCase):
             env['PATH'] = str(tools) + os.pathsep + env['PATH']
         return env
 
-    def run_dist(self, portable, *flags, container=None, listed='uscreen-build'):
-        with tempfile.TemporaryDirectory(prefix='uscreen-make-dist-') as tmp:
+    def run_dist(self, portable, *flags, container=None, listed='blent-build'):
+        with tempfile.TemporaryDirectory(prefix='blent-make-dist-') as tmp:
             root = Path(tmp)
             makefile = (REPO / 'Makefile').read_text()
             for directory in ['scripts', 'packaging', 'bin']:
@@ -40,7 +40,7 @@ class MakeTest(unittest.TestCase):
                 script.write_text('#!/bin/sh\nprintf "executed\\n" >> release-marker\n')
                 script.chmod(0o755)
             distrobox = root / 'bin/distrobox'
-            distrobox.write_text('#!/bin/sh\nprintf " %s \\n" "$USCREEN_TEST_CONTAINER_LIST"\n')
+            distrobox.write_text('#!/bin/sh\nprintf " %s \\n" "$BLENT_TEST_CONTAINER_LIST"\n')
             distrobox.chmod(0o755)
             # Replace only the local fixture target; production dist dispatch stays intact.
             prefix = makefile[:makefile.index('dist-local: build')]
@@ -49,10 +49,10 @@ class MakeTest(unittest.TestCase):
             cargo.write_text(CARGO)
             cargo.chmod(0o755)
             env = self.make_environment(root / 'bin')
-            env.pop('USCREEN_BUILD_CONTAINER', None)
-            env['USCREEN_TEST_CONTAINER_LIST'] = listed if portable else ''
+            env.pop('BLENT_BUILD_CONTAINER', None)
+            env['BLENT_TEST_CONTAINER_LIST'] = listed if portable else ''
             if container is not None:
-                env['USCREEN_BUILD_CONTAINER'] = container
+                env['BLENT_BUILD_CONTAINER'] = container
             result = subprocess.run(
                 ['make', '-j2', *flags, 'dist', f'CARGO={cargo}', 'CC=true'],
                 cwd=root, env=env, capture_output=True, text=True)
@@ -62,12 +62,12 @@ class MakeTest(unittest.TestCase):
     def test_t304_dist_uses_the_requested_build_container(self):
         for requested, listed, portable in [
             ('custom-build', 'custom-build', True),
-            ('custom-build', 'uscreen-build', False),
+            ('custom-build', 'blent-build', False),
             ('ci.build', 'ci.build', True),
             ('ci.build', 'ciXbuild', False),
             ('ci-build', 'ci-build-backup', False),
-            ('', 'uscreen-build', True),
-            (None, 'uscreen-build', True),
+            ('', 'blent-build', True),
+            (None, 'blent-build', True),
         ]:
             with self.subTest(requested=requested, listed=listed):
                 result, marker = self.run_dist(True, container=requested, listed=listed)
@@ -96,7 +96,7 @@ class MakeTest(unittest.TestCase):
         self.assertIn('T220: cargo executed with usable jobserver', result.stdout)
 
     def run_build(self, *flags):
-        with tempfile.TemporaryDirectory(prefix='uscreen-make-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-make-') as tmp:
             root = Path(tmp)
             (root / 'Makefile').write_text((REPO / 'Makefile').read_text())
             cargo = root / 'cargo'
@@ -106,7 +106,7 @@ class MakeTest(unittest.TestCase):
                                   cwd=root, env=self.make_environment(), capture_output=True, text=True)
 
     def test_t261_failed_make_install_preserves_existing_binaries(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-make-install-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-make-install-') as tmp:
             root = Path(tmp)
             (root / 'Makefile').write_text((REPO / 'Makefile').read_text())
             (root / 'scripts').mkdir()
@@ -115,17 +115,17 @@ class MakeTest(unittest.TestCase):
             source.mkdir(parents=True)
             installed = root / 'installed bin'
             installed.mkdir()
-            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+            for name in ['blent', 'blent-gui', 'evdi_helper']:
                 (installed / name).write_text('old-' + name)
-            (source / 'uscreen').write_text('new daemon')
+            (source / 'blent').write_text('new daemon')
             # Missing GUI/helper simulates a damaged build artifact after build.
             result = subprocess.run(['make', '-o', 'build', 'install', f'BIN_DIR={installed}'],
                                     cwd=root, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-            for name in ['uscreen', 'uscreen-gui', 'evdi_helper']:
+            for name in ['blent', 'blent-gui', 'evdi_helper']:
                 self.assertEqual((installed / name).read_text(), 'old-' + name,
                                  'T261: failed make install removed working binaries')
-            self.assertEqual(list(installed.glob('.uscreen-*')), [])
+            self.assertEqual(list(installed.glob('.blent-*')), [])
 
     def test_t220_parallel_build_passes_open_jobserver(self):
         result = self.run_build()

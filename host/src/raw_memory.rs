@@ -1,13 +1,13 @@
 //! Linux sealed memfd adapter. Pixel mappings are immutable in this process.
 use crate::raw_socket::Socket;
 use anyhow::{ensure, Context, Result};
+use blent_config::raw_frame::*;
 use std::os::fd::{AsRawFd, OwnedFd};
 use std::ptr::NonNull;
 use std::sync::{
     atomic::{AtomicU32, AtomicU64, Ordering},
     Arc,
 };
-use uscreen_config::raw_frame::*;
 
 pub(crate) struct Mapping {
     pointer: NonNull<u8>,

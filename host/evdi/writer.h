@@ -1,5 +1,5 @@
-#ifndef USCREEN_WRITER_H
-#define USCREEN_WRITER_H
+#ifndef BLENT_WRITER_H
+#define BLENT_WRITER_H
 #include "frame_exchange.h"
 #include "fifo_writer.h"
 

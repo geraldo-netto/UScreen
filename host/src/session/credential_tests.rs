@@ -152,7 +152,7 @@ async fn t444_current_credential_reconnects_and_same_identity_migrates() {
     );
     f.tablet.begin_with_transport(
         Some("physical-A".into()),
-        Some(uscreen_config::adb::Transport::Network),
+        Some(blent_config::adb::Transport::Network),
     );
     assert_eq!(f.tablet.token().unwrap().as_deref(), Some(token.as_str()));
     closed(&mut second).await;

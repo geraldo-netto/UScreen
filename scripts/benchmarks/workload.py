@@ -18,7 +18,7 @@ class Workload:
         import tkinter as tk
 
         self.root = tk.Tk()
-        self.root.title('UScreen T382 reproducible baseline')
+        self.root.title('Blent T382 reproducible baseline')
         self.root.overrideredirect(True)
         self.root.geometry(geometry)
         self.root.attributes('-topmost', True)
@@ -53,7 +53,7 @@ class Workload:
         for y in range(0, 800, 32):
             self.canvas.create_line(0, y, 1280, y, fill='#34455c')
         for row in range(28):
-            label = f'{row:02d}  UScreen baseline | abcdef 0123456789 | The quick brown fox | 1px lines'
+            label = f'{row:02d}  Blent baseline | abcdef 0123456789 | The quick brown fox | 1px lines'
             self.lines.append(self.canvas.create_text(24, row * 32, text=label, anchor='nw',
                                                      font=('DejaVu Sans Mono', 16), fill='#e8edf4'))
         for index, color in enumerate(['#e65b65', '#64d3a2', '#e8c367', '#769df4']):

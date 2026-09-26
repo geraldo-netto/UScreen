@@ -1,7 +1,7 @@
 //! Desktop placement policy; only KDE Wayland currently exposes this adapter.
+use blent_config::commands::AsyncCommandExt;
 use tokio::process::Command;
 use tracing::{info, warn};
-use uscreen_config::commands::AsyncCommandExt;
 
 /// Enable the EVDI output at the configured edge of the existing desktop.
 ///
@@ -216,7 +216,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
     fn isolated_placement() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", T497_TEST, "--nocapture"])
-            .env("USCREEN_T497_PLACEMENT", "1")
+            .env("BLENT_T497_PLACEMENT", "1")
             .output()
             .unwrap();
         assert!(
@@ -291,7 +291,7 @@ if [ "$1" = -j ]; then /bin/cat "${0%/*}/inventory"; fi
 
     #[tokio::test]
     async fn t497_placement_handles_absence_retries_and_failed_commands() {
-        if std::env::var_os("USCREEN_T497_PLACEMENT").is_none() {
+        if std::env::var_os("BLENT_T497_PLACEMENT").is_none() {
             isolated_placement();
             return;
         }

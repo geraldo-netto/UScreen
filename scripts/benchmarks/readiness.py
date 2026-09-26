@@ -15,7 +15,7 @@ BASE = '48e9427'
 FILES = ['host/src/encoder_io.rs', 'host/src/encoder_fifo.rs',
          'host/evdi/fifo_writer.c', 'host/evdi/fifo_writer.h']
 MANIFEST = '''[package]
-name = "uscreen-readiness-bench"
+name = "blent-readiness-bench"
 version = "0.0.0"
 edition = "2021"
 [dependencies]
@@ -101,7 +101,7 @@ def build(folder, variant):
     env = dict(os.environ, CARGO_TARGET_DIR=str(folder / 'target'))
     subprocess.run(['cargo', 'build', '--offline', '--release'], cwd=folder, env=env, check=True)
     binary = folder / 'readiness'
-    shutil.copy2(folder / 'target/release/uscreen-readiness-bench', binary)
+    shutil.copy2(folder / 'target/release/blent-readiness-bench', binary)
     return binary
 
 

@@ -4,18 +4,18 @@
 //! package manager is the update mechanism, and a daemon that overwrites its
 //! own binary behind the package manager's back is how systems end up in
 //! states nobody can explain. So the daemon only asks GitHub what the latest
-//! tag is, and the tray icon and `uscreen doctor` say so if it is newer.
+//! tag is, and the tray icon and `blent doctor` say so if it is newer.
 //!
 //! Uses curl rather than an HTTP client crate: one HTTPS GET a day is not
 //! worth a dependency tree, and curl is on every system this runs on.
 
+use blent_config::commands::AsyncCommandExt;
 use std::time::Duration;
 use tokio::sync::watch;
 use tracing::{debug, info};
-use uscreen_config::commands::AsyncCommandExt;
 
-pub use uscreen_config::release::PAGE as RELEASES_PAGE;
-use uscreen_config::release::{newer_tag, tag_from_json, API as RELEASES_API};
+pub use blent_config::release::PAGE as RELEASES_PAGE;
+use blent_config::release::{newer_tag, tag_from_json, API as RELEASES_API};
 
 /// Delay before the first check, so startup is not spent waiting on the
 /// network, and the interval between checks after that.
@@ -29,7 +29,7 @@ pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-pub use uscreen_config::version::is_newer;
+pub use blent_config::version::is_newer;
 
 pub async fn latest_release_tag() -> Option<String> {
     let out = tokio::process::Command::new("curl")
@@ -40,7 +40,7 @@ pub async fn latest_release_tag() -> Option<String> {
             "-H",
             "Accept: application/vnd.github+json",
             "-H",
-            &format!("User-Agent: uscreen/{}", current_version()),
+            &format!("User-Agent: blent/{}", current_version()),
             RELEASES_API,
         ])
         .output_bounded()

@@ -1,7 +1,7 @@
 //! T533: dependency evidence must not be confused with runtime readiness.
 #![cfg(feature = "platform")]
+use blent_config::diagnostics::{collect_with, Probe, State, Tool};
 use std::path::{Path, PathBuf};
-use uscreen_config::diagnostics::{collect_with, Probe, State, Tool};
 
 struct Fake {
     present: bool,
@@ -18,8 +18,8 @@ impl Probe for Fake {
         self.output.clone()
     }
 }
-fn unsupported() -> uscreen_config::platform::Capabilities {
-    uscreen_config::platform::Capabilities {
+fn unsupported() -> blent_config::platform::Capabilities {
+    blent_config::platform::Capabilities {
         camera: false,
         daemon: false,
         display: false,

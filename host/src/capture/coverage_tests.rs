@@ -173,14 +173,14 @@ impl Fixture {
 
 #[tokio::test]
 async fn t497_supervisor_distinguishes_notifications_restarts_and_failures() {
-    if std::env::var_os("USCREEN_T497_CAPTURE_STATE").is_none() {
+    if std::env::var_os("BLENT_T497_CAPTURE_STATE").is_none() {
         let root = tempfile::Builder::new()
             .permissions(std::fs::Permissions::from_mode(0o700))
             .tempdir()
             .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", TEST, "--nocapture"])
-            .env("USCREEN_T497_CAPTURE_STATE", "1")
+            .env("BLENT_T497_CAPTURE_STATE", "1")
             .env("HOME", root.path())
             .env("XDG_RUNTIME_DIR", root.path())
             .env("PATH", root.path())

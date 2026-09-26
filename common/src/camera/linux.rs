@@ -13,10 +13,10 @@ use std::{
 pub struct CameraOptions {
     #[cfg_attr(feature = "platform", command(flatten))]
     pub profile: CameraProfile,
-    /// Existing v4l2loopback device labelled UScreen Front.
+    /// Existing v4l2loopback device labelled Blent Front.
     #[cfg_attr(feature = "platform", arg(long, default_value = "/dev/video20"))]
     pub front_device: PathBuf,
-    /// Existing v4l2loopback device labelled UScreen Rear.
+    /// Existing v4l2loopback device labelled Blent Rear.
     #[cfg_attr(feature = "platform", arg(long, default_value = "/dev/video21"))]
     pub rear_device: PathBuf,
 }

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Blent
+Comment=Start the Blent daemon with the desktop
+Exec=blent start
+Icon=blent
+Terminal=false
+StartupNotify=false
+NoDisplay=true

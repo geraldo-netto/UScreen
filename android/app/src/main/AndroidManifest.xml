@@ -28,9 +28,9 @@
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="UScreen Display"
+        android:label="Blent Display"
         android:supportsRtl="true"
-        android:theme="@style/Theme.UScreen"
+        android:theme="@style/Theme.Blent"
         android:networkSecurityConfig="@xml/network_security_config"
         android:hardwareAccelerated="true">
 

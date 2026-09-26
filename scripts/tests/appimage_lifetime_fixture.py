@@ -7,8 +7,8 @@ import subprocess
 import sys
 import tempfile
 
-source = Path(os.environ['USCREEN_TEST_TEMPLATE'])
-with tempfile.TemporaryDirectory(prefix='uscreen-runtime-') as root:
+source = Path(os.environ['BLENT_TEST_TEMPLATE'])
+with tempfile.TemporaryDirectory(prefix='blent-runtime-') as root:
     app = Path(root) / 'AppDir'
     shutil.copytree(source, app)
     env = dict(os.environ, APPIMAGE=os.path.realpath(__file__))

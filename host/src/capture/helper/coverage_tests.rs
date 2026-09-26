@@ -4,14 +4,14 @@ use std::os::unix::fs::PermissionsExt;
 
 #[test]
 fn t497_helper_command_prepares_private_edid_and_respects_card_priority() {
-    let Ok(root) = std::env::var("USCREEN_T497_HELPER_ROOT") else {
+    let Ok(root) = std::env::var("BLENT_T497_HELPER_ROOT") else {
         let directory = tempfile::Builder::new()
             .permissions(std::fs::Permissions::from_mode(0o700))
             .tempdir()
             .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "capture::helper::coverage_tests::t497_helper_command_prepares_private_edid_and_respects_card_priority", "--nocapture"])
-            .env("USCREEN_T497_HELPER_ROOT", directory.path())
+            .env("BLENT_T497_HELPER_ROOT", directory.path())
             .env("HOME", directory.path()).env("XDG_RUNTIME_DIR", directory.path()).output().unwrap();
         assert!(
             output.status.success(),

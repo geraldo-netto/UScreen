@@ -76,10 +76,10 @@ def attest(path, digest, directory, root, manifest_path):
 
 
 def main():
-    directory = Path(os.environ['USCREEN_SHELL_COVERAGE_DIR'])/'origins'
+    directory = Path(os.environ['BLENT_SHELL_COVERAGE_DIR'])/'origins'
     directory.mkdir(parents=True, exist_ok=True)
     attest(Path(sys.argv[1]), sys.argv[2], directory,
-           Path(os.environ['USCREEN_COVERAGE_ROOT']), Path(os.environ['USCREEN_COVERAGE_MANIFEST']))
+           Path(os.environ['BLENT_COVERAGE_ROOT']), Path(os.environ['BLENT_COVERAGE_MANIFEST']))
 
 
 if __name__ == '__main__':

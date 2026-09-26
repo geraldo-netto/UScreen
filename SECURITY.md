@@ -34,17 +34,17 @@ Android token-update activity requires the system DUMP permission, available
 to adb shell and privileged apps. The ordinary launcher ignores token extras.
 This is not isolation from compromised software running as your own user.
 
-`uscreen wifi` runs `adb tcpip 5555`: it **opens the tablet's adb listener on
+`blent wifi` runs `adb tcpip 5555`: it **opens the tablet's adb listener on
 the network**, then stores its address for reconnection. The host video/input
 ports remain on loopback. Use this only on a trusted local network.
-`uscreen wifi --off` forgets the address and disconnects that adb connection;
+`blent wifi --off` forgets the address and disconnects that adb connection;
 it does not turn off the tablet's TCP listener. To return adbd to USB mode,
 use `adb -s TABLET_SERIAL_OR_IP:5555 usb` with the identifier shown by
 `adb devices`, or reboot the tablet and verify its debugging settings.
 See [Android's adb instructions](https://developer.android.com/tools/adb#wireless).
 
 Screen and input data are sent between the computer and tablet, over USB or
-the selected ADB network connection. UScreen has no account, application
+the selected ADB network connection. Blent has no account, application
 telemetry or cloud relay. This describes the application; the static website
 loads fonts from Google and a social preview from GitHub.
 
@@ -52,10 +52,10 @@ loads fonts from Google and a social preview from GitHub.
 
 The runtime base is an existing `$XDG_RUNTIME_DIR`, otherwise an existing
 `/run/user/<uid>`, otherwise `$HOME/.cache` (`/tmp/.cache` if HOME is absent).
-UScreen uses a `uscreen` subdirectory. Runtime-path selection returns an error
+Blent uses a `blent` subdirectory. Runtime-path selection returns an error
 unless the resolved base belongs to the current UID, has owner read/write/search
 permissions and cannot be written by group/other users. Base symlinks (such as a
-relocated HOME cache) are resolved before validation. The final `uscreen`
+relocated HOME cache) are resolved before validation. The final `blent`
 directory is opened with `O_DIRECTORY | O_NOFOLLOW` and must belong to the same
 UID with permission bits 0700. Existing unsafe paths are refused without changing
 their ownership or permissions; a selected unsafe path does not trigger fallback.
@@ -69,7 +69,7 @@ mode 0600 and use only accepted runtime paths. These checks do not protect
 against the same user or root replacing their own directories after validation.
 
 Android disables application backup and explicitly excludes the token-bearing
-`uscreen.xml` preferences from legacy backup, cloud backup and device transfer.
+`blent.xml` preferences from legacy backup, cloud backup and device transfer.
 Both rule files are referenced by the packaged manifest and covered by the
 Android regression suite. Device-transfer exclusions matter because some OEMs
 ignore `allowBackup=false` for that transport; see
@@ -92,10 +92,10 @@ for normal streaming.
 
 | Installed or changed state | Purpose |
 | --- | --- |
-| User-local binaries, menu entry, icons, user service and optional `XDG_CONFIG_HOME/autostart/uscreen.desktop`, or their package-managed counterparts | Application launch and optional desktop-session autostart |
-| `/etc/modprobe.d/uscreen-evdi.conf` (script) or `/usr/lib/modprobe.d/uscreen-evdi.conf` (package) | Default `options evdi initial_device_count=2` at module load |
-| `/etc/modules-load.d/uscreen.conf` (script) or `/usr/lib/modules-load.d/uscreen.conf` (package) | Boot-module list for init systems that read `modules-load.d`; other init systems need their own configuration |
-| `/etc/udev/rules.d/60-uscreen-uinput.rules` or `/usr/lib/udev/rules.d/60-uscreen-uinput.rules` | Seat-user access to `/dev/uinput`; this permits synthetic input |
+| User-local binaries, menu entry, icons, user service and optional `XDG_CONFIG_HOME/autostart/blent.desktop`, or their package-managed counterparts | Application launch and optional desktop-session autostart |
+| `/etc/modprobe.d/blent-evdi.conf` (script) or `/usr/lib/modprobe.d/blent-evdi.conf` (package) | Default `options evdi initial_device_count=2` at module load |
+| `/etc/modules-load.d/blent.conf` (script) or `/usr/lib/modules-load.d/blent.conf` (package) | Boot-module list for init systems that read `modules-load.d`; other init systems need their own configuration |
+| `/etc/udev/rules.d/60-blent-uinput.rules` or `/usr/lib/udev/rules.d/60-blent-uinput.rules` | Seat-user access to `/dev/uinput`; this permits synthetic input |
 | Distribution packages and, where the full script selects them, RPM Fusion configuration or rpm-ostree layers | Runtime/build dependencies |
 
 Project setup helpers preserve a loaded EVDI module and existing devices,
@@ -110,25 +110,25 @@ automatically undone by removing application files.
 Stop the daemon before removing its files. For a systemd installation:
 
 ```bash
-systemctl --user disable --now uscreen
+systemctl --user disable --now blent
 ```
 
-For a terminal or direct GUI launch, use `uscreen stop`. Then remove **the
+For a terminal or direct GUI launch, use `blent stop`. Then remove **the
 installation method you used**:
 
-- Package: `sudo apt remove uscreen`, `sudo dnf remove uscreen`,
-  `sudo zypper rm uscreen` or `sudo pacman -R uscreen`, as appropriate.
+- Package: `sudo apt remove blent`, `sudo dnf remove blent`,
+  `sudo zypper rm blent` or `sudo pacman -R blent`, as appropriate.
   Inspect the proposed transaction. Dependencies and repository settings may remain.
 - Default source/tarball installation: remove these application-owned files:
 
 ```bash
-rm -f ~/.local/bin/uscreen ~/.local/bin/uscreen-gui ~/.local/bin/evdi_helper
+rm -f ~/.local/bin/blent ~/.local/bin/blent-gui ~/.local/bin/evdi_helper
 rm -f ~/.local/bin/libevdi.so.1 ~/.local/bin/libevdi.so.1.15.0
-rm -f ~/.config/systemd/user/uscreen.service
-rm -f ~/.config/autostart/uscreen.desktop
-rm -f ~/.local/share/applications/uscreen.desktop
-rm -f ~/.local/share/icons/hicolor/scalable/apps/uscreen.svg
-rm -f ~/.local/share/icons/hicolor/scalable/apps/uscreen-pen.svg
+rm -f ~/.config/systemd/user/blent.service
+rm -f ~/.config/autostart/blent.desktop
+rm -f ~/.local/share/applications/blent.desktop
+rm -f ~/.local/share/icons/hicolor/scalable/apps/blent.svg
+rm -f ~/.local/share/icons/hicolor/scalable/apps/blent-pen.svg
 systemctl --user daemon-reload
 ```
 
@@ -140,24 +140,24 @@ Adapt the binary path if you selected a custom `BIN_DIR`. Both user installers
 use an absolute `XDG_DATA_HOME` for launchers/icons and an absolute
 `XDG_CONFIG_HOME` for the user unit and desktop-autostart entry. Unset, empty or
 relative values use the HOME defaults shown above. Adjust those cleanup paths
-to your selected bases and remove only the named UScreen files. Native packages
+to your selected bases and remove only the named Blent files. Native packages
 own their files under `/usr`; let the package manager remove them instead of
 deleting arbitrary system libraries.
 
-Remove the following only if UScreen created them and you do not need their
+Remove the following only if Blent created them and you do not need their
 settings for another EVDI/uinput application:
 
 ```bash
-sudo rm -f /etc/modprobe.d/uscreen-evdi.conf
-sudo rm -f /etc/modules-load.d/uscreen.conf
-sudo rm -f /etc/udev/rules.d/60-uscreen-uinput.rules
+sudo rm -f /etc/modprobe.d/blent-evdi.conf
+sudo rm -f /etc/modules-load.d/blent.conf
+sudo rm -f /etc/udev/rules.d/60-blent-uinput.rules
 sudo udevadm control --reload
 ```
 
-Settings are in `$XDG_CONFIG_HOME/uscreen` when XDG_CONFIG_HOME is absolute,
-otherwise `~/.config/uscreen`. Logs/PID state from direct GUI launches are in
-`~/.local/share/uscreen`; service logs are in the user journal. After stopping,
-remove unwanted settings/state and the selected runtime `uscreen` directory
+Settings are in `$XDG_CONFIG_HOME/blent` when XDG_CONFIG_HOME is absolute,
+otherwise `~/.config/blent`. Logs/PID state from direct GUI launches are in
+`~/.local/share/blent`; service logs are in the user journal. After stopping,
+remove unwanted settings/state and the selected runtime `blent` directory
 listed above. Check it for a pending `osk-restore` backup before removal: on
 KDE, restore the desired virtual-keyboard setting first. Journal records,
 external dependencies, kernel modules and repository configuration require
@@ -165,7 +165,7 @@ separate management; deleting these directories does not remove them.
 Reboot if you need boot-module or device-access changes to take full effect;
 do not unload an in-use EVDI module as an uninstall step.
 
-On the tablet, uninstall UScreen normally. If Wi-Fi debugging was enabled,
+On the tablet, uninstall Blent normally. If Wi-Fi debugging was enabled,
 return adbd to USB mode as described above.
 
 ## Release integrity
@@ -176,7 +176,7 @@ they do not independently authenticate its publisher.
 
 The fork's permanent Android release key is provisioned; its public certificate
 and SHA-256 fingerprint are recorded in [release signing](docs/release-signing.md).
-Builds use `io.github.geraldo_netto.uscreen`. Release bundling and publication
+Builds use `io.github.geraldo_netto.blent`. Release bundling and publication
 verify a valid APK signature with exactly the designated certificate, package,
 launcher and non-debuggable status before proceeding. Independent local builds
 may use another key, but the official release gate rejects them. These checks

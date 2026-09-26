@@ -40,12 +40,12 @@ fn isolated() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", TEST, "--nocapture"])
             .env("LD_PRELOAD", &library)
-            .env("USCREEN_T497_UINPUT_FILE", &device)
+            .env("BLENT_T497_UINPUT_FILE", &device)
             .env(
-                "USCREEN_T497_UINPUT_LOG",
+                "BLENT_T497_UINPUT_LOG",
                 root.join(format!("ioctl-{failure}")),
             )
-            .env("USCREEN_T497_UINPUT_FAIL", failure.to_string())
+            .env("BLENT_T497_UINPUT_FAIL", failure.to_string())
             .env("PATH", root)
             .env("HOME", root)
             .env("XDG_CONFIG_HOME", root)
@@ -62,7 +62,7 @@ fn isolated() {
 }
 
 fn assert_intercepted() {
-    let symbol = unsafe { libc::dlsym(libc::RTLD_DEFAULT, c"uscreen_test_uinput_active".as_ptr()) };
+    let symbol = unsafe { libc::dlsym(libc::RTLD_DEFAULT, c"blent_test_uinput_active".as_ptr()) };
     assert!(
         !symbol.is_null(),
         "T497 refuses device constructors without the syscall shim"
@@ -87,8 +87,7 @@ fn construction_contract() {
     }
     let long_name = "x".repeat(160);
     drop(UInputDevice::new_pointer(&long_name, u16::MAX).unwrap());
-    let log =
-        std::fs::read_to_string(std::env::var_os("USCREEN_T497_UINPUT_LOG").unwrap()).unwrap();
+    let log = std::fs::read_to_string(std::env::var_os("BLENT_T497_UINPUT_LOG").unwrap()).unwrap();
     assert!(log.contains("axis 0 0 65535 211"));
     assert!(log.contains("axis 47 0 9 0"));
     assert!(log.contains("axis 26 -1571 1571 1000"));
@@ -136,7 +135,7 @@ async fn owner_contract() {
 
 #[tokio::test]
 async fn t497_uinput_construction_errors_and_owned_retirement() {
-    let Ok(failure) = std::env::var("USCREEN_T497_UINPUT_FAIL") else {
+    let Ok(failure) = std::env::var("BLENT_T497_UINPUT_FAIL") else {
         isolated();
         return;
     };

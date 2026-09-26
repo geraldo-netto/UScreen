@@ -11,7 +11,7 @@ static void t580_stop_writer(pthread_t writer) {
 
 static void test_t580_no_reader(void) {
     alarm(10);
-    char directory[] = "/tmp/uscreen-t580-XXXXXX", path[256];
+    char directory[] = "/tmp/blent-t580-XXXXXX", path[256];
     assert(mkdtemp(directory));
     snprintf(path, sizeof(path), "%s/frames", directory);
     assert(mkfifo(path, 0600) == 0);
@@ -42,7 +42,7 @@ typedef struct {
 static void t580_start(t580_fifo_t *fixture) {
     alarm(10);
     signal(SIGPIPE, SIG_IGN);
-    strcpy(fixture->directory, "/tmp/uscreen-t580-fifo-XXXXXX");
+    strcpy(fixture->directory, "/tmp/blent-t580-fifo-XXXXXX");
     assert(mkdtemp(fixture->directory));
     snprintf(fixture->path, sizeof(fixture->path), "%s/frames", fixture->directory);
     assert(mkfifo(fixture->path, 0600) == 0);

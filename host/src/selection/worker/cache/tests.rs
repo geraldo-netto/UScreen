@@ -4,20 +4,20 @@ use super::super::{
 };
 use super::*;
 use crate::{attachment::Attachment, capture::CaptureConfig};
+use blent_config::adb::Transport;
 use std::os::unix::fs::PermissionsExt;
-use uscreen_config::adb::Transport;
 
 pub(in crate::selection::worker) fn setup() -> (EncoderSettings, Candidate) {
     let mut snapshot = settings();
-    let mut caps: uscreen_config::negotiation::DecoderCapabilities = serde_json::from_str(
+    let mut caps: blent_config::negotiation::DecoderCapabilities = serde_json::from_str(
         include_str!("../../../../../testdata/decoder-capabilities-v2.json"),
     )
     .unwrap();
     caps.software = Some("a".repeat(64));
     snapshot.decoders = Some(caps);
-    let stream = uscreen_config::negotiation::StreamProfile {
+    let stream = blent_config::negotiation::StreamProfile {
         codec: "h264".into(),
-        format: uscreen_config::negotiation::Profile {
+        format: blent_config::negotiation::Profile {
             profile: "baseline".into(),
             level: 31,
             depth: 8,

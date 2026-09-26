@@ -38,7 +38,7 @@ impl SettingsSink for Recorder {
 
 #[test]
 fn t484_old_decoder_receipt_cannot_acknowledge_new_encoder_packets() {
-    let choice: uscreen_config::negotiation::DecoderChoice = serde_json::from_str(
+    let choice: blent_config::negotiation::DecoderChoice = serde_json::from_str(
         r#"{"name":"vendor.avc","stream":{"codec":"h264","profile":"baseline","level":41,"depth":8},"low_latency":false,"operating_rate":120}"#).unwrap();
     let tracker = crate::latency::LatencyTracker::new();
     let encoder =

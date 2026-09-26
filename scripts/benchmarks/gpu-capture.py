@@ -2,7 +2,7 @@
 """T575: controlled EVDI/FIFO versus X11 GPU capture through physical USB ACKs.
 
 Requires an explicitly selected UNUSED EVDI card and output. Creates one temporary
-test display; always retires it and restores the UScreen Android activity.
+test display; always retires it and restores the Blent Android activity.
 """
 import argparse
 import hashlib
@@ -18,8 +18,8 @@ import resource
 import profile_usb_pipeline as PIPELINE
 from profile_usb_wire import Acknowledgements, receipt
 
-PACKAGE = 'com.uscreen.decoderbench.candidate'
-APP = 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity'
+PACKAGE = 'com.blent.decoderbench.candidate'
+APP = 'io.github.geraldo_netto.blent/com.blent.MainActivity'
 CHOICE = dict(name='c2.unisoc.avc.decoder', stream=dict(codec='h264', profile='baseline', level=50, depth=8),
               low_latency=False, operating_rate=60)
 
@@ -57,7 +57,7 @@ def pump(args, command, connection, acks, folder):
     started = time.monotonic_ns()
     with (folder / 'encoder.log').open('w') as log, (folder / 'encoded.h264').open('wb') as encoded:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=log, stdin=subprocess.DEVNULL,
-                                   env=dict(os.environ, USCREEN_GPU_TRACE='1'))
+                                   env=dict(os.environ, BLENT_GPU_TRACE='1'))
         packets = PIPELINE.PacketDelivery(connection, 0, encoded)
         deadline = time.monotonic() + args.frames / 30 + 12
         try:
@@ -137,7 +137,7 @@ def trial(args, variant, number, policy):
         adb(args, 'reverse', '--no-rebind', route, route)
         try:
             adb(args, 'shell', 'run-as', PACKAGE, 'rm', '-f', 'files/result.json')
-            launch = adb(args, 'shell', 'am', 'start', '-S', '-W', '-n', PACKAGE + '/com.uscreen.benchmark.MainActivity',
+            launch = adb(args, 'shell', 'am', 'start', '-S', '-W', '-n', PACKAGE + '/com.blent.benchmark.MainActivity',
                          '--ez', 'run', 'true', '--ei', 'usb_port', str(port))
             (folder / 'launch.txt').write_text(launch)
             if 'Status: ok' not in launch:
@@ -207,7 +207,7 @@ def run(args):
         raise RuntimeError('selected card must be an unused EVDI device')
     foreground = adb(args, 'shell', 'dumpsys', 'activity', 'activities')
     if not any('topResumedActivity=' in line and APP in line for line in foreground.splitlines()):
-        raise RuntimeError('UScreen must already be visible')
+        raise RuntimeError('Blent must already be visible')
     args.output.mkdir(mode=0o700)
     provenance(args)
     before = adb(args, 'reverse', '--list')

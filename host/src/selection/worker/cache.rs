@@ -1,12 +1,12 @@
 //! One optional historical winner; fresh probes and render receipts remain mandatory.
 use super::{Candidate, EncoderSettings};
 use crate::selection::trial::Observation;
+use blent_config::negotiation::DecoderChoice;
 use serde::{Deserialize, Serialize};
 use std::{
     io::{Read, Write},
     path::PathBuf,
 };
-use uscreen_config::negotiation::DecoderChoice;
 
 mod context;
 #[cfg(test)]
@@ -203,7 +203,7 @@ pub(super) fn now() -> u64 {
 }
 
 fn supports_choice(
-    caps: &uscreen_config::negotiation::DecoderCapabilities,
+    caps: &blent_config::negotiation::DecoderCapabilities,
     expected: &DecoderChoice,
 ) -> bool {
     caps.choices(&expected.stream, true)

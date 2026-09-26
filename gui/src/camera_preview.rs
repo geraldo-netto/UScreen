@@ -1,7 +1,7 @@
 //! Preview is a thumbnail of the backend's exported pixels, never a second capture.
+use blent_config::camera::{CameraPreview, Lens};
 use eframe::egui;
 use std::sync::Arc;
-use uscreen_config::camera::{CameraPreview, Lens};
 
 #[derive(Default)]
 pub(super) struct Preview {

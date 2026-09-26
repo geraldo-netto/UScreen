@@ -1,4 +1,4 @@
-//! `uscreen doctor` — one-shot check of everything that has to be true for the
+//! `blent doctor` — one-shot check of everything that has to be true for the
 //! pipeline to work, with an actionable hint for every failure.
 //!
 //! This is deliberately the first thing to run whenever the stream "is laggy
@@ -13,11 +13,11 @@ use crate::runtime::fifo_path_for;
 mod codecs;
 use crate::vdisplay;
 use anyhow::Result;
+use blent_config::adb::{transport_of, Transport};
+use blent_config::commands::AsyncCommandExt;
+use blent_config::linux::processes::{self, CaptureRole, Process};
 use codecs::{report_codec, report_live_encoder};
 use std::path::Path;
-use uscreen_config::adb::{transport_of, Transport};
-use uscreen_config::commands::AsyncCommandExt;
-use uscreen_config::linux::processes::{self, CaptureRole, Process};
 
 #[cfg(test)]
 #[path = "doctor/coverage_tests.rs"]
@@ -97,7 +97,7 @@ async fn output_of(program: &str, args: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&out.stdout).to_string())
 }
 
-use uscreen_config::linux::programs::command_exists;
+use blent_config::linux::programs::command_exists;
 
 fn check_modules(r: &mut Report, cfg: &FileConfig) {
     check_modules_at(r, cfg, Path::new("/"));
@@ -118,7 +118,7 @@ fn check_modules_at(r: &mut Report, cfg: &FileConfig, root: &Path) {
                 // where evdi is already resident. Both halves matter.
                 r.hint(
                     "for every boot: echo 'options evdi initial_device_count=2' | sudo tee \
-                     /etc/modprobe.d/uscreen-evdi.conf # takes effect after reboot; keep the live module loaded",
+                     /etc/modprobe.d/blent-evdi.conf # takes effect after reboot; keep the live module loaded",
                 );
             }
         }
@@ -159,11 +159,11 @@ fn check_modules_at(r: &mut Report, cfg: &FileConfig, root: &Path) {
 fn uinput_hint(root: &Path) -> String {
     if ["etc/udev/rules.d", "usr/lib/udev/rules.d"]
         .iter()
-        .any(|dir| root.join(dir).join("60-uscreen-uinput.rules").exists())
+        .any(|dir| root.join(dir).join("60-blent-uinput.rules").exists())
     {
         "rule installed: sudo udevadm control --reload && sudo udevadm trigger --name-match=uinput; log in locally at an active seat to receive the uaccess grant".into()
     } else {
-        "reinstall the UScreen package or rerun the release tarball's scripts/install.sh to install the uinput rule".into()
+        "reinstall the Blent package or rerun the release tarball's scripts/install.sh to install the uinput rule".into()
     }
 }
 
@@ -198,7 +198,7 @@ async fn check_helper_execution(r: &mut Report, helper: &Path) {
                     String::from_utf8_lossy(&out.stderr).trim()
                 ),
             );
-            r.hint("reinstall UScreen and the libevdi runtime package for this distribution");
+            r.hint("reinstall Blent and the libevdi runtime package for this distribution");
         }
         Err(e) => {
             r.line(
@@ -206,7 +206,7 @@ async fn check_helper_execution(r: &mut Report, helper: &Path) {
                 "evdi_helper",
                 &format!("could not execute {}: {e}", helper.display()),
             );
-            r.hint("reinstall UScreen (including evdi_helper) and its libevdi runtime dependency");
+            r.hint("reinstall Blent (including evdi_helper) and its libevdi runtime dependency");
         }
     }
 }
@@ -305,7 +305,7 @@ fn report_process_query(r: &mut Report, cfg: &FileConfig, query: std::io::Result
 
 fn report_process_inventory(r: &mut Report, cfg: &FileConfig, inventory: &[Process]) {
     let pid_file = crate::get_pid_path();
-    let daemons = uscreen_config::linux::daemon::from_processes(inventory, Some(&pid_file));
+    let daemons = blent_config::linux::daemon::from_processes(inventory, Some(&pid_file));
     let tracked = report_daemon(r, &daemons, &pid_file);
     let fifos = match (0..cfg.max_tablets)
         .map(fifo_path_for)
@@ -336,17 +336,17 @@ fn report_daemon(r: &mut Report, daemons: &[u32], pid_file: &Path) -> Option<u32
     if daemons.len() > 1 {
         r.line(
             Level::Fail,
-            "multiple uscreen daemons",
+            "multiple blent daemons",
             &format!("{daemons:?}"),
         );
-        r.hint("uscreen stop reaches validated same-user daemons even without a PID file; stop them before starting again");
+        r.hint("blent stop reaches validated same-user daemons even without a PID file; stop them before starting again");
     } else if tracked.is_none() && pid_file.exists() {
         r.line(
             Level::Warn,
             "PID file",
             "stale or not a daemon; no live daemon was found",
         );
-        r.hint("uscreen start replaces the stale PID file");
+        r.hint("blent start replaces the stale PID file");
     }
     tracked
 }
@@ -371,14 +371,14 @@ fn report_encoders(r: &mut Report, encoders: &[u32], tracked: Option<u32>, fifo:
             &format!("ffmpeg on {}", fifo.display()),
             &format!("{} running: {:?}", encoders.len(), encoders),
         );
-        r.hint("two readers on one pipe corrupt frames; stop and start UScreen to retire matching capture processes before capture begins");
+        r.hint("two readers on one pipe corrupt frames; stop and start Blent to retire matching capture processes before capture begins");
     } else if encoders.len() == 1 && tracked.is_none() {
         r.line(
             Level::Fail,
             &format!("ffmpeg on {}", fifo.display()),
             "orphaned",
         );
-        r.hint("stop and start UScreen; capture startup retires processes matching this FIFO");
+        r.hint("stop and start Blent; capture startup retires processes matching this FIFO");
     } else {
         r.line(
             Level::Ok,
@@ -395,10 +395,10 @@ fn report_helpers(r: &mut Report, helpers: &[u32], tracked: Option<u32>, max_tab
             "evdi_helper processes",
             &format!("{} running: {:?}", helpers.len(), helpers),
         );
-        r.hint("more helpers than configured tablet slots: stop and start UScreen; capture startup retires matching helpers before attaching");
+        r.hint("more helpers than configured tablet slots: stop and start Blent; capture startup retires matching helpers before attaching");
     } else if !helpers.is_empty() && tracked.is_none() {
         r.line(Level::Fail, "evdi_helper", "orphaned (no daemon owns it)");
-        r.hint("start UScreen and reconnect the tablet; capture startup retires matching helpers before attaching");
+        r.hint("start Blent and reconnect the tablet; capture startup retires matching helpers before attaching");
     } else {
         r.line(
             Level::Ok,
@@ -534,11 +534,11 @@ async fn check_tablet_session(
             "broadcast",
             "--include-stopped-packages",
             "-n",
-            &uscreen_config::android::Component::CodecReportReceiver.adb_name(),
+            &blent_config::android::Component::CodecReportReceiver.adb_name(),
             "-a",
-            "io.github.geraldo_netto.uscreen.DECODER_CAPABILITIES",
+            "io.github.geraldo_netto.blent.DECODER_CAPABILITIES",
             "--ei",
-            "uscreen_codecs_version",
+            "blent_codecs_version",
             "2",
         ])
         .output_bounded()
@@ -555,22 +555,22 @@ async fn check_tablet_session(
         "pm",
         "list",
         "packages",
-        uscreen_config::android::PACKAGE,
+        blent_config::android::PACKAGE,
     ]);
     if let Some(out) = output_of(adb, &pm_args).await {
         if out
             .lines()
-            .any(|line| line.trim() == format!("package:{}", uscreen_config::android::PACKAGE))
+            .any(|line| line.trim() == format!("package:{}", blent_config::android::PACKAGE))
         {
             r.line(Level::Ok, "tablet app", "installed");
         } else {
             r.line(
                 Level::Fail,
                 "tablet app",
-                "io.github.geraldo_netto.uscreen not installed",
+                "io.github.geraldo_netto.blent not installed",
             );
             r.hint(&format!(
-                "download uscreen.apk from {} then: adb -s {} install -r uscreen.apk",
+                "download blent.apk from {} then: adb -s {} install -r blent.apk",
                 crate::update::RELEASES_PAGE,
                 session.serial
             ));
@@ -785,13 +785,13 @@ async fn check_kwin_input(r: &mut Report) {
 
 /// Whether plugging the cable in is actually enough on its own.
 async fn check_autostart(r: &mut Report) {
-    let enabled = output_of("systemctl", &["--user", "is-enabled", "uscreen.service"]).await;
+    let enabled = output_of("systemctl", &["--user", "is-enabled", "blent.service"]).await;
     let load_state = output_of(
         "systemctl",
         &[
             "--user",
             "show",
-            "uscreen.service",
+            "blent.service",
             "-p",
             "LoadState",
             "--value",
@@ -809,7 +809,7 @@ fn report_autostart(r: &mut Report, load_state: &str, enabled: Option<String>) {
             "start with the desktop",
             "service not installed",
         );
-        r.hint("reinstall the UScreen package or run scripts/install.sh from the release tarball to install uscreen.service");
+        r.hint("reinstall the Blent package or run scripts/install.sh from the release tarball to install blent.service");
         return;
     }
     match enabled {
@@ -822,7 +822,7 @@ fn report_autostart(r: &mut Report, load_state: &str, enabled: Option<String>) {
                 "start with the desktop",
                 "disabled — the daemon must be started by hand",
             );
-            r.hint("systemctl --user enable --now uscreen.service");
+            r.hint("systemctl --user enable --now blent.service");
         }
         None => {}
     }
@@ -899,7 +899,7 @@ fn report_tablet_refresh_rate(r: &mut Report, value: &str) {
         format!("system refresh_rate_mode={value}; effective panel rate not measured")
     };
     r.line(Level::Ok, "tablet refresh setting", &detail);
-    r.hint("UScreen has its own app-only refresh preference (default 60 Hz); Android may choose a different effective display mode.");
+    r.hint("Blent has its own app-only refresh preference (default 60 Hz); Android may choose a different effective display mode.");
 }
 
 async fn check_desktop_colour_profiles(r: &mut Report) {
@@ -933,7 +933,7 @@ fn report_desktop_colour_profiles(
                 "none assigned to the virtual display",
             );
             r.hint(
-                "System Settings → Display → pick the UScreen display → Color Profile. \
+                "System Settings → Display → pick the Blent display → Color Profile. \
                  A generic sRGB profile is the right baseline; a measured one needs a \
                  colorimeter pointed at the tablet.",
             );
@@ -1060,7 +1060,7 @@ fn report_tablet_capacity(r: &mut Report, wanted: u32, cards: u32) {
         );
         r.hint(&format!(
             "for this boot: echo 1 | sudo tee /sys/devices/evdi/add   (repeat {} time(s)); \
-                 for every boot: initial_device_count={} in /etc/modprobe.d/uscreen-evdi.conf",
+                 for every boot: initial_device_count={} in /etc/modprobe.d/blent-evdi.conf",
             wanted - cards,
             wanted
         ));
@@ -1157,7 +1157,7 @@ fn report_configured_bitrate(r: &mut Report, cfg: &FileConfig, on_disk: Option<&
                 cfg.bitrate as f64 / 1000.0
             ),
         );
-        r.hint("rewrite it via uscreen-gui (or the tablet settings) to make the file agree");
+        r.hint("rewrite it via blent-gui (or the tablet settings) to make the file agree");
     } else {
         r.line(
             Level::Ok,
@@ -1188,7 +1188,7 @@ fn report_configured_fps(r: &mut Report, cfg: &FileConfig, on_disk: Option<&File
 }
 
 pub async fn run() -> Result<()> {
-    println!("=== uscreen doctor ===");
+    println!("=== blent doctor ===");
 
     let mut r = Report::new();
     // Loaded once: every load logs a warning when it clamps a stale value, and
@@ -1256,7 +1256,7 @@ mod tests {
     async fn t234_input_diagnostics_follow_desktop_and_requested_devices() {
         const TEST: &str =
             "doctor::tests::t234_input_diagnostics_follow_desktop_and_requested_devices";
-        if let Ok(input) = std::env::var("USCREEN_T234_INPUT") {
+        if let Ok(input) = std::env::var("BLENT_T234_INPUT") {
             let enabled = input == "true";
             let cfg = super::FileConfig {
                 input_touch: enabled,
@@ -1265,7 +1265,7 @@ mod tests {
             };
             let mut report = super::Report::new();
             super::check_osk(&mut report, &cfg).await;
-            let expected: u32 = std::env::var("USCREEN_T234_FAILURES")
+            let expected: u32 = std::env::var("BLENT_T234_FAILURES")
                 .unwrap()
                 .parse()
                 .unwrap();
@@ -1275,7 +1275,7 @@ mod tests {
                 "T234: {:?}",
                 report.messages.borrow()
             );
-            let trace = std::path::PathBuf::from(std::env::var_os("USCREEN_T234_TRACE").unwrap());
+            let trace = std::path::PathBuf::from(std::env::var_os("BLENT_T234_TRACE").unwrap());
             assert_eq!(
                 trace.exists(),
                 expected > 0,
@@ -1317,7 +1317,7 @@ mod tests {
             let path = dir.path().join(tool);
             std::fs::write(
                 &path,
-                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$USCREEN_T234_TRACE\"\nexit 1\n",
+                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$BLENT_T234_TRACE\"\nexit 1\n",
             )
             .unwrap();
             std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -1332,9 +1332,9 @@ mod tests {
             .env("PATH", dir.path())
             .env("XDG_CURRENT_DESKTOP", desktop)
             .env("XDG_SESSION_TYPE", session)
-            .env("USCREEN_T234_INPUT", inputs.to_string())
-            .env("USCREEN_T234_FAILURES", failures.to_string())
-            .env("USCREEN_T234_TRACE", dir.path().join("trace"))
+            .env("BLENT_T234_INPUT", inputs.to_string())
+            .env("BLENT_T234_FAILURES", failures.to_string())
+            .env("BLENT_T234_TRACE", dir.path().join("trace"))
             .output()
             .unwrap();
         assert!(
@@ -1410,7 +1410,7 @@ mod tests {
         let fixture = daemon_fixture::Fixture::new();
         let unrelated = fixture.start(&["start"]);
         let output = std::process::Command::new("/bin/sh")
-            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .args(["-c", "umask 0002; exec \"$@\"", "blent-t436"])
             .arg(std::env::current_exe().unwrap())
             .args(["doctor::tests::t251_doctor_", "--nocapture"])
             .output()
@@ -1421,12 +1421,12 @@ mod tests {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        assert!(uscreen_config::linux::processes::Process::read(unrelated.pid()).is_some());
+        assert!(blent_config::linux::processes::Process::read(unrelated.pid()).is_some());
     }
 
     #[tokio::test]
     async fn t251_doctor_recovers_daemons_without_broad_orphan_matches() {
-        if std::env::var_os("USCREEN_T251_CHILD").is_some() {
+        if std::env::var_os("BLENT_T251_CHILD").is_some() {
             check_t251_report(true).await;
             return;
         }
@@ -1437,7 +1437,7 @@ mod tests {
             "evdi_helper",
             &["--capture-fifo", "/unrelated/capture.fifo"],
         );
-        let fifo = fixture.root.path().join("runtime/uscreen/capture.fifo");
+        let fifo = fixture.root.path().join("runtime/blent/capture.fifo");
         let helper =
             fixture.start_named("evdi_helper", &["--capture-fifo", fifo.to_str().unwrap()]);
         let encoder = fixture.start_named("ffmpeg", &["-i", fifo.to_str().unwrap()]);
@@ -1455,7 +1455,7 @@ mod tests {
             encoder.pid(),
         ] {
             assert!(
-                uscreen_config::linux::processes::Process::read(pid).is_some(),
+                blent_config::linux::processes::Process::read(pid).is_some(),
                 "T251: diagnostics signalled a fixture"
             );
         }
@@ -1463,7 +1463,7 @@ mod tests {
 
     #[tokio::test]
     async fn t251_doctor_ignores_diagnostic_commands_and_unrelated_helpers() {
-        if std::env::var_os("USCREEN_T251_CHILD").is_some() {
+        if std::env::var_os("BLENT_T251_CHILD").is_some() {
             check_t251_report(false).await;
             return;
         }
@@ -1481,7 +1481,7 @@ mod tests {
             "doctor::tests::t251_doctor_ignores_diagnostic_commands_and_unrelated_helpers",
         );
         for pid in [doctor.pid(), status.pid(), unrelated.pid()] {
-            assert!(uscreen_config::linux::processes::Process::read(pid).is_some());
+            assert!(blent_config::linux::processes::Process::read(pid).is_some());
         }
     }
 
@@ -1503,7 +1503,7 @@ mod tests {
         assert_eq!(report.failures, 5);
         let text = report.messages.borrow().join("\n");
         assert!(!text.contains("pkill"), "T251: {text}");
-        assert!(text.contains("uscreen stop reaches validated same-user daemons"));
+        assert!(text.contains("blent stop reaches validated same-user daemons"));
     }
 
     #[test]
@@ -1517,7 +1517,7 @@ mod tests {
         let mut daemon_process = Process::read(daemon.pid()).unwrap();
         let mut helper_process = Process::read(helper.pid()).unwrap();
         assert_eq!(
-            uscreen_config::linux::daemon::from_processes(&[daemon_process.clone()], None),
+            blent_config::linux::daemon::from_processes(&[daemon_process.clone()], None),
             [daemon.pid()]
         );
         assert_eq!(
@@ -1526,7 +1526,7 @@ mod tests {
         );
         daemon_process.uid = daemon_process.uid.wrapping_add(1);
         helper_process.uid = helper_process.uid.wrapping_add(1);
-        assert!(uscreen_config::linux::daemon::from_processes(&[daemon_process], None).is_empty());
+        assert!(blent_config::linux::daemon::from_processes(&[daemon_process], None).is_empty());
         assert!(capture_pids(&[helper_process], CaptureRole::Helper, &fifo).is_empty());
     }
 
@@ -1544,10 +1544,10 @@ mod tests {
             .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
-            .env("USCREEN_T251_CHILD", "1")
-            .env("USCREEN_T251_ROOT", fixture.root.path())
-            .env("USCREEN_T251_DIAGNOSTIC", diagnostic.to_string())
-            .env("USCREEN_T251_DAEMON", daemon.unwrap_or(0).to_string())
+            .env("BLENT_T251_CHILD", "1")
+            .env("BLENT_T251_ROOT", fixture.root.path())
+            .env("BLENT_T251_DIAGNOSTIC", diagnostic.to_string())
+            .env("BLENT_T251_DAEMON", daemon.unwrap_or(0).to_string())
             .env("HOME", fixture.root.path())
             .env("XDG_RUNTIME_DIR", runtime)
             .output()
@@ -1562,7 +1562,7 @@ mod tests {
 
     async fn check_t251_report(running: bool) {
         use super::*;
-        let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T251_ROOT").unwrap());
+        let root = std::path::PathBuf::from(std::env::var_os("BLENT_T251_ROOT").unwrap());
         // Keep real /proc identity and liveness validation; inject only this
         // fixture's process inventory at the production reporting boundary.
         let inventory = processes::same_user_processes()
@@ -1570,8 +1570,8 @@ mod tests {
             .into_iter()
             .filter(|process| process.executable.starts_with(&root))
             .collect::<Vec<_>>();
-        let diagnostic = std::env::var("USCREEN_T251_DIAGNOSTIC").unwrap();
-        let daemon = std::env::var("USCREEN_T251_DAEMON").unwrap();
+        let diagnostic = std::env::var("BLENT_T251_DIAGNOSTIC").unwrap();
+        let daemon = std::env::var("BLENT_T251_DAEMON").unwrap();
         let path = crate::get_pid_path();
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         for stale in [
@@ -1685,7 +1685,7 @@ mod tests {
         );
         let text = report.messages.borrow().join("\n");
         assert!(
-            text.contains("60 Hz") && text.contains("UScreen"),
+            text.contains("60 Hz") && text.contains("Blent"),
             "T440: {text}"
         );
         assert!(
@@ -1793,18 +1793,18 @@ mod tests {
             (
                 "libvpx-vp9",
                 "VP9",
-                "USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=none;av1=sw",
+                "BLENT_CODECS_V2:h264=hw;hevc=hw10;vp9=none;av1=sw",
                 1,
                 false,
             ),
             (
                 "libaom-av1",
                 "AV1",
-                "USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw",
+                "BLENT_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw",
                 0,
                 true,
             ),
-            ("libvpx-vp9", "VP9", "USCREEN_CODECS_V1:hw10", 0, true),
+            ("libvpx-vp9", "VP9", "BLENT_CODECS_V1:hw10", 0, true),
         ] {
             let cfg = FileConfig {
                 encoder: encoder.into(),
@@ -1853,35 +1853,35 @@ mod tests {
             (None, false, 1, 0, "unknown"),
             (Some("video/hevc Main10"), false, 1, 0, "unknown"),
             (
-                Some("data=\"USCREEN_CODECS_V1:none\""),
+                Some("data=\"BLENT_CODECS_V1:none\""),
                 false,
                 0,
                 1,
                 "no HEVC decoder",
             ),
             (
-                Some("data=\"USCREEN_CODECS_V1:sw10\""),
+                Some("data=\"BLENT_CODECS_V1:sw10\""),
                 false,
                 1,
                 0,
                 "software",
             ),
             (
-                Some("data=\"USCREEN_CODECS_V1:hw8\""),
+                Some("data=\"BLENT_CODECS_V1:hw8\""),
                 true,
                 0,
                 1,
                 "Main10 not reported",
             ),
             (
-                Some("data=\"USCREEN_CODECS_V1:hw10\""),
+                Some("data=\"BLENT_CODECS_V1:hw10\""),
                 true,
                 0,
                 0,
                 "hardware HEVC Main10",
             ),
             (
-                Some("data=\"USCREEN_CODECS_V1:unknown10\""),
+                Some("data=\"BLENT_CODECS_V1:unknown10\""),
                 false,
                 1,
                 0,
@@ -1922,8 +1922,8 @@ case "$*" in
   devices) printf 'List of devices attached\nPHONE\tdevice\nTABLET\tdevice\n192.0.2.1:5555\tdevice\nEXTRA\tdevice\n';;
   '-s 192.0.2.1:5555 reverse --list') printf 'USB tcp:8890 tcp:19000\nUSB tcp:8891 tcp:19100\n';;
   '-s EXTRA reverse --list') printf 'USB tcp:8890 tcp:19004\nUSB tcp:8891 tcp:19104\n';;
-  *'pm path io.github.geraldo_netto.uscreen') [ "$2" = TABLET ] && echo package:/app/uscreen.apk;;
-  *'pm list packages io.github.geraldo_netto.uscreen') echo package:io.github.geraldo_netto.uscreen;;
+  *'pm path io.github.geraldo_netto.blent') [ "$2" = TABLET ] && echo package:/app/blent.apk;;
+  *'pm list packages io.github.geraldo_netto.blent') echo package:io.github.geraldo_netto.blent;;
 esac
 exit 0
 "#, log.display())).unwrap();
@@ -2009,7 +2009,7 @@ exit 0
         check_tools_with_helper(
             &mut r,
             &FileConfig::default(),
-            Path::new("/nonexistent-uscreen-test/evdi_helper"),
+            Path::new("/nonexistent-blent-test/evdi_helper"),
         )
         .await;
         assert!(r
@@ -2042,7 +2042,7 @@ exit 0
 
     #[tokio::test]
     async fn t026_colour_queries_target_the_selected_tablet() {
-        let path = std::env::temp_dir().join(format!("uscreen-adb-colour-{}", std::process::id()));
+        let path = std::env::temp_dir().join(format!("blent-adb-colour-{}", std::process::id()));
         std::fs::write(
             &path,
             "#!/bin/sh\n[ \"$1 $2\" = '-s TABLET' ] || exit 1\nprintf '%s' \"$7\"\n",
@@ -2066,10 +2066,10 @@ exit 0
 
     #[test]
     fn t058_packaged_udev_hint_works_outside_a_source_checkout() {
-        let root = std::env::temp_dir().join(format!("uscreen-udev-doctor-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("blent-udev-doctor-{}", std::process::id()));
         std::fs::create_dir_all(root.join("usr/lib/udev/rules.d")).unwrap();
         std::fs::write(
-            root.join("usr/lib/udev/rules.d/60-uscreen-uinput.rules"),
+            root.join("usr/lib/udev/rules.d/60-blent-uinput.rules"),
             "rule",
         )
         .unwrap();

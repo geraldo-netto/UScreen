@@ -1,0 +1,29 @@
+[Unit]
+Description=Blent - USB Second Display Server
+Documentation=https://github.com/geraldo-netto/UScreen
+# Bound to the desktop session rather than to login: the daemon talks to the
+# compositor (to place the virtual output and to map the tablet's touch and pen
+# onto it), so starting before KWin exists would leave it retrying for nothing.
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# T582: fair CPU preference for the complete capture/encode/helper group.
+# The daemon applies the user's High/Normal preference at startup.
+CPUWeight=1000
+# No --edid here on purpose: passing one pins the virtual display to a single
+# baked-in resolution and disables auto-resolution, so the display would stop
+# following the tablet. Without it the daemon generates an EDID at runtime for
+# whatever resolution is configured or reported.
+ExecStart=%h/.local/bin/blent --helper %h/.local/bin/evdi_helper start
+ExecStop=%h/.local/bin/blent stop
+# T268: longer than the CLI cleanup grace, bounded by the GUI action budget.
+TimeoutStopSec=15
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

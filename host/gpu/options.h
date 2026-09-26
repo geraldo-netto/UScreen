@@ -1,5 +1,5 @@
-#ifndef USCREEN_GPU_OPTIONS_H
-#define USCREEN_GPU_OPTIONS_H
+#ifndef BLENT_GPU_OPTIONS_H
+#define BLENT_GPU_OPTIONS_H
 #include <stdint.h>
 #include <stddef.h>
 typedef struct {

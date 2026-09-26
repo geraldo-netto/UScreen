@@ -1,5 +1,5 @@
-#ifndef USCREEN_GPU_H
-#define USCREEN_GPU_H
+#ifndef BLENT_GPU_H
+#define BLENT_GPU_H
 #include <stdint.h>
 #include "options.h"
 #include <X11/Xlib.h>

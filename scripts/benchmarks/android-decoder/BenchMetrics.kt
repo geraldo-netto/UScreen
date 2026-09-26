@@ -1,4 +1,4 @@
-package com.uscreen
+package com.blent
 
 import android.media.MediaCodec
 import java.util.concurrent.atomic.AtomicLong

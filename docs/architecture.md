@@ -250,7 +250,7 @@ budget. A stable callback context outlives the codec, while delayed consumers
 can outlive both. The [packet-storage report](benchmarks/2026-09-17-packet-storage.md)
 describes the ownership tests, fallback and measured stage costs.
 
-`uscreen-config::model` owns the portable settings schema, sanitization and edit
+`blent-config::model` owns the portable settings schema, sanitization and edit
 merging. Its `storage` adapter owns transactional files; `commands` owns bounded
 process execution; `linux` owns Linux process/runtime state. Default features
 retain the existing Linux API, while `--no-default-features` builds policy and
@@ -265,7 +265,7 @@ runtime ACL/lease validation still needs a native Windows runner, and its
 application backend capabilities remain disabled. See the
 [T493 validation report](reviews/2026-09-19-windows-services.md).
 
-The `uscreen` library builds attachment ownership, authentication, control and
+The `blent` library builds attachment ownership, authentication, control and
 video transport, bounded encoded queues, latency accounting and session
 orchestration for every host target. `session::CaptureBackend` supplies capture
 resources and returns owned workers; `input::backend::InputBackend` supplies
@@ -275,18 +275,18 @@ manager and uinput implementation; other platforms must provide their own
 implementations before runtime capabilities can be enabled.
 
 Attachment credentials use the operating system CSPRNG through stock
-`getrandom`, with shared token comparison in `uscreen-config::credentials`.
+`getrandom`, with shared token comparison in `blent-config::credentials`.
 Private token persistence remains a platform responsibility. The video socket's
 best-effort send-buffer hint uses stock `socket2`, preserving the existing
 128 KiB request without Unix file descriptors in the shared transport.
 
-`uscreen-config::diagnostics` separates executable/version evidence from backend
+`blent-config::diagnostics` separates executable/version evidence from backend
 implementation and runtime readiness. Its native probe uses platform discovery
 and bounded command services; Windows CLI and GUI consume the same report.
 The GUI collects versions through its cached background status worker, keeping
 dependency probes out of rendering and retaining explicit unsupported states.
 
-- `uscreen`: daemon, adb monitor, per-tablet sessions, tray and settings state.
+- `blent`: daemon, adb monitor, per-tablet sessions, tray and settings state.
   The Linux `session::Spec` constructs native adapters and delegates to the
   shared library's `session::Spec` for every slot. Preparation exposes settings
   before producers start so the
@@ -306,7 +306,7 @@ dependency probes out of rendering and retaining explicit unsupported states.
   An explicit helper `--card` pin remains strict and never falls back.
 - `ffmpeg`: one per active encoding slot, unless built with the optional
   in-process encoder.
-- `uscreen-gui`: host configuration and start/stop controls. Apply & Restart
+- `blent-gui`: host configuration and start/stop controls. Apply & Restart
   runs one background save and restarts only after successful persistence.
   Controls remain editable during a save; completion preserves those newer
   edits and merges unrelated disk changes into the saved baseline. Save,
@@ -382,7 +382,7 @@ inactive unit. Doctor uses the same daemon validation and one read-only process
 inventory. Helpers and encoders are associated by same-user ownership, executable
 identity and the configured slot's exact FIFO argument; unrelated capture
 processes and concurrent diagnostic commands do not count as orphans. Its
-remediation uses validated UScreen stop/start operations rather than broad
+remediation uses validated Blent stop/start operations rather than broad
 process-name signals.
 
 GUI status owns a cancellable poll worker. It revalidates a cached daemon
@@ -556,7 +556,7 @@ orientation sensor. Focus regain still rereads the saved window preferences;
 backgrounding stops streaming and unregisters the sensor. Preferences affect
 only this app's window, preserving other apps' system display settings.
 
-Compose rendering (`UScreenUi.kt`) observes `StreamPresentation` and immutable
+Compose rendering (`BlentUi.kt`) observes `StreamPresentation` and immutable
 `SettingsValues`; it emits `SettingsEvent` commands instead of accessing Prefs,
 VideoReceiver or TouchCapture. The settings sheet composes focused display,
 orientation, mode, stream and update sections. Draft bitrate/FPS changes still
@@ -710,7 +710,7 @@ Changed button state is synchronized after tool entry and before tip-down,
 restoring a held modifier across Android's hover-to-contact transition.
 
 Android [hover events](https://developer.android.com/reference/android/view/MotionEvent#ACTION_HOVER_EXIT)
-refer to a view/window, not an unambiguous hardware proximity signal. UScreen
+refer to a view/window, not an unambiguous hardware proximity signal. Blent
 ends its virtual tool proximity on hover-exit, including view-boundary exits,
 and restores it from subsequent down/hover samples. It does not infer continued
 physical proximity or delay release after a real exit. A reconnect releases
@@ -742,10 +742,10 @@ KWin keyboard suppression requires a valid restore mode (0, 1 or 2). A saved
 mode from an interrupted run takes precedence over the current desktop value.
 New state is written and synchronized in a temporary file, published without
 replacing an existing backup, and followed by a directory sync before suppression.
-An empty, invalid, unreadable or nonregular `~/.local/share/uscreen/osk-restore`
+An empty, invalid, unreadable or nonregular `~/.local/share/blent/osk-restore`
 file leaves the live keyboard unchanged and is retained for manual repair.
 Failed D-Bus restoration retains valid state for retry. These rules also apply
-when the KWin mode interface is absent: UScreen leaves the keyboard unchanged.
+when the KWin mode interface is absent: Blent leaves the keyboard unchanged.
 
 Capture keeps runtime-directory and FIFO paths as native `PathBuf`/`OsString`
 values through creation, helper and encoder arguments, in-process reads,

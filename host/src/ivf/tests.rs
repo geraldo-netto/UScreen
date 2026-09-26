@@ -30,7 +30,7 @@ async fn t497_ivf_configuration_is_absent_until_validated_and_survives_frames() 
     let (_, frames) = parser.read_from(&mut input).await.unwrap();
     let config = parser.codec_config().unwrap();
     assert_eq!(Some(&config), frames[0].codec_config.as_ref());
-    assert_eq!(config.as_ref(), b"USC1\x03\0\0\0\x40\0\0\0\x40");
+    assert_eq!(config.as_ref(), b"BLN1\x03\0\0\0\x40\0\0\0\x40");
     parser.read_from(&mut input).await.unwrap();
     assert_eq!(parser.codec_config().as_ref(), Some(&config));
 }
@@ -67,7 +67,7 @@ async fn packets_for(codec: Codec, data: &[u8]) -> Result<Vec<VideoPacket>> {
 
 #[tokio::test]
 async fn t433_stock_av1_preserves_decode_hashes_and_late_join_points() {
-    let profile = uscreen_config::encoding::Profile::new("libaom-av1", 30, 20000, 18).unwrap();
+    let profile = blent_config::encoding::Profile::new("libaom-av1", 30, 20000, 18).unwrap();
     let encoded = std::process::Command::new("ffmpeg")
         .args([
             "-hide_banner",
@@ -104,7 +104,7 @@ async fn t433_stock_av1_preserves_decode_hashes_and_late_join_points() {
     );
     assert_eq!(
         frames[0].codec_config.as_ref().unwrap().as_ref(),
-        b"USC1\x04\0\0\0\x40\0\0\0\x40"
+        b"BLN1\x04\0\0\0\x40\0\0\0\x40"
     );
     let reference = frame_hashes(&encoded.stdout);
     assert_eq!(reference.len(), 6);
@@ -164,7 +164,7 @@ async fn t432_ivf_preserves_packet_flags_configuration_and_retirement() {
     assert_eq!(packets[1].seq, packets[0].seq + 1);
     assert_eq!(
         packets[0].codec_config.as_ref().unwrap().as_ref(),
-        b"USC1\x03\0\0\0\x40\0\0\0\x40"
+        b"BLN1\x03\0\0\0\x40\0\0\0\x40"
     );
     assert!(!packets[0]
         .generation

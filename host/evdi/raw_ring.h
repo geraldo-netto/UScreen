@@ -1,5 +1,5 @@
-#ifndef USCREEN_RAW_RING_H
-#define USCREEN_RAW_RING_H
+#ifndef BLENT_RAW_RING_H
+#define BLENT_RAW_RING_H
 #include <stdint.h>
 #include <stddef.h>
 #include <stdatomic.h>

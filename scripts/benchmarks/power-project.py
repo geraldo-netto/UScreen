@@ -20,8 +20,8 @@ def prepare(directory, image):
     assets.mkdir()
     for filename in ['build.gradle.kts', 'settings.gradle.kts', 'gradle.properties']:
         shutil.copy2(shared.ROOT / 'android' / filename, directory / filename)
-    (directory / 'app/build.gradle.kts').write_text(shared.BUILD.replace('PACKAGE', 'com.uscreen.powercontrol'))
-    (directory / 'app/src/main/AndroidManifest.xml').write_text(shared.MANIFEST.replace('UScreen decoder replay', 'UScreen power control'))
+    (directory / 'app/build.gradle.kts').write_text(shared.BUILD.replace('PACKAGE', 'com.blent.powercontrol'))
+    (directory / 'app/src/main/AndroidManifest.xml').write_text(shared.MANIFEST.replace('Blent decoder replay', 'Blent power control'))
     shutil.copy2(Path(__file__).with_name('android-power') / 'MainActivity.kt', source / 'MainActivity.kt')
     shutil.copy2(image, assets / 'static.png')
     paths = [p for p in directory.rglob('*') if p.is_file()]

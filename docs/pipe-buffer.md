@@ -1,6 +1,6 @@
 # Linux capture pipe buffer
 
-Open **UScreen → Video → Capture pipe buffer** on Linux. Choose **1, 2, 4 or
+Open **Blent → Video → Capture pipe buffer** on Linux. Choose **1, 2, 4 or
 8 MiB** and click **Apply**. This is the raw-video buffer between the Linux
 capture helper and FFmpeg, not Android memory or a total application RAM limit.
 The setting has one owner and is deliberately absent from Android settings.
@@ -11,7 +11,7 @@ each tablet. A saved request is not proof that Linux granted that much space.
 Inactive capture shows “waiting for capture”; the GUI reads helper reports and
 never opens the capture pipe.
 
-A pipe-only edit applies to the running helper without restarting UScreen,
+A pipe-only edit applies to the running helper without restarting Blent,
 FFmpeg or the virtual display. The helper checks for updates approximately once
 per second, between complete frame writes, and retries a refused request. A
 shrink can remain pending while queued bytes occupy more space than the requested
@@ -29,8 +29,8 @@ cat /proc/sys/fs/pipe-max-size
 The value is bytes: **1048576 = 1 MiB**, **8388608 = 8 MiB**. If the existing
 value is already 8388608 or higher, do not lower it. This ceiling applies to
 unprivileged processes across the host, including applications other than
-UScreen. Raising it permits larger requests; it does not immediately allocate
-8 MiB to every pipe or select 8 MiB in UScreen.
+Blent. Raising it permits larger requests; it does not immediately allocate
+8 MiB to every pipe or select 8 MiB in Blent.
 
 To raise a smaller ceiling until reboot, run in a terminal:
 
@@ -38,7 +38,7 @@ To raise a smaller ceiling until reboot, run in a terminal:
 sudo sysctl -w fs.pipe-max-size=8388608
 ```
 
-Then select the desired capacity in UScreen and **Apply**. If that request was
+Then select the desired capacity in Blent and **Apply**. If that request was
 already saved, the active helper retries it automatically. Confirm the
 **effective capacity** in the GUI; no display restart is required.
 
@@ -46,14 +46,14 @@ For persistence on distributions that load `/etc/sysctl.d` during boot, create
 this dedicated file (inspect it first if it already exists):
 
 ```sh
-printf 'fs.pipe-max-size = 8388608\n' | sudo tee /etc/sysctl.d/90-uscreen-pipe.conf
-sudo sysctl -p /etc/sysctl.d/90-uscreen-pipe.conf
+printf 'fs.pipe-max-size = 8388608\n' | sudo tee /etc/sysctl.d/90-blent-pipe.conf
+sudo sysctl -p /etc/sysctl.d/90-blent-pipe.conf
 ```
 
 The second command loads only this file. Other sysctl files can override its
 value at boot; check the live `/proc` value again after reboot. On distributions
 with a different boot-time sysctl mechanism, use that mechanism to load this
-setting. UScreen does not require systemd for the runtime resize and does not
+setting. Blent does not require systemd for the runtime resize and does not
 run these privileged commands itself.
 
 Linux also enforces aggregate per-user pipe-memory limits. An increase may still
@@ -67,7 +67,7 @@ getconf PAGESIZE
 
 Those two limits are in pages, not bytes. Zero denotes no corresponding limit.
 Other applications consume the same user's allowance. A new pipe first attempts the existing 1 MiB baseline, then the selected size.
-UScreen keeps streaming with the capacity already granted; its helper log records requested/effective
+Blent keeps streaming with the capacity already granted; its helper log records requested/effective
 bytes and a resize error number when the result changes. It does not obtain
 extra capabilities or change these system limits automatically.
 
@@ -79,12 +79,12 @@ for the per-user accounting rules.
 
 ## Undo
 
-Choose **1 MiB** in UScreen and **Apply** first, then wait for its effective
+Choose **1 MiB** in Blent and **Apply** first, then wait for its effective
 capacity to drop. Remove the dedicated persistent file only if you created it
 for this purpose:
 
 ```sh
-sudo rm /etc/sysctl.d/90-uscreen-pipe.conf
+sudo rm /etc/sysctl.d/90-blent-pipe.conf
 ```
 
 Restore the original ceiling you recorded earlier. For example, if it was

@@ -23,7 +23,7 @@ pub(super) async fn terminate(child: &mut Child, what: &str) {
 }
 
 pub(super) async fn retire_orphan_capture(path: &Path) -> Result<()> {
-    use uscreen_config::linux::processes;
+    use blent_config::linux::processes;
     let selected: Vec<_> = processes::same_user_processes()?
         .into_iter()
         .filter(|process| process.capture_role(path).is_some())

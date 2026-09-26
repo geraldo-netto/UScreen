@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
@@ -16,7 +16,7 @@ object CodecInventory {
                 rows.put(entry(info, mime))
             }
         }
-        println("USCREEN_INVENTORY_V1:" + JSONObject().put("fingerprint", Build.FINGERPRINT)
+        println("BLENT_INVENTORY_V1:" + JSONObject().put("fingerprint", Build.FINGERPRINT)
             .put("sdk", Build.VERSION.SDK_INT).put("abis", JSONArray(Build.SUPPORTED_ABIS.toList())).put("decoders", rows))
     }
     private fun entry(info: MediaCodecInfo, mime: String): JSONObject {

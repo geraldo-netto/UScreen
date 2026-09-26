@@ -47,5 +47,5 @@ pub struct Selected {
     pub encoder: String,
     pub reason: String,
     pub verified: bool,
-    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    pub decoder: Option<blent_config::negotiation::DecoderChoice>,
 }

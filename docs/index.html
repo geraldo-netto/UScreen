@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UScreen for Linux: Android Tablet as a USB Second Monitor</title>
+<title>Blent for Linux: Android Tablet as a USB Second Monitor</title>
 <meta name="description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
 <!-- GitHub Pages deployment is not verified; use the fork repository as canonical. -->
 <link rel="canonical" href="https://github.com/geraldo-netto/UScreen">
 <meta name="theme-color" content="#141311">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="UScreen for Linux">
-<meta property="og:title" content="UScreen for Linux: Android Tablet as a USB Second Monitor">
+<meta property="og:site_name" content="Blent for Linux">
+<meta property="og:title" content="Blent for Linux: Android Tablet as a USB Second Monitor">
 <meta property="og:description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
 <meta property="og:url" content="https://github.com/geraldo-netto/UScreen">
-<!-- og:image / twitter:image: replace with docs/assets/uscreen-social.png (1280×640) once a real photo of the tablet running UScreen exists. -->
+<!-- og:image / twitter:image: replace with docs/assets/blent-social.png (1280×640) once a real photo of the tablet running Blent exists. -->
 <meta property="og:image" content="https://opengraph.githubassets.com/1/geraldo-netto/UScreen">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="UScreen for Linux: Android Tablet as a USB Second Monitor">
+<meta name="twitter:title" content="Blent for Linux: Android Tablet as a USB Second Monitor">
 <meta name="twitter:description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
 <meta name="twitter:image" content="https://opengraph.githubassets.com/1/geraldo-netto/UScreen">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,8 +26,8 @@
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "UScreen for Linux",
-  "alternateName": "UScreen",
+  "name": "Blent for Linux",
+  "alternateName": "Blent",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Linux, Android 8.1+",
   "softwareVersion": "1.2.3",
@@ -62,17 +62,17 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "Is UScreen an open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "UScreen for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay supports Windows hosts and Android clients; its official FAQ says no Linux or macOS port is planned."}},
-    {"@type": "Question", "name": "Can an Android tablet be used as a real second monitor on Linux?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. UScreen creates a virtual display through the EVDI kernel module, so the tablet appears in the display settings like any monitor. It extends the desktop rather than mirroring it."}},
-    {"@type": "Question", "name": "Does UScreen require USB tethering or Wi-Fi?", "acceptedAnswer": {"@type": "Answer", "text": "No. It uses the adb connection provided by USB debugging over a normal data-capable USB cable; USB debugging must be enabled on the tablet, USB tethering is not needed. Wi-Fi is optional; historical tests had longer tail delays."}},
-    {"@type": "Question", "name": "Does UScreen support Samsung S Pen pressure and tilt?", "acceptedAnswer": {"@type": "Answer", "text": "Yes: pressure, tilt, the eraser end and the stylus button are forwarded to Linux as a graphics-tablet device, so Krita, GIMP and Blender see a real tablet."}},
-    {"@type": "Question", "name": "Does UScreen work on Bazzite and KDE Wayland?", "acceptedAnswer": {"@type": "Answer", "text": "That is the historical upstream reference setup. KDE Plasma on Wayland gets automatic display placement, input mapping and on-screen keyboard suppression. X11 desktops get automatic input mapping with xinput and xrandr; place outputs in desktop settings. Other Wayland desktops depend on compositor facilities and manual mapping; see known limitations."}},
-    {"@type": "Question", "name": "Does UScreen require a dummy HDMI plug?", "acceptedAnswer": {"@type": "Answer", "text": "No. The virtual display is created in software by the EVDI kernel module."}},
-    {"@type": "Question", "name": "Can I change brightness and refresh rate?", "acceptedAnswer": {"@type": "Answer", "text": "The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect UScreen only. Other apps retain normal settings; Android may override the requested refresh mode. Stream FPS is separate."}},
+    {"@type": "Question", "name": "Is Blent an open-source SuperDisplay alternative for Linux?", "acceptedAnswer": {"@type": "Answer", "text": "Blent for Linux turns an Android tablet into a real extended display over a USB cable, with S Pen pressure and tilt, on a Linux host. SuperDisplay supports Windows hosts and Android clients; its official FAQ says no Linux or macOS port is planned."}},
+    {"@type": "Question", "name": "Can an Android tablet be used as a real second monitor on Linux?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Blent creates a virtual display through the EVDI kernel module, so the tablet appears in the display settings like any monitor. It extends the desktop rather than mirroring it."}},
+    {"@type": "Question", "name": "Does Blent require USB tethering or Wi-Fi?", "acceptedAnswer": {"@type": "Answer", "text": "No. It uses the adb connection provided by USB debugging over a normal data-capable USB cable; USB debugging must be enabled on the tablet, USB tethering is not needed. Wi-Fi is optional; historical tests had longer tail delays."}},
+    {"@type": "Question", "name": "Does Blent support Samsung S Pen pressure and tilt?", "acceptedAnswer": {"@type": "Answer", "text": "Yes: pressure, tilt, the eraser end and the stylus button are forwarded to Linux as a graphics-tablet device, so Krita, GIMP and Blender see a real tablet."}},
+    {"@type": "Question", "name": "Does Blent work on Bazzite and KDE Wayland?", "acceptedAnswer": {"@type": "Answer", "text": "That is the historical upstream reference setup. KDE Plasma on Wayland gets automatic display placement, input mapping and on-screen keyboard suppression. X11 desktops get automatic input mapping with xinput and xrandr; place outputs in desktop settings. Other Wayland desktops depend on compositor facilities and manual mapping; see known limitations."}},
+    {"@type": "Question", "name": "Does Blent require a dummy HDMI plug?", "acceptedAnswer": {"@type": "Answer", "text": "No. The virtual display is created in software by the EVDI kernel module."}},
+    {"@type": "Question", "name": "Can I change brightness and refresh rate?", "acceptedAnswer": {"@type": "Answer", "text": "The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect Blent only. Other apps retain normal settings; Android may override the requested refresh mode. Stream FPS is separate."}},
     {"@type": "Question", "name": "What Android versions are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Android 8.1/API 27 and newer; the device decoder must support the selected codec, profile, resolution and frame rate."}},
     {"@type": "Question", "name": "Is screen or input data sent to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release on GitHub, which can be turned off."}},
-    {"@type": "Question", "name": "How is UScreen different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse."}},
-    {"@type": "Question", "name": "How do I uninstall UScreen completely?", "acceptedAnswer": {"@type": "Answer", "text": "Follow SECURITY.md for your installation method, custom paths and residual system state. Package removal does not necessarily remove dependencies or settings."}}
+    {"@type": "Question", "name": "How is Blent different from Weylus?", "acceptedAnswer": {"@type": "Answer", "text": "Weylus turns the tablet's browser into an input device and can show the screen in it; a virtual display must be set up separately. Blent creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse."}},
+    {"@type": "Question", "name": "How do I uninstall Blent completely?", "acceptedAnswer": {"@type": "Answer", "text": "Follow SECURITY.md for your installation method, custom paths and residual system state. Package removal does not necessarily remove dependencies or settings."}}
   ]
 }
 </script>
@@ -240,7 +240,7 @@
 
 <a class="skip" href="#main">Skip to content</a>
 <header class="rail">
-  <div class="brand">UScreen <small>for Linux</small></div>
+  <div class="brand">Blent <small>for Linux</small></div>
   <nav>
     <a href="#install">Install</a>
     <a href="#numbers">Numbers</a>
@@ -255,7 +255,7 @@
   <div>
     <p class="kicker">Open-source SuperDisplay alternative for Linux</p>
     <h1>Your Android tablet, as a <em>real</em> second monitor. Over one USB cable.</h1>
-    <p class="lead">UScreen creates an extended display on the Linux side, streams it to the tablet with the selected encoder, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
+    <p class="lead">Blent creates an extended display on the Linux side, streams it to the tablet with the selected encoder, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
     <div class="cta">
       <a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/development.md#building-from-source">Build from source</a>
       <a class="btn" href="#install">Install in three steps</a>
@@ -263,7 +263,7 @@
     </div>
   </div>
 
-  <!-- Hero image: when docs/assets/uscreen-hero.jpg (a real photo of the tablet running UScreen, 1600×1000) exists, put it here as <img> and keep the diagram as a fallback below it. -->
+  <!-- Hero image: when docs/assets/blent-hero.jpg (a real photo of the tablet running Blent, 1600×1000) exists, put it here as <img> and keep the diagram as a fallback below it. -->
   <figure class="topology">
     <svg viewBox="0 0 560 340" role="img" aria-labelledby="topo-t topo-d" xmlns="http://www.w3.org/2000/svg">
       <title id="topo-t">A laptop's desktop extended onto a tablet over a USB cable</title>
@@ -327,7 +327,7 @@
 <section id="why">
   <div class="sec-head">
     <h2>Not a mirror.<br>A monitor.</h2>
-    <p>UScreen creates a virtual output through EVDI so the desktop can extend onto the tablet. Successful attachment depends on the kernel module, compositor and chosen display mode.</p>
+    <p>Blent creates a virtual output through EVDI so the desktop can extend onto the tablet. Successful attachment depends on the kernel module, compositor and chosen display mode.</p>
   </div>
   <div class="facts">
     <article><h3>Extended display through EVDI</h3><p>A virtual output with the tablet's own resolution and physical size. It appears in Display settings; you drag windows onto it; KDE places it next to your real screens for you.</p></article>
@@ -348,16 +348,16 @@
   <table>
     <thead><tr><th>File</th><th>Distribution</th><th>Command</th></tr></thead>
     <tbody>
-      <tr><td><code>uscreen-1.2.3-x86_64.AppImage</code></td><td>Linux x86-64, glibc 2.36+</td><td><a href="appimage-plan.md">Launch, extraction and user installation</a></td></tr>
-      <tr><td><code>uscreen-1.2.3-1.x86_64.rpm</code></td><td>openSUSE · Fedora (RPM Fusion first)</td><td><code>zypper install ./uscreen-*.rpm</code> · <code>dnf install --allowerasing ./uscreen-*.rpm</code></td></tr>
-      <tr><td><code>uscreen-1.2.3-PKGBUILD.tar.gz</code></td><td>Arch, Manjaro, EndeavourOS, CachyOS</td><td>install AUR <code>evdi-dkms</code> first, then <code>makepkg -si</code></td></tr>
-      <tr><td><code>uscreen-1.2.3-linux-x86_64.tar.gz</code></td><td>compatible Linux x86-64/glibc systems</td><td><code>./scripts/install.sh</code></td></tr>
-      <tr><td><code>uscreen.apk</code></td><td>the tablet</td><td>install, enable USB debugging</td></tr>
+      <tr><td><code>blent-1.2.3-x86_64.AppImage</code></td><td>Linux x86-64, glibc 2.36+</td><td><a href="appimage-plan.md">Launch, extraction and user installation</a></td></tr>
+      <tr><td><code>blent-1.2.3-1.x86_64.rpm</code></td><td>openSUSE · Fedora (RPM Fusion first)</td><td><code>zypper install ./blent-*.rpm</code> · <code>dnf install --allowerasing ./blent-*.rpm</code></td></tr>
+      <tr><td><code>blent-1.2.3-PKGBUILD.tar.gz</code></td><td>Arch, Manjaro, EndeavourOS, CachyOS</td><td>install AUR <code>evdi-dkms</code> first, then <code>makepkg -si</code></td></tr>
+      <tr><td><code>blent-1.2.3-linux-x86_64.tar.gz</code></td><td>compatible Linux x86-64/glibc systems</td><td><code>./scripts/install.sh</code></td></tr>
+      <tr><td><code>blent.apk</code></td><td>the tablet</td><td>install, enable USB debugging</td></tr>
     </tbody>
   </table>
   </div>
   <div class="steps" style="margin-top:40px">
-    <div><h3>Start the daemon</h3><p>Enable <strong>Start UScreen with the desktop</strong> in the GUI for automatic login startup, including Cinnamon. The full installer attempts to enable autostart but does not start the service. Check the installation guide and live-module reload limitation before setup.</p></div>
+    <div><h3>Start the daemon</h3><p>Enable <strong>Start Blent with the desktop</strong> in the GUI for automatic login startup, including Cinnamon. The full installer attempts to enable autostart but does not start the service. Check the installation guide and live-module reload limitation before setup.</p></div>
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
     <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Input mapping depends on the desktop and tools; check the compatibility guide. Graphics-tablet mode targets a host screen; the current status-message mismatch can leave its reconnect overlay visible.</p></div>
   </div>
@@ -381,8 +381,8 @@
   </table>
   </div>
   <div class="log" style="margin-top:28px" aria-label="Excerpt from the daemon log">
-    <b>uscreen::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
-    <b>uscreen::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
+    <b>blent::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
+    <b>blent::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
   </div>
   <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt preserves historical output: “encode→display” includes the return acknowledgement. The legacy “wire ~6.2 ms” subtracts independent medians and is an invalid decomposition, not a measurement of transport or queueing; current logs omit it. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
 </section>
@@ -396,7 +396,7 @@
   <table>
     <thead><tr><th>Project</th><th>Linux host</th><th>Display setup</th><th>Android connection</th></tr></thead>
     <tbody>
-      <tr><td>UScreen</td><td>yes</td><td>EVDI virtual output; see known limitations</td><td>native app, adb over USB; optional Wi-Fi</td></tr>
+      <tr><td>Blent</td><td>yes</td><td>EVDI virtual output; see known limitations</td><td>native app, adb over USB; optional Wi-Fi</td></tr>
       <tr><td><a href="https://superdisplay.app/help/">SuperDisplay</a></td><td>no; Windows host</td><td>virtual extended display</td><td>native app, USB or Wi-Fi</td></tr>
       <tr><td><a href="https://github.com/H-M-H/Weylus#readme">Weylus</a></td><td>yes</td><td>capture a screen/window; configure a separate output for extension</td><td>browser, network or adb reverse</td></tr>
       <tr><td><a href="https://docs.lizardbyte.dev/projects/sunshine/latest/">Sunshine</a> + <a href="https://github.com/moonlight-stream/moonlight-android">Moonlight</a></td><td>yes</td><td>stream a host display; provisioning depends on host setup</td><td>native client, network</td></tr>
@@ -404,7 +404,7 @@
     </tbody>
   </table>
   </div>
-  <p>UScreen supports available NVENC/VAAPI hardware encoders and libx264, libvpx VP9 and libaom AV1 software encoders through stock FFmpeg, subject to tablet compatibility. Consult each project's documentation for current encoder, stylus and licensing details.</p>
+  <p>Blent supports available NVENC/VAAPI hardware encoders and libx264, libvpx VP9 and libaom AV1 software encoders through stock FFmpeg, subject to tablet compatibility. Consult each project's documentation for current encoder, stylus and licensing details.</p>
 </section>
 
 <section id="faq">
@@ -417,10 +417,10 @@
   <details><summary>Does S Pen pressure and tilt work?</summary><p>Yes, plus the eraser end and the stylus button, as a proper tablet device.</p></details>
   <details><summary>Does it work on Bazzite and KDE Wayland?</summary><p>That is the historical upstream reference setup. X11 desktops get automatic input mapping with <code>xinput</code> and <code>xrandr</code>; place outputs in desktop settings. Other Wayland desktops depend on compositor facilities and manual mapping; see known limitations.</p></details>
   <details><summary>Does it need a dummy HDMI plug?</summary><p>No. The virtual display is created in software by EVDI.</p></details>
-  <details><summary>Can I change brightness and refresh rate?</summary><p>The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect UScreen only; other apps retain normal system settings. Choose System default for refresh or a preferred rate; Android may override it. Stream FPS is separate.</p></details>
+  <details><summary>Can I change brightness and refresh rate?</summary><p>The gear menu defaults to 50% brightness and a 60 Hz display preference. Both persist and affect Blent only; other apps retain normal system settings. Choose System default for refresh or a preferred rate; Android may override it. Stream FPS is separate.</p></details>
   <details><summary>Which Android versions?</summary><p>8.1/API 27 and newer; the decoder must also support the selected stream.</p></details>
   <details><summary>Is anything sent to the cloud?</summary><p>No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release tag on GitHub, with <code>check_updates = false</code> disabling host checks and the app’s separate switch disabling tablet checks.</p></details>
-  <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. UScreen creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
+  <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. Blent creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
   <details><summary>How do I uninstall it completely?</summary><p>Follow the instructions for your installation method, custom paths and residual system state in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
 </section>
 
@@ -429,13 +429,13 @@
     <div><dt>Fork maintained by</dt><dd><a href="https://github.com/geraldo-netto">geraldo-netto</a> · original author <a href="https://github.com/majmichu1">majmichu1</a></dd></div>
     <div><dt>Source version</dt><dd><span id="source-version">1.2.3</span> (unreleased fork; identify builds by commit) · <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md">changelog</a></dd></div>
     <div><dt>Last updated</dt><dd><time datetime="2026-09-17">2026-09-17</time></dd></div>
-    <div><dt>Upstream verified on</dt><dd>Bazzite KDE Wayland (upstream maintainer) · Arch Linux KDE Wayland, installer and PKGBUILD (<a href="https://github.com/majmichu1/UScreen/issues/2#issuecomment-5478643599">report 1</a>, <a href="https://github.com/majmichu1/UScreen/issues/3#issuecomment-5494961262">report 2</a>) · Fedora 44 KDE with a Tab S9 FE (<a href="https://github.com/majmichu1/UScreen/discussions/7">report 3</a>)</dd></div>
+    <div><dt>Upstream verified on</dt><dd>Bazzite KDE Wayland (upstream maintainer) · Arch Linux KDE Wayland, installer and PKGBUILD (report 1 (historical upstream), report 2 (historical upstream)) · Fedora 44 KDE with a Tab S9 FE (report 3 (historical upstream))</dd></div>
   </dl>
 </section>
 </main>
 
 <footer>
-  <span>UScreen for Linux · MIT · not affiliated with Uscreen.tv, SuperDisplay or DisplayLink</span>
+  <span>Blent for Linux · MIT · not affiliated with Blent.tv, SuperDisplay or DisplayLink</span>
   <span>
     <a href="https://github.com/geraldo-netto/UScreen">source</a> ·
     <a href="https://github.com/geraldo-netto/UScreen/issues">issues</a> ·

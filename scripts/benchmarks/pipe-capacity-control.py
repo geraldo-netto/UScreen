@@ -44,7 +44,7 @@ def main():
     args = parser.parse_args()
     if args.trials < 1:
         parser.error('trials must be positive')
-    with tempfile.TemporaryDirectory(prefix='uscreen-pipe-control-') as directory:
+    with tempfile.TemporaryDirectory(prefix='blent-pipe-control-') as directory:
         run(args, Path(directory) / 'transport')
 
 

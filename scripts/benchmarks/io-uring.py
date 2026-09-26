@@ -60,7 +60,7 @@ def main():
     args = parser.parse_args()
     if bool(args.include) != bool(args.library) or args.trials < 1:
         parser.error('include/library must be supplied together; trials must be positive')
-    with tempfile.TemporaryDirectory(prefix='uscreen-uring-') as directory:
+    with tempfile.TemporaryDirectory(prefix='blent-uring-') as directory:
         result = run(args, Path(directory) / 'transport')
     args.output.write_text(json.dumps(result, indent=2) + '\n')
 

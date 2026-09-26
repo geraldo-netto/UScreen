@@ -41,7 +41,7 @@ fn t492_sparse_capture_lease_preserves_fresh_frame_wakeup() {
 impl Harness {
     fn build(case: &str) -> Self {
         let dir =
-            std::env::temp_dir().join(format!("uscreen-evdi-test-{}-{case}", std::process::id()));
+            std::env::temp_dir().join(format!("blent-evdi-test-{}-{case}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let harness = Self(dir);
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/evdi_helper_test.c");

@@ -12,7 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / 'docs/benchmarks/2026-09-17-input-batching/baseline-event-writer.rs.txt'
 MANIFEST = '''[package]
-name = "uscreen-input-batching-replay"
+name = "blent-input-batching-replay"
 version = "0.0.0"
 edition = "2021"
 [features]
@@ -35,7 +35,7 @@ def build(root, variant):
     if variant == 'baseline':
         command += ['--features', 'baseline']
     subprocess.run(command, cwd=folder, env=dict(os.environ, CARGO_TARGET_DIR=str(folder / 'target')), check=True)
-    binary = folder / 'target/release/uscreen-input-batching-replay'
+    binary = folder / 'target/release/blent-input-batching-replay'
     return binary, hashlib.sha256(source.read_bytes()).hexdigest()
 
 
@@ -63,7 +63,7 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.rounds <= 100000:
         parser.error('rounds must be in 1..100000')
-    with tempfile.TemporaryDirectory(prefix='uscreen-input-batching-') as directory:
+    with tempfile.TemporaryDirectory(prefix='blent-input-batching-') as directory:
         result = run(Path(directory), args.rounds)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
 

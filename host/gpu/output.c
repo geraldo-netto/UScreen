@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 void gpu_emit_header(const gpu_options *options) {
-    printf("#software: UScreen GPU capture, stock FFmpeg %s\n", av_version_info());
+    printf("#software: Blent GPU capture, stock FFmpeg %s\n", av_version_info());
     printf("#tb 0: 1/1000000\n#media_type 0: video\n#codec_id 0: h264\n");
     printf("#dimensions 0: %ux%u\n", options->width, options->height);
     gpu_require(fflush(stdout) == 0, "encoded stream header");

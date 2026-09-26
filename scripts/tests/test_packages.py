@@ -13,7 +13,7 @@ class PackageTest(unittest.TestCase):
     def test_t428_portable_build_rejects_unverified_evdi_cache(self):
         from test_notices import NoticeTest
         for mode in ['wrong', 'dirty', 'probe-error', 'missing', 'valid']:
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-evdi-cache-') as tmp:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='blent-evdi-cache-') as tmp:
                 root = Path(tmp)
                 NoticeTest().copy_sources(root)
                 self.portable_fixture(root)
@@ -27,10 +27,10 @@ if [ "$1" = clone ]; then
 fi
 case " $* " in
     *" rev-parse HEAD "*)
-        if [ "$USCREEN_TEST_CACHE" = wrong ]; then echo wrong; else echo "$USCREEN_TEST_REVISION"; fi ;;
+        if [ "$BLENT_TEST_CACHE" = wrong ]; then echo wrong; else echo "$BLENT_TEST_REVISION"; fi ;;
     *" status "*)
-        [ "$USCREEN_TEST_CACHE" != probe-error ] || exit 42
-        [ "$USCREEN_TEST_CACHE" != dirty ] || echo ' M library/evdi_lib.c' ;;
+        [ "$BLENT_TEST_CACHE" != probe-error ] || exit 42
+        [ "$BLENT_TEST_CACHE" != dirty ] || echo ' M library/evdi_lib.c' ;;
     *) exit 1 ;;
 esac
 exit 0
@@ -42,7 +42,7 @@ exit 0
                 import re
                 revision = re.search(r'^EVDI_COMMIT="([0-9a-f]+)"$', build, re.M)
                 env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', HOME=str(root / 'home'),
-                           USCREEN_TEST_CACHE=mode, USCREEN_TEST_REVISION=revision[1] if revision else 'expected')
+                           BLENT_TEST_CACHE=mode, BLENT_TEST_REVISION=revision[1] if revision else 'expected')
                 result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root, env=env,
                                         capture_output=True, text=True, timeout=20)
                 if mode in ['wrong', 'dirty', 'probe-error']:
@@ -55,10 +55,10 @@ exit 0
 
     def test_t101_container_and_rpmbuild_failures_reject_stale_assets(self):
         for mode in ['container', 'appimage', 'rpm', 'success']:
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-packages-') as tmp:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='blent-packages-') as tmp:
                 root = Path(tmp)
                 assets = self.create_fixture(root)
-                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_TEST_MODE=mode)
+                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', BLENT_TEST_MODE=mode)
                 result = subprocess.run(['bash', 'packaging/build-packages.sh'], cwd=root, env=env, capture_output=True, text=True)
                 if mode == 'success':
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -72,14 +72,14 @@ exit 0
 
     def test_t235_checkout_paths_are_literal_container_arguments(self):
         for name in ["project with spaces", "project'quote", 'project$(touch INJECTED)`touch INJECTED`']:
-            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='uscreen-quoting-') as tmp:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='blent-quoting-') as tmp:
                 root = Path(tmp) / name
                 root.mkdir()
                 self.create_fixture(root)
                 # Execute the actual inner program and preserve its positional arguments.
                 stub = root / 'bin/distrobox'
                 stub.write_text('#!/bin/bash\nshift 3\n[ "$1" = bash ] && shift\n[ "$1" = -lc ] && shift\nexec bash -c "$@"\n')
-                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', USCREEN_TEST_MODE='success')
+                env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', BLENT_TEST_MODE='success')
                 result = subprocess.run(['bash', 'packaging/build-packages.sh'], cwd=root,
                                         env=env, capture_output=True, text=True, timeout=20)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -88,7 +88,7 @@ exit 0
     def test_t235_portable_build_uses_literal_checkout_path(self):
         from test_notices import NoticeTest
         for name in ["project with spaces", "project'quote", 'project$(touch INJECTED)`touch INJECTED`']:
-            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='uscreen-build-path-') as tmp:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix='blent-build-path-') as tmp:
                 root = Path(tmp) / name
                 root.mkdir()
                 version = NoticeTest().copy_sources(root)
@@ -97,12 +97,12 @@ exit 0
                 result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
                                         env=env, capture_output=True, text=True, timeout=20)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertTrue((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').is_file())
+                self.assertTrue((root / f'dist/blent-{version}-linux-x86_64.tar.gz').is_file())
                 self.assertFalse((root / 'INJECTED').exists())
 
     def test_t236_release_rejects_new_glibc_in_bundled_evdi(self):
         from test_notices import NoticeTest
-        with tempfile.TemporaryDirectory(prefix='uscreen-abi-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-abi-') as tmp:
             root = Path(tmp)
             version = NoticeTest().copy_sources(root)
             self.portable_fixture(root)
@@ -111,7 +111,7 @@ exit 0
             result = subprocess.run(['bash', 'scripts/build-release.sh'], cwd=root,
                                     env=env, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0, 'T236: shipped library exceeds the documented ABI floor')
-            self.assertFalse((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').exists())
+            self.assertFalse((root / f'dist/blent-{version}-linux-x86_64.tar.gz').exists())
 
     def portable_fixture(self, root):
         import release_signing_fixture
@@ -126,7 +126,7 @@ exit 0
         }
         for name in ['cargo', 'make', 'gcc']:
             files['bin/' + name] = '#!/bin/sh\nexit 0\n'
-        for name in ['release/uscreen', 'release/uscreen-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
+        for name in ['release/blent', 'release/blent-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
             files['target-deb12/' + name] = '#!/bin/sh\nexit 0\n'
         for name, text in files.items():
             path = root / name
@@ -135,7 +135,7 @@ exit 0
             path.chmod(0o755)
 
     def test_t235_make_preserves_release_notes_path(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen-notes-path-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent-notes-path-') as tmp:
             root = Path(tmp)
             shutil.copy(REPO / 'Makefile', root)
             (root / 'scripts').mkdir()
@@ -157,7 +157,7 @@ exit 0
             if executable:
                 path.chmod(0o755)
         for name in ['packaging/build-packages.sh', 'packaging/deb/control', 'packaging/deb/postinst',
-                     'packaging/rpm/uscreen.spec', 'packaging/arch/PKGBUILD', 'packaging/arch/uscreen.install']:
+                     'packaging/rpm/blent.spec', 'packaging/arch/PKGBUILD', 'packaging/arch/blent.install']:
             write(name, (REPO / name).read_text(), name.endswith('.sh'))
         for name in ['README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
             source = REPO / name
@@ -166,19 +166,19 @@ exit 0
         write('scripts/copy-distribution-docs.sh', (REPO / 'scripts/copy-distribution-docs.sh').read_text(), True)
         write('packaging/distribution-docs.txt', (REPO / 'packaging/distribution-docs.txt').read_text())
         write('Makefile', 'VERSION = 1.2.3\n')
-        for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
-            write('dist/uscreen-1.2.3/bin/' + name, 'binary', True)
-        for name in ['scripts/setup-evdi.sh', 'scripts/uscreen.desktop', 'packaging/icons/uscreen.svg', 'packaging/icons/uscreen-pen.svg',
-                     'packaging/uscreen.service', 'packaging/uscreen-evdi.conf', 'packaging/uscreen-modules.conf',
-                     'packaging/60-uscreen-uinput.rules']:
+        for name in ['blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+            write('dist/blent-1.2.3/bin/' + name, 'binary', True)
+        for name in ['scripts/setup-evdi.sh', 'scripts/blent.desktop', 'packaging/icons/blent.svg', 'packaging/icons/blent-pen.svg',
+                     'packaging/blent.service', 'packaging/blent-evdi.conf', 'packaging/blent-modules.conf',
+                     'packaging/60-blent-uinput.rules']:
             write(name, 'fixture')
-        assets = ['uscreen-1.2.3-x86_64.AppImage', 'uscreen-1.2.3-AppImage-sources.tar.gz', 'uscreen-1.2.3-1.x86_64.rpm', 'uscreen-1.2.3-PKGBUILD.tar.gz']
-        for name in assets + ['uscreen-1.2.3-linux-x86_64.tar.gz', '.packages-ok']:
+        assets = ['blent-1.2.3-x86_64.AppImage', 'blent-1.2.3-AppImage-sources.tar.gz', 'blent-1.2.3-1.x86_64.rpm', 'blent-1.2.3-PKGBUILD.tar.gz']
+        for name in assets + ['blent-1.2.3-linux-x86_64.tar.gz', '.packages-ok']:
             write('dist/' + name, 'stale')
-        write('bin/distrobox', '#!/bin/bash\nif [ "$USCREEN_TEST_MODE" != container ]; then shift 3; shift 2; bash -c "$@"; fi\nexit 0\n', True)
+        write('bin/distrobox', '#!/bin/bash\nif [ "$BLENT_TEST_MODE" != container ]; then shift 3; shift 2; bash -c "$@"; fi\nexit 0\n', True)
         write('bin/fakeroot', '#!/bin/sh\nexec "$@"\n', True)
-        write('bin/dpkg-deb', '#!/bin/bash\nif [ "$1" = --info ]; then echo "Package: uscreen"; else echo new > "${@: -1}"; fi\n', True)
-        write('bin/rpmbuild', '#!/bin/sh\nRB=${2#_topdir }\nmkdir -p "$RB/RPMS/x86_64"\necho new > "$RB/RPMS/x86_64/uscreen-1.2.3-1.x86_64.rpm"\necho Wrote\n[ "$USCREEN_TEST_MODE" != rpm ]\n', True)
+        write('bin/dpkg-deb', '#!/bin/bash\nif [ "$1" = --info ]; then echo "Package: blent"; else echo new > "${@: -1}"; fi\n', True)
+        write('bin/rpmbuild', '#!/bin/sh\nRB=${2#_topdir }\nmkdir -p "$RB/RPMS/x86_64"\necho new > "$RB/RPMS/x86_64/blent-1.2.3-1.x86_64.rpm"\necho Wrote\n[ "$BLENT_TEST_MODE" != rpm ]\n', True)
         import appimage_fixture
         appimage_fixture.install(root)
         return assets

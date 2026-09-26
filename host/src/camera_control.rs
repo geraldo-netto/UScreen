@@ -1,8 +1,8 @@
 //! T543 manual host ownership. Preferences never start capture by themselves.
 use anyhow::Result;
+use blent_config::camera::{CameraBackend, CameraPreview, CameraProfile, CameraState as State};
 use std::{future::Future, sync::Arc, thread::JoinHandle};
 use tokio::sync::watch;
-use uscreen_config::camera::{CameraBackend, CameraPreview, CameraProfile, CameraState as State};
 
 #[derive(Clone)]
 pub struct Report {
@@ -42,7 +42,7 @@ impl Controller {
             preview: images,
         };
         let worker = std::thread::Builder::new()
-            .name("uscreen-camera".into())
+            .name("blent-camera".into())
             .spawn(move || {
                 runtime.block_on(supervise(commands, report, session));
             })?;
@@ -191,7 +191,7 @@ mod tests {
         state.wait_for(|s| *s == State::Streaming).await.unwrap();
         command
             .send(Some(CameraProfile {
-                lens: uscreen_config::camera::Lens::Rear,
+                lens: blent_config::camera::Lens::Rear,
                 ..Default::default()
             }))
             .unwrap();

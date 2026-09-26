@@ -128,9 +128,9 @@ pub(super) const UINPUT_VENDOR: u16 = 0x4553;
 pub(super) const PRODUCT_TOUCH: u16 = 0x0001;
 pub(super) const PRODUCT_PEN: u16 = 0x0002;
 pub(super) const PRODUCT_POINTER: u16 = 0x0003;
-pub(super) const TOUCH_DEVICE_NAME: &str = "UScreen Touch";
-pub(super) const PEN_DEVICE_NAME: &str = "UScreen Pen";
-pub(super) const POINTER_DEVICE_NAME: &str = "UScreen Pointer";
+pub(super) const TOUCH_DEVICE_NAME: &str = "Blent Touch";
+pub(super) const PEN_DEVICE_NAME: &str = "Blent Pen";
+pub(super) const POINTER_DEVICE_NAME: &str = "Blent Pointer";
 
 /// Device names and product ids for the N-th tablet. The first keeps the
 /// original names and ids so existing KWin input mappings stay valid; every

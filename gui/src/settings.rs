@@ -1,7 +1,7 @@
 //! One owned save at a time. File locks/fsync and an optional restart run off
 //! the render thread; completion carries the exact submitted/saved snapshots.
+use blent_config::{model::FileConfig, storage::ConfigStore};
 use std::thread::JoinHandle;
-use uscreen_config::{model::FileConfig, storage::ConfigStore};
 
 pub type PipeApply = Box<dyn FnOnce(u32) -> Result<(), String> + Send>;
 
@@ -255,7 +255,7 @@ mod tests {
             Box::new(move |mib| {
                 entered.send(()).unwrap();
                 paused.recv_timeout(Duration::from_secs(5)).unwrap();
-                uscreen_config::linux::pipe::publish_at(&first_path, mib).map_err(|e| e.to_string())
+                blent_config::linux::pipe::publish_at(&first_path, mib).map_err(|e| e.to_string())
             }),
         );
         waiting.recv_timeout(Duration::from_secs(2)).unwrap();
@@ -270,7 +270,7 @@ mod tests {
             baseline,
             None,
             Box::new(move |mib| {
-                uscreen_config::linux::pipe::publish_at(&second_path, mib)
+                blent_config::linux::pipe::publish_at(&second_path, mib)
                     .map_err(|e| e.to_string())?;
                 published.send(()).unwrap();
                 Ok(())
@@ -312,7 +312,7 @@ mod tests {
                     value,
                     "T415: publish follows commit"
                 );
-                uscreen_config::linux::pipe::publish_at(&request, value).map_err(|e| e.to_string())
+                blent_config::linux::pipe::publish_at(&request, value).map_err(|e| e.to_string())
             });
             let saved =
                 PendingSave::start_with_pipe(store.clone(), edited, baseline, None, publish)

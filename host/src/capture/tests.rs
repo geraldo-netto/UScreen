@@ -29,11 +29,11 @@ fn t484_decoder_only_change_restarts_encoder_without_restarting_helper() {
     let manager = test_manager();
     let mut selected = manager_settings(&manager);
     selected.encoder = "auto".into();
-    let decoder = uscreen_config::negotiation::DecoderChoice {
+    let decoder = blent_config::negotiation::DecoderChoice {
         name: "vendor.avc".into(),
-        stream: uscreen_config::negotiation::StreamProfile {
+        stream: blent_config::negotiation::StreamProfile {
             codec: "h264".into(),
-            format: uscreen_config::negotiation::Profile {
+            format: blent_config::negotiation::Profile {
                 profile: "baseline".into(),
                 level: 31,
                 depth: 8,
@@ -490,11 +490,11 @@ fn test_manager() -> CaptureManager {
     static INSTANCE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(100_000);
     let mut manager = CaptureManager::new(CaptureConfig {
         encoder: "libx264".into(),
-        helper_path: "/nonexistent/uscreen-test-helper".into(),
+        helper_path: "/nonexistent/blent-test-helper".into(),
         instance: INSTANCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         ..CaptureConfig::default()
     });
-    // Never address a real connector, even on a machine running UScreen.
+    // Never address a real connector, even on a machine running Blent.
     manager.helper.card = Some(u32::MAX);
     manager
 }
@@ -739,7 +739,7 @@ fn t436_capture_fixtures_survive_shared_umask() {
         "capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources",
     ] {
         let output = std::process::Command::new("/bin/sh")
-            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .args(["-c", "umask 0002; exec \"$@\"", "blent-t436"])
             .arg(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
             .output()

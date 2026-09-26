@@ -5,12 +5,12 @@ has an inline SVG topology diagram and references GitHub's generated social
 preview at `opengraph.githubassets.com`. Those are illustrations/metadata, not
 screenshots or evidence of a running setup. The README currently uses no image.
 
-If a real photo of a tablet running UScreen is provided, possible assets are:
+If a real photo of a tablet running Blent is provided, possible assets are:
 
 | Proposed file | Suggested dimensions | Intended use |
 | --- | --- | --- |
-| `uscreen-hero.jpg` | 1600×1000, under 300 KB | README introduction and site hero |
-| `uscreen-social.png` | 1280×640 | Site social-preview metadata and repository social preview |
+| `blent-hero.jpg` | 1600×1000, under 300 KB | README introduction and site hero |
+| `blent-social.png` | 1280×640 | Site social-preview metadata and repository social preview |
 
 Do not reference these filenames until the files exist. Use accurate alt text
 and captions identifying the setup. Do not label a generated diagram or mock-up

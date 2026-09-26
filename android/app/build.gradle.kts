@@ -9,7 +9,7 @@ plugins {
 // Local signing properties stay outside Git. Official release tooling verifies
 // the APK against the designated public certificate (docs/release-signing.md).
 val keystoreProps = Properties().apply {
-    val f = rootProject.file(System.getenv("USCREEN_KEYSTORE_PROPERTIES") ?: "keystore.properties")
+    val f = rootProject.file(System.getenv("BLENT_KEYSTORE_PROPERTIES") ?: "keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
@@ -32,11 +32,11 @@ val sourceId = sourceDigest.digest().joinToString("") { "%02x".format(it) }
 
 
 android {
-    namespace = "com.uscreen"
+    namespace = "com.blent"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.github.geraldo_netto.uscreen"
+        applicationId = "io.github.geraldo_netto.blent"
         minSdk = 27
         targetSdk = 34
         versionCode = 12
@@ -108,9 +108,9 @@ listOf("debug", "release").forEach { variant ->
         inputs.property("variant", variant)
         outputs.dir(profileSource)
         doLast {
-            val output = profileSource.get().file("com/uscreen/ProfileBuild.kt").asFile
+            val output = profileSource.get().file("com/blent/ProfileBuild.kt").asFile
             output.parentFile.mkdirs()
-            output.writeText("package com.uscreen\ninternal object ProfileBuild { const val SOURCE_ID = \"$sourceId:$variant\" }\n")
+            output.writeText("package com.blent\ninternal object ProfileBuild { const val SOURCE_ID = \"$sourceId:$variant\" }\n")
         }
     }
     android.sourceSets.getByName(variant).java.srcDir(profileSource)

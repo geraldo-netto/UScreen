@@ -1,5 +1,5 @@
-#ifndef USCREEN_FRAME_EXCHANGE_H
-#define USCREEN_FRAME_EXCHANGE_H
+#ifndef BLENT_FRAME_EXCHANGE_H
+#define BLENT_FRAME_EXCHANGE_H
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stddef.h>

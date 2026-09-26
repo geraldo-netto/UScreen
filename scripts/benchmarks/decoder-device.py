@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run separate baseline/candidate decoder APKs; never replace the UScreen APK."""
+"""Run separate baseline/candidate decoder APKs; never replace the Blent APK."""
 import argparse
 import base64
 from datetime import datetime, timezone
@@ -52,7 +52,7 @@ def logs(args, package, folder):
     pid = capture(args.serial, 'shell', 'pidof', package).strip()
     if pid.isdigit():
         (folder / 'android.log').write_text(capture(args.serial, 'logcat', '-d', '--pid', pid, '-v', 'threadtime', '-s',
-                                                   'UScreenDecoderBench:I', 'AndroidRuntime:E'))
+                                                   'BlentDecoderBench:I', 'AndroidRuntime:E'))
 
 
 def selection_args(args):
@@ -66,12 +66,12 @@ def selection_args(args):
 def trial(args, variant, profile, scene, rate, number):
     folder = args.output / f'{scene}-{rate}-{number}-{variant}-{profile}'
     folder.mkdir()
-    package = f'com.uscreen.decoderbench.{variant}'
+    package = f'com.blent.decoderbench.{variant}'
     transfer(args, package, scene)
     adb(args.serial, 'shell', 'run-as', package, 'rm', '-f', 'files/result.json', capture_output=True)
     (folder / 'battery-before.txt').write_text(capture(args.serial, 'shell', 'dumpsys', 'battery'))
     started = datetime.now(timezone.utc).isoformat()
-    command = capture(args.serial, 'shell', 'am', 'start', '-S', '-W', '-n', f'{package}/com.uscreen.benchmark.MainActivity',
+    command = capture(args.serial, 'shell', 'am', 'start', '-S', '-W', '-n', f'{package}/com.blent.benchmark.MainActivity',
                       '--ez', 'run', 'true', '--es', 'profile', profile, '--ei', 'rate', str(rate),
                       '--ei', 'seconds', str(args.seconds), '--ei', 'warmup', str(args.warmup),
                       '--ei', 'burst', str(getattr(args, 'burst', 1)), *selection_args(args))

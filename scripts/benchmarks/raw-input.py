@@ -32,7 +32,7 @@ def prepare(folder):
     (folder / 'src/baseline_copy.rs').write_text(copy.replace('fn copy_plane(', 'fn baseline_copy_plane('))
     shutil.copy2(ROOT / 'scripts/benchmarks/raw-input.rs', folder / 'src/main.rs')
     (folder / 'Cargo.toml').write_text('''[package]
-name = "uscreen-raw-input-bench"
+name = "blent-raw-input-bench"
 version = "0.0.0"
 edition = "2021"
 [dependencies]
@@ -50,7 +50,7 @@ def build(folder):
     subprocess.run(['cargo', 'build', '--offline', '--release'], cwd=folder,
                    env=dict(os.environ, CARGO_TARGET_DIR=str(folder / 'target')), check=True)
     binary = folder / 'raw-input'
-    shutil.copy2(folder / 'target/release/uscreen-raw-input-bench', binary)
+    shutil.copy2(folder / 'target/release/blent-raw-input-bench', binary)
     return binary
 
 

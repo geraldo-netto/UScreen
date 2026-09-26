@@ -19,12 +19,12 @@ class ShellTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             hook = Path(__file__).with_name('trace.sh').resolve()
-            bodies = re.findall(r'(?ms)^    uscreen_coverage_\w+\(\) \{.*?^    \}\n', hook.read_text())
+            bodies = re.findall(r'(?ms)^    blent_coverage_\w+\(\) \{.*?^    \}\n', hook.read_text())
             self.assertEqual(len(bodies), 2)
             fixture = root/'fixture.sh'
             fixture.write_text('set -eu\n' + ''.join(bodies) + HOOK_EXERCISE)
-            traces = Path(os.environ.get('USCREEN_SHELL_COVERAGE_DIR', root/'traces'))
-            env = dict(os.environ, BASH_ENV=str(hook), USCREEN_SHELL_COVERAGE_DIR=str(traces))
+            traces = Path(os.environ.get('BLENT_SHELL_COVERAGE_DIR', root/'traces'))
+            env = dict(os.environ, BASH_ENV=str(hook), BLENT_SHELL_COVERAGE_DIR=str(traces))
             measured = subprocess.run(['bash', fixture, root], env=env, capture_output=True)
             self.assertEqual(measured.returncode, 0, measured.stderr)
             self.assertEqual(measured.stdout, b'origin attestation failed\n')
@@ -53,14 +53,14 @@ class ShellTest(unittest.TestCase):
                 fragment.write_text((body.replace('yes', 'changed') if modified else body) + 'choose\n')
                 tools = Path(__file__).resolve().parent
                 env = dict(os.environ, BASH_ENV=str(tools/'trace.sh'),
-                           USCREEN_SHELL_COVERAGE_DIR=str(trace), USCREEN_COVERAGE_ROOT=str(root),
-                           USCREEN_COVERAGE_MANIFEST=str(manifest_path),
-                           USCREEN_SHELL_COVERAGE_PYTHON=sys.executable,
-                           USCREEN_SHELL_COVERAGE_ORIGINS=str(tools/'shell_origins.py'))
+                           BLENT_SHELL_COVERAGE_DIR=str(trace), BLENT_COVERAGE_ROOT=str(root),
+                           BLENT_COVERAGE_MANIFEST=str(manifest_path),
+                           BLENT_SHELL_COVERAGE_PYTHON=sys.executable,
+                           BLENT_SHELL_COVERAGE_ORIGINS=str(tools/'shell_origins.py'))
                 # This is a different source manifest. Do not combine its
                 # attester subprocesses with an enclosing project's counters.
                 env.pop('COVERAGE_PROCESS_START', None)
-                env.pop('USCREEN_PYTHON_CALLS', None)
+                env.pop('BLENT_PYTHON_CALLS', None)
                 process = subprocess.run(['bash', fragment], env=env, capture_output=True)
                 self.assertEqual(process.returncode, 0, process.stderr)
                 fragment.unlink()
@@ -88,7 +88,7 @@ exit 7
             script.write_text(source)
             baseline = subprocess.run(['bash', script], capture_output=True)
             traces = root/'traces'
-            env = dict(os.environ, USCREEN_SHELL_COVERAGE_DIR=str(traces),
+            env = dict(os.environ, BLENT_SHELL_COVERAGE_DIR=str(traces),
                        BASH_ENV=str(Path(__file__).with_name('trace.sh').resolve()))
             measured = subprocess.run(['bash', script], env=env, capture_output=True)
             self.assertEqual((measured.returncode, measured.stdout, measured.stderr),
@@ -120,33 +120,33 @@ HOOK_EXERCISE = r'''
 fixture_source=${BASH_SOURCE[0]}
 fixture_hash=$(/usr/bin/sha256sum -- "$fixture_source")
 fixture_hash=${fixture_hash%% *}
-exec {fixture_fd}>>"$USCREEN_SHELL_COVERAGE_DIR/self-$fixture_hash.bin"
+exec {fixture_fd}>>"$BLENT_SHELL_COVERAGE_DIR/self-$fixture_hash.bin"
 trap 'printf "%s\0%s\0%s\0" "$fixture_hash" "${BASH_SOURCE[0]}" "$LINENO" >&"$fixture_fd"' DEBUG
-USCREEN_SHELL_COVERAGE_DIR=$1/private
-mkdir -p "$USCREEN_SHELL_COVERAGE_DIR/origins"
-USCREEN_SHELL_COVERAGE_ORIGINS=
-uscreen_coverage_origin
-USCREEN_SHELL_COVERAGE_ORIGINS=/unused
-USCREEN_SHELL_COVERAGE_PYTHON=
-uscreen_coverage_origin
-USCREEN_SHELL_COVERAGE_PYTHON=/bin/true
-uscreen_coverage_hash=fixture
-touch "$USCREEN_SHELL_COVERAGE_DIR/origins/fixture.json"
-uscreen_coverage_origin
-rm "$USCREEN_SHELL_COVERAGE_DIR/origins/fixture.json"
-uscreen_coverage_origin
-USCREEN_SHELL_COVERAGE_PYTHON=/bin/false
-uscreen_coverage_origin
-[[ -f $USCREEN_SHELL_COVERAGE_DIR/origins.failed ]]
-cat "$USCREEN_SHELL_COVERAGE_DIR/origins.failed"
-USCREEN_SHELL_COVERAGE_ORIGINS=
-uscreen_coverage_hook=$fixture_source
-uscreen_coverage_location
-uscreen_coverage_hook=/never-this-fixture
-uscreen_coverage_source=
-uscreen_coverage_location private-argument-value
-[[ $uscreen_coverage_source == "$fixture_source" ]]
-[[ $uscreen_coverage_hash == "$fixture_hash" ]]
-uscreen_coverage_location
+BLENT_SHELL_COVERAGE_DIR=$1/private
+mkdir -p "$BLENT_SHELL_COVERAGE_DIR/origins"
+BLENT_SHELL_COVERAGE_ORIGINS=
+blent_coverage_origin
+BLENT_SHELL_COVERAGE_ORIGINS=/unused
+BLENT_SHELL_COVERAGE_PYTHON=
+blent_coverage_origin
+BLENT_SHELL_COVERAGE_PYTHON=/bin/true
+blent_coverage_hash=fixture
+touch "$BLENT_SHELL_COVERAGE_DIR/origins/fixture.json"
+blent_coverage_origin
+rm "$BLENT_SHELL_COVERAGE_DIR/origins/fixture.json"
+blent_coverage_origin
+BLENT_SHELL_COVERAGE_PYTHON=/bin/false
+blent_coverage_origin
+[[ -f $BLENT_SHELL_COVERAGE_DIR/origins.failed ]]
+cat "$BLENT_SHELL_COVERAGE_DIR/origins.failed"
+BLENT_SHELL_COVERAGE_ORIGINS=
+blent_coverage_hook=$fixture_source
+blent_coverage_location
+blent_coverage_hook=/never-this-fixture
+blent_coverage_source=
+blent_coverage_location private-argument-value
+[[ $blent_coverage_source == "$fixture_source" ]]
+[[ $blent_coverage_hash == "$fixture_hash" ]]
+blent_coverage_location
 trap - DEBUG
 '''

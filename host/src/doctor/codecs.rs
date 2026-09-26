@@ -5,7 +5,7 @@ use crate::media::Codec;
 use std::ffi::OsString;
 
 pub(super) fn report_codec(r: &mut Report, cfg: &FileConfig, output: Option<&str>) {
-    if cfg.encoder != "auto" && uscreen_config::encoding::find(&cfg.encoder).is_none() {
+    if cfg.encoder != "auto" && blent_config::encoding::find(&cfg.encoder).is_none() {
         r.line(
             Level::Warn,
             "tablet codec",
@@ -112,7 +112,7 @@ fn payload<'a>(output: Option<&'a str>, prefix: &str) -> Option<&'a str> {
         .map(|(_, tail)| tail.split(['"', '\r', '\n']).next().unwrap_or("").trim())
 }
 fn inventory(output: Option<&str>, codec: Codec) -> Option<&str> {
-    if let Some(text) = payload(output, "USCREEN_CODECS_V2:") {
+    if let Some(text) = payload(output, "BLENT_CODECS_V2:") {
         let mut matches = text
             .split(';')
             .filter_map(|entry| entry.split_once('='))
@@ -121,7 +121,7 @@ fn inventory(output: Option<&str>, codec: Codec) -> Option<&str> {
         return matches.next().is_none().then_some(value);
     }
     if codec == Codec::Hevc {
-        payload(output, "USCREEN_CODECS_V1:")
+        payload(output, "BLENT_CODECS_V1:")
     } else {
         None
     }
@@ -154,7 +154,7 @@ pub(super) async fn report_live_encoder(r: &mut Report, cfg: &FileConfig, instan
 
 fn observed_profile(args: &[OsString]) -> Option<&str> {
     let name = argument(args, "-c:v")?;
-    uscreen_config::encoding::find(name)?;
+    blent_config::encoding::find(name)?;
     if name == "h264_vaapi" && argument(args, "-profile:v") == Some("constrained_baseline") {
         Some("h264_vaapi_baseline")
     } else {
@@ -176,7 +176,7 @@ mod tests {
         report_codec(
             &mut report,
             &FileConfig::default(),
-            Some("USCREEN_CODECS_V2:h264=hw;hevc=none;vp9=none;av1=none"),
+            Some("BLENT_CODECS_V2:h264=hw;hevc=none;vp9=none;av1=none"),
         );
         assert_eq!((report.warnings, report.failures), (0, 0));
     }
@@ -188,7 +188,7 @@ mod tests {
             encoder: "unrecognized-encoder".into(),
             ..Default::default()
         };
-        report_codec(&mut report, &cfg, Some("USCREEN_CODECS_V2:h264=hw"));
+        report_codec(&mut report, &cfg, Some("BLENT_CODECS_V2:h264=hw"));
         let text = report.messages.borrow().join("\n");
         assert!(text.contains("unknown encoder"), "T438: {text}");
         assert!(!text.contains("H.264"), "T438: {text}");
@@ -215,9 +215,9 @@ mod tests {
         );
         assert_eq!(observed_profile(&args(&["-c:v", "unknown"])), None);
         assert_eq!(
-            inventory(Some("USCREEN_CODECS_V2:vp9=hw;vp9=none"), Codec::Vp9),
+            inventory(Some("BLENT_CODECS_V2:vp9=hw;vp9=none"), Codec::Vp9),
             None
         );
-        assert_eq!(inventory(Some("USCREEN_CODECS_V1:hw10"), Codec::Av1), None);
+        assert_eq!(inventory(Some("BLENT_CODECS_V1:hw10"), Codec::Av1), None);
     }
 }

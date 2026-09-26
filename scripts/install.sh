@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# UScreen installer — works from a source checkout or a release tarball.
+# Blent installer — works from a source checkout or a release tarball.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -23,7 +23,7 @@ info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-is_prebuilt() { [ -f "$PROJECT_DIR/bin/uscreen" ]; }
+is_prebuilt() { [ -f "$PROJECT_DIR/bin/blent" ]; }
 
 has_evdi_library() {
     # Source linking needs the unversioned development link. A prebuilt helper
@@ -187,7 +187,7 @@ check_deps() {
 
 # ~/.local/bin is only added to PATH at login on most distributions, and only
 # if it already exists. Installing into a directory we just created therefore
-# gives "uscreen: command not found" straight after a successful install.
+# gives "blent: command not found" straight after a successful install.
 check_path() {
     case ":${PATH}:" in
         *":${BIN_DIR}:"*) return 0 ;;
@@ -210,11 +210,11 @@ build_if_needed() {
 
 stage_install_binaries() {
     local src_bin="$1" staged="$2" helper="$1/evdi_helper"
-    cp "$src_bin/uscreen" "$staged/uscreen" || return
-    if [ -f "$src_bin/uscreen-gui" ]; then
-        cp "$src_bin/uscreen-gui" "$staged/uscreen-gui" || return
+    cp "$src_bin/blent" "$staged/blent" || return
+    if [ -f "$src_bin/blent-gui" ]; then
+        cp "$src_bin/blent-gui" "$staged/blent-gui" || return
     else
-        warn "uscreen-gui not found, skipping"
+        warn "blent-gui not found, skipping"
     fi
     if [ ! -f "$helper" ]; then
         helper="$PROJECT_DIR/host/evdi/evdi_helper"
@@ -237,7 +237,7 @@ install_binaries() {
         src_bin="$PROJECT_DIR/target/release"
     fi
 
-    staged=$(mktemp -d "$BIN_DIR/.uscreen-install.XXXXXXXX") || return
+    staged=$(mktemp -d "$BIN_DIR/.blent-install.XXXXXXXX") || return
     # Finish every copy before replacing installed names. Atomic replacement
     # also preserves the inodes mapped by running executables and libraries.
     if stage_install_binaries "$src_bin" "$staged" && mv -f "$staged/"* "$BIN_DIR/"; then
@@ -251,9 +251,9 @@ install_binaries() {
 
 install_desktop_entry() {
     # Absolute path: the app menu does not necessarily have ~/.local/bin on
-    # its PATH, so a bare "uscreen-gui" can be a menu entry that does nothing.
-    bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen-gui" "$SCRIPT_DIR/uscreen.desktop" > "$APP_DIR/uscreen.desktop" \
-        && info "Desktop entry installed (UScreen in the app menu)"
+    # its PATH, so a bare "blent-gui" can be a menu entry that does nothing.
+    bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/blent-gui" "$SCRIPT_DIR/blent.desktop" > "$APP_DIR/blent.desktop" \
+        && info "Desktop entry installed (Blent in the app menu)"
     return 0
 }
 
@@ -261,9 +261,9 @@ install_icons() {
     # The menu entry and the tray look the icon up by name in the hicolor
     # theme; without this they fall back to a generic or blank picture.
     local ICON_DIR="$DATA_BASE/icons/hicolor/scalable/apps"
-    if [ -f "$PROJECT_DIR/packaging/icons/uscreen.svg" ]; then
+    if [ -f "$PROJECT_DIR/packaging/icons/blent.svg" ]; then
         mkdir -p "$ICON_DIR"
-        cp "$PROJECT_DIR/packaging/icons/uscreen.svg" "$PROJECT_DIR/packaging/icons/uscreen-pen.svg" "$ICON_DIR/"
+        cp "$PROJECT_DIR/packaging/icons/blent.svg" "$PROJECT_DIR/packaging/icons/blent-pen.svg" "$ICON_DIR/"
         # KDE keys its icon cache on the theme directory's mtime.
         touch "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
         command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t "${ICON_DIR%/scalable/apps}" 2>/dev/null || true
@@ -272,14 +272,14 @@ install_icons() {
 }
 
 write_user_service() {
-    bash "$SCRIPT_DIR/write-systemd-service.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen.service" "$BIN_DIR/evdi_helper"
+    bash "$SCRIPT_DIR/write-systemd-service.sh" "$BIN_DIR/blent" "$SCRIPT_DIR/blent.service" "$BIN_DIR/evdi_helper"
 }
 
 write_installed_user_service() {
     mkdir -p "$CONFIG_BASE/systemd/user" || return
     local staged
-    staged=$(mktemp "$CONFIG_BASE/systemd/user/.uscreen.XXXXXXXX") || return
-    if write_user_service > "$staged" && mv -f "$staged" "$CONFIG_BASE/systemd/user/uscreen.service"; then
+    staged=$(mktemp "$CONFIG_BASE/systemd/user/.blent.XXXXXXXX") || return
+    if write_user_service > "$staged" && mv -f "$staged" "$CONFIG_BASE/systemd/user/blent.service"; then
         :
     else
         rm -f "$staged"
@@ -290,8 +290,8 @@ write_installed_user_service() {
 install_autostart_entry() {
     local directory="$CONFIG_BASE/autostart" staged
     mkdir -p "$directory" || return
-    staged=$(mktemp "$directory/.uscreen.XXXXXXXX") || return
-    if "$@" > "$staged" && mv -f "$staged" "$directory/uscreen.desktop"; then
+    staged=$(mktemp "$directory/.blent.XXXXXXXX") || return
+    if "$@" > "$staged" && mv -f "$staged" "$directory/blent.desktop"; then
         return 0
     fi
     rm -f "$staged"
@@ -299,22 +299,22 @@ install_autostart_entry() {
 }
 
 install_desktop_autostart() {
-    if systemctl --user is-enabled --quiet uscreen.service 2>/dev/null; then
+    if systemctl --user is-enabled --quiet blent.service 2>/dev/null; then
         error "The user service is enabled but its manager is unreachable; restore the user manager before changing autostart"
         return 1
     fi
-    install_autostart_entry bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/uscreen" "$SCRIPT_DIR/uscreen-autostart.desktop" start
+    install_autostart_entry bash "$SCRIPT_DIR/write-desktop-entry.sh" "$BIN_DIR/blent" "$SCRIPT_DIR/blent-autostart.desktop" start
 }
 
 configure_managed_autostart() {
     if [ "${1:-enable}" = enable ]; then
-        systemctl --user enable uscreen.service || return
+        systemctl --user enable blent.service || return
     fi
     # Repair existing enabled installations even when preserving the preference.
-    if systemctl --user is-enabled --quiet uscreen.service 2>/dev/null; then
-        install_autostart_entry cat "$SCRIPT_DIR/uscreen-service-autostart.desktop" || return
+    if systemctl --user is-enabled --quiet blent.service 2>/dev/null; then
+        install_autostart_entry cat "$SCRIPT_DIR/blent-service-autostart.desktop" || return
     fi
-    info "User service installed; desktop login follows the autostart preference. Start now with: systemctl --user start uscreen"
+    info "User service installed; desktop login follows the autostart preference. Start now with: systemctl --user start blent"
 }
 
 install_user_service() {
@@ -325,9 +325,9 @@ install_user_service() {
         configure_managed_autostart "${1:-enable}" || return
     elif [ "${1:-enable}" = enable ]; then
         install_desktop_autostart || return
-        info "Desktop autostart enabled (no systemd user manager); start now with: uscreen start"
+        info "Desktop autostart enabled (no systemd user manager); start now with: blent start"
     else
-        info "No systemd user manager; desktop autostart preference unchanged. Enable it in UScreen settings."
+        info "No systemd user manager; desktop autostart preference unchanged. Enable it in Blent settings."
     fi
 }
 
@@ -344,10 +344,10 @@ configure_boot_modules() {
     # set -e a missing one used to kill the whole script here, silently, with
     # the binaries already copied and the udev rule not yet installed.
     sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
-    echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/uscreen-evdi.conf >/dev/null \
-        || warn "Could not write /etc/modprobe.d/uscreen-evdi.conf"
-    printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/uscreen.conf >/dev/null \
-        || warn "Could not write /etc/modules-load.d/uscreen.conf"
+    echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/blent-evdi.conf >/dev/null \
+        || warn "Could not write /etc/modprobe.d/blent-evdi.conf"
+    printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/blent.conf >/dev/null \
+        || warn "Could not write /etc/modules-load.d/blent.conf"
     if [ ! -d /run/systemd/system ]; then
         warn "Configure your init system to load evdi and uinput at boot; modules-load.d support is not guaranteed. See docs/installation.md."
     fi
@@ -357,13 +357,13 @@ configure_uinput() {
     sudo modprobe uinput 2>/dev/null || true
     # /dev/uinput is root-only on a stock system. Bazzite ships a rule that
     # opens it to the seat user; everyone else needs this one.
-    if [ ! -e /etc/udev/rules.d/60-uscreen-uinput.rules ] && [ ! -e /usr/lib/udev/rules.d/60-uscreen-uinput.rules ]; then
-        if [ -f "$PROJECT_DIR/packaging/60-uscreen-uinput.rules" ]; then
-            sudo install -Dm644 "$PROJECT_DIR/packaging/60-uscreen-uinput.rules" /etc/udev/rules.d/60-uscreen-uinput.rules
+    if [ ! -e /etc/udev/rules.d/60-blent-uinput.rules ] && [ ! -e /usr/lib/udev/rules.d/60-blent-uinput.rules ]; then
+        if [ -f "$PROJECT_DIR/packaging/60-blent-uinput.rules" ]; then
+            sudo install -Dm644 "$PROJECT_DIR/packaging/60-blent-uinput.rules" /etc/udev/rules.d/60-blent-uinput.rules
             sudo udevadm control --reload 2>/dev/null || warn "Reload the uinput rule with your device manager"
             sudo udevadm trigger --name-match=uinput 2>/dev/null || warn "Activate the uinput permissions with your device manager"
         else
-            warn "packaging/60-uscreen-uinput.rules not found — /dev/uinput may stay root-only"
+            warn "packaging/60-blent-uinput.rules not found — /dev/uinput may stay root-only"
         fi
     fi
 }
@@ -395,7 +395,7 @@ main() {
         return
     fi
     echo "================================================"
-    echo "  UScreen installer"
+    echo "  Blent installer"
     echo "================================================"
     install_deps
     check_deps
@@ -403,7 +403,7 @@ main() {
     install_files
     system_setup
     echo ""
-    info "Done! Launch 'UScreen' from your app menu (or run: uscreen-gui)"
+    info "Done! Launch 'Blent' from your app menu (or run: blent-gui)"
     info "Install the APK on your tablet, enable USB debugging, plug in — that's it."
     check_path
 }

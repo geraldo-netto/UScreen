@@ -1,5 +1,11 @@
 //! Linux construction of the shared session and native capture adapter.
 use crate::{capture, input, media};
+#[cfg(test)]
+pub(crate) use blent::session::start_servers;
+pub(crate) use blent::session::Runtime;
+#[cfg(test)]
+use blent::session::{forward_shutdown, spawn_display_gate, spawn_server};
+use blent::session::{CaptureBackend, CaptureContext, CaptureResources, CaptureWorkers, Prepared};
 use std::sync::Arc;
 #[cfg(test)]
 use std::time::Duration;
@@ -7,14 +13,6 @@ use tokio::sync::watch;
 #[cfg(test)]
 use tokio::task::JoinHandle;
 use tracing::error;
-#[cfg(test)]
-pub(crate) use uscreen::session::start_servers;
-pub(crate) use uscreen::session::Runtime;
-#[cfg(test)]
-use uscreen::session::{forward_shutdown, spawn_display_gate, spawn_server};
-use uscreen::session::{
-    CaptureBackend, CaptureContext, CaptureResources, CaptureWorkers, Prepared,
-};
 
 pub(crate) struct Spec {
     pub capture: capture::CaptureConfig,
@@ -47,7 +45,7 @@ impl Spec {
         let settings = self.settings();
         let manager = capture::CaptureManager::new(self.capture.clone());
         let backend = Arc::new(input::LinuxBackend::new(manager.card_rx()));
-        uscreen::session::Spec {
+        blent::session::Spec {
             settings,
             instance: self.capture.instance,
             ports: self.ports,
@@ -321,10 +319,10 @@ mod credential_tests;
 #[tokio::test]
 async fn t497_server_task_errors_keep_the_service_name_and_do_not_escape() {
     const TEST: &str = "session::t497_server_task_errors_keep_the_service_name_and_do_not_escape";
-    if std::env::var_os("USCREEN_T497_SERVER_REPORT").is_none() {
+    if std::env::var_os("BLENT_T497_SERVER_REPORT").is_none() {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", TEST, "--nocapture"])
-            .env("USCREEN_T497_SERVER_REPORT", "1")
+            .env("BLENT_T497_SERVER_REPORT", "1")
             .output()
             .unwrap();
         assert!(

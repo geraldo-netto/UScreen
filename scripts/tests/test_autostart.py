@@ -22,7 +22,7 @@ class AutostartTest(unittest.TestCase):
             result = subprocess.run(['bash', 'scripts/install-fixture.sh', mode], cwd=root,
                                     env=env, capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            entry = config / 'autostart/uscreen.desktop'
+            entry = config / 'autostart/blent.desktop'
             self.assertEqual(entry.exists(), expected, 'T536: service preference has no working desktop login route')
             self.assertEqual((state / 'enabled').exists(), expected)
             self.assertFalse((state / 'launches').exists(), 'T536: installation started the daemon')

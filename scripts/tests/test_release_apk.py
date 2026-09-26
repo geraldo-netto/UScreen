@@ -16,7 +16,7 @@ APK = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(APK)
 DIGEST = '1b34ed115e476f4d178b49f6076cf9ed6cc07d474f9230ec952bc97bbba70400'
 SIGNER = 'Signer #1 certificate SHA-256 digest: ' + DIGEST + '\n'
-MANIFEST = "package: name='io.github.geraldo_netto.uscreen' versionCode='12'\nlaunchable-activity: name='com.uscreen.MainActivity'\n"
+MANIFEST = "package: name='io.github.geraldo_netto.blent' versionCode='12'\nlaunchable-activity: name='com.blent.MainActivity'\n"
 
 
 class ReleaseApkTest(unittest.TestCase):
@@ -45,8 +45,8 @@ class ReleaseApkTest(unittest.TestCase):
 
     def test_t250_manifest_rejects_wrong_package_class_duplicate_and_debug(self):
         APK.verify_manifest(MANIFEST)
-        for report in ('', MANIFEST * 2, MANIFEST.replace(APK.PACKAGE, 'com.uscreen'),
-                       MANIFEST.replace('com.uscreen.MainActivity', APK.PACKAGE + '.MainActivity'),
+        for report in ('', MANIFEST * 2, MANIFEST.replace(APK.PACKAGE, 'com.blent'),
+                       MANIFEST.replace('com.blent.MainActivity', APK.PACKAGE + '.MainActivity'),
                        MANIFEST + 'application-debuggable\n', 'x' * (APK.MAX_OUTPUT + 1)):
             with self.assertRaises(ValueError):
                 APK.verify_manifest(report)

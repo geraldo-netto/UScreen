@@ -47,7 +47,7 @@ class VisibilityIntegrityTests(unittest.TestCase):
                 phases.append(dict(event='complete', utc=20, visibility_verified=guarded))
             samples = [dict(utc=t, monotonic=t, host=[], android=dict(pid=123, start_ticks=1, ticks=t),
                             collection_seconds=.01) for t in [0, 5, 10, 15]]
-            (folder / 'android.log').write_text('15.0 123 123 D UScreen: fixture\n')
+            (folder / 'android.log').write_text('15.0 123 123 D Blent: fixture\n')
             for name, rows in [('phases', phases), ('samples', samples), ('host-windows', [dict(utc=15, message='fixture')])]:
                 (folder / f'{name}.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
             if invalid:

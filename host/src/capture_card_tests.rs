@@ -139,7 +139,7 @@ async fn allocation_lifecycle(root: &Path) {
 
 #[tokio::test]
 async fn t330_daemon_slots_share_free_card_leases_across_restarts() {
-    if let Some(root) = std::env::var_os("USCREEN_T330_ROOT") {
+    if let Some(root) = std::env::var_os("BLENT_T330_ROOT") {
         allocation_lifecycle(Path::new(&root)).await;
         return;
     }
@@ -150,7 +150,7 @@ async fn t330_daemon_slots_share_free_card_leases_across_restarts() {
     compile_helper(root.path());
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", "capture::card_allocation_tests::t330_daemon_slots_share_free_card_leases_across_restarts", "--nocapture"])
-        .env("USCREEN_T330_ROOT", root.path()).env("USCREEN_T330_DRM", root.path())
+        .env("BLENT_T330_ROOT", root.path()).env("BLENT_T330_DRM", root.path())
         .env("XDG_RUNTIME_DIR", root.path()).env("HOME", root.path()).output().unwrap();
     assert!(
         output.status.success(),

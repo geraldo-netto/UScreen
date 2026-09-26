@@ -152,7 +152,7 @@ def cohorts(trials):
     for scene, codec in keys:
         cases = [row for row in trials if (row['scene'], row['codec']) == (scene, codec)]
         app_memory = [m['total_pss_mib'] for row in cases for m in row['memory']
-                      if m['source'].endswith('-com.uscreen.rectbench.txt')]
+                      if m['source'].endswith('-com.blent.rectbench.txt')]
         rows.append(dict(scene=scene, codec=codec, trials=len(cases),
                          cpu_percent_one_core=statistics.median(row['cpu']['cpu_percent_one_core'] for row in cases),
                          sampled_app_pss_mib=distribution(app_memory),

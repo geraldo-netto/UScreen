@@ -1,6 +1,6 @@
 //! Linux conversion pool capacity; applied by the existing explicit restart.
+use blent_config::model::MAX_CONVERSION_THREADS;
 use eframe::egui;
-use uscreen_config::model::MAX_CONVERSION_THREADS;
 
 pub(super) fn show(ui: &mut egui::Ui, capacity: &mut u32) {
     ui.label("Conversion capacity");

@@ -138,7 +138,7 @@ pub struct FileConfig {
     /// older than 1.1.0 to keep working.
     pub require_token: bool,
     /// Ask GitHub once a day whether a newer release exists, and say so in
-    /// the tray and in `uscreen doctor`. Nothing is ever downloaded or
+    /// the tray and in `blent doctor`. Nothing is ever downloaded or
     /// installed by the daemon; updating stays with you or your package
     /// manager. One HTTPS request a day to api.github.com.
     pub check_updates: bool,
@@ -147,7 +147,7 @@ pub struct FileConfig {
     /// setup provisions the configured count now and at subsequent boots.
     pub max_tablets: u32,
     /// The tablet's address on the network, as `ip:port`, remembered by
-    /// `uscreen wifi`. When the cable is not plugged in the daemon tries to
+    /// `blent wifi`. When the cable is not plugged in the daemon tries to
     /// reconnect to it by itself, so the tablet comes back as a screen
     /// without anyone typing an adb command. Empty disables that.
     pub wifi_address: String,
@@ -155,17 +155,17 @@ pub struct FileConfig {
     pub auto_resolution: bool,
     pub video_port: u16,
     pub input_port: u16,
-    /// Launch the UScreen app on the tablet automatically when it's plugged in
+    /// Launch the Blent app on the tablet automatically when it's plugged in
     pub auto_launch_app: bool,
-    /// Create the virtual touchscreen ("UScreen Touch") while a tablet is
+    /// Create the virtual touchscreen ("Blent Touch") while a tablet is
     /// attached, so taps on it become touch input here. Opt out if merely
     /// having a touchscreen upsets your desktop (Cinnamon/GNOME on X11 hide
     /// the mouse cursor around touch devices) and you only use the pen.
     pub input_touch: bool,
-    /// Create the virtual pen tablet ("UScreen Pen") for stylus input with
+    /// Create the virtual pen tablet ("Blent Pen") for stylus input with
     /// pressure, tilt and eraser. Pen-only mode needs it.
     pub input_pen: bool,
-    /// Create the absolute pointer ("UScreen Pointer") that parks the mouse
+    /// Create the absolute pointer ("Blent Pointer") that parks the mouse
     /// cursor where the pen last was, so it does not vanish when the pen
     /// lifts. Only exists together with `input_pen`.
     pub input_pointer: bool,

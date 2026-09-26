@@ -31,7 +31,7 @@ class DistributionTest(unittest.TestCase):
                         'host/evdi/evdi_helper', str(library), str(staged)], cwd=root, check=True)
         expected = tree_contents(local)
         # APK production belongs to the caller; CI Linux package fixtures omit it.
-        expected.pop('uscreen.apk')
+        expected.pop('blent.apk')
         self.assertEqual(tree_contents(staged), expected, 'T379: bundle layouts diverged')
         self.assertEqual(os.readlink(staged / 'bin/libevdi.so.1'), 'libevdi.so.1.15.0')
         self.assertFalse((staged / 'bin/libevdi.so.1.15.0').is_symlink())
@@ -39,7 +39,7 @@ class DistributionTest(unittest.TestCase):
 
     def test_t102_apk_failure_and_bundled_helper_loading(self):
         for mode in ['failed-apk', 'missing-apk', 'success']:
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='uscreen-dist-') as tmp:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(prefix='blent-dist-') as tmp:
                 root = Path(tmp)
                 version = test_notices.NoticeTest().copy_sources(root)
                 def write(name, body, executable=False):
@@ -49,10 +49,10 @@ class DistributionTest(unittest.TestCase):
                     if executable:
                         path.chmod(0o755)
                     return path
-                write('target/release/uscreen', '#!/bin/sh\nexit 0\n', True)
-                write('target/release/uscreen-gui', '#!/bin/sh\nexit 0\n', True)
-                write('library.c', 'int uscreen_distribution_probe(void) { return 0; }\n')
-                write('host/evdi/evdi_helper.c', 'extern int uscreen_distribution_probe(void); int main(void) { return uscreen_distribution_probe(); }\n')
+                write('target/release/blent', '#!/bin/sh\nexit 0\n', True)
+                write('target/release/blent-gui', '#!/bin/sh\nexit 0\n', True)
+                write('library.c', 'int blent_distribution_probe(void) { return 0; }\n')
+                write('host/evdi/evdi_helper.c', 'extern int blent_distribution_probe(void); int main(void) { return blent_distribution_probe(); }\n')
                 # T380: stub the other C units too; this fixture checks loader
                 # paths and packaging. evdi_modules tests the real module link.
                 for module in ['conversion', 'frame_exchange', 'fifo_writer', 'capture', 'raw_ring', 'writer']:
@@ -79,20 +79,20 @@ class DistributionTest(unittest.TestCase):
                     # Extract and remove build-time library search paths entirely.
                     artifact = root / 'extracted'
                     artifact.mkdir()
-                    subprocess.run(['tar', '-xf', f'dist/uscreen-{version}-linux-x86_64.tar.gz', '-C', str(artifact)], cwd=root, check=True)
-                    self.compare_shared_bundle(root, artifact / f'uscreen-{version}', library)
+                    subprocess.run(['tar', '-xf', f'dist/blent-{version}-linux-x86_64.tar.gz', '-C', str(artifact)], cwd=root, check=True)
+                    self.compare_shared_bundle(root, artifact / f'blent-{version}', library)
                     shutil.rmtree(library.parent)
                     env.pop('LIBRARY_PATH')
                     env.pop('LD_LIBRARY_PATH', None)
-                    helper = artifact / f'uscreen-{version}/bin/evdi_helper'
+                    helper = artifact / f'blent-{version}/bin/evdi_helper'
                     loaded = subprocess.run([str(helper)], env=env, capture_output=True, text=True)
                     self.assertEqual(loaded.returncode, 0, loaded.stderr)
-                    self.assertTrue((artifact / f'uscreen-{version}/uscreen.apk').is_file())
+                    self.assertTrue((artifact / f'blent-{version}/blent.apk').is_file())
                     # T129: the local tarball carries the same notices and working links.
-                    test_notices.NoticeTest().verify_docs(artifact / f'uscreen-{version}')
+                    test_notices.NoticeTest().verify_docs(artifact / f'blent-{version}')
 
     def test_t379_missing_bundle_inputs_cannot_produce_an_archive(self):
-        inputs = ['target/release/uscreen', 'target/release/uscreen-gui',
+        inputs = ['target/release/blent', 'target/release/blent-gui',
                   'host/evdi/evdi_helper', 'library/libevdi.so.1.15.0']
         for missing in inputs:
             with self.subTest(missing=missing), tempfile.TemporaryDirectory() as tmp:
@@ -113,7 +113,7 @@ class DistributionTest(unittest.TestCase):
                 for command in commands:
                     result = subprocess.run(command, cwd=root, capture_output=True, text=True)
                     self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertFalse((root / f'dist/uscreen-{version}-linux-x86_64.tar.gz').exists())
+                self.assertFalse((root / f'dist/blent-{version}-linux-x86_64.tar.gz').exists())
 
 
 if __name__ == '__main__':

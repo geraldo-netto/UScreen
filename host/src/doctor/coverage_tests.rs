@@ -170,7 +170,7 @@ fn diagnostics_child() {
     }
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", DIAGNOSTICS_TEST, "--nocapture"])
-        .env("USCREEN_T497_DIAGNOSTICS", "1")
+        .env("BLENT_T497_DIAGNOSTICS", "1")
         .env("PATH", &tools)
         .env("HOME", directory.path())
         .env("XDG_CONFIG_HOME", directory.path())
@@ -232,7 +232,7 @@ async fn version_queries(root: &Path) {
 
 #[tokio::test]
 async fn t497_live_adapters_read_only_private_command_fixtures() {
-    if std::env::var_os("USCREEN_T497_DIAGNOSTICS").is_none() {
+    if std::env::var_os("BLENT_T497_DIAGNOSTICS").is_none() {
         diagnostics_child();
         return;
     }

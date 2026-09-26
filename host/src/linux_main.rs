@@ -4,10 +4,10 @@ mod adb_inventory;
 mod allocation_probe;
 #[cfg(not(feature = "inproc-encoder"))]
 mod annex_b;
-use uscreen::attachment;
-use uscreen::camera;
+use blent::attachment;
+use blent::camera;
 mod capture;
-use uscreen::config;
+use blent::config;
 mod desktop;
 mod device_tasks;
 mod discovery;
@@ -19,16 +19,16 @@ mod encoder;
 mod encoder_io;
 #[cfg(not(feature = "inproc-encoder"))]
 mod framed_annex_b;
-use uscreen::input;
+use blent::input;
 #[cfg(not(feature = "inproc-encoder"))]
 mod ivf;
-use uscreen::kscreen;
-use uscreen::kwin;
-use uscreen::latency;
-use uscreen::media;
-use uscreen::media_storage;
+use blent::kscreen;
+use blent::kwin;
+use blent::latency;
+use blent::media;
+use blent::media_storage;
 mod monitor;
-use uscreen::osk;
+use blent::osk;
 mod persistence;
 #[cfg(feature = "inproc-encoder")]
 mod raw_memory;
@@ -38,19 +38,22 @@ mod runtime;
 mod selection;
 mod session;
 #[cfg(test)]
-use uscreen::stream;
+use blent::stream;
 #[cfg(test)]
 mod test_logging;
 mod tray;
 mod update;
-use uscreen::vdisplay;
-use uscreen::video_queue;
+use blent::vdisplay;
+use blent::video_queue;
 
 use anyhow::{Context, Result};
 use clap::Parser;
 #[cfg(test)]
 mod discovery_tests;
 
+use blent_config::adb::{transport_of, Transport};
+use blent_config::cli::{Cli, Commands};
+use blent_config::commands::AsyncCommandExt;
 #[cfg(test)]
 use monitor::test_support::{deliver_extra_token, tick_assigned_apps};
 #[cfg(test)]
@@ -60,9 +63,6 @@ use std::path::PathBuf;
 use tokio::signal;
 use tokio::sync::watch;
 use tracing::{error, info, warn};
-use uscreen_config::adb::{transport_of, Transport};
-use uscreen_config::cli::{Cli, Commands};
-use uscreen_config::commands::AsyncCommandExt;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
 
     match &cli.command {
         Some(Commands::Start) | None => {
-            info!("Starting uscreen daemon");
+            info!("Starting blent daemon");
             run_daemon(cli).await?;
         }
         Some(Commands::Stop) => stop_daemon().await?,
@@ -89,7 +89,7 @@ fn setup_logging() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "uscreen=info".into()),
+                .unwrap_or_else(|_| "blent=info".into()),
         )
         .with_target(true)
         .with_line_number(true)
@@ -120,11 +120,11 @@ mod cli_tests {
     #[test]
     fn t250_activity_and_token_targets_use_fork_package_and_original_classes() {
         let with_token = super::app_launch_command(Some(&"a".repeat(64)));
-        assert!(with_token.contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenActivity"));
+        assert!(with_token.contains("io.github.geraldo_netto.blent/com.blent.TokenActivity"));
         assert!(super::app_launch_command(None)
-            .contains("io.github.geraldo_netto.uscreen/com.uscreen.MainActivity"));
+            .contains("io.github.geraldo_netto.blent/com.blent.MainActivity"));
         assert!(super::token_delivery_command(None)
-            .contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenReceiver"));
+            .contains("io.github.geraldo_netto.blent/com.blent.TokenReceiver"));
     }
 
     #[tokio::test]
@@ -133,8 +133,8 @@ mod cli_tests {
         let root = tempfile::tempdir().unwrap();
         let adb = root.path().join("adb");
         std::fs::write(&adb, r#"#!/bin/sh
-if [ "$6" = com.uscreen ]; then echo package:/upstream/base.apk; exit 0; fi
-if [ "$6" = io.github.geraldo_netto.uscreen ] && [ "$2" = FORK ]; then echo package:/fork/base.apk; exit 0; fi
+if [ "$6" = com.blent ]; then echo package:/upstream/base.apk; exit 0; fi
+if [ "$6" = io.github.geraldo_netto.blent ] && [ "$2" = FORK ]; then echo package:/fork/base.apk; exit 0; fi
 exit 1
 "#).unwrap();
         std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
@@ -145,9 +145,8 @@ exit 1
     #[test]
     fn t321_explicit_cli_low_clock_is_not_silently_repaired() {
         use clap::Parser;
-        let cli = super::Cli::parse_from([
-            "uscreen", "--width", "640", "--height", "480", "--fps", "10",
-        ]);
+        let cli =
+            super::Cli::parse_from(["blent", "--width", "640", "--height", "480", "--fps", "10"]);
         let config = super::effective_config(&cli, &Default::default());
         assert_eq!(config.fps, 10);
         assert!(
@@ -164,11 +163,11 @@ exit 1
             ..Default::default()
         };
         assert_eq!(
-            effective_config(&Cli::try_parse_from(["uscreen"]).unwrap(), &saved).conversion_threads,
+            effective_config(&Cli::try_parse_from(["blent"]).unwrap(), &saved).conversion_threads,
             64
         );
         for (value, expected) in [("auto", 0), ("1", 1), ("128", 128)] {
-            let cli = Cli::try_parse_from(["uscreen", "--conversion-threads", value]).unwrap();
+            let cli = Cli::try_parse_from(["blent", "--conversion-threads", value]).unwrap();
             let effective = effective_config(&cli, &saved);
             assert_eq!(effective.conversion_threads, expected);
             let template = capture::CaptureConfig {
@@ -192,26 +191,26 @@ exit 1
         use super::*;
         for value in ["auto", "0", "1", "64", "128"] {
             assert!(
-                Cli::try_parse_from(["uscreen", "--conversion-threads", value]).is_ok(),
+                Cli::try_parse_from(["blent", "--conversion-threads", value]).is_ok(),
                 "T474: {value}"
             );
         }
         for value in ["129", "-1", "garbage", "4294967296"] {
             assert!(
-                Cli::try_parse_from(["uscreen", "--conversion-threads", value]).is_err(),
+                Cli::try_parse_from(["blent", "--conversion-threads", value]).is_err(),
                 "T474: {value}"
             );
         }
     }
     // Configuration writers are exercised only in child processes with a private XDG tree.
     fn isolated_config_test(name: &str) -> bool {
-        if std::env::var_os("USCREEN_CONFIG_TEST_CHILD").is_some() {
+        if std::env::var_os("BLENT_CONFIG_TEST_CHILD").is_some() {
             return false;
         }
         let dir = tempfile::tempdir().unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
-            .env("USCREEN_CONFIG_TEST_CHILD", "1")
+            .env("BLENT_CONFIG_TEST_CHILD", "1")
             .env("XDG_CONFIG_HOME", dir.path())
             .output()
             .unwrap();
@@ -243,7 +242,7 @@ exit 1
             )
             .unwrap();
             let mut cli =
-                Cli::try_parse_from(["uscreen", "--helper", "/nonexistent-t332-helper"]).unwrap();
+                Cli::try_parse_from(["blent", "--helper", "/nonexistent-t332-helper"]).unwrap();
             if saved_fps == 60 {
                 cli.fps = Some(90);
             }
@@ -272,7 +271,7 @@ exit 1
             )
             .unwrap();
             let mut cli =
-                Cli::try_parse_from(["uscreen", "--helper", "/nonexistent-t288-helper"]).unwrap();
+                Cli::try_parse_from(["blent", "--helper", "/nonexistent-t288-helper"]).unwrap();
             cli.pen_only = !saved_mode;
             let error = run_daemon(cli).await.unwrap_err().to_string();
             assert!(error.contains("requires Pen"), "T288: {error}");
@@ -301,7 +300,7 @@ exit 1
                     ..Default::default()
                 };
                 saved.save().unwrap();
-                let mut args = vec!["uscreen", "--helper", "/nonexistent-t284-helper"];
+                let mut args = vec!["blent", "--helper", "/nonexistent-t284-helper"];
                 if explicit {
                     args.extend(["--encoder", encoder]);
                 }
@@ -376,7 +375,7 @@ exit 1
             selection: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
-        let cli = Cli::try_parse_from(["uscreen"]).unwrap();
+        let cli = Cli::try_parse_from(["blent"]).unwrap();
         let writer = persist_settings(receiver, CliOverrides::new(&cli));
         sender
             .send(media::EncoderSettings { fps: 30, ..initial })
@@ -409,7 +408,7 @@ exit 1
             selection: None,
         };
         let (sender, receiver) = watch::channel(initial.clone());
-        let cli = Cli::try_parse_from(["uscreen"]).unwrap();
+        let cli = Cli::try_parse_from(["blent"]).unwrap();
         let worker = persistence::Worker::new(config::storage::ConfigStore::default()).unwrap();
         let writer = persist_settings_with(receiver, CliOverrides::new(&cli), worker.writer());
         tokio::pin!(writer);
@@ -512,7 +511,7 @@ exit 1
             selection: None,
         };
         let (tx, rx) = watch::channel(initial.clone());
-        let cli = Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi"]).unwrap();
+        let cli = Cli::try_parse_from(["blent", "--encoder", "h264_vaapi"]).unwrap();
         let persist = persist_settings(rx, CliOverrides::new(&cli));
         // A GUI edit to an unrelated field must also survive the delayed writer.
         config::FileConfig::update(|cfg| {
@@ -557,7 +556,7 @@ exit 1
     #[test]
     fn t200_runtime_persistence_preserves_cli_and_unchanged_fields() {
         let cli =
-            Cli::try_parse_from(["uscreen", "--encoder", "h264_vaapi", "--width", "1280"]).unwrap();
+            Cli::try_parse_from(["blent", "--encoder", "h264_vaapi", "--width", "1280"]).unwrap();
         let overrides = CliOverrides::new(&cli);
         let previous = media::EncoderSettings {
             encoder: "h264_vaapi".into(),
@@ -639,9 +638,9 @@ exit 1
 
     #[test]
     fn t122_cli_distinguishes_omitted_helper_from_explicit_override() {
-        assert!(Cli::try_parse_from(["uscreen"]).unwrap().helper.is_none());
+        assert!(Cli::try_parse_from(["blent"]).unwrap().helper.is_none());
         assert_eq!(
-            Cli::try_parse_from(["uscreen", "--helper", "/custom/helper"])
+            Cli::try_parse_from(["blent", "--helper", "/custom/helper"])
                 .unwrap()
                 .helper,
             Some(PathBuf::from("/custom/helper"))
@@ -888,7 +887,7 @@ printf '%s\n' "$2" >> "$0.log"
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
         let adb = root.path().join("adb");
-        std::fs::write(&adb, "#!/bin/sh\ncase \"$2\" in TABLET*|192.0.2.1:5555) echo package:/data/app/com.uscreen/base.apk;; esac\n").unwrap();
+        std::fs::write(&adb, "#!/bin/sh\ncase \"$2\" in TABLET*|192.0.2.1:5555) echo package:/data/app/com.blent/base.apk;; esac\n").unwrap();
         std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
         let adb = adb.to_str().unwrap();
         let network = ["PHONE", "192.0.2.1:5555"].map(String::from);
@@ -1002,7 +1001,7 @@ printf '%s\n' "$2" >> "$0.log"
         use std::os::unix::fs::PermissionsExt;
         let root = tempfile::tempdir().unwrap();
         let adb = root.path().join("adb");
-        std::fs::write(&adb, "#!/bin/sh\nprintf '%s\\n' \"$2\" >> \"$0.log\"\necho package:/data/app/com.uscreen/base.apk\n").unwrap();
+        std::fs::write(&adb, "#!/bin/sh\nprintf '%s\\n' \"$2\" >> \"$0.log\"\necho package:/data/app/com.blent/base.apk\n").unwrap();
         std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
         let network = [
             "adb-TABLET-nonce._adb-tls-connect._tcp",
@@ -1093,9 +1092,7 @@ printf '%s\n' "$2" >> "$0.log"
     fn t039_host_sends_tokens_only_to_the_protected_activity() {
         let token = "a".repeat(64);
         let cmd = super::app_launch_command(Some(&token));
-        assert!(
-            cmd.contains("io.github.geraldo_netto.uscreen/com.uscreen.TokenActivity --es token")
-        );
+        assert!(cmd.contains("io.github.geraldo_netto.blent/com.blent.TokenActivity --es token"));
         assert!(!cmd.contains(".MainActivity --es token"));
         assert!(super::app_launch_command(None).contains(".MainActivity"));
     }
@@ -1104,10 +1101,10 @@ printf '%s\n' "$2" >> "$0.log"
     fn t065_dead_flags_are_rejected_instead_of_silently_ignored() {
         use clap::Parser;
         for args in [
-            vec!["uscreen", "start", "--daemon"],
-            vec!["uscreen", "start", "-d"],
-            vec!["uscreen", "--display", "DVI-I-1"],
-            vec!["uscreen", "--auto-vdisplay"],
+            vec!["blent", "start", "--daemon"],
+            vec!["blent", "start", "-d"],
+            vec!["blent", "--display", "DVI-I-1"],
+            vec!["blent", "--auto-vdisplay"],
         ] {
             assert!(
                 super::Cli::try_parse_from(args.clone()).is_err(),
@@ -1157,7 +1154,7 @@ printf '%s\n' "$2" >> "$0.log"
 
     fn t237_process_fixture(root: &std::path::Path) -> std::path::PathBuf {
         let source = root.join("child.c");
-        let executable = root.join("uscreen");
+        let executable = root.join("blent");
         std::fs::write(&source, "#include <stdio.h>\n#include <unistd.h>\nint main(void) { puts(\"ready\"); fflush(stdout); for (;;) pause(); }\n").unwrap();
         assert!(std::process::Command::new("cc")
             .arg(&source)
@@ -1236,14 +1233,14 @@ printf '%s\n' "$2" >> "$0.log"
 
     #[tokio::test]
     async fn t244_status_recovers_daemon_despite_stale_pid_file() {
-        if std::env::var_os("USCREEN_T244_CHILD").is_some() {
+        if std::env::var_os("BLENT_T244_CHILD").is_some() {
             show_status().await.unwrap();
             return;
         }
         let root = tempfile::tempdir().unwrap();
         let executable = t237_process_fixture(root.path());
         let mut unrelated = t237_child(&executable, &["doctor"]).await;
-        let pid_path = root.path().join(".local/share/uscreen/uscreen.pid");
+        let pid_path = root.path().join(".local/share/blent/blent.pid");
         std::fs::create_dir_all(pid_path.parent().unwrap()).unwrap();
         let mut daemon = t237_child(&executable, &[]).await;
         let pid = daemon.id().unwrap();
@@ -1261,7 +1258,7 @@ printf '%s\n' "$2" >> "$0.log"
                     "cli_tests::t244_status_recovers_daemon_despite_stale_pid_file",
                     "--nocapture",
                 ])
-                .env("USCREEN_T244_CHILD", "1")
+                .env("BLENT_T244_CHILD", "1")
                 .env("HOME", root.path())
                 .output()
                 .unwrap();
@@ -1273,7 +1270,7 @@ printf '%s\n' "$2" >> "$0.log"
             assert!(output.status.success());
             let text = String::from_utf8(output.stdout).unwrap();
             let reported = text
-                .split("uscreen is running (PID: ")
+                .split("blent is running (PID: ")
                 .nth(1)
                 .and_then(|tail| tail.split(')').next())
                 .unwrap_or("");
@@ -1291,7 +1288,7 @@ printf '%s\n' "$2" >> "$0.log"
     }
 
     #[tokio::test]
-    async fn t030_pid_reuse_does_not_mistake_another_process_for_uscreen() {
+    async fn t030_pid_reuse_does_not_mistake_another_process_for_blent() {
         let mut child = tokio::process::Command::new("sleep")
             .arg("5")
             .kill_on_drop(true)
@@ -1306,7 +1303,7 @@ printf '%s\n' "$2" >> "$0.log"
     async fn t033_stop_waits_for_daemon_cleanup() {
         use tokio::io::AsyncBufReadExt;
         let mut child = tokio::process::Command::new("sh")
-            .args(["-c", "echo uscreen > /proc/$$/comm; trap 'sleep 0.1; exit 0' TERM; echo ready; while :; do sleep 0.01; done"])
+            .args(["-c", "echo blent > /proc/$$/comm; trap 'sleep 0.1; exit 0' TERM; echo ready; while :; do sleep 0.01; done"])
             .stdout(std::process::Stdio::piped()).kill_on_drop(true).spawn().unwrap();
         let mut ready = String::new();
         tokio::io::BufReader::new(child.stdout.take().unwrap())
@@ -1491,7 +1488,7 @@ printf '%s\n' "$2" >> "$0.log"
     #[test]
     fn t066_cli_overrides_use_the_same_limits_as_saved_settings() {
         let cli = Cli::try_parse_from([
-            "uscreen",
+            "blent",
             "--fps",
             "500",
             "--bitrate",
@@ -1531,15 +1528,15 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     ensure_single_daemon(&pid_path)?;
 
-    uscreen_config::scheduling::apply_configured();
-    uscreen_config::scheduling::apply_shared_adb(file_cfg.scheduling_priority);
+    blent_config::scheduling::apply_configured();
+    blent_config::scheduling::apply_shared_adb(file_cfg.scheduling_priority);
 
     // Write PID file for clean stop/status
     let pid = std::process::id();
     std::fs::write(&pid_path, pid.to_string())?;
 
     heal_config(&file_cfg);
-    uscreen_config::linux::pipe::publish_current()?;
+    blent_config::linux::pipe::publish_current()?;
     let encoder = effective.encoder.clone();
     let fps = effective.fps;
     let bitrate = effective.bitrate;
@@ -1608,7 +1605,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         persistence.writer(),
     );
 
-    info!("=== uscreen daemon starting ===");
+    info!("=== blent daemon starting ===");
     info!("  Resolution: {}x{} @ {}fps", width, height, fps);
     info!("  Encoder: {}", encoder);
     info!("  Bitrate: {} kbps", bitrate);
@@ -1691,16 +1688,16 @@ async fn run_daemon(cli: Cli) -> Result<()> {
 
     println!();
     println!("================================================");
-    println!("  uscreen daemon running (PID: {})", pid);
+    println!("  blent daemon running (PID: {})", pid);
     println!("================================================");
-    println!("  On your tablet, open the UScreen app");
+    println!("  On your tablet, open the Blent app");
     println!("  ADB ports will be auto-forwarded if possible.");
     println!("  Otherwise, run:");
     println!("{}", forwarding_instructions(video_port, input_port));
     println!("================================================");
     println!();
 
-    // `uscreen stop` (and the GUI) send SIGTERM, not SIGINT — without a
+    // `blent stop` (and the GUI) send SIGTERM, not SIGINT — without a
     // handler for it, the kernel kills the process with its default
     // disposition and none of our cleanup (which is what kills the
     // evdi_helper/ffmpeg children via kill_on_drop) ever runs, orphaning
@@ -1748,10 +1745,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // Only if it is still ours. Winding down takes a few seconds, and a
     // daemon started in the meantime has already written its own PID here;
     // deleting that leaves the new daemon untracked - doctor calls it an
-    // orphan and `uscreen stop` can no longer find it.
+    // orphan and `blent stop` can no longer find it.
     remove_pid_file_if_ours(&pid_path, pid);
 
-    info!("uscreen daemon stopped");
+    info!("blent daemon stopped");
     Ok(())
 }
 
@@ -1766,7 +1763,7 @@ async fn wait_for_shutdown(mut quit_rx: watch::Receiver<bool>) {
 
 fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
     // Refuse to start a second daemon on top of a live one: the PID file is
-    // a single slot, so `uscreen stop` only ever kills the most recently
+    // a single slot, so `blent stop` only ever kills the most recently
     // started process — any earlier instance still running would become
     // permanently untracked, and both would keep writing/reading the same
     // EVDI FIFO, corrupting frames and starving the encoder.
@@ -1775,7 +1772,7 @@ fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
             let alive = is_daemon_process(existing_pid as u32, unsafe { libc::getuid() });
             if alive {
                 anyhow::bail!(
-                    "uscreen daemon already running (PID: {}). Run `uscreen stop` first.",
+                    "blent daemon already running (PID: {}). Run `blent stop` first.",
                     existing_pid
                 );
             }
@@ -1787,7 +1784,7 @@ fn ensure_single_daemon(pid_path: &std::path::Path) -> Result<()> {
     let others = other_daemons();
     if !others.is_empty() {
         anyhow::bail!(
-            "uscreen daemon already running (PID {:?}, untracked). Run `uscreen stop` first.",
+            "blent daemon already running (PID {:?}, untracked). Run `blent stop` first.",
             others
         );
     }
@@ -1977,11 +1974,11 @@ fn persist_settings(
 
 /// Recover same-user daemons even when their PID file is missing.
 fn other_daemons() -> Vec<u32> {
-    uscreen_config::linux::daemon::discover(None)
+    blent_config::linux::daemon::discover(None)
 }
 
 fn is_daemon_process(pid: u32, uid: u32) -> bool {
-    uscreen_config::linux::daemon::is_daemon_process(pid, uid)
+    blent_config::linux::daemon::is_daemon_process(pid, uid)
 }
 
 fn remove_pid_file_if_ours(pid_path: &std::path::Path, pid: u32) {
@@ -1997,7 +1994,7 @@ fn remove_pid_file_if_ours(pid_path: &std::path::Path, pid: u32) {
 
 fn get_pid_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_default();
-    PathBuf::from(format!("{}/.local/share/uscreen/uscreen.pid", home))
+    PathBuf::from(format!("{}/.local/share/blent/blent.pid", home))
 }
 
 fn select_helper(explicit: Option<&std::path::Path>, candidates: &[PathBuf]) -> Result<PathBuf> {
@@ -2033,9 +2030,9 @@ fn find_helper(explicit: Option<&std::path::Path>) -> Result<PathBuf> {
         candidates.push(dir.join("evdi_helper"));
         if let Some(prefix) = dir.parent() {
             for relative in [
-                "lib/uscreen/evdi_helper",
-                "lib64/uscreen/evdi_helper",
-                "libexec/uscreen/evdi_helper",
+                "lib/blent/evdi_helper",
+                "lib64/blent/evdi_helper",
+                "libexec/blent/evdi_helper",
             ] {
                 candidates.push(prefix.join(relative));
             }
@@ -2043,10 +2040,10 @@ fn find_helper(explicit: Option<&std::path::Path>) -> Result<PathBuf> {
     }
     candidates.push(PathBuf::from(home).join(".local/bin/evdi_helper"));
     for path in [
-        "/usr/lib/uscreen/evdi_helper",
-        "/usr/lib64/uscreen/evdi_helper",
-        "/usr/libexec/uscreen/evdi_helper",
-        "/usr/local/lib/uscreen/evdi_helper",
+        "/usr/lib/blent/evdi_helper",
+        "/usr/lib64/blent/evdi_helper",
+        "/usr/libexec/blent/evdi_helper",
+        "/usr/local/lib/blent/evdi_helper",
         "host/evdi/evdi_helper",
     ] {
         candidates.push(PathBuf::from(path));
@@ -2184,7 +2181,7 @@ fn session_ledger() -> Option<runtime::SessionLedger> {
 fn add_fake_tablets(devices: &mut Vec<String>) {
     // Test hook: pretend a serial is attached so a second pipeline can be
     // exercised with one physical tablet and a loopback client.
-    if let Ok(fake) = std::env::var("USCREEN_FAKE_TABLET") {
+    if let Ok(fake) = std::env::var("BLENT_FAKE_TABLET") {
         for f in fake.split(',').map(str::trim).filter(|f| !f.is_empty()) {
             if !devices.iter().any(|d| d == f) {
                 devices.push(f.to_string());
@@ -2293,7 +2290,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
 
     let Some(serial) = wifi_device_with(&adb_devices().await, "adb").await else {
         anyhow::bail!(
-            "No USB tablet with UScreen installed. Install the app and plug the cable in for this one step — the tablet has to be told \
+            "No USB tablet with Blent installed. Install the app and plug the cable in for this one step — the tablet has to be told \
              to listen on the network, and only the cable can tell it."
         );
     };
@@ -2316,7 +2313,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
         anyhow::bail!(
             "The tablet is listening, but its address could not be read. Find it under \
              Settings → About tablet → Status, then put `wifi_address = \"<ip>:5555\"` in \
-             ~/.config/uscreen/config.toml."
+             ~/.config/blent/config.toml."
         );
     };
     let address = format!("{}:5555", ip);
@@ -2340,7 +2337,7 @@ async fn setup_wifi(off: bool) -> Result<()> {
          so this is a one-off — until the tablet reboots, which puts its adb back on USB \
          and means running this once more.\n\
          Wi-Fi is a fallback: a historical test with the radio lock had a median \
-         close to USB but multi-second outliers. Your network may differ. `uscreen wifi --off` forgets the address."
+         close to USB but multi-second outliers. Your network may differ. `blent wifi --off` forgets the address."
     );
     Ok(())
 }
@@ -2455,7 +2452,7 @@ impl TabletConnection<'_> {
 /// to a local process that must not receive it. Failed input authentication
 /// requests a protected broadcast, never an Activity launch.
 fn app_launch_command(token: Option<&str>) -> String {
-    use uscreen_config::android::Component;
+    use blent_config::android::Component;
     let component = if token.is_some() {
         Component::TokenActivity
     } else {
@@ -2479,7 +2476,7 @@ async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
 fn token_delivery_command(token: Option<&str>) -> String {
     let mut command = format!(
         "am broadcast -n {}",
-        uscreen_config::android::Component::TokenReceiver.adb_name()
+        blent_config::android::Component::TokenReceiver.adb_name()
     );
     if let Some(token) = token {
         command.push_str(" --es token ");
@@ -2519,20 +2516,20 @@ async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) -
     };
     match tokio::time::timeout(std::time::Duration::from_secs(15), operation).await {
         Ok(Ok(st)) if st.success() => {
-            info!("UScreen {action} command completed on tablet");
+            info!("Blent {action} command completed on tablet");
             true
         }
         _ => {
             let _ = child.kill().await;
-            warn!("Could not complete UScreen {action} (is the matching app installed?)");
+            warn!("Could not complete Blent {action} (is the matching app installed?)");
             false
         }
     }
 }
 
-/// Test-only serials supplied through USCREEN_FAKE_TABLET.
+/// Test-only serials supplied through BLENT_FAKE_TABLET.
 fn is_fake_serial(serial: &str) -> bool {
-    std::env::var("USCREEN_FAKE_TABLET")
+    std::env::var("BLENT_FAKE_TABLET")
         .map(|f| f.split(',').any(|x| x.trim() == serial))
         .unwrap_or(false)
 }
@@ -2666,7 +2663,7 @@ async fn app_presence_with(serial: &str, adb: &str) -> Option<bool> {
             "shell",
             "pm",
             "path",
-            uscreen_config::android::PACKAGE,
+            blent_config::android::PACKAGE,
         ])
         .output_bounded()
         .await
@@ -2836,7 +2833,7 @@ async fn stop_daemon_at(pid_path: &std::path::Path, mut pids: Vec<u32>) -> Resul
     if let Some(pid) = tracked {
         remove_pid_file_if_ours(pid_path, pid);
     }
-    info!("uscreen daemon stopped");
+    info!("blent daemon stopped");
     Ok(())
 }
 
@@ -2852,14 +2849,14 @@ async fn show_status() -> Result<()> {
         remove_pid_file_if_ours(&pid_path, stale);
     }
     if pids.is_empty() {
-        println!("uscreen is not running");
+        println!("blent is not running");
     } else {
         let pids = pids
             .iter()
             .map(u32::to_string)
             .collect::<Vec<_>>()
             .join(" ");
-        println!("uscreen is running (PID: {})", pids);
+        println!("blent is running (PID: {})", pids);
     }
     Ok(())
 }

@@ -1,5 +1,5 @@
-#ifndef USCREEN_PIXEL_DAMAGE_H
-#define USCREEN_PIXEL_DAMAGE_H
+#ifndef BLENT_PIXEL_DAMAGE_H
+#define BLENT_PIXEL_DAMAGE_H
 #include "pixel_span.h"
 #include <stdint.h>
 #include <string.h>

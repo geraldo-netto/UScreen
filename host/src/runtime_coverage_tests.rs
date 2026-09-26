@@ -8,7 +8,7 @@ const TEST: &str = "runtime_coverage_tests::t497_private_runtime_failures_and_tr
 
 fn isolated_command() -> std::process::Command {
     let executable = std::env::current_exe().unwrap();
-    if std::env::var_os("USCREEN_TEST_PRIVATE_PID_NAMESPACE").is_some()
+    if std::env::var_os("BLENT_TEST_PRIVATE_PID_NAMESPACE").is_some()
         && Path::new("/.dockerenv").is_file()
     {
         return std::process::Command::new(executable);
@@ -17,7 +17,7 @@ fn isolated_command() -> std::process::Command {
     command.args(["--user", "--map-root-user", "--mount", "--propagation", "private",
         "--pid", "--fork", "--mount-proc", "/bin/sh", "-c",
         "set -e; mount -t tmpfs -o mode=700,nosuid,nodev tmpfs /run/user; PATH=\"$HOME\" exec \"$@\"",
-        "uscreen-t497-runtime"]);
+        "blent-t497-runtime"]);
     command.arg(executable);
     command
 }
@@ -29,8 +29,8 @@ fn isolated() {
         .unwrap();
     let output = isolated_command()
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T497_HOST_RUNTIME", "1")
-        .env("USCREEN_FAKE_TABLET", "one, two,,one, existing, ")
+        .env("BLENT_T497_HOST_RUNTIME", "1")
+        .env("BLENT_FAKE_TABLET", "one, two,,one, existing, ")
         .env("HOME", root.path())
         .env("XDG_CONFIG_HOME", root.path().join("config"))
         .env("XDG_RUNTIME_DIR", root.path())
@@ -123,7 +123,7 @@ async fn wifi_contract(root: &Path) {
         r#"#!/bin/sh
 printf '%s\n' "$*" >> "$HOME/adb-calls"
 if [ "$1" = connect ]; then
-  printf "wifi_address = '192.0.2.10:5555'\n" > "$XDG_CONFIG_HOME/uscreen/config.toml"
+  printf "wifi_address = '192.0.2.10:5555'\n" > "$XDG_CONFIG_HOME/blent/config.toml"
   printf 'connected\n'
 fi
 "#,
@@ -148,7 +148,7 @@ fi
 
 #[tokio::test]
 async fn t497_private_runtime_failures_and_transport_recovery() {
-    if std::env::var_os("USCREEN_T497_HOST_RUNTIME").is_none() {
+    if std::env::var_os("BLENT_T497_HOST_RUNTIME").is_none() {
         isolated();
         return;
     }
@@ -166,7 +166,7 @@ async fn t497_stop_timeout_leaves_a_nonresponsive_owned_daemon_reported() {
     let mut child = tokio::process::Command::new("/bin/sh")
         .args([
             "-c",
-            "trap '' TERM; echo uscreen > /proc/$$/comm; echo ready; read value",
+            "trap '' TERM; echo blent > /proc/$$/comm; echo ready; read value",
         ])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())

@@ -1,8 +1,8 @@
 //! Linux dynamic status and assigned-tablet probes.
 use super::{Capabilities, Source};
 use crate::{apply_tablet_sessions, autostart_enabled, command_exists, pid_path, Status};
+use blent_config::{commands::SyncCommandExt, linux::daemon, runtime};
 use std::process::Command;
-use uscreen_config::{commands::SyncCommandExt, linux::daemon, runtime};
 #[derive(Default)]
 pub(super) struct Platform {
     daemon: daemon::StatusProbe,
@@ -11,7 +11,7 @@ pub(super) struct Platform {
 impl Source for Platform {
     fn capabilities(&mut self) -> Capabilities {
         Capabilities {
-            daemon_binary: crate::find_uscreen_bin().is_some(),
+            daemon_binary: crate::find_blent_bin().is_some(),
             ffmpeg: command_exists("ffmpeg"),
             adb: command_exists("adb"),
             autostart: autostart_enabled(),
@@ -43,13 +43,13 @@ impl Source for Platform {
             .ok()
             .and_then(|dir| runtime::load_sessions(&dir.join("sessions.json")))
             .unwrap_or_default();
-        status.pipe_ceiling = uscreen_config::linux::pipe::ceiling_bytes();
+        status.pipe_ceiling = blent_config::linux::pipe::ceiling_bytes();
         status.pipe_capacities = sessions
             .iter()
             .map(|session| {
                 let capacity = runtime::fifo_path_for(session.instance)
                     .ok()
-                    .and_then(|path| uscreen_config::linux::pipe::effective_bytes(&path));
+                    .and_then(|path| blent_config::linux::pipe::effective_bytes(&path));
                 (session.instance, capacity)
             })
             .collect();

@@ -60,15 +60,15 @@ def environment(directory, root):
     paths.extend(filter(None, os.environ.get('PYTHONPATH', '').split(os.pathsep)))
     return dict(os.environ, PYTHONPATH=os.pathsep.join(paths), PYTHONNOUSERSITE='1',
                 COVERAGE_PROCESS_START=str(configuration(directory, root)),
-                USCREEN_COVERAGE_ROOT=str(root), USCREEN_COVERAGE_MANIFEST=str(directory/'manifest.json'),
-                USCREEN_PYTHON_CALLS=str(directory/'calls'),
-                USCREEN_SHELL_COVERAGE_PYTHON=sys.executable,
-                USCREEN_SHELL_COVERAGE_ORIGINS=str(tools/'shell_origins.py'),
-                BASH_ENV=str(tools/'trace.sh'), USCREEN_SHELL_COVERAGE_DIR=str(directory/'shell'))
+                BLENT_COVERAGE_ROOT=str(root), BLENT_COVERAGE_MANIFEST=str(directory/'manifest.json'),
+                BLENT_PYTHON_CALLS=str(directory/'calls'),
+                BLENT_SHELL_COVERAGE_PYTHON=sys.executable,
+                BLENT_SHELL_COVERAGE_ORIGINS=str(tools/'shell_origins.py'),
+                BASH_ENV=str(tools/'trace.sh'), BLENT_SHELL_COVERAGE_DIR=str(directory/'shell'))
 
 
 def commands(root):
-    yield ['cargo', 'test', '--locked', '-p', 'uscreen', '--test', 'tooling']
+    yield ['cargo', 'test', '--locked', '-p', 'blent', '--test', 'tooling']
     for directory in ['scripts/tests', 'scripts/complexity', 'scripts/coverage']:
         executable = 'python3' if directory == 'scripts/tests' else sys.executable
         yield [executable, '-m', 'unittest', 'discover', '-s', str(root/directory), '-p', 'test_*.py']
@@ -79,7 +79,7 @@ def python_report(directory, root, env):
     option = '--rcfile=' + str(directory/'coverage.ini')
     # Reporting is outside the measured subprocesses, using their exact same source manifest.
     clean = {key: value for key, value in env.items()
-             if key not in {'COVERAGE_PROCESS_START', 'USCREEN_PYTHON_CALLS', 'BASH_ENV'}}
+             if key not in {'COVERAGE_PROCESS_START', 'BLENT_PYTHON_CALLS', 'BASH_ENV'}}
     with (directory/'reporting.log').open('w') as log:
         for args in [['combine', option, '--keep', str(directory)],
                      ['json', option, '-o', str(directory/'python.json')]]:

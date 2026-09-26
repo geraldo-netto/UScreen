@@ -9,21 +9,21 @@ fn fixture(path: &std::path::Path, role: &str) -> Command {
             "commands::tests::t496_fixture_process",
             "--nocapture",
         ])
-        .env("USCREEN_T496_PATH", path)
-        .env("USCREEN_T496_ROLE", role);
+        .env("BLENT_T496_PATH", path)
+        .env("BLENT_T496_ROLE", role);
     command
 }
 
 #[test]
 fn t496_fixture_process() {
-    let Some(path) = std::env::var_os("USCREEN_T496_PATH") else {
+    let Some(path) = std::env::var_os("BLENT_T496_PATH") else {
         return;
     };
     let path = std::path::PathBuf::from(path);
     let stage = path.with_extension("tmp");
     std::fs::write(&stage, std::process::id().to_string()).unwrap();
     std::fs::rename(stage, &path).unwrap();
-    let role = std::env::var("USCREEN_T496_ROLE").unwrap();
+    let role = std::env::var("BLENT_T496_ROLE").unwrap();
     match role.as_str() {
         "denied" => std::thread::sleep(Duration::from_millis(400)),
         "wait" => std::thread::sleep(Duration::from_secs(10)),
@@ -97,8 +97,8 @@ fn t268_lifecycle_deadlines_cover_cli_and_shipped_service_budgets() {
     assert!(SERVICE_STOP_TIMEOUT > DAEMON_STOP_TIMEOUT);
     assert!(daemon_command_timeout(true) > SERVICE_STOP_TIMEOUT * 2);
     for unit in [
-        include_str!("../../../scripts/uscreen.service"),
-        include_str!("../../../packaging/uscreen.service"),
+        include_str!("../../../scripts/blent.service"),
+        include_str!("../../../packaging/blent.service"),
     ] {
         let seconds: u64 = unit
             .lines()

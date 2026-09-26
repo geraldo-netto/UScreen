@@ -1,5 +1,5 @@
 //! Installed fork identity is distinct from the retained Kotlin namespace.
-pub const PACKAGE: &str = "io.github.geraldo_netto.uscreen";
+pub const PACKAGE: &str = "io.github.geraldo_netto.blent";
 
 pub enum Component {
     MainActivity,
@@ -15,7 +15,7 @@ impl Component {
             Self::TokenReceiver => "TokenReceiver",
             Self::CodecReportReceiver => "CodecReportReceiver",
         };
-        format!("{PACKAGE}/com.uscreen.{class}")
+        format!("{PACKAGE}/com.blent.{class}")
     }
 }
 
@@ -32,7 +32,7 @@ mod tests {
         ] {
             assert_eq!(
                 component.adb_name(),
-                format!("io.github.geraldo_netto.uscreen/com.uscreen.{class}")
+                format!("io.github.geraldo_netto.blent/com.blent.{class}")
             );
         }
     }

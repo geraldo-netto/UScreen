@@ -213,7 +213,7 @@ fn publish_choice(
     key: &Key,
     encoder: &str,
     reason: &str,
-    decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    decoder: Option<blent_config::negotiation::DecoderChoice>,
 ) -> bool {
     settings.send_if_modified(|current| {
         if !key.matches(current) {
@@ -235,7 +235,7 @@ async fn rendered(
     latency: &LatencyTracker,
     key: &Key,
     name: &str,
-    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
+    decoder: Option<&blent_config::negotiation::DecoderChoice>,
 ) -> bool {
     let mut updates = latency.activity_updates();
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
@@ -257,7 +257,7 @@ fn matches_evidence(
     key: &Key,
     name: &str,
     previous: Option<(u64, u64)>,
-    decoder: Option<&uscreen_config::negotiation::DecoderChoice>,
+    decoder: Option<&blent_config::negotiation::DecoderChoice>,
 ) -> bool {
     evidence.is_some_and(|e| {
         let before = previous
@@ -277,14 +277,14 @@ struct Candidate {
     cached: bool,
     measurement: Measurement,
     hardware: bool,
-    decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    decoder: Option<blent_config::negotiation::DecoderChoice>,
     observation: Option<super::trial::Observation>,
 }
 
 async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Candidate> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let mut candidates = Vec::new();
-    let mut encoders = uscreen_config::encoding::ENCODERS;
+    let mut encoders = blent_config::encoding::ENCODERS;
     encoders.sort_by_key(|encoder| probe_order(encoder.name));
     for encoder in encoders {
         let codec = crate::media::Codec::from_encoder(encoder.name);

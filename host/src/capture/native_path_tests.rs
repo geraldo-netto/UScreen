@@ -7,7 +7,7 @@ use tokio::process::Command;
 async fn t348_native_runtime_paths_agree_across_capture_resources() {
     const NAME: &str =
         "capture::native_path_tests::t348_native_runtime_paths_agree_across_capture_resources";
-    if std::env::var_os("USCREEN_T348_CHILD").is_none() {
+    if std::env::var_os("BLENT_T348_CHILD").is_none() {
         for name in [
             b"ordinary space [1]".as_slice(),
             b"native-\xff space [1]".as_slice(),
@@ -20,7 +20,7 @@ async fn t348_native_runtime_paths_agree_across_capture_resources() {
                 .unwrap();
             let result = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", NAME, "--nocapture"])
-                .env("USCREEN_T348_CHILD", "1")
+                .env("BLENT_T348_CHILD", "1")
                 .env("XDG_RUNTIME_DIR", &runtime)
                 .env("HOME", dir.path())
                 .output()
@@ -91,14 +91,14 @@ async fn native_capture_resources() {
             .await;
     assert_eq!(
         crate::doctor::encoders_for_fifo(
-            &uscreen_config::linux::processes::same_user_processes().unwrap(),
+            &blent_config::linux::processes::same_user_processes().unwrap(),
             &expected
         ),
         vec![child.id().unwrap()]
     );
     process::retire_orphan_capture(&path).await.unwrap();
     assert!(crate::doctor::encoders_for_fifo(
-        &uscreen_config::linux::processes::same_user_processes().unwrap(),
+        &blent_config::linux::processes::same_user_processes().unwrap(),
         &expected
     )
     .is_empty());

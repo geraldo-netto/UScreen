@@ -91,10 +91,10 @@ fn t497_poll_rejects_excess_descriptors() {
 
 #[test]
 fn t497_poll_retries_interrupted_waits_and_preserves_kernel_errors() {
-    if std::env::var_os("USCREEN_T497_POLL_CHILD").is_none() {
+    if std::env::var_os("BLENT_T497_POLL_CHILD").is_none() {
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "encoder_io::fifo::tests::t497_poll_retries_interrupted_waits_and_preserves_kernel_errors", "--nocapture"])
-            .env("USCREEN_T497_POLL_CHILD", "1")
+            .env("BLENT_T497_POLL_CHILD", "1")
             .output().unwrap();
         assert!(
             result.status.success(),

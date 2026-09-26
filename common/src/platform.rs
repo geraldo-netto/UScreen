@@ -38,12 +38,12 @@ pub const fn capabilities() -> Capabilities {
 
 pub fn data_dir() -> Result<PathBuf> {
     #[cfg(windows)]
-    return Ok(crate::windows::paths::local()?.join("uscreen"));
+    return Ok(crate::windows::paths::local()?.join("blent"));
     #[cfg(not(windows))]
     std::env::var_os("HOME")
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
-        .map(|home| home.join(".local/share/uscreen"))
+        .map(|home| home.join(".local/share/blent"))
         .context("data location needs an absolute HOME")
 }
 
@@ -70,12 +70,8 @@ mod tests {
         assert_eq!(caps.pipe_capacity, caps.daemon);
         assert_eq!(caps.conversion_pool, caps.daemon);
         assert_eq!(
-            executable_name("uscreen"),
-            if cfg!(windows) {
-                "uscreen.exe"
-            } else {
-                "uscreen"
-            }
+            executable_name("blent"),
+            if cfg!(windows) { "blent.exe" } else { "blent" }
         );
         assert!(data_dir().unwrap().is_absolute());
     }

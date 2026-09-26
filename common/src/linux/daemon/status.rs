@@ -18,7 +18,7 @@ impl Source for NativeSource {
         Process::read(pid).filter(Self::accepted)
     }
     fn discover(&self) -> Vec<Process> {
-        let mut candidates = processes::same_user_processes_named("uscreen").unwrap_or_default();
+        let mut candidates = processes::same_user_processes_named("blent").unwrap_or_default();
         candidates.retain(Self::accepted);
         candidates.sort_by_key(|process| process.pid);
         candidates
@@ -85,8 +85,8 @@ mod tests {
             pid,
             uid: 1000,
             start_ticks: 1,
-            executable: "/bin/uscreen".into(),
-            arguments: vec!["uscreen".into(), "start".into()],
+            executable: "/bin/blent".into(),
+            arguments: vec!["blent".into(), "start".into()],
             cwd: "/".into(),
         }
     }
@@ -116,7 +116,7 @@ mod tests {
             2,
             "PID reuse must invalidate cached identity"
         );
-        source.processes.borrow_mut()[0].executable = "/new/uscreen".into();
+        source.processes.borrow_mut()[0].executable = "/new/blent".into();
         assert_eq!(probe.poll_with(&source, Some(42)), Some(42));
         assert_eq!(
             source.scanned.get(),

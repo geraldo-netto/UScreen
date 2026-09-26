@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn t533_command_fixture() {
-        if std::env::var_os("USCREEN_T533_WAIT").is_some() {
+        if std::env::var_os("BLENT_T533_WAIT").is_some() {
             std::thread::sleep(Duration::from_secs(5));
         }
     }
@@ -71,7 +71,7 @@ mod tests {
                     "diagnostics::native::tests::t533_command_fixture",
                     "--nocapture",
                 ])
-                .env("USCREEN_T533_WAIT", "1"),
+                .env("BLENT_T533_WAIT", "1"),
             Duration::from_millis(100),
         );
         assert!(result.unwrap_err().contains("timed out"));

@@ -1,7 +1,7 @@
 //! T536: exercise real desktop entries against an isolated Cinnamon-like manager.
 #![cfg(all(target_os = "linux", feature = "platform"))]
+use blent_config::linux::autostart;
 use std::{os::unix::fs::PermissionsExt, path::Path, process::Command, time::Duration};
-use uscreen_config::linux::autostart;
 
 fn wait_for_starts(state: &Path, expected: usize) {
     let deadline = std::time::Instant::now() + Duration::from_secs(3);
@@ -9,7 +9,7 @@ fn wait_for_starts(state: &Path, expected: usize) {
         let calls = std::fs::read_to_string(state.join("calls")).unwrap_or_default();
         let count = calls
             .lines()
-            .filter(|line| *line == "--user start uscreen.service")
+            .filter(|line| *line == "--user start blent.service")
             .count();
         if count >= expected && state.join("launches").exists() {
             return;
@@ -39,7 +39,7 @@ fn login(entry: &Path) {
 
 #[test]
 fn t536_autostart_child() {
-    let Some(state) = std::env::var_os("USCREEN_T536_STATE") else {
+    let Some(state) = std::env::var_os("BLENT_T536_STATE") else {
         return;
     };
     let state = Path::new(&state);
@@ -50,7 +50,7 @@ fn t536_autostart_child() {
         .success());
     assert!(autostart::systemd_available());
     let entry = autostart::desktop_path().unwrap();
-    let binary = Path::new("/must-not-launch-a-direct-daemon/uscreen");
+    let binary = Path::new("/must-not-launch-a-direct-daemon/blent");
     autostart::set_enabled(true, binary).unwrap();
     assert!(autostart::enabled());
     assert!(
@@ -99,9 +99,9 @@ fn t536_managed_autostart_works_without_graphical_target_and_disables_cleanly() 
         .args(["--exact", "t536_autostart_child", "--nocapture"])
         .env("HOME", root.path())
         .env("XDG_CONFIG_HOME", root.path().join("config space"))
-        .env("USCREEN_T536_STATE", root.path())
+        .env("BLENT_T536_STATE", root.path())
         .env("PATH", format!("{}:/usr/bin:/bin", root.path().display()))
-        .env_remove(uscreen_config::linux::appimage::LAUNCHER)
+        .env_remove(blent_config::linux::appimage::LAUNCHER)
         .output()
         .unwrap();
     assert!(

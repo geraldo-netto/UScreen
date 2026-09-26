@@ -216,7 +216,7 @@ impl Monitor {
         if self.current.as_deref() == Some(serial) {
             self.config.tablet.begin_with_transport(
                 Some(attachment_identity(serial, &self.identities)),
-                Some(uscreen_config::adb::transport_of(serial)),
+                Some(blent_config::adb::transport_of(serial)),
             );
         }
         self.remove_assignment(serial);
@@ -231,7 +231,7 @@ impl Monitor {
             found
                 .as_ref()
                 .map(|serial| attachment_identity(serial, &self.identities)),
-            found.as_deref().map(uscreen_config::adb::transport_of),
+            found.as_deref().map(blent_config::adb::transport_of),
         );
         let old = self.current.clone();
         disconnected_primary(&mut self.current, &mut self.wifi_announced);
@@ -292,7 +292,7 @@ impl Monitor {
         };
         self.config.tablet.begin_with_transport(
             Some(attachment_identity(&serial, &self.identities)),
-            Some(uscreen_config::adb::transport_of(&serial)),
+            Some(blent_config::adb::transport_of(&serial)),
         );
         self.prepare(
             serial,
@@ -337,7 +337,7 @@ impl Monitor {
         };
         session.tablet_tx.begin_with_transport(
             Some(attachment_identity(&serial, &self.identities)),
-            Some(uscreen_config::adb::transport_of(&serial)),
+            Some(blent_config::adb::transport_of(&serial)),
         );
         let ports = (session.video_port, session.input_port);
         self.prepare(

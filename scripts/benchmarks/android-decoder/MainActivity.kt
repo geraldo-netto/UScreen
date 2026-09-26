@@ -1,4 +1,4 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import android.app.Activity
 import android.os.Bundle
@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
 
 /** Shell-only, separate application. Closing/backgrounding the activity ends
- * its test; the experiment never updates installed UScreen preferences. */
+ * its test; the experiment never updates installed Blent preferences. */
 class MainActivity : Activity(), SurfaceHolder.Callback {
     private val active = AtomicBoolean(false)
     private var worker: Thread? = null

@@ -3,10 +3,10 @@ use super::shared;
 use crate::encoder_io::StopSignal;
 use crate::raw_memory::{Mapping, Reader};
 use crate::raw_socket::Socket;
+use blent_config::raw_frame::*;
 use std::io::{BufRead, BufReader, Write};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
-use uscreen_config::raw_frame::*;
 
 struct Producer {
     child: Child,

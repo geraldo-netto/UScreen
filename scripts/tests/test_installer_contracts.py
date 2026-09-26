@@ -81,12 +81,12 @@ check_path
     def test_t497_failed_service_staging_preserves_existing_unit(self):
         output = self.execute('''
 mkdir -p "$CONFIG_BASE/systemd/user"
-echo original > "$CONFIG_BASE/systemd/user/uscreen.service"
+echo original > "$CONFIG_BASE/systemd/user/blent.service"
 write_user_service() { echo partial; return 7; }
 if write_installed_user_service; then exit 8; fi
-[[ $(cat "$CONFIG_BASE/systemd/user/uscreen.service") == original ]]
+[[ $(cat "$CONFIG_BASE/systemd/user/blent.service") == original ]]
 shopt -s nullglob
-staged=("$CONFIG_BASE/systemd/user/".uscreen.*)
+staged=("$CONFIG_BASE/systemd/user/".blent.*)
 [[ ${#staged[@]} == 0 ]]
 echo preserved
 ''')
@@ -95,12 +95,12 @@ echo preserved
     def test_t536_failed_autostart_staging_preserves_existing_login_entry(self):
         output = self.execute('''
 mkdir -p "$CONFIG_BASE/autostart"
-echo original > "$CONFIG_BASE/autostart/uscreen.desktop"
+echo original > "$CONFIG_BASE/autostart/blent.desktop"
 partial_entry() { echo partial; return 7; }
 if install_autostart_entry partial_entry; then exit 8; fi
-[[ $(cat "$CONFIG_BASE/autostart/uscreen.desktop") == original ]]
+[[ $(cat "$CONFIG_BASE/autostart/blent.desktop") == original ]]
 shopt -s nullglob
-staged=("$CONFIG_BASE/autostart/".uscreen.*)
+staged=("$CONFIG_BASE/autostart/".blent.*)
 [[ ${#staged[@]} == 0 ]]
 echo preserved
 ''')
@@ -111,14 +111,14 @@ echo preserved
 sudo() { if [[ $1 == tee ]]; then command cat >/dev/null; return 9; fi; }
 configure_boot_modules
 ''')
-        self.assertIn('Could not write /etc/modprobe.d/uscreen-evdi.conf', output)
-        self.assertIn('Could not write /etc/modules-load.d/uscreen.conf', output)
+        self.assertIn('Could not write /etc/modprobe.d/blent-evdi.conf', output)
+        self.assertIn('Could not write /etc/modules-load.d/blent.conf', output)
 
     def test_t497_uinput_missing_rule_and_manager_failures_remain_actionable(self):
         stubs = '''
 sudo() { printf 'request: %s\\n' "$*" >&3; [[ $1 != udevadm ]]; }
 [() {
-    if [[ $1 == '!' && $2 == -e && $3 == */60-uscreen-uinput.rules ]]; then return 0;
+    if [[ $1 == '!' && $2 == -e && $3 == */60-blent-uinput.rules ]]; then return 0;
     else builtin [ "$@"; fi
 }
 PROJECT_DIR=$1

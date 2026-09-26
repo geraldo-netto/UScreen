@@ -22,8 +22,8 @@ def module(name):
 class CompletionTests(unittest.TestCase):
     def assert_no_relaunch(self, capture):
         targets = [call.args for call in capture.call_args_list
-                   if 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' in call.args]
-        self.assertEqual(targets, [], 'T485: completion relaunched UScreen over the next app')
+                   if 'io.github.geraldo_netto.blent/com.blent.MainActivity' in call.args]
+        self.assertEqual(targets, [], 'T485: completion relaunched Blent over the next app')
 
     def test_t485_decoder_matrix_completion_does_not_choose_foreground_app(self):
         device = module('decoder-device')
@@ -41,7 +41,7 @@ class CompletionTests(unittest.TestCase):
             root = Path(directory)
             (root / 'plan.json').write_text(json.dumps([dict(scene='motion', fixture='clip.bin',
                 profile='legacy', rate=60, trial=0, seconds=1, warmup=0)]))
-            (root / 'provenance.json').write_text(json.dumps(dict(package='com.uscreen.decoderbench.candidate')))
+            (root / 'provenance.json').write_text(json.dumps(dict(package='com.blent.decoderbench.candidate')))
             args = SimpleNamespace(plan=root / 'plan.json', provenance=root / 'provenance.json',
                                    output=root / 'output', serial='fixture')
             with patch.object(plan, 'verify_apk'), patch.object(plan.DEVICE, 'trial'), \

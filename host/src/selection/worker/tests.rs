@@ -50,11 +50,11 @@ async fn t484_old_decoder_acks_cannot_certify_a_new_decoder_only_trial() {
     let latency = LatencyTracker::new();
     let old = latency.encoder_started("libx264", Key::new(&snapshot).format);
     let mut trial = candidate("libx264", true, 100.0, 10);
-    trial.decoder = Some(uscreen_config::negotiation::DecoderChoice {
+    trial.decoder = Some(blent_config::negotiation::DecoderChoice {
         name: "vendor.avc".into(),
-        stream: uscreen_config::negotiation::StreamProfile {
+        stream: blent_config::negotiation::StreamProfile {
             codec: "h264".into(),
-            format: uscreen_config::negotiation::Profile {
+            format: blent_config::negotiation::Profile {
                 profile: "baseline".into(),
                 level: 31,
                 depth: 8,
@@ -111,9 +111,9 @@ fn t478_rich_selection_requires_actual_profile_and_conversion_intersection() {
     settings.decoders = Some(report);
     let mut measured = candidate("libx264", true, 100.0, 10).measurement;
     assert!(compatible_candidate(&settings, measured.clone(), false).is_none());
-    measured.stream = Some(uscreen_config::negotiation::StreamProfile {
+    measured.stream = Some(blent_config::negotiation::StreamProfile {
         codec: "h264".into(),
-        format: uscreen_config::negotiation::Profile {
+        format: blent_config::negotiation::Profile {
             profile: "constrained-baseline".into(),
             depth: 8,
             level: 31,

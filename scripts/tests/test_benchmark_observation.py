@@ -36,7 +36,7 @@ def evidence(folder):
     write_rows(folder, 'samples.jsonl', samples)
     write_rows(folder, 'android-session.jsonl', health)
     write_rows(folder, 'host-windows.jsonl', [dict(utc=15, message='Encoder: 1 access units in 5.0s, 0.0 MB/s (1 kbps)')])
-    (folder / 'android.log').write_text('15.0 123 123 D UScreen: Control statistics: fixture\n')
+    (folder / 'android.log').write_text('15.0 123 123 D Blent: Control statistics: fixture\n')
     (folder / 'observer.json').write_text(json.dumps(dict(complete=True, errors=[], log_receipts={'android.log': [15]})))
     return samples, health
 
@@ -78,7 +78,7 @@ class ObservationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
             evidence(folder)
-            (folder / 'android.log').write_text('         9000000000.0 123 123 D UScreen: fixture\n')
+            (folder / 'android.log').write_text('         9000000000.0 123 123 D Blent: fixture\n')
             result = summarize(folder)
             self.assertTrue(result['complete'], result['invalid_reasons'])
 
@@ -166,22 +166,22 @@ class ObservationTests(unittest.TestCase):
 
 
 STAT = '123 (app) S 1 1 0 0 -1 0 0 0 0 0 200 50 0 0 20 0 3 0 900 1000000 12'
-FOREGROUND = 'USCREEN_STAT ' + STAT + '\nmCurrentFocus=Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\nmShowingLockscreen=false\n'
+FOREGROUND = 'BLENT_STAT ' + STAT + '\nmCurrentFocus=Window{abc u0 io.github.geraldo_netto.blent/com.blent.MainActivity}\nmShowingLockscreen=false\n'
 
 
 class AndroidFocusSectionTests(unittest.TestCase):
     def test_t488_query_reads_focus_from_android_display_dump(self):
         # Android 16 device evidence: `windows` enumerates app windows but
         # `displays` owns mCurrentFocus. A visible window alone is insufficient.
-        windows = 'Window #10 Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\n'
-        displays = 'mCurrentFocus=Window{abc u0 io.github.geraldo_netto.uscreen/com.uscreen.MainActivity}\n'
+        windows = 'Window #10 Window{abc u0 io.github.geraldo_netto.blent/com.blent.MainActivity}\n'
+        displays = 'mCurrentFocus=Window{abc u0 io.github.geraldo_netto.blent/com.blent.MainActivity}\n'
 
         def shell(arguments, **kwargs):
             query = arguments[-1]
             sections = {'dumpsys window windows': windows,
                         'dumpsys window displays': displays,
                         'dumpsys window policy': 'mShowingLockscreen=false\n'}
-            output = 'USCREEN_STAT ' + STAT + '\n'
+            output = 'BLENT_STAT ' + STAT + '\n'
             output += ''.join(text for command, text in sections.items() if command in query)
             return SimpleNamespace(returncode=0, stdout=output)
 
@@ -201,7 +201,7 @@ class TabletSessionTests(unittest.TestCase):
             self.assertEqual(snapshot('fixture'), dict(pid=123, start_ticks=900, foreground=True))
 
     def test_t470_background_unknown_focus_and_keyguard_are_rejected(self):
-        cases = [FOREGROUND.replace('io.github.geraldo_netto.uscreen/', 'com.other/'),
+        cases = [FOREGROUND.replace('io.github.geraldo_netto.blent/', 'com.other/'),
                  FOREGROUND.replace('mCurrentFocus=', 'oldFocus='),
                  FOREGROUND.replace('mShowingLockscreen=false', 'mShowingLockscreen=true')]
         for text in cases:

@@ -5,7 +5,7 @@ Connects to the daemon's input WebSocket and video stream for one slot,
 authenticates with the session token, reports a resolution, and acks every
 complete frame it receives - enough to drive a pipeline without a device.
 ACKs represent receipt with synthetic decode_us, not actual decoding/rendering.
-Used together with USCREEN_FAKE_TABLET=<serial> and max_tablets > 1 to test
+Used together with BLENT_FAKE_TABLET=<serial> and max_tablets > 1 to test
 a second slot with a single physical tablet.
 
     scripts/fake-tablet.py --slot 1 --seconds 20
@@ -23,7 +23,7 @@ def runtime_dir():
         base = f"/run/user/{os.getuid()}"
     if not os.path.isdir(base):
         base = os.path.join(os.environ.get("HOME", "/tmp"), ".cache")
-    return os.path.join(os.path.realpath(base), "uscreen")
+    return os.path.join(os.path.realpath(base), "blent")
 
 class BufferedSocket:
     """Keep bytes received after the HTTP upgrade for the first WS frame."""

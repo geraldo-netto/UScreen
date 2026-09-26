@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn t582_windows_priority_round_trip() {
         use crate::commands::{AsyncCommandExt, SyncCommandExt};
-        let role = std::env::var("USCREEN_T582_WINDOWS_ROLE").unwrap_or_default();
+        let role = std::env::var("BLENT_T582_WINDOWS_ROLE").unwrap_or_default();
         if role == "probe" {
             assert_eq!(
                 unsafe { GetPriorityClass(GetCurrentProcess()) },
@@ -62,7 +62,7 @@ mod tests {
                 "--exact",
                 "scheduling::windows::tests::t582_windows_priority_round_trip",
             ])
-            .env("USCREEN_T582_WINDOWS_ROLE", role);
+            .env("BLENT_T582_WINDOWS_ROLE", role);
         command
     }
 }

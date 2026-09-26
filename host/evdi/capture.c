@@ -510,7 +510,7 @@ int capture_run(capture_context_t *capture, evdi_handle handle) {
 
     long long last_stats_ms = capture_now_ms();
     long long last_fallback_grab_ms = 0;
-    if (getenv("USCREEN_NO_PIPELINE")) capture->pipeline = 0;
+    if (getenv("BLENT_NO_PIPELINE")) capture->pipeline = 0;
     long long stats_grab_base = 0;
     long request_period_ms = capture_period_ms(capture);
 

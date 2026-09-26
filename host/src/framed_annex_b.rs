@@ -49,7 +49,7 @@ impl FramedAnnexB {
 
     pub(crate) fn timestamp_us(&self) -> Option<i64> {
         let (num, den) = self.time_base?;
-        uscreen_config::idle::timestamp_us(i128::from(self.current_pts?), num, den)
+        blent_config::idle::timestamp_us(i128::from(self.current_pts?), num, den)
     }
 
     pub(crate) async fn read_from(

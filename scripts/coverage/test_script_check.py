@@ -122,4 +122,4 @@ class CollectionTest(unittest.TestCase):
             child = subprocess.run([sys.executable, '-c', 'raise AssertionError("must not run")'],
                                    env=env, capture_output=True)
             self.assertEqual(child.returncode, 86)
-            self.assertIn(b'UScreen coverage startup failed', child.stderr)
+            self.assertIn(b'Blent coverage startup failed', child.stderr)

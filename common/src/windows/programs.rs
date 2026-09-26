@@ -60,6 +60,6 @@ mod tests {
         }
         assert_eq!(find_in("adb", "relative;;".as_ref()), None);
         assert!(!is_executable(&directory));
-        assert!(!command_exists("uscreen-t493-does-not-exist"));
+        assert!(!command_exists("blent-t493-does-not-exist"));
     }
 }

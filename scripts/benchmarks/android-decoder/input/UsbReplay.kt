@@ -1,7 +1,7 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
 import android.view.Surface
-import com.uscreen.*
+import com.blent.*
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetSocketAddress

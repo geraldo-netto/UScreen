@@ -1,15 +1,15 @@
 //! T328: disposable child trees, isolated subreapers, no host setup commands.
 #![cfg(all(feature = "commands", target_os = "linux"))]
+use blent_config::commands::{AsyncCommandExt, SyncCommandExt};
 use std::{io, path::Path, process::Command, time::Duration};
-use uscreen_config::commands::{AsyncCommandExt, SyncCommandExt};
 
 const WORK: &str = "echo $$ > \"$1/parent\"; sh -c 'echo $$ > \"$1/worker\"; sleep 0.3; echo late > \"$1/late\"' sh \"$1\" & wait";
 
 fn isolated(name: &str, exercise: impl FnOnce(&Path)) {
-    if std::env::var("USCREEN_T328_CASE").as_deref() != Ok(name) {
+    if std::env::var("BLENT_T328_CASE").as_deref() != Ok(name) {
         let output = Command::new(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture"])
-            .env("USCREEN_T328_CASE", name)
+            .env("BLENT_T328_CASE", name)
             .output()
             .unwrap();
         assert!(

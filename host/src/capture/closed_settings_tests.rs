@@ -5,7 +5,7 @@ use super::*;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn t437_closed_settings_stops_idle_capture() {
     let mut manager = CaptureManager::new(CaptureConfig {
-        helper_path: "/nonexistent/uscreen-t437-helper".into(),
+        helper_path: "/nonexistent/blent-t437-helper".into(),
         instance: u32::MAX - 437,
         ..Default::default()
     });

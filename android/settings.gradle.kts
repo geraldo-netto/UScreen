@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "uscreen"
+rootProject.name = "blent"
 include(":app")

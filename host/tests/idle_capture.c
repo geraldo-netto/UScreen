@@ -51,7 +51,7 @@ static void t492_sparse_deadlines(writer_state_t *state, long long now) {
 
 /* T492: a request is bounded to one FIFO inode and a short monotonic lease. */
 static void test_t492_idle(void) {
-    char path[] = "/tmp/uscreen-t492-idle-XXXXXX";
+    char path[] = "/tmp/blent-t492-idle-XXXXXX";
     int file = mkstemp(path); assert(file >= 0);
     int ends[2]; assert(pipe(ends) == 0);
     struct stat identity; assert(fstat(ends[1], &identity) == 0);

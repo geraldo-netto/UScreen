@@ -10,7 +10,7 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = 'io.github.geraldo_netto.uscreen'
+PACKAGE = 'io.github.geraldo_netto.blent'
 MAX_OUTPUT = 1024 * 1024
 
 
@@ -71,7 +71,7 @@ def verify_manifest(text):
         raise ValueError('manifest report exceeds limit')
     packages = re.findall(r"^package: name='([^']*)'", text, re.M)
     activities = re.findall(r"^launchable-activity: name='([^']*)'", text, re.M)
-    if packages != [PACKAGE] or activities != ['com.uscreen.MainActivity']:
+    if packages != [PACKAGE] or activities != ['com.blent.MainActivity']:
         raise ValueError('APK package or launcher does not match fork identity')
     if re.search(r'^application-debuggable(?:\s|$)', text, re.M):
         raise ValueError('official release APK must not be debuggable')

@@ -346,7 +346,7 @@ async fn trial(count: usize) -> Trial {
 }
 
 fn isolated() -> bool {
-    if std::env::var_os("USCREEN_T391_REPLAY_CHILD").is_some() {
+    if std::env::var_os("BLENT_T391_REPLAY_CHILD").is_some() {
         return false;
     }
     let output = std::process::Command::new(std::env::current_exe().unwrap())
@@ -355,7 +355,7 @@ fn isolated() -> bool {
             "stream::resources::t391_one_two_four_sessions_release_resources",
             "--nocapture",
         ])
-        .env("USCREEN_T391_REPLAY_CHILD", "1")
+        .env("BLENT_T391_REPLAY_CHILD", "1")
         .output()
         .unwrap();
     assert!(

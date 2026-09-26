@@ -9,22 +9,22 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / 'android/app/src/main/java/com/uscreen'
+SOURCE = ROOT / 'android/app/src/main/java/com/blent'
 SHARED = ['DecoderSession.kt', 'VideoTiming.kt', 'DecoderOutputWatchdog.kt', 'CodecLifetime.kt',
           'DecoderInput.kt', 'DecoderMailbox.kt', 'CallbackDecoder.kt', 'DecoderConfiguration.kt',
           'ChannelPacketReader.kt', 'VideoPacketReader.kt', 'DecodedOutputDrainer.kt', 'VideoCodec.kt',
           'MediaProfiles.kt', 'MediaInventory.kt', 'DecoderSelection.kt', 'JsonNumbers.kt']
 MANIFEST = '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.INTERNET" />
-<application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="UScreen decoder replay">
-<activity android:name="com.uscreen.benchmark.MainActivity" android:exported="true"
+<application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Blent decoder replay">
+<activity android:name="com.blent.benchmark.MainActivity" android:exported="true"
  android:showWhenLocked="true" android:turnScreenOn="true"
  android:permission="android.permission.DUMP" android:screenOrientation="landscape" />
 </application></manifest>
 '''
 BUILD = '''plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android {
- namespace = "com.uscreen.benchmark"
+ namespace = "com.blent.benchmark"
  compileSdk = 34
  defaultConfig { applicationId = "PACKAGE"; minSdk = 27; targetSdk = 34; versionCode = 1; versionName = "1" }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -32,8 +32,8 @@ android {
 }
 dependencies { implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3") }
 '''
-BRIDGE = '''package com.uscreen.benchmark
-import com.uscreen.*
+BRIDGE = '''package com.blent.benchmark
+import com.blent.*
 internal fun applyProfile(decoder: DecoderSession, name: String) {
     decoder.profile = when (name) {
         "legacy", "socket-heap", "socket-direct" -> DecoderProfile()
@@ -46,8 +46,8 @@ internal fun applyProfile(decoder: DecoderSession, name: String) {
     }
 }
 '''
-LEGACY_BRIDGE = '''package com.uscreen.benchmark
-import com.uscreen.DecoderSession
+LEGACY_BRIDGE = '''package com.blent.benchmark
+import com.blent.DecoderSession
 internal fun applyProfile(decoder: DecoderSession, name: String) { require(name == "legacy") }
 '''
 SOCKET_BRIDGE = '''
@@ -168,7 +168,7 @@ def copy_replay_sources(directory, direct_input):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', type=Path, required=True)
-    parser.add_argument('--package', required=True, choices=['com.uscreen.decoderbench.baseline', 'com.uscreen.decoderbench.candidate'])
+    parser.add_argument('--package', required=True, choices=['com.blent.decoderbench.baseline', 'com.blent.decoderbench.candidate'])
     parser.add_argument('--revision', help='immutable git revision; default: working tree')
     args = parser.parse_args()
     if args.revision:

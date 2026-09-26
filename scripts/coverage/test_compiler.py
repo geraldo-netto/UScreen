@@ -14,10 +14,10 @@ import readers
 
 class CompilerTest(unittest.TestCase):
     def test_t497_compiler_entry_preserves_status_and_rejects_recursion(self):
-        env = dict(USCREEN_C_COVERAGE=str(self.root/'native'), USCREEN_REAL_CC='/bin/false')
+        env = dict(BLENT_C_COVERAGE=str(self.root/'native'), BLENT_REAL_CC='/bin/false')
         with patch.dict(os.environ, env), patch.object(sys, 'argv', ['collector', '--version']):
             self.assertEqual(compiler.main(), 1)
-            with patch.dict(os.environ, USCREEN_REAL_CC=str(Path('collector').resolve())):
+            with patch.dict(os.environ, BLENT_REAL_CC=str(Path('collector').resolve())):
                 with self.assertRaisesRegex(ValueError, 'recursively'): compiler.main()
 
     def setUp(self):

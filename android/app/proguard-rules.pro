@@ -5,10 +5,10 @@
 -keep class okio.** { *; }
 
 # Keep WebSocket listener
--keep class com.uscreen.TouchCapture$* { *; }
+-keep class com.blent.TouchCapture$* { *; }
 
 # JSON
 -keep class org.json.** { *; }
 
 # Keep all classes in our package
--keep class com.uscreen.** { *; }
+-keep class com.blent.** { *; }

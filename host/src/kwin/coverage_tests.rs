@@ -14,7 +14,7 @@ case "$*" in
     printf '%s\n' "$value" > "$HOME/mode";;
   *mode*)
     read -r value < "$HOME/mode"
-    if [ "$USCREEN_T497_BACKEND" = busctl ]; then printf 'i %s\n' "$value"
+    if [ "$BLENT_T497_BACKEND" = busctl ]; then printf 'i %s\n' "$value"
     else printf '[Variant(int): %s]\n' "$value"; fi;;
   *bad*) exit 42;;
   *) /bin/cat "$HOME/reply";;
@@ -32,7 +32,7 @@ fn isolated(backend: &str) {
     std::fs::write(directory.path().join("mode"), "2\n").unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T497_BACKEND", backend)
+        .env("BLENT_T497_BACKEND", backend)
         .env("PATH", directory.path())
         .env("HOME", directory.path())
         .env("XDG_RUNTIME_DIR", directory.path())
@@ -88,7 +88,7 @@ async fn keyboard(root: &Path) {
     use std::sync::atomic::{AtomicUsize, Ordering};
     let devices = AtomicUsize::new(1);
     crate::osk::sync_touch_state(&devices).await;
-    let backup = root.join(".local/share/uscreen/osk-restore");
+    let backup = root.join(".local/share/blent/osk-restore");
     assert_eq!(std::fs::read_to_string(&backup).unwrap(), "2");
     assert_eq!(std::fs::read_to_string(root.join("mode")).unwrap(), "0\n");
     devices.store(0, Ordering::SeqCst);
@@ -101,7 +101,7 @@ async fn keyboard(root: &Path) {
 
 #[tokio::test]
 async fn t497_kwin_adapters_restore_only_the_owned_keyboard_state() {
-    let Ok(kind) = std::env::var("USCREEN_T497_BACKEND") else {
+    let Ok(kind) = std::env::var("BLENT_T497_BACKEND") else {
         for backend in ["busctl", "qdbus", "qdbus6", "qdbus-qt6", "qdbus-qt5"] {
             isolated(backend);
         }

@@ -24,7 +24,7 @@ hints, image quality, sustained throughput or lower power. Keep these distinct:
 | Evidence | Meaning | Does not establish |
 | --- | --- | --- |
 | Advertised | Platform reports support for a format or feature | Successful configuration or performance |
-| Requested | UScreen supplied a profile/hint to an adapter | Adapter accepted or applied it |
+| Requested | Blent supplied a profile/hint to an adapter | Adapter accepted or applied it |
 | Configured | Actual encoder output or decoder configuration was inspected | Correct sustained rendering or optical latency |
 | Render verified | Fresh acknowledgements belong to this stream generation | Quality, optical presentation or battery improvement |
 | Measured | Named workload, boundary, sample population and conditions | An untested workload/device/transport |

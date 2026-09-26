@@ -74,7 +74,7 @@ def prepare(args):
     project = decoder_project()
     directory = args.directory.resolve()
     if not directory.exists():
-        project.prepare(SimpleNamespace(directory=directory, package='com.uscreen.rectbench', revision=None))
+        project.prepare(SimpleNamespace(directory=directory, package='com.blent.rectbench', revision=None))
         shutil.copyfile(ROOT / 'android/local.properties', directory / 'local.properties')
     for source in Path(__file__).with_name('android-rect').glob('*.kt'):
         shutil.copyfile(source, directory / 'app/src/main/java' / source.name)
@@ -83,7 +83,7 @@ def prepare(args):
     for source in Path(__file__).with_name('android-rect-tests').glob('*.kt'):
         shutil.copyfile(source, tests / source.name)
     build = directory / 'app/build.gradle.kts'
-    build.write_text(project.BUILD.replace('PACKAGE', 'com.uscreen.rectbench') + '\ndependencies { testImplementation("junit:junit:4.13.2") }\n')
+    build.write_text(project.BUILD.replace('PACKAGE', 'com.blent.rectbench') + '\ndependencies { testImplementation("junit:junit:4.13.2") }\n')
     main = directory / 'app/src/main/java/MainActivity.kt'
     original = (Path(__file__).with_name('android-decoder') / 'MainActivity.kt').read_text()
     needle = 'else replay(holder)'
@@ -109,7 +109,7 @@ def main():
     apk = directory / 'app/build/outputs/apk/debug/app-debug.apk'
     sources = {str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
                for path in directory.rglob('*.kt') if 'build' not in path.relative_to(directory).parts}
-    result = dict(package='com.uscreen.rectbench', apk_sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),
+    result = dict(package='com.blent.rectbench', apk_sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),
                   native=native, sources=sources,
                   revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                   source_state='working tree; exact copied Kotlin and C hashes required')

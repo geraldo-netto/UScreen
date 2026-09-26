@@ -5,19 +5,19 @@ APPDIR=$(readlink -f -- "$0")
 APPDIR=${APPDIR%/*}
 export APPDIR
 if [ -n "${APPIMAGE:-}" ] && [ -x "$APPIMAGE" ]; then
-    USCREEN_APPIMAGE_LAUNCHER=$APPIMAGE
+    BLENT_APPIMAGE_LAUNCHER=$APPIMAGE
 else
-    USCREEN_APPIMAGE_LAUNCHER=$APPDIR/AppRun
+    BLENT_APPIMAGE_LAUNCHER=$APPDIR/AppRun
 fi
-export USCREEN_APPIMAGE_LAUNCHER
+export BLENT_APPIMAGE_LAUNCHER
 # Child invocations also work when the parent used the one-shot extraction flag.
 export APPIMAGE_EXTRACT_AND_RUN=1
 export PATH="$APPDIR/usr/bin:$PATH"
 # ELF RUNPATHs supply private libraries without contaminating host utilities.
 case "${1:-}" in
-    '') exec "$APPDIR/usr/bin/uscreen-gui" ;;
-    --gui) shift; exec "$APPDIR/usr/bin/uscreen-gui" "$@" ;;
-    --install-user) shift; exec "$APPDIR/usr/bin/bash" "$APPDIR/usr/share/uscreen/install-appimage.sh" "$@" ;;
-    --daemon) shift; exec "$APPDIR/usr/bin/uscreen" "$@" ;;
-    *) exec "$APPDIR/usr/bin/uscreen" "$@" ;;
+    '') exec "$APPDIR/usr/bin/blent-gui" ;;
+    --gui) shift; exec "$APPDIR/usr/bin/blent-gui" "$@" ;;
+    --install-user) shift; exec "$APPDIR/usr/bin/bash" "$APPDIR/usr/share/blent/install-appimage.sh" "$@" ;;
+    --daemon) shift; exec "$APPDIR/usr/bin/blent" "$@" ;;
+    *) exec "$APPDIR/usr/bin/blent" "$@" ;;
 esac

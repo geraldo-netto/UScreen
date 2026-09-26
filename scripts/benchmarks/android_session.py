@@ -6,20 +6,20 @@ import threading
 import time
 from observe import process_stat
 
-QUERY = ('p=$(pidof io.github.geraldo_netto.uscreen); test -n "$p" || exit 1; '
-         'printf "USCREEN_STAT "; run-as io.github.geraldo_netto.uscreen cat /proc/$p/stat || exit 1; '
+QUERY = ('p=$(pidof io.github.geraldo_netto.blent); test -n "$p" || exit 1; '
+         'printf "BLENT_STAT "; run-as io.github.geraldo_netto.blent cat /proc/$p/stat || exit 1; '
          'dumpsys window displays; dumpsys window policy')
 
 
 def parse_snapshot(output):
-    stat = next((line[len('USCREEN_STAT '):] for line in output.splitlines()
-                 if line.startswith('USCREEN_STAT ')), None)
+    stat = next((line[len('BLENT_STAT '):] for line in output.splitlines()
+                 if line.startswith('BLENT_STAT ')), None)
     if stat is None:
         raise ValueError('tablet process identity unavailable')
     process = process_stat(stat, 1)
     focus = re.findall(r'mCurrentFocus=Window\{[^\n}]*\s([\w.]+)/[\w.$]+\}', output)
-    if focus != ['io.github.geraldo_netto.uscreen']:
-        raise ValueError('UScreen is not the verified foreground tablet window')
+    if focus != ['io.github.geraldo_netto.blent']:
+        raise ValueError('Blent is not the verified foreground tablet window')
     if re.search(r'(?:mShowingLockscreen|mKeyguardShowing|isKeyguardShowing)\s*=\s*true', output):
         raise ValueError('tablet keyguard is showing')
     return dict(pid=process['pid'], start_ticks=process['start_ticks'], foreground=True)

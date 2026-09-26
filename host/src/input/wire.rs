@@ -101,7 +101,7 @@ pub struct InputResponse {
     pub decoder_protocol: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decoder_scope: Option<String>,
-    pub decoder_selection: Option<uscreen_config::negotiation::DecoderChoice>,
+    pub decoder_selection: Option<blent_config::negotiation::DecoderChoice>,
     /// Tells the tablet not to expect a video stream: it is acting as a
     /// graphics tablet for the host's own screen, not as a display.
     pub pen_only: bool,

@@ -8,7 +8,7 @@ use std::{
     process::Command,
 };
 
-pub const LAUNCHER: &str = "USCREEN_APPIMAGE_LAUNCHER";
+pub const LAUNCHER: &str = "BLENT_APPIMAGE_LAUNCHER";
 
 pub fn launcher() -> Result<Option<PathBuf>> {
     std::env::var_os(LAUNCHER)
@@ -33,7 +33,7 @@ pub fn marker(path: &Path) -> String {
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect();
-    format!("# USCREEN_APPIMAGE_PATH_HEX={encoded}")
+    format!("# BLENT_APPIMAGE_PATH_HEX={encoded}")
 }
 
 pub fn unit_matches(path: &Path, text: &str) -> bool {
@@ -57,7 +57,7 @@ fn service_matches(path: &Path) -> bool {
             "-p",
             "FragmentPath",
             "--value",
-            "uscreen.service",
+            "blent.service",
         ])
         .output_bounded();
     let Ok(unit) = unit else {
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn t308_stable_launcher_requires_absolute_executable_and_literal_unit_binding() {
         let dir = tempfile::tempdir().unwrap();
-        let image = dir.path().join("UScreen space % $ ` ' \"\n.AppImage");
+        let image = dir.path().join("Blent space % $ ` ' \"\n.AppImage");
         for path in [Path::new("relative"), image.as_path(), dir.path()] {
             assert!(checked_launcher(path.as_os_str()).is_err());
         }
@@ -91,7 +91,7 @@ mod tests {
         assert!(!unit_matches(&dir.path().join("another.AppImage"), &text));
         assert!(!unit_matches(
             &image,
-            "[Service]\nExecStart=/usr/bin/uscreen start\n"
+            "[Service]\nExecStart=/usr/bin/blent start\n"
         ));
     }
 }

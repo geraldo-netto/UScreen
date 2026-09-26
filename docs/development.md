@@ -27,9 +27,9 @@ For Debian 12, or to match the bundled release library exactly, build the
 pinned upstream userspace library (this does not build/load a kernel module):
 
 ```bash
-git clone --depth 1 --branch v1.15.0 https://github.com/DisplayLink/evdi /tmp/uscreen-evdi
-make -C /tmp/uscreen-evdi/library
-sudo make -C /tmp/uscreen-evdi/library install PREFIX=/usr/local
+git clone --depth 1 --branch v1.15.0 https://github.com/DisplayLink/evdi /tmp/blent-evdi
+make -C /tmp/blent-evdi/library
+sudo make -C /tmp/blent-evdi/library install PREFIX=/usr/local
 sudo ldconfig
 ```
 
@@ -46,8 +46,8 @@ make setup-system     # modprobe.d / modules-load.d / udev rule (sudo)
 ```
 
 These install/setup commands modify the machine. For a configured systemd
-desktop, enable **Start UScreen with the desktop** in the GUI (including Cinnamon);
-`make install` does not do that. Without a user manager, launch `uscreen start`
+desktop, enable **Start Blent with the desktop** in the GUI (including Cinnamon);
+`make install` does not do that. Without a user manager, launch `blent start`
 in a terminal. See [installation](installation.md) before attaching EVDI.
 Make delegates user-file installation to `scripts/install.sh --user-install`;
 both routes honor absolute XDG data/config base directories, falling back to
@@ -80,7 +80,7 @@ Or open `android/` in Android Studio.
 ## Running and testing
 
 For a live foreground run, first stop any service/direct daemon, then use
-`RUST_LOG=uscreen=debug uscreen start` in the desktop session. This can attach
+`RUST_LOG=blent=debug blent start` in the desktop session. This can attach
 a virtual display; it is separate from automated validation and inappropriate
 for reproducing the known Cinnamon crash on a working desktop.
 
@@ -124,13 +124,13 @@ Windows coverage remains an explicit prerequisite in `TODO.md`.
 
 `scripts/fake-tablet.py` pretends to be a tablet on the loopback ports
 (authenticates, reports a resolution, acks frames). With
-`USCREEN_FAKE_TABLET=fake1,fake2` and `max_tablets = 2` it exercises a
+`BLENT_FAKE_TABLET=fake1,fake2` and `max_tablets = 2` it exercises a
 second pipeline without a second physical tablet. It still drives the real
 host capture/encoder pipeline and can attach EVDI; it is not an isolated unit
 test or a measure of tablet decoding. Token discovery uses the daemon's base
 selection: an existing XDG_RUNTIME_DIR, then an existing /run/user/<uid>, then
 HOME/.cache (/tmp/.cache when HOME is absent). Both resolve base aliases before
-using `uscreen/token` for slot 0 and `uscreen/token-N` for slots 1–3. Each slot's
+using `blent/token` for slot 0 and `blent/token-N` for slots 1–3. Each slot's
 credential rotates on logical attachment replacement; wait for slot preparation
 before connecting, and restart the client after a replacement. A proven same-tablet
 transport migration keeps its key but closes old sockets. Run with the daemon's
@@ -160,7 +160,7 @@ host/              Rust daemon
   src/latency.rs     encoded-packet-to-render-acknowledgement timing
   src/tray.rs        StatusNotifierItem tray icon
   src/update.rs      release check (report only)
-  src/doctor.rs      `uscreen doctor`
+  src/doctor.rs      `blent doctor`
   src/osk.rs         KDE on-screen keyboard suppression over D-Bus
   src/kwin.rs        KWin D-Bus calls, through busctl or qdbus
   src/vdisplay.rs    EVDI discovery via sysfs
@@ -187,7 +187,7 @@ is not implemented yet.
 ## Command line
 
 ```
-uscreen [OPTIONS] [COMMAND]
+blent [OPTIONS] [COMMAND]
 
 COMMANDS
   start           start the daemon
@@ -198,7 +198,7 @@ COMMANDS
   doctor          diagnose the setup and print fixes
   cameras         expose tablet front/rear Linux webcams (foreground command)
 
-OPTIONS (override ~/.config/uscreen/config.toml for this run only)
+OPTIONS (override ~/.config/blent/config.toml for this run only)
   --encoder <NAME>      auto or a registered NVENC/VAAPI/software codec profile
   --fps <N>             frame rate (10–90)
   --bitrate <KBPS>      rate-control limit (1000–60000; not enforced by VAAPI CQP)
@@ -213,7 +213,7 @@ OPTIONS (override ~/.config/uscreen/config.toml for this run only)
 
 No subcommand defaults to `start`. `--width`/`--height` do not turn off
 auto-resolution: set `auto_resolution = false` in config for a manual mode.
-With auto-resolution disabled, UScreen validates the configured capture geometry
+With auto-resolution disabled, Blent validates the configured capture geometry
 independently of the tablet's native size. The native report must still have
 nonzero width and height; an oversized native size does not invalidate a supported
 manual mode. An explicit `--edid` pins the supplied EDID instead of generating one.
@@ -249,14 +249,14 @@ dirty-work dispatch still uses fewer participants for small updates. The calling
 thread counts toward the limit, so 1 creates no conversion workers. Capacity
 does not limit encoder threads or the application's total threads.
 
-The equivalent CLI override is `uscreen --conversion-threads 8 start`; use
+The equivalent CLI override is `blent --conversion-threads 8 start`; use
 `--conversion-threads auto` (or 0) to restore Auto for that run. CLI overrides
 do not change saved preferences. The startup log reports requested and effective
 capacity, which may be lower if worker creation fails. The setting applies to
 every helper: four active tablets can request four separate pools. Higher values
 consume more threads and may increase scheduling overhead; no throughput or
 latency gain on larger machines has been established. Tune for the workload.
-| `wifi_address` | empty | Set by `uscreen wifi`; reread for reconnect attempts |
+| `wifi_address` | empty | Set by `blent wifi`; reread for reconnect attempts |
 
 Graphics-tablet mode requires `input_pen = true`. The GUI prevents incompatible
 toggle combinations; saving or starting with an incompatible file or `--pen-only`
@@ -387,7 +387,7 @@ These results do not compare software encoding against VAAPI or justify changing
 an existing hardware encoder selection.
 
 Keep FFmpeg unmodified. Use distribution packages and their matching development
-libraries; implement compatibility and encoder integration in UScreen's adapters
+libraries; implement compatibility and encoder integration in Blent's adapters
 without maintaining or requiring FFmpeg patches.
 
 ### Encoder policy ownership
@@ -421,18 +421,18 @@ are documented in [the packetizer replay](benchmarks.md#annex-b-packetizer-repla
 
 The fork's permanent release key has been provisioned. See
 [release signing](release-signing.md) for the public certificate, fingerprint
-and migration instructions. Builds use `io.github.geraldo_netto.uscreen` while
-Kotlin classes retain the `com.uscreen` namespace. Official bundle/publication
+and migration instructions. Builds use `io.github.geraldo_netto.blent` while
+Kotlin classes retain the `com.blent` namespace. Official bundle/publication
 tooling rejects APKs whose package, launcher or signing certificate differs
 from the designated identity, and rejects debuggable APKs. Reuse the designated
-key for future fork updates. Set `USCREEN_KEYSTORE_PROPERTIES` to an owner-only
+key for future fork updates. Set `BLENT_KEYSTORE_PROPERTIES` to an owner-only
 properties file outside Git; otherwise Gradle reads `android/keystore.properties`.
 
 For an independent signing identity, the existing local-build mechanism is:
 
 ```bash
 cd android
-keytool -genkeypair -keystore uscreen-release.keystore -alias uscreen \
+keytool -genkeypair -keystore blent-release.keystore -alias blent \
         -keyalg RSA -keysize 2048 -validity 10000
 # keystore.properties: storeFile / storePassword / keyAlias / keyPassword
 ./gradlew assembleRelease     # app/build/outputs/apk/release/app-release.apk
@@ -455,7 +455,7 @@ build/signing environment:
 
 
 ```bash
-distrobox create --image debian:12 --name uscreen-build
+distrobox create --image debian:12 --name blent-build
 # Inside: install the host compiler/GUI prerequisites listed above,
 # plus dpkg-dev fakeroot rpm patchelf squashfs-tools file, and stable Rust through rustup.
 # Enable matching deb-src repositories for the bundled package versions.
@@ -465,8 +465,8 @@ distrobox create --image debian:12 --name uscreen-build
 GH_TOKEN=... make publish NOTES=release-notes.md
 ```
 
-Set `USCREEN_BUILD_CONTAINER=name` to use a differently named build container
-with `make dist` or `make publish`; an empty or unset value uses `uscreen-build`.
+Set `BLENT_BUILD_CONTAINER=name` to use a differently named build container
+with `make dist` or `make publish`; an empty or unset value uses `blent-build`.
 
 `make publish` runs `scripts/build-release.sh` and `packaging/build-packages.sh`,
 checks that HEAD and both local/origin tag objects match, and refuses to
@@ -543,16 +543,16 @@ security package updates remain enabled. Build/test tools include **both
 AppImage packaging downloads checksum-pinned AppImage tools and exact Debian
 source packages, so matching `deb-src` indexes and network access are needed.
 Installing only `librpmbuild9t64` does not supply those commands. These tools
-are not dependencies for running an installed UScreen package.
+are not dependencies for running an installed Blent package.
 
 From the checkout, reproduce the CI environment and suite with:
 
 ```bash
-docker build -t uscreen-ci packaging/ci
+docker build -t blent-ci packaging/ci
 docker run --rm --security-opt seccomp=unconfined \
-  -v "$PWD:/work" -v uscreen-cargo:/usr/local/cargo/registry \
-  -v uscreen-target:/build -e CARGO_TARGET_DIR=/build \
-  uscreen-ci cargo test --locked --release --workspace
+  -v "$PWD:/work" -v blent-cargo:/usr/local/cargo/registry \
+  -v blent-target:/build -e CARGO_TARGET_DIR=/build \
+  blent-ci cargo test --locked --release --workspace
 ```
 
 The seccomp exception allows the existing ThreadSanitizer test's `setarch`
@@ -588,8 +588,8 @@ To generate the same Linux package fixtures locally:
 
 ```bash
 docker run --rm -v "$PWD:/work" \
-  -v uscreen-cargo:/usr/local/cargo/registry -v uscreen-target:/build \
-  -e CARGO_TARGET_DIR=/build uscreen-ci scripts/ci/build-artifacts.sh
+  -v blent-cargo:/usr/local/cargo/registry -v blent-target:/build \
+  -e CARGO_TARGET_DIR=/build blent-ci scripts/ci/build-artifacts.sh
 ```
 
 This writes package test artifacts under `dist/`, without an Android APK;

@@ -2,7 +2,7 @@
 use crate::media_storage::MediaBytes as Bytes;
 use std::sync::Arc;
 
-pub use uscreen_config::video::Codec;
+pub use blent_config::video::Codec;
 
 /// Immutable current codec headers with race-free publication notifications.
 /// T405: publishers may run on native encoder threads without a Tokio runtime.
@@ -103,7 +103,7 @@ pub struct EncoderSettings {
     pub selection: Option<crate::selection::Selected>,
 }
 
-pub use uscreen_config::negotiation::DecoderCapabilities;
+pub use blent_config::negotiation::DecoderCapabilities;
 
 impl EncoderSettings {
     pub fn same_stream(&self, other: &Self) -> bool {
@@ -142,7 +142,7 @@ impl EncoderSettings {
             .map(|s| s.reason.as_str())
             .unwrap_or("H.264 fallback while awaiting compatible encoder measurements")
     }
-    pub fn decoder_choice(&self) -> Option<&uscreen_config::negotiation::DecoderChoice> {
+    pub fn decoder_choice(&self) -> Option<&blent_config::negotiation::DecoderChoice> {
         self.selection
             .as_ref()
             .filter(|s| s.key.matches(self))?

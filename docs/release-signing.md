@@ -1,15 +1,16 @@
-# Fork Android release identity
+# Blent Android release identity
 
-The maintainer designated an independent fork identity on 2026-09-18, and its
-permanent signing key has been provisioned. Android builds the fork package
+Blent uses a fresh application identity selected on 2026-09-26 and the
+permanent signing key provisioned on 2026-09-18. No settings migration or
+compatibility with the former application is provided. Android builds the fork package
 below. Host discovery, launch, token delivery and capability queries target
-that package; Kotlin classes retain their `com.uscreen` namespace. Release
+that package; Kotlin classes retain their `com.blent` namespace. Release
 bundling and publication verify the APK against the designated certificate.
 
 | Property | Value |
 | --- | --- |
 | Maintainer | [geraldo-netto](https://github.com/geraldo-netto) |
-| Selected application ID | `io.github.geraldo_netto.uscreen` |
+| Selected application ID | `io.github.geraldo_netto.blent` |
 | Key alias | `uscreen-fork-release` |
 | Key algorithm | RSA, 4096 bits |
 | Certificate signature | SHA256withRSA |
@@ -19,7 +20,7 @@ bundling and publication verify the APK against the designated certificate.
 
 The application ID uses an underscore because Android allows letters, digits
 and underscores in its dot-separated segments, but not hyphens. It identifies
-a separate app from `com.uscreen`; see [Android's application-ID rules](https://developer.android.com/build/configure-app-module).
+a separate app from the former UScreen packages; see [Android's application-ID rules](https://developer.android.com/build/configure-app-module).
 The selected migration allows both apps to be installed. It must not uninstall
 the existing app or promise automatic transfer of its private settings.
 Android's [signing documentation](https://developer.android.com/studio/publish/app-signing)
@@ -64,7 +65,7 @@ an absolute path. The environment variable selects the properties file without
 putting passwords on the command line:
 
 ```bash
-USCREEN_KEYSTORE_PROPERTIES=/private/path/keystore.properties \
+BLENT_KEYSTORE_PROPERTIES=/private/path/keystore.properties \
   ./android/gradlew -p android assembleRelease
 python3 scripts/verify-release-apk.py android/app/build/outputs/apk/release/app-release.apk
 ```
@@ -73,25 +74,23 @@ The verifier uses stock Android SDK `apksigner` and `aapt2`, from PATH or the
 latest stable installed build-tools directory. It discovers the SDK through
 `ANDROID_SDK_ROOT`, `ANDROID_HOME`, then `android/local.properties`. Verification
 requires a valid APK signature, exactly one signer matching the tracked public
-certificate, the fork package, `com.uscreen.MainActivity` as launcher, and a
+certificate, the fork package, `com.blent.MainActivity` as launcher, and a
 non-debuggable APK. Missing tools, unsigned/debug APKs and mismatched identities
 fail closed. Both release bundle builders verify before copying the APK;
 publication verifies the staged APK before any release API writes.
 
-## Migration from the upstream package
+## Fresh Blent installation
 
-Install the fork APK alongside the existing `com.uscreen` app. The host now
-looks specifically for `io.github.geraldo_netto.uscreen`, so an upstream-only
-installation is reported as missing. The fork has separate Android private
-data. Note the old app's brightness, refresh, decoder and other preferences,
-then select them in the fork app as needed; there is no automatic settings
-transfer. The installer does not remove the old app. Both apps can remain
-installed, but use the fork with the updated host.
+Install the signed Blent APK as `io.github.geraldo_netto.blent`. It has separate
+private data from the former UScreen packages and starts with fresh defaults.
+No settings migration or old-version compatibility is provided. Stop the old
+app before using Blent with the renamed host; old app data need not be deleted.
+The host targets only the new Blent package.
 
-An explicit launch uses the application ID and the original class namespace:
+An explicit launch uses the new application ID and class namespace:
 
 ```bash
-adb shell am start -n io.github.geraldo_netto.uscreen/com.uscreen.MainActivity
+adb shell am start -n io.github.geraldo_netto.blent/com.blent.MainActivity
 ```
 
 Debug builds use the same fork application ID with a different signing key.

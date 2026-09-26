@@ -10,8 +10,8 @@ import time
 import observe
 from rect_surface import PresentationSampler
 
-PACKAGE = 'com.uscreen.rectbench'
-SERVICES = ['io.github.geraldo_netto.uscreen', 'media.unisoc.codec2', 'surfaceflinger', 'android.hardware.graphics.composer@2.4-service']
+PACKAGE = 'com.blent.rectbench'
+SERVICES = ['io.github.geraldo_netto.blent', 'media.unisoc.codec2', 'surfaceflinger', 'android.hardware.graphics.composer@2.4-service']
 
 
 def adb(args, *command, **kwargs):
@@ -25,8 +25,8 @@ def capture(args, *command):
 def foreground(args):
     lines = capture(args, 'shell', 'dumpsys', 'activity', 'activities').splitlines()
     top = [line for line in lines if 'topResumedActivity=' in line]
-    if len(top) != 1 or 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' not in top[0]:
-        raise RuntimeError('UScreen is not foreground; do not interrupt another app')
+    if len(top) != 1 or 'io.github.geraldo_netto.blent/com.blent.MainActivity' not in top[0]:
+        raise RuntimeError('Blent is not foreground; do not interrupt another app')
 
 
 def upload(args, source, target):
@@ -47,7 +47,7 @@ def sample(args, pids):
     rows = {}
     for name, pid in pids.items():
         command = ['cat', f'/proc/{pid}/stat']
-        if name in (PACKAGE, 'io.github.geraldo_netto.uscreen'):
+        if name in (PACKAGE, 'io.github.geraldo_netto.blent'):
             command = ['run-as', name, *command]
         begin = time.monotonic_ns()
         raw = capture(args, 'shell', *command)
@@ -105,7 +105,7 @@ def trial(args, scene, rate, codec, number):
                      stream=dict(codec='h264', profile='constrained-baseline', level=40, depth=8),
                      low_latency=False, operating_rate=120))
     encoded = base64.b64encode(json.dumps(selection).encode()).decode()
-    command = ['shell', 'am', 'start', *([] if args.keep_process else ['-S']), '-W', '-n', PACKAGE + '/com.uscreen.benchmark.MainActivity',
+    command = ['shell', 'am', 'start', *([] if args.keep_process else ['-S']), '-W', '-n', PACKAGE + '/com.blent.benchmark.MainActivity',
                '--ez', 'run', 'true', '--ez', 'rect', str(codec != 0).lower(), '--ez', 'verify', str(args.verify).lower(),
                '--ez', 'mapped', str(args.mapped).lower(),
                '--ei', 'seconds', str(args.seconds), '--ei', 'warmup', str(args.warmup), '--ei', 'rate', str(rate),

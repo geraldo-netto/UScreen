@@ -17,14 +17,14 @@ from profile_usb_wire import Acknowledgements, receipt
 
 PLAN = PIPELINE.module('decoder-plan')
 DEVICE = PLAN.DEVICE
-PACKAGE = 'com.uscreen.decoderbench.candidate'
+PACKAGE = 'com.blent.decoderbench.candidate'
 
 
 def foreground(serial):
     state = DEVICE.capture(serial, 'shell', 'dumpsys', 'activity', 'activities')
     top = [line for line in state.splitlines() if 'topResumedActivity=' in line]
-    if len(top) != 1 or 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity' not in top[0]:
-        raise RuntimeError('tablet is not available in the authorized UScreen foreground')
+    if len(top) != 1 or 'io.github.geraldo_netto.blent/com.blent.MainActivity' not in top[0]:
+        raise RuntimeError('tablet is not available in the authorized Blent foreground')
 
 
 def validate(rows, meta):
@@ -41,7 +41,7 @@ def validate(rows, meta):
 def connect(args, listener, port, metadata, folder):
     DEVICE.adb(args.serial, 'shell', 'run-as', PACKAGE, 'rm', '-f', 'files/result.json', capture_output=True)
     output = DEVICE.capture(args.serial, 'shell', 'am', 'start', '-S', '-W', '-n',
-                            f'{PACKAGE}/com.uscreen.benchmark.MainActivity', '--ez', 'run', 'true',
+                            f'{PACKAGE}/com.blent.benchmark.MainActivity', '--ez', 'run', 'true',
                             '--ei', 'usb_port', str(port))
     (folder / 'launch.txt').write_text(output)
     if 'Status: ok' not in output:

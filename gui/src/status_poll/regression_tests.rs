@@ -1,7 +1,7 @@
 //! T516: an unsuccessful ADB inventory cannot claim a connected tablet.
 use super::*;
+use blent_config::runtime::{runtime_dir, SessionLedger, TabletSession};
 use std::os::unix::fs::PermissionsExt;
-use uscreen_config::runtime::{runtime_dir, SessionLedger, TabletSession};
 
 const TEST: &str =
     "status_poll::regression_tests::t516_dynamic_inventory_requires_success_and_recovers";
@@ -12,14 +12,14 @@ fn isolated() {
         .tempdir()
         .unwrap();
     std::fs::create_dir(directory.path().join("bin")).unwrap();
-    let executable = directory.path().join("bin/uscreen");
+    let executable = directory.path().join("bin/blent");
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
     let adb = directory.path().join("adb");
     std::fs::write(&adb, "#!/bin/sh\n/bin/cat \"$HOME/inventory\"\nread -r status < \"$HOME/status\"\nexit \"$status\"\n").unwrap();
     std::fs::set_permissions(adb, std::fs::Permissions::from_mode(0o700)).unwrap();
     let output = std::process::Command::new(executable)
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T516", "1")
+        .env("BLENT_T516", "1")
         .env("HOME", directory.path())
         .env("XDG_CONFIG_HOME", directory.path())
         .env("XDG_RUNTIME_DIR", directory.path())
@@ -36,7 +36,7 @@ fn isolated() {
 
 #[test]
 fn t516_dynamic_inventory_requires_success_and_recovers() {
-    if std::env::var_os("USCREEN_T516").is_none() {
+    if std::env::var_os("BLENT_T516").is_none() {
         isolated();
         return;
     }

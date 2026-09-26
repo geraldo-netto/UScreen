@@ -19,7 +19,7 @@ def verify_abi(binary):
 
 
 def verify_bundle(folder):
-    for name in ['uscreen', 'uscreen-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+    for name in ['blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
         verify_abi(folder / name)
     if (folder / 'libevdi.so.1').resolve() != folder / 'libevdi.so.1.15.0':
         raise ValueError('missing or incorrect bundled libevdi SONAME link')

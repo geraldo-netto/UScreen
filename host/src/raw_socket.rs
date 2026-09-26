@@ -1,8 +1,8 @@
 //! Linux descriptor transport. Packet boundaries and fd ownership are explicit.
 use anyhow::{ensure, Context, Result};
+use blent_config::raw_frame::{Message, MESSAGE_BYTES};
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::sync::Arc;
-use uscreen_config::raw_frame::{Message, MESSAGE_BYTES};
 
 #[derive(Clone)]
 pub(crate) struct Socket(Arc<OwnedFd>);

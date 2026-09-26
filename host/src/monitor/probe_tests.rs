@@ -40,7 +40,7 @@ if [ "$4" = pm ]; then
         exit 1
     fi
     if [ "$2" = OLD ] && [ -f "$0.absent" ]; then exit 1; fi
-    echo package:/data/app/uscreen/base.apk
+    echo package:/data/app/blent/base.apk
 fi
 "#,
     )

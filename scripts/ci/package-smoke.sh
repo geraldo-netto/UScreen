@@ -21,7 +21,7 @@ case "$1" in
     sed -i "\|^NoExtract.*usr/share/doc|d" /etc/pacman.conf
     pacman -Syu --noconfirm
     # A container shares the host kernel: exercise userspace dependencies only.
-    pacman -U --noconfirm --assume-installed evdi-dkms /artifacts/uscreen-[0-9]*.pkg.tar.zst
+    pacman -U --noconfirm --assume-installed evdi-dkms /artifacts/blent-[0-9]*.pkg.tar.zst
     ;;
   *) echo "Unknown distro: $1" >&2; exit 2 ;;
 esac
@@ -29,14 +29,14 @@ esac
 # Direct control must work with neither a systemd PID 1 nor a user bus.
 [[ $(cat /proc/1/comm) != systemd ]]
 unset DBUS_SESSION_BUS_ADDRESS
-uscreen --version
-uscreen status
-uscreen stop
+blent --version
+blent status
+blent stop
 command -v ffmpeg
 command -v adb
-HELPER=/usr/lib/uscreen/evdi_helper
-if [[ -f /usr/lib64/uscreen/evdi_helper ]]; then HELPER=/usr/lib64/uscreen/evdi_helper; fi
-for binary in /usr/bin/uscreen /usr/bin/uscreen-gui "$HELPER"; do
+HELPER=/usr/lib/blent/evdi_helper
+if [[ -f /usr/lib64/blent/evdi_helper ]]; then HELPER=/usr/lib64/blent/evdi_helper; fi
+for binary in /usr/bin/blent /usr/bin/blent-gui "$HELPER"; do
     dependencies=$(ldd "$binary")
     printf '%s\n' "$dependencies"
     if grep -q 'not found' <<< "$dependencies"; then exit 1; fi
@@ -48,7 +48,7 @@ if "$HELPER" > /tmp/helper-usage 2>&1; then helper_status=0; else helper_status=
 [[ $helper_status == 1 ]]
 grep -q 'Usage:' /tmp/helper-usage
 for file in LICENSE THIRD_PARTY_LICENSES.md licenses/libevdi-LGPL-2.1.txt README.md; do
-    test -s "/usr/share/doc/uscreen/$file"
+    test -s "/usr/share/doc/blent/$file"
 done
 
 /source/scripts/ci/direct-control-smoke.sh

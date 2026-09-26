@@ -10,7 +10,7 @@ use tokio::io::AsyncWriteExt;
 const NAME: &str = "capture::fifo_tests::t226_partial_frame_recovers_without_display_hotplug";
 
 fn isolated_fixture(name: &str) -> bool {
-    if std::env::var_os("USCREEN_T226_ROOT").is_some() {
+    if std::env::var_os("BLENT_T226_ROOT").is_some() {
         return false;
     }
     let root = tempfile::Builder::new()
@@ -20,7 +20,7 @@ fn isolated_fixture(name: &str) -> bool {
     card_allocation_tests::compile_helper(root.path());
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", name, "--nocapture"])
-        .env("USCREEN_T226_ROOT", root.path())
+        .env("BLENT_T226_ROOT", root.path())
         .env("HOME", root.path())
         .env("XDG_RUNTIME_DIR", root.path())
         .output()
@@ -183,7 +183,7 @@ fn manager(root: &Path) -> CaptureManager {
         encoder: "libx264".into(),
         width: 1024,
         // T418: these regressions specifically exercise partial FIFO writes.
-        raw_transport: uscreen_config::raw_frame::RawTransport::Fifo,
+        raw_transport: blent_config::raw_frame::RawTransport::Fifo,
         height: 1024,
         fps: 20,
         width_mm: 200,
@@ -198,9 +198,9 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
     if isolated_fixture(NAME) {
         return;
     }
-    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T226_ROOT").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("BLENT_T226_ROOT").unwrap());
     let mut manager = manager(&root);
-    uscreen_config::linux::pipe::publish(2).unwrap();
+    blent_config::linux::pipe::publish(2).unwrap();
     manager.start_helper().await.unwrap();
     let old_reader = std::fs::OpenOptions::new()
         .read(true)
@@ -220,7 +220,7 @@ async fn t226_partial_frame_recovers_without_display_hotplug() {
     let packet = tokio::time::timeout(std::time::Duration::from_secs(10), rx.recv()).await;
     let packet = packet.expect("T226: no recovery frame").unwrap();
     wait_pipe_request(2).await;
-    uscreen_config::linux::pipe::publish(4).unwrap();
+    blent_config::linux::pipe::publish(4).unwrap();
     let second = live_recovery(&root, &packet, &mut rx).await;
     wait_pipe_request(4).await;
     stop.send(true).unwrap();
@@ -246,7 +246,7 @@ async fn t429_encoder_changes_survive_unstarted_manager_cleanup() {
     ) {
         return;
     }
-    let root = std::path::PathBuf::from(std::env::var_os("USCREEN_T226_ROOT").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("BLENT_T226_ROOT").unwrap());
     let mut manager = manager(&root);
     manager.start_helper().await.unwrap();
     let old_reader = std::fs::OpenOptions::new()

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 if [ "$1" = "configure" ]; then
-    sh /usr/share/uscreen/setup-evdi.sh 2 || true
+    sh /usr/share/blent/setup-evdi.sh 2 || true
     modprobe uinput 2>/dev/null || true
     udevadm control --reload 2>/dev/null || true
     udevadm trigger --name-match=uinput 2>/dev/null || true
@@ -9,5 +9,5 @@ if [ "$1" = "configure" ]; then
     # the new icon shows up in menus without a logout.
     touch /usr/share/icons/hicolor 2>/dev/null || true
     command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t /usr/share/icons/hicolor 2>/dev/null || true
-    echo "uscreen: enable at login with:  systemctl --user enable --now uscreen"
+    echo "blent: enable at login with:  systemctl --user enable --now blent"
 fi

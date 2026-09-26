@@ -1,7 +1,7 @@
 //! Desktop-specific mapping adapters, independent of wire authentication.
 use super::linux::{DeviceIdentity, KWIN_INPUT_IFACE};
+use blent_config::commands::AsyncCommandExt;
 use tracing::{info, warn};
-use uscreen_config::commands::AsyncCommandExt;
 
 pub(super) async fn primary_non_evdi_output() -> Option<String> {
     let evdi: Vec<String> = crate::vdisplay::evdi_connectors()
@@ -191,7 +191,7 @@ pub(super) fn x11_connector_matches(output: &str, connector: &str) -> bool {
 }
 
 /// Xorg can expose a pen as separate pen/eraser devices. Keep tablet suffixes
-/// exact: "UScreen Pen 2" must never match the first tablet's "UScreen Pen".
+/// exact: "Blent Pen 2" must never match the first tablet's "Blent Pen".
 pub(super) fn x11_device_kind<'a>(name: &str, ident: &'a DeviceIdentity) -> Option<&'a str> {
     if name == ident.touch {
         return Some(&ident.touch);
@@ -359,7 +359,7 @@ pub(super) fn x11_list_entry<'a, 'b>(
     line: &'a str,
     ident: &'b DeviceIdentity,
 ) -> Option<(&'a str, &'a str, &'b str)> {
-    let start = line.find("UScreen ")?;
+    let start = line.find("Blent ")?;
     let (name, rest) = line[start..].split_once("id=")?;
     let kind = x11_device_kind(name.trim(), ident)?;
     let id = rest

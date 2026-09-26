@@ -28,8 +28,8 @@ impl Fixture {
             .unwrap();
         let bin = root.path().join("bin");
         std::fs::create_dir(&bin).unwrap();
-        let binary = bin.join("uscreen");
-        std::fs::copy(env!("CARGO_BIN_EXE_uscreen"), &binary).unwrap();
+        let binary = bin.join("blent");
+        std::fs::copy(env!("CARGO_BIN_EXE_blent"), &binary).unwrap();
         let fixture = Self { root, binary };
         fixture.script("adb", "printf 'List of devices attached\\n\\n'\n");
         fixture.script(
@@ -69,15 +69,15 @@ impl Fixture {
                 format!("unix:path={}/missing-bus", self.root.path().display()),
             )
             .env("XDG_CURRENT_DESKTOP", "T497 isolated fixture")
-            .env("RUST_LOG", "uscreen=info")
+            .env("RUST_LOG", "blent=info")
             .env_remove("DISPLAY")
             .env_remove("WAYLAND_DISPLAY")
-            .env_remove("USCREEN_FAKE_TABLET");
+            .env_remove("BLENT_FAKE_TABLET");
         command
     }
 
     fn configuration(&self, video: u16, input: u16) {
-        let directory = self.root.path().join("config/uscreen");
+        let directory = self.root.path().join("config/blent");
         std::fs::create_dir_all(&directory).unwrap();
         std::fs::write(directory.join("config.toml"), format!(
             "check_updates = false\ninput_touch = false\ninput_pen = false\ninput_pointer = false\nvideo_port = {video}\ninput_port = {input}\nencoder = 'libx264'\n"
@@ -93,7 +93,7 @@ fn wait_running(child: &mut Child, log: &Path) {
             child.try_wait().unwrap().is_none(),
             "T497: startup exited: {text}"
         );
-        if text.contains("uscreen daemon running (PID:") {
+        if text.contains("blent daemon running (PID:") {
             return;
         }
         assert!(Instant::now() < deadline, "T497: startup timed out: {text}");
@@ -166,14 +166,14 @@ fn lifecycle(cli_stop: bool) {
     assert!(String::from_utf8_lossy(&status.stdout).contains("not running"));
     let text = std::fs::read_to_string(log).unwrap();
     assert!(
-        text.contains("uscreen daemon stopped"),
+        text.contains("blent daemon stopped"),
         "T497: missing shutdown confirmation: {text}"
     );
 }
 
 #[test]
 fn t497_idle_daemon_starts_and_reaps_without_attaching_a_display() {
-    if std::env::var_os("USCREEN_TEST_PRIVATE_PID_NAMESPACE").is_some() {
+    if std::env::var_os("BLENT_TEST_PRIVATE_PID_NAMESPACE").is_some() {
         lifecycle(false);
         lifecycle(true);
         return;
@@ -192,7 +192,7 @@ fn run_isolated(test: &str) {
         ])
         .arg(std::env::current_exe().unwrap())
         .args(["--exact", test, "--nocapture"])
-        .env("USCREEN_TEST_PRIVATE_PID_NAMESPACE", "1")
+        .env("BLENT_TEST_PRIVATE_PID_NAMESPACE", "1")
         .output()
         .unwrap();
     assert!(
@@ -205,7 +205,7 @@ fn run_isolated(test: &str) {
 
 #[test]
 fn t497_diagnostics_and_display_inventory_are_read_only_without_devices() {
-    if std::env::var_os("USCREEN_TEST_PRIVATE_PID_NAMESPACE").is_none() {
+    if std::env::var_os("BLENT_TEST_PRIVATE_PID_NAMESPACE").is_none() {
         run_isolated("t497_diagnostics_and_display_inventory_are_read_only_without_devices");
         return;
     }
@@ -226,7 +226,7 @@ fn t497_diagnostics_and_display_inventory_are_read_only_without_devices() {
     );
     let text = String::from_utf8_lossy(&doctor.stdout);
     for expected in [
-        "=== uscreen doctor ===",
+        "=== blent doctor ===",
         "update check disabled",
         "no active tablet session",
         "Configuration",

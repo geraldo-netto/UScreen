@@ -1,11 +1,11 @@
 //! A dedicated, temporary ADB reverse mapping and shell-protected invitation.
 use anyhow::{ensure, Context, Result};
+use blent_config::{camera::CameraOptions, commands::AsyncCommandExt};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
 use tokio::process::Command;
-use uscreen_config::{camera::CameraOptions, commands::AsyncCommandExt};
 
 pub struct Bridge {
     pub adb: PathBuf,
@@ -61,7 +61,7 @@ impl Bridge {
                 "am",
                 "broadcast",
                 "-n",
-                "io.github.geraldo_netto.uscreen/com.uscreen.CameraReceiver",
+                "io.github.geraldo_netto.blent/com.blent.CameraReceiver",
                 "--es",
                 "token",
                 token,
@@ -80,8 +80,8 @@ impl Bridge {
                 "--ei",
                 "lens",
                 match options.lens {
-                    uscreen_config::camera::Lens::Front => "0",
-                    uscreen_config::camera::Lens::Rear => "1",
+                    blent_config::camera::Lens::Front => "0",
+                    blent_config::camera::Lens::Rear => "1",
                 },
                 "--ez",
                 "background",
@@ -94,7 +94,7 @@ impl Bridge {
         .await?;
         ensure!(
             result.contains("result=1"),
-            "tablet did not accept camera invitation; install updated UScreen APK and open it"
+            "tablet did not accept camera invitation; install updated Blent APK and open it"
         );
         Ok(())
     }

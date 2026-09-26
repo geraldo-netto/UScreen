@@ -12,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts/complexity'))
 import kotlin  # Reuse the pinned/hash-checked compiler bootstrap.
-SOURCE = 'android/app/src/main/java/com/uscreen/VideoTiming.kt'
+SOURCE = 'android/app/src/main/java/com/blent/VideoTiming.kt'
 BASE = '0533724'
 
 
@@ -26,7 +26,7 @@ def prepare(folder, variant):
         text = text.replace('        if (cached >= 0 && valid[cached] && arrivalSeq[cached] == seq) return cached\n', '')
     (folder / 'VideoTiming.kt').write_text(text)
     (folder / 'Log.kt').write_text('package android.util\nobject Log { @JvmStatic fun i(tag: String, message: String): Int = 0 }\n')
-    (folder / 'VideoReceiver.kt').write_text('package com.uscreen\nclass VideoReceiver { companion object { const val ARRIVAL_RING = 64; const val TAG = "test" } }\n')
+    (folder / 'VideoReceiver.kt').write_text('package com.blent\nclass VideoReceiver { companion object { const val ARRIVAL_RING = 64; const val TAG = "test" } }\n')
     (folder / 'Timing.kt').write_bytes((ROOT / 'scripts/benchmarks/timing.kt').read_bytes())
 
 
@@ -48,7 +48,7 @@ def run(args, jars, classpath):
         for trial in range(args.trials):
             order = list(jars) if (number + trial) % 2 else list(reversed(jars))
             for variant in order:
-                command = ['java', '-cp', f'{jars[variant]}{os.pathsep}{classpath}', 'com.uscreen.TimingKt', str(sessions), str(args.count), mode]
+                command = ['java', '-cp', f'{jars[variant]}{os.pathsep}{classpath}', 'com.blent.TimingKt', str(sessions), str(args.count), mode]
                 output = subprocess.check_output(command, text=True, timeout=60)
                 lanes = [list(map(int, line.split('\t'))) for line in output.splitlines()]
                 signature = [row[3] for row in lanes]

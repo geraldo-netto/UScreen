@@ -16,7 +16,7 @@ fn encode_manufacturer_id(s: &[u8; 3]) -> (u8, u8) {
 
 /// Physical size assumed when the tablet has not reported its own, in mm.
 /// Roughly a 14.6" 16:10 panel.
-pub use uscreen_config::display::{DEFAULT_HEIGHT_MM, DEFAULT_WIDTH_MM};
+pub use blent_config::display::{DEFAULT_HEIGHT_MM, DEFAULT_WIDTH_MM};
 
 /// Build a 128-byte EDID with a single detailed timing descriptor.
 ///
@@ -31,7 +31,7 @@ pub fn make_edid_sized(
     width_mm: u32,
     height_mm: u32,
 ) -> Result<Vec<u8>> {
-    let pixel_clock_10khz = uscreen_config::display::pixel_clock_10khz(width, height, refresh)?;
+    let pixel_clock_10khz = blent_config::display::pixel_clock_10khz(width, height, refresh)?;
     anyhow::ensure!(
         (1..=4095).contains(&width_mm) && (1..=4095).contains(&height_mm),
         "EDID physical dimensions must fit 12 bits and be positive"
@@ -41,8 +41,8 @@ pub fn make_edid_sized(
     // Header
     edid[0..8].copy_from_slice(&[0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00]);
 
-    // Manufacturer ID (USC = UScreen)
-    let (b8, b9) = encode_manufacturer_id(b"USC");
+    // Manufacturer ID (BLN = Blent)
+    let (b8, b9) = encode_manufacturer_id(b"BLN");
     edid[8] = b8;
     edid[9] = b9;
 
@@ -74,9 +74,9 @@ pub fn make_edid_sized(
     // Custom fixed-porch timings; these do not implement the CVT-RB formulas.
     let h_active = width;
     let v_active = height;
-    let (h_front, h_sync, h_back) = uscreen_config::display::H_PORCHES;
+    let (h_front, h_sync, h_back) = blent_config::display::H_PORCHES;
     let h_blank = h_front + h_sync + h_back;
-    let (v_front, v_sync, v_back) = uscreen_config::display::V_PORCHES;
+    let (v_front, v_sync, v_back) = blent_config::display::V_PORCHES;
     let v_blank = v_front + v_sync + v_back;
 
     let h_total = h_active + h_blank;
@@ -112,20 +112,20 @@ pub fn make_edid_sized(
     // === Monitor name descriptor (bytes 90-107) ===
     let i = 90;
     edid[i + 3] = 0xFC;
-    let name = b"UScreen\n     ";
+    let name = b"Blent\n       ";
     edid[i + 5..i + 5 + 13].copy_from_slice(&name[..13]);
 
     // === Range limits descriptor (bytes 108-125) ===
     let i = 108;
     edid[i + 3] = 0xFD;
-    let minimum_refresh = uscreen_config::display::minimum_refresh(width, height)?;
+    let minimum_refresh = blent_config::display::minimum_refresh(width, height)?;
     edid[i + 5] = minimum_refresh as u8;
-    edid[i + 6] = uscreen_config::MAX_FPS as u8;
+    edid[i + 6] = blent_config::MAX_FPS as u8;
     // Include the actual rounded DTD clock and every configured refresh.
     // EDID 1.4 range offsets represent horizontal rates above 255 kHz.
     let clock_hz = u32::from(pixel_clock_10khz) * 10_000;
     let min_h = (v_total * minimum_refresh / 1000).min(clock_hz / (h_total * 1000));
-    let max_h = (v_total * uscreen_config::MAX_FPS)
+    let max_h = (v_total * blent_config::MAX_FPS)
         .div_ceil(1000)
         .max(clock_hz.div_ceil(h_total * 1000));
     edid[i + 4] = (u8::from(min_h > 255) << 2) | (u8::from(max_h > 255) << 3);
@@ -163,7 +163,7 @@ pub fn ensure_edid_sized(
     height_mm: u32,
 ) -> Result<PathBuf> {
     let home = std::env::var("HOME").unwrap_or_default();
-    let dir = PathBuf::from(home).join(".local/share/uscreen/edid");
+    let dir = PathBuf::from(home).join(".local/share/blent/edid");
     ensure_edid_in(&dir, width, height, refresh, width_mm, height_mm)
 }
 
@@ -210,6 +210,17 @@ pub fn ensure_edid(width: u32, height: u32, refresh: u32) -> Result<PathBuf> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t585_blent_monitor_descriptor_has_fixed_width_and_checksum() {
+        let edid = super::make_edid(1280, 800, 60);
+        assert_eq!(&edid[95..108], b"Blent\n       ");
+        assert_eq!(&edid[8..10], &[0x09, 0x8e]);
+        assert_eq!(
+            edid.iter().fold(0u8, |sum, byte| sum.wrapping_add(*byte)),
+            0
+        );
+    }
+
     use super::*;
 
     #[test]
@@ -389,7 +400,7 @@ mod tests {
             (640, 480, 10, false),
             (640, 480, 25, true),
         ] {
-            let config = uscreen_config::FileConfig {
+            let config = blent_config::FileConfig {
                 width,
                 height,
                 fps,

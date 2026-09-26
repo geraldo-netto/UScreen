@@ -1,5 +1,5 @@
 //! T559: display and camera settings have distinct identities in diagnostics.
-use uscreen_config::{storage::ConfigStore, FileConfig};
+use blent_config::{storage::ConfigStore, FileConfig};
 
 fn capture_edit(store: &ConfigStore, edit: impl FnOnce(&mut FileConfig)) -> String {
     let log = tempfile::NamedTempFile::new().unwrap();

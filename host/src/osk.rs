@@ -1,4 +1,4 @@
-//! Suppressing the desktop's on-screen keyboard while UScreen touch devices exist.
+//! Suppressing the desktop's on-screen keyboard while Blent touch devices exist.
 //!
 //! The tablet's touch device is a genuine touchscreen as far as the desktop is
 //! concerned, so KDE offers the virtual keyboard whenever a text field takes
@@ -29,7 +29,7 @@ static KEYBOARD_OPERATION: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_ne
 
 fn state_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_default();
-    PathBuf::from(home).join(".local/share/uscreen/osk-restore")
+    PathBuf::from(home).join(".local/share/blent/osk-restore")
 }
 
 async fn get_mode() -> Option<String> {
@@ -61,7 +61,7 @@ async fn disable_from<Get, GetFuture, Apply, ApplyFuture>(
         return;
     }
     if apply().await {
-        info!("On-screen keyboard suppressed while UScreen touch devices exist");
+        info!("On-screen keyboard suppressed while Blent touch devices exist");
     }
 }
 

@@ -2,9 +2,9 @@
 <!-- T257: some Android 12+ OEM transfers ignore allowBackup=false. -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="sharedpref" path="uscreen.xml" />
+        <exclude domain="sharedpref" path="blent.xml" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="sharedpref" path="uscreen.xml" />
+        <exclude domain="sharedpref" path="blent.xml" />
     </device-transfer>
 </data-extraction-rules>

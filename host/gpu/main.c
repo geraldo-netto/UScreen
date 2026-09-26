@@ -14,7 +14,7 @@ static void pace(uint64_t deadline) {
 
 static void stream(gpu_capture *capture, gpu_encoder *encoder, const gpu_options *options) {
     uint64_t deadline = gpu_now_ns(), period = 1000000000 / options->fps;
-    int trace = getenv("USCREEN_GPU_TRACE") != NULL;
+    int trace = getenv("BLENT_GPU_TRACE") != NULL;
     for (unsigned sequence = 0; !options->limit || sequence < options->limit; sequence++) {
         alarm(0); pace(deadline);
         /* Native X/VA waits and backpressured stdout cannot stall indefinitely.

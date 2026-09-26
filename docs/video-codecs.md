@@ -270,15 +270,15 @@ checks the version, FourCC, dimensions and frame-size bound before allocating.
 Payloads retain their packet boundaries. AV1 may repeat a cached sequence header
 at a join point as described below; other bytes are unchanged. IVF
 container timestamps are not forwarded as a shared audio/video clock: the
-existing UScreen sequence ID continues to identify render acknowledgements.
+existing Blent sequence ID continues to identify render acknowledgements.
 
-UScreen's outer TCP length/type/sequence framing is unchanged. For VP9 and AV1, type 0
+Blent's outer TCP length/type/sequence framing is unchanged. For VP9 and AV1, type 0
 contains this versioned configuration envelope; type 1 contains the encoded
 packet after the sequence number:
 
 | Offset | Bytes | Meaning |
 |---|---|---|
-| 0 | 4 | ASCII `USC1` |
+| 0 | 4 | ASCII `BLN1` |
 | 4 | 1 | Codec ID: 3 for VP9, 4 for AV1 |
 | 5 | 4 | Width, unsigned big-endian |
 | 9 | 4 | Height, unsigned big-endian |
@@ -338,7 +338,7 @@ latency, battery or quality improvement without matched live measurements.
 
 ## Doctor inventory
 
-`uscreen doctor` treats `auto` as a selection policy and checks the required
+`blent doctor` treats `auto` as a selection policy and checks the required
 `libx264` fallback separately from encoder wrappers. It reports the configured
 preference alongside an encoder observed on the selected session's owned FIFO,
 when a single recognized FFmpeg child can be identified. An absent, ambiguous
@@ -347,10 +347,10 @@ process has produced successful decoded frames. Doctor never claims the tablet's
 control socket to inspect the selection.
 
 The shell-protected Android inventory receiver accepts the integer extra
-`uscreen_codecs_version=2`. Its response is a bounded-family text inventory:
+`blent_codecs_version=2`. Its response is a bounded-family text inventory:
 
 ```text
-USCREEN_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw
+BLENT_CODECS_V2:h264=hw;hevc=hw10;vp9=hw;av1=sw
 ```
 
 Each field can contain comma-separated implementations. `none` means none was
@@ -359,5 +359,5 @@ listed without a known acceleration class. HEVC retains its `hw8`/`hw10`, `sw8`/
 `sw10`, `unknown8`/`unknown10` profile entries. This is general inventory, not an
 exact-resolution decoder trial. Unsupported optional codecs do not fail automatic
 mode; missing required H.264 support does. Without the extra, the receiver keeps
-its HEVC-only `USCREEN_CODECS_V1` response for older hosts. New hosts never use a
+its HEVC-only `BLENT_CODECS_V1` response for older hosts. New hosts never use a
 legacy HEVC result to infer VP9, AV1 or H.264 support.

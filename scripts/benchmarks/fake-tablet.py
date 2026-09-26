@@ -158,7 +158,7 @@ def main():
                     candidate_sha256=hashlib.sha256(candidate.read_bytes()).hexdigest(),
                     ack='receive only; synthetic decode_us=1000; no decode/render',
                     workloads=WORKLOADS)
-    with tempfile.TemporaryDirectory(prefix='uscreen-t408-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='blent-t408-') as temporary:
         old = Path(temporary) / 'baseline.py'
         old.write_bytes(baseline)
         records = []

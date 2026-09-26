@@ -12,9 +12,9 @@
 //! project targets, and it is tried first; the qdbus family stays as a
 //! fallback for systems without it.
 
+use blent_config::commands::AsyncCommandExt;
 use tokio::sync::OnceCell;
 use tracing::{info, warn};
-use uscreen_config::commands::AsyncCommandExt;
 
 const SERVICE: &str = "org.kde.KWin";
 /// Probe target: a property KWin always exposes, so a tool that exists but

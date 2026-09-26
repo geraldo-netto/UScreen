@@ -10,10 +10,10 @@ pub struct CaptureConfig {
     pub profile_cache: bool,
     /// Opt-in, current-session sparse cadence; native backend must validate it.
     pub adaptive_idle: bool,
-    pub raw_transport: uscreen_config::raw_frame::RawTransport,
+    pub raw_transport: blent_config::raw_frame::RawTransport,
     pub raw_slots: u32,
     /// Control-side decoder request whose ACKs may certify this encoder generation.
-    pub decoder: Option<uscreen_config::negotiation::DecoderChoice>,
+    pub decoder: Option<blent_config::negotiation::DecoderChoice>,
     // The experimental in-process encoder does not create VAAPI contexts.
     #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
     pub vaapi_device: String,
@@ -47,7 +47,7 @@ impl CaptureConfig {
     }
 
     pub(super) fn shared_raw_for(&self, encoder: &str) -> bool {
-        use uscreen_config::raw_frame::RawTransport;
+        use blent_config::raw_frame::RawTransport;
         match self.raw_transport {
             RawTransport::Fifo => false,
             RawTransport::SharedMemory => true,
@@ -90,7 +90,7 @@ mod tests {
     use super::*;
     #[test]
     fn t418_auto_selects_only_measured_capability_and_preserves_fifo_override() {
-        use uscreen_config::raw_frame::RawTransport;
+        use blent_config::raw_frame::RawTransport;
         for encoder in ["libx264", "h264_nvenc", "h264_vaapi_baseline"] {
             let mut config = CaptureConfig {
                 encoder: encoder.into(),

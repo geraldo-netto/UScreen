@@ -21,7 +21,7 @@ class DecoderPlanTests(unittest.TestCase):
             plan.write_text(json.dumps([dict(scene='motion', fixture='clip.bin', profile='legacy', rate=rate,
                                              trial=0, seconds=20, warmup=5)]))
             provenance = root / 'provenance.json'
-            provenance.write_text(json.dumps(dict(package='com.uscreen.decoderbench.candidate', apk_sha256='a' * 64)))
+            provenance.write_text(json.dumps(dict(package='com.blent.decoderbench.candidate', apk_sha256='a' * 64)))
             args = SimpleNamespace(plan=plan, provenance=provenance, output=root / 'output', serial='device')
             responses = ['fingerprint', 'package:/data/app/replay/base.apk\n', installed + '  /data/app/replay/base.apk\n']
             with patch.object(BENCH.DEVICE, 'capture', side_effect=responses), patch.object(BENCH.DEVICE, 'trial') as trial:

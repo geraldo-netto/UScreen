@@ -174,7 +174,7 @@ fn variants(snapshot: &EncoderSettings, best: &Candidate) -> Vec<Candidate> {
 fn variant(
     snapshot: &EncoderSettings,
     best: &Candidate,
-    choice: uscreen_config::negotiation::DecoderChoice,
+    choice: blent_config::negotiation::DecoderChoice,
 ) -> Candidate {
     let hardware = snapshot.decoders.as_ref().unwrap().details.iter().any(|d| {
         d.name == choice.name && d.codec == choice.stream.codec && d.hardware == Some(true)
@@ -223,9 +223,9 @@ mod tests {
         software.hardware = Some(false);
         report.details.push(software);
         snapshot.decoders = Some(report);
-        let stream = uscreen_config::negotiation::StreamProfile {
+        let stream = blent_config::negotiation::StreamProfile {
             codec: "h264".into(),
-            format: uscreen_config::negotiation::Profile {
+            format: blent_config::negotiation::Profile {
                 profile: "baseline".into(),
                 level: 31,
                 depth: 8,

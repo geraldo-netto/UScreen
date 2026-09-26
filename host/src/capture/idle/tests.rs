@@ -1,5 +1,5 @@
 use super::*;
-use uscreen_config::negotiation::{DecoderChoice, Profile, StreamProfile};
+use blent_config::negotiation::{DecoderChoice, Profile, StreamProfile};
 
 fn launch(lease: Lease, evidence: Arc<EncoderEvidence>, tracker: LatencyTracker) -> Handle {
     super::launch(lease, evidence, tracker, Default::default())

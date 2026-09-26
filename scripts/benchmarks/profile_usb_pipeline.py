@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def policies(fps, bitrate, quality):
     return json.loads(subprocess.check_output([
-        'cargo', 'run', '--quiet', '-p', 'uscreen-config', '--example', 'encoder-options', '--',
+        'cargo', 'run', '--quiet', '-p', 'blent-config', '--example', 'encoder-options', '--',
         str(fps), str(bitrate), str(quality)], cwd=ROOT, text=True, timeout=60))
 
 

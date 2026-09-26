@@ -9,11 +9,11 @@ printf '%s\n' "$*" >> "$HOME/adb.calls"
 case "$*" in
   devices|'devices -l') printf 'List of devices attached\nTABLET\tdevice\n';;
   *'shell pm path '*) echo 'package:/fixture.apk';;
-  *'tcpip 5555') [ "$USCREEN_T514_MODE" != tcpip-failed ];;
-  *'addr show wlan0') echo 'inet 192.0.2.10/24'; [ "$USCREEN_T514_MODE" = success ];;
-  *'route get 1.1.1.1') echo 'src 192.0.2.20'; [ "$USCREEN_T514_MODE" != probe-failed ];;
+  *'tcpip 5555') [ "$BLENT_T514_MODE" != tcpip-failed ];;
+  *'addr show wlan0') echo 'inet 192.0.2.10/24'; [ "$BLENT_T514_MODE" = success ];;
+  *'route get 1.1.1.1') echo 'src 192.0.2.20'; [ "$BLENT_T514_MODE" != probe-failed ];;
   *'inet addr') echo 'inet 192.0.2.30/24'; exit 1;;
-  'connect '*) echo "connected to $2"; [ "$USCREEN_T514_MODE" != connect-failed ];;
+  'connect '*) echo "connected to $2"; [ "$BLENT_T514_MODE" != connect-failed ];;
   'disconnect '*) exit 0;;
   *) exit 85;;
 esac
@@ -37,25 +37,25 @@ impl Fixture {
         fixture
     }
     fn config(&self) -> PathBuf {
-        self.0.path().join("config/uscreen/config.toml")
+        self.0.path().join("config/blent/config.toml")
     }
     fn run(&self, mode: &str, off: bool) -> Output {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_uscreen"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_blent"));
         command
             .arg("wifi")
-            .env("USCREEN_T514_MODE", mode)
+            .env("BLENT_T514_MODE", mode)
             .env("HOME", self.0.path())
             .env("XDG_RUNTIME_DIR", self.0.path())
             .env("XDG_CONFIG_HOME", self.0.path().join("config"))
             .env("PATH", self.0.path().join("bin"))
-            .env_remove("USCREEN_FAKE_TABLET");
+            .env_remove("BLENT_FAKE_TABLET");
         if off {
             command.arg("--off");
         }
         command.output().unwrap()
     }
     fn address(&self) -> String {
-        uscreen_config::FileConfig::load_at(&self.config()).wifi_address
+        blent_config::FileConfig::load_at(&self.config()).wifi_address
     }
 }
 

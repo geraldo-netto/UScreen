@@ -1,4 +1,4 @@
-name: Build UScreen
+name: Build Blent
 
 on:
   workflow_dispatch:
@@ -49,36 +49,36 @@ jobs:
 
       - name: Install coverage reporting tools (T497)
         run: |
-          python3 -m venv '${{ runner.temp }}/uscreen-coverage-venv'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
+          python3 -m venv '${{ runner.temp }}/blent-coverage-venv'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
           cargo install cargo-llvm-cov --version 0.8.7 --locked
 
       - name: Run both Rust configurations and enforce Linux function coverage (T497)
         run: |
-          mkdir -p '${{ runner.temp }}/uscreen-rust-coverage'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/uscreen-rust-coverage/manifest.json'
-          cargo llvm-cov --locked --workspace --lcov --output-path '${{ runner.temp }}/uscreen-rust-coverage/default.lcov'
-          cargo llvm-cov --locked --workspace --all-features --lcov --output-path '${{ runner.temp }}/uscreen-rust-coverage/all-features.lcov'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/rust_check.py \
-            --manifest '${{ runner.temp }}/uscreen-rust-coverage/manifest.json' \
-            --lcov '${{ runner.temp }}/uscreen-rust-coverage/default.lcov' \
-            --lcov '${{ runner.temp }}/uscreen-rust-coverage/all-features.lcov' \
-            --output '${{ runner.temp }}/uscreen-rust-coverage'
+          mkdir -p '${{ runner.temp }}/blent-rust-coverage'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/blent-rust-coverage/manifest.json'
+          cargo llvm-cov --locked --workspace --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/default.lcov'
+          cargo llvm-cov --locked --workspace --all-features --lcov --output-path '${{ runner.temp }}/blent-rust-coverage/all-features.lcov'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/rust_check.py \
+            --manifest '${{ runner.temp }}/blent-rust-coverage/manifest.json' \
+            --lcov '${{ runner.temp }}/blent-rust-coverage/default.lcov' \
+            --lcov '${{ runner.temp }}/blent-rust-coverage/all-features.lcov' \
+            --output '${{ runner.temp }}/blent-rust-coverage'
 
       - name: Check portable configuration policy (T371)
         run: |
-          cargo test --locked --release -p uscreen-config --no-default-features
+          cargo test --locked --release -p blent-config --no-default-features
           rustup target add wasm32-unknown-unknown
-          cargo check --locked -p uscreen-config --no-default-features --target wasm32-unknown-unknown
+          cargo check --locked -p blent-config --no-default-features --target wasm32-unknown-unknown
 
       - name: Build EVDI helper
         run: make build-helper
 
       - name: Enforce per-function C capture coverage (T497)
-        run: "'${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/capture_check.py '${{ runner.temp }}/uscreen-capture-coverage'"
+        run: "'${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/capture_check.py '${{ runner.temp }}/blent-capture-coverage'"
 
       - name: Enforce essential installation and packaging function coverage (T497)
-        run: "'${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/script_check.py '${{ runner.temp }}/uscreen-script-coverage'"
+        run: "'${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/script_check.py '${{ runner.temp }}/blent-script-coverage'"
 
       - name: Preserve host coverage evidence
         if: always()
@@ -86,17 +86,17 @@ jobs:
         with:
           name: host-coverage
           path: |
-            ${{ runner.temp }}/uscreen-capture-coverage
-            ${{ runner.temp }}/uscreen-rust-coverage
-            ${{ runner.temp }}/uscreen-script-coverage
+            ${{ runner.temp }}/blent-capture-coverage
+            ${{ runner.temp }}/blent-rust-coverage
+            ${{ runner.temp }}/blent-script-coverage
 
       - name: Upload host binaries
         uses: actions/upload-artifact@v4
         with:
-          name: uscreen-linux-x86_64
+          name: blent-linux-x86_64
           path: |
-            target/release/uscreen
-            target/release/uscreen-gui
+            target/release/blent
+            target/release/blent-gui
             host/evdi/evdi_helper
 
   build-android:
@@ -116,35 +116,35 @@ jobs:
 
       - name: Install Android coverage reporting tools (T497)
         run: |
-          python3 -m venv '${{ runner.temp }}/uscreen-coverage-venv'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
-          mkdir -p '${{ runner.temp }}/uscreen-android-coverage'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/uscreen-android-coverage/manifest.json'
+          python3 -m venv '${{ runner.temp }}/blent-coverage-venv'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' -m pip install -r scripts/coverage/requirements.txt
+          mkdir -p '${{ runner.temp }}/blent-android-coverage'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/report.py snapshot '${{ runner.temp }}/blent-android-coverage/manifest.json'
 
       - name: Build debug APK and enforce Android method coverage (T497)
         run: |
           ./android/gradlew -p android -I "$PWD/scripts/coverage/android.init.gradle" lintDebug profileCoverage assembleDebug
-          cp android/app/build/reports/jacoco/profileCoverage/profileCoverage.xml '${{ runner.temp }}/uscreen-android-coverage/jacoco.xml'
-          '${{ runner.temp }}/uscreen-coverage-venv/bin/python' scripts/coverage/report.py check \
-            --manifest '${{ runner.temp }}/uscreen-android-coverage/manifest.json' \
-            --jacoco '${{ runner.temp }}/uscreen-android-coverage/jacoco.xml' \
-            --scope android/app/src/main/ --output '${{ runner.temp }}/uscreen-android-coverage/report.json'
+          cp android/app/build/reports/jacoco/profileCoverage/profileCoverage.xml '${{ runner.temp }}/blent-android-coverage/jacoco.xml'
+          '${{ runner.temp }}/blent-coverage-venv/bin/python' scripts/coverage/report.py check \
+            --manifest '${{ runner.temp }}/blent-android-coverage/manifest.json' \
+            --jacoco '${{ runner.temp }}/blent-android-coverage/jacoco.xml' \
+            --scope android/app/src/main/ --output '${{ runner.temp }}/blent-android-coverage/report.json'
 
       - name: Preserve Android coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-coverage
-          path: ${{ runner.temp }}/uscreen-android-coverage
+          path: ${{ runner.temp }}/blent-android-coverage
 
       - name: Build isolated decoder replay (T458)
         run: >-
           python3 scripts/benchmarks/decoder-project.py
-          --directory "${{ runner.temp }}/uscreen-decoder-replay"
-          --package com.uscreen.decoderbench.candidate
+          --directory "${{ runner.temp }}/blent-decoder-replay"
+          --package com.blent.decoderbench.candidate
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: uscreen-android-debug
+          name: blent-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk

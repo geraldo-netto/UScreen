@@ -200,7 +200,7 @@ impl CliEncoder<'_> {
         encoder: &str,
         ten_bit: bool,
     ) -> Result<()> {
-        let profile = uscreen_config::encoding::Profile::new(
+        let profile = blent_config::encoding::Profile::new(
             encoder,
             self.config.fps,
             self.config.bitrate,
@@ -234,7 +234,7 @@ fn video_filter(vaapi: bool, ten_bit: bool) -> String {
 /// T400: distribution FFmpeg options vary; probe the selected stock encoder.
 /// Uses the shared asynchronous deadline/cancellation implementation.
 pub(super) async fn supports_async_depth(program: &std::ffi::OsStr, encoder: &str) -> bool {
-    use uscreen_config::commands::AsyncCommandExt;
+    use blent_config::commands::AsyncCommandExt;
     if !encoder.ends_with("_vaapi") {
         return false;
     }
@@ -382,7 +382,7 @@ fn trace_packet(
     timestamp: Option<i64>,
     started: Instant,
 ) {
-    tracing::trace!(target: "uscreen::frame_timing",
+    tracing::trace!(target: "blent::frame_timing",
         encoder_epoch = epoch, sequence = packet.seq, media_pts_us = ?timestamp,
         output_elapsed_us = started.elapsed().as_micros().min(u64::MAX as u128) as u64,
         packet_bytes = packet.data.len(), keyframe = packet.is_idr,

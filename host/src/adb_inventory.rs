@@ -1,6 +1,6 @@
 //! T443: only a successful, well-formed ADB listing confirms disappearance.
-use uscreen_config::adb::{transport_of, Transport};
-use uscreen_config::commands::AsyncCommandExt;
+use blent_config::adb::{transport_of, Transport};
+use blent_config::commands::AsyncCommandExt;
 
 pub(crate) async fn query(adb: &str) -> Option<Vec<String>> {
     let output = tokio::process::Command::new(adb)

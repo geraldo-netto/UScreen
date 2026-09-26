@@ -1,15 +1,15 @@
 //! Linux lifecycle, session status and privileged setup adapters.
-use super::find_uscreen_bin;
+use super::find_blent_bin;
 use crate::Status;
-use std::{path::PathBuf, process::Command, time::Duration};
-use uscreen_config::{
+use blent_config::{
     commands::{daemon_command_timeout, SyncCommandExt},
     linux::daemon,
 };
+use std::{path::PathBuf, process::Command, time::Duration};
 
 /// Autostart can be a user service or an XDG desktop entry.
 pub(crate) fn autostart_enabled() -> bool {
-    uscreen_config::linux::autostart::enabled()
+    blent_config::linux::autostart::enabled()
 }
 
 pub(crate) fn set_autostart(on: bool) -> Result<(), String> {
@@ -18,11 +18,11 @@ pub(crate) fn set_autostart(on: bool) -> Result<(), String> {
 
 pub(crate) fn set_autostart_with(on: bool, running: impl Fn() -> bool) -> Result<(), String> {
     let bin = if on {
-        find_uscreen_bin().ok_or("uscreen binary not found")?
+        find_blent_bin().ok_or("blent binary not found")?
     } else {
         PathBuf::new()
     };
-    uscreen_config::linux::autostart::set_enabled(on, &bin).map_err(|e| e.to_string())?;
+    blent_config::linux::autostart::set_enabled(on, &bin).map_err(|e| e.to_string())?;
     let result = if on {
         if !running() {
             start_daemon_with(service_managed_with(&running))
@@ -40,7 +40,7 @@ pub(crate) fn home() -> String {
 }
 
 pub(crate) fn pid_path() -> PathBuf {
-    PathBuf::from(format!("{}/.local/share/uscreen/uscreen.pid", home()))
+    PathBuf::from(format!("{}/.local/share/blent/blent.pid", home()))
 }
 
 #[cfg(test)]
@@ -50,7 +50,7 @@ pub(crate) fn apply_tablet_status(
     sessions_path: Option<&std::path::Path>,
 ) {
     let sessions = sessions_path
-        .and_then(uscreen_config::runtime::load_sessions)
+        .and_then(blent_config::runtime::load_sessions)
         .unwrap_or_default();
     apply_tablet_sessions(s, text, sessions);
 }
@@ -58,7 +58,7 @@ pub(crate) fn apply_tablet_status(
 pub(crate) fn apply_tablet_sessions(
     s: &mut Status,
     text: &str,
-    mut sessions: Vec<uscreen_config::runtime::TabletSession>,
+    mut sessions: Vec<blent_config::runtime::TabletSession>,
 ) {
     sessions.sort_by_key(|session| session.instance);
     let models: Vec<_> = sessions
@@ -87,8 +87,8 @@ pub(crate) fn system_setup_script(root: &std::path::Path, max_tablets: u32) -> S
     let script = format!(
         r#"set -e
 mkdir -p /etc/modprobe.d /etc/modules-load.d
-echo 'options evdi initial_device_count={count}' > /etc/modprobe.d/uscreen-evdi.conf
-printf 'evdi\nuinput\n' > /etc/modules-load.d/uscreen.conf
+echo 'options evdi initial_device_count={count}' > /etc/modprobe.d/blent-evdi.conf
+printf 'evdi\nuinput\n' > /etc/modules-load.d/blent.conf
 modprobe evdi || true
 modprobe uinput || true
 existing=$(cat /sys/devices/evdi/count 2>/dev/null || echo 0)
@@ -96,8 +96,8 @@ if [ "$existing" -lt {count} ]; then
     echo "$(({count} - existing))" > /sys/devices/evdi/add
 fi"#
     );
-    let script = format!("{}\nmkdir -p /etc/udev/rules.d\ncat > /etc/udev/rules.d/60-uscreen-uinput.rules <<'USCREEN_RULE'\n{}USCREEN_RULE\nudevadm control --reload\nudevadm trigger --name-match=uinput\n", script,
-        include_str!("../../../packaging/60-uscreen-uinput.rules"));
+    let script = format!("{}\nmkdir -p /etc/udev/rules.d\ncat > /etc/udev/rules.d/60-blent-uinput.rules <<'BLENT_RULE'\n{}BLENT_RULE\nudevadm control --reload\nudevadm trigger --name-match=uinput\n", script,
+        include_str!("../../../packaging/60-blent-uinput.rules"));
     script
         .replace("/etc/", &format!("{}/etc/", root.display()))
         .replace("/sys/", &format!("{}/sys/", root.display()))
@@ -134,7 +134,7 @@ pub(crate) fn system_setup_result(command: &mut Command, timeout: Duration) -> R
 pub(crate) fn daemon_command(bin: &std::path::Path, action: &str, managed: bool) -> Command {
     if managed {
         let mut command = Command::new("systemctl");
-        command.args(["--user", action, "uscreen.service"]);
+        command.args(["--user", action, "blent.service"]);
         command
     } else {
         let mut command = Command::new(bin);
@@ -148,11 +148,11 @@ pub(crate) fn service_managed() -> bool {
 }
 
 pub(crate) fn service_managed_with(running: impl FnOnce() -> bool) -> bool {
-    if !uscreen_config::linux::appimage::permits_service() {
+    if !blent_config::linux::appimage::permits_service() {
         return false;
     }
     if Command::new("systemctl")
-        .args(["--user", "is-active", "--quiet", "uscreen.service"])
+        .args(["--user", "is-active", "--quiet", "blent.service"])
         .output_bounded()
         .is_ok_and(|output| output.status.success())
     {
@@ -161,14 +161,14 @@ pub(crate) fn service_managed_with(running: impl FnOnce() -> bool) -> bool {
     if running() {
         return false;
     }
-    uscreen_config::linux::autostart::systemd_available()
+    blent_config::linux::autostart::systemd_available()
 }
 
 pub(crate) fn run_daemon_command(action: &str, managed: bool) -> Result<(), String> {
     let bin = if managed {
         PathBuf::new()
     } else {
-        find_uscreen_bin().ok_or("uscreen binary not found")?
+        find_blent_bin().ok_or("blent binary not found")?
     };
     execute_daemon_command(action, &mut daemon_command(&bin, action, managed), managed)
 }
@@ -220,8 +220,8 @@ pub(crate) fn start_daemon_with(managed: bool) -> Result<(), String> {
 }
 
 pub(crate) fn start_direct_daemon() -> Result<(), String> {
-    let bin = find_uscreen_bin().ok_or("uscreen binary not found — run `make install`")?;
-    let log_dir = PathBuf::from(format!("{}/.local/share/uscreen", home()));
+    let bin = find_blent_bin().ok_or("blent binary not found — run `make install`")?;
+    let log_dir = PathBuf::from(format!("{}/.local/share/blent", home()));
     let _ = std::fs::create_dir_all(&log_dir);
     let log = std::fs::File::create(log_dir.join("daemon.log")).map_err(|e| e.to_string())?;
     let log_err = log.try_clone().map_err(|e| e.to_string())?;

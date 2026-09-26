@@ -90,11 +90,11 @@ fn t495_shared_settings_save_in_unicode_directory() {
 #[test]
 fn t495_daemon_discovery_uses_windows_executable_suffix() {
     let root = tempfile::tempdir().unwrap();
-    let sibling = root.path().join("uscreen.exe");
+    let sibling = root.path().join("blent.exe");
     std::fs::write(&sibling, "fixture").unwrap();
     assert_eq!(
-        find_uscreen_bin_in(
-            Some(root.path().join("uscreen-gui.exe")),
+        find_blent_bin_in(
+            Some(root.path().join("blent-gui.exe")),
             root.path().join("missing.exe"),
             "".as_ref()
         ),

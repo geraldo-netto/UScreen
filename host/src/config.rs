@@ -1,11 +1,11 @@
-pub use uscreen_config::*;
+pub use blent_config::*;
 
 /// Validate adapter capabilities before claiming capture resources or publishing settings.
 pub fn validate_encoder_for_build(name: &str) -> anyhow::Result<()> {
     if name == "auto" {
         return Ok(());
     }
-    let encoder = uscreen_config::encoding::find(name)
+    let encoder = blent_config::encoding::find(name)
         .ok_or_else(|| anyhow::anyhow!("Unknown encoder: {name}"))?;
     if cfg!(feature = "inproc-encoder") {
         encoder.validate_inproc()?;

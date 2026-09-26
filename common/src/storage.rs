@@ -28,7 +28,7 @@ fn linux_config_home() -> Result<PathBuf> {
 }
 
 pub fn config_path() -> Result<PathBuf> {
-    Ok(config_home()?.join("uscreen/config.toml"))
+    Ok(config_home()?.join("blent/config.toml"))
 }
 
 /// A filesystem adapter with an explicit location, shared by UI and daemon
@@ -363,10 +363,10 @@ mod tests {
     #[cfg(not(windows))]
     #[test]
     fn t140_xdg_config_isolation() {
-        if let Ok(mode) = std::env::var("USCREEN_T140_CHILD") {
+        if let Ok(mode) = std::env::var("BLENT_T140_CHILD") {
             if mode == "absolute" {
                 let expected = PathBuf::from(std::env::var_os("XDG_CONFIG_HOME").unwrap())
-                    .join("uscreen/config.toml");
+                    .join("blent/config.toml");
                 assert_eq!(
                     config_path().unwrap(),
                     expected,
@@ -381,15 +381,15 @@ mod tests {
                 assert_eq!(FileConfig::load().fps, 30);
             } else {
                 let expected = PathBuf::from(std::env::var_os("HOME").unwrap())
-                    .join(".config/uscreen/config.toml");
+                    .join(".config/blent/config.toml");
                 assert_eq!(config_path().unwrap(), expected);
             }
             return;
         }
         let temp = tempfile::tempdir().unwrap();
-        std::fs::create_dir(temp.path().join("uscreen")).unwrap();
+        std::fs::create_dir(temp.path().join("blent")).unwrap();
         std::fs::write(
-            temp.path().join("uscreen/config.toml"),
+            temp.path().join("blent/config.toml"),
             "check_updates = false\n",
         )
         .unwrap();
@@ -404,7 +404,7 @@ mod tests {
                     "storage::tests::t140_xdg_config_isolation",
                     "--nocapture",
                 ])
-                .env("USCREEN_T140_CHILD", mode)
+                .env("BLENT_T140_CHILD", mode)
                 .env("XDG_CONFIG_HOME", value)
                 .output()
                 .unwrap();
@@ -416,7 +416,7 @@ mod tests {
             );
         }
         assert_eq!(
-            FileConfig::load_at(&temp.path().join("uscreen/config.toml")).fps,
+            FileConfig::load_at(&temp.path().join("blent/config.toml")).fps,
             30
         );
     }
@@ -458,7 +458,7 @@ mod tests {
     // T104: concurrent transactions retain every edit; readers never see partial TOML.
     #[test]
     fn t104_concurrent_config_transactions() {
-        let dir = std::env::temp_dir().join(format!("uscreen-t104-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("blent-t104-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("config.toml");
         FileConfig::default().save_at(&path).unwrap();

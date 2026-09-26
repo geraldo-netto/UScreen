@@ -62,7 +62,7 @@ impl IvfPacketizer {
             .await
             .context("Truncated IVF frame header")?;
         let size = u32::from_le_bytes(header[..4].try_into().unwrap()) as usize;
-        self.timestamp_us = uscreen_config::idle::timestamp_us(
+        self.timestamp_us = blent_config::idle::timestamp_us(
             i128::from(u64::from_le_bytes(header[4..12].try_into().unwrap())),
             self.time_base.0,
             self.time_base.1,
@@ -111,7 +111,7 @@ fn configuration(header: &[u8; 32], codec: Codec) -> Result<MediaBytes> {
         (2..=4096).contains(&width) && (2..=4096).contains(&height),
         "Unsupported IVF dimensions"
     );
-    let mut config = b"USC1".to_vec();
+    let mut config = b"BLN1".to_vec();
     config.push(id);
     config.extend_from_slice(&u32::from(width).to_be_bytes());
     config.extend_from_slice(&u32::from(height).to_be_bytes());

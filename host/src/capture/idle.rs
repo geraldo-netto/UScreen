@@ -2,6 +2,7 @@
 use super::CaptureConfig;
 use crate::latency::{EncoderEvidence, LatencyTracker};
 use anyhow::{Context, Result};
+use blent_config::idle::{Phase, Policy, Sample, COMPATIBLE_MS};
 use std::{
     collections::VecDeque,
     io::{Read, Write},
@@ -14,7 +15,6 @@ use std::{
     time::Duration,
 };
 use tokio::time::Instant;
-use uscreen_config::idle::{Phase, Policy, Sample, COMPATIBLE_MS};
 
 const MAX_TIMINGS: usize = 256;
 static LEASE_FILES: Mutex<()> = Mutex::new(());

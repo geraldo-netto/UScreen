@@ -19,10 +19,10 @@ use tracing::{info, warn};
 /// tooltip. The same pictures are also embedded as pixmaps below, so a tray
 /// that cannot find the theme icon (a build run from the source tree, a
 /// desktop with an odd icon path) still shows something recognisable.
-const ICON_SCREEN: &str = "uscreen";
-const ICON_TABLET: &str = "uscreen-pen";
-const PIXMAP_SCREEN: &[u8] = include_bytes!("../../packaging/icons/uscreen-64.rgba");
-const PIXMAP_TABLET: &[u8] = include_bytes!("../../packaging/icons/uscreen-pen-64.rgba");
+const ICON_SCREEN: &str = "blent";
+const ICON_TABLET: &str = "blent-pen";
+const PIXMAP_SCREEN: &[u8] = include_bytes!("../../packaging/icons/blent-64.rgba");
+const PIXMAP_TABLET: &[u8] = include_bytes!("../../packaging/icons/blent-pen-64.rgba");
 const PIXMAP_SIDE: i32 = 64;
 
 #[cfg(test)]
@@ -43,7 +43,7 @@ fn pixmap(rgba: &[u8]) -> ksni::Icon {
     }
 }
 
-struct UScreenTray {
+struct BlentTray {
     pen_only: bool,
     /// Whether the daemon creates a pen device at all; pen-only mode is
     /// pointless without one.
@@ -55,7 +55,7 @@ struct UScreenTray {
     shutdown_tx: watch::Sender<bool>,
 }
 
-impl UScreenTray {
+impl BlentTray {
     fn state_line(&self) -> String {
         if !self.tablet_present {
             "No tablet connected".to_string()
@@ -67,13 +67,13 @@ impl UScreenTray {
     }
 }
 
-impl Tray for UScreenTray {
+impl Tray for BlentTray {
     fn id(&self) -> String {
-        "uscreen".into()
+        "blent".into()
     }
 
     fn title(&self) -> String {
-        "UScreen".into()
+        "Blent".into()
     }
 
     fn icon_name(&self) -> String {
@@ -105,7 +105,7 @@ impl Tray for UScreenTray {
         }
         ToolTip {
             icon_name: self.icon_name(),
-            title: "UScreen".into(),
+            title: "Blent".into(),
             description,
             ..Default::default()
         }
@@ -198,14 +198,14 @@ fn open_settings() {
         .and_then(|mut command| crate::config::spawn_reaped(&mut command).map_err(Into::into));
     match result {
         Ok(_) => info!("Opened settings from the tray"),
-        Err(e) => warn!("Could not launch uscreen-gui: {}", e),
+        Err(e) => warn!("Could not launch blent-gui: {}", e),
     }
 }
 
 fn settings_command() -> anyhow::Result<std::process::Command> {
     // T550: the daemon may retain an older extraction after an image update.
     // Re-enter the stable image so its current GUI owns its own runtime lifetime.
-    if let Some(launcher) = uscreen_config::linux::appimage::launcher()? {
+    if let Some(launcher) = blent_config::linux::appimage::launcher()? {
         let mut command = std::process::Command::new(launcher);
         command.arg("--gui");
         return Ok(command);
@@ -215,9 +215,9 @@ fn settings_command() -> anyhow::Result<std::process::Command> {
     // fail for exactly the installs that start the daemon at login.
     let sibling = std::env::current_exe()
         .ok()
-        .and_then(|p| p.parent().map(|d| d.join("uscreen-gui")))
+        .and_then(|p| p.parent().map(|d| d.join("blent-gui")))
         .filter(|p| p.exists());
-    let program = sibling.unwrap_or_else(|| std::path::PathBuf::from("uscreen-gui"));
+    let program = sibling.unwrap_or_else(|| std::path::PathBuf::from("blent-gui"));
     Ok(std::process::Command::new(program))
 }
 
@@ -234,7 +234,7 @@ pub async fn run(
 ) {
     let mut mode_rx = mode_tx.subscribe();
 
-    let tray = UScreenTray {
+    let tray = BlentTray {
         pen_device,
         pen_only: *mode_rx.borrow_and_update(),
         tablet_present: *tablet_rx.borrow_and_update(),
@@ -243,7 +243,7 @@ pub async fn run(
         shutdown_tx,
     };
 
-    let handle: Handle<UScreenTray> = match tray.spawn().await {
+    let handle: Handle<BlentTray> = match tray.spawn().await {
         Ok(h) => {
             info!("Tray icon registered");
             h
@@ -262,17 +262,17 @@ pub async fn run(
             r = mode_rx.changed() => {
                 if r.is_err() { break; }
                 let pen_only = *mode_rx.borrow();
-                handle.update(move |t: &mut UScreenTray| t.pen_only = pen_only).await;
+                handle.update(move |t: &mut BlentTray| t.pen_only = pen_only).await;
             }
             r = tablet_rx.changed() => {
                 if r.is_err() { break; }
                 let present = *tablet_rx.borrow();
-                handle.update(move |t: &mut UScreenTray| t.tablet_present = present).await;
+                handle.update(move |t: &mut BlentTray| t.tablet_present = present).await;
             }
             r = update_rx.changed() => {
                 if r.is_err() { break; }
                 let v = update_rx.borrow().clone();
-                handle.update(move |t: &mut UScreenTray| t.update = v).await;
+                handle.update(move |t: &mut BlentTray| t.update = v).await;
             }
         }
     }

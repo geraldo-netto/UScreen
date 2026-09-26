@@ -34,7 +34,7 @@ fn isolated() {
     }
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T497_MAPPING", "1")
+        .env("BLENT_T497_MAPPING", "1")
         .env("HOME", dir.path())
         .env("PATH", dir.path())
         .env("XDG_RUNTIME_DIR", dir.path())
@@ -199,7 +199,7 @@ async fn adapter_failures(root: &Path) {
 
 #[tokio::test]
 async fn t497_mapping_retries_verify_device_ownership_and_readback() {
-    if std::env::var_os("USCREEN_T497_MAPPING").is_none() {
+    if std::env::var_os("BLENT_T497_MAPPING").is_none() {
         isolated();
         return;
     }

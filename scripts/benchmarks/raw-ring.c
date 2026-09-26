@@ -71,7 +71,7 @@ static void seal_size(storage_t *store) {
 static storage_t allocate(size_t size, int ring, const char *allocation) {
     storage_t store = layout(size);
     if (ring) {
-        store.fd = memfd_create("uscreen-t389-ring", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+        store.fd = memfd_create("blent-t389-ring", MFD_CLOEXEC | MFD_ALLOW_SEALING);
         assert(store.fd >= 0);
         assert(ftruncate(store.fd, (off_t)store.size) == 0);
         store.memory = mmap(NULL, store.size, PROT_READ | PROT_WRITE, MAP_SHARED, store.fd, 0);

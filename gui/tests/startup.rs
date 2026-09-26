@@ -27,14 +27,14 @@ fn t078_workspace_gui_and_accessibility_start_without_worker_panics() {
         "{}",
         String::from_utf8_lossy(&built.stderr)
     );
-    let root = std::env::temp_dir().join(format!("uscreen-gui-startup-{}", std::process::id()));
-    std::fs::create_dir_all(root.join("uscreen")).unwrap();
+    let root = std::env::temp_dir().join(format!("blent-gui-startup-{}", std::process::id()));
+    std::fs::create_dir_all(root.join("blent")).unwrap();
     std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700)).unwrap();
     std::fs::create_dir(root.join("bin")).unwrap();
     stub(&root, "curl", "printf checked > \"$XDG_CONFIG_HOME/update-checked\"\necho '{\"tag_name\":\"v999.0.0\",\"draft\":false,\"prerelease\":false}'");
     stub(&root, "adb", "printf 'List of devices attached\\n\\n'");
     stub(&root, "systemctl", "exit 1");
-    std::fs::write(root.join("uscreen/config.toml"), "check_updates = true\n").unwrap();
+    std::fs::write(root.join("blent/config.toml"), "check_updates = true\n").unwrap();
     let path = std::env::join_paths(
         std::iter::once(root.join("bin"))
             .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
@@ -54,7 +54,7 @@ fn t078_workspace_gui_and_accessibility_start_without_worker_panics() {
             result=$?
             trap - EXIT
             exit "$result""#, "sh"])
-        .arg(env!("CARGO_BIN_EXE_uscreen-gui"))
+        .arg(env!("CARGO_BIN_EXE_blent-gui"))
         .arg(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/close_window.py"))
         .env("XDG_CONFIG_HOME", &root)
         .env("HOME", &root)
@@ -78,7 +78,7 @@ fn t078_workspace_gui_and_accessibility_start_without_worker_panics() {
         "T497: startup did not complete its isolated update check"
     );
     assert!(
-        String::from_utf8_lossy(&output.stdout).contains("UScreen"),
+        String::from_utf8_lossy(&output.stdout).contains("Blent"),
         "GUI window missing: {stderr}"
     );
     assert!(

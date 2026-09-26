@@ -11,7 +11,7 @@ for argument do
   if [ "$previous" = '-c:v' ] && [ "$argument" != 'libx264' ]; then exit 17; fi
   previous=$argument
 done
-exec "$USCREEN_T497_STOCK_FFMPEG" "$@"
+exec "$BLENT_T497_STOCK_FFMPEG" "$@"
 "#;
 
 fn command_path(name: &str) -> std::path::PathBuf {
@@ -33,7 +33,7 @@ fn isolated() {
     std::fs::set_permissions(wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", TEST, "--nocapture"])
-        .env("USCREEN_T497_STOCK_FFMPEG", ffmpeg)
+        .env("BLENT_T497_STOCK_FFMPEG", ffmpeg)
         .env("HOME", root.path())
         .env("XDG_RUNTIME_DIR", root.path())
         .env("PATH", root.path())
@@ -75,7 +75,7 @@ async fn calibration_contract(root: &Path, base: &CaptureConfig, snapshot: &Enco
     assert_eq!(candidates[0].measurement.encoder, "libx264");
     assert!(candidates[0].measurement.quality_db.unwrap() > 0.0);
     assert!(!candidates[0].hardware);
-    assert!(!root.join("uscreen/capture.fifo").exists());
+    assert!(!root.join("blent/capture.fifo").exists());
     let calls = std::fs::read_to_string(root.join("ffmpeg-calls")).unwrap();
     assert!(calls.contains("-s 64x64"));
     assert!(!calls.contains("-c:v libaom-av1"));
@@ -132,7 +132,7 @@ async fn cancellation_contract(base: CaptureConfig, snapshot: EncoderSettings) {
 
 #[tokio::test]
 async fn t497_calibration_respects_geometry_peer_support_and_cancellation() {
-    if std::env::var_os("USCREEN_T497_STOCK_FFMPEG").is_none() {
+    if std::env::var_os("BLENT_T497_STOCK_FFMPEG").is_none() {
         isolated();
         return;
     }

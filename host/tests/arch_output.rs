@@ -21,7 +21,7 @@ fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
         "Cargo.toml",
         "[workspace]\nmembers = [\"host\", \"gui\"]\nresolver = \"2\"\n",
     );
-    for (folder, name) in [("host", "uscreen"), ("gui", "uscreen-gui")] {
+    for (folder, name) in [("host", "blent"), ("gui", "blent-gui")] {
         write(
             &source,
             &format!("{folder}/Cargo.toml"),
@@ -41,13 +41,13 @@ fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
     for name in [
         "scripts/setup-evdi.sh",
         "host/evdi/evdi_helper",
-        "scripts/uscreen.desktop",
-        "packaging/icons/uscreen.svg",
-        "packaging/icons/uscreen-pen.svg",
-        "packaging/uscreen.service",
-        "packaging/uscreen-evdi.conf",
-        "packaging/uscreen-modules.conf",
-        "packaging/60-uscreen-uinput.rules",
+        "scripts/blent.desktop",
+        "packaging/icons/blent.svg",
+        "packaging/icons/blent-pen.svg",
+        "packaging/blent.service",
+        "packaging/blent-evdi.conf",
+        "packaging/blent-modules.conf",
+        "packaging/60-blent-uinput.rules",
         "LICENSE",
         "licenses/libevdi-LGPL-2.1.txt",
     ] {
@@ -102,9 +102,9 @@ fn builds_fresh_package(config_override: bool) {
     build
         .args([
             "-c",
-            "set -eu\nsource \"$USCREEN_PKGBUILD\"\nbuild\ncd \"$srcdir\"\npackage\n",
+            "set -eu\nsource \"$BLENT_PKGBUILD\"\nbuild\ncd \"$srcdir\"\npackage\n",
         ])
-        .env("USCREEN_PKGBUILD", pkgbuild)
+        .env("BLENT_PKGBUILD", pkgbuild)
         .env("srcdir", root.path())
         .env("pkgdir", &package)
         .env("PATH", path)
@@ -121,7 +121,7 @@ fn builds_fresh_package(config_override: bool) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    for name in ["uscreen", "uscreen-gui"] {
+    for name in ["blent", "blent-gui"] {
         let output = Command::new(package.join("usr/bin").join(name))
             .output()
             .unwrap();

@@ -1,5 +1,5 @@
-#ifndef USCREEN_CAPTURE_H
-#define USCREEN_CAPTURE_H
+#ifndef BLENT_CAPTURE_H
+#define BLENT_CAPTURE_H
 #include "evdi_lib.h"
 #include "frame_exchange.h"
 #include "conversion.h"

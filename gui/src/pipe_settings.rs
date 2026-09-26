@@ -1,10 +1,10 @@
 //! Linux-only raw-video buffer controls; privileged host policy stays explicit.
 use crate::Status;
+use blent_config::model::PIPE_CAPACITIES_MIB;
 use eframe::egui;
-use uscreen_config::model::PIPE_CAPACITIES_MIB;
 
 const TEMPORARY: &str = "sudo sysctl -w fs.pipe-max-size=8388608";
-const PERSISTENT: &str = "printf 'fs.pipe-max-size = 8388608\\n' | sudo tee /etc/sysctl.d/90-uscreen-pipe.conf\nsudo sysctl -p /etc/sysctl.d/90-uscreen-pipe.conf";
+const PERSISTENT: &str = "printf 'fs.pipe-max-size = 8388608\\n' | sudo tee /etc/sysctl.d/90-blent-pipe.conf\nsudo sysctl -p /etc/sysctl.d/90-blent-pipe.conf";
 
 pub(super) fn show(ui: &mut egui::Ui, requested: &mut u32, status: &Status) {
     ui.label("Capture pipe buffer");
@@ -57,11 +57,11 @@ fn command(ui: &mut egui::Ui, text: &str) {
 fn show_limit_help(ui: &mut egui::Ui, ceiling: Option<u32>) {
     ui.collapsing("How to allow larger pipes in Linux", |ui| {
         let value = ceiling.map(size_label).unwrap_or_else(|| "unknown".into());
-        ui.label(format!("Current per-pipe ceiling: {value}. These commands affect all unprivileged applications, not just UScreen. Record the old value first; only raise it if below 8 MiB."));
+        ui.label(format!("Current per-pipe ceiling: {value}. These commands affect all unprivileged applications, not just Blent. Record the old value first; only raise it if below 8 MiB."));
         ui.monospace("cat /proc/sys/fs/pipe-max-size");
         ui.label("Until reboot (run in a terminal):"); command(ui, TEMPORARY);
         ui.label("Persist on systems that load /etc/sysctl.d:"); command(ui, PERSISTENT);
         ui.label("Choose a buffer size and Apply. No display restart is needed. Per-user pipe-memory limits can still refuse an increase; check effective capacity.");
-        ui.label("Undo: remove /etc/sysctl.d/90-uscreen-pipe.conf if you created it, then restore the recorded value with sudo sysctl -w fs.pipe-max-size=OLD_VALUE. Existing pipes are not automatically shrunk.");
+        ui.label("Undo: remove /etc/sysctl.d/90-blent-pipe.conf if you created it, then restore the recorded value with sudo sysctl -w fs.pipe-max-size=OLD_VALUE. Existing pipes are not automatically shrunk.");
     });
 }

@@ -1,6 +1,6 @@
 # Maintainer: Geraldo Netto (https://github.com/geraldo-netto)
 # Original upstream author: majmichu1
-pkgname=uscreen
+pkgname=blent
 pkgver=1.2.3
 pkgrel=1
 pkgdesc="Use an Android tablet as a USB second display and graphics tablet (KDE Wayland)"
@@ -9,7 +9,7 @@ url="https://github.com/geraldo-netto/UScreen"
 license=('MIT' 'LGPL-2.1-or-later')
 depends=('evdi-dkms' 'ffmpeg' 'android-tools' 'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11')
 makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
-install=uscreen.install
+install=blent.install
 _evdi=v1.15.0
 source=("$pkgname-$pkgver.tar.gz::https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz"
         "evdi-$_evdi.tar.gz::https://github.com/DisplayLink/evdi/archive/refs/tags/$_evdi.tar.gz")
@@ -28,20 +28,20 @@ build() {
 
 package() {
   cd "UScreen-$pkgver"
-  install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/uscreen/setup-evdi.sh"
-  install -Dm755 target/release/uscreen     "$pkgdir/usr/bin/uscreen"
-  install -Dm755 target/release/uscreen-gui "$pkgdir/usr/bin/uscreen-gui"
-  install -Dm755 host/evdi/evdi_helper      "$pkgdir/usr/lib/uscreen/evdi_helper"
-  install -Dm755 "$srcdir/evdi-${_evdi#v}/library/libevdi.so.1.15.0" "$pkgdir/usr/lib/uscreen/libevdi.so.1.15.0"
-  ln -sf libevdi.so.1.15.0 "$pkgdir/usr/lib/uscreen/libevdi.so.1"
-  install -Dm644 scripts/uscreen.desktop    "$pkgdir/usr/share/applications/uscreen.desktop"
-  install -Dm644 packaging/icons/uscreen.svg     "$pkgdir/usr/share/icons/hicolor/scalable/apps/uscreen.svg"
-  install -Dm644 packaging/icons/uscreen-pen.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/uscreen-pen.svg"
-  install -Dm644 packaging/uscreen.service  "$pkgdir/usr/lib/systemd/user/uscreen.service"
-  install -Dm644 packaging/uscreen-evdi.conf "$pkgdir/usr/lib/modprobe.d/uscreen-evdi.conf"
-  install -Dm644 packaging/uscreen-modules.conf "$pkgdir/usr/lib/modules-load.d/uscreen.conf"
-  install -Dm644 packaging/60-uscreen-uinput.rules "$pkgdir/usr/lib/udev/rules.d/60-uscreen-uinput.rules"
-  ./scripts/copy-distribution-docs.sh "$pkgdir/usr/share/doc/uscreen"
+  install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/blent/setup-evdi.sh"
+  install -Dm755 target/release/blent     "$pkgdir/usr/bin/blent"
+  install -Dm755 target/release/blent-gui "$pkgdir/usr/bin/blent-gui"
+  install -Dm755 host/evdi/evdi_helper      "$pkgdir/usr/lib/blent/evdi_helper"
+  install -Dm755 "$srcdir/evdi-${_evdi#v}/library/libevdi.so.1.15.0" "$pkgdir/usr/lib/blent/libevdi.so.1.15.0"
+  ln -sf libevdi.so.1.15.0 "$pkgdir/usr/lib/blent/libevdi.so.1"
+  install -Dm644 scripts/blent.desktop    "$pkgdir/usr/share/applications/blent.desktop"
+  install -Dm644 packaging/icons/blent.svg     "$pkgdir/usr/share/icons/hicolor/scalable/apps/blent.svg"
+  install -Dm644 packaging/icons/blent-pen.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/blent-pen.svg"
+  install -Dm644 packaging/blent.service  "$pkgdir/usr/lib/systemd/user/blent.service"
+  install -Dm644 packaging/blent-evdi.conf "$pkgdir/usr/lib/modprobe.d/blent-evdi.conf"
+  install -Dm644 packaging/blent-modules.conf "$pkgdir/usr/lib/modules-load.d/blent.conf"
+  install -Dm644 packaging/60-blent-uinput.rules "$pkgdir/usr/lib/udev/rules.d/60-blent-uinput.rules"
+  ./scripts/copy-distribution-docs.sh "$pkgdir/usr/share/doc/blent"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 licenses/libevdi-LGPL-2.1.txt "$pkgdir/usr/share/licenses/$pkgname/libevdi-LGPL-2.1.txt"
 }

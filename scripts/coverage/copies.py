@@ -45,5 +45,5 @@ class Copies(CoveragePlugin):
 
 
 def coverage_init(registry, options):
-    manifest = json.loads(Path(os.environ['USCREEN_COVERAGE_MANIFEST']).read_text())
-    registry.add_file_tracer(Copies(Path(os.environ['USCREEN_COVERAGE_ROOT']), manifest['sources']))
+    manifest = json.loads(Path(os.environ['BLENT_COVERAGE_MANIFEST']).read_text())
+    registry.add_file_tracer(Copies(Path(os.environ['BLENT_COVERAGE_ROOT']), manifest['sources']))

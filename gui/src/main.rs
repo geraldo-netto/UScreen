@@ -13,17 +13,17 @@ mod status_worker;
 #[cfg(all(test, windows))]
 mod windows_tests;
 
+use blent_config::commands::SyncCommandExt;
+use blent_config::model::{
+    FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
+};
+use blent_config::storage::{config_path, ConfigStore};
 use eframe::egui;
 #[cfg(all(test, target_os = "linux"))]
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use uscreen_config::commands::SyncCommandExt;
-use uscreen_config::model::{
-    FileConfig, MAX_BITRATE_KBPS, MAX_DIMENSION, MAX_QUALITY, MIN_BITRATE_KBPS, MIN_QUALITY,
-};
-use uscreen_config::storage::{config_path, ConfigStore};
 
 #[derive(Default, Clone, PartialEq, Eq)]
 struct Status {
@@ -40,7 +40,7 @@ struct Status {
     uinput_ok: bool,
     pipe_capacities: Vec<(u32, Option<u32>)>,
     pipe_ceiling: Option<u32>,
-    diagnostics: Option<Arc<uscreen_config::diagnostics::Report>>,
+    diagnostics: Option<Arc<blent_config::diagnostics::Report>>,
 }
 
 fn needs_system_setup(status: &Status, config: &FileConfig) -> bool {
@@ -92,7 +92,7 @@ enum Tab {
     Camera,
 }
 
-use uscreen_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
+use blent_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
 
 fn urlencode(s: &str) -> String {
     let mut out = String::new();
@@ -124,9 +124,9 @@ fn compatibility_url(distro: &str, encoder: &str, tablet: &str, version: &str) -
     format!("https://github.com/geraldo-netto/UScreen/issues/new?{query}")
 }
 
-use uscreen_config::release::newer_from_json as release_from_response;
+use blent_config::release::newer_from_json as release_from_response;
 #[cfg(all(test, target_os = "linux"))]
-use uscreen_config::version::is_newer as is_newer_version;
+use blent_config::version::is_newer as is_newer_version;
 
 /// One request when the window opens. Reports; never installs.
 fn check_for_update() -> Option<String> {
@@ -138,7 +138,7 @@ fn check_for_update() -> Option<String> {
             "-H",
             "Accept: application/vnd.github+json",
             "-H",
-            concat!("User-Agent: uscreen-gui/", env!("CARGO_PKG_VERSION")),
+            concat!("User-Agent: blent-gui/", env!("CARGO_PKG_VERSION")),
             RELEASES_API,
         ])
         .output_bounded()
@@ -397,7 +397,7 @@ impl App {
 
     fn show_header(&mut self, ui: &mut egui::Ui, status: &Status) {
         ui.add_space(6.0);
-        ui.heading(egui::RichText::new("UScreen").size(26.0));
+        ui.heading(egui::RichText::new("Blent").size(26.0));
         ui.label(egui::RichText::new("USB second display for your tablet").weak());
         ui.horizontal(|ui| {
             if ui.small_button("Report compatibility").on_hover_text(
@@ -581,7 +581,7 @@ impl App {
         let selected = if self.cfg.encoder == "auto" {
             "Automatic (measure compatible encoders)"
         } else {
-            uscreen_config::encoding::find(&self.cfg.encoder)
+            blent_config::encoding::find(&self.cfg.encoder)
                 .map(|encoder| encoder.label)
                 .unwrap_or(&self.cfg.encoder)
         };
@@ -593,7 +593,7 @@ impl App {
                     "auto".to_string(),
                     "Automatic (measure compatible encoders)",
                 );
-                for encoder in uscreen_config::encoding::ENCODERS {
+                for encoder in blent_config::encoding::ENCODERS {
                     ui.selectable_value(
                         &mut self.cfg.encoder,
                         encoder.name.to_string(),
@@ -629,8 +629,8 @@ impl App {
     }
 
     fn setting_bitrate(&mut self, ui: &mut egui::Ui) {
-        let uncapped = uscreen_config::encoding::find(&self.cfg.encoder)
-            .is_some_and(|encoder| encoder.backend == uscreen_config::encoding::Backend::Vaapi);
+        let uncapped = blent_config::encoding::find(&self.cfg.encoder)
+            .is_some_and(|encoder| encoder.backend == blent_config::encoding::Backend::Vaapi);
         let explanation = if uncapped {
             "Unused with VAAPI: constant quality (CQP) has no bitrate cap. Adjust Quality above."
         } else if self.cfg.encoder == "auto" {
@@ -652,7 +652,7 @@ impl App {
 
     fn setting_frame_rate(&mut self, ui: &mut egui::Ui) {
         ui.label("Frame rate");
-        // UScreen supports at most 90 FPS. Validation also checks the
+        // Blent supports at most 90 FPS. Validation also checks the
         // selected resolution/FPS against the generated EDID clock limit.
         egui::ComboBox::from_id_salt("fps")
             .selected_text(format!("{} fps", self.cfg.fps))
@@ -696,7 +696,7 @@ impl App {
             ui.label(
                 egui::RichText::new(
                     "Each tablet becomes its own screen. Needs that many EVDI devices \
-                 (see uscreen doctor); the installer prepares two.",
+                 (see blent doctor); the installer prepares two.",
                 )
                 .small()
                 .weak(),
@@ -730,8 +730,8 @@ impl App {
     fn setting_colour_depth(&mut self, ui: &mut egui::Ui) {
         ui.label("Colour depth");
         ui.vertical(|ui| {
-            let hevc = uscreen_config::encoding::find(&self.cfg.encoder)
-                .is_some_and(|encoder| encoder.hevc);
+            let hevc =
+                blent_config::encoding::find(&self.cfg.encoder).is_some_and(|encoder| encoder.hevc);
             ui.add_enabled(
                 hevc,
                 egui::Checkbox::new(&mut self.cfg.ten_bit, "10-bit (HEVC Main10)"),
@@ -888,7 +888,7 @@ impl App {
             if ui
                 .add_enabled(
                     capabilities().autostart,
-                    egui::Checkbox::new(&mut auto, "Start UScreen with the desktop"),
+                    egui::Checkbox::new(&mut auto, "Start Blent with the desktop"),
                 )
                 .changed()
             {
@@ -958,7 +958,7 @@ impl App {
     }
 
     fn setting_scheduling(&mut self, ui: &mut egui::Ui) {
-        use uscreen_config::scheduling::Priority;
+        use blent_config::scheduling::Priority;
         ui.label("CPU scheduling");
         ui.vertical(|ui| {
             egui::ComboBox::from_id_salt("scheduling-priority")
@@ -1002,18 +1002,18 @@ impl App {
 }
 
 fn main() -> eframe::Result {
-    let scheduling_status = uscreen_config::scheduling::apply_configured();
+    let scheduling_status = blent_config::scheduling::apply_configured();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             // Tall enough for the longest settings tab; anything shorter
             // scrolls rather than hiding rows off the bottom.
             .with_inner_size([440.0, 760.0])
             .with_min_inner_size([380.0, 560.0])
-            .with_app_id("uscreen")
+            .with_app_id("blent")
             // Window icon from the same picture as the launcher and tray, so
             // the task bar shows it even where the theme icon is not installed.
             .with_icon(egui::IconData {
-                rgba: include_bytes!("../../packaging/icons/uscreen-64.rgba").to_vec(),
+                rgba: include_bytes!("../../packaging/icons/blent-64.rgba").to_vec(),
                 width: 64,
                 height: 64,
             }),
@@ -1023,7 +1023,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "UScreen",
+        "Blent",
         options,
         Box::new(move |cc| Ok(Box::new(App::new(cc, scheduling_status)))),
     )
@@ -1033,8 +1033,8 @@ fn main() -> eframe::Result {
 mod tests {
     mod coverage;
     use super::*;
+    use blent_config::commands::daemon_command_timeout;
     use std::os::unix::fs::PermissionsExt;
-    use uscreen_config::commands::daemon_command_timeout;
 
     #[test]
     fn t374_release_json_contract() {
@@ -1062,40 +1062,37 @@ mod tests {
         for directory in [&sibling, &earlier, &later] {
             std::fs::create_dir(directory).unwrap();
         }
-        let valid = later.join("uscreen");
+        let valid = later.join("blent");
         std::fs::write(&valid, "#!/bin/sh\n").unwrap();
         std::fs::set_permissions(&valid, std::fs::Permissions::from_mode(0o700)).unwrap();
         let installed = root.path().join("installed");
         std::os::unix::fs::symlink(&valid, &installed).unwrap();
         let path = std::env::join_paths([&earlier, &later]).unwrap();
-        let exe = Some(sibling.join("uscreen-gui"));
-        std::fs::create_dir(sibling.join("uscreen")).unwrap();
-        std::fs::write(earlier.join("uscreen"), "not executable").unwrap();
+        let exe = Some(sibling.join("blent-gui"));
+        std::fs::create_dir(sibling.join("blent")).unwrap();
+        std::fs::write(earlier.join("blent"), "not executable").unwrap();
         assert_eq!(
-            find_uscreen_bin_in(exe.clone(), installed.clone(), &path),
+            find_blent_bin_in(exe.clone(), installed.clone(), &path),
             Some(valid.clone())
         );
-        std::fs::remove_dir(sibling.join("uscreen")).unwrap();
-        std::os::unix::fs::symlink(root.path().join("missing"), sibling.join("uscreen")).unwrap();
+        std::fs::remove_dir(sibling.join("blent")).unwrap();
+        std::os::unix::fs::symlink(root.path().join("missing"), sibling.join("blent")).unwrap();
         assert_eq!(
-            find_uscreen_bin_in(exe.clone(), installed.clone(), &path),
+            find_blent_bin_in(exe.clone(), installed.clone(), &path),
             Some(valid.clone())
         );
-        std::fs::remove_file(sibling.join("uscreen")).unwrap();
-        std::os::unix::fs::symlink(&valid, sibling.join("uscreen")).unwrap();
+        std::fs::remove_file(sibling.join("blent")).unwrap();
+        std::os::unix::fs::symlink(&valid, sibling.join("blent")).unwrap();
         assert_eq!(
-            find_uscreen_bin_in(exe, installed.clone(), &path),
-            Some(sibling.join("uscreen"))
+            find_blent_bin_in(exe, installed.clone(), &path),
+            Some(sibling.join("blent"))
         );
         let path = std::env::join_paths([&earlier]).unwrap();
         assert_eq!(
-            find_uscreen_bin_in(None, installed, &path),
+            find_blent_bin_in(None, installed, &path),
             Some(root.path().join("installed"))
         );
-        assert_eq!(
-            find_uscreen_bin_in(None, earlier.join("uscreen"), &path),
-            None
-        );
+        assert_eq!(find_blent_bin_in(None, earlier.join("blent"), &path), None);
     }
 
     #[test]
@@ -1578,7 +1575,7 @@ mod tests {
 
     #[test]
     fn t582_general_settings_allow_normal_and_high_priority() {
-        use uscreen_config::scheduling::Priority;
+        use blent_config::scheduling::Priority;
         let mut app = settings_test_app(Tab::General);
         let ctx = egui::Context::default();
         assert_eq!(app.cfg.scheduling_priority, Priority::High);
@@ -1784,7 +1781,7 @@ mod tests {
         let saved = app.store.load();
         assert_eq!(saved.encoder, "h264_vaapi_baseline");
         assert_eq!(saved.vaapi_device, "/dev/dri/renderD129");
-        assert_eq!(saved.fps, uscreen_config::FileConfig::default().fps);
+        assert_eq!(saved.fps, blent_config::FileConfig::default().fps);
     }
 
     #[test]
@@ -1830,11 +1827,11 @@ mod tests {
 
     #[test]
     fn t543_camera_tab_controls_only_camera_profile_and_saves_without_display_restart() {
+        use blent_config::camera::{CameraBackend, CameraProfile, CameraState, Lens};
         use std::{cell::RefCell, rc::Rc};
-        use uscreen_config::camera::{CameraBackend, CameraProfile, CameraState, Lens};
         struct Backend(Rc<RefCell<(CameraState, Vec<CameraProfile>)>>);
         impl CameraBackend for Backend {
-            fn start(&self, options: CameraProfile) -> uscreen_config::camera::BackendResult {
+            fn start(&self, options: CameraProfile) -> blent_config::camera::BackendResult {
                 let mut state = self.0.borrow_mut();
                 state.0 = CameraState::Streaming;
                 state.1.push(options);
@@ -1846,7 +1843,7 @@ mod tests {
             fn state(&self) -> CameraState {
                 self.0.borrow().0.clone()
             }
-            fn preview(&self) -> Option<std::sync::Arc<uscreen_config::camera::CameraPreview>> {
+            fn preview(&self) -> Option<std::sync::Arc<blent_config::camera::CameraPreview>> {
                 None
             }
         }
@@ -1992,14 +1989,14 @@ mod tests {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        assert!(uscreen_config::linux::processes::Process::read(unrelated.pid()).is_some());
+        assert!(blent_config::linux::processes::Process::read(unrelated.pid()).is_some());
     }
 
     #[test]
     fn t231_autostart_supports_a_desktop_without_a_user_manager() {
-        if std::env::var_os("USCREEN_T231_CHILD").is_some() {
-            if std::env::var("USCREEN_T231_CHILD").unwrap() == "offline-enabled" {
-                let path = uscreen_config::linux::autostart::desktop_path().unwrap();
+        if std::env::var_os("BLENT_T231_CHILD").is_some() {
+            if std::env::var("BLENT_T231_CHILD").unwrap() == "offline-enabled" {
+                let path = blent_config::linux::autostart::desktop_path().unwrap();
                 let original = std::fs::read(&path).unwrap();
                 assert!(
                     set_autostart_with(false, || false).is_err(),
@@ -2023,7 +2020,7 @@ mod tests {
                 autostart_enabled(),
                 "T231: enabling autostart did not persist"
             );
-            let log = std::env::var_os("USCREEN_T231_ACTIONS").unwrap();
+            let log = std::env::var_os("BLENT_T231_ACTIONS").unwrap();
             let deadline = std::time::Instant::now() + Duration::from_secs(2);
             while std::fs::read_to_string(&log).unwrap_or_default() != "stop\nstart\n"
                 && std::time::Instant::now() < deadline
@@ -2035,8 +2032,8 @@ mod tests {
                 "stop\nstart\n",
                 "T231: autostart toggle lost current-daemon actions"
             );
-            let routes = std::env::var_os("USCREEN_T231_ROUTES").unwrap();
-            let expected = if std::env::var("USCREEN_T231_CHILD").unwrap() == "managed" {
+            let routes = std::env::var_os("BLENT_T231_ROUTES").unwrap();
+            let expected = if std::env::var("BLENT_T231_CHILD").unwrap() == "managed" {
                 "managed\nmanaged\n"
             } else {
                 "direct\ndirect\n"
@@ -2059,12 +2056,15 @@ mod tests {
             let home = sandbox.0.join("home");
             let config = sandbox.0.join("config space");
             std::fs::create_dir_all(config.join("autostart")).unwrap();
-            std::fs::write(config.join("autostart/uscreen.desktop"),
-                "[Desktop Entry]\nType=Application\nName=UScreen\nExec=uscreen start\nHidden=false\n").unwrap();
+            std::fs::write(
+                config.join("autostart/blent.desktop"),
+                "[Desktop Entry]\nType=Application\nName=Blent\nExec=blent start\nHidden=false\n",
+            )
+            .unwrap();
             install_t231_systemctl(&sandbox, mode);
             sandbox.script(
-                "uscreen",
-                "printf '%s\\n' \"$*\" >> \"$USCREEN_T231_ACTIONS\"; printf 'direct\\n' >> \"$USCREEN_T231_ROUTES\"",
+                "blent",
+                "printf '%s\\n' \"$*\" >> \"$BLENT_T231_ACTIONS\"; printf 'direct\\n' >> \"$BLENT_T231_ROUTES\"",
             );
             let output = Command::new(std::env::current_exe().unwrap())
                 .args([
@@ -2072,12 +2072,12 @@ mod tests {
                     "tests::t231_autostart_supports_a_desktop_without_a_user_manager",
                     "--nocapture",
                 ])
-                .env("USCREEN_T231_CHILD", mode)
+                .env("BLENT_T231_CHILD", mode)
                 .env("HOME", &home)
                 .env("XDG_CONFIG_HOME", &config)
-                .env("USCREEN_T231_ACTIONS", sandbox.0.join("actions"))
-                .env("USCREEN_T231_ROUTES", sandbox.0.join("routes"))
-                .env("USCREEN_T231_STATE", sandbox.0.join("enabled"))
+                .env("BLENT_T231_ACTIONS", sandbox.0.join("actions"))
+                .env("BLENT_T231_ROUTES", sandbox.0.join("routes"))
+                .env("BLENT_T231_STATE", sandbox.0.join("enabled"))
                 .env("PATH", &sandbox.0)
                 .output()
                 .unwrap();
@@ -2099,10 +2099,10 @@ mod tests {
                 r#"case "$2" in
 show) echo loaded ;;
 is-active) exit 1 ;;
-is-enabled) [ -f "$USCREEN_T231_STATE" ] && echo enabled ;;
-enable) : > "$USCREEN_T231_STATE" ;;
-disable) /bin/rm -f "$USCREEN_T231_STATE" ;;
-start|stop) printf '%s\n' "$2" >> "$USCREEN_T231_ACTIONS"; printf 'managed\n' >> "$USCREEN_T231_ROUTES" ;;
+is-enabled) [ -f "$BLENT_T231_STATE" ] && echo enabled ;;
+enable) : > "$BLENT_T231_STATE" ;;
+disable) /bin/rm -f "$BLENT_T231_STATE" ;;
+start|stop) printf '%s\n' "$2" >> "$BLENT_T231_ACTIONS"; printf 'managed\n' >> "$BLENT_T231_ROUTES" ;;
 *) exit 99 ;;
 esac"#
             }
@@ -2113,14 +2113,14 @@ esac"#
 
     #[test]
     fn t260_gui_recovers_daemons_and_routes_actions_without_trusting_pid_files() {
-        if let Some(pid) = std::env::var_os("USCREEN_T260_DAEMON") {
+        if let Some(pid) = std::env::var_os("BLENT_T260_DAEMON") {
             check_t260_gui_state(pid.to_str().unwrap().parse().unwrap());
             return;
         }
         let fixture = daemon_fixture::Fixture::new();
         let runtime = fixture.root.path().join("runtime");
         std::fs::create_dir(&runtime).unwrap();
-        let daemon = fixture.start_named("uscreen", &[]);
+        let daemon = fixture.start_named("blent", &[]);
         let diagnostic = fixture.start(&["doctor"]);
         let sandbox = Sandbox::new();
         sandbox.script("adb", "exit 0");
@@ -2131,8 +2131,8 @@ esac"#
                 "tests::t260_gui_recovers_daemons_and_routes_actions_without_trusting_pid_files",
                 "--nocapture",
             ])
-            .env("USCREEN_T260_DAEMON", daemon.pid().to_string())
-            .env("USCREEN_T260_DIAGNOSTIC", diagnostic.pid().to_string())
+            .env("BLENT_T260_DAEMON", daemon.pid().to_string())
+            .env("BLENT_T260_DIAGNOSTIC", diagnostic.pid().to_string())
             .env("HOME", fixture.root.path())
             .env("XDG_RUNTIME_DIR", runtime)
             .env("PATH", &sandbox.0)
@@ -2147,7 +2147,7 @@ esac"#
     }
 
     fn check_t260_gui_state(daemon: u32) {
-        let diagnostic: u32 = std::env::var("USCREEN_T260_DIAGNOSTIC")
+        let diagnostic: u32 = std::env::var("BLENT_T260_DIAGNOSTIC")
             .unwrap()
             .parse()
             .unwrap();
@@ -2184,11 +2184,11 @@ esac"#
                 "T260: inactive installed service captured direct-daemon actions"
             );
             let command = daemon_command(
-                std::path::Path::new("/fixture/uscreen"),
+                std::path::Path::new("/fixture/blent"),
                 "stop",
                 service_managed(),
             );
-            assert_eq!(command.get_program(), "/fixture/uscreen");
+            assert_eq!(command.get_program(), "/fixture/blent");
             assert_eq!(command.get_args().collect::<Vec<_>>(), ["stop"]);
         }
     }
@@ -2198,7 +2198,7 @@ esac"#
         fn new() -> Self {
             static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
             let path = std::env::temp_dir().join(format!(
-                "uscreen-gui-test-{}-{}",
+                "blent-gui-test-{}-{}",
                 std::process::id(),
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
@@ -2222,13 +2222,13 @@ esac"#
     #[test]
     fn t014_packaged_daemon_wins_over_stale_local_install() {
         let sandbox = Sandbox::new();
-        let sibling = sandbox.script("package/uscreen", "exit 0");
-        let local = sandbox.script("local/uscreen", "exit 0");
-        let path_bin = sandbox.script("path/uscreen", "exit 0");
+        let sibling = sandbox.script("package/blent", "exit 0");
+        let local = sandbox.script("local/blent", "exit 0");
+        let path_bin = sandbox.script("path/blent", "exit 0");
         let path = path_bin.parent().unwrap().as_os_str();
         assert_eq!(
-            find_uscreen_bin_in(
-                Some(sibling.with_file_name("uscreen-gui")),
+            find_blent_bin_in(
+                Some(sibling.with_file_name("blent-gui")),
                 local.clone(),
                 path
             ),
@@ -2236,17 +2236,17 @@ esac"#
         );
         std::fs::remove_file(sibling).unwrap();
         assert_eq!(
-            find_uscreen_bin_in(None, local.clone(), path),
+            find_blent_bin_in(None, local.clone(), path),
             Some(path_bin.clone())
         );
         std::fs::remove_file(&path_bin).unwrap();
-        assert_eq!(find_uscreen_bin_in(None, local.clone(), path), Some(local));
+        assert_eq!(find_blent_bin_in(None, local.clone(), path), Some(local));
     }
 
     #[test]
     fn t135_tablet_status_uses_live_assignments_and_all_models() {
         let sandbox = Sandbox::new();
-        let executable = sandbox.0.join("uscreen");
+        let executable = sandbox.0.join("blent");
         std::os::unix::fs::symlink("/bin/sleep", &executable).unwrap();
         let mut daemon = Command::new(&executable).arg("30").spawn().unwrap();
         let pid = daemon.id();
@@ -2318,7 +2318,7 @@ esac"#
         sandbox.script("bin/modprobe", "exit 0");
         sandbox.script(
             "bin/udevadm",
-            "printf '%s\\n' \"$*\" >> \"$USCREEN_TEST_TRACE\"",
+            "printf '%s\\n' \"$*\" >> \"$BLENT_TEST_TRACE\"",
         );
         let trace = sandbox.0.join("trace");
         let output = Command::new("sh")
@@ -2327,7 +2327,7 @@ esac"#
                 "PATH",
                 format!("{}:/usr/bin:/bin", sandbox.0.join("bin").display()),
             )
-            .env("USCREEN_TEST_TRACE", &trace)
+            .env("BLENT_TEST_TRACE", &trace)
             .output()
             .unwrap();
         assert!(
@@ -2336,10 +2336,10 @@ esac"#
             String::from_utf8_lossy(&output.stderr)
         );
         let rule =
-            std::fs::read_to_string(sandbox.0.join("etc/udev/rules.d/60-uscreen-uinput.rules"));
+            std::fs::read_to_string(sandbox.0.join("etc/udev/rules.d/60-blent-uinput.rules"));
         assert_eq!(
             rule.unwrap(),
-            include_str!("../../packaging/60-uscreen-uinput.rules")
+            include_str!("../../packaging/60-blent-uinput.rules")
         );
         let trace = std::fs::read_to_string(trace).unwrap();
         assert!(trace.contains("control --reload"));
@@ -2394,8 +2394,8 @@ esac"#
                 "{}",
                 String::from_utf8_lossy(&output.stderr)
             );
-            let boot = std::fs::read_to_string(sandbox.0.join("etc/modprobe.d/uscreen-evdi.conf"))
-                .unwrap();
+            let boot =
+                std::fs::read_to_string(sandbox.0.join("etc/modprobe.d/blent-evdi.conf")).unwrap();
             assert_eq!(
                 boot.trim(),
                 format!("options evdi initial_device_count={wanted}")
@@ -2430,9 +2430,9 @@ esac"#
             String::from_utf8_lossy(&output.stderr)
         );
         for file in [
-            "etc/modprobe.d/uscreen-evdi.conf",
-            "etc/modules-load.d/uscreen.conf",
-            "etc/udev/rules.d/60-uscreen-uinput.rules",
+            "etc/modprobe.d/blent-evdi.conf",
+            "etc/modules-load.d/blent.conf",
+            "etc/udev/rules.d/60-blent-uinput.rules",
         ] {
             assert!(sandbox.0.join(file).is_file(), "missing {file}");
         }
@@ -2498,7 +2498,7 @@ esac"#
         let pid_file = sandbox.0.join("pid");
         let program = sandbox.script(
             "stuck-stop",
-            r#"echo $$ > "$USCREEN_T268_PID"; exec sleep 60"#,
+            r#"echo $$ > "$BLENT_T268_PID"; exec sleep 60"#,
         );
         let restarted = std::cell::Cell::new(false);
         let before = std::time::Instant::now();
@@ -2507,7 +2507,7 @@ esac"#
             |action, managed| {
                 execute_daemon_command(
                     action,
-                    Command::new(&program).env("USCREEN_T268_PID", &pid_file),
+                    Command::new(&program).env("BLENT_T268_PID", &pid_file),
                     managed,
                 )
             },
@@ -2534,7 +2534,7 @@ esac"#
     #[test]
     fn t016_service_actions_use_systemd_including_restart() {
         let sandbox = Sandbox::new();
-        let bin = sandbox.script("uscreen", "echo direct");
+        let bin = sandbox.script("blent", "echo direct");
         sandbox.script("systemctl", "printf 'managed %s\\n' \"$*\"");
         for action in ["start", "stop", "restart"] {
             let output = daemon_command(&bin, action, true)
@@ -2544,7 +2544,7 @@ esac"#
             assert!(output.status.success());
             assert_eq!(
                 String::from_utf8_lossy(&output.stdout),
-                format!("managed --user {action} uscreen.service\n")
+                format!("managed --user {action} blent.service\n")
             );
         }
         let output = daemon_command(&bin, "stop", false).output().unwrap();

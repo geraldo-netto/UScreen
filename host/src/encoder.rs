@@ -45,7 +45,7 @@ impl Encoder {
         quality: u32,
     ) -> Result<Self> {
         crate::config::validate_encoder_for_build(name)?;
-        let profile = uscreen_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?;
+        let profile = blent_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?;
         ffmpeg_next::init().context("initialise libavcodec")?;
 
         let codec = ffmpeg_next::encoder::find_by_name(name)
@@ -99,7 +99,7 @@ impl Encoder {
 
     /// Translate shared policy to libavcodec dictionary values. Context fields stay typed.
     fn low_latency_options(
-        profile: &uscreen_config::encoding::Profile,
+        profile: &blent_config::encoding::Profile,
         opts: &mut ffmpeg_next::Dictionary,
     ) -> Result<()> {
         for (key, value) in profile.inproc_options()? {
@@ -262,7 +262,7 @@ mod tests {
             for name in ["h264_nvenc", "hevc_nvenc", "libx264"] {
                 let mut options = ffmpeg_next::Dictionary::new();
                 let profile =
-                    uscreen_config::encoding::Profile::new(name, fps, bitrate, quality).unwrap();
+                    blent_config::encoding::Profile::new(name, fps, bitrate, quality).unwrap();
                 Encoder::low_latency_options(&profile, &mut options).unwrap();
                 let actual = options.iter().collect::<BTreeMap<_, _>>();
                 let expected = if name.ends_with("_nvenc") {

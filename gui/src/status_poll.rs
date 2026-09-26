@@ -13,7 +13,7 @@ struct Capabilities {
     ffmpeg: bool,
     adb: bool,
     autostart: bool,
-    diagnostics: Option<std::sync::Arc<uscreen_config::diagnostics::Report>>,
+    diagnostics: Option<std::sync::Arc<blent_config::diagnostics::Report>>,
 }
 
 trait Source {
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn t409_no_idle_adb_calls_and_live_assignment_refresh() {
         use super::linux::query_tablets;
-        use uscreen_config::runtime;
+        use blent_config::runtime;
         let calls = std::cell::Cell::new(0);
         let devices = || {
             calls.set(calls.get() + 1);

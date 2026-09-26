@@ -1,6 +1,6 @@
 //! Host-owned webcam pipeline; independent of the display daemon/EVDI.
 use crate::camera_control::{self as control, Report};
-use uscreen_config::camera::CameraState as State;
+use blent_config::camera::CameraState as State;
 mod bridge;
 mod decoder;
 mod outputs;
@@ -9,9 +9,9 @@ mod protocol;
 mod tests;
 
 use anyhow::{Context, Result};
+use blent_config::camera::{CameraOptions, CameraProfile};
 use std::path::PathBuf;
 use tokio::{net::TcpListener, sync::watch, task::JoinSet};
-use uscreen_config::camera::{CameraOptions, CameraProfile};
 
 pub async fn run(options: &CameraOptions) -> Result<()> {
     let (stop, stopped) = watch::channel(false);
@@ -53,13 +53,13 @@ async fn run_native(
 ) -> Result<()> {
     options.validate()?;
     let devices = [
-        outputs::open_device(&options.front_device, "UScreen Front")?,
-        outputs::open_device(&options.rear_device, "UScreen Rear")?,
+        outputs::open_device(&options.front_device, "Blent Front")?,
+        outputs::open_device(&options.rear_device, "Blent Rear")?,
     ];
     let ffmpeg = executable("ffmpeg")?;
     let adb = executable("adb")?;
     let listener = TcpListener::bind("127.0.0.1:0").await?;
-    let token = uscreen_config::runtime::random_token()?;
+    let token = blent_config::runtime::random_token()?;
     let bridge = bridge::Bridge::create(
         adb,
         options.serial.as_deref(),
@@ -78,7 +78,7 @@ async fn run_native(
 }
 
 fn executable(name: &str) -> Result<PathBuf> {
-    uscreen_config::linux::programs::find_in(name, &std::env::var_os("PATH").unwrap_or_default())
+    blent_config::linux::programs::find_in(name, &std::env::var_os("PATH").unwrap_or_default())
         .with_context(|| format!("camera sharing requires {name}"))
 }
 
@@ -178,8 +178,8 @@ async fn sessions(
 
 async fn frame_status(frames: &[outputs::Frames; 2], options: &CameraOptions, status: &Report) {
     let mut selected = frames[match options.lens {
-        uscreen_config::camera::Lens::Front => 0,
-        uscreen_config::camera::Lens::Rear => 1,
+        blent_config::camera::Lens::Front => 0,
+        blent_config::camera::Lens::Rear => 1,
     }]
     .subscribe();
     let mut next_preview = tokio::time::Instant::now();
@@ -194,7 +194,7 @@ async fn frame_status(frames: &[outputs::Frames; 2], options: &CameraOptions, st
         };
         status.update(State::Streaming);
         if tokio::time::Instant::now() >= next_preview {
-            let preview = uscreen_config::camera::CameraPreview::from_yuv420(
+            let preview = blent_config::camera::CameraPreview::from_yuv420(
                 options.lens,
                 options.width,
                 options.height,

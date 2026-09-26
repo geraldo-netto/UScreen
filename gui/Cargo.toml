@@ -1,17 +1,17 @@
 [package]
-name = "uscreen-gui"
+name = "blent-gui"
 version = "1.2.3"
 edition = "2021"
-description = "Settings and status GUI for the uscreen USB display server"
+description = "Settings and status GUI for the blent USB display server"
 
 [dependencies]
-uscreen-config = { path = "../common" }
+blent-config = { path = "../common" }
 eframe = "0.32"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-uscreen = { path = "../host" }
+blent = { path = "../host" }
 
 [dev-dependencies]
 tempfile = "3"

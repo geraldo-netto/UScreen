@@ -1,8 +1,8 @@
 //! GUI platform boundary. Capability flags describe implemented operations.
-use std::path::PathBuf;
-pub(crate) use uscreen_config::platform::capabilities;
+pub(crate) use blent_config::platform::capabilities;
 #[cfg(target_os = "linux")]
-pub(crate) use uscreen_config::platform::programs::command_exists;
+pub(crate) use blent_config::platform::programs::command_exists;
+use std::path::PathBuf;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
@@ -17,16 +17,16 @@ fn installed_binary() -> Option<PathBuf> {
     return std::env::var_os("HOME")
         .map(PathBuf::from)
         .filter(|home| home.is_absolute())
-        .map(|home| home.join(".local/bin/uscreen"));
+        .map(|home| home.join(".local/bin/blent"));
     #[cfg(windows)]
-    uscreen_config::platform::data_dir()
+    blent_config::platform::data_dir()
         .ok()
-        .map(|dir| dir.join("uscreen.exe"))
+        .map(|dir| dir.join("blent.exe"))
 }
 
 pub(crate) fn publish_pipe(mib: u32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
-    return uscreen_config::linux::pipe::publish(mib).map_err(|error| error.to_string());
+    return blent_config::linux::pipe::publish(mib).map_err(|error| error.to_string());
     #[cfg(windows)]
     {
         let _ = mib;
@@ -34,35 +34,35 @@ pub(crate) fn publish_pipe(mib: u32) -> Result<(), String> {
     }
 }
 
-pub(crate) fn find_uscreen_bin() -> Option<PathBuf> {
+pub(crate) fn find_blent_bin() -> Option<PathBuf> {
     #[cfg(target_os = "linux")]
-    match uscreen_config::linux::appimage::launcher() {
+    match blent_config::linux::appimage::launcher() {
         Ok(Some(path)) => return Some(path),
         Err(_) => return None,
         Ok(None) => {}
     }
-    find_uscreen_bin_in(
+    find_blent_bin_in(
         std::env::current_exe().ok(),
         installed_binary().unwrap_or_default(),
         &std::env::var_os("PATH").unwrap_or_default(),
     )
 }
 
-pub(crate) fn find_uscreen_bin_in(
+pub(crate) fn find_blent_bin_in(
     exe: Option<PathBuf>,
     installed: PathBuf,
     path: &std::ffi::OsStr,
 ) -> Option<PathBuf> {
-    use uscreen_config::platform::programs::{find_in, is_executable};
+    use blent_config::platform::programs::{find_in, is_executable};
     if let Some(sibling) = exe.and_then(|exe| {
         exe.parent()
-            .map(|dir| dir.join(uscreen_config::platform::executable_name("uscreen")))
+            .map(|dir| dir.join(blent_config::platform::executable_name("blent")))
     }) {
         if is_executable(&sibling) {
             return Some(sibling);
         }
     }
-    find_in("uscreen", path).or_else(|| is_executable(&installed).then_some(installed))
+    find_in("blent", path).or_else(|| is_executable(&installed).then_some(installed))
 }
 
 #[cfg(all(test, target_os = "linux"))]
@@ -72,9 +72,9 @@ mod appimage_tests {
 
     #[test]
     fn t541_pipe_publication_validates_and_preserves_previous_request() {
-        if std::env::var_os("USCREEN_T541_PIPE_CHILD").is_some() {
+        if std::env::var_os("BLENT_T541_PIPE_CHILD").is_some() {
             publish_pipe(4).unwrap();
-            let path = uscreen_config::linux::pipe::request_path().unwrap();
+            let path = blent_config::linux::pipe::request_path().unwrap();
             assert_eq!(std::fs::read_to_string(&path).unwrap(), "4\n");
             assert_eq!(
                 std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
@@ -90,7 +90,7 @@ mod appimage_tests {
         std::fs::set_permissions(root.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
         let result = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "platform::appimage_tests::t541_pipe_publication_validates_and_preserves_previous_request"])
-            .env("USCREEN_T541_PIPE_CHILD", "1")
+            .env("BLENT_T541_PIPE_CHILD", "1")
             .env("XDG_RUNTIME_DIR", root.path())
             .output().unwrap();
         assert!(
@@ -102,16 +102,15 @@ mod appimage_tests {
 
     #[test]
     fn t308_outer_launcher_child() {
-        let Ok(mode) = std::env::var("USCREEN_T308_GUI_MODE") else {
+        let Ok(mode) = std::env::var("BLENT_T308_GUI_MODE") else {
             return;
         };
-        let expected =
-            std::env::var_os(uscreen_config::linux::appimage::LAUNCHER).map(PathBuf::from);
+        let expected = std::env::var_os(blent_config::linux::appimage::LAUNCHER).map(PathBuf::from);
         match mode.as_str() {
-            "valid" => assert_eq!(find_uscreen_bin(), expected),
-            "invalid" => assert_eq!(find_uscreen_bin(), None),
+            "valid" => assert_eq!(find_blent_bin(), expected),
+            "invalid" => assert_eq!(find_blent_bin(), None),
             _ => {
-                let _ = find_uscreen_bin();
+                let _ = find_blent_bin();
             }
         }
     }
@@ -134,10 +133,10 @@ mod appimage_tests {
                     "platform::appimage_tests::t308_outer_launcher_child",
                     "--nocapture",
                 ])
-                .env("USCREEN_T308_GUI_MODE", mode)
-                .env_remove(uscreen_config::linux::appimage::LAUNCHER);
+                .env("BLENT_T308_GUI_MODE", mode)
+                .env_remove(blent_config::linux::appimage::LAUNCHER);
             if let Some(path) = path {
-                command.env(uscreen_config::linux::appimage::LAUNCHER, path);
+                command.env(blent_config::linux::appimage::LAUNCHER, path);
             }
             let result = command.output().unwrap();
             assert!(

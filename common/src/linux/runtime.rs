@@ -21,10 +21,10 @@ pub fn runtime_dir() -> Result<PathBuf> {
     );
     create_runtime_directory(&base)?;
     // HOME/.cache may intentionally be a symlink. Resolve the base once and
-    // validate its actual directory; the final uscreen component must not be a link.
+    // validate its actual directory; the final blent component must not be a link.
     let base = std::fs::canonicalize(&base).context("resolve runtime base")?;
     validate_runtime_directory(&base, uid, false)?;
-    let dir = base.join("uscreen");
+    let dir = base.join("blent");
     create_runtime_directory(&dir)?;
     validate_runtime_directory(&dir, uid, true)?;
     Ok(dir)
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn t436_runtime_fixture_survives_shared_umask() {
         let output = std::process::Command::new("/bin/sh")
-            .args(["-c", "umask 0002; exec \"$@\"", "uscreen-t436"])
+            .args(["-c", "umask 0002; exec \"$@\"", "blent-t436"])
             .arg(std::env::current_exe().unwrap())
             .args([
                 "--exact",
@@ -180,7 +180,7 @@ mod tests {
                     "linux::runtime::tests::t252_runtime_child",
                     "--nocapture",
                 ])
-                .env("USCREEN_T252_CASE", scenario)
+                .env("BLENT_T252_CASE", scenario)
                 .env("XDG_RUNTIME_DIR", root.path())
                 .env("HOME", root.path())
                 .output()
@@ -197,11 +197,11 @@ mod tests {
     #[test]
     fn t252_runtime_child() {
         use std::os::unix::fs::PermissionsExt;
-        let Ok(scenario) = std::env::var("USCREEN_T252_CASE") else {
+        let Ok(scenario) = std::env::var("BLENT_T252_CASE") else {
             return;
         };
         let base = PathBuf::from(std::env::var_os("XDG_RUNTIME_DIR").unwrap());
-        let dir = base.join("uscreen");
+        let dir = base.join("blent");
         match scenario.as_str() {
             "safe" | "0755" | "0777" => {
                 std::fs::create_dir(&dir).unwrap();
@@ -268,11 +268,11 @@ mod tests {
 
     #[test]
     fn t252_foreign_owner_child() {
-        let Some(root) = std::env::var_os("USCREEN_T252_OWNER_ROOT") else {
+        let Some(root) = std::env::var_os("BLENT_T252_OWNER_ROOT") else {
             return;
         };
         use std::os::unix::ffi::OsStrExt;
-        let dir = PathBuf::from(root).join("uscreen");
+        let dir = PathBuf::from(root).join("blent");
         create_runtime_directory(&dir).unwrap();
         let uid = unsafe { libc::getuid() };
         if uid == 0 {
@@ -300,7 +300,7 @@ mod tests {
                 "linux::runtime::tests::t252_foreign_owner_child",
                 "--nocapture",
             ])
-            .env("USCREEN_T252_OWNER_ROOT", root.path())
+            .env("BLENT_T252_OWNER_ROOT", root.path())
             .env("XDG_RUNTIME_DIR", root.path())
             .env("HOME", root.path())
             .output()
@@ -415,7 +415,7 @@ mod tests {
         }
         assert!(!path.exists());
         // A real named process exercises liveness and PID-start-time validation.
-        let executable = temp.path().join("uscreen");
+        let executable = temp.path().join("blent");
         std::os::unix::fs::symlink("/bin/sleep", &executable).unwrap();
         let mut child = tokio::process::Command::new(executable)
             .arg("30")

@@ -1,5 +1,6 @@
 //! Persistent V4L2 producers. A stopped/stalled camera becomes a black frame.
 use anyhow::{ensure, Context, Result};
+use blent_config::camera::CameraOptions;
 use std::{
     fs::File,
     os::unix::{
@@ -16,7 +17,6 @@ use tokio::{
     sync::watch,
     time::Instant,
 };
-use uscreen_config::camera::CameraOptions;
 
 pub type Frames = watch::Sender<Option<Arc<Vec<u8>>>>;
 
@@ -49,7 +49,7 @@ pub fn open_device(path: &Path, label: &str) -> Result<File> {
     let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
     ensure!(
         locked == 0,
-        "camera output is already owned by another UScreen camera process"
+        "camera output is already owned by another Blent camera process"
     );
     Ok(file)
 }
@@ -162,10 +162,10 @@ mod tests {
         );
         assert_eq!(current_frame(None, &black, Duration::ZERO), &black);
         let root = tempfile::tempdir().unwrap();
-        assert!(open_device(&root.path().join("missing"), "UScreen Front").is_err());
+        assert!(open_device(&root.path().join("missing"), "Blent Front").is_err());
         let path = root.path().join("regular");
         std::fs::write(&path, "").unwrap();
-        assert!(open_device(&path, "UScreen Front").is_err());
-        assert!(open_device(Path::new("/dev/null"), "UScreen Front").is_err());
+        assert!(open_device(&path, "Blent Front").is_err());
+        assert!(open_device(Path::new("/dev/null"), "Blent Front").is_err());
     }
 }

@@ -259,7 +259,7 @@ mod tests {
         }
         fn name(&self, pid: u32) -> Option<String> {
             self.names.set(self.names.get() + 1);
-            Some(if pid <= 2 { "uscreen" } else { "other" }.into())
+            Some(if pid <= 2 { "blent" } else { "other" }.into())
         }
         fn read(&self, pid: u32) -> Option<Process> {
             self.reads.set(self.reads.get() + 1);
@@ -267,8 +267,8 @@ mod tests {
                 pid,
                 uid: if pid == 2 { 2000 } else { 1000 },
                 start_ticks: 1,
-                executable: PathBuf::from(OsString::from_vec(b"/native-\xff/uscreen".to_vec())),
-                arguments: vec!["uscreen".into()],
+                executable: PathBuf::from(OsString::from_vec(b"/native-\xff/blent".to_vec())),
+                arguments: vec!["blent".into()],
                 cwd: "/".into(),
             })
         }
@@ -280,7 +280,7 @@ mod tests {
             reads: Cell::new(0),
             names: Cell::new(0),
         };
-        let selected = inventory(&source, 1000, Some("uscreen")).unwrap();
+        let selected = inventory(&source, 1000, Some("blent")).unwrap();
         assert_eq!(source.names.get(), 100, "other users need no comm read");
         assert_eq!(
             source.reads.get(),
@@ -295,7 +295,7 @@ mod tests {
         assert_eq!(selected[0].pid, 1);
         assert_eq!(
             selected[0].executable.as_os_str().as_bytes(),
-            b"/native-\xff/uscreen"
+            b"/native-\xff/blent"
         );
         source.reads.set(0);
         let all = inventory(&source, 1000, None).unwrap();
@@ -350,7 +350,7 @@ mod coverage_tests {
         let ready = root.path().join("ready");
         let mut child = OwnedChild(std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "linux::processes::coverage_tests::t497_pinned_signals_reject_invalid_inputs_and_accept_retired_children"])
-            .env("USCREEN_T497_PIN_READY", &ready)
+            .env("BLENT_T497_PIN_READY", &ready)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::null())
             .spawn().unwrap());
@@ -367,7 +367,7 @@ mod coverage_tests {
     }
 
     fn await_parent_retirement() -> bool {
-        let Some(path) = std::env::var_os("USCREEN_T497_PIN_READY") else {
+        let Some(path) = std::env::var_os("BLENT_T497_PIN_READY") else {
             return false;
         };
         std::fs::write(path, "ready").unwrap();

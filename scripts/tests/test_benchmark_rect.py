@@ -27,11 +27,11 @@ SURFACE = load('rect_surface')
 
 class RectEvidenceTests(unittest.TestCase):
     def test_t419_android16_layer_names_keep_the_unique_id(self):
-        raw = 'RequestedLayerState{abc SurfaceView[com.uscreen.rectbench/com.uscreen.benchmark.MainActivity](BLAST)#42 parentId=41}'
-        self.assertEqual(SURFACE.layer_name(raw, 'com.uscreen.rectbench'),
-                         'abc SurfaceView[com.uscreen.rectbench/com.uscreen.benchmark.MainActivity](BLAST)#42')
+        raw = 'RequestedLayerState{abc SurfaceView[com.blent.rectbench/com.blent.benchmark.MainActivity](BLAST)#42 parentId=41}'
+        self.assertEqual(SURFACE.layer_name(raw, 'com.blent.rectbench'),
+                         'abc SurfaceView[com.blent.rectbench/com.blent.benchmark.MainActivity](BLAST)#42')
         with self.assertRaises(ValueError):
-            SURFACE.layer_name(raw + '\n' + raw, 'com.uscreen.rectbench')
+            SURFACE.layer_name(raw + '\n' + raw, 'com.blent.rectbench')
 
     def test_t419_surface_present_joins_sequence_ids_and_rejects_ambiguity(self):
         trace = [[1, 10_000_000], [2, 20_000_000]]
@@ -90,7 +90,7 @@ class RectEvidenceTests(unittest.TestCase):
         self.assertIsNone(SUMMARY.distribution([]))
 
     def test_t419_foreground_check_never_starts_over_another_app(self):
-        for activity in ['other.app/.MainActivity', 'com.uscreen.rectbench/com.uscreen.benchmark.MainActivity']:
+        for activity in ['other.app/.MainActivity', 'com.blent.rectbench/com.blent.benchmark.MainActivity']:
             with self.subTest(activity=activity), patch.object(DEVICE, 'capture', return_value='topResumedActivity=' + activity):
                 with self.assertRaises(RuntimeError):
                     DEVICE.foreground(SimpleNamespace(serial='fixture'))

@@ -33,7 +33,7 @@ def host_process(pid, role):
 
 
 def service_processes():
-    _, group, _ = command(['systemctl', '--user', 'show', 'uscreen', '-p', 'ControlGroup', '--value'])
+    _, group, _ = command(['systemctl', '--user', 'show', 'blent', '-p', 'ControlGroup', '--value'])
     try:
         pids = Path('/sys/fs/cgroup', group.lstrip('/'), 'cgroup.procs').read_text().split()
         return [(int(pid), Path(f'/proc/{pid}/comm').read_text().strip()) for pid in pids]
@@ -69,7 +69,7 @@ class Sampler:
         return {'code': code, 'out': out, 'error': err}
 
     def app_process(self):
-        raw = self.android(['p=$(pidof io.github.geraldo_netto.uscreen); test -n "$p" && run-as io.github.geraldo_netto.uscreen cat /proc/$p/stat'])
+        raw = self.android(['p=$(pidof io.github.geraldo_netto.blent); test -n "$p" && run-as io.github.geraldo_netto.blent cat /proc/$p/stat'])
         if raw['code'] != 0:
             return raw
         try:
@@ -89,7 +89,7 @@ class Sampler:
                              if 'mActiveModeId=' in line or 'mBrightnessState=' in line]
 
     def memory_sample(self, result):
-        memory = self.android(['dumpsys', 'meminfo', '--local', 'io.github.geraldo_netto.uscreen'])
+        memory = self.android(['dumpsys', 'meminfo', '--local', 'io.github.geraldo_netto.blent'])
         result['app_memory'] = [line.strip() for line in memory['out'].splitlines()
                                 if re.match(r'\s*(TOTAL|Native Heap|Dalvik Heap)', line)]
 

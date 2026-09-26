@@ -11,8 +11,8 @@ import subprocess
 import time
 from profile_usb_wire import Acknowledgements, receipt
 
-PACKAGE = 'com.uscreen.decoderbench.candidate'
-APP = 'io.github.geraldo_netto.uscreen/com.uscreen.MainActivity'
+PACKAGE = 'com.blent.decoderbench.candidate'
+APP = 'io.github.geraldo_netto.blent/com.blent.MainActivity'
 CHOICE = dict(name='c2.unisoc.avc.decoder', stream=dict(codec='h264', profile='baseline', level=50, depth=8),
               low_latency=False, operating_rate=120)
 
@@ -35,7 +35,7 @@ def one(args, repeat, mode):
         try:
             adb(args, 'shell', 'run-as', PACKAGE, 'rm', '-f', 'files/result.json')
             launch = adb(args, 'shell', 'am', 'start', '-S', '-W', '-n',
-                f'{PACKAGE}/com.uscreen.benchmark.MainActivity', '--ez', 'run', 'true', '--ei', 'usb_port', str(port))
+                f'{PACKAGE}/com.blent.benchmark.MainActivity', '--ez', 'run', 'true', '--ei', 'usb_port', str(port))
             prefix.with_suffix('.launch').write_text(launch)
             if 'Status: ok' not in launch:
                 raise RuntimeError('benchmark activity did not launch')
@@ -49,7 +49,7 @@ def one(args, repeat, mode):
                 acks.thread.start()
                 try:
                     acks.wait_ready(1)
-                    command = [str(args.directory / 'target/release/uscreen-shared-encode-bench'),
+                    command = [str(args.directory / 'target/release/blent-shared-encode-bench'),
                         str(args.directory / 'producer'), mode, '1280', '800', str(args.frames),
                         str(args.workers), str(prefix.with_suffix('.h264')), str(connection.fileno())]
                     with prefix.with_suffix('.log').open('w') as log:
@@ -94,7 +94,7 @@ def main():
     args.output.mkdir()
     foreground = adb(args, 'shell', 'dumpsys', 'activity', 'activities')
     if not any('topResumedActivity=' in line and APP in line for line in foreground.splitlines()):
-        raise RuntimeError('UScreen must already be visible and unlocked')
+        raise RuntimeError('Blent must already be visible and unlocked')
     before = adb(args, 'reverse', '--list')
     (args.output / 'routes-before.txt').write_text(before)
     try:
@@ -102,7 +102,7 @@ def main():
             for mode in (['fifo', 'shared'] if repeat % 2 == 0 else ['shared', 'fifo']):
                 one(args, repeat, mode)
     finally:
-        # No force-stop of UScreen, power key, lock action, ADB reset or display detach.
+        # No force-stop of Blent, power key, lock action, ADB reset or display detach.
         adb(args, 'shell', 'am', 'start', '-W', '-n', APP)
         after = adb(args, 'reverse', '--list')
         (args.output / 'routes-after.txt').write_text(after)

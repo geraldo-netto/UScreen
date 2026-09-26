@@ -117,8 +117,8 @@ pub(super) fn physical_dimensions(width: u32, height: u32) -> (u32, u32) {
         (width, height)
     } else {
         (
-            uscreen_config::display::DEFAULT_WIDTH_MM,
-            uscreen_config::display::DEFAULT_HEIGHT_MM,
+            blent_config::display::DEFAULT_WIDTH_MM,
+            blent_config::display::DEFAULT_HEIGHT_MM,
         )
     }
 }
@@ -172,7 +172,7 @@ pub fn negotiated_geometry(
         return None;
     }
     let refresh =
-        match uscreen_config::display::compatible_refresh(selected.0, selected.1, current.fps) {
+        match blent_config::display::compatible_refresh(selected.0, selected.1, current.fps) {
             Ok(refresh) => refresh,
             Err(error) => {
                 warn!("Ignoring unsupported display mode: {error}");
@@ -213,8 +213,7 @@ pub(super) fn apply_tablet_config(
         new.bitrate = bitrate.unwrap_or(current.bitrate);
         new.fps = fps.unwrap_or(current.fps);
         new.encoder = encoder.unwrap_or_else(|| current.encoder.clone());
-        if let Err(error) =
-            uscreen_config::display::pixel_clock_10khz(new.width, new.height, new.fps)
+        if let Err(error) = blent_config::display::pixel_clock_10khz(new.width, new.height, new.fps)
         {
             rejection = Some(error.to_string());
             return false;

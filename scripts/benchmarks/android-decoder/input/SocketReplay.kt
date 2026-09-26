@@ -1,6 +1,6 @@
-package com.uscreen.benchmark
+package com.blent.benchmark
 
-import com.uscreen.*
+import com.blent.*
 import java.net.InetSocketAddress
 import java.net.SocketTimeoutException
 import java.io.InterruptedIOException

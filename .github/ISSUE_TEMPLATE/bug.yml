@@ -11,7 +11,7 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: Output of `uscreen doctor`
+      label: Output of `blent doctor`
       render: text
     validations:
       required: true
@@ -19,12 +19,12 @@ body:
     id: log
     attributes:
       label: Daemon log
-      description: "Service: `journalctl --user -u uscreen -n 200`; direct GUI: `~/.local/share/uscreen/daemon.log`. Redact tokens, serials and personal data. Stop an existing daemon before a foreground debug run; see docs/troubleshooting.md."
+      description: "Service: `journalctl --user -u blent -n 200`; direct GUI: `~/.local/share/blent/daemon.log`. Redact tokens, serials and personal data. Stop an existing daemon before a foreground debug run; see docs/troubleshooting.md."
       render: text
   - type: input
     id: versions
     attributes:
-      label: UScreen version and fork commit (host and app)
+      label: Blent version and fork commit (host and app)
       placeholder: "Host/app 1.2.3, built from commit ..."
     validations:
       required: true

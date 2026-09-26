@@ -55,7 +55,7 @@ def run(args):
     args.output.mkdir()
     provenance = json.loads(args.provenance.read_text())
     package = provenance['package']
-    variant = package.removeprefix('com.uscreen.decoderbench.')
+    variant = package.removeprefix('com.blent.decoderbench.')
     if variant not in ['baseline', 'candidate']:
         raise ValueError('unexpected replay package')
     metadata = dict(plan=plan, plan_sha256=hashlib.sha256(args.plan.read_bytes()).hexdigest(),

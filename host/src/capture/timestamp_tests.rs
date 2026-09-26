@@ -1,6 +1,6 @@
 //! T421: duplicate/backward input PTS must not lose frames or wall-time IDRs.
 use super::*;
-use uscreen_config::commands::AsyncCommandExt;
+use blent_config::commands::AsyncCommandExt;
 
 const SOURCE: &str = "nullsrc=size=64x64:rate=60,geq=lum='16+4*N':cb=128:cr=128,format=nv12,settb=1/1000000,setpts='if(lt(N,10),0,if(lt(N,20),1100000,if(lt(N,30),500000,2200000)))'";
 

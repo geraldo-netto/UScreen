@@ -2,7 +2,7 @@
 use anyhow::{ensure, Result};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-pub const MAGIC: &[u8; 8] = b"USCAM001";
+pub const MAGIC: &[u8; 8] = b"BLCAM001";
 pub const MAX_PACKET: usize = 2 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -17,7 +17,7 @@ pub async fn header(reader: &mut (impl AsyncRead + Unpin), token: &str) -> Resul
     ensure!(&bytes[..8] == MAGIC, "unsupported camera protocol");
     let presented = std::str::from_utf8(&bytes[8..72])?;
     ensure!(
-        uscreen_config::runtime::token_matches(token, presented),
+        blent_config::runtime::token_matches(token, presented),
         "camera authentication failed"
     );
     ensure!(bytes[72] <= 1, "invalid camera identity");

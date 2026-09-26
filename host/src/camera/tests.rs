@@ -4,10 +4,10 @@ use std::{os::unix::fs::PermissionsExt, path::Path, time::Duration};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub(super) fn options() -> CameraOptions {
-    let cli = uscreen_config::cli::Cli::parse_from([
-        "uscreen", "cameras", "--width", "160", "--height", "120",
+    let cli = blent_config::cli::Cli::parse_from([
+        "blent", "cameras", "--width", "160", "--height", "120",
     ]);
-    let Some(uscreen_config::cli::Commands::Cameras(options)) = cli.command else {
+    let Some(blent_config::cli::Commands::Cameras(options)) = cli.command else {
         panic!()
     };
     options
@@ -171,7 +171,7 @@ fn t539_rotation_and_mirroring_are_bounded_filter_choices() {
     }
     profile.mirror = true;
     assert!(decoder::filters(0, &profile).starts_with("hflip,scale="));
-    assert!(executable("uscreen-t539-missing-executable").is_err());
+    assert!(executable("blent-t539-missing-executable").is_err());
 }
 
 #[tokio::test]
@@ -295,7 +295,7 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
     };
     let token = "a".repeat(64);
     let mut profile = options();
-    profile.lens = uscreen_config::camera::Lens::Rear;
+    profile.lens = blent_config::camera::Lens::Rear;
     let clients = async {
         let mut foreign = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
             .await
@@ -494,7 +494,7 @@ async fn t543_real_output_and_preview_rotate_the_same_asymmetric_picture() {
         let mut profile = options();
         profile.rotation = rotation;
         let bytes = transformed_test_frame(&encoded.stdout, &profile).await;
-        let preview = uscreen_config::camera::CameraPreview::from_yuv420(
+        let preview = blent_config::camera::CameraPreview::from_yuv420(
             profile.lens,
             profile.width,
             profile.height,

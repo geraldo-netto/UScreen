@@ -1,5 +1,5 @@
-#ifndef USCREEN_FIFO_WRITER_H
-#define USCREEN_FIFO_WRITER_H
+#ifndef BLENT_FIFO_WRITER_H
+#define BLENT_FIFO_WRITER_H
 #include <stddef.h>
 #include <stdatomic.h>
 #include <sys/types.h>

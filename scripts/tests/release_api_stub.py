@@ -8,14 +8,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-root = Path(os.environ['USCREEN_TEST_ROOT'])
+root = Path(os.environ['BLENT_TEST_ROOT'])
 
 
 def upload_asset(request, state):
     data = request.data
     index = len(state['assets'])
-    failure = os.environ.get('USCREEN_TEST_FAILURE')
-    if os.environ.get('USCREEN_TEST_FAIL_INDEX') == str(index):
+    failure = os.environ.get('BLENT_TEST_FAILURE')
+    if os.environ.get('BLENT_TEST_FAIL_INDEX') == str(index):
         if failure == 'http':
             raise urllib.error.HTTPError(request.full_url, 422, 'upload failed', {}, None)
         if failure == 'api':
@@ -49,7 +49,7 @@ def fake_urlopen(request, *args, **kwargs):
         result = {'id': 123, 'draft': state['draft'], 'tag_name': 'v1.2.3'}
     elif method == 'GET' and '/assets' in request.full_url:
         result = state['assets']
-        if os.environ.get('USCREEN_TEST_FAILURE') == 'missing':
+        if os.environ.get('BLENT_TEST_FAILURE') == 'missing':
             result = result[:-1]
     else:
         raise AssertionError('Unexpected HTTP request: ' + request.full_url)

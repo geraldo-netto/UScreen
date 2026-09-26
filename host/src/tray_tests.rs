@@ -15,12 +15,12 @@ fn isolated_tray() {
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
     let tools = directory.path().join("bin");
     std::fs::create_dir(&tools).unwrap();
-    let dbus = uscreen_config::linux::programs::find_in(
+    let dbus = blent_config::linux::programs::find_in(
         "dbus-run-session",
         &std::env::var_os("PATH").unwrap_or_default(),
     )
     .expect("test prerequisite: dbus-run-session");
-    let daemon = uscreen_config::linux::programs::find_in(
+    let daemon = blent_config::linux::programs::find_in(
         "dbus-daemon",
         &std::env::var_os("PATH").unwrap_or_default(),
     )
@@ -30,10 +30,10 @@ fn isolated_tray() {
         .arg("--")
         .arg(executable)
         .args(["--exact", LIVE_TEST, "--nocapture"])
-        .env("USCREEN_T497_TRAY", "1")
+        .env("BLENT_T497_TRAY", "1")
         .env("HOME", directory.path())
         .env("PATH", tools)
-        .env_remove(uscreen_config::linux::appimage::LAUNCHER)
+        .env_remove(blent_config::linux::appimage::LAUNCHER)
         .env_remove("DBUS_SESSION_BUS_ADDRESS")
         .output()
         .unwrap();
@@ -71,7 +71,7 @@ async fn launched(root: &Path, expected: &str) {
 
 #[tokio::test]
 async fn t550_appimage_tray_uses_updated_stable_launcher() {
-    const CASE: &str = "USCREEN_T550_TRAY";
+    const CASE: &str = "BLENT_T550_TRAY";
     if let Ok(case) = std::env::var(CASE) {
         let root = std::path::PathBuf::from(std::env::var_os("HOME").unwrap());
         open_settings();
@@ -94,7 +94,7 @@ async fn t550_appimage_tray_uses_updated_stable_launcher() {
     let root = directory.path();
     let executable = root.join("old-daemon-test");
     std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
-    fake_launcher(&root.join("uscreen-gui"), "stale");
+    fake_launcher(&root.join("blent-gui"), "stale");
     let stable = root.join("updated image with spaces.AppImage");
     fake_launcher(&stable, "updated");
     for (case, launcher) in [
@@ -112,7 +112,7 @@ async fn t550_appimage_tray_uses_updated_stable_launcher() {
             ])
             .env(CASE, case)
             .env("HOME", root)
-            .env(uscreen_config::linux::appimage::LAUNCHER, launcher)
+            .env(blent_config::linux::appimage::LAUNCHER, launcher)
             .output()
             .unwrap();
         assert!(
@@ -125,8 +125,8 @@ async fn t550_appimage_tray_uses_updated_stable_launcher() {
 }
 
 async fn launch_actions(root: &Path) {
-    let sibling = root.join("uscreen-gui");
-    let fallback = root.join("bin/uscreen-gui");
+    let sibling = root.join("blent-gui");
+    let fallback = root.join("bin/blent-gui");
     fake_launcher(&sibling, "sibling");
     fake_launcher(&fallback, "fallback");
     fake_launcher(&root.join("bin/xdg-open"), "release");
@@ -256,7 +256,7 @@ async fn watched_state() {
 
 #[tokio::test]
 async fn t497_tray_actions_and_watch_updates_use_private_services() {
-    if std::env::var_os("USCREEN_T497_TRAY").is_none() {
+    if std::env::var_os("BLENT_T497_TRAY").is_none() {
         isolated_tray();
         return;
     }
@@ -265,11 +265,11 @@ async fn t497_tray_actions_and_watch_updates_use_private_services() {
     watched_state().await;
 }
 
-fn tray() -> (UScreenTray, watch::Receiver<bool>, watch::Receiver<bool>) {
+fn tray() -> (BlentTray, watch::Receiver<bool>, watch::Receiver<bool>) {
     let (mode_tx, mode) = watch::channel(false);
     let (shutdown_tx, shutdown) = watch::channel(false);
     (
-        UScreenTray {
+        BlentTray {
             pen_only: false,
             pen_device: true,
             tablet_present: false,
@@ -285,8 +285,8 @@ fn tray() -> (UScreenTray, watch::Receiver<bool>, watch::Receiver<bool>) {
 #[test]
 fn t497_icons_and_tooltips_follow_connection_mode_and_update() {
     let (mut tray, _, _) = tray();
-    assert_eq!(tray.id(), "uscreen");
-    assert_eq!(tray.title(), "UScreen");
+    assert_eq!(tray.id(), "blent");
+    assert_eq!(tray.title(), "Blent");
     assert_eq!(tray.status(), Status::Active);
     assert_eq!(tray.state_line(), "No tablet connected");
     assert_eq!(tray.icon_name(), ICON_SCREEN);
@@ -306,7 +306,7 @@ fn t497_icons_and_tooltips_follow_connection_mode_and_update() {
     assert_eq!(pixmap(&[1, 2, 3, 4, 9]).data, [4, 1, 2, 3]);
 }
 
-fn toggle(tray: &mut UScreenTray) {
+fn toggle(tray: &mut BlentTray) {
     let item = tray
         .menu()
         .into_iter()

@@ -108,7 +108,7 @@ pub fn find(name: &str) -> Option<&'static Encoder> {
     ENCODERS.iter().find(|encoder| encoder.name == canonical)
 }
 
-pub const INPROC_VAAPI_UNSUPPORTED: &str = "VAAPI is unavailable in this in-process build: UScreen does not create a hardware-frames context or use vaapi_device here. Build without --features inproc-encoder to use VAAPI, or select libx264/NVENC.";
+pub const INPROC_VAAPI_UNSUPPORTED: &str = "VAAPI is unavailable in this in-process build: Blent does not create a hardware-frames context or use vaapi_device here. Build without --features inproc-encoder to use VAAPI, or select libx264/NVENC.";
 
 impl Encoder {
     pub fn validate_inproc(&self) -> Result<()> {

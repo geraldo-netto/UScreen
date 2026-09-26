@@ -4,7 +4,7 @@ import sys
 
 
 def start():
-    if not os.environ.get('USCREEN_PYTHON_CALLS'):
+    if not os.environ.get('BLENT_PYTHON_CALLS'):
         return
     try:
         import coverage
@@ -12,5 +12,5 @@ def start():
         coverage.process_startup()
         observe_calls()
     except Exception as error:
-        print(f'UScreen coverage startup failed: {error}', file=sys.stderr, flush=True)
+        print(f'Blent coverage startup failed: {error}', file=sys.stderr, flush=True)
         os._exit(86)

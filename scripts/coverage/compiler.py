@@ -75,8 +75,8 @@ def export_reports(report):
 
 
 def main():
-    report = Path(os.environ['USCREEN_C_COVERAGE']).resolve()
-    compiler = os.environ['USCREEN_REAL_CC']
+    report = Path(os.environ['BLENT_C_COVERAGE']).resolve()
+    compiler = os.environ['BLENT_REAL_CC']
     if Path(compiler).resolve() == Path(sys.argv[0]).resolve():
         raise ValueError('coverage compiler cannot recursively invoke itself')
     return compile_with_profile(compiler, sys.argv[1:], report, Path(__file__).resolve().parents[2])

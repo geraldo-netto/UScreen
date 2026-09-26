@@ -1,12 +1,12 @@
 //! Inspect a bounded sample of stock encoder output; wrapper defaults are not proof.
 use crate::media::{Codec, VideoPacket};
 use anyhow::{ensure, Context, Result};
+use blent_config::negotiation::{Profile, StreamProfile};
 use std::{process::Stdio, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     process::Command,
 };
-use uscreen_config::negotiation::{Profile, StreamProfile};
 
 pub(super) async fn inspect(
     codec: Codec,

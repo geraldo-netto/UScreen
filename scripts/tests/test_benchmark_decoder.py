@@ -23,7 +23,7 @@ class DecoderBenchmarkTests(unittest.TestCase):
         spec.loader.exec_module(project)
         with tempfile.TemporaryDirectory() as directory:
             args = SimpleNamespace(directory=Path(directory) / 'replay', revision=None,
-                                   package='com.uscreen.decoderbench.candidate')
+                                   package='com.blent.decoderbench.candidate')
             output = project.prepare(args)
             dependency = (project.SOURCE / 'JsonNumbers.kt').read_bytes()
             for folder in ['originals', 'app/src/main/java']:
@@ -38,7 +38,7 @@ class DecoderBenchmarkTests(unittest.TestCase):
         self.assertEqual(json.loads(base64.b64decode(args[2])), selection)
         self.assertEqual(BENCH.selection_args(SimpleNamespace()), [])
 
-    def test_t460_replay_can_remain_visible_over_the_same_keyguard_as_uscreen(self):
+    def test_t460_replay_can_remain_visible_over_the_same_keyguard_as_blent(self):
         path = PATH.with_name('decoder-project.py')
         spec = importlib.util.spec_from_file_location('decoder_project', path)
         project = importlib.util.module_from_spec(spec)
@@ -61,7 +61,7 @@ class DecoderBenchmarkTests(unittest.TestCase):
         spec.loader.exec_module(project)
         with tempfile.TemporaryDirectory() as directory:
             args = SimpleNamespace(directory=Path(directory) / 'replay', revision=None,
-                                   package='com.uscreen.decoderbench.candidate')
+                                   package='com.blent.decoderbench.candidate')
             output = project.prepare(args)
             self.assertEqual((output / 'app/src/main/java/VideoCodec.kt').read_text(),
                              (project.SOURCE / 'VideoCodec.kt').read_text())

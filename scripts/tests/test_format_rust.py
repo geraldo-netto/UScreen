@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class FormatTest(unittest.TestCase):
     def test_t500_included_supervisor_and_children_are_checked_and_formatted(self):
-        with tempfile.TemporaryDirectory(prefix='uscreen format ') as tmp:
+        with tempfile.TemporaryDirectory(prefix='blent format ') as tmp:
             root = Path(tmp)
             (root / 'scripts').mkdir()
             (root / 'host/src').mkdir(parents=True)

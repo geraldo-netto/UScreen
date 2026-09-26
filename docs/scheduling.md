@@ -1,6 +1,6 @@
 # CPU scheduling
 
-UScreen requests **High** CPU scheduling priority by default. Existing TOML
+Blent requests **High** CPU scheduling priority by default. Existing TOML
 files inherit this preference when the field is absent. Select **General → CPU
 scheduling → Normal** to opt out, or set this top-level configuration field:
 
@@ -26,14 +26,14 @@ process identity, then change only that server's scope. The editor or terminal
 that originally launched it is not boosted. This includes a system SDK server
 shadowed by AppImage's bundled executable. Other ADB clients also benefit
 because this is a shared server. Custom server endpoints are not adopted.
-The ADB scope survives a UScreen stop; a later Normal startup lowers its weight.
+The ADB scope survives a Blent stop; a later Normal startup lowers its weight.
 
 CPU weight is a relative share among competing sibling groups, not a CPU quota,
 reserved core, deadline, negative nice value or multiplier of video speed.
-UScreen/EVDI/FFmpeg share a budget, not a new frame synchronization mechanism.
+Blent/EVDI/FFmpeg share a budget, not a new frame synchronization mechanism.
 GPU execution, kernel driver work, Xorg, Chrome and Bluetooth scheduling are
 outside this setting. PipeWire's existing real-time audio threads retain their
-scheduling class; UScreen requests no real-time policy.
+scheduling class; Blent requests no real-time policy.
 
 Android's synchronous render thread already requests `Thread.MAX_PRIORITY` in
 `DecoderConfiguration`/`DecoderSession`. This change does not elevate vendor
@@ -50,15 +50,15 @@ For an already-running service, this takes effect without restarting EVDI or
 Android and persists across service restarts:
 
 ```sh
-systemctl --user set-property uscreen.service CPUWeight=1000
+systemctl --user set-property blent.service CPUWeight=1000
 ```
 
 Use `CPUWeight=100` for the immediate rollback. With the updated application,
 also save `scheduling_priority = "normal"` so its next startup preserves that
 choice. The daemon's runtime preference overrides the packaged service default.
-Inspect `systemctl --user show uscreen.service -p CPUWeight -p ControlGroup`
+Inspect `systemctl --user show blent.service -p CPUWeight -p ControlGroup`
 and the corresponding cgroup `cpu.weight` for effective state. Separate GUI/ADB
-scopes are named `uscreen-priority-<PID>.scope`; lower their CPUWeight to 100 to
+scopes are named `blent-priority-<PID>.scope`; lower their CPUWeight to 100 to
 roll back a live experiment. Do not stop these scopes merely to reset priority:
 stopping a scope can terminate its processes.
 

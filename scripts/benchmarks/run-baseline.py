@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""T382: measure installed UScreen; never install, reconfigure or attach EVDI."""
+"""T382: measure installed Blent; never install, reconfigure or attach EVDI."""
 import argparse
 from contextlib import ExitStack
 import hashlib
@@ -41,9 +41,9 @@ def ensure_target(geometry):
 
 
 def metadata(args, monitors):
-    code, pid, _ = command(['adb', '-s', args.serial, 'shell', 'pidof', 'io.github.geraldo_netto.uscreen'])
+    code, pid, _ = command(['adb', '-s', args.serial, 'shell', 'pidof', 'io.github.geraldo_netto.blent'])
     if code or not pid.isdigit():
-        raise ValueError('UScreen must already be running on the tablet')
+        raise ValueError('Blent must already be running on the tablet')
     scripts = Path(__file__).parent
     result = dict(start_utc=time.time(), geometry=args.geometry, monitors=monitors, visibility_guard_version=1,
                   observation_guard_version=1,
@@ -80,7 +80,7 @@ def start_logs(args, meta):
     android_pattern = re.compile(r'on-device split:|Control statistics:|Codec configured|Decoder stuck|Decoder took|Output thread:')
     logs = []
     try:
-        logs.append(filtered_logs(['journalctl', '--user', '-u', 'uscreen', '-f', '-n', '0', '-o', 'json'],
+        logs.append(filtered_logs(['journalctl', '--user', '-u', 'blent', '-f', '-n', '0', '-o', 'json'],
                                   args.output / 'host-windows.jsonl', host_pattern, True))
         logs.append(filtered_logs(['adb', '-s', args.serial, 'logcat', f'--pid={meta["android_pid"]}',
                                    '-v', 'epoch', '-T', '1'], args.output / 'android.log', android_pattern))

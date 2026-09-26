@@ -3,13 +3,13 @@ use super::{
     protocol,
 };
 use anyhow::{Context, Result};
+use blent_config::camera::CameraOptions;
 use std::{path::Path, process::Stdio, sync::Arc, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
     process::Command,
 };
-use uscreen_config::camera::CameraOptions;
 
 pub fn filters(rotation: u8, options: &CameraOptions) -> String {
     let rotation = (rotation + (options.rotation / 90) as u8) % 4;
@@ -80,8 +80,8 @@ pub async fn connection(
     let header = tokio::time::timeout(Duration::from_secs(5), protocol::header(&mut socket, token))
         .await??;
     let selected = match options.lens {
-        uscreen_config::camera::Lens::Front => 0,
-        uscreen_config::camera::Lens::Rear => 1,
+        blent_config::camera::Lens::Front => 0,
+        blent_config::camera::Lens::Rear => 1,
     };
     anyhow::ensure!(
         header.lens == selected,
