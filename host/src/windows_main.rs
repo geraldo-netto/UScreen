@@ -35,12 +35,13 @@ async fn serve(path: &Path) -> Result<()> {
     tokio::pin!(shutdown);
     loop {
         tokio::select! {
-            result = &mut shutdown => { result?; return Ok(()); },
+            result = &mut shutdown => { result?; break; },
             _ = tokio::time::sleep(Duration::from_millis(50)) => {
-                if session.stop_requested() { return Ok(()); }
+                if session.stop_requested() { break; }
             }
         }
     }
+    session.shutdown()
 }
 fn status(path: &Path) -> Result<()> {
     match lifecycle::status(path)? {

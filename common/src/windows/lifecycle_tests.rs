@@ -98,3 +98,20 @@ fn t524_drop_preserves_replaced_state_and_crash_recovery_cleans_abandoned_files(
     }
     assert!(!path.join("daemon.json").exists());
 }
+
+#[test]
+fn t524_cleanup_failure_still_retires_token_and_reports_failed_stop() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("runtime");
+    let session = Session::start(&path).unwrap();
+    // A blocked session ledger must not prevent independent token retirement.
+    std::fs::create_dir(path.join("sessions.json")).unwrap();
+    drop(session);
+    assert!(
+        !path.join("token").exists(),
+        "T524: unrelated cleanup failure retained the authentication token"
+    );
+    assert!(!path.join("ready.json").exists());
+    assert!(stop(&path, Duration::ZERO).is_err());
+    assert!(path.join("sessions.json").is_dir());
+}

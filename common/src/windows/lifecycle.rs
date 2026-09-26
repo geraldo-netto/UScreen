@@ -26,6 +26,9 @@ impl Session {
         publish(path, "ready.json", session.lease.identity())?;
         Ok(session)
     }
+    pub fn shutdown(self) -> Result<()> {
+        clear(self.lease.directory())
+    }
     pub fn stop_requested(&self) -> bool {
         read(&self.lease.directory().join("stop.json")).as_ref() == Some(self.lease.identity())
     }
@@ -40,14 +43,19 @@ impl Drop for Session {
     }
 }
 fn clear(path: &Path) -> Result<()> {
+    let mut result = Ok(());
     for name in STATE {
         match std::fs::remove_file(path.join(name)) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.into()),
+            Err(error) => {
+                if result.is_ok() {
+                    result = Err(error.into());
+                }
+            }
         }
     }
-    Ok(())
+    result
 }
 fn read(path: &Path) -> Option<Identity> {
     let mut bytes = Vec::new();
@@ -91,13 +99,21 @@ pub fn stop(path: &Path, timeout: Duration) -> Result<()> {
     let Some(owner) = runtime::owner_at(&directory) else {
         // Crash recovery requires exclusive ownership too; corrupt live owners
         // and concurrent startup cannot be mistaken for an abandoned directory.
-        let lease = Lease::acquire(directory)?;
-        return clear(lease.directory());
+        return reclaim(directory);
     };
     publish(path, "stop.json", &owner)?;
     crate::lifecycle::wait_until(timeout, || {
         Ok(runtime::owner_at(&directory).as_ref() != Some(&owner))
-    })
+    })?;
+    if runtime::owner_at(&directory).is_some() {
+        return Ok(()); // A concurrent replacement owns its own state.
+    }
+    reclaim(directory)
+}
+
+fn reclaim(directory: Directory) -> Result<()> {
+    let lease = Lease::acquire(directory)?;
+    clear(lease.directory())
 }
 
 struct Starting(Option<std::process::Child>);
