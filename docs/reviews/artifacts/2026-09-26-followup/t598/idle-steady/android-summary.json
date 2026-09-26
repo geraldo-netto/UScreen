@@ -1,0 +1,125 @@
+{
+  "total_ns": 2527637875,
+  "top_leaf": [
+    {
+      "symbol": "__futex_wait_ex(void volatile*, bool, int, bool, timespec const*)",
+      "ns": 331658250
+    },
+    {
+      "symbol": "ioctl",
+      "ns": 170854250
+    },
+    {
+      "symbol": "pthread_cond_broadcast",
+      "ns": 120603000
+    },
+    {
+      "symbol": "sendto",
+      "ns": 85427125
+    },
+    {
+      "symbol": "pthread_cond_signal",
+      "ns": 85427125
+    },
+    {
+      "symbol": "android::MediaCodec::onMessageReceived(android::sp<android::AMessage> const&)",
+      "ns": 50251250
+    },
+    {
+      "symbol": "android::ALooper::loop()",
+      "ns": 40201000
+    },
+    {
+      "symbol": "com.blent.DecoderSession$startOutputThread$1$index$1.invoke",
+      "ns": 40201000
+    },
+    {
+      "symbol": "android::AMessage::postAndAwaitResponse(android::sp<android::AMessage>*)",
+      "ns": 35175875
+    },
+    {
+      "symbol": "scudo::Allocator<scudo::AndroidNormalConfig, &(scudo_malloc_postinit)>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)",
+      "ns": 35175875
+    },
+    {
+      "symbol": "scudo_malloc",
+      "ns": 35175875
+    },
+    {
+      "symbol": "android::MediaCodec::dequeueOutputBuffer(unsigned long*, unsigned long*, unsigned long*, long*, unsigned int*, long)",
+      "ns": 35175875
+    },
+    {
+      "symbol": "pthread_cond_wait",
+      "ns": 30150750
+    },
+    {
+      "symbol": "android::AMessage::~AMessage()",
+      "ns": 30150750
+    },
+    {
+      "symbol": "art::Thread::Park(bool, long)",
+      "ns": 30150750
+    },
+    {
+      "symbol": "android::Thread::_threadLoop(void*)",
+      "ns": 30150750
+    },
+    {
+      "symbol": "android::Looper::pollOnce(int, int*, int*, void**)",
+      "ns": 30150750
+    },
+    {
+      "symbol": "com.blent.DecoderSession.startOutputThread$lambda$12",
+      "ns": 30150750
+    },
+    {
+      "symbol": "arm::mapper::common::import_buffer(native_handle const*, imported_handle**)",
+      "ns": 25125625
+    },
+    {
+      "symbol": "android::AMessage::deliver()",
+      "ns": 25125625
+    },
+    {
+      "symbol": "android::AHandler::deliverMessage(android::sp<android::AMessage> const&)",
+      "ns": 25125625
+    },
+    {
+      "symbol": "android::AMessage::setTarget(android::sp<android::AHandler const> const&)",
+      "ns": 25125625
+    },
+    {
+      "symbol": "android::C2DmaBufAllocation::unmap(void*, unsigned long, C2Fence*)",
+      "ns": 25125625
+    },
+    {
+      "symbol": "pthread_cond_timedwait",
+      "ns": 25125625
+    },
+    {
+      "symbol": "art::JNI<false>::CallLongMethodV(_JNIEnv*, _jobject*, _jmethodID*, std::__va_list)",
+      "ns": 25125625
+    },
+    {
+      "symbol": "android::C2DmaBufAllocation::mapInternal(unsigned long, unsigned long, unsigned long, int, int, void**, void**)",
+      "ns": 20100500
+    },
+    {
+      "symbol": "poll",
+      "ns": 20100500
+    },
+    {
+      "symbol": "clock_gettime",
+      "ns": 20100500
+    },
+    {
+      "symbol": "android::ALooper::awaitResponse(android::sp<android::AReplyToken> const&, android::sp<android::AMessage>*)",
+      "ns": 20100500
+    },
+    {
+      "symbol": "android::sp<android::AMessage>::operator=(android::sp<android::AMessage> const&)",
+      "ns": 20100500
+    }
+  ]
+}

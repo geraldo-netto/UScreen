@@ -1,0 +1,19 @@
+WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted,
+check /proc/sys/kernel/kptr_restrict and /proc/sys/kernel/perf_event_paranoid.
+
+Samples in kernel functions may not be resolved if a suitable vmlinux
+file is not found in the buildid cache or in the vmlinux path.
+
+Samples in kernel modules won't be resolved at all.
+
+If some relocation was applied (e.g. kexec) symbols may be misresolved
+even with a suitable vmlinux or kallsyms file.
+
+Couldn't record kernel reference relocation symbol
+Symbol resolution may be skewed if relocation was used (e.g. kexec).
+Check /proc/kallsyms permission or run as root.
+simpleperf W kallsyms.cpp:163] Access to kernel symbol addresses is restricted. If possible, please do `echo 0 >/proc/sys/kernel/kptr_restrict` to fix this.
+[ perf record: Woken up 47 times to write data ]
+simpleperf I cmd_record.cpp:840] Recorded for 9.99512 seconds. Start post processing.
+[ perf record: Captured and wrote 17.495 MB /tmp/blent-investigation/t598/scheduler/host.data (133511 samples) ]
+simpleperf I cmd_record.cpp:941] Samples recorded: 11,247. Samples lost: 0.

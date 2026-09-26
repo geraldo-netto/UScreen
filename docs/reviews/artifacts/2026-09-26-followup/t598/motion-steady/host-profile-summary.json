@@ -1,0 +1,158 @@
+{
+  "kernel_symbol_source": "same-boot kallsyms; nearest preceding text symbol, maximum 64 KiB displacement; unresolved addresses retained",
+  "samples": 543,
+  "callchain_unavailable": 275,
+  "sampled_cpu_ns": 2728642875,
+  "top_self": [
+    {
+      "thread": "evdi_helper",
+      "symbol": "convert_job",
+      "ns": 271356750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_macroblock_cache_load_progressive",
+      "ns": 251256250
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_copy_to_user",
+      "ns": 241206000
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "drm_clflush_virt_range",
+      "ns": 160804000
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "find_vmap_area",
+      "ns": 110552750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_frame_init_lowres_core_avx2",
+      "ns": 90452250
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_ratecontrol_mb",
+      "ns": 80402000
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_quant_4x4x4_avx2",
+      "ns": 60301500
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "_copy_to_iter",
+      "ns": 60301500
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "slicetype_mb_cost",
+      "ns": 60301500
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "kernel_init_pages",
+      "ns": 60301500
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_macroblock_cache_save",
+      "ns": 55276375
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_me_search_ref",
+      "ns": 50251250
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_plane_copy_avx512",
+      "ns": 35175875
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "_raw_spin_unlock_irqrestore",
+      "ns": 35175875
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_load_deinterleave_chroma_fdec_avx512",
+      "ns": 35175875
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "mutex_spin_on_owner",
+      "ns": 30150750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_sub8x8_dct_avx512",
+      "ns": 30150750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_prefetch_ref_mmx2",
+      "ns": 30150750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_mc_copy_w16_aligned_sse",
+      "ns": 30150750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "mb_analyse_init_qp",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_pixel_sad_x4_16x16_avx512",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_macroblock_probe_skip",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_pixel_sad_8x8_avx512",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_mc_copy_w16_sse",
+      "ns": 25125625
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_raw_spin_unlock_irqrestore",
+      "ns": 25125625
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_raw_spin_lock",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "__memmove_avx512_unaligned_erms",
+      "ns": 25125625
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "mb_analyse_init",
+      "ns": 20100500
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "__rmqueue_pcplist",
+      "ns": 20100500
+    }
+  ]
+}

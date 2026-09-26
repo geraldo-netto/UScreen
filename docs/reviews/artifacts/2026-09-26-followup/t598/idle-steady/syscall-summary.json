@@ -1,0 +1,1495 @@
+{
+  "window_seconds": 5,
+  "excluded_noncomplete_lines": 136,
+  "processes": [
+    {
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 3106,
+      "elapsed_thread_seconds": 128.0105470000001,
+      "negative_returns": 1470
+    },
+    {
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 11173,
+      "elapsed_thread_seconds": 0.4987219999999974,
+      "negative_returns": 0
+    },
+    {
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 407,
+      "elapsed_thread_seconds": 0.017355000000000013,
+      "negative_returns": 363
+    },
+    {
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 140,
+      "elapsed_thread_seconds": 0.20915299999999976,
+      "negative_returns": 0
+    },
+    {
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 10,
+      "elapsed_thread_seconds": 7.2e-05,
+      "negative_returns": 0
+    },
+    {
+      "process": "unmapped-transient",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 4,
+      "elapsed_thread_seconds": 2.8000000000000003e-05,
+      "negative_returns": 4
+    },
+    {
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 91,
+      "elapsed_thread_seconds": 4.784147999999998,
+      "negative_returns": 0
+    },
+    {
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 590,
+      "elapsed_thread_seconds": 0.006547999999999992,
+      "negative_returns": 0
+    },
+    {
+      "process": "adb",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 570,
+      "elapsed_thread_seconds": 4.792243999999998,
+      "negative_returns": 0
+    },
+    {
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE",
+      "calls": 141,
+      "elapsed_thread_seconds": 0.006346,
+      "negative_returns": 10
+    },
+    {
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 126,
+      "elapsed_thread_seconds": 0.001513000000000001,
+      "negative_returns": 120
+    },
+    {
+      "process": "blent",
+      "syscall": "epoll_wait",
+      "operation": "epoll_wait",
+      "calls": 100,
+      "elapsed_thread_seconds": 4.792365,
+      "negative_returns": 0
+    },
+    {
+      "process": "blent",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 55,
+      "elapsed_thread_seconds": 0.000555,
+      "negative_returns": 0
+    },
+    {
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 3.8e-05,
+      "negative_returns": 0
+    },
+    {
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 4,
+      "elapsed_thread_seconds": 3.7254720000000003,
+      "negative_returns": 0
+    },
+    {
+      "process": "adb",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 281,
+      "elapsed_thread_seconds": 0.003093000000000004,
+      "negative_returns": 58
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 100,
+      "elapsed_thread_seconds": 14.342591999999998,
+      "negative_returns": 2
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 58,
+      "elapsed_thread_seconds": 0.0022380000000000013,
+      "negative_returns": 23
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 301,
+      "elapsed_thread_seconds": 0.003752000000000005,
+      "negative_returns": 0
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE",
+      "calls": 35,
+      "elapsed_thread_seconds": 4.6813649999999996,
+      "negative_returns": 14
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 75,
+      "elapsed_thread_seconds": 0.001063,
+      "negative_returns": 45
+    },
+    {
+      "process": "adb",
+      "syscall": "epoll_wait",
+      "operation": "epoll_wait",
+      "calls": 170,
+      "elapsed_thread_seconds": 4.748695999999997,
+      "negative_returns": 0
+    },
+    {
+      "process": "ffmpeg",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 107,
+      "elapsed_thread_seconds": 4.783293999999999,
+      "negative_returns": 0
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 70,
+      "elapsed_thread_seconds": 0.025707999999999998,
+      "negative_returns": 0
+    },
+    {
+      "process": "evdi_helper",
+      "syscall": "poll",
+      "operation": "poll",
+      "calls": 44,
+      "elapsed_thread_seconds": 4.704502000000001,
+      "negative_returns": 0
+    }
+  ],
+  "threads": [
+    {
+      "tid": 607868,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 181,
+      "elapsed_thread_seconds": 4.745941000000002,
+      "negative_returns": 109
+    },
+    {
+      "tid": 607868,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 361,
+      "elapsed_thread_seconds": 0.018913999999999997,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607868,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 11,
+      "elapsed_thread_seconds": 0.0006,
+      "negative_returns": 11
+    },
+    {
+      "tid": 607861,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 144,
+      "elapsed_thread_seconds": 4.741560000000001,
+      "negative_returns": 83
+    },
+    {
+      "tid": 607861,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 406,
+      "elapsed_thread_seconds": 0.017345000000000006,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607861,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 8.5e-05,
+      "negative_returns": 2
+    },
+    {
+      "tid": 608593,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 31,
+      "elapsed_thread_seconds": 0.09505400000000001,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608593,
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.4e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608593,
+      "process": "unmapped-transient",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 1,
+      "elapsed_thread_seconds": 5e-06,
+      "negative_returns": 1
+    },
+    {
+      "tid": 608595,
+      "process": "unmapped-transient",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 1,
+      "elapsed_thread_seconds": 1e-05,
+      "negative_returns": 1
+    },
+    {
+      "tid": 608595,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 1.1e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608589,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 7e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607862,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 132,
+      "elapsed_thread_seconds": 4.742893000000002,
+      "negative_returns": 57
+    },
+    {
+      "tid": 607862,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 403,
+      "elapsed_thread_seconds": 0.01773499999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607862,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 4,
+      "elapsed_thread_seconds": 0.000185,
+      "negative_returns": 4
+    },
+    {
+      "tid": 290582,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 91,
+      "elapsed_thread_seconds": 4.784147999999998,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290582,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 233,
+      "elapsed_thread_seconds": 0.0024939999999999993,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290582,
+      "process": "adb",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 141,
+      "elapsed_thread_seconds": 0.0029419999999999997,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290582,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE",
+      "calls": 141,
+      "elapsed_thread_seconds": 0.006346,
+      "negative_returns": 10
+    },
+    {
+      "tid": 290582,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 125,
+      "elapsed_thread_seconds": 0.001501000000000001,
+      "negative_returns": 119
+    },
+    {
+      "tid": 608587,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 8e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607856,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 110,
+      "elapsed_thread_seconds": 4.739176,
+      "negative_returns": 57
+    },
+    {
+      "tid": 607856,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 384,
+      "elapsed_thread_seconds": 0.020420999999999988,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607856,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 16,
+      "elapsed_thread_seconds": 0.000818,
+      "negative_returns": 13
+    },
+    {
+      "tid": 608591,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 23,
+      "elapsed_thread_seconds": 0.0022660000000000007,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608591,
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.3000000000000001e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290581,
+      "process": "adb",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 429,
+      "elapsed_thread_seconds": 4.7893019999999975,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290581,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 266,
+      "elapsed_thread_seconds": 0.002887000000000005,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290581,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 1.2e-05,
+      "negative_returns": 1
+    },
+    {
+      "tid": 290560,
+      "process": "blent",
+      "syscall": "epoll_wait",
+      "operation": "epoll_wait",
+      "calls": 35,
+      "elapsed_thread_seconds": 1.84632,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290560,
+      "process": "blent",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 16,
+      "elapsed_thread_seconds": 0.00016900000000000002,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290560,
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 2.1e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290560,
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 0.013868,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607857,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 119,
+      "elapsed_thread_seconds": 4.740109,
+      "negative_returns": 60
+    },
+    {
+      "tid": 607857,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 307,
+      "elapsed_thread_seconds": 0.015917999999999995,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607857,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 45,
+      "elapsed_thread_seconds": 0.002273,
+      "negative_returns": 35
+    },
+    {
+      "tid": 607829,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 40,
+      "elapsed_thread_seconds": 4.783152,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607829,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 91,
+      "elapsed_thread_seconds": 0.0009779999999999995,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607829,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 10,
+      "elapsed_thread_seconds": 0.00011,
+      "negative_returns": 10
+    },
+    {
+      "tid": 607849,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 90,
+      "elapsed_thread_seconds": 4.738326000000001,
+      "negative_returns": 47
+    },
+    {
+      "tid": 607849,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 468,
+      "elapsed_thread_seconds": 0.020401999999999965,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607849,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 5,
+      "elapsed_thread_seconds": 0.000207,
+      "negative_returns": 5
+    },
+    {
+      "tid": 290578,
+      "process": "adb",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 55,
+      "elapsed_thread_seconds": 0.0004720000000000003,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608590,
+      "process": "unmapped-transient",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 1,
+      "elapsed_thread_seconds": 8e-06,
+      "negative_returns": 1
+    },
+    {
+      "tid": 608590,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 9e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607867,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 147,
+      "elapsed_thread_seconds": 4.743423999999998,
+      "negative_returns": 75
+    },
+    {
+      "tid": 607867,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 399,
+      "elapsed_thread_seconds": 0.020258999999999985,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607867,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 7,
+      "elapsed_thread_seconds": 0.00036999999999999994,
+      "negative_returns": 7
+    },
+    {
+      "tid": 291899,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 25,
+      "elapsed_thread_seconds": 4.779940999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291899,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 15,
+      "elapsed_thread_seconds": 0.0006680000000000001,
+      "negative_returns": 3
+    },
+    {
+      "tid": 291899,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 38,
+      "elapsed_thread_seconds": 0.00048100000000000014,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608592,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 8e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607852,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 89,
+      "elapsed_thread_seconds": 4.7386,
+      "negative_returns": 46
+    },
+    {
+      "tid": 607852,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 475,
+      "elapsed_thread_seconds": 0.02369499999999998,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607852,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 4.5e-05,
+      "negative_returns": 1
+    },
+    {
+      "tid": 607869,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 172,
+      "elapsed_thread_seconds": 4.748606000000001,
+      "negative_returns": 74
+    },
+    {
+      "tid": 607869,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 340,
+      "elapsed_thread_seconds": 0.01674199999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607869,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 7,
+      "elapsed_thread_seconds": 0.000392,
+      "negative_returns": 7
+    },
+    {
+      "tid": 607870,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 40,
+      "elapsed_thread_seconds": 4.787543000000001,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607870,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 11,
+      "elapsed_thread_seconds": 9.099999999999999e-05,
+      "negative_returns": 11
+    },
+    {
+      "tid": 607870,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 40,
+      "elapsed_thread_seconds": 0.00029400000000000004,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607864,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 137,
+      "elapsed_thread_seconds": 4.743067,
+      "negative_returns": 70
+    },
+    {
+      "tid": 607864,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 405,
+      "elapsed_thread_seconds": 0.018889999999999966,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607864,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 9.3e-05,
+      "negative_returns": 2
+    },
+    {
+      "tid": 607859,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 150,
+      "elapsed_thread_seconds": 4.74092,
+      "negative_returns": 85
+    },
+    {
+      "tid": 607859,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 405,
+      "elapsed_thread_seconds": 0.016646999999999995,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607859,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 3,
+      "elapsed_thread_seconds": 0.000112,
+      "negative_returns": 3
+    },
+    {
+      "tid": 607850,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 90,
+      "elapsed_thread_seconds": 4.7383219999999975,
+      "negative_returns": 47
+    },
+    {
+      "tid": 607850,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 471,
+      "elapsed_thread_seconds": 0.021424999999999986,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607850,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 6,
+      "elapsed_thread_seconds": 0.00029,
+      "negative_returns": 6
+    },
+    {
+      "tid": 607848,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 88,
+      "elapsed_thread_seconds": 4.738304,
+      "negative_returns": 43
+    },
+    {
+      "tid": 607848,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 468,
+      "elapsed_thread_seconds": 0.019315999999999972,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607848,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 3.5e-05,
+      "negative_returns": 1
+    },
+    {
+      "tid": 607846,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 86,
+      "elapsed_thread_seconds": 4.738333000000001,
+      "negative_returns": 39
+    },
+    {
+      "tid": 607846,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 438,
+      "elapsed_thread_seconds": 0.016720999999999996,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607846,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 8,
+      "elapsed_thread_seconds": 0.00031,
+      "negative_returns": 8
+    },
+    {
+      "tid": 608586,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 8e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607860,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 125,
+      "elapsed_thread_seconds": 4.740739999999997,
+      "negative_returns": 62
+    },
+    {
+      "tid": 607860,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 406,
+      "elapsed_thread_seconds": 0.017235,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607860,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 12,
+      "elapsed_thread_seconds": 0.00039600000000000003,
+      "negative_returns": 12
+    },
+    {
+      "tid": 607851,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 86,
+      "elapsed_thread_seconds": 4.739208999999999,
+      "negative_returns": 39
+    },
+    {
+      "tid": 607851,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 453,
+      "elapsed_thread_seconds": 0.021769000000000007,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291928,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 36,
+      "elapsed_thread_seconds": 0.0004739999999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291928,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE",
+      "calls": 35,
+      "elapsed_thread_seconds": 4.6813649999999996,
+      "negative_returns": 14
+    },
+    {
+      "tid": 291928,
+      "process": "evdi_helper",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 5,
+      "elapsed_thread_seconds": 5.3e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291928,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 3,
+      "elapsed_thread_seconds": 3.7e-05,
+      "negative_returns": 3
+    },
+    {
+      "tid": 607863,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 138,
+      "elapsed_thread_seconds": 4.743104000000002,
+      "negative_returns": 64
+    },
+    {
+      "tid": 607863,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 405,
+      "elapsed_thread_seconds": 0.01850299999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607863,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 9.400000000000001e-05,
+      "negative_returns": 2
+    },
+    {
+      "tid": 290576,
+      "process": "adb",
+      "syscall": "epoll_wait",
+      "operation": "epoll_wait",
+      "calls": 170,
+      "elapsed_thread_seconds": 4.748695999999997,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290576,
+      "process": "adb",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 226,
+      "elapsed_thread_seconds": 0.0026210000000000014,
+      "negative_returns": 58
+    },
+    {
+      "tid": 290576,
+      "process": "adb",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 91,
+      "elapsed_thread_seconds": 0.0011670000000000005,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607827,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 144,
+      "elapsed_thread_seconds": 4.655497999999999,
+      "negative_returns": 19
+    },
+    {
+      "tid": 607827,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 1139,
+      "elapsed_thread_seconds": 0.03710800000000002,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607827,
+      "process": "ffmpeg",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 27,
+      "elapsed_thread_seconds": 0.00023400000000000005,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607827,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 201,
+      "elapsed_thread_seconds": 0.008568,
+      "negative_returns": 177
+    },
+    {
+      "tid": 608584,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 25,
+      "elapsed_thread_seconds": 0.006161000000000001,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608584,
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.9e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607854,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 91,
+      "elapsed_thread_seconds": 4.7401100000000005,
+      "negative_returns": 37
+    },
+    {
+      "tid": 607854,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 366,
+      "elapsed_thread_seconds": 0.017955999999999986,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607854,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 22,
+      "elapsed_thread_seconds": 0.001147,
+      "negative_returns": 19
+    },
+    {
+      "tid": 607866,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 149,
+      "elapsed_thread_seconds": 4.743217000000001,
+      "negative_returns": 83
+    },
+    {
+      "tid": 607866,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 401,
+      "elapsed_thread_seconds": 0.020241999999999996,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607866,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 0.000108,
+      "negative_returns": 2
+    },
+    {
+      "tid": 607855,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 100,
+      "elapsed_thread_seconds": 4.738793,
+      "negative_returns": 50
+    },
+    {
+      "tid": 607855,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 414,
+      "elapsed_thread_seconds": 0.021741000000000007,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607855,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 12,
+      "elapsed_thread_seconds": 0.00039900000000000005,
+      "negative_returns": 10
+    },
+    {
+      "tid": 608594,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 1,
+      "elapsed_thread_seconds": 7e-06,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607865,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 147,
+      "elapsed_thread_seconds": 4.742695000000002,
+      "negative_returns": 80
+    },
+    {
+      "tid": 607865,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 404,
+      "elapsed_thread_seconds": 0.019908999999999996,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607865,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 5.4e-05,
+      "negative_returns": 1
+    },
+    {
+      "tid": 290559,
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 1.851207,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290559,
+      "process": "blent",
+      "syscall": "epoll_wait",
+      "operation": "epoll_wait",
+      "calls": 65,
+      "elapsed_thread_seconds": 2.9460450000000002,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290559,
+      "process": "blent",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 39,
+      "elapsed_thread_seconds": 0.000386,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607853,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 93,
+      "elapsed_thread_seconds": 4.738795,
+      "negative_returns": 48
+    },
+    {
+      "tid": 607853,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 462,
+      "elapsed_thread_seconds": 0.023787999999999993,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607853,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 0.000136,
+      "negative_returns": 2
+    },
+    {
+      "tid": 290558,
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.8603969999999999,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290558,
+      "process": "blent",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 1,
+      "elapsed_thread_seconds": 1.7e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608585,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 23,
+      "elapsed_thread_seconds": 0.002393,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608585,
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.2e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291900,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 25,
+      "elapsed_thread_seconds": 4.7805800000000005,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291900,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 47,
+      "elapsed_thread_seconds": 0.0005700000000000002,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291898,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 25,
+      "elapsed_thread_seconds": 4.7798989999999995,
+      "negative_returns": 0
+    },
+    {
+      "tid": 291898,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 25,
+      "elapsed_thread_seconds": 0.0013969999999999998,
+      "negative_returns": 2
+    },
+    {
+      "tid": 291898,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 31,
+      "elapsed_thread_seconds": 0.000349,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607847,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 78,
+      "elapsed_thread_seconds": 4.73899,
+      "negative_returns": 29
+    },
+    {
+      "tid": 607847,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 418,
+      "elapsed_thread_seconds": 0.018483000000000003,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607847,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 11,
+      "elapsed_thread_seconds": 0.000335,
+      "negative_returns": 9
+    },
+    {
+      "tid": 607830,
+      "process": "ffmpeg",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 80,
+      "elapsed_thread_seconds": 4.78306,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607830,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 40,
+      "elapsed_thread_seconds": 0.000513,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607858,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 140,
+      "elapsed_thread_seconds": 4.741119999999999,
+      "negative_returns": 67
+    },
+    {
+      "tid": 607858,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 404,
+      "elapsed_thread_seconds": 0.015772999999999992,
+      "negative_returns": 0
+    },
+    {
+      "tid": 607858,
+      "process": "ffmpeg",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 3,
+      "elapsed_thread_seconds": 0.000102,
+      "negative_returns": 3
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 70,
+      "elapsed_thread_seconds": 0.0010099999999999998,
+      "negative_returns": 45
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 70,
+      "elapsed_thread_seconds": 0.025707999999999998,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "poll",
+      "operation": "poll",
+      "calls": 44,
+      "elapsed_thread_seconds": 4.704502000000001,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 149,
+      "elapsed_thread_seconds": 0.0018779999999999988,
+      "negative_returns": 0
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME",
+      "calls": 25,
+      "elapsed_thread_seconds": 0.002172,
+      "negative_returns": 2
+    },
+    {
+      "tid": 290619,
+      "process": "evdi_helper",
+      "syscall": "futex",
+      "operation": "FUTEX_WAIT_PRIVATE",
+      "calls": 15,
+      "elapsed_thread_seconds": 0.00013599999999999997,
+      "negative_returns": 15
+    },
+    {
+      "tid": 608588,
+      "process": "unmapped-transient",
+      "syscall": "read",
+      "operation": "read",
+      "calls": 31,
+      "elapsed_thread_seconds": 0.103221,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608588,
+      "process": "unmapped-transient",
+      "syscall": "futex",
+      "operation": "FUTEX_WAKE_PRIVATE",
+      "calls": 2,
+      "elapsed_thread_seconds": 1.4e-05,
+      "negative_returns": 0
+    },
+    {
+      "tid": 608588,
+      "process": "unmapped-transient",
+      "syscall": "ioctl",
+      "operation": "ioctl",
+      "calls": 1,
+      "elapsed_thread_seconds": 5e-06,
+      "negative_returns": 1
+    }
+  ]
+}

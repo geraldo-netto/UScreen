@@ -1,0 +1,28 @@
+{
+  "android_package": "io.github.geraldo_netto.blent.optimized",
+  "android_pid": 17666,
+  "processes": {
+    "290532": {
+      "name": "blent",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/blent",
+      "threads": 36
+    },
+    "290576": {
+      "name": "adb",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/libexec/adb",
+      "threads": 6
+    },
+    "290619": {
+      "name": "evdi_helper",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/evdi_helper",
+      "threads": 31
+    },
+    "607827": {
+      "name": "ffmpeg",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/libexec/ffmpeg",
+      "threads": 43
+    }
+  },
+  "source": "fe5a1109e19e88ebad78b51190359874709595c2",
+  "host_config_sha256": "d55283c1646056b9e5c5401dc5221610e46dd7a3cae19c8408e88c1efb41b858"
+}

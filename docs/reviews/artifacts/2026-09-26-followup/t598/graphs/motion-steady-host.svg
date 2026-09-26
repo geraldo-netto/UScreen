@@ -1,0 +1,2014 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="870" onload="init(evt)" viewBox="0 0 1200 870" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom(true);
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				// we have basically done a clearzoom so clear the url
+				var params = get_params();
+				if (params.x) delete params.x;
+				if (params.y) delete params.y;
+				history.replaceState(null, null, parse_params(params));
+				unzoombtn.classList.add("hide");
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		var sl = t.getSubStringLength(0, txt.length);
+		// check if only whitespace or if we can fit the entire string into width w
+		if (/^ *$/.test(txt) || sl < w)
+			return;
+
+		// this isn't perfect, but gives a good starting point
+		// and avoids calling getSubStringLength too often
+		var start = Math.floor((w/sl) * txt.length);
+		for (var x = start; x > 0; x = x-2) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom(dont_update_text) {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			if(!dont_update_text) update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+		if (currentSearchTerm === null) return;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="870.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Blent motion-steady host CPU samples</text>
+<text id="details" x="10.00" y="853" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="853" > </text>
+<g id="frames">
+<g >
+<title>tcp_data_queue (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="85" width="2.1" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1171.27" y="95.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="725" width="2.2" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1169.10" y="735.5" ></text>
+</g>
+<g >
+<title>__x64_sys_ioctl (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="533" width="252.1" height="15.0" fill="rgb(249,204,49)" rx="2" ry="2" />
+<text  x="195.54" y="543.5" >__x64_sys_ioctl</text>
+</g>
+<g >
+<title>tokio-rt-worker/290532 (55,276,375 sampled CPU ns, 2.03%)</title><rect x="1166.1" y="805" width="23.9" height="15.0" fill="rgb(241,167,40)" rx="2" ry="2" />
+<text  x="1169.10" y="815.5" >t..</text>
+</g>
+<g >
+<title>__check_object_size (5,025,125 sampled CPU ns, 0.18%)</title><rect x="12.2" y="629" width="2.1" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="15.17" y="639.5" ></text>
+</g>
+<g >
+<title>x264_8_dequant_4x4dc_avx2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="666.3" y="773" width="2.2" height="15.0" fill="rgb(223,86,20)" rx="2" ry="2" />
+<text  x="669.28" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_macroblock_cache_load_progressive (251,256,250 sampled CPU ns, 9.21%)</title><rect x="711.9" y="773" width="108.7" height="15.0" fill="rgb(220,73,17)" rx="2" ry="2" />
+<text  x="714.92" y="783.5" >x264_8_macrob..</text>
+</g>
+<g >
+<title>vfs_write (160,804,000 sampled CPU ns, 5.89%)</title><rect x="499.0" y="709" width="69.5" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="501.95" y="719.5" >vfs_write</text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="613" width="2.1" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="1106.08" y="623.5" ></text>
+</g>
+<g >
+<title>ip_rcv (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="197" width="2.1" height="15.0" fill="rgb(209,22,5)" rx="2" ry="2" />
+<text  x="1171.27" y="207.5" ></text>
+</g>
+<g >
+<title>do_dentry_open (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="565" width="2.2" height="15.0" fill="rgb(243,175,41)" rx="2" ry="2" />
+<text  x="1169.10" y="575.5" ></text>
+</g>
+<g >
+<title>_copy_from_iter (15,075,375 sampled CPU ns, 0.55%)</title><rect x="562.0" y="645" width="6.5" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="564.97" y="655.5" ></text>
+</g>
+<g >
+<title>ip_queue_xmit (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="485" width="2.1" height="15.0" fill="rgb(230,119,28)" rx="2" ry="2" />
+<text  x="1171.27" y="495.5" ></text>
+</g>
+<g >
+<title>__nr_to_section (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="533" width="2.1" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="493.26" y="543.5" ></text>
+</g>
+<g >
+<title>check_heap_object (160,804,000 sampled CPU ns, 5.89%)</title><rect x="266.4" y="453" width="69.6" height="15.0" fill="rgb(241,165,39)" rx="2" ry="2" />
+<text  x="269.43" y="463.5" >check_h..</text>
+</g>
+<g >
+<title>do_syscall_64 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="533" width="6.5" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1086.52" y="543.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="453" width="2.1" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="1099.56" y="463.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (85,427,125 sampled CPU ns, 3.13%)</title><rect x="1066.1" y="661" width="37.0" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="671.5" >[ff..</text>
+</g>
+<g >
+<title>alloc_pages_mpol (145,728,625 sampled CPU ns, 5.34%)</title><rect x="499.0" y="645" width="63.0" height="15.0" fill="rgb(254,227,54)" rx="2" ry="2" />
+<text  x="501.95" y="655.5" >alloc_..</text>
+</g>
+<g >
+<title>__ip_queue_xmit (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="469" width="2.1" height="15.0" fill="rgb(253,223,53)" rx="2" ry="2" />
+<text  x="1171.27" y="479.5" ></text>
+</g>
+<g >
+<title>x264_8_slicetype_decide (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1094.4" y="549" width="4.3" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="1097.38" y="559.5" ></text>
+</g>
+<g >
+<title>__libc_start_call_main (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="757" width="299.9" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="195.54" y="767.5" >__libc_start_call_main</text>
+</g>
+<g >
+<title>mux0:tee/607827 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1163.9" y="805" width="2.2" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="1166.92" y="815.5" ></text>
+</g>
+<g >
+<title>__netif_receive_skb (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="229" width="2.1" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="1171.27" y="239.5" ></text>
+</g>
+<g >
+<title>check_heap_object (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="549" width="2.1" height="15.0" fill="rgb(241,165,39)" rx="2" ry="2" />
+<text  x="493.26" y="559.5" ></text>
+</g>
+<g >
+<title>do_poll.constprop.0 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="496.8" y="709" width="2.2" height="15.0" fill="rgb(236,145,34)" rx="2" ry="2" />
+<text  x="499.78" y="719.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (10,050,250 sampled CPU ns, 0.37%)</title><rect x="73.0" y="565" width="4.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="76.02" y="575.5" ></text>
+</g>
+<g >
+<title>__memset_avx512_unaligned_erms (5,025,125 sampled CPU ns, 0.18%)</title><rect x="444.6" y="629" width="2.2" height="15.0" fill="rgb(214,43,10)" rx="2" ry="2" />
+<text  x="447.62" y="639.5" ></text>
+</g>
+<g >
+<title>x264_8_ratecontrol_mb (80,402,000 sampled CPU ns, 2.95%)</title><rect x="1009.6" y="773" width="34.8" height="15.0" fill="rgb(208,14,3)" rx="2" ry="2" />
+<text  x="1012.63" y="783.5" >x2..</text>
+</g>
+<g >
+<title>__x64_sys_epoll_wait (5,025,125 sampled CPU ns, 0.18%)</title><rect x="29.6" y="741" width="2.1" height="15.0" fill="rgb(206,6,1)" rx="2" ry="2" />
+<text  x="32.56" y="751.5" ></text>
+</g>
+<g >
+<title>x264_8_copy_column8 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="653.2" y="773" width="6.6" height="15.0" fill="rgb(229,112,27)" rx="2" ry="2" />
+<text  x="656.24" y="783.5" ></text>
+</g>
+<g >
+<title>obj_cgroup_charge_pages (15,075,375 sampled CPU ns, 0.55%)</title><rect x="507.6" y="597" width="6.6" height="15.0" fill="rgb(246,192,46)" rx="2" ry="2" />
+<text  x="510.64" y="607.5" ></text>
+</g>
+<g >
+<title>x264_8_macroblock_write_cavlc (5,025,125 sampled CPU ns, 0.18%)</title><rect x="857.5" y="773" width="2.2" height="15.0" fill="rgb(211,27,6)" rx="2" ry="2" />
+<text  x="860.51" y="783.5" ></text>
+</g>
+<g >
+<title>__x64_sys_ioctl (20,100,500 sampled CPU ns, 0.74%)</title><rect x="31.7" y="741" width="8.7" height="15.0" fill="rgb(249,204,49)" rx="2" ry="2" />
+<text  x="34.73" y="751.5" ></text>
+</g>
+<g >
+<title>usbdev_ioctl (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="677" width="6.5" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="13.00" y="687.5" ></text>
+</g>
+<g >
+<title>tempfile::file::imp::platform::create (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="773" width="2.2" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="1169.10" y="783.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (1,150,753,625 sampled CPU ns, 42.17%)</title><rect x="568.5" y="789" width="497.6" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="571.49" y="799.5" >[callchain unavailable]</text>
+</g>
+<g >
+<title>__ip_finish_output (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="405" width="2.1" height="15.0" fill="rgb(215,47,11)" rx="2" ry="2" />
+<text  x="1171.27" y="415.5" ></text>
+</g>
+<g >
+<title>rmqueue.isra.0 (45,226,125 sampled CPU ns, 1.66%)</title><rect x="540.2" y="597" width="19.6" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="543.24" y="607.5" ></text>
+</g>
+<g >
+<title>memcg1_uncharge_batch (5,025,125 sampled CPU ns, 0.18%)</title><rect x="55.6" y="597" width="2.2" height="15.0" fill="rgb(225,92,22)" rx="2" ry="2" />
+<text  x="58.64" y="607.5" ></text>
+</g>
+<g >
+<title>do_epoll_wait (5,025,125 sampled CPU ns, 0.18%)</title><rect x="29.6" y="725" width="2.1" height="15.0" fill="rgb(211,31,7)" rx="2" ry="2" />
+<text  x="32.56" y="735.5" ></text>
+</g>
+<g >
+<title>__dev_queue_xmit (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="357" width="2.1" height="15.0" fill="rgb(244,182,43)" rx="2" ry="2" />
+<text  x="1171.27" y="367.5" ></text>
+</g>
+<g >
+<title>x264_8_decimate_score16_avx512 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="664.1" y="773" width="2.2" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="667.11" y="783.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="741" width="39.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="751.5" >[ff..</text>
+</g>
+<g >
+<title>x264_8_prefetch_fenc_420_mmx2 (20,100,500 sampled CPU ns, 0.74%)</title><rect x="961.8" y="773" width="8.7" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="964.82" y="783.5" ></text>
+</g>
+<g >
+<title>_mid_memalign.isra.0 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="49.1" y="773" width="2.2" height="15.0" fill="rgb(229,114,27)" rx="2" ry="2" />
+<text  x="52.12" y="783.5" ></text>
+</g>
+<g >
+<title>vfs_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="709" width="2.2" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="43.42" y="719.5" ></text>
+</g>
+<g >
+<title>main (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="741" width="299.9" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="195.54" y="751.5" >main</text>
+</g>
+<g >
+<title>do_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="661" width="2.1" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="1171.27" y="671.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="789" width="65.2" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="54.29" y="799.5" >entry_S..</text>
+</g>
+<g >
+<title>blent::annex_b::AnnexBPacketizer::extend_pending (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1181.3" y="789" width="2.2" height="15.0" fill="rgb(237,149,35)" rx="2" ry="2" />
+<text  x="1184.31" y="799.5" ></text>
+</g>
+<g >
+<title>slicetype_mb_cost (60,301,500 sampled CPU ns, 2.21%)</title><rect x="625.0" y="773" width="26.1" height="15.0" fill="rgb(232,125,30)" rx="2" ry="2" />
+<text  x="627.99" y="783.5" >s..</text>
+</g>
+<g >
+<title>tcp_try_rmem_schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="69" width="2.1" height="15.0" fill="rgb(236,146,35)" rx="2" ry="2" />
+<text  x="1171.27" y="79.5" ></text>
+</g>
+<g >
+<title>mc_luma_sse2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="605.4" y="773" width="2.2" height="15.0" fill="rgb(247,193,46)" rx="2" ry="2" />
+<text  x="608.43" y="783.5" ></text>
+</g>
+<g >
+<title>__rmqueue_pcplist (45,226,125 sampled CPU ns, 1.66%)</title><rect x="540.2" y="581" width="19.6" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="543.24" y="591.5" ></text>
+</g>
+<g >
+<title>do_futex (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="485" width="6.5" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="1086.52" y="495.5" ></text>
+</g>
+<g >
+<title>__android_log_is_loggable (5,025,125 sampled CPU ns, 0.18%)</title><rect x="20.9" y="773" width="2.1" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="23.87" y="783.5" ></text>
+</g>
+<g >
+<title>__memmove_avx512_unaligned_erms (20,100,500 sampled CPU ns, 0.74%)</title><rect x="1074.8" y="565" width="8.7" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="1077.83" y="575.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="725" width="39.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="735.5" >[ff..</text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="488.1" y="581" width="2.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="491.08" y="591.5" ></text>
+</g>
+<g >
+<title>x264_8_encoder_encode (65,326,625 sampled CPU ns, 2.39%)</title><rect x="1072.7" y="581" width="28.2" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="1075.65" y="591.5" >x..</text>
+</g>
+<g >
+<title>inet_sendmsg (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="597" width="2.1" height="15.0" fill="rgb(244,183,43)" rx="2" ry="2" />
+<text  x="1171.27" y="607.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="661" width="2.2" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="30.38" y="671.5" ></text>
+</g>
+<g >
+<title>ip_finish_output2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="389" width="2.1" height="15.0" fill="rgb(219,67,16)" rx="2" ry="2" />
+<text  x="1171.27" y="399.5" ></text>
+</g>
+<g >
+<title>predict_16x16_p_avx2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="612.0" y="773" width="2.1" height="15.0" fill="rgb(230,117,28)" rx="2" ry="2" />
+<text  x="614.95" y="783.5" ></text>
+</g>
+<g >
+<title>__netif_receive_skb_one_core (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="213" width="2.1" height="15.0" fill="rgb(215,47,11)" rx="2" ry="2" />
+<text  x="1171.27" y="223.5" ></text>
+</g>
+<g >
+<title>evdi_handle_event (688,442,125 sampled CPU ns, 25.23%)</title><rect x="192.5" y="693" width="297.8" height="15.0" fill="rgb(214,45,10)" rx="2" ry="2" />
+<text  x="195.54" y="703.5" >evdi_handle_event</text>
+</g>
+<g >
+<title>x264_8_pixel_sad_16x16_avx512 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="922.7" y="773" width="6.5" height="15.0" fill="rgb(205,4,1)" rx="2" ry="2" />
+<text  x="925.71" y="783.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="581" width="252.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="195.54" y="591.5" >entry_SYSCALL_64_after_hwframe</text>
+</g>
+<g >
+<title>memcg_uncharge (20,100,500 sampled CPU ns, 0.74%)</title><rect x="57.8" y="597" width="8.7" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="60.81" y="607.5" ></text>
+</g>
+<g >
+<title>evdi_painter_grabpix_ioctl (417,085,375 sampled CPU ns, 15.29%)</title><rect x="264.3" y="485" width="180.3" height="15.0" fill="rgb(235,142,34)" rx="2" ry="2" />
+<text  x="267.25" y="495.5" >evdi_painter_grabpix_io..</text>
+</g>
+<g >
+<title>do_sys_openat2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="661" width="2.2" height="15.0" fill="rgb(253,221,52)" rx="2" ry="2" />
+<text  x="1169.10" y="671.5" ></text>
+</g>
+<g >
+<title>slicetype_slice_cost (5,025,125 sampled CPU ns, 0.18%)</title><rect x="651.1" y="773" width="2.1" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="654.07" y="783.5" ></text>
+</g>
+<g >
+<title>ip_local_deliver (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="181" width="2.1" height="15.0" fill="rgb(230,116,27)" rx="2" ry="2" />
+<text  x="1171.27" y="191.5" ></text>
+</g>
+<g >
+<title>mod_memcg_state (10,050,250 sampled CPU ns, 0.37%)</title><rect x="66.5" y="597" width="4.3" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="69.50" y="607.5" ></text>
+</g>
+<g >
+<title>x264_8_pixel_sad_x4_8x8_avx512 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="951.0" y="773" width="4.3" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="953.96" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_pixel_sad_x4_16x16_avx512 (25,125,625 sampled CPU ns, 0.92%)</title><rect x="940.1" y="773" width="10.9" height="15.0" fill="rgb(231,120,28)" rx="2" ry="2" />
+<text  x="943.09" y="783.5" ></text>
+</g>
+<g >
+<title>__rcu_read_lock (5,025,125 sampled CPU ns, 0.18%)</title><rect x="505.5" y="597" width="2.1" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="508.47" y="607.5" ></text>
+</g>
+<g >
+<title>__GI___writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="741" width="2.1" height="15.0" fill="rgb(217,56,13)" rx="2" ry="2" />
+<text  x="1171.27" y="751.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="773" width="4.4" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1108.25" y="783.5" ></text>
+</g>
+<g >
+<title>mark_region (5,025,125 sampled CPU ns, 0.18%)</title><rect x="444.6" y="645" width="2.2" height="15.0" fill="rgb(231,121,28)" rx="2" ry="2" />
+<text  x="447.62" y="655.5" ></text>
+</g>
+<g >
+<title>rmqueue_bulk (25,125,625 sampled CPU ns, 0.92%)</title><rect x="548.9" y="565" width="10.9" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="551.93" y="575.5" ></text>
+</g>
+<g >
+<title>vfs_read (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="709" width="65.2" height="15.0" fill="rgb(224,88,21)" rx="2" ry="2" />
+<text  x="54.29" y="719.5" >vfs_read</text>
+</g>
+<g >
+<title>__memcg_kmem_charge_page (25,125,625 sampled CPU ns, 0.92%)</title><rect x="503.3" y="613" width="10.9" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="506.30" y="623.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="661" width="2.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1106.08" y="671.5" ></text>
+</g>
+<g >
+<title>_raw_spin_lock (25,125,625 sampled CPU ns, 0.92%)</title><rect x="272.9" y="437" width="10.9" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="275.95" y="447.5" ></text>
+</g>
+<g >
+<title>tcp_push (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="549" width="2.1" height="15.0" fill="rgb(243,176,42)" rx="2" ry="2" />
+<text  x="1171.27" y="559.5" ></text>
+</g>
+<g >
+<title>x264_8_pixel_ssd_8x8_avx (10,050,250 sampled CPU ns, 0.37%)</title><rect x="955.3" y="773" width="4.4" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="958.30" y="783.5" ></text>
+</g>
+<g >
+<title>do_futex (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="725" width="4.4" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="1108.25" y="735.5" ></text>
+</g>
+<g >
+<title>sock_write_iter (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="677" width="2.2" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="43.42" y="687.5" ></text>
+</g>
+<g >
+<title>do_iter_readv_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="629" width="2.1" height="15.0" fill="rgb(221,76,18)" rx="2" ry="2" />
+<text  x="1171.27" y="639.5" ></text>
+</g>
+<g >
+<title>x264_8_ratecontrol_mb_qp (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1044.4" y="773" width="2.2" height="15.0" fill="rgb(240,165,39)" rx="2" ry="2" />
+<text  x="1047.40" y="783.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (30,150,750 sampled CPU ns, 1.10%)</title><rect x="29.6" y="773" width="13.0" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="32.56" y="783.5" ></text>
+</g>
+<g >
+<title>__tcp_transmit_skb (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="565" width="2.2" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="43.42" y="575.5" ></text>
+</g>
+<g >
+<title>x264_8_quant_4x4x4_avx2 (60,301,500 sampled CPU ns, 2.21%)</title><rect x="983.6" y="773" width="26.0" height="15.0" fill="rgb(246,191,45)" rx="2" ry="2" />
+<text  x="986.55" y="783.5" >x..</text>
+</g>
+<g >
+<title>free_pcppages_bulk (10,050,250 sampled CPU ns, 0.37%)</title><rect x="73.0" y="581" width="4.4" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="76.02" y="591.5" ></text>
+</g>
+<g >
+<title>x264_8_sub16x16_dct_avx512 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1050.9" y="773" width="2.2" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="1053.92" y="783.5" ></text>
+</g>
+<g >
+<title>__memmove_avx512_unaligned_erms (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1181.3" y="773" width="2.2" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="1184.31" y="783.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="469" width="2.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1099.56" y="479.5" ></text>
+</g>
+<g >
+<title>tcp_sendmsg (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="645" width="2.2" height="15.0" fill="rgb(223,83,19)" rx="2" ry="2" />
+<text  x="43.42" y="655.5" ></text>
+</g>
+<g >
+<title>proc_do_submiturb (10,050,250 sampled CPU ns, 0.37%)</title><rect x="12.2" y="645" width="4.3" height="15.0" fill="rgb(217,58,14)" rx="2" ry="2" />
+<text  x="15.17" y="655.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="693" width="39.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="703.5" >[ff..</text>
+</g>
+<g >
+<title>_raw_spin_lock_irqsave (5,025,125 sampled CPU ns, 0.18%)</title><rect x="38.3" y="677" width="2.1" height="15.0" fill="rgb(247,195,46)" rx="2" ry="2" />
+<text  x="41.25" y="687.5" ></text>
+</g>
+<g >
+<title>nal_end (5,025,125 sampled CPU ns, 0.18%)</title><rect x="607.6" y="773" width="2.2" height="15.0" fill="rgb(205,4,1)" rx="2" ry="2" />
+<text  x="610.61" y="783.5" ></text>
+</g>
+<g >
+<title>pthread_cond_broadcast@@GLIBC_2.3.2 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="565" width="6.5" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="1086.52" y="575.5" ></text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="645" width="2.2" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="30.38" y="655.5" ></text>
+</g>
+<g >
+<title>pow@@GLIBC_2.29 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1098.7" y="517" width="2.2" height="15.0" fill="rgb(222,78,18)" rx="2" ry="2" />
+<text  x="1101.73" y="527.5" ></text>
+</g>
+<g >
+<title>mod_memcg_state (5,025,125 sampled CPU ns, 0.18%)</title><rect x="509.8" y="581" width="2.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="512.82" y="591.5" ></text>
+</g>
+<g >
+<title>__tcp_select_window (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="549" width="2.2" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="43.42" y="559.5" ></text>
+</g>
+<g >
+<title>drm_ioctl_kernel (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="501" width="252.1" height="15.0" fill="rgb(226,101,24)" rx="2" ry="2" />
+<text  x="195.54" y="511.5" >drm_ioctl_kernel</text>
+</g>
+<g >
+<title>slice_write (15,075,375 sampled CPU ns, 0.55%)</title><rect x="618.5" y="773" width="6.5" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="621.47" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_mc_copy_w16_aligned_sse (30,150,750 sampled CPU ns, 1.10%)</title><rect x="877.1" y="773" width="13.0" height="15.0" fill="rgb(232,124,29)" rx="2" ry="2" />
+<text  x="880.07" y="783.5" ></text>
+</g>
+<g >
+<title>dma_buf_begin_cpu_access (5,025,125 sampled CPU ns, 0.18%)</title><rect x="442.4" y="469" width="2.2" height="15.0" fill="rgb(231,123,29)" rx="2" ry="2" />
+<text  x="445.45" y="479.5" ></text>
+</g>
+<g >
+<title>drm_ioctl (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="613" width="252.1" height="15.0" fill="rgb(231,121,29)" rx="2" ry="2" />
+<text  x="195.54" y="623.5" >drm_ioctl</text>
+</g>
+<g >
+<title>__x64_sys_ioctl (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="693" width="6.5" height="15.0" fill="rgb(249,204,49)" rx="2" ry="2" />
+<text  x="13.00" y="703.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="501" width="2.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1099.56" y="511.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="693" width="2.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="30.38" y="703.5" ></text>
+</g>
+<g >
+<title>x264_8_intra_sad_x3_8x8c_avx2 (20,100,500 sampled CPU ns, 0.74%)</title><rect x="677.1" y="773" width="8.7" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="680.15" y="783.5" ></text>
+</g>
+<g >
+<title>__libc_start_main@@GLIBC_2.34 (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="773" width="39.1" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="1069.13" y="783.5" >__l..</text>
+</g>
+<g >
+<title>free_frozen_page_commit.isra.0 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="73.0" y="597" width="4.4" height="15.0" fill="rgb(209,21,5)" rx="2" ry="2" />
+<text  x="76.02" y="607.5" ></text>
+</g>
+<g >
+<title>copy_page_from_iter (15,075,375 sampled CPU ns, 0.55%)</title><rect x="562.0" y="661" width="6.5" height="15.0" fill="rgb(209,22,5)" rx="2" ry="2" />
+<text  x="564.97" y="671.5" ></text>
+</g>
+<g >
+<title>__check_object_size (160,804,000 sampled CPU ns, 5.89%)</title><rect x="266.4" y="469" width="69.6" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="269.43" y="479.5" >__check..</text>
+</g>
+<g >
+<title>x264_8_macroblock_encode (5,025,125 sampled CPU ns, 0.18%)</title><rect x="844.5" y="773" width="2.1" height="15.0" fill="rgb(207,11,2)" rx="2" ry="2" />
+<text  x="847.48" y="783.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (85,427,125 sampled CPU ns, 3.13%)</title><rect x="1066.1" y="677" width="37.0" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="687.5" >[ff..</text>
+</g>
+<g >
+<title>__GI___ioctl (5,025,125 sampled CPU ns, 0.18%)</title><rect x="18.7" y="773" width="2.2" height="15.0" fill="rgb(232,128,30)" rx="2" ry="2" />
+<text  x="21.69" y="783.5" ></text>
+</g>
+<g >
+<title>grab_now (688,442,125 sampled CPU ns, 25.23%)</title><rect x="192.5" y="661" width="297.8" height="15.0" fill="rgb(242,170,40)" rx="2" ry="2" />
+<text  x="195.54" y="671.5" >grab_now</text>
+</g>
+<g >
+<title>x264_8_intra_sad_x3_16x16_avx2 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="672.8" y="773" width="4.3" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="675.80" y="783.5" ></text>
+</g>
+<g >
+<title>pthread_cond_broadcast@@GLIBC_2.3.2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="677" width="2.1" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="1106.08" y="687.5" ></text>
+</g>
+<g >
+<title>uncharge_batch (40,201,000 sampled CPU ns, 1.47%)</title><rect x="53.5" y="613" width="17.3" height="15.0" fill="rgb(220,72,17)" rx="2" ry="2" />
+<text  x="56.46" y="623.5" ></text>
+</g>
+<g >
+<title>__GI___libc_open (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="741" width="2.2" height="15.0" fill="rgb(249,202,48)" rx="2" ry="2" />
+<text  x="1169.10" y="751.5" ></text>
+</g>
+<g >
+<title>anon_pipe_read (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="677" width="65.2" height="15.0" fill="rgb(232,124,29)" rx="2" ry="2" />
+<text  x="54.29" y="687.5" >anon_pi..</text>
+</g>
+<g >
+<title>x264_8_ratecontrol_start (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1098.7" y="565" width="2.2" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="1101.73" y="575.5" ></text>
+</g>
+<g >
+<title>dec0:0:rawvideo/607827 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="42.6" y="805" width="2.2" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="45.60" y="815.5" ></text>
+</g>
+<g >
+<title>analyse_update_cache (5,025,125 sampled CPU ns, 0.18%)</title><rect x="568.5" y="773" width="2.2" height="15.0" fill="rgb(214,41,9)" rx="2" ry="2" />
+<text  x="571.49" y="783.5" ></text>
+</g>
+<g >
+<title>do_ioctl (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="629" width="252.1" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="195.54" y="639.5" >do_ioctl</text>
+</g>
+<g >
+<title>__x64_sys_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="677" width="2.1" height="15.0" fill="rgb(233,133,31)" rx="2" ry="2" />
+<text  x="1171.27" y="687.5" ></text>
+</g>
+<g >
+<title>kernel_init_pages (60,301,500 sampled CPU ns, 2.21%)</title><rect x="514.2" y="581" width="26.0" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="517.16" y="591.5" >k..</text>
+</g>
+<g >
+<title>get_page_from_freelist (105,527,625 sampled CPU ns, 3.87%)</title><rect x="514.2" y="613" width="45.6" height="15.0" fill="rgb(252,218,52)" rx="2" ry="2" />
+<text  x="517.16" y="623.5" >get_..</text>
+</g>
+<g >
+<title>__x64_sys_read (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="741" width="65.2" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="54.29" y="751.5" >__x64_s..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (30,150,750 sampled CPU ns, 1.10%)</title><rect x="29.6" y="789" width="13.0" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="32.56" y="799.5" ></text>
+</g>
+<g >
+<title>try_to_wake_up (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="389" width="2.1" height="15.0" fill="rgb(220,70,16)" rx="2" ry="2" />
+<text  x="1099.56" y="399.5" ></text>
+</g>
+<g >
+<title>x264_8_macroblock_probe_skip (25,125,625 sampled CPU ns, 0.92%)</title><rect x="846.6" y="773" width="10.9" height="15.0" fill="rgb(213,38,9)" rx="2" ry="2" />
+<text  x="849.65" y="783.5" ></text>
+</g>
+<g >
+<title>do_iter_readv_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="693" width="2.2" height="15.0" fill="rgb(221,76,18)" rx="2" ry="2" />
+<text  x="43.42" y="703.5" ></text>
+</g>
+<g >
+<title>fdec_filter_row (5,025,125 sampled CPU ns, 0.18%)</title><rect x="572.8" y="773" width="2.2" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="575.84" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_macroblock_analyse (15,075,375 sampled CPU ns, 0.55%)</title><rect x="705.4" y="773" width="6.5" height="15.0" fill="rgb(237,147,35)" rx="2" ry="2" />
+<text  x="708.40" y="783.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="645" width="2.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1106.08" y="655.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (25,125,625 sampled CPU ns, 0.92%)</title><rect x="548.9" y="549" width="10.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="551.93" y="559.5" ></text>
+</g>
+<g >
+<title>ip_local_out (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="453" width="2.1" height="15.0" fill="rgb(233,131,31)" rx="2" ry="2" />
+<text  x="1171.27" y="463.5" ></text>
+</g>
+<g >
+<title>tcp_v4_do_rcv (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="117" width="2.1" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1171.27" y="127.5" ></text>
+</g>
+<g >
+<title>mb_analyse_intra (10,050,250 sampled CPU ns, 0.37%)</title><rect x="594.6" y="773" width="4.3" height="15.0" fill="rgb(209,19,4)" rx="2" ry="2" />
+<text  x="597.57" y="783.5" ></text>
+</g>
+<g >
+<title>&lt;tokio::process::Command as blent_config::commands::AsyncCommandExt&gt;::output_timeout::{{closure}} (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="789" width="2.2" height="15.0" fill="rgb(207,9,2)" rx="2" ry="2" />
+<text  x="1169.10" y="799.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="485" width="2.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1099.56" y="495.5" ></text>
+</g>
+<g >
+<title>refine_subpel (5,025,125 sampled CPU ns, 0.18%)</title><rect x="616.3" y="773" width="2.2" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="619.30" y="783.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (75,376,875 sampled CPU ns, 2.76%)</title><rect x="1068.3" y="613" width="32.6" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1071.31" y="623.5" >[f..</text>
+</g>
+<g >
+<title>__sk_mem_raise_allocated (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="37" width="2.1" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1171.27" y="47.5" ></text>
+</g>
+<g >
+<title>mb_encode_i16x16 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="598.9" y="773" width="4.4" height="15.0" fill="rgb(246,191,45)" rx="2" ry="2" />
+<text  x="601.91" y="783.5" ></text>
+</g>
+<g >
+<title>srso_alias_safe_ret (5,025,125 sampled CPU ns, 0.18%)</title><rect x="559.8" y="613" width="2.2" height="15.0" fill="rgb(242,170,40)" rx="2" ry="2" />
+<text  x="562.80" y="623.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="693" width="2.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1171.27" y="703.5" ></text>
+</g>
+<g >
+<title>x264_8_frame_expand_border_lowres (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1090.0" y="549" width="4.4" height="15.0" fill="rgb(250,211,50)" rx="2" ry="2" />
+<text  x="1093.04" y="559.5" ></text>
+</g>
+<g >
+<title>wake_up_q (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="565" width="2.1" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="1106.08" y="575.5" ></text>
+</g>
+<g >
+<title>check_stack_object (5,025,125 sampled CPU ns, 0.18%)</title><rect x="440.3" y="469" width="2.1" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="443.28" y="479.5" ></text>
+</g>
+<g >
+<title>x264_8_pixel_sad_8x8_avx512 (25,125,625 sampled CPU ns, 0.92%)</title><rect x="929.2" y="773" width="10.9" height="15.0" fill="rgb(213,37,8)" rx="2" ry="2" />
+<text  x="932.23" y="783.5" ></text>
+</g>
+<g >
+<title>neigh_hh_output (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="373" width="2.1" height="15.0" fill="rgb(213,37,8)" rx="2" ry="2" />
+<text  x="1171.27" y="383.5" ></text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="437" width="2.1" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="1099.56" y="447.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1068.3" y="597" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1071.31" y="607.5" ></text>
+</g>
+<g >
+<title>rate_estimate_qscale (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1098.7" y="549" width="2.2" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="1101.73" y="559.5" ></text>
+</g>
+<g >
+<title>x264_8_store_interleave_chroma_sse2 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1046.6" y="773" width="4.3" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="1049.57" y="783.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="25.2" y="773" width="2.2" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="28.21" y="783.5" ></text>
+</g>
+<g >
+<title>__libc_start_call_main (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="757" width="39.1" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1069.13" y="767.5" >__l..</text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="645" width="2.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="493.26" y="655.5" ></text>
+</g>
+<g >
+<title>&lt;core::future::poll_fn::PollFn&lt;F&gt; as core::future::future::Future&gt;::poll (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1177.0" y="773" width="2.1" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="1179.96" y="783.5" ></text>
+</g>
+<g >
+<title>__mutex_lock_slowpath (30,150,750 sampled CPU ns, 1.10%)</title><rect x="103.4" y="645" width="13.1" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="106.44" y="655.5" ></text>
+</g>
+<g >
+<title>x264_8_frame_init_lowres (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1090.0" y="565" width="4.4" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1093.04" y="575.5" ></text>
+</g>
+<g >
+<title>clone3 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="789" width="2.2" height="15.0" fill="rgb(216,54,12)" rx="2" ry="2" />
+<text  x="30.38" y="799.5" ></text>
+</g>
+<g >
+<title>vfs_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="645" width="2.1" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="1171.27" y="655.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="741" width="2.2" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="497.60" y="751.5" ></text>
+</g>
+<g >
+<title>futex_wake (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="709" width="4.4" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="1108.25" y="719.5" ></text>
+</g>
+<g >
+<title>ip_protocol_deliver_rcu (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="149" width="2.1" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="1171.27" y="159.5" ></text>
+</g>
+<g >
+<title>__x64_sys_openat (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="677" width="2.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1169.10" y="687.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (175,879,375 sampled CPU ns, 6.45%)</title><rect x="492.4" y="789" width="76.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="495.43" y="799.5" >entry_SY..</text>
+</g>
+<g >
+<title>try_to_wake_up (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="677" width="4.4" height="15.0" fill="rgb(220,70,16)" rx="2" ry="2" />
+<text  x="1108.25" y="687.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="725" width="6.5" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="13.00" y="735.5" ></text>
+</g>
+<g >
+<title>__libc_start_main@@GLIBC_2.34 (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="773" width="299.9" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="195.54" y="783.5" >__libc_start_main@@GLIBC_2.34</text>
+</g>
+<g >
+<title>[callchain unavailable] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="42.6" y="789" width="2.2" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="45.60" y="799.5" ></text>
+</g>
+<g >
+<title>x264_8_me_search_ref (50,251,250 sampled CPU ns, 1.84%)</title><rect x="901.0" y="773" width="21.7" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="903.98" y="783.5" >x..</text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="549" width="2.2" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="1103.90" y="559.5" ></text>
+</g>
+<g >
+<title>__mem_cgroup_uncharge (45,226,125 sampled CPU ns, 1.66%)</title><rect x="51.3" y="629" width="19.5" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="54.29" y="639.5" ></text>
+</g>
+<g >
+<title>process_backlog (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="245" width="2.1" height="15.0" fill="rgb(224,90,21)" rx="2" ry="2" />
+<text  x="1171.27" y="255.5" ></text>
+</g>
+<g >
+<title>convert_job (95,477,375 sampled CPU ns, 3.50%)</title><rect x="446.8" y="613" width="41.3" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="449.80" y="623.5" >con..</text>
+</g>
+<g >
+<title>ksys_read (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="725" width="65.2" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="54.29" y="735.5" >ksys_read</text>
+</g>
+<g >
+<title>futex_do_wait (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="677" width="2.2" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="497.60" y="687.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="549" width="6.5" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1086.52" y="559.5" ></text>
+</g>
+<g >
+<title>conv_pool_convert (100,502,500 sampled CPU ns, 3.68%)</title><rect x="446.8" y="629" width="43.5" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="449.80" y="639.5" >conv..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="789" width="4.4" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1108.25" y="799.5" ></text>
+</g>
+<g >
+<title>futex_wake (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="581" width="2.1" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="1106.08" y="591.5" ></text>
+</g>
+<g >
+<title>x264_8_mb_encode_chroma (15,075,375 sampled CPU ns, 0.55%)</title><rect x="859.7" y="773" width="6.5" height="15.0" fill="rgb(213,38,9)" rx="2" ry="2" />
+<text  x="862.69" y="783.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="488.1" y="597" width="2.2" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="491.08" y="607.5" ></text>
+</g>
+<g >
+<title>pthread_cond_clockwait@@GLIBC_2.34 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="16.5" y="757" width="2.2" height="15.0" fill="rgb(252,218,52)" rx="2" ry="2" />
+<text  x="19.52" y="767.5" ></text>
+</g>
+<g >
+<title>x264_8_frame_init_lowres_core_avx2 (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1109.6" y="789" width="39.1" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="1112.59" y="799.5" >x26..</text>
+</g>
+<g >
+<title>x64_sys_call (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="549" width="252.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="195.54" y="559.5" >x64_sys_call</text>
+</g>
+<g >
+<title>_copy_to_iter (60,301,500 sampled CPU ns, 2.21%)</title><rect x="77.4" y="645" width="26.0" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="80.37" y="655.5" >_..</text>
+</g>
+<g >
+<title>_copy_to_user (241,206,000 sampled CPU ns, 8.84%)</title><rect x="336.0" y="469" width="104.3" height="15.0" fill="rgb(206,8,1)" rx="2" ry="2" />
+<text  x="338.97" y="479.5" >_copy_to_user</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="709" width="2.2" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="30.38" y="719.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="614.1" y="773" width="2.2" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="617.13" y="783.5" ></text>
+</g>
+<g >
+<title>std::fs::OpenOptions::_open (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="757" width="2.2" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="1169.10" y="767.5" ></text>
+</g>
+<g >
+<title>__tcp_push_pending_frames (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="597" width="2.2" height="15.0" fill="rgb(230,117,28)" rx="2" ry="2" />
+<text  x="43.42" y="607.5" ></text>
+</g>
+<g >
+<title>[[unknown]: unresolved] (20,100,500 sampled CPU ns, 0.74%)</title><rect x="10.0" y="789" width="8.7" height="15.0" fill="rgb(216,54,12)" rx="2" ry="2" />
+<text  x="13.00" y="799.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="373" width="2.1" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="1099.56" y="383.5" ></text>
+</g>
+<g >
+<title>schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="661" width="2.2" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="497.60" y="671.5" ></text>
+</g>
+<g >
+<title>usbdev_ioctl (20,100,500 sampled CPU ns, 0.74%)</title><rect x="31.7" y="725" width="8.7" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="34.73" y="735.5" ></text>
+</g>
+<g >
+<title>drm_ioctl (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="517" width="252.1" height="15.0" fill="rgb(231,121,29)" rx="2" ry="2" />
+<text  x="195.54" y="527.5" >drm_ioctl</text>
+</g>
+<g >
+<title>__GI___lll_lock_wake (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="725" width="2.2" height="15.0" fill="rgb(210,23,5)" rx="2" ry="2" />
+<text  x="30.38" y="735.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="709" width="6.5" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="13.00" y="719.5" ></text>
+</g>
+<g >
+<title>convert_job (175,879,375 sampled CPU ns, 6.45%)</title><rect x="116.5" y="773" width="76.0" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="119.48" y="783.5" >convert_..</text>
+</g>
+<g >
+<title>__tcp_transmit_skb (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="501" width="2.1" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="1171.27" y="511.5" ></text>
+</g>
+<g >
+<title>[adb: unresolved] (20,100,500 sampled CPU ns, 0.74%)</title><rect x="10.0" y="773" width="8.7" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="13.00" y="783.5" ></text>
+</g>
+<g >
+<title>evdi_handle_events (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="709" width="299.9" height="15.0" fill="rgb(222,78,18)" rx="2" ry="2" />
+<text  x="195.54" y="719.5" >evdi_handle_events</text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="709" width="2.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1171.27" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx512_unaligned_erms (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1092.2" y="533" width="2.2" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="1095.21" y="543.5" ></text>
+</g>
+<g >
+<title>finish_open (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="581" width="2.2" height="15.0" fill="rgb(205,2,0)" rx="2" ry="2" />
+<text  x="1169.10" y="591.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="677" width="2.2" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="30.38" y="687.5" ></text>
+</g>
+<g >
+<title>tokio::runtime::scheduler::multi_thread::handle::&lt;impl tokio::runtime::task::Schedule for alloc::sync::Arc&lt;tokio::runtime::scheduler::multi_thread::handle::Handle&gt;&gt;::schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1183.5" y="789" width="2.2" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="1186.48" y="799.5" ></text>
+</g>
+<g >
+<title>usbdev_do_ioctl (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="661" width="6.5" height="15.0" fill="rgb(248,201,48)" rx="2" ry="2" />
+<text  x="13.00" y="671.5" ></text>
+</g>
+<g >
+<title>vfs_tmpfile (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="613" width="2.2" height="15.0" fill="rgb(221,75,18)" rx="2" ry="2" />
+<text  x="1169.10" y="623.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (30,150,750 sampled CPU ns, 1.10%)</title><rect x="29.6" y="757" width="13.0" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="32.56" y="767.5" ></text>
+</g>
+<g >
+<title>get_qscale (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1098.7" y="533" width="2.2" height="15.0" fill="rgb(243,177,42)" rx="2" ry="2" />
+<text  x="1101.73" y="543.5" ></text>
+</g>
+<g >
+<title>futex_wait (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="709" width="2.2" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="497.60" y="719.5" ></text>
+</g>
+<g >
+<title>tcp_rcv_established (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="101" width="2.1" height="15.0" fill="rgb(242,170,40)" rx="2" ry="2" />
+<text  x="1171.27" y="111.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="677" width="2.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="493.26" y="687.5" ></text>
+</g>
+<g >
+<title>ext4_tmpfile (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="597" width="2.2" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="1169.10" y="607.5" ></text>
+</g>
+<g >
+<title>fifo_pipe_write (160,804,000 sampled CPU ns, 5.89%)</title><rect x="499.0" y="693" width="69.5" height="15.0" fill="rgb(210,23,5)" rx="2" ry="2" />
+<text  x="501.95" y="703.5" >fifo_pi..</text>
+</g>
+<g >
+<title>proc_do_submiturb (15,075,375 sampled CPU ns, 0.55%)</title><rect x="31.7" y="693" width="6.6" height="15.0" fill="rgb(217,58,14)" rx="2" ry="2" />
+<text  x="34.73" y="703.5" ></text>
+</g>
+<g >
+<title>x264_8_load_deinterleave_chroma_fdec_avx512 (35,175,875 sampled CPU ns, 1.29%)</title><rect x="685.8" y="773" width="15.2" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="688.84" y="783.5" ></text>
+</g>
+<g >
+<title>schedule_hrtimeout_range (5,025,125 sampled CPU ns, 0.18%)</title><rect x="29.6" y="693" width="2.1" height="15.0" fill="rgb(221,75,18)" rx="2" ry="2" />
+<text  x="32.56" y="703.5" ></text>
+</g>
+<g >
+<title>drm_read (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="581" width="2.1" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="493.26" y="591.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="421" width="6.5" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="1086.52" y="431.5" ></text>
+</g>
+<g >
+<title>[adb: unresolved] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="757" width="2.2" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="30.38" y="767.5" ></text>
+</g>
+<g >
+<title>tcp_sendmsg_locked (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="629" width="2.2" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="43.42" y="639.5" ></text>
+</g>
+<g >
+<title>x264_8_mb_predict_mv_ref16x16 (15,075,375 sampled CPU ns, 0.55%)</title><rect x="866.2" y="773" width="6.5" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="869.21" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_lookahead_get_frames (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1094.4" y="565" width="4.3" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="1097.38" y="575.5" ></text>
+</g>
+<g >
+<title>tcp_write_xmit (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="517" width="2.1" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="1171.27" y="527.5" ></text>
+</g>
+<g >
+<title>__check_object_size (5,025,125 sampled CPU ns, 0.18%)</title><rect x="192.5" y="485" width="2.2" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="195.54" y="495.5" ></text>
+</g>
+<g >
+<title>amdgpu_dma_buf_begin_cpu_access (5,025,125 sampled CPU ns, 0.18%)</title><rect x="442.4" y="453" width="2.2" height="15.0" fill="rgb(246,191,45)" rx="2" ry="2" />
+<text  x="445.45" y="463.5" ></text>
+</g>
+<g >
+<title>propagate_protected_usage (10,050,250 sampled CPU ns, 0.37%)</title><rect x="62.2" y="565" width="4.3" height="15.0" fill="rgb(206,5,1)" rx="2" ry="2" />
+<text  x="65.15" y="575.5" ></text>
+</g>
+<g >
+<title>capture_run (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="725" width="299.9" height="15.0" fill="rgb(213,38,9)" rx="2" ry="2" />
+<text  x="195.54" y="735.5" >capture_run</text>
+</g>
+<g >
+<title>_raw_spin_unlock (5,025,125 sampled CPU ns, 0.18%)</title><rect x="331.6" y="421" width="2.2" height="15.0" fill="rgb(223,85,20)" rx="2" ry="2" />
+<text  x="334.62" y="431.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (20,100,500 sampled CPU ns, 0.74%)</title><rect x="18.7" y="789" width="8.7" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="21.69" y="799.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="613" width="2.2" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1103.90" y="623.5" ></text>
+</g>
+<g >
+<title>inet_sendmsg (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="661" width="2.2" height="15.0" fill="rgb(244,183,43)" rx="2" ry="2" />
+<text  x="43.42" y="671.5" ></text>
+</g>
+<g >
+<title>__sk_mem_schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="53" width="2.1" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="1171.27" y="63.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="533" width="2.1" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="1106.08" y="543.5" ></text>
+</g>
+<g >
+<title>__x64_sys_poll (5,025,125 sampled CPU ns, 0.18%)</title><rect x="496.8" y="741" width="2.2" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="499.78" y="751.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="42.6" y="773" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="45.60" y="783.5" ></text>
+</g>
+<g >
+<title>pthread_cond_signal@@GLIBC_2.3.2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="488.1" y="613" width="2.2" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="491.08" y="623.5" ></text>
+</g>
+<g >
+<title>drm_clflush_virt_range (160,804,000 sampled CPU ns, 5.89%)</title><rect x="194.7" y="485" width="69.6" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="197.71" y="495.5" >drm_clf..</text>
+</g>
+<g >
+<title>x264_8_dct4x4x4_internal_avx512 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="659.8" y="773" width="4.3" height="15.0" fill="rgb(213,37,9)" rx="2" ry="2" />
+<text  x="662.76" y="783.5" ></text>
+</g>
+<g >
+<title>evdi_grab_pixels (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="645" width="252.1" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="195.54" y="655.5" >evdi_grab_pixels</text>
+</g>
+<g >
+<title>tokio::runtime::scheduler::multi_thread::worker::&lt;impl tokio::runtime::scheduler::multi_thread::handle::Handle&gt;::schedule_local (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1179.1" y="773" width="2.2" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="1182.13" y="783.5" ></text>
+</g>
+<g >
+<title>copy_page_to_iter (60,301,500 sampled CPU ns, 2.21%)</title><rect x="77.4" y="661" width="26.0" height="15.0" fill="rgb(209,22,5)" rx="2" ry="2" />
+<text  x="80.37" y="671.5" >c..</text>
+</g>
+<g >
+<title>__x64_sys_futex (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="741" width="4.4" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="1108.25" y="751.5" ></text>
+</g>
+<g >
+<title>slicetype_frame_cost (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1094.4" y="533" width="4.3" height="15.0" fill="rgb(241,165,39)" rx="2" ry="2" />
+<text  x="1097.38" y="543.5" ></text>
+</g>
+<g >
+<title>usbdev_do_ioctl (20,100,500 sampled CPU ns, 0.74%)</title><rect x="31.7" y="709" width="8.7" height="15.0" fill="rgb(248,201,48)" rx="2" ry="2" />
+<text  x="34.73" y="719.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="501" width="6.5" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="1086.52" y="511.5" ></text>
+</g>
+<g >
+<title>__check_object_size (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="565" width="2.1" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="493.26" y="575.5" ></text>
+</g>
+<g >
+<title>pthread_cond_broadcast@@GLIBC_2.3.2 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1094.4" y="517" width="4.3" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="1097.38" y="527.5" ></text>
+</g>
+<g >
+<title>cavlc_mb_header_i (5,025,125 sampled CPU ns, 0.18%)</title><rect x="570.7" y="773" width="2.1" height="15.0" fill="rgb(205,2,0)" rx="2" ry="2" />
+<text  x="573.66" y="783.5" ></text>
+</g>
+<g >
+<title>wake_up_q (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="405" width="2.1" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="1099.56" y="415.5" ></text>
+</g>
+<g >
+<title>read (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="693" width="2.1" height="15.0" fill="rgb(252,216,51)" rx="2" ry="2" />
+<text  x="493.26" y="703.5" ></text>
+</g>
+<g >
+<title>__GI___ioctl (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="757" width="6.5" height="15.0" fill="rgb(232,128,30)" rx="2" ry="2" />
+<text  x="13.00" y="767.5" ></text>
+</g>
+<g >
+<title>check_heap_object (5,025,125 sampled CPU ns, 0.18%)</title><rect x="12.2" y="613" width="2.1" height="15.0" fill="rgb(241,165,39)" rx="2" ry="2" />
+<text  x="15.17" y="623.5" ></text>
+</g>
+<g >
+<title>x264_8_load_deinterleave_chroma_fenc_avx512 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="701.0" y="773" width="4.4" height="15.0" fill="rgb(229,112,26)" rx="2" ry="2" />
+<text  x="704.05" y="783.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="581" width="2.2" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1103.90" y="591.5" ></text>
+</g>
+<g >
+<title>x264_8_prefetch_ref_mmx2 (30,150,750 sampled CPU ns, 1.10%)</title><rect x="970.5" y="773" width="13.1" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="973.52" y="783.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="693" width="2.2" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1169.10" y="703.5" ></text>
+</g>
+<g >
+<title>[[unknown]: unresolved] (20,100,500 sampled CPU ns, 0.74%)</title><rect x="1168.3" y="789" width="8.7" height="15.0" fill="rgb(216,54,12)" rx="2" ry="2" />
+<text  x="1171.27" y="799.5" ></text>
+</g>
+<g >
+<title>__napi_poll (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="261" width="2.1" height="15.0" fill="rgb(247,195,46)" rx="2" ry="2" />
+<text  x="1171.27" y="271.5" ></text>
+</g>
+<g >
+<title>tokio::runtime::task::core::TaskIdGuard::enter (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1185.7" y="789" width="2.1" height="15.0" fill="rgb(225,95,22)" rx="2" ry="2" />
+<text  x="1188.65" y="799.5" ></text>
+</g>
+<g >
+<title>__x64_sys_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="741" width="2.2" height="15.0" fill="rgb(233,133,31)" rx="2" ry="2" />
+<text  x="43.42" y="751.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1163.9" y="773" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1166.92" y="783.5" ></text>
+</g>
+<g >
+<title>&lt;&amp;std::os::unix::net::stream::UnixStream as std::io::Write&gt;::write_vectored (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="757" width="2.1" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1171.27" y="767.5" ></text>
+</g>
+<g >
+<title>_start (693,467,250 sampled CPU ns, 25.41%)</title><rect x="192.5" y="789" width="299.9" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="195.54" y="799.5" >_start</text>
+</g>
+<g >
+<title>x264_encoder_encode (70,351,750 sampled CPU ns, 2.58%)</title><rect x="1070.5" y="597" width="30.4" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="1073.48" y="607.5" >x2..</text>
+</g>
+<g >
+<title>try_to_wake_up (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="437" width="6.5" height="15.0" fill="rgb(220,70,16)" rx="2" ry="2" />
+<text  x="1086.52" y="447.5" ></text>
+</g>
+<g >
+<title>do_softirq.part.0 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="325" width="2.1" height="15.0" fill="rgb(233,131,31)" rx="2" ry="2" />
+<text  x="1171.27" y="335.5" ></text>
+</g>
+<g >
+<title>mb_analyse_init_qp (25,125,625 sampled CPU ns, 0.92%)</title><rect x="583.7" y="773" width="10.9" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="586.70" y="783.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1163.9" y="789" width="2.2" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="1166.92" y="799.5" ></text>
+</g>
+<g >
+<title>futex_wake (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="533" width="2.2" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="1103.90" y="543.5" ></text>
+</g>
+<g >
+<title>reap_as (5,025,125 sampled CPU ns, 0.18%)</title><rect x="38.3" y="693" width="2.1" height="15.0" fill="rgb(241,167,40)" rx="2" ry="2" />
+<text  x="41.25" y="703.5" ></text>
+</g>
+<g >
+<title>schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="29.6" y="677" width="2.1" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="32.56" y="687.5" ></text>
+</g>
+<g >
+<title>mb_mc_0xywh (5,025,125 sampled CPU ns, 0.18%)</title><rect x="603.3" y="773" width="2.1" height="15.0" fill="rgb(247,197,47)" rx="2" ry="2" />
+<text  x="606.26" y="783.5" ></text>
+</g>
+<g >
+<title>mutex_lock (30,150,750 sampled CPU ns, 1.10%)</title><rect x="103.4" y="661" width="13.1" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="106.44" y="671.5" ></text>
+</g>
+<g >
+<title>do_writev (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="725" width="2.2" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="43.42" y="735.5" ></text>
+</g>
+<g >
+<title>alloc_pages_noprof (145,728,625 sampled CPU ns, 5.34%)</title><rect x="499.0" y="661" width="63.0" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="501.95" y="671.5" >alloc_..</text>
+</g>
+<g >
+<title>select_estimate_accuracy (5,025,125 sampled CPU ns, 0.18%)</title><rect x="496.8" y="693" width="2.2" height="15.0" fill="rgb(250,210,50)" rx="2" ry="2" />
+<text  x="499.78" y="703.5" ></text>
+</g>
+<g >
+<title>tcp_sendmsg_locked (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="565" width="2.1" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="1171.27" y="575.5" ></text>
+</g>
+<g >
+<title>post_alloc_hook (60,301,500 sampled CPU ns, 2.21%)</title><rect x="514.2" y="597" width="26.0" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="517.16" y="607.5" >p..</text>
+</g>
+<g >
+<title>start_thread (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="773" width="2.2" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="30.38" y="783.5" ></text>
+</g>
+<g >
+<title>fifo_pipe_read (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="693" width="65.2" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="54.29" y="703.5" >fifo_pi..</text>
+</g>
+<g >
+<title>x264_8_mc_copy_w16_sse (25,125,625 sampled CPU ns, 0.92%)</title><rect x="890.1" y="773" width="10.9" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="893.11" y="783.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="661" width="2.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="493.26" y="671.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="725" width="2.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="1171.27" y="735.5" ></text>
+</g>
+<g >
+<title>ip_local_deliver_finish (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="165" width="2.1" height="15.0" fill="rgb(225,95,22)" rx="2" ry="2" />
+<text  x="1171.27" y="175.5" ></text>
+</g>
+<g >
+<title>cfree@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="23.0" y="773" width="2.2" height="15.0" fill="rgb(233,131,31)" rx="2" ry="2" />
+<text  x="26.04" y="783.5" ></text>
+</g>
+<g >
+<title>ksys_read (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="613" width="2.1" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="493.26" y="623.5" ></text>
+</g>
+<g >
+<title>wake_up_q (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="453" width="6.5" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="1086.52" y="463.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="661" width="4.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="1108.25" y="671.5" ></text>
+</g>
+<g >
+<title>tokio::runtime::scheduler::multi_thread::worker::Context::run (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1172.6" y="773" width="2.2" height="15.0" fill="rgb(209,18,4)" rx="2" ry="2" />
+<text  x="1175.62" y="783.5" ></text>
+</g>
+<g >
+<title>dmx0:rawvideo/607827 (165,829,125 sampled CPU ns, 6.08%)</title><rect x="44.8" y="805" width="71.7" height="15.0" fill="rgb(207,13,3)" rx="2" ry="2" />
+<text  x="47.77" y="815.5" >dmx0:raw..</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (10,050,250 sampled CPU ns, 0.37%)</title><rect x="44.8" y="773" width="4.3" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="47.77" y="783.5" ></text>
+</g>
+<g >
+<title>x264_8_macroblock_cache_save (55,276,375 sampled CPU ns, 2.03%)</title><rect x="820.6" y="773" width="23.9" height="15.0" fill="rgb(247,196,46)" rx="2" ry="2" />
+<text  x="823.57" y="783.5" >x..</text>
+</g>
+<g >
+<title>do_syscall_64 (175,879,375 sampled CPU ns, 6.45%)</title><rect x="492.4" y="773" width="76.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="495.43" y="783.5" >do_sysca..</text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="629" width="2.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1106.08" y="639.5" ></text>
+</g>
+<g >
+<title>__free_frozen_pages (15,075,375 sampled CPU ns, 0.55%)</title><rect x="70.8" y="613" width="6.6" height="15.0" fill="rgb(234,134,32)" rx="2" ry="2" />
+<text  x="73.85" y="623.5" ></text>
+</g>
+<g >
+<title>mb_analyse_init (20,100,500 sampled CPU ns, 0.74%)</title><rect x="575.0" y="773" width="8.7" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="578.01" y="783.5" ></text>
+</g>
+<g >
+<title>sock_write_iter (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="613" width="2.1" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1171.27" y="623.5" ></text>
+</g>
+<g >
+<title>all (2,728,642,875 sampled CPU ns, 100%)</title><rect x="10.0" y="821" width="1180.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="13.00" y="831.5" ></text>
+</g>
+<g >
+<title>ip_output (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="437" width="2.1" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1171.27" y="447.5" ></text>
+</g>
+<g >
+<title>on_update_ready (688,442,125 sampled CPU ns, 25.23%)</title><rect x="192.5" y="677" width="297.8" height="15.0" fill="rgb(211,30,7)" rx="2" ry="2" />
+<text  x="195.54" y="687.5" >on_update_ready</text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="725" width="2.2" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="497.60" y="735.5" ></text>
+</g>
+<g >
+<title>x264_8_mc_chroma_avx2 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="872.7" y="773" width="4.4" height="15.0" fill="rgb(237,150,36)" rx="2" ry="2" />
+<text  x="875.73" y="783.5" ></text>
+</g>
+<g >
+<title>do_sys_poll (5,025,125 sampled CPU ns, 0.18%)</title><rect x="496.8" y="725" width="2.2" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="499.78" y="735.5" ></text>
+</g>
+<g >
+<title>anon_pipe_write (160,804,000 sampled CPU ns, 5.89%)</title><rect x="499.0" y="677" width="69.5" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="501.95" y="687.5" >anon_pi..</text>
+</g>
+<g >
+<title>__schedule (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="645" width="2.2" height="15.0" fill="rgb(227,103,24)" rx="2" ry="2" />
+<text  x="497.60" y="655.5" ></text>
+</g>
+<g >
+<title>tcp_sendmsg (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="581" width="2.1" height="15.0" fill="rgb(223,83,19)" rx="2" ry="2" />
+<text  x="1171.27" y="591.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (170,854,250 sampled CPU ns, 6.26%)</title><rect x="494.6" y="757" width="73.9" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="497.60" y="767.5" >x64_sys_..</text>
+</g>
+<g >
+<title>mutex_spin_on_owner (30,150,750 sampled CPU ns, 1.10%)</title><rect x="103.4" y="613" width="13.1" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="106.44" y="623.5" ></text>
+</g>
+<g >
+<title>free_frozen_pages (15,075,375 sampled CPU ns, 0.55%)</title><rect x="70.8" y="629" width="6.6" height="15.0" fill="rgb(211,30,7)" rx="2" ry="2" />
+<text  x="73.85" y="639.5" ></text>
+</g>
+<g >
+<title>publish_frame (100,502,500 sampled CPU ns, 3.68%)</title><rect x="446.8" y="645" width="43.5" height="15.0" fill="rgb(218,61,14)" rx="2" ry="2" />
+<text  x="449.80" y="655.5" >publ..</text>
+</g>
+<g >
+<title>handle_softirqs (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="293" width="2.1" height="15.0" fill="rgb(238,156,37)" rx="2" ry="2" />
+<text  x="1171.27" y="303.5" ></text>
+</g>
+<g >
+<title>__futex_wait (5,025,125 sampled CPU ns, 0.18%)</title><rect x="494.6" y="693" width="2.2" height="15.0" fill="rgb(207,12,3)" rx="2" ry="2" />
+<text  x="497.60" y="703.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="709" width="39.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="719.5" >[ff..</text>
+</g>
+<g >
+<title>x264_8_sub8x8_dct_avx512 (30,150,750 sampled CPU ns, 1.10%)</title><rect x="1053.1" y="773" width="13.0" height="15.0" fill="rgb(252,219,52)" rx="2" ry="2" />
+<text  x="1056.09" y="783.5" ></text>
+</g>
+<g >
+<title>__virt_addr_valid (5,025,125 sampled CPU ns, 0.18%)</title><rect x="12.2" y="597" width="2.1" height="15.0" fill="rgb(216,53,12)" rx="2" ry="2" />
+<text  x="15.17" y="607.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (75,376,875 sampled CPU ns, 2.76%)</title><rect x="1068.3" y="629" width="32.6" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1071.31" y="639.5" >[f..</text>
+</g>
+<g >
+<title>[callchain unavailable] (15,075,375 sampled CPU ns, 0.55%)</title><rect x="44.8" y="789" width="6.5" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="47.77" y="799.5" ></text>
+</g>
+<g >
+<title>__x64_sys_read (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="629" width="2.1" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="493.26" y="639.5" ></text>
+</g>
+<g >
+<title>ip_finish_output (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="421" width="2.1" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1171.27" y="431.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="565" width="2.2" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="1103.90" y="575.5" ></text>
+</g>
+<g >
+<title>x264_8_plane_copy_avx512 (35,175,875 sampled CPU ns, 1.29%)</title><rect x="1148.7" y="789" width="15.2" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="1151.71" y="799.5" ></text>
+</g>
+<g >
+<title>x264_8_frame_expand_border (10,050,250 sampled CPU ns, 0.37%)</title><rect x="668.5" y="773" width="4.3" height="15.0" fill="rgb(229,114,27)" rx="2" ry="2" />
+<text  x="671.45" y="783.5" ></text>
+</g>
+<g >
+<title>&lt;&amp;mio::net::tcp::stream::TcpStream as std::io::Write&gt;::write_vectored (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="773" width="2.1" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="1171.27" y="783.5" ></text>
+</g>
+<g >
+<title>__tcp_push_pending_frames (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="533" width="2.1" height="15.0" fill="rgb(230,117,28)" rx="2" ry="2" />
+<text  x="1171.27" y="543.5" ></text>
+</g>
+<g >
+<title>vfs_read (5,025,125 sampled CPU ns, 0.18%)</title><rect x="490.3" y="597" width="2.1" height="15.0" fill="rgb(224,88,21)" rx="2" ry="2" />
+<text  x="493.26" y="607.5" ></text>
+</g>
+<g >
+<title>path_openat (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="629" width="2.2" height="15.0" fill="rgb(249,202,48)" rx="2" ry="2" />
+<text  x="1169.10" y="639.5" ></text>
+</g>
+<g >
+<title>anon_pipe_buf_release (60,301,500 sampled CPU ns, 2.21%)</title><rect x="51.3" y="661" width="26.1" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="54.29" y="671.5" >a..</text>
+</g>
+<g >
+<title>do_syscall_64 (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="565" width="252.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="195.54" y="575.5" >do_syscall_64</text>
+</g>
+<g >
+<title>[callchain unavailable] (175,879,375 sampled CPU ns, 6.45%)</title><rect x="116.5" y="789" width="76.0" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="119.48" y="799.5" >[callcha..</text>
+</g>
+<g >
+<title>tcp_push (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="613" width="2.2" height="15.0" fill="rgb(243,176,42)" rx="2" ry="2" />
+<text  x="43.42" y="623.5" ></text>
+</g>
+<g >
+<title>adb/290576 (75,376,875 sampled CPU ns, 2.76%)</title><rect x="10.0" y="805" width="32.6" height="15.0" fill="rgb(206,6,1)" rx="2" ry="2" />
+<text  x="13.00" y="815.5" >ad..</text>
+</g>
+<g >
+<title>__local_bh_enable_ip (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="341" width="2.1" height="15.0" fill="rgb(237,147,35)" rx="2" ry="2" />
+<text  x="1171.27" y="351.5" ></text>
+</g>
+<g >
+<title>tokio::sync::notify::NotifyGuard::notify_waiters (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1174.8" y="773" width="2.2" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1177.79" y="783.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="517" width="6.5" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1086.52" y="527.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1177.0" y="789" width="4.3" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="1179.96" y="799.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="709" width="2.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1169.10" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::collections::vec_deque::drain::Drain&lt;T,A&gt; as core::ops::drop::Drop&gt;::drop (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1170.4" y="773" width="2.2" height="15.0" fill="rgb(207,11,2)" rx="2" ry="2" />
+<text  x="1173.44" y="783.5" ></text>
+</g>
+<g >
+<title>__x64_sys_write (160,804,000 sampled CPU ns, 5.89%)</title><rect x="499.0" y="741" width="69.5" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="501.95" y="751.5" >__x64_s..</text>
+</g>
+<g >
+<title>pthread_mutex_unlock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="741" width="2.2" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="30.38" y="751.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="597" width="2.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1103.90" y="607.5" ></text>
+</g>
+<g >
+<title>wake_up_q (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="693" width="4.4" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="1108.25" y="703.5" ></text>
+</g>
+<g >
+<title>futex_wake (15,075,375 sampled CPU ns, 0.55%)</title><rect x="1083.5" y="469" width="6.5" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="1086.52" y="479.5" ></text>
+</g>
+<g >
+<title>__mutex_lock.constprop.0 (30,150,750 sampled CPU ns, 1.10%)</title><rect x="103.4" y="629" width="13.1" height="15.0" fill="rgb(225,95,22)" rx="2" ry="2" />
+<text  x="106.44" y="639.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1105.2" y="757" width="4.4" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1108.25" y="767.5" ></text>
+</g>
+<g >
+<title>tcp_write_xmit (5,025,125 sampled CPU ns, 0.18%)</title><rect x="40.4" y="581" width="2.2" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="43.42" y="591.5" ></text>
+</g>
+<g >
+<title>tcp_v4_rcv (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="133" width="2.1" height="15.0" fill="rgb(237,148,35)" rx="2" ry="2" />
+<text  x="1171.27" y="143.5" ></text>
+</g>
+<g >
+<title>net_rx_action (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="277" width="2.1" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="1171.27" y="287.5" ></text>
+</g>
+<g >
+<title>srso_alias_return_thunk (5,025,125 sampled CPU ns, 0.18%)</title><rect x="333.8" y="437" width="2.2" height="15.0" fill="rgb(241,167,39)" rx="2" ry="2" />
+<text  x="336.79" y="447.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="757" width="65.2" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="54.29" y="767.5" >x64_sys..</text>
+</g>
+<g >
+<title>predict_16x16_dc_128_c (5,025,125 sampled CPU ns, 0.18%)</title><rect x="609.8" y="773" width="2.2" height="15.0" fill="rgb(251,211,50)" rx="2" ry="2" />
+<text  x="612.78" y="783.5" ></text>
+</g>
+<g >
+<title>page_counter_uncharge (15,075,375 sampled CPU ns, 0.55%)</title><rect x="60.0" y="581" width="6.5" height="15.0" fill="rgb(248,199,47)" rx="2" ry="2" />
+<text  x="62.98" y="591.5" ></text>
+</g>
+<g >
+<title>__ieee754_pow_fma (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1098.7" y="501" width="2.2" height="15.0" fill="rgb(240,163,39)" rx="2" ry="2" />
+<text  x="1101.73" y="511.5" ></text>
+</g>
+<g >
+<title>try_charge_memcg (5,025,125 sampled CPU ns, 0.18%)</title><rect x="512.0" y="581" width="2.2" height="15.0" fill="rgb(210,27,6)" rx="2" ry="2" />
+<text  x="514.99" y="591.5" ></text>
+</g>
+<g >
+<title>futex_wake (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1096.6" y="421" width="2.1" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="1099.56" y="431.5" ></text>
+</g>
+<g >
+<title>find_vmap_area (115,577,875 sampled CPU ns, 4.24%)</title><rect x="283.8" y="437" width="50.0" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="286.81" y="447.5" >find_..</text>
+</g>
+<g >
+<title>ffmpeg/607827 (1,376,884,250 sampled CPU ns, 50.46%)</title><rect x="568.5" y="805" width="595.4" height="15.0" fill="rgb(242,172,41)" rx="2" ry="2" />
+<text  x="571.49" y="815.5" >ffmpeg/607827</text>
+</g>
+<g >
+<title>futex_ref_get (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="613" width="2.2" height="15.0" fill="rgb(229,112,26)" rx="2" ry="2" />
+<text  x="30.38" y="623.5" ></text>
+</g>
+<g >
+<title>__GI___ioctl (582,914,500 sampled CPU ns, 21.36%)</title><rect x="192.5" y="597" width="252.1" height="15.0" fill="rgb(232,128,30)" rx="2" ry="2" />
+<text  x="195.54" y="607.5" >__GI___ioctl</text>
+</g>
+<g >
+<title>ep_poll (5,025,125 sampled CPU ns, 0.18%)</title><rect x="29.6" y="709" width="2.1" height="15.0" fill="rgb(238,151,36)" rx="2" ry="2" />
+<text  x="32.56" y="719.5" ></text>
+</g>
+<g >
+<title>__alloc_frozen_pages_noprof (135,678,375 sampled CPU ns, 4.97%)</title><rect x="503.3" y="629" width="58.7" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="506.30" y="639.5" >__allo..</text>
+</g>
+<g >
+<title>__folio_put (60,301,500 sampled CPU ns, 2.21%)</title><rect x="51.3" y="645" width="26.1" height="15.0" fill="rgb(224,91,21)" rx="2" ry="2" />
+<text  x="54.29" y="655.5" >_..</text>
+</g>
+<g >
+<title>ksys_write (160,804,000 sampled CPU ns, 5.89%)</title><rect x="499.0" y="725" width="69.5" height="15.0" fill="rgb(205,4,1)" rx="2" ry="2" />
+<text  x="501.95" y="735.5" >ksys_wr..</text>
+</g>
+<g >
+<title>futex_wake (5,025,125 sampled CPU ns, 0.18%)</title><rect x="27.4" y="629" width="2.2" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="30.38" y="639.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (15,075,375 sampled CPU ns, 0.55%)</title><rect x="10.0" y="741" width="6.5" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="13.00" y="751.5" ></text>
+</g>
+<g >
+<title>try_to_wake_up (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="549" width="2.1" height="15.0" fill="rgb(220,70,16)" rx="2" ry="2" />
+<text  x="1106.08" y="559.5" ></text>
+</g>
+<g >
+<title>evdi_helper/290619 (1,045,226,000 sampled CPU ns, 38.31%)</title><rect x="116.5" y="805" width="452.0" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="119.48" y="815.5" >evdi_helper/290619</text>
+</g>
+<g >
+<title>do_syscall_64 (150,753,750 sampled CPU ns, 5.52%)</title><rect x="51.3" y="773" width="65.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="54.29" y="783.5" >do_sysc..</text>
+</g>
+<g >
+<title>do_file_open (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1166.1" y="645" width="2.2" height="15.0" fill="rgb(232,125,29)" rx="2" ry="2" />
+<text  x="1169.10" y="655.5" ></text>
+</g>
+<g >
+<title>tokio::sync::watch::state::AtomicState::load (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1187.8" y="789" width="2.2" height="15.0" fill="rgb(253,221,52)" rx="2" ry="2" />
+<text  x="1190.83" y="799.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (80,402,000 sampled CPU ns, 2.95%)</title><rect x="1068.3" y="645" width="34.8" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1071.31" y="655.5" >[f..</text>
+</g>
+<g >
+<title>__do_softirq (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1168.3" y="309" width="2.1" height="15.0" fill="rgb(246,191,45)" rx="2" ry="2" />
+<text  x="1171.27" y="319.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (90,452,250 sampled CPU ns, 3.31%)</title><rect x="1066.1" y="789" width="39.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.13" y="799.5" >[ff..</text>
+</g>
+<g >
+<title>x264_8_prefetch_fenc (5,025,125 sampled CPU ns, 0.18%)</title><rect x="959.7" y="773" width="2.1" height="15.0" fill="rgb(231,123,29)" rx="2" ry="2" />
+<text  x="962.65" y="783.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irq (5,025,125 sampled CPU ns, 0.18%)</title><rect x="14.3" y="629" width="2.2" height="15.0" fill="rgb(215,47,11)" rx="2" ry="2" />
+<text  x="17.35" y="639.5" ></text>
+</g>
+<g >
+<title>pthread_cond_broadcast@@GLIBC_2.3.2 (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1100.9" y="629" width="2.2" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="1103.90" y="639.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irq (10,050,250 sampled CPU ns, 0.37%)</title><rect x="33.9" y="677" width="4.4" height="15.0" fill="rgb(215,47,11)" rx="2" ry="2" />
+<text  x="36.90" y="687.5" ></text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.18%)</title><rect x="1103.1" y="597" width="2.1" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="1106.08" y="607.5" ></text>
+</g>
+</g>
+</svg>

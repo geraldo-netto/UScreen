@@ -1,0 +1,1818 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="614" onload="init(evt)" viewBox="0 0 1200 614" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom(true);
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				// we have basically done a clearzoom so clear the url
+				var params = get_params();
+				if (params.x) delete params.x;
+				if (params.y) delete params.y;
+				history.replaceState(null, null, parse_params(params));
+				unzoombtn.classList.add("hide");
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		var sl = t.getSubStringLength(0, txt.length);
+		// check if only whitespace or if we can fit the entire string into width w
+		if (/^ *$/.test(txt) || sl < w)
+			return;
+
+		// this isn't perfect, but gives a good starting point
+		// and avoids calling getSubStringLength too often
+		var start = Math.floor((w/sl) * txt.length);
+		for (var x = start; x > 0; x = x-2) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom(dont_update_text) {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			if(!dont_update_text) update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+		if (currentSearchTerm === null) return;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="614.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Blent optimized Android off-CPU (10 s)</text>
+<text id="details" x="10.00" y="597" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="597" > </text>
+<g id="frames">
+<g >
+<title>s3.a.run (9,006,355,841 off-CPU ns, 4.32%)</title><rect x="345.4" y="501" width="51.0" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="348.41" y="511.5" >s3.a...</text>
+</g>
+<g >
+<title>OkHttp TaskRunn-17666/18906 (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="549" width="52.9" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="660.00" y="559.5" >OkHtt..</text>
+</g>
+<g >
+<title>art::Monitor::Wait(art::Thread*, art::ObjPtr&lt;art::mirror::Object&gt;, long, int, bool, art::ThreadState) (4,256,648,884 off-CPU ns, 2.04%)</title><rect x="685.8" y="341" width="24.1" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="688.76" y="351.5" >a..</text>
+</g>
+<g >
+<title>main (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="517" width="56.4" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="1136.56" y="527.5" >main</text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="485" width="55.7" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="1025.92" y="495.5" >art::..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (136,496,855 off-CPU ns, 0.07%)</title><rect x="341.4" y="101" width="0.7" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="344.37" y="111.5" ></text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner.awaitTaskToRun (4,257,448,960 off-CPU ns, 2.04%)</title><rect x="685.8" y="373" width="24.1" height="15.0" fill="rgb(225,96,22)" rx="2" ry="2" />
+<text  x="688.76" y="383.5" >o..</text>
+</g>
+<g >
+<title>android_media_MediaCodec_queueInputBuffer(_JNIEnv*, _jobject*, int, int, int, long, int) (571,935,561 off-CPU ns, 0.27%)</title><rect x="342.2" y="117" width="3.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="345.16" y="127.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="517" width="55.7" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="1025.92" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android.os.MessageQueue.nextLegacy (9,833,739,024 off-CPU ns, 4.72%)</title><rect x="1022.9" y="373" width="55.7" height="15.0" fill="rgb(237,148,35)" rx="2" ry="2" />
+<text  x="1025.94" y="383.5" >andro..</text>
+</g>
+<g >
+<title>sendto (35,332,345 off-CPU ns, 0.02%)</title><rect x="38.9" y="501" width="0.2" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="41.86" y="511.5" ></text>
+</g>
+<g >
+<title>android::AMessage::deliver() (204,168,113 off-CPU ns, 0.10%)</title><rect x="550.7" y="437" width="1.2" height="15.0" fill="rgb(205,0,0)" rx="2" ry="2" />
+<text  x="553.70" y="447.5" ></text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="501" width="37.7" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="42.07" y="511.5" >lib..</text>
+</g>
+<g >
+<title>okio.AsyncTimeout$Companion.awaitTimeout$okio (9,958,557,414 off-CPU ns, 4.78%)</title><rect x="758.0" y="485" width="56.4" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="761.00" y="495.5" >okio...</text>
+</g>
+<g >
+<title>android::Looper::pollOnce(int, int*, int*, void**) (9,833,311,370 off-CPU ns, 4.72%)</title><rect x="1022.9" y="325" width="55.7" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="1025.94" y="335.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.locks.LockSupport.parkNanos (9,008,030,571 off-CPU ns, 4.32%)</title><rect x="239.9" y="485" width="51.0" height="15.0" fill="rgb(251,211,50)" rx="2" ry="2" />
+<text  x="242.91" y="495.5" >java...</text>
+</g>
+<g >
+<title>s3.i.run (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="485" width="4.0" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="344.36" y="495.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="517" width="51.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="399.39" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android::ALooper::awaitResponse(android::sp&lt;android::AReplyToken&gt; const&amp;, android::sp&lt;android::AMessage&gt;*) (569,963,216 off-CPU ns, 0.27%)</title><rect x="342.2" y="69" width="3.2" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="345.17" y="79.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="533" width="56.3" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="914.77" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>SocketOutputStream_socketWrite0 (62,026,001 off-CPU ns, 0.03%)</title><rect x="38.5" y="533" width="0.3" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="41.49" y="543.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="517" width="56.3" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="914.77" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android::hardware::IPCThreadState::transact(int, unsigned int, android::hardware::Parcel const&amp;, android::hardware::Parcel*, unsigned int) (179,884,002 off-CPU ns, 0.09%)</title><rect x="550.8" y="293" width="1.0" height="15.0" fill="rgb(236,146,35)" rx="2" ry="2" />
+<text  x="553.75" y="303.5" ></text>
+</g>
+<g >
+<title>android::ALooper::loop() (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="469" width="37.7" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="42.07" y="479.5" >and..</text>
+</g>
+<g >
+<title>com.blent.VideoReceiver.feedDecoder$app_optimized$default (714,463,070 off-CPU ns, 0.34%)</title><rect x="341.4" y="325" width="4.0" height="15.0" fill="rgb(246,188,45)" rx="2" ry="2" />
+<text  x="344.36" y="335.5" ></text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="469" width="52.9" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="660.00" y="479.5" >art::..</text>
+</g>
+<g >
+<title>art::ThreadPoolWorker::Callback(void*) (8,675,790,225 off-CPU ns, 4.16%)</title><rect x="501.6" y="501" width="49.1" height="15.0" fill="rgb(239,156,37)" rx="2" ry="2" />
+<text  x="504.58" y="511.5" >art:..</text>
+</g>
+<g >
+<title>pthread_cond_wait (9,952,808,908 off-CPU ns, 4.77%)</title><rect x="814.4" y="453" width="56.3" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="817.38" y="463.5" >pthre..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (5,579,919,846 off-CPU ns, 2.68%)</title><rect x="709.9" y="309" width="31.5" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="712.86" y="319.5" >ar..</text>
+</g>
+<g >
+<title>android::IPCThreadState::talkWithDriver(bool) (7,252,086,763 off-CPU ns, 3.48%)</title><rect x="870.7" y="421" width="41.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="873.72" y="431.5" >and..</text>
+</g>
+<g >
+<title>android::ALooper::loop() (8,910,469,661 off-CPU ns, 4.27%)</title><rect x="550.7" y="453" width="50.4" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="553.69" y="463.5" >andro..</text>
+</g>
+<g >
+<title>__start_thread (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="533" width="48.1" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="712.86" y="543.5" >__st..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession.b (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="405" width="55.0" height="15.0" fill="rgb(221,76,18)" rx="2" ry="2" />
+<text  x="1081.60" y="415.5" >com.b..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (9,008,030,571 off-CPU ns, 4.32%)</title><rect x="239.9" y="453" width="51.0" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="242.91" y="463.5" >art::..</text>
+</g>
+<g >
+<title>com.blent.DecoderInputKt.queueCodecInput (574,771,214 off-CPU ns, 0.28%)</title><rect x="342.2" y="165" width="3.2" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="345.15" y="175.5" ></text>
+</g>
+<g >
+<title>pthread_cond_timedwait (6,599,687,226 off-CPU ns, 3.17%)</title><rect x="39.1" y="453" width="37.3" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="42.07" y="463.5" >pth..</text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue.poll (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="373" width="28.8" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="660.00" y="383.5" >ja..</text>
+</g>
+<g >
+<title>__start_thread (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="533" width="55.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="1081.60" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>android.media.MediaCodec.queueInputBuffer (572,570,099 off-CPU ns, 0.27%)</title><rect x="342.2" y="149" width="3.2" height="15.0" fill="rgb(218,64,15)" rx="2" ry="2" />
+<text  x="345.16" y="159.5" ></text>
+</g>
+<g >
+<title>CodecLooper-17666/19045 (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="549" width="55.7" height="15.0" fill="rgb(252,218,52)" rx="2" ry="2" />
+<text  x="187.22" y="559.5" >Codec..</text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="469" width="55.9" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="604.12" y="479.5" >art::..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (9,008,030,571 off-CPU ns, 4.32%)</title><rect x="239.9" y="437" width="51.0" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="242.91" y="447.5" >art::..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (8,910,689,392 off-CPU ns, 4.27%)</title><rect x="550.7" y="517" width="50.4" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="553.69" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>java.lang.Thread.run (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="437" width="51.0" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="399.39" y="447.5" >java...</text>
+</g>
+<g >
+<title>art::Method_invoke(_JNIEnv*, _jobject*, _jobject*, _jobjectArray*) (.__uniq.165753521025965369065708152063621506277) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="373" width="56.4" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1136.56" y="383.5" >art::..</text>
+</g>
+<g >
+<title>java.util.concurrent.LinkedTransferQueue$DualNode.await (5,579,919,846 off-CPU ns, 2.68%)</title><rect x="709.9" y="341" width="31.5" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="712.86" y="351.5" >ja..</text>
+</g>
+<g >
+<title>android.os.Looper.loopOnce (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="293" width="56.4" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="1136.56" y="303.5" >andro..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (9,831,001,259 off-CPU ns, 4.72%)</title><rect x="184.3" y="437" width="55.6" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="187.26" y="447.5" >__fut..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="517" width="37.7" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="42.07" y="527.5" >__p..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$feedDecoder$3.invoke (574,771,214 off-CPU ns, 0.28%)</title><rect x="342.2" y="197" width="3.2" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="345.15" y="207.5" ></text>
+</g>
+<g >
+<title>com.blent.DecoderInput.write (574,771,214 off-CPU ns, 0.28%)</title><rect x="342.2" y="181" width="3.2" height="15.0" fill="rgb(239,156,37)" rx="2" ry="2" />
+<text  x="345.15" y="191.5" ></text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (8,703,028,317 off-CPU ns, 4.17%)</title><rect x="551.9" y="421" width="49.2" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="554.86" y="431.5" >__fu..</text>
+</g>
+<g >
+<title>android::PoolThread::threadLoop() (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="453" width="56.3" height="15.0" fill="rgb(224,91,21)" rx="2" ry="2" />
+<text  x="914.77" y="463.5" >andro..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$queueInput$1$queued$1.invoke (713,456,261 off-CPU ns, 0.34%)</title><rect x="341.4" y="229" width="4.0" height="15.0" fill="rgb(229,114,27)" rx="2" ry="2" />
+<text  x="344.37" y="239.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,954,855,291 off-CPU ns, 4.78%)</title><rect x="814.4" y="533" width="56.3" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="817.37" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>pthread_cond_wait (136,666,740 off-CPU ns, 0.07%)</title><rect x="341.4" y="117" width="0.7" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="344.37" y="127.5" ></text>
+</g>
+<g >
+<title>com.blent.DecodedOutputDrainer.release (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="325" width="2.6" height="15.0" fill="rgb(240,162,38)" rx="2" ry="2" />
+<text  x="1133.96" y="335.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.getTask (7,203,197,991 off-CPU ns, 3.46%)</title><rect x="601.1" y="389" width="40.8" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="604.13" y="399.5" >jav..</text>
+</g>
+<g >
+<title>android::IPCThreadState::joinThreadPool(bool) (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="437" width="56.3" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="914.77" y="447.5" >andro..</text>
+</g>
+<g >
+<title>android::hardware::BHwBinder::transact(unsigned int, android::hardware::Parcel const&amp;, android::hardware::Parcel*, unsigned int, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;) (105,654,588 off-CPU ns, 0.05%)</title><rect x="447.4" y="421" width="0.6" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="450.38" y="431.5" ></text>
+</g>
+<g >
+<title>android::AndroidRuntime::javaThreadShell(void*) (8,910,689,392 off-CPU ns, 4.27%)</title><rect x="550.7" y="485" width="50.4" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="553.69" y="495.5" >andro..</text>
+</g>
+<g >
+<title>__start_thread (9,006,535,072 off-CPU ns, 4.32%)</title><rect x="345.4" y="533" width="51.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="348.41" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="469" width="48.1" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="712.86" y="479.5" >art:..</text>
+</g>
+<g >
+<title>art_quick_invoke_stub (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="453" width="52.9" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="660.00" y="463.5" >art_q..</text>
+</g>
+<g >
+<title>m3.d0.run (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="453" width="4.0" height="15.0" fill="rgb(226,100,23)" rx="2" ry="2" />
+<text  x="344.36" y="463.5" ></text>
+</g>
+<g >
+<title>ioctl (92,354,742 off-CPU ns, 0.04%)</title><rect x="447.4" y="325" width="0.5" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="450.39" y="335.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="517" width="54.8" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="971.09" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>s3.a.run (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="501" width="4.0" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="344.36" y="511.5" ></text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="485" width="55.9" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="604.12" y="495.5" >art::..</text>
+</g>
+<g >
+<title>java.lang.Thread.run (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="437" width="48.1" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="712.86" y="447.5" >java..</text>
+</g>
+<g >
+<title>java.lang.Thread.run (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="437" width="52.9" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="660.00" y="447.5" >java...</text>
+</g>
+<g >
+<title>__libc_init (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="533" width="56.4" height="15.0" fill="rgb(207,11,2)" rx="2" ry="2" />
+<text  x="1136.56" y="543.5" >__lib..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$startOutputThread$1$index$1.invoke (9,249,801,005 off-CPU ns, 4.44%)</title><rect x="1078.6" y="357" width="52.4" height="15.0" fill="rgb(242,172,41)" rx="2" ry="2" />
+<text  x="1081.61" y="367.5" >com.b..</text>
+</g>
+<g >
+<title>__start_thread (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="533" width="55.7" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="1025.92" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>DefaultDispatch-17666/17712 (9,006,535,072 off-CPU ns, 4.32%)</title><rect x="345.4" y="549" width="51.0" height="15.0" fill="rgb(232,128,30)" rx="2" ry="2" />
+<text  x="348.41" y="559.5" >Defau..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (7,203,100,837 off-CPU ns, 3.46%)</title><rect x="601.1" y="309" width="40.8" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="604.13" y="319.5" >art..</text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="469" width="55.7" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="1025.92" y="479.5" >art::..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.getTask (5,580,366,730 off-CPU ns, 2.68%)</title><rect x="709.9" y="389" width="31.5" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="712.86" y="399.5" >ja..</text>
+</g>
+<g >
+<title>art_jni_trampoline (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="261" width="2.6" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="1133.96" y="271.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,008,191,801 off-CPU ns, 4.32%)</title><rect x="239.9" y="517" width="51.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="242.91" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="501" width="51.0" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="399.39" y="511.5" >art::..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$startOutputThread$1$index$1.invoke (9,249,722,736 off-CPU ns, 4.44%)</title><rect x="1078.6" y="341" width="52.4" height="15.0" fill="rgb(242,172,41)" rx="2" ry="2" />
+<text  x="1081.61" y="351.5" >com.b..</text>
+</g>
+<g >
+<title>io.github.geraldo_netto.blent.optimized-17666/17666 (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="549" width="56.4" height="15.0" fill="rgb(230,117,28)" rx="2" ry="2" />
+<text  x="1136.56" y="559.5" >io.gi..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (9,958,019,337 off-CPU ns, 4.78%)</title><rect x="758.0" y="421" width="56.4" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="761.00" y="431.5" >art::..</text>
+</g>
+<g >
+<title>android::MediaCodec::queueInputBuffer(unsigned long, unsigned long, unsigned long, long, unsigned int, android::AString*) (571,410,138 off-CPU ns, 0.27%)</title><rect x="342.2" y="101" width="3.2" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="345.17" y="111.5" ></text>
+</g>
+<g >
+<title>art_jni_trampoline (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="389" width="56.4" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="1136.56" y="399.5" >art_j..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="485" width="51.0" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="399.39" y="495.5" >art::..</text>
+</g>
+<g >
+<title>__start_thread (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="533" width="54.2" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="450.37" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>OkHttp TaskRunn-17666/17706 (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="549" width="55.9" height="15.0" fill="rgb(209,19,4)" rx="2" ry="2" />
+<text  x="604.12" y="559.5" >OkHtt..</text>
+</g>
+<g >
+<title>std::__1::condition_variable::wait(std::__1::unique_lock&lt;std::__1::mutex&gt;&amp;) (9,971,145,061 off-CPU ns, 4.78%)</title><rect x="127.8" y="469" width="56.4" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="130.78" y="479.5" >std::..</text>
+</g>
+<g >
+<title>android::hardware::media::c2::V1_0::BpHwComponent::_hidl_queue(android::hardware::IInterface*, android::hardware::details::HidlInstrumentor*, android::hardware::media::c2::V1_0::WorkBundle const&amp;) (181,641,040 off-CPU ns, 0.09%)</title><rect x="550.7" y="325" width="1.1" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="553.75" y="335.5" ></text>
+</g>
+<g >
+<title>_jobject* art::InvokeMethod&lt;(art::PointerSize)8&gt;(art::ScopedObjectAccessAlreadyRunnable const&amp;, _jobject*, _jobject*, _jobject*, unsigned long) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="357" width="56.4" height="15.0" fill="rgb(253,221,52)" rx="2" ry="2" />
+<text  x="1136.56" y="367.5" >_jobj..</text>
+</g>
+<g >
+<title>com.blent.VideoReceiver.connectAndReceive (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="389" width="4.0" height="15.0" fill="rgb(252,219,52)" rx="2" ry="2" />
+<text  x="344.36" y="399.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.LinkedTransferQueue$DualNode.await (7,203,197,991 off-CPU ns, 3.46%)</title><rect x="601.1" y="341" width="40.8" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="604.13" y="351.5" >jav..</text>
+</g>
+<g >
+<title>android::(anonymous namespace)::SurfaceCallbackHandler::run() (9,971,417,483 off-CPU ns, 4.78%)</title><rect x="127.8" y="485" width="56.4" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="130.77" y="495.5" >andro..</text>
+</g>
+<g >
+<title>android::AndroidRuntime::javaThreadShell(void*) (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="485" width="41.1" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="873.71" y="495.5" >and..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="501" width="56.3" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="914.77" y="511.5" >libut..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$feedDecoder$3.invoke (574,771,214 off-CPU ns, 0.28%)</title><rect x="342.2" y="213" width="3.2" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="345.15" y="223.5" ></text>
+</g>
+<g >
+<title>android.media.MediaCodec.releaseOutputBuffer (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="293" width="2.6" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="1133.96" y="303.5" ></text>
+</g>
+<g >
+<title>art_jni_trampoline (5,579,919,846 off-CPU ns, 2.68%)</title><rect x="709.9" y="325" width="31.5" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="712.86" y="335.5" >ar..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="501" width="41.1" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="873.71" y="511.5" >lib..</text>
+</g>
+<g >
+<title>com.blent.c.run (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="421" width="55.0" height="15.0" fill="rgb(225,96,22)" rx="2" ry="2" />
+<text  x="1081.60" y="431.5" >com.b..</text>
+</g>
+<g >
+<title>android::hardware::BpHwBinder::transact(unsigned int, android::hardware::Parcel const&amp;, android::hardware::Parcel*, unsigned int, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;) (180,184,002 off-CPU ns, 0.09%)</title><rect x="550.8" y="309" width="1.0" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="553.75" y="319.5" ></text>
+</g>
+<g >
+<title>okio.AsyncTimeout$Watchdog.run (9,958,785,684 off-CPU ns, 4.78%)</title><rect x="758.0" y="501" width="56.4" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="761.00" y="511.5" >okio...</text>
+</g>
+<g >
+<title>NET_Send (29,640,885 off-CPU ns, 0.01%)</title><rect x="38.3" y="517" width="0.2" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="41.31" y="527.5" ></text>
+</g>
+<g >
+<title>m3.z.run (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="421" width="51.0" height="15.0" fill="rgb(244,182,43)" rx="2" ry="2" />
+<text  x="399.39" y="431.5" >m3.z...</text>
+</g>
+<g >
+<title>com.blent.VideoReceiver.receivePackets (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="373" width="4.0" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="344.36" y="383.5" ></text>
+</g>
+<g >
+<title>com.blent.CodecLifetime.use (9,707,514,466 off-CPU ns, 4.66%)</title><rect x="1078.6" y="373" width="55.0" height="15.0" fill="rgb(214,43,10)" rx="2" ry="2" />
+<text  x="1081.61" y="383.5" >com.b..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="501" width="54.8" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="971.09" y="511.5" >libut..</text>
+</g>
+<g >
+<title>ioctl (9,948,979,797 off-CPU ns, 4.77%)</title><rect x="911.8" y="405" width="56.3" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="914.78" y="415.5" >ioctl</text>
+</g>
+<g >
+<title>ioctl (9,685,752,992 off-CPU ns, 4.65%)</title><rect x="968.1" y="405" width="54.8" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="971.10" y="415.5" >ioctl</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,958,019,337 off-CPU ns, 4.78%)</title><rect x="758.0" y="437" width="56.4" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="761.00" y="447.5" >art_j..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="501" width="55.7" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="187.22" y="511.5" >libut..</text>
+</g>
+<g >
+<title>android.os.MessageQueue.next (9,833,739,024 off-CPU ns, 4.72%)</title><rect x="1022.9" y="389" width="55.7" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1025.94" y="399.5" >andro..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (6,599,687,226 off-CPU ns, 3.17%)</title><rect x="39.1" y="437" width="37.3" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="42.07" y="447.5" >__f..</text>
+</g>
+<g >
+<title>android::hardware::graphics::bufferqueue::V2_0::BnHwGraphicBufferProducer::onTransact(unsigned int, android::hardware::Parcel const&amp;, android::hardware::Parcel*, unsigned int, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;) (93,919,358 off-CPU ns, 0.05%)</title><rect x="447.4" y="405" width="0.5" height="15.0" fill="rgb(231,120,28)" rx="2" ry="2" />
+<text  x="450.39" y="415.5" ></text>
+</g>
+<g >
+<title>__start_thread (8,675,790,225 off-CPU ns, 4.16%)</title><rect x="501.6" y="533" width="49.1" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="504.58" y="543.5" >__st..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="485" width="48.1" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="712.86" y="495.5" >art:..</text>
+</g>
+<g >
+<title>java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await (9,958,019,337 off-CPU ns, 4.78%)</title><rect x="758.0" y="469" width="56.4" height="15.0" fill="rgb(226,100,23)" rx="2" ry="2" />
+<text  x="761.00" y="479.5" >java...</text>
+</g>
+<g >
+<title>android::ALooper::awaitResponse(android::sp&lt;android::AReplyToken&gt; const&amp;, android::sp&lt;android::AMessage&gt;*) (9,243,049,698 off-CPU ns, 4.43%)</title><rect x="1078.6" y="245" width="52.3" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1081.63" y="255.5" >andro..</text>
+</g>
+<g >
+<title>android::hardware::graphics::bufferqueue::V2_0::BnHwGraphicBufferProducer::_hidl_dequeueBuffer(android::hidl::base::V1_0::BnHwBase*, android::hardware::Parcel const&amp;, android::hardware::Parcel*, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;) (93,580,050 off-CPU ns, 0.04%)</title><rect x="447.4" y="389" width="0.5" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="450.39" y="399.5" ></text>
+</g>
+<g >
+<title>art_quick_invoke_stub (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="453" width="55.0" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="1081.60" y="463.5" >art_q..</text>
+</g>
+<g >
+<title>android.os.MessageQueue.next (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="277" width="56.4" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1136.56" y="287.5" >andro..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (5,579,919,846 off-CPU ns, 2.68%)</title><rect x="709.9" y="293" width="31.5" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="712.86" y="303.5" >ar..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor$Worker.run (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="421" width="48.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="712.86" y="431.5" >java..</text>
+</g>
+<g >
+<title>android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl::evictorThread(std::__1::map&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long, std::__1::owner_less&lt;void&gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long&gt; &gt; &gt;&amp;, std::__1::mutex&amp;, std::__1::condition_variable&amp;) (.cfi) (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="485" width="51.0" height="15.0" fill="rgb(219,66,15)" rx="2" ry="2" />
+<text  x="79.82" y="495.5" >andro..</text>
+</g>
+<g >
+<title>android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="229" width="56.4" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="1136.56" y="239.5" >andro..</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="245" width="56.4" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="1136.56" y="255.5" >art_j..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (8,675,790,225 off-CPU ns, 4.16%)</title><rect x="501.6" y="517" width="49.1" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="504.58" y="527.5" >__pt..</text>
+</g>
+<g >
+<title>android::ALooper::loop() (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="469" width="55.7" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="187.22" y="479.5" >andro..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (9,006,071,534 off-CPU ns, 4.32%)</title><rect x="345.4" y="437" width="51.0" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="348.41" y="447.5" >art::..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="485" width="55.0" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="1081.60" y="495.5" >art::..</text>
+</g>
+<g >
+<title>art_jni_trampoline (7,203,197,991 off-CPU ns, 3.46%)</title><rect x="601.1" y="325" width="40.8" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="604.13" y="335.5" >art..</text>
+</g>
+<g >
+<title>usleep (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="469" width="51.0" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="79.82" y="479.5" >usleep</text>
+</g>
+<g >
+<title>pthread_cond_wait (568,308,720 off-CPU ns, 0.27%)</title><rect x="342.2" y="53" width="3.2" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="345.18" y="63.5" ></text>
+</g>
+<g >
+<title>art_quick_invoke_stub (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="453" width="55.7" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="1025.92" y="463.5" >art_q..</text>
+</g>
+<g >
+<title>void* std::__1::__thread_proxy[abi:nn200000]&lt;std::__1::tuple&lt;std::__1::unique_ptr&lt;std::__1::__thread_struct, std::__1::default_delete&lt;std::__1::__thread_struct&gt; &gt;, void (*)(std::__1::map&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long, std::__1::owner_less&lt;void&gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long&gt; &gt; &gt;&amp;, std::__1::mutex&amp;, std::__1::condition_variable&amp;), std::__1::reference_wrapper&lt;std::__1::map&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long, std::__1::owner_less&lt;void&gt;, std::__1::allocator&lt;std::__1::pair&lt;std::__1::weak_ptr&lt;android::hardware::media::bufferpool::V2_0::implementation::Accessor::Impl&gt; const, long&gt; &gt; &gt; &gt;, std::__1::reference_wrapper&lt;std::__1::mutex&gt;, std::__1::reference_wrapper&lt;std::__1::condition_variable&gt; &gt; &gt;(void*) (.cfi) (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="501" width="51.0" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="79.82" y="511.5" >void*..</text>
+</g>
+<g >
+<title>java.util.concurrent.locks.LockSupport.parkNanos (9,006,071,534 off-CPU ns, 4.32%)</title><rect x="345.4" y="485" width="51.0" height="15.0" fill="rgb(251,211,50)" rx="2" ry="2" />
+<text  x="348.41" y="495.5" >java...</text>
+</g>
+<g >
+<title>__start_thread (9,008,191,801 off-CPU ns, 4.32%)</title><rect x="239.9" y="533" width="51.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="242.91" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$RealBackend.coordinatorWait (4,257,097,536 off-CPU ns, 2.04%)</title><rect x="685.8" y="357" width="24.1" height="15.0" fill="rgb(212,33,8)" rx="2" ry="2" />
+<text  x="688.76" y="367.5" >o..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession.startOutputThread$lambda$12 (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="389" width="55.0" height="15.0" fill="rgb(241,167,40)" rx="2" ry="2" />
+<text  x="1081.60" y="399.5" >com.b..</text>
+</g>
+<g >
+<title>android.os.Looper.loop (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="309" width="56.4" height="15.0" fill="rgb(208,16,3)" rx="2" ry="2" />
+<text  x="1136.56" y="319.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.LinkedTransferQueue$DualNode.await (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="341" width="28.8" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="660.00" y="351.5" >ja..</text>
+</g>
+<g >
+<title>ioctl (9,469,102,136 off-CPU ns, 4.54%)</title><rect x="448.0" y="421" width="53.6" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="450.98" y="431.5" >ioctl</text>
+</g>
+<g >
+<title>CodecLooper-17666/17724 (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="549" width="51.0" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="79.82" y="559.5" >Codec..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="517" width="51.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="79.82" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>s3.a.run (9,008,191,801 off-CPU ns, 4.32%)</title><rect x="239.9" y="501" width="51.0" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="242.91" y="511.5" >s3.a...</text>
+</g>
+<g >
+<title>void* std::__1::__thread_proxy[abi:nn200000]&lt;std::__1::tuple&lt;std::__1::unique_ptr&lt;std::__1::__thread_struct, std::__1::default_delete&lt;std::__1::__thread_struct&gt; &gt;, void (android::AsyncWorker::*)(), android::AsyncWorker*&gt; &gt;(void*) (9,954,855,291 off-CPU ns, 4.78%)</title><rect x="814.4" y="501" width="56.3" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="817.37" y="511.5" >void*..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="517" width="52.9" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="660.00" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android::android_os_MessageQueue_nativePollOnce(_JNIEnv*, _jobject*, long, int) (9,833,311,370 off-CPU ns, 4.72%)</title><rect x="1022.9" y="341" width="55.7" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="1025.94" y="351.5" >andro..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="501" width="55.7" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="1025.92" y="511.5" >art::..</text>
+</g>
+<g >
+<title>binder:17666_1-17666/17735 (9,954,855,291 off-CPU ns, 4.78%)</title><rect x="814.4" y="549" width="56.3" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="817.37" y="559.5" >binde..</text>
+</g>
+<g >
+<title>art::Monitor::Wait(art::Thread*, art::ObjPtr&lt;art::mirror::Object&gt;, long, int, bool, art::ThreadState) (2,921,955,138 off-CPU ns, 1.40%)</title><rect x="741.5" y="341" width="16.5" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="744.45" y="351.5" ></text>
+</g>
+<g >
+<title>android::hardware::PoolThread::threadLoop() (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="453" width="54.2" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="450.37" y="463.5" >andro..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="501" width="55.9" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="604.12" y="511.5" >art::..</text>
+</g>
+<g >
+<title>binder:17666_2-17666/17676 (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="549" width="41.1" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="873.71" y="559.5" >bin..</text>
+</g>
+<g >
+<title>android::AHandler::deliverMessage(android::sp&lt;android::AMessage&gt; const&amp;) (203,159,306 off-CPU ns, 0.10%)</title><rect x="550.7" y="421" width="1.2" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="553.70" y="431.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="533" width="55.7" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="187.22" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (9,006,071,534 off-CPU ns, 4.32%)</title><rect x="345.4" y="453" width="51.0" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="348.41" y="463.5" >art::..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$startOutputThread$1$seq$1.invoke (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="341" width="2.6" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="1133.96" y="351.5" ></text>
+</g>
+<g >
+<title>ioctl (179,884,002 off-CPU ns, 0.09%)</title><rect x="550.8" y="277" width="1.0" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="553.75" y="287.5" ></text>
+</g>
+<g >
+<title>art::ConditionVariable::WaitHoldingLocks(art::Thread*) (8,675,151,917 off-CPU ns, 4.16%)</title><rect x="501.6" y="469" width="49.1" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="504.58" y="479.5" >art:..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="501" width="54.2" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="450.37" y="511.5" >libut..</text>
+</g>
+<g >
+<title>Jit thread pool-17666/17670 (8,675,790,225 off-CPU ns, 4.16%)</title><rect x="501.6" y="549" width="49.1" height="15.0" fill="rgb(207,13,3)" rx="2" ry="2" />
+<text  x="504.58" y="559.5" >Jit ..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession.queueInput (713,764,145 off-CPU ns, 0.34%)</title><rect x="341.4" y="277" width="4.0" height="15.0" fill="rgb(247,195,46)" rx="2" ry="2" />
+<text  x="344.36" y="287.5" ></text>
+</g>
+<g >
+<title>poll (8,902,519,772 off-CPU ns, 4.27%)</title><rect x="291.0" y="501" width="50.4" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="293.96" y="511.5" >poll</text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="485" width="55.7" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="187.22" y="495.5" >andro..</text>
+</g>
+<g >
+<title>CCodecWatchdog-17666/17722 (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="549" width="37.7" height="15.0" fill="rgb(229,112,26)" rx="2" ry="2" />
+<text  x="42.07" y="559.5" >CCo..</text>
+</g>
+<g >
+<title>libutil_thread_trampoline(void*) (.__uniq.226528677032898775202282855395389835431) (8,910,689,392 off-CPU ns, 4.27%)</title><rect x="550.7" y="501" width="50.4" height="15.0" fill="rgb(229,110,26)" rx="2" ry="2" />
+<text  x="553.69" y="511.5" >libut..</text>
+</g>
+<g >
+<title>art_quick_invoke_stub (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="453" width="51.0" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="399.39" y="463.5" >art_q..</text>
+</g>
+<g >
+<title>art_quick_invoke_static_stub (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="341" width="56.4" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="1136.56" y="351.5" >art_q..</text>
+</g>
+<g >
+<title>n3.d.run (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="469" width="4.0" height="15.0" fill="rgb(230,116,27)" rx="2" ry="2" />
+<text  x="344.36" y="479.5" ></text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner.awaitTaskToRun (2,667,131,804 off-CPU ns, 1.28%)</title><rect x="641.9" y="373" width="15.1" height="15.0" fill="rgb(225,96,22)" rx="2" ry="2" />
+<text  x="644.90" y="383.5" ></text>
+</g>
+<g >
+<title>android.media.MediaCodec.dequeueInputBuffer (138,260,816 off-CPU ns, 0.07%)</title><rect x="341.4" y="213" width="0.8" height="15.0" fill="rgb(220,71,17)" rx="2" ry="2" />
+<text  x="344.37" y="223.5" ></text>
+</g>
+<g >
+<title>android_media_MediaCodec_releaseOutputBuffer(_JNIEnv*, _jobject*, int, unsigned char, unsigned char, long) (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="245" width="2.6" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="1133.96" y="255.5" ></text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (8,910,469,661 off-CPU ns, 4.27%)</title><rect x="550.7" y="469" width="50.4" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="553.69" y="479.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue.poll (5,580,201,230 off-CPU ns, 2.68%)</title><rect x="709.9" y="373" width="31.5" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="712.86" y="383.5" >ja..</text>
+</g>
+<g >
+<title>__start_thread (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="533" width="41.1" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="873.71" y="543.5" >__s..</text>
+</g>
+<g >
+<title>CodecLooper-17666/17730 (9,971,417,483 off-CPU ns, 4.78%)</title><rect x="127.8" y="549" width="56.4" height="15.0" fill="rgb(208,18,4)" rx="2" ry="2" />
+<text  x="130.77" y="559.5" >Codec..</text>
+</g>
+<g >
+<title>android::AMessage::postAndAwaitResponse(android::sp&lt;android::AMessage&gt;*) (9,244,516,777 off-CPU ns, 4.43%)</title><rect x="1078.6" y="261" width="52.4" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1081.63" y="271.5" >andro..</text>
+</g>
+<g >
+<title>android::MediaCodec::dequeueOutputBuffer(unsigned long*, unsigned long*, unsigned long*, long*, unsigned int*, long) (9,246,800,277 off-CPU ns, 4.44%)</title><rect x="1078.6" y="277" width="52.4" height="15.0" fill="rgb(236,145,34)" rx="2" ry="2" />
+<text  x="1081.62" y="287.5" >andro..</text>
+</g>
+<g >
+<title>DefaultDispatch-17666/17710 (9,008,191,801 off-CPU ns, 4.32%)</title><rect x="239.9" y="549" width="51.0" height="15.0" fill="rgb(245,187,44)" rx="2" ry="2" />
+<text  x="242.91" y="559.5" >Defau..</text>
+</g>
+<g >
+<title>pthread_cond_wait (9,832,098,836 off-CPU ns, 4.72%)</title><rect x="184.3" y="453" width="55.6" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="187.25" y="463.5" >pthre..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession.feedDecoder (713,955,338 off-CPU ns, 0.34%)</title><rect x="341.4" y="293" width="4.0" height="15.0" fill="rgb(211,31,7)" rx="2" ry="2" />
+<text  x="344.36" y="303.5" ></text>
+</g>
+<g >
+<title>android::MediaCodec::onQueueInputBuffer(android::sp&lt;android::AMessage&gt; const&amp;) (191,408,615 off-CPU ns, 0.09%)</title><rect x="550.7" y="389" width="1.1" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="553.74" y="399.5" ></text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="469" width="54.2" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="450.37" y="479.5" >andro..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (9,240,877,814 off-CPU ns, 4.43%)</title><rect x="1078.6" y="213" width="52.3" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="1081.64" y="223.5" >__fut..</text>
+</g>
+<g >
+<title>android.media.MediaCodec.releaseOutputBufferInternal (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="277" width="2.6" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1133.96" y="287.5" ></text>
+</g>
+<g >
+<title>art::Thread::CreateCallback(void*) (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="485" width="52.9" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="660.00" y="495.5" >art::..</text>
+</g>
+<g >
+<title>android::AndroidRuntime::javaThreadShell(void*) (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="485" width="54.2" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="450.37" y="495.5" >andro..</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,008,030,571 off-CPU ns, 4.32%)</title><rect x="239.9" y="469" width="51.0" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="242.91" y="479.5" >art_j..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (9,952,057,716 off-CPU ns, 4.77%)</title><rect x="814.4" y="437" width="56.3" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="817.38" y="447.5" >__fut..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (9,007,391,759 off-CPU ns, 4.32%)</title><rect x="396.4" y="373" width="51.0" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="399.39" y="383.5" >art::..</text>
+</g>
+<g >
+<title>android::IPCThreadState::joinThreadPool(bool) (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="437" width="41.1" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="873.71" y="447.5" >and..</text>
+</g>
+<g >
+<title>__start_thread (9,971,417,483 off-CPU ns, 4.78%)</title><rect x="127.8" y="533" width="56.4" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="130.77" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>NET_Timeout (8,904,957,695 off-CPU ns, 4.27%)</title><rect x="291.0" y="517" width="50.4" height="15.0" fill="rgb(207,13,3)" rx="2" ry="2" />
+<text  x="293.95" y="527.5" >NET_T..</text>
+</g>
+<g >
+<title>com.android.internal.os.ZygoteInit.main (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="421" width="56.4" height="15.0" fill="rgb(207,11,2)" rx="2" ry="2" />
+<text  x="1136.56" y="431.5" >com.a..</text>
+</g>
+<g >
+<title>Okio Watchdog-17666/18905 (9,958,785,684 off-CPU ns, 4.78%)</title><rect x="758.0" y="549" width="56.4" height="15.0" fill="rgb(220,71,17)" rx="2" ry="2" />
+<text  x="761.00" y="559.5" >Okio ..</text>
+</g>
+<g >
+<title>android::CCodecBufferChannel::queueInputBufferInternal(android::sp&lt;android::MediaCodecBuffer&gt;, std::__1::shared_ptr&lt;C2LinearBlock&gt;, unsigned long) (184,005,386 off-CPU ns, 0.09%)</title><rect x="550.7" y="357" width="1.1" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="553.74" y="367.5" ></text>
+</g>
+<g >
+<title>HwBinder:17666_-17666/17725 (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="549" width="54.2" height="15.0" fill="rgb(217,58,14)" rx="2" ry="2" />
+<text  x="450.37" y="559.5" >HwBin..</text>
+</g>
+<g >
+<title>art::Monitor::Wait(art::Thread*, art::ObjPtr&lt;art::mirror::Object&gt;, long, int, bool, art::ThreadState) (2,666,541,842 off-CPU ns, 1.28%)</title><rect x="641.9" y="341" width="15.1" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="644.91" y="351.5" ></text>
+</g>
+<g >
+<title>SocketInputStream_socketRead0 (5,001,616,920 off-CPU ns, 2.40%)</title><rect x="10.0" y="533" width="28.3" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="13.00" y="543.5" >S..</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,006,071,534 off-CPU ns, 4.32%)</title><rect x="345.4" y="469" width="51.0" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="348.41" y="479.5" >art_j..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="517" width="55.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="1081.60" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>art_quick_invoke_stub (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="453" width="55.9" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="604.12" y="463.5" >art_q..</text>
+</g>
+<g >
+<title>art_jni_trampoline (138,260,816 off-CPU ns, 0.07%)</title><rect x="341.4" y="197" width="0.8" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="344.37" y="207.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,576,896,032 off-CPU ns, 4.59%)</title><rect x="447.4" y="517" width="54.2" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="450.37" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>blent-render-17666/19050 (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="549" width="55.0" height="15.0" fill="rgb(235,140,33)" rx="2" ry="2" />
+<text  x="1081.60" y="559.5" >blent..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="517" width="48.1" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="712.86" y="527.5" >__pt..</text>
+</g>
+<g >
+<title>android::PoolThread::threadLoop() (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="453" width="54.8" height="15.0" fill="rgb(224,91,21)" rx="2" ry="2" />
+<text  x="971.09" y="463.5" >andro..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,838,870,181 off-CPU ns, 4.72%)</title><rect x="184.2" y="517" width="55.7" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="187.22" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (69,647,923 off-CPU ns, 0.03%)</title><rect x="76.4" y="437" width="0.4" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="79.43" y="447.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="517" width="4.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="344.36" y="527.5" ></text>
+</g>
+<g >
+<title>art::JNI&lt;true&gt;::CallStaticVoidMethodV(_JNIEnv*, _jclass*, _jmethodID*, std::__va_list) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="469" width="56.4" height="15.0" fill="rgb(216,54,12)" rx="2" ry="2" />
+<text  x="1136.56" y="479.5" >art::..</text>
+</g>
+<g >
+<title>pthread_cond_wait (69,647,923 off-CPU ns, 0.03%)</title><rect x="76.4" y="453" width="0.4" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="79.43" y="463.5" ></text>
+</g>
+<g >
+<title>OkHttp TaskRunn-17666/18909 (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="549" width="48.1" height="15.0" fill="rgb(220,71,17)" rx="2" ry="2" />
+<text  x="712.86" y="559.5" >OkHt..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,971,417,483 off-CPU ns, 4.78%)</title><rect x="127.8" y="517" width="56.4" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="130.77" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>binder:17666_3-17666/17677 (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="549" width="56.3" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="914.77" y="559.5" >binde..</text>
+</g>
+<g >
+<title>android::MediaCodec::onMessageReceived(android::sp&lt;android::AMessage&gt; const&amp;) (201,524,768 off-CPU ns, 0.10%)</title><rect x="550.7" y="405" width="1.2" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="553.71" y="415.5" ></text>
+</g>
+<g >
+<title>pthread_cond_wait (457,317,999 off-CPU ns, 0.22%)</title><rect x="1131.0" y="181" width="2.6" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1133.96" y="191.5" ></text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="469" width="55.0" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="1081.60" y="479.5" >art::..</text>
+</g>
+<g >
+<title>android.os.Looper.loop (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="421" width="55.7" height="15.0" fill="rgb(208,16,3)" rx="2" ry="2" />
+<text  x="1025.92" y="431.5" >andro..</text>
+</g>
+<g >
+<title>java.lang.Thread.run (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="437" width="55.9" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="604.12" y="447.5" >java...</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$RealBackend.coordinatorWait (2,921,955,138 off-CPU ns, 1.40%)</title><rect x="741.5" y="357" width="16.5" height="15.0" fill="rgb(212,33,8)" rx="2" ry="2" />
+<text  x="744.45" y="367.5" ></text>
+</g>
+<g >
+<title>std::__1::__function::__func&lt;android::hardware::graphics::bufferqueue::V2_0::BnHwGraphicBufferProducer::_hidl_dequeueBuffer(android::hidl::base::V1_0::BnHwBase*, android::hardware::Parcel const&amp;, android::hardware::Parcel*, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;)::$_0, std::__1::allocator&lt;android::hardware::graphics::bufferqueue::V2_0::BnHwGraphicBufferProducer::_hidl_dequeueBuffer(android::hidl::base::V1_0::BnHwBase*, android::hardware::Parcel const&amp;, android::hardware::Parcel*, std::__1::function&lt;void (android::hardware::Parcel&amp;)&gt;)::$_0&gt;, void (android::hardware::graphics::bufferqueue::V2_0::Status, int, android::hardware::graphics::bufferqueue::V2_0::IGraphicBufferProducer::DequeueBufferOutput const&amp;)&gt;::operator()(android::hardware::graphics::bufferqueue::V2_0::Status&amp;&amp;, int&amp;&amp;, android::hardware::graphics::bufferqueue::V2_0::IGraphicBufferProducer::DequeueBufferOutput const&amp;) (.8bf0b1dd02f817c1368ccf1002edd4c3) (92,757,358 off-CPU ns, 0.04%)</title><rect x="447.4" y="357" width="0.5" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="450.39" y="367.5" ></text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="501" width="55.0" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="1081.60" y="511.5" >art::..</text>
+</g>
+<g >
+<title>pthread_cond_timedwait (8,704,520,394 off-CPU ns, 4.18%)</title><rect x="551.9" y="437" width="49.2" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="554.85" y="447.5" >pthr..</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,249,666,006 off-CPU ns, 4.44%)</title><rect x="1078.6" y="309" width="52.4" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="1081.61" y="319.5" >art_j..</text>
+</g>
+<g >
+<title>art::Unsafe_park(_JNIEnv*, _jobject*, unsigned char, long) (.__uniq.319429422067363160645159987129209045680) (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="309" width="28.8" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="660.00" y="319.5" >ar..</text>
+</g>
+<g >
+<title>art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*) (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="469" width="51.0" height="15.0" fill="rgb(215,48,11)" rx="2" ry="2" />
+<text  x="399.39" y="479.5" >art::..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="517" width="41.1" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="873.71" y="527.5" >__p..</text>
+</g>
+<g >
+<title>NET_Send (61,873,578 off-CPU ns, 0.03%)</title><rect x="38.5" y="517" width="0.3" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="41.49" y="527.5" ></text>
+</g>
+<g >
+<title>android::IPCThreadState::talkWithDriver(bool) (9,948,979,797 off-CPU ns, 4.77%)</title><rect x="911.8" y="421" width="56.3" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="914.78" y="431.5" >andro..</text>
+</g>
+<g >
+<title>android.media.MediaCodec.dequeueOutputBuffer (9,249,666,006 off-CPU ns, 4.44%)</title><rect x="1078.6" y="325" width="52.4" height="15.0" fill="rgb(237,148,35)" rx="2" ry="2" />
+<text  x="1081.61" y="335.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.runWorker (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="405" width="55.9" height="15.0" fill="rgb(251,213,51)" rx="2" ry="2" />
+<text  x="604.12" y="415.5" >java...</text>
+</g>
+<g >
+<title>8891/... writer-17666/18906 (65,123,038 off-CPU ns, 0.03%)</title><rect x="38.5" y="549" width="0.4" height="15.0" fill="rgb(213,40,9)" rx="2" ry="2" />
+<text  x="41.49" y="559.5" ></text>
+</g>
+<g >
+<title>__start_thread (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="533" width="4.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="344.36" y="543.5" ></text>
+</g>
+<g >
+<title>com.blent.VideoReceiver.feedDecoder$app_optimized (714,347,532 off-CPU ns, 0.34%)</title><rect x="341.4" y="309" width="4.0" height="15.0" fill="rgb(215,47,11)" rx="2" ry="2" />
+<text  x="344.36" y="319.5" ></text>
+</g>
+<g >
+<title>android::AsyncWorker::run() (9,954,855,291 off-CPU ns, 4.78%)</title><rect x="814.4" y="485" width="56.3" height="15.0" fill="rgb(237,150,36)" rx="2" ry="2" />
+<text  x="817.37" y="495.5" >andro..</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$RealBackend.coordinatorWait (2,666,767,534 off-CPU ns, 1.28%)</title><rect x="641.9" y="357" width="15.1" height="15.0" fill="rgb(212,33,8)" rx="2" ry="2" />
+<text  x="644.91" y="367.5" ></text>
+</g>
+<g >
+<title>android::ALooper::awaitResponse(android::sp&lt;android::AReplyToken&gt; const&amp;, android::sp&lt;android::AMessage&gt;*) (457,317,999 off-CPU ns, 0.22%)</title><rect x="1131.0" y="197" width="2.6" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="1133.96" y="207.5" ></text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="501" width="52.9" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="660.00" y="511.5" >art::..</text>
+</g>
+<g >
+<title>android::AndroidRuntime::start(char const*, android::Vector&lt;android::String8&gt; const&amp;, bool) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="501" width="56.4" height="15.0" fill="rgb(224,89,21)" rx="2" ry="2" />
+<text  x="1136.56" y="511.5" >andro..</text>
+</g>
+<g >
+<title>void* std::__1::__thread_proxy[abi:nn200000]&lt;std::__1::tuple&lt;std::__1::unique_ptr&lt;std::__1::__thread_struct, std::__1::default_delete&lt;std::__1::__thread_struct&gt; &gt;, void (android::(anonymous namespace)::SurfaceCallbackHandler::*)(), android::(anonymous namespace)::SurfaceCallbackHandler*&gt; &gt;(void*) (.cfi) (9,971,417,483 off-CPU ns, 4.78%)</title><rect x="127.8" y="501" width="56.4" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="130.77" y="511.5" >void*..</text>
+</g>
+<g >
+<title>android::IPCThreadState::joinThreadPool(bool) (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="437" width="54.8" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="971.09" y="447.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.getTask (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="389" width="28.8" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="660.00" y="399.5" >ja..</text>
+</g>
+<g >
+<title>com.blent.VideoReceiver$start$1$1.invokeSuspend (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="421" width="4.0" height="15.0" fill="rgb(250,210,50)" rx="2" ry="2" />
+<text  x="344.36" y="431.5" ></text>
+</g>
+<g >
+<title>SocketOutputStream_socketWrite0 (29,640,885 off-CPU ns, 0.01%)</title><rect x="38.3" y="533" width="0.2" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="41.31" y="543.5" ></text>
+</g>
+<g >
+<title>ioctl (7,252,086,763 off-CPU ns, 3.48%)</title><rect x="870.7" y="405" width="41.1" height="15.0" fill="rgb(231,122,29)" rx="2" ry="2" />
+<text  x="873.72" y="415.5" >ioctl</text>
+</g>
+<g >
+<title>java.lang.Thread.run (9,709,603,004 off-CPU ns, 4.66%)</title><rect x="1078.6" y="437" width="55.0" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="1081.60" y="447.5" >java...</text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="469" width="56.3" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="914.77" y="479.5" >andro..</text>
+</g>
+<g >
+<title>_JNIEnv::CallStaticVoidMethod(_jclass*, _jmethodID*, ...) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="485" width="56.4" height="15.0" fill="rgb(226,97,23)" rx="2" ry="2" />
+<text  x="1136.56" y="495.5" >_JNIE..</text>
+</g>
+<g >
+<title>art::JValue art::InvokeWithVarArgs&lt;_jmethodID*&gt;(art::ScopedObjectAccessAlreadyRunnable const&amp;, _jobject*, _jmethodID*, std::__va_list) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="453" width="56.4" height="15.0" fill="rgb(237,147,35)" rx="2" ry="2" />
+<text  x="1136.56" y="463.5" >art::..</text>
+</g>
+<g >
+<title>8891/... writer-17666/18909 (37,669,036 off-CPU ns, 0.02%)</title><rect x="38.9" y="549" width="0.2" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="41.86" y="559.5" ></text>
+</g>
+<g >
+<title>DefaultExecutor-17666/18929 (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="549" width="51.0" height="15.0" fill="rgb(211,30,7)" rx="2" ry="2" />
+<text  x="399.39" y="559.5" >Defau..</text>
+</g>
+<g >
+<title>__start_thread (9,001,367,188 off-CPU ns, 4.32%)</title><rect x="76.8" y="533" width="51.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="79.82" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>com.blent.DecodedOutputDrainer.present (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="309" width="2.6" height="15.0" fill="rgb(233,131,31)" rx="2" ry="2" />
+<text  x="1133.96" y="319.5" ></text>
+</g>
+<g >
+<title>com.blent.DecoderSession$startOutputThread$1$seq$1.invoke (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="357" width="2.6" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="1133.96" y="367.5" ></text>
+</g>
+<g >
+<title>com.blent.VideoReceiver$VideoPackets.frame (714,463,070 off-CPU ns, 0.34%)</title><rect x="341.4" y="341" width="4.0" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="344.36" y="351.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.locks.LockSupport.parkNanos (9,958,019,337 off-CPU ns, 4.78%)</title><rect x="758.0" y="453" width="56.4" height="15.0" fill="rgb(251,211,50)" rx="2" ry="2" />
+<text  x="761.00" y="463.5" >java...</text>
+</g>
+<g >
+<title>android.app.ActivityThread.main (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="325" width="56.4" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="1136.56" y="335.5" >andro..</text>
+</g>
+<g >
+<title>SocketInputStream_socketRead0 (8,914,545,506 off-CPU ns, 4.28%)</title><rect x="290.9" y="533" width="50.5" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="293.90" y="543.5" >Socke..</text>
+</g>
+<g >
+<title>art::Thread::CreateCallbackWithUffdGc(void*) (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="501" width="48.1" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="712.86" y="511.5" >art:..</text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue$Transferer.xferLifo (7,203,197,991 off-CPU ns, 3.46%)</title><rect x="601.1" y="357" width="40.8" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="604.13" y="367.5" >jav..</text>
+</g>
+<g >
+<title>DefaultDispatch-17666/17711 (9,630,878,155 off-CPU ns, 4.62%)</title><rect x="290.9" y="549" width="54.5" height="15.0" fill="rgb(239,158,37)" rx="2" ry="2" />
+<text  x="293.89" y="559.5" >Defau..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.runWorker (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="405" width="52.9" height="15.0" fill="rgb(251,213,51)" rx="2" ry="2" />
+<text  x="660.00" y="415.5" >java...</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor$Worker.run (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="421" width="52.9" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="660.00" y="431.5" >java...</text>
+</g>
+<g >
+<title>8891/... writer-17666/17706 (31,585,692 off-CPU ns, 0.02%)</title><rect x="38.3" y="549" width="0.2" height="15.0" fill="rgb(233,129,30)" rx="2" ry="2" />
+<text  x="41.31" y="559.5" ></text>
+</g>
+<g >
+<title>android::ALooper::awaitResponse(android::sp&lt;android::AReplyToken&gt; const&amp;, android::sp&lt;android::AMessage&gt;*) (137,054,970 off-CPU ns, 0.07%)</title><rect x="341.4" y="133" width="0.7" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="344.37" y="143.5" ></text>
+</g>
+<g >
+<title>__start_thread (8,910,689,392 off-CPU ns, 4.27%)</title><rect x="550.7" y="533" width="50.4" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="553.69" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$runnable$1.run (2,668,506,149 off-CPU ns, 1.28%)</title><rect x="641.9" y="389" width="15.1" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="644.90" y="399.5" ></text>
+</g>
+<g >
+<title>android::AndroidRuntime::javaThreadShell(void*) (9,951,142,373 off-CPU ns, 4.77%)</title><rect x="911.8" y="485" width="56.3" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="914.77" y="495.5" >andro..</text>
+</g>
+<g >
+<title>com.blent.DecoderSession$queueInput$1$queued$1.invoke (713,764,145 off-CPU ns, 0.34%)</title><rect x="341.4" y="245" width="4.0" height="15.0" fill="rgb(229,114,27)" rx="2" ry="2" />
+<text  x="344.36" y="255.5" ></text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,958,785,684 off-CPU ns, 4.78%)</title><rect x="758.0" y="517" width="56.4" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="761.00" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android_media_MediaCodec_dequeueOutputBuffer(_JNIEnv*, _jobject*, _jobject*, long) (9,249,666,006 off-CPU ns, 4.44%)</title><rect x="1078.6" y="293" width="52.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1081.61" y="303.5" >andro..</text>
+</g>
+<g >
+<title>sendto (61,873,578 off-CPU ns, 0.03%)</title><rect x="38.5" y="501" width="0.3" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="41.49" y="511.5" ></text>
+</g>
+<g >
+<title>android::hardware::IPCThreadState::joinThreadPool(bool) (9,575,864,840 off-CPU ns, 4.59%)</title><rect x="447.4" y="437" width="54.2" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="450.38" y="447.5" >andro..</text>
+</g>
+<g >
+<title>SocketOutputStream_socketWrite0 (35,332,345 off-CPU ns, 0.02%)</title><rect x="38.9" y="533" width="0.2" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="41.86" y="543.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,958,785,684 off-CPU ns, 4.78%)</title><rect x="758.0" y="533" width="56.4" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="761.00" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>com.blent.VideoPacketReader.dispatch (714,916,917 off-CPU ns, 0.34%)</title><rect x="341.4" y="357" width="4.0" height="15.0" fill="rgb(221,75,18)" rx="2" ry="2" />
+<text  x="344.36" y="367.5" ></text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$runnable$1.run (2,923,937,178 off-CPU ns, 1.40%)</title><rect x="741.4" y="389" width="16.6" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="744.45" y="399.5" ></text>
+</g>
+<g >
+<title>.0.0.1:8891/...-17666/18904 (5,001,708,074 off-CPU ns, 2.40%)</title><rect x="10.0" y="549" width="28.3" height="15.0" fill="rgb(252,217,51)" rx="2" ry="2" />
+<text  x="13.00" y="559.5" >...</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (9,970,417,638 off-CPU ns, 4.78%)</title><rect x="127.8" y="437" width="56.4" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="130.78" y="447.5" >__fut..</text>
+</g>
+<g >
+<title>pthread_cond_wait (9,241,833,814 off-CPU ns, 4.43%)</title><rect x="1078.6" y="229" width="52.3" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1081.64" y="239.5" >pthre..</text>
+</g>
+<g >
+<title>android.os.Looper.loopOnce (9,837,539,293 off-CPU ns, 4.72%)</title><rect x="1022.9" y="405" width="55.7" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="1025.92" y="415.5" >andro..</text>
+</g>
+<g >
+<title>auto android::hardware::IPCThreadState::executeCommand(int)::$_0::operator()&lt;android::hardware::Parcel&gt;(android::hardware::Parcel&amp;) const (.__uniq.198295754020524905358818648755506703109) (92,354,742 off-CPU ns, 0.04%)</title><rect x="447.4" y="341" width="0.5" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="450.39" y="351.5" ></text>
+</g>
+<g >
+<title>android::Codec2Client::Component::queue(std::__1::list&lt;std::__1::unique_ptr&lt;C2Work, std::__1::default_delete&lt;C2Work&gt; &gt;, std::__1::allocator&lt;std::__1::unique_ptr&lt;C2Work, std::__1::default_delete&lt;C2Work&gt; &gt; &gt; &gt;*) (183,241,310 off-CPU ns, 0.09%)</title><rect x="550.7" y="341" width="1.1" height="15.0" fill="rgb(211,28,6)" rx="2" ry="2" />
+<text  x="553.74" y="351.5" ></text>
+</g>
+<g >
+<title>android::MediaCodec::renderOutputBufferAndRelease(unsigned long) (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="229" width="2.6" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="1133.96" y="239.5" ></text>
+</g>
+<g >
+<title>android::IPCThreadState::talkWithDriver(bool) (9,685,752,992 off-CPU ns, 4.65%)</title><rect x="968.1" y="421" width="54.8" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="971.10" y="431.5" >andro..</text>
+</g>
+<g >
+<title>NET_Read (5,001,616,920 off-CPU ns, 2.40%)</title><rect x="10.0" y="517" width="28.3" height="15.0" fill="rgb(252,220,52)" rx="2" ry="2" />
+<text  x="13.00" y="527.5" >N..</text>
+</g>
+<g >
+<title>__start_thread (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="533" width="54.8" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="971.09" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="517" width="55.9" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="604.12" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue$Transferer.xferLifo (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="357" width="28.8" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="660.00" y="367.5" >ja..</text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="469" width="54.8" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="971.09" y="479.5" >andro..</text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="485" width="37.7" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="42.07" y="495.5" >and..</text>
+</g>
+<g >
+<title>com.blent.VideoReceiver.access$connectAndReceive (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="405" width="4.0" height="15.0" fill="rgb(226,97,23)" rx="2" ry="2" />
+<text  x="344.36" y="415.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="533" width="55.9" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="604.12" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>art_quick_invoke_stub (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="453" width="48.1" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="712.86" y="463.5" >art_..</text>
+</g>
+<g >
+<title>android::Looper::pollOnce(int, int*, int*, void**) (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="213" width="56.4" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="1136.56" y="223.5" >andro..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (7,202,979,530 off-CPU ns, 3.46%)</title><rect x="601.1" y="293" width="40.8" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="604.13" y="303.5" >art..</text>
+</g>
+<g >
+<title>art_jni_trampoline (571,935,561 off-CPU ns, 0.27%)</title><rect x="342.2" y="133" width="3.2" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="345.16" y="143.5" ></text>
+</g>
+<g >
+<title>android::CCodecBufferChannel::queueInputBuffer(android::sp&lt;android::MediaCodecBuffer&gt; const&amp;) (184,249,040 off-CPU ns, 0.09%)</title><rect x="550.7" y="373" width="1.1" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="553.74" y="383.5" ></text>
+</g>
+<g >
+<title>art_jni_trampoline (9,833,311,370 off-CPU ns, 4.72%)</title><rect x="1022.9" y="357" width="55.7" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="1025.94" y="367.5" >art_j..</text>
+</g>
+<g >
+<title>android::AMessage::postAndAwaitResponse(android::sp&lt;android::AMessage&gt;*) (570,191,254 off-CPU ns, 0.27%)</title><rect x="342.2" y="85" width="3.2" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="345.17" y="95.5" ></text>
+</g>
+<g >
+<title>android.os.MessageQueue.nextLegacy (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="261" width="56.4" height="15.0" fill="rgb(237,148,35)" rx="2" ry="2" />
+<text  x="1136.56" y="271.5" >andro..</text>
+</g>
+<g >
+<title>android_media_MediaCodec_dequeueInputBuffer(_JNIEnv*, _jobject*, long) (138,110,547 off-CPU ns, 0.07%)</title><rect x="341.4" y="181" width="0.8" height="15.0" fill="rgb(222,78,18)" rx="2" ry="2" />
+<text  x="344.37" y="191.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue$Transferer.xferLifo (5,579,919,846 off-CPU ns, 2.68%)</title><rect x="709.9" y="357" width="31.5" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="712.86" y="367.5" >ja..</text>
+</g>
+<g >
+<title>art_jni_trampoline (9,007,391,759 off-CPU ns, 4.32%)</title><rect x="396.4" y="389" width="51.0" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="399.39" y="399.5" >art_j..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,954,855,291 off-CPU ns, 4.78%)</title><rect x="814.4" y="517" width="56.3" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="817.37" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>sendto (29,640,885 off-CPU ns, 0.01%)</title><rect x="38.3" y="501" width="0.2" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="41.31" y="511.5" ></text>
+</g>
+<g >
+<title>android::PoolThread::threadLoop() (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="453" width="41.1" height="15.0" fill="rgb(224,91,21)" rx="2" ry="2" />
+<text  x="873.71" y="463.5" >and..</text>
+</g>
+<g >
+<title>android.os.HandlerThread.run (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="437" width="55.7" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1025.92" y="447.5" >andro..</text>
+</g>
+<g >
+<title>java.util.concurrent.locks.LockSupport.parkNanos (9,007,391,759 off-CPU ns, 4.32%)</title><rect x="396.4" y="405" width="51.0" height="15.0" fill="rgb(251,211,50)" rx="2" ry="2" />
+<text  x="399.39" y="415.5" >java...</text>
+</g>
+<g >
+<title>com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="405" width="56.4" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="1136.56" y="415.5" >com.a..</text>
+</g>
+<g >
+<title>art_quick_invoke_static_stub (9,970,641,149 off-CPU ns, 4.78%)</title><rect x="1133.6" y="437" width="56.4" height="15.0" fill="rgb(222,81,19)" rx="2" ry="2" />
+<text  x="1136.56" y="447.5" >art_q..</text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor$Worker.run (9,871,886,524 off-CPU ns, 4.74%)</title><rect x="601.1" y="421" width="55.9" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="604.12" y="431.5" >java...</text>
+</g>
+<g >
+<title>art_jni_trampoline (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="325" width="28.8" height="15.0" fill="rgb(254,225,54)" rx="2" ry="2" />
+<text  x="660.00" y="335.5" >ar..</text>
+</g>
+<g >
+<title>std::__1::condition_variable::wait(std::__1::unique_lock&lt;std::__1::mutex&gt;&amp;) (9,952,808,908 off-CPU ns, 4.77%)</title><rect x="814.4" y="469" width="56.3" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="817.38" y="479.5" >std::..</text>
+</g>
+<g >
+<title>android::hardware::graphics::bufferqueue::V2_0::utils::B2HGraphicBufferProducer::dequeueBuffer(android::hardware::graphics::bufferqueue::V2_0::IGraphicBufferProducer::DequeueBufferInput const&amp;, std::__1::function&lt;void (android::hardware::graphics::bufferqueue::V2_0::Status, int, android::hardware::graphics::bufferqueue::V2_0::IGraphicBufferProducer::DequeueBufferOutput const&amp;)&gt;) (93,580,050 off-CPU ns, 0.04%)</title><rect x="447.4" y="373" width="0.5" height="15.0" fill="rgb(222,82,19)" rx="2" ry="2" />
+<text  x="450.39" y="383.5" ></text>
+</g>
+<g >
+<title>y2.a.resumeWith (715,783,841 off-CPU ns, 0.34%)</title><rect x="341.4" y="437" width="4.0" height="15.0" fill="rgb(232,125,30)" rx="2" ry="2" />
+<text  x="344.36" y="447.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.SynchronousQueue.poll (7,203,197,991 off-CPU ns, 3.46%)</title><rect x="601.1" y="373" width="40.8" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="604.13" y="383.5" >jav..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (9,007,391,759 off-CPU ns, 4.32%)</title><rect x="396.4" y="357" width="51.0" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="399.39" y="367.5" >art::..</text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (5,079,800,845 off-CPU ns, 2.44%)</title><rect x="657.0" y="293" width="28.8" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="660.00" y="303.5" >ar..</text>
+</g>
+<g >
+<title>android::AndroidRuntime::javaThreadShell(void*) (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="485" width="54.8" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="971.09" y="495.5" >andro..</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner.awaitTaskToRun (2,922,126,753 off-CPU ns, 1.40%)</title><rect x="741.5" y="373" width="16.5" height="15.0" fill="rgb(225,96,22)" rx="2" ry="2" />
+<text  x="744.45" y="383.5" ></text>
+</g>
+<g >
+<title>__start_thread (9,338,512,844 off-CPU ns, 4.48%)</title><rect x="657.0" y="533" width="52.9" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="660.00" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>android::MediaCodec::dequeueInputBuffer(unsigned long*, long) (138,110,547 off-CPU ns, 0.07%)</title><rect x="341.4" y="165" width="0.8" height="15.0" fill="rgb(235,139,33)" rx="2" ry="2" />
+<text  x="344.37" y="175.5" ></text>
+</g>
+<g >
+<title>pthread_cond_wait (9,971,145,061 off-CPU ns, 4.78%)</title><rect x="127.8" y="453" width="56.4" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="130.78" y="463.5" >pthre..</text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (566,615,375 off-CPU ns, 0.27%)</title><rect x="342.2" y="37" width="3.2" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="345.19" y="47.5" ></text>
+</g>
+<g >
+<title>java.util.concurrent.ThreadPoolExecutor.runWorker (8,504,520,369 off-CPU ns, 4.08%)</title><rect x="709.9" y="405" width="48.1" height="15.0" fill="rgb(251,213,51)" rx="2" ry="2" />
+<text  x="712.86" y="415.5" >java..</text>
+</g>
+<g >
+<title>__pthread_start(void*) (9,006,535,072 off-CPU ns, 4.32%)</title><rect x="345.4" y="517" width="51.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="348.41" y="527.5" >__pth..</text>
+</g>
+<g >
+<title>android::AMessage::postAndAwaitResponse(android::sp&lt;android::AMessage&gt;*) (137,862,931 off-CPU ns, 0.07%)</title><rect x="341.4" y="149" width="0.8" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="344.37" y="159.5" ></text>
+</g>
+<g >
+<title>art::Thread::Park(bool, long) (9,958,019,337 off-CPU ns, 4.78%)</title><rect x="758.0" y="405" width="56.4" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="761.00" y="415.5" >art::..</text>
+</g>
+<g >
+<title>android::AMessage::postAndAwaitResponse(android::sp&lt;android::AMessage&gt;*) (457,587,768 off-CPU ns, 0.22%)</title><rect x="1131.0" y="213" width="2.6" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1133.96" y="223.5" ></text>
+</g>
+<g >
+<title>__futex_wait_ex(void volatile*, bool, int, bool, timespec const*) (457,317,999 off-CPU ns, 0.22%)</title><rect x="1131.0" y="165" width="2.6" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="1133.96" y="175.5" ></text>
+</g>
+<g >
+<title>NET_Send (35,332,345 off-CPU ns, 0.02%)</title><rect x="38.9" y="517" width="0.2" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="41.86" y="527.5" ></text>
+</g>
+<g >
+<title>blent-frame-cb-17666/19049 (9,837,690,870 off-CPU ns, 4.72%)</title><rect x="1022.9" y="549" width="55.7" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="1025.92" y="559.5" >blent..</text>
+</g>
+<g >
+<title>binder:17666_6-17666/18902 (9,686,170,453 off-CPU ns, 4.65%)</title><rect x="968.1" y="549" width="54.8" height="15.0" fill="rgb(208,18,4)" rx="2" ry="2" />
+<text  x="971.09" y="559.5" >binde..</text>
+</g>
+<g >
+<title>all (208,471,000,871 off-CPU ns, 100%)</title><rect x="10.0" y="565" width="1180.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="13.00" y="575.5" ></text>
+</g>
+<g >
+<title>android::Thread::_threadLoop(void*) (7,253,022,917 off-CPU ns, 3.48%)</title><rect x="870.7" y="469" width="41.1" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="873.71" y="479.5" >and..</text>
+</g>
+<g >
+<title>com.blent.CodecLifetime.use (713,764,145 off-CPU ns, 0.34%)</title><rect x="341.4" y="261" width="4.0" height="15.0" fill="rgb(214,43,10)" rx="2" ry="2" />
+<text  x="344.36" y="271.5" ></text>
+</g>
+<g >
+<title>MediaCodec_loop-17666/19044 (8,910,689,392 off-CPU ns, 4.27%)</title><rect x="550.7" y="549" width="50.4" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="553.69" y="559.5" >Media..</text>
+</g>
+<g >
+<title>__start_thread (6,669,335,149 off-CPU ns, 3.20%)</title><rect x="39.1" y="533" width="37.7" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="42.07" y="543.5" >__s..</text>
+</g>
+<g >
+<title>art::ThreadPoolWorker::Run() (8,675,790,225 off-CPU ns, 4.16%)</title><rect x="501.6" y="485" width="49.1" height="15.0" fill="rgb(213,37,8)" rx="2" ry="2" />
+<text  x="504.58" y="495.5" >art:..</text>
+</g>
+<g >
+<title>__start_thread (9,007,508,297 off-CPU ns, 4.32%)</title><rect x="396.4" y="533" width="51.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="399.39" y="543.5" >__sta..</text>
+</g>
+<g >
+<title>okhttp3.internal.concurrent.TaskRunner$runnable$1.run (4,258,618,576 off-CPU ns, 2.04%)</title><rect x="685.8" y="389" width="24.1" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="688.76" y="399.5" >o..</text>
+</g>
+</g>
+</svg>

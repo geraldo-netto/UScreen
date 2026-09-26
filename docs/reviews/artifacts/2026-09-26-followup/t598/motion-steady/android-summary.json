@@ -1,0 +1,125 @@
+{
+  "total_ns": 6487436375,
+  "top_leaf": [
+    {
+      "symbol": "ioctl",
+      "ns": 743718500
+    },
+    {
+      "symbol": "__futex_wait_ex(void volatile*, bool, int, bool, timespec const*)",
+      "ns": 512562750
+    },
+    {
+      "symbol": "sendto",
+      "ns": 296482375
+    },
+    {
+      "symbol": "pthread_cond_signal",
+      "ns": 221105500
+    },
+    {
+      "symbol": "pthread_cond_broadcast",
+      "ns": 160804000
+    },
+    {
+      "symbol": "NET_Read",
+      "ns": 130653250
+    },
+    {
+      "symbol": "android::C2DmaBufAllocation::unmap(void*, unsigned long, C2Fence*)",
+      "ns": 100502500
+    },
+    {
+      "symbol": "scudo_malloc",
+      "ns": 85427125
+    },
+    {
+      "symbol": "arm::mapper::common::import_buffer(native_handle const*, imported_handle**)",
+      "ns": 80402000
+    },
+    {
+      "symbol": "android::Looper::pollOnce(int, int*, int*, void**)",
+      "ns": 80402000
+    },
+    {
+      "symbol": "okhttp3.internal.concurrent.TaskRunner$runnable$1.run",
+      "ns": 70351750
+    },
+    {
+      "symbol": "android::C2DmaBufAllocation::mapInternal(unsigned long, unsigned long, unsigned long, int, int, void**, void**)",
+      "ns": 70351750
+    },
+    {
+      "symbol": "poll",
+      "ns": 70351750
+    },
+    {
+      "symbol": "android::MediaCodec::onMessageReceived(android::sp<android::AMessage> const&)",
+      "ns": 70351750
+    },
+    {
+      "symbol": "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+      "ns": 70351750
+    },
+    {
+      "symbol": "android::Thread::_threadLoop(void*)",
+      "ns": 65326625
+    },
+    {
+      "symbol": "android::BLASTBufferQueue::acquireNextBufferLocked(std::__1::optional<android::SurfaceComposerClient::Transaction*>)",
+      "ns": 60301500
+    },
+    {
+      "symbol": "art::Thread::Park(bool, long)",
+      "ns": 60301500
+    },
+    {
+      "symbol": "scudo::Allocator<scudo::AndroidNormalConfig, &(scudo_malloc_postinit)>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)",
+      "ns": 55276375
+    },
+    {
+      "symbol": "android::ALooper::loop()",
+      "ns": 55276375
+    },
+    {
+      "symbol": "android::AMessage::postAndAwaitResponse(android::sp<android::AMessage>*)",
+      "ns": 50251250
+    },
+    {
+      "symbol": "pthread_setname_np",
+      "ns": 45226125
+    },
+    {
+      "symbol": "arm::mapper::common::free_buffer(void*)",
+      "ns": 45226125
+    },
+    {
+      "symbol": "android_fdsan_close_with_tag",
+      "ns": 45226125
+    },
+    {
+      "symbol": "okhttp3.internal.concurrent.TaskQueue.schedule",
+      "ns": 45226125
+    },
+    {
+      "symbol": "android::CCodec::onMessageReceived(android::sp<android::AMessage> const&)",
+      "ns": 40201000
+    },
+    {
+      "symbol": "android::CCodecBufferChannel::renderOutputBuffer(android::sp<android::MediaCodecBuffer> const&, long)",
+      "ns": 40201000
+    },
+    {
+      "symbol": "arm::mapper::common::set_metadata(imported_handle const*, arm::mapper::common::metadata_descriptor const&, unsigned char const*, unsigned long, std::__1::function<arm::mapper::common::mapper_error (unsigned char const*, unsigned long, void*)>)",
+      "ns": 40201000
+    },
+    {
+      "symbol": "okhttp3.internal.concurrent.TaskRunner$RealBackend.coordinatorWait",
+      "ns": 40201000
+    },
+    {
+      "symbol": "com.blent.DecoderSession.startOutputThread$lambda$12",
+      "ns": 40201000
+    }
+  ]
+}

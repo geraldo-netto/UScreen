@@ -1,0 +1,138 @@
+adb/290576;[[unknown]: unresolved];[adb: unresolved];__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl 5025125
+adb/290576;[[unknown]: unresolved];[adb: unresolved];__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl;proc_do_submiturb;__check_object_size;check_heap_object;__virt_addr_valid 5025125
+adb/290576;[[unknown]: unresolved];[adb: unresolved];__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl;proc_do_submiturb;_raw_spin_unlock_irq 5025125
+adb/290576;[[unknown]: unresolved];[adb: unresolved];pthread_cond_clockwait@@GLIBC_2.34 5025125
+adb/290576;[callchain unavailable];__GI___ioctl 5025125
+adb/290576;[callchain unavailable];__android_log_is_loggable 5025125
+adb/290576;[callchain unavailable];cfree@GLIBC_2.2.5 5025125
+adb/290576;[callchain unavailable];pthread_mutex_unlock@@GLIBC_2.2.5 5025125
+adb/290576;clone3;start_thread;[adb: unresolved];pthread_mutex_unlock@@GLIBC_2.2.5;__GI___lll_lock_wake;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake;futex_ref_get 5025125
+adb/290576;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_epoll_wait;do_epoll_wait;ep_poll;schedule_hrtimeout_range;schedule 5025125
+adb/290576;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl;proc_do_submiturb 5025125
+adb/290576;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl;proc_do_submiturb;_raw_spin_unlock_irq 10050250
+adb/290576;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;usbdev_ioctl;usbdev_do_ioctl;reap_as;_raw_spin_lock_irqsave 5025125
+adb/290576;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_writev;do_writev;vfs_writev;do_iter_readv_writev;sock_write_iter;inet_sendmsg;tcp_sendmsg;tcp_sendmsg_locked;tcp_push;__tcp_push_pending_frames;tcp_write_xmit;__tcp_transmit_skb;__tcp_select_window 5025125
+dec0:0:rawvideo/607827;[callchain unavailable];[ffmpeg: unresolved] 5025125
+dmx0:rawvideo/607827;[callchain unavailable];[ffmpeg: unresolved] 10050250
+dmx0:rawvideo/607827;[callchain unavailable];_mid_memalign.isra.0 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch;memcg1_uncharge_batch 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch;memcg_uncharge 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch;memcg_uncharge;page_counter_uncharge 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch;memcg_uncharge;page_counter_uncharge;propagate_protected_usage 10050250
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;__mem_cgroup_uncharge;uncharge_batch;mod_memcg_state 10050250
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;free_frozen_pages;__free_frozen_pages 5025125
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;anon_pipe_buf_release;__folio_put;free_frozen_pages;__free_frozen_pages;free_frozen_page_commit.isra.0;free_pcppages_bulk;_raw_spin_unlock_irqrestore 10050250
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;copy_page_to_iter;_copy_to_iter 60301500
+dmx0:rawvideo/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;fifo_pipe_read;anon_pipe_read;mutex_lock;__mutex_lock_slowpath;__mutex_lock.constprop.0;mutex_spin_on_owner 30150750
+evdi_helper/290619;[callchain unavailable];convert_job 175879375
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;__check_object_size 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;drm_clflush_virt_range 160804000
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;__check_object_size;check_heap_object 15075375
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;__check_object_size;check_heap_object;_raw_spin_lock 25125625
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;__check_object_size;check_heap_object;find_vmap_area 110552750
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;__check_object_size;check_heap_object;find_vmap_area;_raw_spin_unlock 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;__check_object_size;check_heap_object;srso_alias_return_thunk 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;_copy_to_user 241206000
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;check_stack_object 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;evdi_grab_pixels;do_ioctl;drm_ioctl;__GI___ioctl;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_ioctl;drm_ioctl;drm_ioctl_kernel;evdi_painter_grabpix_ioctl;dma_buf_begin_cpu_access;amdgpu_dma_buf_begin_cpu_access 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;mark_region;__memset_avx512_unaligned_erms 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;publish_frame;conv_pool_convert;convert_job 95477375
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;evdi_handle_event;on_update_ready;grab_now;publish_frame;conv_pool_convert;pthread_cond_signal@@GLIBC_2.3.2;entry_SYSCALL_64_after_hwframe;do_syscall_64 5025125
+evdi_helper/290619;_start;__libc_start_main@@GLIBC_2.34;__libc_start_call_main;main;capture_run;evdi_handle_events;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_read;ksys_read;vfs_read;drm_read;__check_object_size;check_heap_object;__nr_to_section 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wait;__futex_wait;futex_do_wait;schedule;__schedule 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_poll;do_sys_poll;do_poll.constprop.0;select_estimate_accuracy 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol 10050250
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;__memcg_kmem_charge_page 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;__memcg_kmem_charge_page;__rcu_read_lock 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;__memcg_kmem_charge_page;obj_cgroup_charge_pages 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;__memcg_kmem_charge_page;obj_cgroup_charge_pages;mod_memcg_state 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;__memcg_kmem_charge_page;obj_cgroup_charge_pages;try_charge_memcg 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;get_page_from_freelist;post_alloc_hook;kernel_init_pages 60301500
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;get_page_from_freelist;rmqueue.isra.0;__rmqueue_pcplist 20100500
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;get_page_from_freelist;rmqueue.isra.0;__rmqueue_pcplist;rmqueue_bulk;_raw_spin_unlock_irqrestore 25125625
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;alloc_pages_noprof;alloc_pages_mpol;__alloc_frozen_pages_noprof;srso_alias_safe_ret 5025125
+evdi_helper/290619;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_write;ksys_write;vfs_write;fifo_pipe_write;anon_pipe_write;copy_page_from_iter;_copy_from_iter 15075375
+ffmpeg/607827;[callchain unavailable];analyse_update_cache 5025125
+ffmpeg/607827;[callchain unavailable];cavlc_mb_header_i 5025125
+ffmpeg/607827;[callchain unavailable];fdec_filter_row 5025125
+ffmpeg/607827;[callchain unavailable];mb_analyse_init 20100500
+ffmpeg/607827;[callchain unavailable];mb_analyse_init_qp 25125625
+ffmpeg/607827;[callchain unavailable];mb_analyse_intra 10050250
+ffmpeg/607827;[callchain unavailable];mb_encode_i16x16 10050250
+ffmpeg/607827;[callchain unavailable];mb_mc_0xywh 5025125
+ffmpeg/607827;[callchain unavailable];mc_luma_sse2 5025125
+ffmpeg/607827;[callchain unavailable];nal_end 5025125
+ffmpeg/607827;[callchain unavailable];predict_16x16_dc_128_c 5025125
+ffmpeg/607827;[callchain unavailable];predict_16x16_p_avx2 5025125
+ffmpeg/607827;[callchain unavailable];pthread_mutex_lock@@GLIBC_2.2.5 5025125
+ffmpeg/607827;[callchain unavailable];refine_subpel 5025125
+ffmpeg/607827;[callchain unavailable];slice_write 15075375
+ffmpeg/607827;[callchain unavailable];slicetype_mb_cost 60301500
+ffmpeg/607827;[callchain unavailable];slicetype_slice_cost 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_copy_column8 15075375
+ffmpeg/607827;[callchain unavailable];x264_8_dct4x4x4_internal_avx512 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_decimate_score16_avx512 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_dequant_4x4dc_avx2 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_frame_expand_border 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_intra_sad_x3_16x16_avx2 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_intra_sad_x3_8x8c_avx2 20100500
+ffmpeg/607827;[callchain unavailable];x264_8_load_deinterleave_chroma_fdec_avx512 35175875
+ffmpeg/607827;[callchain unavailable];x264_8_load_deinterleave_chroma_fenc_avx512 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_analyse 15075375
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_cache_load_progressive 251256250
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_cache_save 55276375
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_encode 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_probe_skip 25125625
+ffmpeg/607827;[callchain unavailable];x264_8_macroblock_write_cavlc 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_mb_encode_chroma 15075375
+ffmpeg/607827;[callchain unavailable];x264_8_mb_predict_mv_ref16x16 15075375
+ffmpeg/607827;[callchain unavailable];x264_8_mc_chroma_avx2 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_mc_copy_w16_aligned_sse 30150750
+ffmpeg/607827;[callchain unavailable];x264_8_mc_copy_w16_sse 25125625
+ffmpeg/607827;[callchain unavailable];x264_8_me_search_ref 50251250
+ffmpeg/607827;[callchain unavailable];x264_8_pixel_sad_16x16_avx512 15075375
+ffmpeg/607827;[callchain unavailable];x264_8_pixel_sad_8x8_avx512 25125625
+ffmpeg/607827;[callchain unavailable];x264_8_pixel_sad_x4_16x16_avx512 25125625
+ffmpeg/607827;[callchain unavailable];x264_8_pixel_sad_x4_8x8_avx512 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_pixel_ssd_8x8_avx 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_prefetch_fenc 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_prefetch_fenc_420_mmx2 20100500
+ffmpeg/607827;[callchain unavailable];x264_8_prefetch_ref_mmx2 30150750
+ffmpeg/607827;[callchain unavailable];x264_8_quant_4x4x4_avx2 60301500
+ffmpeg/607827;[callchain unavailable];x264_8_ratecontrol_mb 80402000
+ffmpeg/607827;[callchain unavailable];x264_8_ratecontrol_mb_qp 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_store_interleave_chroma_sse2 10050250
+ffmpeg/607827;[callchain unavailable];x264_8_sub16x16_dct_avx512 5025125
+ffmpeg/607827;[callchain unavailable];x264_8_sub8x8_dct_avx512 30150750
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved] 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved] 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;__memmove_avx512_unaligned_erms 20100500
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;pthread_cond_broadcast@@GLIBC_2.3.2;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake;wake_up_q;try_to_wake_up;_raw_spin_unlock_irqrestore 15075375
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;x264_8_frame_init_lowres;x264_8_frame_expand_border_lowres 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;x264_8_frame_init_lowres;x264_8_frame_expand_border_lowres;__memmove_avx512_unaligned_erms 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;x264_8_lookahead_get_frames;x264_8_slicetype_decide;slicetype_frame_cost;pthread_cond_broadcast@@GLIBC_2.3.2 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;x264_8_lookahead_get_frames;x264_8_slicetype_decide;slicetype_frame_cost;pthread_cond_broadcast@@GLIBC_2.3.2;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake;wake_up_q;try_to_wake_up;_raw_spin_unlock_irqrestore 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];x264_encoder_encode;x264_8_encoder_encode;x264_8_ratecontrol_start;rate_estimate_qscale;get_qscale;pow@@GLIBC_2.29;__ieee754_pow_fma 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];pthread_cond_broadcast@@GLIBC_2.3.2;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake 5025125
+ffmpeg/607827;[ffmpeg: unresolved];__libc_start_main@@GLIBC_2.34;__libc_start_call_main;[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];[ffmpeg: unresolved];pthread_cond_broadcast@@GLIBC_2.3.2;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake;wake_up_q;try_to_wake_up;_raw_spin_unlock_irqrestore 5025125
+ffmpeg/607827;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_futex;do_futex;futex_wake;wake_up_q;try_to_wake_up;_raw_spin_unlock_irqrestore 10050250
+ffmpeg/607827;x264_8_frame_init_lowres_core_avx2 90452250
+ffmpeg/607827;x264_8_plane_copy_avx512 35175875
+mux0:tee/607827;[callchain unavailable];[ffmpeg: unresolved] 5025125
+tokio-rt-worker/290532;<tokio::process::Command as blent_config::commands::AsyncCommandExt>::output_timeout::{{closure}};tempfile::file::imp::platform::create;std::fs::OpenOptions::_open;__GI___libc_open;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_openat;do_sys_openat2;do_file_open;path_openat;vfs_tmpfile;ext4_tmpfile;finish_open;do_dentry_open 5025125
+tokio-rt-worker/290532;[[unknown]: unresolved];<&mio::net::tcp::stream::TcpStream as std::io::Write>::write_vectored;<&std::os::unix::net::stream::UnixStream as std::io::Write>::write_vectored;__GI___writev;entry_SYSCALL_64_after_hwframe;do_syscall_64;x64_sys_call;__x64_sys_writev;do_writev;vfs_writev;do_iter_readv_writev;sock_write_iter;inet_sendmsg;tcp_sendmsg;tcp_sendmsg_locked;tcp_push;__tcp_push_pending_frames;tcp_write_xmit;__tcp_transmit_skb;ip_queue_xmit;__ip_queue_xmit;ip_local_out;ip_output;ip_finish_output;__ip_finish_output;ip_finish_output2;neigh_hh_output;__dev_queue_xmit;__local_bh_enable_ip;do_softirq.part.0;__do_softirq;handle_softirqs;net_rx_action;__napi_poll;process_backlog;__netif_receive_skb;__netif_receive_skb_one_core;ip_rcv;ip_local_deliver;ip_local_deliver_finish;ip_protocol_deliver_rcu;tcp_v4_rcv;tcp_v4_do_rcv;tcp_rcv_established;tcp_data_queue;tcp_try_rmem_schedule;__sk_mem_schedule;__sk_mem_raise_allocated 5025125
+tokio-rt-worker/290532;[[unknown]: unresolved];<alloc::collections::vec_deque::drain::Drain<T,A> as core::ops::drop::Drop>::drop 5025125
+tokio-rt-worker/290532;[[unknown]: unresolved];tokio::runtime::scheduler::multi_thread::worker::Context::run 5025125
+tokio-rt-worker/290532;[[unknown]: unresolved];tokio::sync::notify::NotifyGuard::notify_waiters 5025125
+tokio-rt-worker/290532;[callchain unavailable];<core::future::poll_fn::PollFn<F> as core::future::future::Future>::poll 5025125
+tokio-rt-worker/290532;[callchain unavailable];tokio::runtime::scheduler::multi_thread::worker::<impl tokio::runtime::scheduler::multi_thread::handle::Handle>::schedule_local 5025125
+tokio-rt-worker/290532;blent::annex_b::AnnexBPacketizer::extend_pending;__memmove_avx512_unaligned_erms 5025125
+tokio-rt-worker/290532;tokio::runtime::scheduler::multi_thread::handle::<impl tokio::runtime::task::Schedule for alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>::schedule 5025125
+tokio-rt-worker/290532;tokio::runtime::task::core::TaskIdGuard::enter 5025125
+tokio-rt-worker/290532;tokio::sync::watch::state::AtomicState::load 5025125

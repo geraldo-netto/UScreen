@@ -1,0 +1,125 @@
+{
+  "total_ns": 208471000871,
+  "top_leaf": [
+    {
+      "symbol": "__futex_wait_ex(void volatile*, bool, int, bool, timespec const*)",
+      "ns": 55542278613
+    },
+    {
+      "symbol": "art::Thread::Park(bool, long)",
+      "ns": 54842213422
+    },
+    {
+      "symbol": "ioctl",
+      "ns": 36628699740
+    },
+    {
+      "symbol": "android::Looper::pollOnce(int, int*, int*, void**)",
+      "ns": 19803952519
+    },
+    {
+      "symbol": "art::Monitor::Wait(art::Thread*, art::ObjPtr<art::mirror::Object>, long, int, bool, art::ThreadState)",
+      "ns": 9845145864
+    },
+    {
+      "symbol": "usleep",
+      "ns": 9001367188
+    },
+    {
+      "symbol": "poll",
+      "ns": 8902519772
+    },
+    {
+      "symbol": "art::ConditionVariable::WaitHoldingLocks(art::Thread*)",
+      "ns": 8675151917
+    },
+    {
+      "symbol": "NET_Read",
+      "ns": 5009477730
+    },
+    {
+      "symbol": "sendto",
+      "ns": 127376347
+    },
+    {
+      "symbol": "android::C2DmaBufAllocation::unmap(void*, unsigned long, C2Fence*)",
+      "ns": 5797960
+    },
+    {
+      "symbol": "pthread_cond_signal",
+      "ns": 4920114
+    },
+    {
+      "symbol": "okhttp3.internal.concurrent.TaskRunner$runnable$1.run",
+      "ns": 4011039
+    },
+    {
+      "symbol": "arm::mapper::common::free_buffer(void*)",
+      "ns": 2771885
+    },
+    {
+      "symbol": "UnisocBufferMappingRetainer::increaseCount(native_handle const*)",
+      "ns": 1969115
+    },
+    {
+      "symbol": "com.blent.DecoderSession.recordOutput",
+      "ns": 1705269
+    },
+    {
+      "symbol": "scudo_malloc",
+      "ns": 1649924
+    },
+    {
+      "symbol": "pthread_setname_np",
+      "ns": 1552808
+    },
+    {
+      "symbol": "pthread_mutex_unlock",
+      "ns": 1502076
+    },
+    {
+      "symbol": "pthread_cond_broadcast",
+      "ns": 1451769
+    },
+    {
+      "symbol": "com.blent.ControlSession.enqueue",
+      "ns": 1387308
+    },
+    {
+      "symbol": "android::ALooper::loop()",
+      "ns": 1314884
+    },
+    {
+      "symbol": "android::DummyContainerBuffer::DummyContainerBuffer(android::sp<android::AMessage> const&, std::__1::shared_ptr<C2Buffer> const&)",
+      "ns": 1266115
+    },
+    {
+      "symbol": "_JNIEnv::CallVoidMethod(_jobject*, _jmethodID*, ...)",
+      "ns": 1148385
+    },
+    {
+      "symbol": "android::MediaCodec::dequeueOutputBuffer(unsigned long*, unsigned long*, unsigned long*, long*, unsigned int*, long)",
+      "ns": 1130769
+    },
+    {
+      "symbol": "art::Unsafe_unpark(_JNIEnv*, _jobject*, _jobject*) (.__uniq.319429422067363160645159987129209045680)",
+      "ns": 1088270
+    },
+    {
+      "symbol": "SocketInputStream_socketRead0",
+      "ns": 1079808
+    },
+    {
+      "symbol": "android::AHandler::deliverMessage(android::sp<android::AMessage> const&)",
+      "ns": 1059000
+    },
+    {
+      "symbol": "android::hardware::PoolThread::threadLoop()",
+      "ns": 1031192
+    },
+    {
+      "symbol": "android::AMessage::deliver()",
+      "ns": 1008807
+    }
+  ]
+}
