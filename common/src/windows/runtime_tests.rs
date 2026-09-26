@@ -2,13 +2,14 @@
 use super::*;
 use crate::commands::SyncCommandExt;
 use crate::windows::{native::Local, security::User};
-use std::os::windows::io::AsRawHandle;
+use std::os::windows::{io::AsRawHandle, process::CommandExt};
 use windows_sys::Win32::{
     Security::{Authorization::*, *},
     Storage::FileSystem::FILE_ALL_ACCESS,
 };
 
 fn assert_owner_only_file(path: &Path) {
+    // T637: permanent native regression; do not accept a default group owner.
     let file = std::fs::File::open(path).unwrap();
     let user = User::current().unwrap();
     let mut owner = std::ptr::null_mut();
@@ -90,11 +91,8 @@ fn t493_runtime_rejects_junctions_without_modifying_the_target() {
     let directory = Directory::create(&target).unwrap();
     let token = new_session_token(&directory).unwrap();
     let output = std::process::Command::new("cmd.exe")
-        .args([
-            "/d",
-            "/c",
-            "mklink /j \"%BLENT_TEST_LINK%\" \"%BLENT_TEST_TARGET%\"",
-        ])
+        .args(["/d", "/c"])
+        .raw_arg("mklink /j \"%BLENT_TEST_LINK%\" \"%BLENT_TEST_TARGET%\"")
         .env("BLENT_TEST_LINK", &junction)
         .env("BLENT_TEST_TARGET", &target)
         .output_bounded()
