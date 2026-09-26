@@ -1,0 +1,61 @@
+{
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/camera/decoder.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 4,
+      "passing": 4,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "filters",
+      "line": 14,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "command",
+      "line": 27,
+      "language": "rust",
+      "covered": 43,
+      "total": 43,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "connection",
+      "line": 73,
+      "language": "rust",
+      "covered": 22,
+      "total": 22,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "name": "transfer",
+      "line": 99,
+      "language": "rust",
+      "covered": 42,
+      "total": 42,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

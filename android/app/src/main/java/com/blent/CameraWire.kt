@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import okio.BufferedSink
 import okio.buffer
+import okio.source
 import okio.sink
 
 internal object CameraWire {
@@ -26,7 +27,7 @@ internal object CameraWire {
         greeting(sink, endpoint.token, lens, rotation)
         val input = socket.getInputStream()
         check(input.read() == 'O'.code && input.read() == 'K'.code) { "Desktop rejected camera connection" }
-        return CameraLink(sink, java.io.DataInputStream(input))
+        return CameraLink(sink, socket.source().buffer(), endpoint.freshnessMs) { socket.close() }
     }
 
     fun greeting(sink: BufferedSink, token: String, lens: CameraLens, rotation: Int) {

@@ -173,7 +173,7 @@ class CameraCaptureTest {
                 runBlocking {
                     try {
                         withContext(captureJob) {
-                            capture.stream(CameraEndpoint("a".repeat(64), server.localPort, 1280, 720, 30, 3000), lens, 1, resources)
+                            capture.run(CameraEndpoint("a".repeat(64), server.localPort, 1280, 720, 30, 3000), lens, 1, resources)
                         }
                     } catch (error: Exception) { error } finally { resources.close() }
                 }

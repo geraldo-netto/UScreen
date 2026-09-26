@@ -14,7 +14,7 @@ internal class CameraBinding(
     private val rotation: () -> Int,
     private val requestPermission: () -> Unit,
     private val permission: () -> Boolean = { context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED },
-    private val capture: suspend (CameraEndpoint, CameraLens, Int, CameraResources) -> Unit = CameraCapture(context)::stream,
+    private val capture: suspend (CameraEndpoint, CameraLens, Int, CameraResources) -> Unit = CameraCapture(context)::run,
     private val invitations: StateFlow<CameraEndpoint?> = CameraInvitations.endpoint,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + android.os.Handler(android.os.Looper.getMainLooper()).asCoroutineDispatcher()),
     private val backgroundService: (Boolean) -> Unit = {},

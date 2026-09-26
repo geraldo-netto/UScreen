@@ -120,7 +120,17 @@ fresh keyframe arrives; one sync request is sent per gap. Codec configuration
 is preserved, and a two-second wait without a fresh keyframe stops the session.
 Lower budgets favor freshness but can cause more freezing on slow routes.
 The sender retains only the current MediaCodec buffer and 8 KiB packet staging;
-there is no additional frame-copy queue.
+there is no additional frame-copy queue. The remaining freshness budget applies
+to the **whole packet write plus acceptance feedback**, not separately to each
+8 KiB segment or received byte. A deadline failure closes that connection;
+partially transmitted packets are never continued on another stream. The host
+also bounds decoder-input and feedback writes by the configured budget.
+
+Within the still-authorized foreground/background session, transport failure
+allows at most two retries with 250/500 ms backoff. Each retry first retires the
+old socket, camera and codec, then starts a fresh decoder/encoder generation.
+Stop, permission changes, lifecycle cancellation and non-transport failures do
+not trigger retries. Retry exhaustion leaves sharing off with an error.
 
 ## Backend boundary
 

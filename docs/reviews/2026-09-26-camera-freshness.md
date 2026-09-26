@@ -17,8 +17,7 @@ and the Android camera suite pass. JaCoCo measured all 34 functions in the
 changed Android files ≥80%; LLVM measured all six functions in decoder/protocol
 ≥80%. Complexity: 5,825 functions, none above nine. [Evidence](artifacts/2026-09-26-camera/freshness/).
 
-Whole-packet deadlines/reconnect and rate
-adaptation are tracked separately in TODO.md until implemented. No native
+Rate adaptation is tracked separately in TODO.md until implemented. No native
 performance improvement or absolute camera-to-display latency is claimed here.
 
 ## T616 — stale encoded-frame recovery
@@ -34,3 +33,21 @@ configurable 50–2000 ms through the portable profile, invitation, CLI and GUI.
 Android changed-file coverage: 35/35 functions ≥80%. Rust profile, bridge and
 camera settings: 20/20 functions ≥80%, including the full GUI suite. Camera host
 suite remains 19/19 passing. Complexity: 5,832 functions, none above nine.
+
+## T617 — whole-packet deadlines and generation retirement
+
+The missing-feedback regression exceeded its 500 ms test bound before the fix;
+with a configured 50 ms budget it now terminates and rejects reuse. A separate
+real-socket regression blocks a 2 MiB packet mid-write, verifies only a prefix
+arrived and ensures the retired connection cannot accept a new packet. Okio's
+socket deadlines share one absolute deadline across write and feedback phases;
+its normal 8 KiB staging is preserved. Host decoder input and ACK writes use the
+configured freshness budget too.
+
+Recovery is bounded to two retries with 250/500 ms backoff inside the original
+consent owner. Tests prove resources retire before the next attempt, final
+failure stops, cancellation during I/O/backoff prevents reopening, and unrelated
+camera errors do not retry. Camera adapter tests exercise the production recovery
+entry point. All 58 functions in changed Android files and all four host decoder
+functions meet ≥80% coverage. All 19 host camera tests pass; complexity gate
+reports 5,841 functions, none above nine.

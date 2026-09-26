@@ -20,6 +20,9 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val handler = Handler(Looper.getMainLooper())
 
+    suspend fun run(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing =
+        CameraRecovery.run(resources) { owned -> stream(endpoint, lens, displayRotation, owned) }
+
     suspend fun stream(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing =
         withContext(Dispatchers.IO) {
             val id = cameraId(lens)

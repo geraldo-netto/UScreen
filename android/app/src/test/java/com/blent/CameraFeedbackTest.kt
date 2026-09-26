@@ -16,16 +16,16 @@ class CameraFeedbackTest {
     @Test fun t614_feedbackRequiresExactConnectionLocalSequence() {
         val output = Buffer()
         val acks = Buffer().apply { for (i in 1L..31L) writeLong(i) }.readByteArray()
-        val link = CameraLink(output, DataInputStream(ByteArrayInputStream(acks)))
+        val link = CameraLink(output, Buffer().write(acks))
         repeat(31) { assertTrue(link.send(ByteBuffer.wrap(byteArrayOf(7)), 0, 1, 0) >= 0) }
         repeat(31) { assertEquals(1, output.readInt()); assertEquals(7, output.readByte().toInt()) }
         for (ack in listOf(-1L, 0L, 2L, Long.MAX_VALUE)) {
             val input = Buffer().writeLong(ack).readByteArray()
-            val invalid = CameraLink(Buffer(), DataInputStream(ByteArrayInputStream(input)))
+            val invalid = CameraLink(Buffer(), Buffer().write(input))
             assertTrue(runCatching { invalid.send(ByteBuffer.wrap(byteArrayOf(1)), 0, 1, 0) }.isFailure)
         }
         for (length in 0..7) {
-            val truncated = CameraLink(Buffer(), DataInputStream(ByteArrayInputStream(ByteArray(length))))
+            val truncated = CameraLink(Buffer(), Buffer().write(ByteArray(length)))
             assertTrue(runCatching { truncated.send(ByteBuffer.wrap(byteArrayOf(1)), 0, 1, 0) }.isFailure)
         }
     }
