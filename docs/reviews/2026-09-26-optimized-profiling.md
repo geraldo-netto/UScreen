@@ -5,6 +5,11 @@ scheduler defaults changed. Encoder worker count remains the useful T600
 experiment. Camera stayed off. Workload: the attached 1280×800 tablet, existing
 60 FPS stream configuration, idle desktop and the same 30 Hz moving scene.
 
+Current reruns use `assembleOptimized` and the [temporary profiling
+runner](../profiling-android.md). T624 removes the profiling launcher and guarantees
+cleanup for normal completion and handled interruption; the measurements below
+describe the original artifact.
+
 ## Build and CPU evidence
 
 An isolated full-client build inherits release R8/resource shrinking, uses a

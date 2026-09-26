@@ -59,12 +59,15 @@ synthetic payloads; development sources live under `scripts/benchmarks` and do
 not enter release builds. No main-app setting, signing identity or system power
 setting changes. The normal release remains installed.
 
-Reproduce with:
+Current reproduction uses the [temporary profiling runner](../profiling-android.md),
+which removes the shell-only test APK afterward:
 
 ```sh
 ./android/gradlew -p android :app:assembleProfile :app:testProfileUnitTest
-adb -s DEVICE install -r android/app/build/outputs/apk/profile/app-profile.apk
-python3 scripts/benchmarks/android-allocations.py --serial DEVICE --output /tmp/new-allocation-run
+python3 scripts/benchmarks/profile-session.py --serial DEVICE \
+  --package io.github.geraldo_netto.blent.profile \
+  --apk android/app/build/outputs/apk/profile/app-profile.apk -- \
+  python3 scripts/benchmarks/android-allocations.py --serial DEVICE --output /tmp/new-allocation-run
 ```
 
 Three fresh-process trials ran on the connected RugKing tablet. Every trial

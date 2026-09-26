@@ -72,9 +72,19 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+        create("optimized") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".optimized"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     sourceSets.getByName("profile").java.srcDir("../../scripts/benchmarks/android-allocations")
+    sourceSets.getByName("optimized").apply {
+        manifest.srcFile("src/profile/AndroidManifest.xml")
+        java.srcDir("../../scripts/benchmarks/android-allocations")
+    }
     sourceSets.getByName("testProfile").java.srcDir("../../scripts/benchmarks/android-allocation-tests")
     sourceSets.getByName("test").resources.srcDir("../../testdata")
     // Exercise the isolated replay's transport lifetime in the normal suite.
@@ -108,7 +118,7 @@ android {
 }
 
 // Per-variant generated Kotlin avoids conflating debug and release software.
-listOf("debug", "release", "profile").forEach { variant ->
+listOf("debug", "release", "profile", "optimized").forEach { variant ->
     val title = variant.replaceFirstChar { it.uppercaseChar() }
     val profileSource = layout.buildDirectory.dir("generated/source/profile/$variant")
     val generateProfileIdentity = tasks.register("generate${title}ProfileIdentity") {
