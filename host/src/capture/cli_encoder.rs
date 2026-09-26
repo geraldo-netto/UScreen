@@ -738,7 +738,7 @@ mod encoder_policy_tests {
             // asynchronous queue. Preserve this command-boundary regression.
             format!("-rc_mode CQP -qp {quality} -bf 0 -idr_interval 0 -async_depth 1 {limits}")
         } else {
-            format!("-preset ultrafast -tune zerolatency -crf {quality} -bufsize {swbuf}k -x264-params scenecut=0 {limits}")
+            format!("-preset ultrafast -tune zerolatency -threads 1 -crf {quality} -bufsize {swbuf}k -x264-params scenecut=0 {limits}")
         }
     }
 

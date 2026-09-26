@@ -1,0 +1,25 @@
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.67s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test capture::cli_encoder::encoder_policy_tests::t373_cli_quality_profiles_keep_adapter_contracts ... FAILED
+
+failures:
+
+---- capture::cli_encoder::encoder_policy_tests::t373_cli_quality_profiles_keep_adapter_contracts stdout ----
+
+thread 'capture::cli_encoder::encoder_policy_tests::t373_cli_quality_profiles_keep_adapter_contracts' (91292) panicked at host/src/capture/cli_encoder.rs:712:21:
+assertion `left == right` failed: T373: libx264, 10, false
+  left: {"-bufsize": "200k", "-crf": "12", "-g": "10", "-maxrate": "1000k", "-preset": "ultrafast", "-threads": "1", "-tune": "zerolatency", "-x264-params": "scenecut=0"}
+ right: {"-bufsize": "200k", "-crf": "12", "-g": "10", "-maxrate": "1000k", "-preset": "ultrafast", "-tune": "zerolatency", "-x264-params": "scenecut=0"}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    capture::cli_encoder::encoder_policy_tests::t373_cli_quality_profiles_keep_adapter_contracts
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 381 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --bin blent`
