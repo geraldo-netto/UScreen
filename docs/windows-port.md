@@ -1,8 +1,11 @@
 # Windows integration plan
 
-Status: staged implementation, updated 2026-09-21. Linux remains the supported
+Status: staged implementation, updated 2026-09-26. Linux remains the supported
 runtime. Windows capture, input, lifecycle and packaging are not implemented.
-The backend and release recommendations below remain pending decisions.
+The first Windows release target is **Windows 11 x64**, selected by the maintainer
+on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
+decision does not enable runtime capabilities; driver and packaging choices
+remain pending.
 
 The initial [cross-compilation review](reviews/2026-09-19-windows-cross-compilation.md)
 recorded GNU/MSVC failures at `63b332e`. The subsequent
@@ -46,7 +49,7 @@ a successful Windows build alone does not establish functional support.
 
 | Decision or resource | Recommendation | Condition to proceed |
 |---|---|---|
-| Windows target | Windows 11 x64 first | Confirm the initial OS and architecture. Decide separately whether Windows 10 or ARM64 belongs in the first release. |
+| Windows target | Windows 11 x64, accepted 2026-09-26 | Development VM uses the official 90-day Enterprise evaluation. Windows 10 and ARM64 are outside the first release; native acceptance remains required. |
 | Virtual-display driver | Integrate an existing [Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver) installation | Confirm that a separately installed driver is acceptable. Pin and validate its version and control interface before implementing display integration. |
 | Hardware testing | A Windows PC connected to the Android tablet | Provide a test machine or tester, its Windows version and GPU, and administrator access for driver installation when authorized. CI or a VM can cover builds and isolated tests; USB, GPU and tablet validation need physical hardware. |
 | Owned driver, if required | Treat driver ownership as a separate deliverable | Confirm maintenance, signing and distribution responsibilities before developing or shipping our own driver. |
@@ -57,8 +60,9 @@ Work depending on an unanswered choice must wait for that choice.
 
 ## Build environment
 
-- Rust's MSVC target for the selected architecture, Microsoft C++ Build Tools
-  and the Windows SDK.
+- Rust's `x86_64-pc-windows-msvc` target, Microsoft C++ Build Tools and the
+  Windows SDK for the accepted Windows 11 x64 target. GNU cross-builds remain
+  portability checks; they do not widen the initial release scope.
 - Windows adb and FFmpeg, with actual executable and encoder discovery.
 - Windows CI for compilation, automated tests and artifacts, alongside the
   existing Linux and Android jobs.
