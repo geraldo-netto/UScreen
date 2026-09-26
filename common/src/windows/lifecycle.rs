@@ -40,8 +40,7 @@ impl Session {
 impl Drop for Session {
     fn drop(&mut self) {
         // Never retire replacement state. The stable lease stays held throughout.
-        if runtime::owner_at(self.lease.private_directory()).as_ref() == Some(self.lease.identity())
-        {
+        if self.owns_state() {
             let _ = clear(self.lease.directory());
         }
     }
