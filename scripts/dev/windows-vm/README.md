@@ -17,7 +17,7 @@ machine policies or removing apps:
 
 ```powershell
 ./scripts/tests/windows_vm_policy.ps1
-./scripts/tests/windows_vm_tools.ps1
+./scripts/tests/windows_vm_tools_process.ps1
 ```
 
 The policy test extracts isolated helpers, uses a temporary owned HKCU key,
@@ -31,6 +31,9 @@ asynchronous; verify effective state and actual activation after applying it.
 It logs native stderr without treating successful diagnostics as terminating
 PowerShell errors, and returns the actual process exit code. Windows CI runs both
 PowerShell regressions. Neither test applies the VM's administrator policy.
+The process wrapper also verifies that an expected native failure inside the
+test does not leak a failing exit status after all assertions pass (T646).
+AppLocker types are initialized through a read-only native cmdlet on Server 2022.
 
 `guest_status.py` supplies `read_file(request, path)` to the private QEMU guest
 control adapter. Pass its serialized QGA request function. A bounded PowerShell

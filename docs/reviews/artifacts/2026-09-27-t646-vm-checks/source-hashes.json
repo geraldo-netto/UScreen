@@ -1,0 +1,6 @@
+{
+  "scripts/tests/windows_vm_policy.ps1": "8fe3ddca15f3001b1f3abf2b29d436df0fe6d35549929c1888a7470c36906cc7",
+  "scripts/tests/windows_vm_tools.ps1": "a909129020fe4eda586261aa60e3df44ed35f86dcd06e305dae928aacf5aa734",
+  "scripts/tests/windows_vm_tools_process.ps1": "26a5e8c1ebe641ab50db5d4513ea47596da964beed13841f514cdf4f018600a0",
+  ".github/workflows/windows.yml": "d337a3ff29edab98b9a0a593cfdbb71cecd27a945dcd51ce1613b746524075ea"
+}

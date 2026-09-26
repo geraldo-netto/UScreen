@@ -1,0 +1,15 @@
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	﻿2026-09-26T23:36:50.4858783Z ##[group]Run ./scripts/tests/windows_vm_policy.ps1
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4859307Z ^[[36;1m./scripts/tests/windows_vm_policy.ps1^[[0m
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4859601Z ^[[36;1m./scripts/tests/windows_vm_tools.ps1^[[0m
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4895621Z shell: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4896020Z env:
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4896296Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4896554Z   CARGO_INCREMENTAL: 0
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4896761Z   CARGO_TERM_COLOR: always
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:50.4896982Z ##[endgroup]
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:54.5834001Z PASS: sibling policy values survive creation and update
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:54.6406860Z PASS: packaged app denials cover actual publishers and preserve shell/tools
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:55.1826455Z PASS: native AppLocker package decisions and version boundaries
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:55.2622219Z PASS: owned policy updates preserve foreign rules and are idempotent
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:55.4408971Z PASS: native stderr is logged and exit codes determine success
+Native Windows policy and service contracts	Check development VM registry and native package policies (T633)	2026-09-26T23:36:55.5067095Z ##[error]Process completed with exit code 1.

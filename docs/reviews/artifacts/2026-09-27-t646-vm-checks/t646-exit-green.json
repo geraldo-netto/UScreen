@@ -1,0 +1,5 @@
+{
+  "exitcode": 0,
+  "out": "PASS: native stderr is logged and exit codes determine success\r\nPASS: successful regression process exits zero after expected native failures\r\n",
+  "err": ""
+}

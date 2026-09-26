@@ -35,7 +35,7 @@ jobs:
         shell: powershell
         run: |
           ./scripts/tests/windows_vm_policy.ps1
-          ./scripts/tests/windows_vm_tools.ps1
+          ./scripts/tests/windows_vm_tools_process.ps1
       - name: Test portable policy without platform features
         run: cargo test --locked -p blent-config --no-default-features
       - name: T631 reject the Linux camera probe on Windows
