@@ -115,3 +115,23 @@ fn t524_cleanup_failure_still_retires_token_and_reports_failed_stop() {
     assert!(stop(&path, Duration::ZERO).is_err());
     assert!(path.join("sessions.json").is_dir());
 }
+
+#[test]
+fn t524_explicit_shutdown_preserves_replacement_state() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("runtime");
+    let session = Session::start(&path).unwrap();
+    let token = std::fs::read(path.join("token")).unwrap();
+    std::fs::write(path.join("daemon.json"), b"replacement").unwrap();
+    assert!(session
+        .shutdown()
+        .unwrap_err()
+        .to_string()
+        .contains("ownership changed"));
+    assert_eq!(std::fs::read(path.join("token")).unwrap(), token);
+    assert_eq!(
+        std::fs::read(path.join("daemon.json")).unwrap(),
+        b"replacement"
+    );
+    stop(&path, Duration::ZERO).unwrap();
+}

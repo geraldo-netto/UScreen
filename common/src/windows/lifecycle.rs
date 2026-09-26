@@ -27,7 +27,11 @@ impl Session {
         Ok(session)
     }
     pub fn shutdown(self) -> Result<()> {
+        anyhow::ensure!(self.owns_state(), "daemon state ownership changed");
         clear(self.lease.directory())
+    }
+    fn owns_state(&self) -> bool {
+        runtime::owner_at(self.lease.private_directory()).as_ref() == Some(self.lease.identity())
     }
     pub fn stop_requested(&self) -> bool {
         read(&self.lease.directory().join("stop.json")).as_ref() == Some(self.lease.identity())
