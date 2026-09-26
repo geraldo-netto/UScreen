@@ -75,3 +75,38 @@ The [artifact directory](artifacts/2026-09-26-blent-validation/) retains the exa
 source manifest, merged default/optional LLVM counters, additional native
 scheduling counters, reports and logs. Native counters use the unchanged common
 production sources; test-only additions do not alter those source locations.
+
+## T577: X11 input follows connector identity
+
+Native acceptance reproduced the recorded mismatch: DRM card1's `DVI-I-1`
+appeared as RandR `DVI-I-2-1`; the previous name-prefix logic left touch addressing
+the whole desktop. A permanent regression failed before the selection fix.
+
+Linux discovery now supplies the owned connector's EDID. The X11 adapter queries
+RandR properties, validates bounded EDID headers, extension counts and block
+checksums, and selects exactly one active output with exactly one eligible owner.
+It rejects absent, corrupt and duplicated identities rather than guessing by
+provider-dependent names. Physical-screen selection also excludes known virtual
+identities. Other OS backends and wire contracts are unchanged.
+
+Tests retain T029's per-tablet/device assertions and add renamed two-card cases,
+ambiguous/missing identities, physical-mode selection, invalid-length and
+checksum mutation loops. Input suite: 68 pass. Clean host library/binary
+collection: 523 pass, three pre-existing ignored tests. Every one of the 23
+mapping/discovery functions meets 80%; all six new identity functions reach
+100%. Strict all-target/all-feature Clippy and formatting pass. Whole-project
+complexity: 5,631 functions, none above nine. Camera coverage remains T572.
+
+The rebuilt AppImage was installed and the service restarted. Touch and pointer
+read back the expected matrix for the 1280x800 output at desktop x=3840:
+`[0.25, 0, 0.75; 0, 0.370370, 0; 0, 0, 1]`. An Android center tap `(640,400)`
+through the real app/USB/uinput path placed the desktop pointer at `(4479,399)`
+inside the owned test window. The prior pointer position was restored.
+
+Xorg's base pen node remains a keyboard-like node and rejects `map-to-output`
+with `BadMatch`; this can precede creation of separate stylus tool devices.
+T592 records late-tool investigation and physical stylus validation. No pen
+pressure/tilt success is inferred from the working touch path.
+
+Red/green logs, exact snapshot and clean counters are retained as `t577-*` in
+[validation artifacts](artifacts/2026-09-26-blent-validation/).

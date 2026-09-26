@@ -36,11 +36,13 @@ pub fn evdi_cards() -> Vec<u32> {
 }
 
 /// A DRM connector belonging to an EVDI card, e.g. `DVI-I-1`.
-/// The name is exactly what KWin/kscreen-doctor calls the output.
+/// KWin uses the connector name; Xorg may rename it per provider.
+/// EDID bytes supply the cross-adapter identity for RandR matching.
 pub struct EvdiConnector {
     pub name: String,
     pub card: u32,
     pub connected: bool,
+    pub edid: Vec<u8>,
 }
 
 /// Enumerate the connectors of every EVDI card. Used to address the virtual
@@ -77,6 +79,7 @@ pub fn evdi_connectors() -> Vec<EvdiConnector> {
             name: connector.to_string(),
             card: idx,
             connected,
+            edid: std::fs::read(entry.path().join("edid")).unwrap_or_default(),
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));

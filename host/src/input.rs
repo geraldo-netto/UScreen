@@ -834,11 +834,13 @@ esac
         let first = crate::vdisplay::EvdiConnector {
             card: 2,
             name: "DVI-I-1".into(),
+            edid: Vec::new(),
             connected: true,
         };
         let second = crate::vdisplay::EvdiConnector {
             card: 3,
             name: "DVI-I-2".into(),
+            edid: Vec::new(),
             connected: true,
         };
         let connectors = [first, second];
@@ -1634,7 +1636,14 @@ else
     printf '%s %s %s\n' "$1" "$2" "$3" >> mapped
 fi
 "#).unwrap();
-        std::fs::write(&xrandr, "#!/bin/sh\nprintf '%s\n' 'eDP-1 connected primary 1920x1080+0+0' 'DVI-I-1-1 connected 1920x1080+1920+0' 'DVI-I-2-1 connected 1920x1080+3840+0'\n").unwrap();
+        let inventory = mapping::x11_tests::output("eDP-1", true, &mapping::x11_tests::edid(1920))
+            + &mapping::x11_tests::output("DVI-I-1-1", false, &mapping::x11_tests::edid(1280))
+            + &mapping::x11_tests::output("DVI-I-2-1", false, &mapping::x11_tests::edid(1200));
+        std::fs::write(
+            &xrandr,
+            format!("#!/bin/sh\ncat <<'BLENT_OUTPUTS'\n{inventory}BLENT_OUTPUTS\n"),
+        )
+        .unwrap();
         for path in [&xinput, &xrandr] {
             std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
         }
@@ -1642,11 +1651,13 @@ fi
             crate::vdisplay::EvdiConnector {
                 name: "DVI-I-1".into(),
                 card: 8,
+                edid: mapping::x11_tests::edid(1280),
                 connected: true,
             },
             crate::vdisplay::EvdiConnector {
                 name: "DVI-I-2".into(),
                 card: 9,
+                edid: mapping::x11_tests::edid(1200),
                 connected: true,
             },
         ];

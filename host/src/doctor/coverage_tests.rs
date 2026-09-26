@@ -35,6 +35,7 @@ async fn t497_virtual_output_diagnostics_tolerate_missing_and_malformed_inventor
     let connectors = [vdisplay::EvdiConnector {
         name: "fixture-evdi".into(),
         card: 127,
+        edid: Vec::new(),
         connected: true,
     }];
     for (text, warnings) in [("invalid", 1), ("{}", 0), (r#"{"outputs":[]}"#, 0)] {
@@ -310,11 +311,13 @@ fn t497_connector_and_autostart_reports_preserve_unknown_states() {
             vdisplay::EvdiConnector {
                 name: "one".into(),
                 card: 7,
+                edid: Vec::new(),
                 connected: true,
             },
             vdisplay::EvdiConnector {
                 name: "two".into(),
                 card: 8,
+                edid: Vec::new(),
                 connected: false,
             },
         ],

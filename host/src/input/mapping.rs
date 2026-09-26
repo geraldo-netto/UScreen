@@ -2,6 +2,8 @@
 use super::linux::{DeviceIdentity, KWIN_INPUT_IFACE};
 use blent_config::commands::AsyncCommandExt;
 use tracing::{info, warn};
+mod x11;
+use x11::{x11_active_outputs, x11_target_output};
 
 pub(super) async fn primary_non_evdi_output() -> Option<String> {
     let evdi: Vec<String> = crate::vdisplay::evdi_connectors()
@@ -182,14 +184,6 @@ pub(super) async fn map_kwin_device(sysname: &str, ident: &DeviceIdentity, outpu
     false
 }
 
-pub(super) fn x11_connector_matches(output: &str, connector: &str) -> bool {
-    output == connector
-        || output
-            .strip_prefix(connector)
-            .and_then(|s| s.strip_prefix('-'))
-            .is_some_and(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()))
-}
-
 /// Xorg can expose a pen as separate pen/eraser devices. Keep tablet suffixes
 /// exact: "Blent Pen 2" must never match the first tablet's "Blent Pen".
 pub(super) fn x11_device_kind<'a>(name: &str, ident: &'a DeviceIdentity) -> Option<&'a str> {
@@ -228,7 +222,7 @@ pub(super) async fn map_x11_devices(
         let connectors = fixed_connectors.unwrap_or(&current);
         let Some(randr) = x11_query(
             xrandr,
-            &["--query"],
+            &["--prop"],
             "xrandr",
             "xrandr could not query this X11 session",
         )
@@ -295,64 +289,6 @@ pub(super) fn x11_has_geometry(field: &str) -> bool {
                 .is_some_and(|h| h.parse::<u32>().is_ok())
             && (h.contains('+') || h.contains('-'))
     })
-}
-
-pub(super) fn x11_active_outputs(text: &str) -> Vec<(&str, bool)> {
-    text.lines()
-        .filter_map(|line| {
-            let fields: Vec<_> = line.split_whitespace().collect();
-            if fields.get(1) != Some(&"connected") {
-                return None;
-            }
-            fields
-                .iter()
-                .any(|field| x11_has_geometry(field))
-                .then_some((fields[0], fields.contains(&"primary")))
-        })
-        .collect()
-}
-
-pub(super) fn x11_capture_output(
-    name: &str,
-    connectors: &[crate::vdisplay::EvdiConnector],
-    card: Option<u32>,
-) -> bool {
-    connectors.iter().any(|c| {
-        c.connected
-            && card.is_none_or(|want| c.card == want)
-            && x11_connector_matches(name, &c.name)
-    })
-}
-
-pub(super) fn x11_target_output<'a>(
-    pen_only: bool,
-    active: &[(&'a str, bool)],
-    connectors: &[crate::vdisplay::EvdiConnector],
-    card: Option<u32>,
-) -> Option<&'a str> {
-    if pen_only {
-        active
-            .iter()
-            .filter(|(name, _)| {
-                !connectors
-                    .iter()
-                    .any(|c| x11_connector_matches(name, &c.name))
-            })
-            .max_by_key(|(_, primary)| primary)
-            .map(|(name, _)| *name)
-    } else {
-        let candidates: Vec<_> = active
-            .iter()
-            .filter(|(name, _)| x11_capture_output(name, connectors, card))
-            .map(|(name, _)| *name)
-            .collect();
-        // Ambiguous names must not attach input to another tablet.
-        if candidates.len() == 1 {
-            candidates.first().copied()
-        } else {
-            None
-        }
-    }
 }
 
 pub(super) fn x11_list_entry<'a, 'b>(
@@ -480,3 +416,6 @@ pub(super) fn fallback_output(
     }
     .map(|connector| connector.name.clone())
 }
+
+#[cfg(test)]
+pub(super) mod x11_tests;

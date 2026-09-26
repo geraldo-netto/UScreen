@@ -5,6 +5,7 @@ fn connectors() -> Vec<EvdiConnector> {
     vec![EvdiConnector {
         name: "DVI-I-2".into(),
         card: 7,
+        edid: Vec::new(),
         connected: true,
     }]
 }

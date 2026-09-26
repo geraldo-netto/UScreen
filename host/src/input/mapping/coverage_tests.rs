@@ -89,6 +89,7 @@ async fn connector_contract(root: &Path) {
     let names = [crate::vdisplay::EvdiConnector {
         name: "fixture-evdi".into(),
         card: 127,
+        edid: Vec::new(),
         connected: true,
     }];
     assert_eq!(
