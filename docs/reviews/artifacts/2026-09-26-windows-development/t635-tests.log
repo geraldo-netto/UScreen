@@ -1,0 +1,18 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.68s
+     Running unittests src/lib.rs (target/llvm-cov-target/debug/deps/blent-859e44302dce7b99)
+
+running 7 tests
+test raw_transfer::tests::t635_bounded_bad_lengths_and_resize_never_touch_the_stream ... ok
+test raw_transfer::tests::t635_cancelling_a_pending_frame_closes_the_stream ... ok
+test raw_transfer::tests::t635_geometry_and_write_budget_are_bounded ... ok
+test raw_transfer::tests::t635_partial_writes_preserve_complete_frame_boundaries ... ok
+test raw_transfer::tests::t635_reader_exit_retires_the_writer ... ok
+test raw_transfer::tests::t635_timeout_retires_partial_input_and_fresh_session_recovers ... ok
+test raw_transfer::tests::t635_zero_writes_and_shutdown_failures_retire_input ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 166 filtered out; finished in 0.00s
+
+
+    Finished report saved to /tmp/blent-t635.lcov

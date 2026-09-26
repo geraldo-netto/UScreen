@@ -1,0 +1,64 @@
+{
+  "sources": {
+    "host/src/raw_transfer.rs": "8711de3b4220f8e2b28f294a6acaff371b0ad2fb317f9ebbf4ad047992c59489"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "new",
+      "line": 25,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "write_frame",
+      "line": 46,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "shutdown",
+      "line": 60,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "invalid",
+      "line": 70,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "retired",
+      "line": 74,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}
