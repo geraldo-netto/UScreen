@@ -109,3 +109,25 @@ T571 extraction passed its six focused executions. Retained
 [summary](artifacts/2026-09-26-next-batch/t589-summary.json),
 [device/APK identity](artifacts/2026-09-26-next-batch/t589-metadata.json), and
 [build/test log](artifacts/2026-09-26-next-batch/android-final.log.gz).
+
+## T595 — screen timeout during profiling
+
+The initial profiling activity lacked `FLAG_KEEP_SCREEN_ON`. Android reported
+`mLastSleepReason=timeout` with its unchanged 15,000 ms screen timeout. Normal
+Blent and the decoder replay already set the flag; window wakefulness does not
+transfer to a different foreground activity automatically.
+
+The profile activity now holds the flag for its visible window. A permanent
+API 27/34 test covers creation and recreation, with workload execution replaced
+by an inert test subclass. Both executions fail with the flag removed; all four
+profile test executions pass with it restored. The corrected APK is deployed.
+
+Three native profile runs completed across 28.6 seconds with `Awake` before and
+after, identical last-sleep timestamps, the same 15-second system timeout, and
+normal Blent visible afterward. This verifies no intervening sleep. It does not
+attribute the older T549 `force_suspend` report, which remains unresolved.
+No system timeout, lock-screen or global stay-awake preference was changed.
+
+Evidence: [regression failure](artifacts/2026-09-26-next-batch/t595-red.log.gz),
+[passing profile tests](artifacts/2026-09-26-next-batch/t595-green.log.gz), and
+[native power/activity/APK readback](artifacts/2026-09-26-next-batch/t595-native.json).

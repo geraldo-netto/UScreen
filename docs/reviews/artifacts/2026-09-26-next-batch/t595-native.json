@@ -1,0 +1,22 @@
+{
+  "before": [
+    "mWakefulness=Awake",
+    "mLastSleepTime=25442497 (225793 ms ago)",
+    "mLastSleepReason=timeout",
+    "mScreenOffTimeoutSetting=15000"
+  ],
+  "after": [
+    "mWakefulness=Awake",
+    "mLastSleepTime=25442497 (254389 ms ago)",
+    "mLastSleepReason=timeout",
+    "mScreenOffTimeoutSetting=15000"
+  ],
+  "foreground": [
+    "topResumedActivity=ActivityRecord{246677995 u0 io.github.geraldo_netto.blent/com.blent.MainActivity t634 d0}"
+  ],
+  "profile_identity": {
+    "fingerprint": "Ulefone/GQ8002RH1_EEA/GQ8002RH1:16/BP2A.250605.031.A3/1782987754:user/release-keys",
+    "apk": "09cb54e389abdc6fb8851cd4323b5dc2ed0a06537034d2cde808edbe77853925",
+    "trials": 3
+  }
+}

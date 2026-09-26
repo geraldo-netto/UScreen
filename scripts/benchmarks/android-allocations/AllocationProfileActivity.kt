@@ -16,6 +16,7 @@ import org.json.JSONObject
 open class AllocationProfileActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         launchWorkload()
     }
 
