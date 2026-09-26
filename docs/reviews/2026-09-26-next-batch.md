@@ -28,3 +28,24 @@ working tree, HEAD and pre-header revision `d1de64a`, verify copied bytes/hashes
 and compare row/span replay checksums. Both tests pass; the same tests fail with
 the original generators/harnesses. Retained [failure](artifacts/2026-09-26-next-batch/t576-red.log.gz)
 and [passing logs](artifacts/2026-09-26-next-batch/t576-green.log.gz).
+
+## T572 — native camera ownership and cleanup coverage
+
+The normal Rust suite now creates fresh PTY character devices, binds fixture
+labels over `/sys/dev/char` in a private child mount namespace, and runs the
+unchanged native camera adapter with private fake ADB/FFmpeg executables.
+It verifies successful device opening, exclusive locks, wrong labels, symlink
+rejection, graceful stop, producer failure, reverse-mapping cleanup and release
+of both output locks. No live webcam or real ADB mapping is accessed.
+
+All 17 camera tests pass. `open_device` reaches **28/28 executable lines (100%)**;
+`run_native` reaches **27/28 (96.43%)**. The remaining line logs a failed cleanup
+attempt. [Counters](artifacts/2026-09-26-next-batch/t572-coverage.json),
+[LCOV](artifacts/2026-09-26-next-batch/t572.lcov.gz),
+[suite log](artifacts/2026-09-26-next-batch/t572.log.gz), and
+[ordinary-user native run](artifacts/2026-09-26-next-batch/t572-user.log.gz) are retained.
+
+The fixture requires working Linux user/mount namespaces. Ordinary-user execution
+passes on the development host. Container CI grants SYS_ADMIN and disables its
+mount-blocking AppArmor profile only for the regression container; namespace
+setup failure fails the test explicitly. No production behavior was changed.

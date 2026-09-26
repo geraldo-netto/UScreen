@@ -1,0 +1,26 @@
+[
+  {
+    "file": "host/src/camera/outputs.rs",
+    "name": "open_device",
+    "line": 23,
+    "language": "rust",
+    "covered": 28,
+    "total": 28,
+    "percent": 100.0,
+    "passes": true,
+    "missing": []
+  },
+  {
+    "file": "host/src/camera.rs",
+    "name": "run_native",
+    "line": 51,
+    "language": "rust",
+    "covered": 27,
+    "total": 28,
+    "percent": 96.42857142857143,
+    "passes": true,
+    "missing": [
+      76
+    ]
+  }
+]

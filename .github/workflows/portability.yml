@@ -11,9 +11,10 @@ jobs:
       - name: Build reproducible test and release environment
         run: docker build -t blent-ci packaging/ci
       - name: Run every workspace regression in Debian 12
-        # TSan's existing setarch fallback needs personality(2) inside Docker.
+        # TSan needs personality(2); T572 binds fake sysfs in a private mount namespace.
         run: >-
-          docker run --rm --security-opt seccomp=unconfined
+          docker run --rm --cap-add SYS_ADMIN --security-opt seccomp=unconfined
+          --security-opt apparmor=unconfined
           -v "$PWD:/work" -v blent-cargo:/usr/local/cargo/registry
           -v blent-target:/build -e CARGO_TARGET_DIR=/build
           -e BLENT_TEST_PRIVATE_PID_NAMESPACE=1

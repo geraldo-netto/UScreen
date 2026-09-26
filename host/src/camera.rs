@@ -3,6 +3,8 @@ use crate::camera_control::{self as control, Report};
 use blent_config::camera::CameraState as State;
 mod bridge;
 mod decoder;
+#[cfg(test)]
+mod native_tests;
 mod outputs;
 mod protocol;
 #[cfg(test)]
