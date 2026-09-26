@@ -9,16 +9,14 @@ use windows_sys::Win32::Security::Cryptography::{
     BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG,
 };
 
-pub fn directory() -> Result<Directory> {
-    Directory::create(&super::paths::local()?.join("blent"))
-}
-
+/// Locate the default runtime without creating or replacing user state.
 pub fn runtime_dir() -> Result<PathBuf> {
-    Ok(directory()?.path().to_owned())
+    Ok(super::paths::local()?.join("blent"))
 }
 
-pub fn new_session_token() -> Result<String> {
-    let directory = directory()?;
+/// Publish a token in the caller's validated, pinned runtime directory.
+/// Lifecycle code must retain its lease while creating or replacing tokens.
+pub fn new_session_token(directory: &Directory) -> Result<String> {
     let mut bytes = [0u8; 32];
     let status = unsafe {
         BCryptGenRandom(
@@ -109,3 +107,7 @@ fn read_owner(path: &Path) -> Option<Identity> {
     let identity: Identity = serde_json::from_slice(&bytes).ok()?;
     identity.is_current().then_some(identity)
 }
+
+#[cfg(test)]
+#[path = "runtime_tests.rs"]
+mod tests;
