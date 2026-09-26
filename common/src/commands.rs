@@ -184,16 +184,34 @@ pub trait AsyncCommandExt {
         &mut self,
         timeout: Duration,
     ) -> impl std::future::Future<Output = io::Result<Output>> + Send;
+    /// Feed sensitive command data through stdin, never process arguments.
+    fn output_input_timeout(
+        &mut self,
+        input: Option<&[u8]>,
+        timeout: Duration,
+    ) -> impl std::future::Future<Output = io::Result<Output>> + Send;
 }
 impl AsyncCommandExt for tokio::process::Command {
     async fn output_timeout(&mut self, timeout: Duration) -> io::Result<Output> {
+        self.output_input_timeout(None, timeout).await
+    }
+
+    async fn output_input_timeout(
+        &mut self,
+        input: Option<&[u8]>,
+        timeout: Duration,
+    ) -> io::Result<Output> {
         let output = CapturedOutput::new()?;
         #[cfg(windows)]
         let job = windows::Job::new()?;
         prepare_group(self.as_std_mut());
         let mut child = RunningAsync(
             self.kill_on_drop(true)
-                .stdin(Stdio::null())
+                .stdin(if input.is_some() {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                })
                 .stdout(output.stdout.try_clone()?)
                 .stderr(output.stderr.try_clone()?)
                 .spawn()?,
@@ -206,7 +224,16 @@ impl AsyncCommandExt for tokio::process::Command {
             let _ = child.0.kill().await;
             return Err(error);
         }
-        match tokio::time::timeout(timeout, child.0.wait()).await {
+        let operation = async {
+            use tokio::io::AsyncWriteExt;
+            if let Some(input) = input {
+                let mut stdin = child.0.stdin.take().expect("piped command input");
+                stdin.write_all(input).await?;
+                stdin.shutdown().await?;
+            }
+            child.0.wait().await
+        };
+        match tokio::time::timeout(timeout, operation).await {
             Ok(status) => output.finish(status?),
             Err(_) => {
                 if let Some(pid) = child.0.id() {

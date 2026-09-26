@@ -98,7 +98,7 @@ if 'tcp:0' in a:
     (root/'mapping').write_text(a[-1]); print('34567')
 elif '--list' in a: print('Usb tcp:34567 '+(root/'mapping').read_text())
 elif '--remove' in a: (root/'mapping').unlink()
-elif 'broadcast' in a: print('Broadcast completed: result=1')
+elif 'shell' in a and 'broadcast' in sys.stdin.read(): print('Broadcast completed: result=1')
 else: print('fixture-tablet')"#
         ),
     );

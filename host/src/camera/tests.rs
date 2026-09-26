@@ -21,6 +21,37 @@ pub(super) fn script(root: &Path, name: &str, source: &str) -> PathBuf {
 }
 
 #[tokio::test]
+async fn t609_invitation_token_uses_stdin_not_process_arguments() {
+    let root = tempfile::tempdir().unwrap();
+    let adb = script(
+        root.path(),
+        "adb",
+        &format!(
+            r#"import sys, pathlib, json
+root = pathlib.Path({:?})
+(root/'argv').write_text(json.dumps(sys.argv[1:]))
+(root/'stdin').write_text(sys.stdin.read())
+print('Broadcast completed: result=1')"#,
+            root.path()
+        ),
+    );
+    let bridge = bridge::Bridge {
+        adb,
+        serial: "tablet ' ; $()".into(),
+        remote: "tcp:34567".into(),
+        local: "tcp:12345".into(),
+    };
+    let token = "a".repeat(64);
+    bridge.invite(&token, &options()).await.unwrap();
+    let argv = std::fs::read_to_string(root.path().join("argv")).unwrap();
+    assert!(!argv.contains(&token), "T609 token exposed in ADB argv");
+    let args: Vec<String> = serde_json::from_str(&argv).unwrap();
+    assert_eq!(args, ["-s", &bridge.serial, "shell"]);
+    let command = std::fs::read_to_string(root.path().join("stdin")).unwrap();
+    assert_eq!(command, format!("am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port 34567 --ei width 160 --ei height 120 --ei fps {} --ei lens 0 --ez background false --ei bitrate {}\n", options().fps, options().bitrate));
+}
+
+#[tokio::test]
 async fn t539_graceful_output_stop_allows_final_blank_to_flush() {
     let root = tempfile::tempdir().unwrap();
     let marker = root.path().join("flushed");
@@ -138,7 +169,7 @@ async fn t539_virtual_camera_writes_black_on_start_and_stop() {
 #[tokio::test]
 async fn t539_bridge_invitation_and_mapping_ownership() {
     let root = tempfile::tempdir().unwrap();
-    let adb = script(root.path(), "adb", "import sys\na=sys.argv\nif 'get-serialno' in a: print('tablet')\nelif '--list' in a: print('Usb tcp:34567 tcp:12345')\nelif 'tcp:0' in a: print('34567')\nelif 'broadcast' in a: print('Broadcast completed: result=1')");
+    let adb = script(root.path(), "adb", "import sys\na=sys.argv\nif 'get-serialno' in a: print('tablet')\nelif '--list' in a: print('Usb tcp:34567 tcp:12345')\nelif 'tcp:0' in a: print('34567')\nelif 'shell' in a and 'broadcast' in sys.stdin.read(): print('Broadcast completed: result=1')");
     let bridge = bridge::Bridge::create(adb.clone(), None, 12345)
         .await
         .unwrap();
@@ -512,5 +543,66 @@ async fn t543_real_output_and_preview_rotate_the_same_asymmetric_picture() {
             channel(blue, 2) - channel(blue, 0) > 100,
             "T543 blue quadrant wrong at {rotation}°"
         );
+    }
+}
+
+#[tokio::test]
+async fn t609_rejects_shell_input_and_redacts_adb_diagnostics() {
+    let root = tempfile::tempdir().unwrap();
+    let adb = script(root.path(), "adb", "import sys\ncommand=sys.stdin.read()\nprint(command, file=sys.stderr)\nprint('Broadcast completed: result=0')");
+    let mut bridge = bridge::Bridge {
+        adb,
+        serial: "tablet".into(),
+        remote: "tcp:1234".into(),
+        local: "tcp:5678".into(),
+    };
+    let token = "b".repeat(64);
+    let mut profile = options();
+    profile.lens = blent_config::camera::Lens::Rear;
+    profile.background = true;
+    let error = bridge
+        .invite(&token, &profile)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("did not accept"));
+    assert!(!error.contains(&token));
+    script(
+        root.path(),
+        "adb",
+        "import sys\nprint(sys.stdin.read(),file=sys.stderr)\nsys.exit(1)",
+    );
+    assert_eq!(
+        bridge
+            .invite(&token, &profile)
+            .await
+            .unwrap_err()
+            .to_string(),
+        "ADB camera invitation failed"
+    );
+    for invalid in ["", "short", "$(id)", "a;id", "a\nexit", "'", "\"", "\0"] {
+        assert!(bridge
+            .invite(invalid, &profile)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("invalid camera token"));
+    }
+    for byte in 0u8..=127 {
+        if byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte) {
+            continue;
+        }
+        let mut value = token.clone().into_bytes();
+        value[31] = byte;
+        assert!(bridge
+            .invite(std::str::from_utf8(&value).unwrap(), &profile)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("invalid camera token"));
+    }
+    for remote in ["", "tcp:", "tcp:0", "tcp:65536", "udp:12", "tcp:12;id"] {
+        bridge.remote = remote.into();
+        assert!(bridge.invite(&token, &profile).await.is_err());
     }
 }

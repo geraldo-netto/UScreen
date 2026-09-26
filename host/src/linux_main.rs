@@ -2491,36 +2491,18 @@ async fn redeliver_token_using(serial: &str, token: Option<&str>, adb: &str) -> 
 }
 
 async fn app_command_using(serial: &str, cmd: String, action: &str, adb: &str) -> bool {
-    use tokio::io::AsyncWriteExt;
+    use blent_config::commands::AsyncCommandExt;
 
-    let child = tokio::process::Command::new(adb)
-        .kill_on_drop(true)
+    let result = tokio::process::Command::new(adb)
         .args(["-s", serial, "shell"])
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
-    let mut child = match child {
-        Ok(c) => c,
-        Err(e) => {
-            warn!("Could not run adb: {}", e);
-            return false;
-        }
-    };
-    let operation = async {
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(cmd.as_bytes()).await?;
-            stdin.shutdown().await?;
-        }
-        child.wait().await
-    };
-    match tokio::time::timeout(std::time::Duration::from_secs(15), operation).await {
-        Ok(Ok(st)) if st.success() => {
+        .output_input_timeout(Some(cmd.as_bytes()), std::time::Duration::from_secs(15))
+        .await;
+    match result {
+        Ok(output) if output.status.success() => {
             info!("Blent {action} command completed on tablet");
             true
         }
         _ => {
-            let _ = child.kill().await;
             warn!("Could not complete Blent {action} (is the matching app installed?)");
             false
         }

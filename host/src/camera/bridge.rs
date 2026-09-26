@@ -51,47 +51,36 @@ impl Bridge {
     }
 
     pub async fn invite(&self, token: &str, options: &CameraOptions) -> Result<()> {
-        let port = &self.remote[4..];
-        let result = output(
-            &self.adb,
-            &[
-                "-s",
-                &self.serial,
-                "shell",
-                "am",
-                "broadcast",
-                "-n",
-                "io.github.geraldo_netto.blent/com.blent.CameraReceiver",
-                "--es",
-                "token",
-                token,
-                "--ei",
-                "port",
-                port,
-                "--ei",
-                "width",
-                &options.width.to_string(),
-                "--ei",
-                "height",
-                &options.height.to_string(),
-                "--ei",
-                "fps",
-                &options.fps.to_string(),
-                "--ei",
-                "lens",
-                match options.lens {
-                    blent_config::camera::Lens::Front => "0",
-                    blent_config::camera::Lens::Rear => "1",
-                },
-                "--ez",
-                "background",
-                if options.background { "true" } else { "false" },
-                "--ei",
-                "bitrate",
-                &options.bitrate.to_string(),
-            ],
-        )
-        .await?;
+        // Only hex and typed numbers enter the remote shell command. The serial
+        // stays a distinct local argv element, including spaces/metacharacters.
+        ensure!(
+            token.len() == 64
+                && token
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+            "invalid camera token"
+        );
+        let port: u16 = self
+            .remote
+            .strip_prefix("tcp:")
+            .context("invalid camera endpoint")?
+            .parse()?;
+        ensure!(port != 0, "invalid camera port");
+        let lens = match options.lens {
+            blent_config::camera::Lens::Front => 0,
+            blent_config::camera::Lens::Rear => 1,
+        };
+        let command = format!(
+            "am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port {port} --ei width {} --ei height {} --ei fps {} --ei lens {lens} --ez background {} --ei bitrate {}\n",
+            options.width, options.height, options.fps, options.background, options.bitrate,
+        );
+        let result = Command::new(&self.adb)
+            .args(["-s", &self.serial, "shell"])
+            .output_input_timeout(Some(command.as_bytes()), Duration::from_secs(5))
+            .await?;
+        // ADB may echo the shell input in diagnostics; never surface it.
+        ensure!(result.status.success(), "ADB camera invitation failed");
+        let result = String::from_utf8_lossy(&result.stdout);
         ensure!(
             result.contains("result=1"),
             "tablet did not accept camera invitation; install updated Blent APK and open it"

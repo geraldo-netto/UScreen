@@ -25,6 +25,11 @@ fn t496_fixture_process() {
     std::fs::rename(stage, &path).unwrap();
     let role = std::env::var("BLENT_T496_ROLE").unwrap();
     match role.as_str() {
+        "input" => {
+            let mut bytes = Vec::new();
+            std::io::stdin().read_to_end(&mut bytes).unwrap();
+            std::fs::write(path.with_extension("input"), bytes).unwrap();
+        }
         "denied" => std::thread::sleep(Duration::from_millis(400)),
         "wait" => std::thread::sleep(Duration::from_secs(10)),
         _ => panic!("T496: unknown fixture role"),
@@ -239,4 +244,54 @@ fn t590_denied_group_signal_reports_unretired_work() {
     assert!(std::fs::read_to_string(log.path())
         .unwrap()
         .contains("Command group could not be terminated; delegated work may continue"));
+}
+
+#[tokio::test]
+async fn t609_stdin_delivery_closes_input_and_preserves_bytes() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("pid");
+    let input = b"secret ' \" \n\0 end";
+    let output = tokio::process::Command::from(fixture(&path, "input"))
+        .output_input_timeout(Some(input), Duration::from_secs(2))
+        .await
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(std::fs::read(path.with_extension("input")).unwrap(), input);
+    assert_reaped(&path);
+}
+
+#[tokio::test]
+async fn t609_timeout_covers_blocked_stdin_write() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("pid");
+    let input = vec![0; 1024 * 1024];
+    let error = tokio::process::Command::from(fixture(&path, "wait"))
+        .output_input_timeout(Some(&input), fixture_timeout())
+        .await
+        .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::TimedOut);
+    assert_reaped(&path);
+}
+
+#[tokio::test]
+async fn t609_cancelled_stdin_writer_is_reaped() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("pid");
+    let task_path = path.clone();
+    let task = tokio::spawn(async move {
+        tokio::process::Command::from(fixture(&task_path, "wait"))
+            .output_input_timeout(Some(&vec![0; 1024 * 1024]), Duration::from_secs(10))
+            .await
+    });
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while !path.exists() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .unwrap();
+    task.abort();
+    let _ = task.await;
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert_reaped(&path);
 }

@@ -246,3 +246,12 @@ async fn t557_ready_attachment_repairs_lost_mappings_without_reopening_android()
     assert!(state.ready.contains("USB"));
     state.stop().await;
 }
+
+#[tokio::test]
+async fn t609_display_command_reports_spawn_and_exit_failure() {
+    assert!(!app_command_using("tablet", "exit\n".into(), "launch", "/missing/t609-adb").await);
+    let root = tempfile::tempdir().unwrap();
+    let adb = adb(root.path());
+    std::fs::write(&adb, "#!/bin/sh\ncat >/dev/null\nexit 1\n").unwrap();
+    assert!(!app_command_using("tablet", "exit\n".into(), "launch", adb.to_str().unwrap()).await);
+}
