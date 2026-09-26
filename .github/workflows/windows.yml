@@ -16,6 +16,20 @@ jobs:
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned stock FFmpeg for software pipe acceptance
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'ffmpeg.7z'
+          Invoke-WebRequest 'https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-8.1.2-essentials_build.7z' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne 'e25b682664025d49034c981afb4bae36238a40f29a3cc1c713ad9a8b5b3528f6') {
+            throw 'FFmpeg archive checksum mismatch'
+          }
+          $destination = Join-Path $env:RUNNER_TEMP 'blent-ffmpeg'
+          7z x $archive "-o$destination" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'FFmpeg extraction failed' }
+          $binary = Get-ChildItem $destination -Recurse -Filter ffmpeg.exe
+          if (@($binary).Count -ne 1) { throw 'Expected one FFmpeg executable' }
+          $binary.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Append
       - name: Test portable policy without platform features
         run: cargo test --locked -p blent-config --no-default-features
       - name: T631 reject the Linux camera probe on Windows
@@ -39,8 +53,8 @@ jobs:
           cargo install cargo-llvm-cov --version 0.8.7 --locked
       - name: Measure native Windows service contracts
         run: |
-          python -c "import hashlib,json,pathlib; root=pathlib.Path('.'); paths=sorted(root.glob('common/src/**/*.rs')); pathlib.Path('windows-sources.json').write_text(json.dumps({p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},indent=2))"
-          cargo llvm-cov --locked -p blent-config --remap-path-prefix --lcov --output-path windows-common.lcov
+          python -c "import hashlib,json,pathlib; root=pathlib.Path('.'); paths=sorted(list(root.glob('common/src/**/*.rs'))+list(root.glob('host/src/**/*.rs'))); pathlib.Path('windows-sources.json').write_text(json.dumps({p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},indent=2))"
+          cargo llvm-cov --locked -p blent-config -p blent --remap-path-prefix --lcov --output-path windows-common.lcov
       - name: Preserve native counters and source revision
         if: always()
         uses: actions/upload-artifact@v4
