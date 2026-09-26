@@ -9,16 +9,14 @@ use windows_sys::Win32::Security::Cryptography::{
     BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG,
 };
 
-pub fn directory() -> Result<Directory> {
-    Directory::create(&super::paths::local()?.join("blent"))
-}
-
+/// Locate the default runtime without creating or replacing user state.
 pub fn runtime_dir() -> Result<PathBuf> {
-    Ok(directory()?.path().to_owned())
+    Ok(super::paths::local()?.join("blent"))
 }
 
-pub fn new_session_token() -> Result<String> {
-    let directory = directory()?;
+/// Publish a token in the caller's validated, pinned runtime directory.
+/// Lifecycle code must retain its lease while creating or replacing tokens.
+pub fn new_session_token(directory: &Directory) -> Result<String> {
     let mut bytes = [0u8; 32];
     let status = unsafe {
         BCryptGenRandom(
@@ -34,6 +32,7 @@ pub fn new_session_token() -> Result<String> {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     let mut file = tempfile::NamedTempFile::new_in(directory.path())?;
+    super::security::set_file_owner(file.as_file())?;
     file.write_all(token.as_bytes())?;
     file.as_file().sync_all()?;
     file.persist(directory.path().join("token"))?;
@@ -56,8 +55,10 @@ impl Lease {
             .open(directory.path().join("daemon.lock"))?;
         lock.try_lock()
             .context("another Blent instance owns this runtime")?;
+        super::security::set_file_owner(&lock)?;
         let identity = Identity::read(std::process::id())?;
         let mut record = tempfile::NamedTempFile::new_in(directory.path())?;
+        super::security::set_file_owner(record.as_file())?;
         serde_json::to_writer(&mut record, &identity)?;
         record.as_file().sync_all()?;
         record.persist(directory.path().join("daemon.json"))?;
@@ -109,3 +110,7 @@ fn read_owner(path: &Path) -> Option<Identity> {
     let identity: Identity = serde_json::from_slice(&bytes).ok()?;
     identity.is_current().then_some(identity)
 }
+
+#[cfg(test)]
+#[path = "runtime_tests.rs"]
+mod tests;

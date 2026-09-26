@@ -74,6 +74,35 @@ pub(super) fn private_descriptor(user: &User) -> Result<Local> {
     descriptor(&format!("O:{sid}D:P(A;OICI;FA;;;{sid})"))
 }
 
+/// T637: a process token's default owner can be a group, even when its DACL
+/// inherits only the current user's SID. Reopen the same file object, not its
+/// path, and set the explicit user before publishing private runtime state.
+pub(super) fn set_file_owner(file: &std::fs::File) -> Result<()> {
+    use windows_sys::Win32::Storage::FileSystem::*;
+    let user = User::current()?;
+    let handle = owned(unsafe {
+        ReOpenFile(
+            file.as_raw_handle(),
+            WRITE_OWNER,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            0,
+        )
+    })?;
+    let result = unsafe {
+        SetSecurityInfo(
+            handle.as_raw_handle(),
+            SE_FILE_OBJECT,
+            OWNER_SECURITY_INFORMATION,
+            user.sid(),
+            std::ptr::null_mut(),
+            std::ptr::null(),
+            std::ptr::null(),
+        )
+    };
+    anyhow::ensure!(result == 0, "set private file owner: {result}");
+    Ok(())
+}
+
 fn descriptor(text: &str) -> Result<Local> {
     let text = wide(text.as_ref())?;
     let mut pointer = std::ptr::null_mut();

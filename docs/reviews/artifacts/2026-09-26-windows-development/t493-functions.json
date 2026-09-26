@@ -1,0 +1,541 @@
+{
+  "run": "https://github.com/geraldo-netto/UScreen/actions/runs/36264925943",
+  "revision": "44b939ee919df859e0afe1eb7441d416d12b99f9",
+  "platform": "Windows Server 2022 x64, native MSVC",
+  "sources": {
+    "common/src/windows/mod.rs": "642df0a38def23df7d3f13fb46bacca351acc96bae54f3070de0d7ebdbb174cf",
+    "common/src/windows/native.rs": "dd3351fd19bbdb021dc22787ce7bdb9d151fd8ceca1262f0bb07a9b01a29b76e",
+    "common/src/windows/paths.rs": "78676c3862221effb699aa246b3390ad57b88734c6673501ee11a049c5b74c36",
+    "common/src/windows/private.rs": "f934423535fc20d2e85ba3f550b6289268e694f9afe4671c7fc2a494b58cbe71",
+    "common/src/windows/process.rs": "7ba785d45b4634b5fdd5a3f140cd1bb45e0ff1a2d088bf3651d959f8043954ab",
+    "common/src/windows/programs.rs": "00c1b10e1c91c38cf95303178c5d6eb1bf9a0a4126f8bab4e817106c01f94c2b",
+    "common/src/windows/runtime.rs": "c52f76e7125f92a735d5a12fcb1b8d9e1ef4168ca2fe1b9a8b93f91ebec3e157",
+    "common/src/windows/runtime_tests.rs": "eff6d3f7f8177195088c4988d0caf87b67cc354afa3a9234d5e1117b0d044c5c",
+    "common/src/windows/security.rs": "4e1b17fd056b490a1be359f8747f2cdbb132f225578f1e1cede12d1fb7da51e4",
+    "common/src/commands/windows.rs": "2978eff960c426c49b72b19687058bc5c1d92306846852d3c8ce03945a473267"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "common/src/windows/native.rs",
+      "name": "checked",
+      "line": 11,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/native.rs",
+      "name": "owned",
+      "line": 19,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/native.rs",
+      "name": "wide",
+      "line": 26,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/native.rs",
+      "name": "drop",
+      "line": 40,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/paths.rs",
+      "name": "drop",
+      "line": 10,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/paths.rs",
+      "name": "known",
+      "line": 15,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/paths.rs",
+      "name": "roaming",
+      "line": 36,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/paths.rs",
+      "name": "local",
+      "line": 40,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "create",
+      "line": 26,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "path",
+      "line": 60,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "name": "open_directory",
+      "line": 65,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/process.rs",
+      "name": "inspect",
+      "line": 27,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/process.rs",
+      "name": "read",
+      "line": 52,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/process.rs",
+      "name": "is_current",
+      "line": 63,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/process.rs",
+      "name": "retire",
+      "line": 67,
+      "language": "rust",
+      "covered": 16,
+      "total": 17,
+      "percent": 94.11764705882354,
+      "passes": true,
+      "missing": [
+        78
+      ]
+    },
+    {
+      "file": "common/src/windows/programs.rs",
+      "name": "is_executable",
+      "line": 7,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/programs.rs",
+      "name": "candidates",
+      "line": 14,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/programs.rs",
+      "name": "find_in",
+      "line": 21,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/programs.rs",
+      "name": "command_exists",
+      "line": 37,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "runtime_dir",
+      "line": 13,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "new_session_token",
+      "line": 19,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "acquire",
+      "line": 49,
+      "language": "rust",
+      "covered": 22,
+      "total": 22,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "directory",
+      "line": 72,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "identity",
+      "line": 75,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "drop",
+      "line": 81,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "owner_at",
+      "line": 90,
+      "language": "rust",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        99
+      ]
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "name": "read_owner",
+      "line": 103,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "of",
+      "line": 13,
+      "language": "rust",
+      "covered": 24,
+      "total": 25,
+      "percent": 96.0,
+      "passes": true,
+      "missing": [
+        37
+      ]
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "current",
+      "line": 41,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "sid",
+      "line": 45,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "matches",
+      "line": 49,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "bytes",
+      "line": 53,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "text",
+      "line": 57,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "private_descriptor",
+      "line": 72,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "set_file_owner",
+      "line": 80,
+      "language": "rust",
+      "covered": 16,
+      "total": 17,
+      "percent": 94.11764705882354,
+      "passes": true,
+      "missing": [
+        90
+      ]
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "descriptor",
+      "line": 106,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "validate",
+      "line": 120,
+      "language": "rust",
+      "covered": 24,
+      "total": 24,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "validate_acl",
+      "line": 152,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "name": "validate_ace",
+      "line": 176,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "child_priority",
+      "line": 11,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "checked",
+      "line": 17,
+      "language": "rust",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        19
+      ]
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "handle",
+      "line": 25,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "new",
+      "line": 34,
+      "language": "rust",
+      "covered": 11,
+      "total": 12,
+      "percent": 91.66666666666667,
+      "passes": true,
+      "missing": [
+        45
+      ]
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "start",
+      "line": 49,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "resume_child",
+      "line": 55,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "name": "resume_thread",
+      "line": 73,
+      "language": "rust",
+      "covered": 16,
+      "total": 17,
+      "percent": 94.11764705882354,
+      "passes": true,
+      "missing": [
+        88
+      ]
+    }
+  ]
+}
