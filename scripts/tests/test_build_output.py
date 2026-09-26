@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -55,6 +56,18 @@ def fixture(root, selection, stale):
 
 
 class BuildOutputTest(unittest.TestCase):
+    def test_t639_android_ci_avoids_retired_sdk_tools(self):
+        workflow = (REPO / '.github/workflows/build.yml').read_text()
+        steps = re.split(r'(?m)^      - ', workflow)
+        setup = [step for step in steps if 'uses: android-actions/setup-android@' in step]
+        self.assertTrue(setup, 'T639: Android SDK setup must remain in the build')
+        for step in setup:
+            packages = re.search(r'(?m)^          packages: [\"\']?([^\"\'\n]+)', step)
+            self.assertIsNotNone(packages, 'T639: default SDK packages include retired tools')
+            selected = packages.group(1).split()
+            self.assertNotIn('tools', selected, 'T639: SDK tools package no longer exists')
+            self.assertIn('platform-tools', selected, 'T639: retain supported SDK platform tools')
+
     def run_command(self, root, env, *command):
         result = subprocess.run(command, cwd=root, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
