@@ -1,0 +1,22 @@
+--- capture.c
++++ capture.c
+@@ -372,6 +372,7 @@
+     /* Watchdog: if a request got lost (compositor hiccup), don't stay
+        stuck waiting for update_ready forever. */
+     if (capture->update_pending && (now - capture->last_request_ms) >= 250) {
++        fprintf(stderr, "T623 watchdog ms=%lld pending=%d\n", now, capture->update_pending);
+         capture->update_pending = 0;
+         grab_now(capture);
+     }
+@@ -379,8 +380,10 @@
+     /* Fallback grab once a second in case no events flow at all */
+     if ((now - (*last_fallback_grab_ms)) >= 1000) {
+         (*last_fallback_grab_ms) = now;
+-        if (!capture->update_pending)
++        if (!capture->update_pending) {
++            fprintf(stderr, "T623 fallback ms=%lld pending=%d\n", now, capture->update_pending);
+             grab_now(capture);
++        }
+     }
+ 
+ }

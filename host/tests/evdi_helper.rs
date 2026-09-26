@@ -337,3 +337,8 @@ fn t418_shared_capture_ownership_pacing_and_control_fuzz() {
         harness.run(case);
     }
 }
+
+#[test]
+fn t623_watchdog_coalesces_grabs_and_recovers_lost_events() {
+    Harness::build("T623").run("T623");
+}

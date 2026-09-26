@@ -101,6 +101,8 @@ static int mock_discovery_calls;
 static int allocation_countdown = 0;
 static long long mock_monotonic_ms = -1;
 static int mock_grab_calls = -1;
+static int t623_request_calls = -1;
+static int t623_ready = 0;
 static int mock_clock_gettime(clockid_t clock, struct timespec *value) {
     if (clock == CLOCK_MONOTONIC && mock_monotonic_ms >= 0) {
         value->tv_sec = mock_monotonic_ms / 1000;
@@ -218,6 +220,7 @@ void evdi_handle_events(evdi_handle handle, struct evdi_event_context *context) 
 }
 bool evdi_request_update(evdi_handle handle, int buffer) {
     (void)handle; (void)buffer;
+    if (t623_request_calls >= 0) { t623_request_calls++; return t623_ready; }
     if (t497_capture_events) return t497_immediate;
     assert(0 && "failed event channel must not request a capture");
     return false;
@@ -885,6 +888,42 @@ static void test_t293(void) {
     }
 }
 
+/* T623: preserve retry recovery, but coalesce watchdog/fallback on one tick. */
+static void test_t623(void) {
+    g_capture.have_mode = 1;
+    g_capture.update_pending = 0;
+    g_capture.last_request_ms = 0;
+    mock_monotonic_ms = 1000;
+    mock_grab_calls = 0;
+    t623_request_calls = 0;
+    long long fallback = 0;
+    request_capture_if_due(&g_capture, g_capture.handle, 1000, 16);
+    assert(t623_request_calls == 1 && g_capture.update_pending);
+    mock_monotonic_ms = 1250;
+    recover_capture_if_stalled(&g_capture, 1250, &fallback);
+    assert(mock_grab_calls == 1 && "T623 watchdog and fallback must not grab twice on the same tick");
+    assert(fallback == 1250 && !g_capture.update_pending);
+    request_capture_if_due(&g_capture, g_capture.handle, 1250, 16);
+    assert(t623_request_calls == 2 && g_capture.update_pending);
+    /* Driver sent readiness but its event was lost. Retry must restart capture. */
+    t623_ready = 1;
+    mock_monotonic_ms = 1500;
+    recover_capture_if_stalled(&g_capture, 1500, &fallback);
+    request_capture_if_due(&g_capture, g_capture.handle, 1500, 16);
+    assert(t623_request_calls == 3 && !g_capture.update_pending);
+    assert(mock_grab_calls == 3 && "T623 lost readiness still recovers to immediate captures");
+    t623_ready = 0;
+    request_capture_if_due(&g_capture, g_capture.handle, 1516, 16);
+    assert(g_capture.update_pending);
+    on_update_ready(0, &g_capture);
+    assert(!g_capture.update_pending && mock_grab_calls == 4);
+    recover_capture_if_stalled(&g_capture, 2500, &fallback);
+    assert(mock_grab_calls == 5 && "T623 independent one-second fallback remains available");
+    mock_monotonic_ms = -1;
+    mock_grab_calls = -1;
+    t623_request_calls = -1;
+}
+
 static void test_t294(void) {
     g_capture.have_mode = 1;
     for (long long elapsed = 249; elapsed <= 251; elapsed++) {
@@ -1375,6 +1414,7 @@ int main(int argc, char **argv) {
         {"T340-readable", test_t340_readable},
         {"T324", test_t324},
         {"T294", test_t294},
+        {"T623", test_t623},
         {"T293", test_t293},
         {"T290", test_t290},
         {"T279", test_t279},

@@ -1,0 +1,11 @@
+{
+  "baseline": {
+    "capture.c": "f1d504c7a999ad4451a99f98f280212d68dd9ba4894a2f2c2b5697d3d7dcecd3",
+    "helper": "d114c8907f111efc92c8f0824edcd3a6c6e6d17af11138084b92ac5ad91629f9"
+  },
+  "fixed": {
+    "capture.c": "422766f48577d93d35e9c35e791b8a04a4403bda576eee43a50fc51350b56416",
+    "helper": "39abdd9060a9060b7bc4c2bd730c3a55fbcd5b7a57c80193bb53b690f01b4bfb"
+  },
+  "libevdi_sha256": "5ec8b7614074dd10dce5ba4b668203c70e77bf698da6614d839324955aead96a"
+}

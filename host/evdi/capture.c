@@ -374,6 +374,9 @@ static void recover_capture_if_stalled(capture_context_t *capture, long long now
     if (capture->update_pending && (now - capture->last_request_ms) >= 250) {
         capture->update_pending = 0;
         grab_now(capture);
+        /* This recovery also satisfies the fallback deadline. A second grab
+         * on the same tick has no intervening update and only repeats work. */
+        (*last_fallback_grab_ms) = now;
     }
 
     /* Fallback grab once a second in case no events flow at all */
