@@ -1,0 +1,19 @@
+
+== Service global info: ==
+
+Number of camera devices: 2
+Number of normal camera devices: 2
+Number of public camera devices visible to API1: 2
+    Device 0 maps to "0"
+    Device 1 maps to "1"
+Active Camera Clients:
+[]
+Allowed user IDs: 0
+
+== Camera service events log (most recent at top): ==
+  09-26 17:44:43 : DISCONNECT device 1 client for package io.github.geraldo_netto.blent (PID 8846)
+  09-26 17:44:13 : CONNECT device 1 client for package io.github.geraldo_netto.blent (PID 8846)
+  09-26 16:35:47 : USER_SWITCH previous allowed user IDs: <None>, current allowed user IDs: 0
+  09-26 16:35:35 : ADD device 0, reason: (Device added)
+  09-26 16:35:35 : ADD device 1, reason: (Device added)
+

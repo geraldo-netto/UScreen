@@ -1,0 +1,127 @@
+{
+  "display_only": {
+    "seconds": 21.736,
+    "display_encoded": 846,
+    "display_acks": 846,
+    "display_ack_fps": 38.92,
+    "display_ack_ms_p50_p95_p99": [
+      16.041,
+      17.504,
+      21.057
+    ],
+    "processes": [
+      {
+        "pid": 13312,
+        "name": "adb",
+        "cpu_seconds": 0.15,
+        "peak_sampled_rss": 8519680
+      },
+      {
+        "pid": 155434,
+        "name": "blent",
+        "cpu_seconds": 0.26,
+        "peak_sampled_rss": 35024896
+      },
+      {
+        "pid": 155508,
+        "name": "helper",
+        "cpu_seconds": 1.47,
+        "peak_sampled_rss": 10080256
+      },
+      {
+        "pid": 157546,
+        "name": "ffmpeg",
+        "cpu_seconds": 1.38,
+        "peak_sampled_rss": 86249472
+      }
+    ],
+    "local_tcp": {
+      "8890": {
+        "bytes_acked_mbps": 0.0311,
+        "bytes_received_mbps": 0.0,
+        "bytes_sent_mbps": 0.0311,
+        "max_sampled_sendq_bytes": 0
+      }
+    },
+    "start": 1790437432.033864,
+    "end": 1790437453.7694905
+  },
+  "combined": {
+    "seconds": 28.381,
+    "display_encoded": 1688,
+    "display_acks": 1688,
+    "display_ack_fps": 59.48,
+    "display_ack_ms_p50_p95_p99": [
+      11.228,
+      16.682,
+      20.552
+    ],
+    "processes": [
+      {
+        "pid": 13312,
+        "name": "adb",
+        "cpu_seconds": 0.37,
+        "peak_sampled_rss": 8781824
+      },
+      {
+        "pid": 155434,
+        "name": "blent",
+        "cpu_seconds": 0.49,
+        "peak_sampled_rss": 35024896
+      },
+      {
+        "pid": 155508,
+        "name": "helper",
+        "cpu_seconds": 3.02,
+        "peak_sampled_rss": 10080256
+      },
+      {
+        "pid": 157546,
+        "name": "ffmpeg",
+        "cpu_seconds": 2.84,
+        "peak_sampled_rss": 86249472
+      },
+      {
+        "pid": 158936,
+        "name": "camera-feedback",
+        "cpu_seconds": 0.77,
+        "peak_sampled_rss": 8421376
+      },
+      {
+        "pid": 158972,
+        "name": "ffmpeg",
+        "cpu_seconds": 2.42,
+        "peak_sampled_rss": 71012352
+      }
+    ],
+    "local_tcp": {
+      "8890": {
+        "bytes_acked_mbps": 0.0422,
+        "bytes_received_mbps": 0.0,
+        "bytes_sent_mbps": 0.0422,
+        "max_sampled_sendq_bytes": 0
+      },
+      "32827": {
+        "bytes_acked_mbps": 0.0019,
+        "bytes_received_mbps": 2.9931,
+        "bytes_sent_mbps": 0.0019,
+        "max_sampled_sendq_bytes": 8
+      }
+    },
+    "start": 1790437454.9769015,
+    "end": 1790437483.3575933
+  },
+  "camera": {
+    "adaptive": true,
+    "bitrate_kbps": 3000,
+    "boundary": "camera sensor through production decoder; no V4L2/presentation",
+    "first_frame_ms": 584,
+    "frames": 880,
+    "freshness_ms": 150,
+    "seconds": 30,
+    "stall_feedback_ms": 0,
+    "decoded_fps": 29.33,
+    "longest_decoded_gap_ms": 44
+  },
+  "limits": "Uncontrolled desktop content; local TCP staging counters, not USB utilization; camera boundary stops at decoded output, no V4L2 or presentation."
+}
