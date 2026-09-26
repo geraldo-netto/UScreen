@@ -28,8 +28,12 @@ headless UI tests and a real window launch passed under Wine, not native Windows
 T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/windows.yml).
 Shell-free command fixtures run as Windows executables; Linux process-group
 assertions remain in the Linux suite. Local policy and library execution passed
-under Wine. The native CI workflow is configured but has not been run from this
-checkout; its mandatory ACL/lease tests must pass before T493 can close.
+under Wine. The native CI workflow is available. Historical [run 35528506377](https://github.com/geraldo-netto/UScreen/actions/runs/35528506377)
+failed before ACL/lease tests at `2b91e77`. The current
+[run 36259429008](https://github.com/geraldo-netto/UScreen/actions/runs/36259429008)
+at `3bcb11f` passed portable policy, but both MSVC and GNU workspace compilation
+failed because the Linux camera benchmark is not platform-gated (T631).
+Mandatory ACL/lease tests still need a successful native run before T493 closes.
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
@@ -50,7 +54,7 @@ a successful Windows build alone does not establish functional support.
 | Decision or resource | Recommendation | Condition to proceed |
 |---|---|---|
 | Windows target | Windows 11 x64, accepted 2026-09-26 | Development VM uses the official 90-day Enterprise evaluation. Windows 10 and ARM64 are outside the first release; native acceptance remains required. |
-| Virtual-display driver | Integrate an existing [Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver) installation | Confirm that a separately installed driver is acceptable. Pin and validate its version and control interface before implementing display integration. |
+| Virtual-display driver | Separately installed upstream VDD for the lab only; no production selection | [T521 research](reviews/2026-09-26-windows-display-driver.md) found global count/reload control without owned-monitor leases. Choose and validate an upstream ownership extension, exclusive supported instance, or an owned IDD before production attach/detach. |
 | Hardware testing | A Windows PC connected to the Android tablet | Provide a test machine or tester, its Windows version and GPU, and administrator access for driver installation when authorized. CI or a VM can cover builds and isolated tests; USB, GPU and tablet validation need physical hardware. |
 | Owned driver, if required | Treat driver ownership as a separate deliverable | Confirm maintenance, signing and distribution responsibilities before developing or shipping our own driver. |
 | Application distribution | Per-user application with optional autostart | Choose an installer format and whether adb/FFmpeg are bundled or separate prerequisites before packaging. Keep driver elevation separate from normal application execution. |
