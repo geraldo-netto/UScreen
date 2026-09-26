@@ -46,6 +46,7 @@ pub(crate) fn runtime_path() -> Result<std::path::PathBuf, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use blent_config::commands::SyncCommandExt;
     #[test]
     fn t524_gui_routes_lifecycle_and_preserves_startup_errors() {
         if let Some(path) = std::env::var_os("BLENT_T524_GUI_RUNTIME") {
@@ -70,7 +71,11 @@ mod tests {
             root.path().join("blent.exe"),
         )
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
+        // Run the GUI fixture beside its private fake daemon; the build's
+        // deps directory can contain the real blent.exe and wins over PATH.
+        let runner = root.path().join("gui-tests.exe");
+        std::fs::copy(std::env::current_exe().unwrap(), &runner).unwrap();
+        let output = std::process::Command::new(runner)
             .args([
                 "--exact",
                 "platform::windows::tests::t524_gui_routes_lifecycle_and_preserves_startup_errors",
@@ -81,7 +86,7 @@ mod tests {
                 root.path().join("runtime café 東京"),
             )
             .env("PATH", root.path())
-            .output()
+            .output_timeout(Duration::from_secs(12))
             .unwrap();
         assert!(
             output.status.success(),
