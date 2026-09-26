@@ -1,0 +1,46 @@
+{
+  "observed_at": "2026-09-26T10:05:42.845095+00:00",
+  "scope": "Read-only host /proc snapshot; not the earlier T596 trace window and not a CPU/wakeup or comparative benchmark; no process command lines recorded.",
+  "processes": [
+    {
+      "pid": 290532,
+      "comm": "blent",
+      "thread_count": 36,
+      "thread_names": {
+        "blent": 1,
+        "tokio-rt-worker": 33,
+        "blent-config": 1,
+        "async-io": 1
+      }
+    },
+    {
+      "pid": 290576,
+      "comm": "adb",
+      "thread_count": 6,
+      "thread_names": {
+        "adb": 4,
+        "device poll": 1,
+        "client_socket_t": 1
+      }
+    },
+    {
+      "pid": 290619,
+      "comm": "evdi_helper",
+      "thread_count": 31,
+      "thread_names": {
+        "evdi_helper": 31
+      }
+    },
+    {
+      "pid": 548713,
+      "comm": "ffmpeg",
+      "thread_count": 43,
+      "thread_names": {
+        "ffmpeg": 40,
+        "dec0:0:rawvideo": 1,
+        "dmx0:rawvideo": 1,
+        "mux0:tee": 1
+      }
+    }
+  ]
+}
