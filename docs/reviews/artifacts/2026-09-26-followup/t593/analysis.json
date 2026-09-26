@@ -1,0 +1,1154 @@
+[
+  {
+    "phase_ns": 0,
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 4.842769,
+      "p50_ms": 33.333641,
+      "p95_ms": 33.868793,
+      "p99_ms": 35.528276,
+      "max_ms": 61.86834,
+      "mean_ms": 33.33812760504202
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 0.662284,
+      "p50_ms": 2.4049180000000003,
+      "p95_ms": 2.483459,
+      "p99_ms": 8.373453,
+      "max_ms": 30.946238,
+      "mean_ms": 2.6871042555555555
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 23.021516,
+      "p95_ms": 25.918695,
+      "max_ms": 50.962315
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.415869,
+      "p50_ms": 2.841578,
+      "p95_ms": 3.408479,
+      "p99_ms": 4.102264,
+      "max_ms": 5.685411,
+      "mean_ms": 2.9473851888888887
+    },
+    "events": 140,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.101706,
+      "p50_ms": 0.187931,
+      "p95_ms": 0.333923,
+      "p99_ms": 0.474704,
+      "max_ms": 1.606913,
+      "mean_ms": 0.21068788764044943
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.081268,
+    "evdi_cpu_seconds": 0.1200000000000001,
+    "steady_min_interval_ms": 4.842769,
+    "steady_subperiod_intervals": 9
+  },
+  {
+    "phase_ns": 0,
+    "trial": "0-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.591228,
+      "p50_ms": 33.333387,
+      "p95_ms": 33.652131,
+      "p99_ms": 33.836673,
+      "max_ms": 34.125901,
+      "mean_ms": 33.3333424789916
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": -3.027264,
+      "p50_ms": -0.190782,
+      "p95_ms": -0.129139,
+      "p99_ms": -0.10399,
+      "max_ms": -0.094572,
+      "mean_ms": -0.35367034444444445
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 22.699481499999997,
+      "p95_ms": 25.540273,
+      "max_ms": 33.070361
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.805522,
+      "p50_ms": 4.884814,
+      "p95_ms": 7.00579,
+      "p99_ms": 14.114799,
+      "max_ms": 14.852177,
+      "mean_ms": 5.2565816666666665
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.08091999999999999,
+    "evdi_cpu_seconds": 0.13999999999999968,
+    "steady_min_interval_ms": 32.591228,
+    "steady_subperiod_intervals": 15
+  },
+  {
+    "phase_ns": 0,
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 4.519127,
+      "p50_ms": 33.184863,
+      "p95_ms": 34.477761,
+      "p99_ms": 35.852016,
+      "max_ms": 61.995916,
+      "mean_ms": 33.34455962184874
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 0.638108,
+      "p50_ms": 1.8113915,
+      "p95_ms": 2.175777,
+      "p99_ms": 2.4476,
+      "max_ms": 30.953928,
+      "mean_ms": 2.0761564555555556
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 22.563812499999997,
+      "p95_ms": 24.723689,
+      "max_ms": 54.976687
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.314774,
+      "p50_ms": 2.8101085,
+      "p95_ms": 3.376057,
+      "p99_ms": 4.211474,
+      "max_ms": 4.485712,
+      "mean_ms": 2.833058988888889
+    },
+    "events": 141,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.086637,
+      "p50_ms": 0.188182,
+      "p95_ms": 0.260221,
+      "p99_ms": 0.34276,
+      "max_ms": 2.076636,
+      "mean_ms": 0.2042081797752809
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.08497600000000005,
+    "evdi_cpu_seconds": 0.14000000000000057,
+    "steady_min_interval_ms": 4.519127,
+    "steady_subperiod_intervals": 60
+  },
+  {
+    "phase_ns": 0,
+    "trial": "1-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.363545,
+      "p50_ms": 33.333183,
+      "p95_ms": 33.392508,
+      "p99_ms": 33.760066,
+      "max_ms": 34.305383,
+      "mean_ms": 33.33307156302521
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": -2.829956,
+      "p50_ms": -0.19226,
+      "p95_ms": -0.133346,
+      "p99_ms": -0.100473,
+      "max_ms": -0.086707,
+      "mean_ms": -0.2567059222222222
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 22.697404,
+      "p95_ms": 24.895986,
+      "max_ms": 27.968579
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.941245,
+      "p50_ms": 4.800724499999999,
+      "p95_ms": 6.32859,
+      "p99_ms": 8.050334,
+      "max_ms": 8.12125,
+      "mean_ms": 4.9806029
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.06971300000000002,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 32.434273,
+    "steady_subperiod_intervals": 7
+  },
+  {
+    "phase_ns": 0,
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 30.252844,
+      "p50_ms": 33.187782,
+      "p95_ms": 35.345076,
+      "p99_ms": 35.999295,
+      "max_ms": 36.112142,
+      "mean_ms": 33.343155605042014
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 1.064699,
+      "p50_ms": 1.826967,
+      "p95_ms": 3.745771,
+      "p99_ms": 4.604614,
+      "max_ms": 4.642736,
+      "mean_ms": 1.9758452333333334
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 22.7848735,
+      "p95_ms": 25.224285,
+      "max_ms": 27.22252
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.418636,
+      "p50_ms": 2.898399,
+      "p95_ms": 3.325311,
+      "p99_ms": 5.741573,
+      "max_ms": 6.313653,
+      "mean_ms": 3.015430188888889
+    },
+    "events": 135,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.084392,
+      "p50_ms": 0.160419,
+      "p95_ms": 0.236956,
+      "p99_ms": 0.362017,
+      "max_ms": 0.45208,
+      "mean_ms": 0.1720488426966292
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07550299999999988,
+    "evdi_cpu_seconds": 0.14000000000000057,
+    "steady_min_interval_ms": 30.252844,
+    "steady_subperiod_intervals": 61
+  },
+  {
+    "phase_ns": 0,
+    "trial": "2-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.448223,
+      "p50_ms": 33.332999,
+      "p95_ms": 33.368424,
+      "p99_ms": 33.633595,
+      "max_ms": 34.232377,
+      "mean_ms": 33.33335169747899
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": -4.162041,
+      "p50_ms": -0.1845905,
+      "p95_ms": -0.15064,
+      "p99_ms": -0.127625,
+      "max_ms": -0.11966,
+      "mean_ms": -0.32124627777777776
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 22.6333545,
+      "p95_ms": 24.952869,
+      "max_ms": 27.496744
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.955003,
+      "p50_ms": 4.820824,
+      "p95_ms": 7.339216,
+      "p99_ms": 8.858009,
+      "max_ms": 9.282046,
+      "mean_ms": 5.082002688888889
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.06791599999999998,
+    "evdi_cpu_seconds": 0.13999999999999968,
+    "steady_min_interval_ms": 33.046926,
+    "steady_subperiod_intervals": 3
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.898306,
+      "p50_ms": 33.333504,
+      "p95_ms": 33.370277,
+      "p99_ms": 33.387759,
+      "max_ms": 33.791676,
+      "mean_ms": 33.33449251260504
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 16.710267,
+      "p50_ms": 16.791924,
+      "p95_ms": 16.84666,
+      "p99_ms": 16.887167,
+      "max_ms": 16.890713,
+      "mean_ms": 16.792736133333335
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 38.706833,
+      "p95_ms": 42.892893,
+      "max_ms": 49.352761
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.842296,
+      "p50_ms": 3.9332185,
+      "p95_ms": 4.169583,
+      "p99_ms": 10.940429,
+      "max_ms": 12.69475,
+      "mean_ms": 4.155593188888889
+    },
+    "events": 141,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.069584,
+      "p50_ms": 0.155249,
+      "p95_ms": 0.208331,
+      "p99_ms": 0.21807,
+      "max_ms": 0.218521,
+      "mean_ms": 0.1589660224719101
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07833800000000002,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 33.271526,
+    "steady_subperiod_intervals": 5
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "0-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.51831,
+      "p50_ms": 33.333779,
+      "p95_ms": 33.363829,
+      "p99_ms": 33.635924,
+      "max_ms": 34.166646,
+      "mean_ms": 33.33328811764706
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 15.409408,
+      "p50_ms": 16.501477,
+      "p95_ms": 16.576627,
+      "p99_ms": 16.903746,
+      "max_ms": 17.308246,
+      "mean_ms": 16.500101766666667
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 38.7785875,
+      "p95_ms": 41.284238,
+      "max_ms": 47.412497
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.449557,
+      "p50_ms": 3.9857139999999998,
+      "p95_ms": 6.772137,
+      "p99_ms": 11.142767,
+      "max_ms": 11.454388,
+      "mean_ms": 4.338101088888889
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.06837499999999999,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 32.51831,
+    "steady_subperiod_intervals": 5
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 20.36908,
+      "p50_ms": 33.333741,
+      "p95_ms": 33.381102,
+      "p99_ms": 33.426768,
+      "max_ms": 46.198251,
+      "mean_ms": 33.333685159663865
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 17.698003,
+      "p50_ms": 17.767075,
+      "p95_ms": 17.837149,
+      "p99_ms": 17.878231,
+      "max_ms": 30.71215,
+      "mean_ms": 17.91625578888889
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 40.02312,
+      "p95_ms": 44.234868,
+      "max_ms": 49.700986
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.249902,
+      "p50_ms": 3.8951055,
+      "p95_ms": 4.205443,
+      "p99_ms": 12.836675,
+      "max_ms": 12.954452,
+      "mean_ms": 4.190399
+    },
+    "events": 144,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.086176,
+      "p50_ms": 0.143026,
+      "p95_ms": 0.208041,
+      "p99_ms": 0.245793,
+      "max_ms": 1.51557,
+      "mean_ms": 0.16003891011235954
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07975300000000002,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 20.36908,
+    "steady_subperiod_intervals": 8
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "1-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.36001,
+      "p50_ms": 33.333496,
+      "p95_ms": 33.37348,
+      "p99_ms": 33.990481,
+      "max_ms": 34.38985,
+      "mean_ms": 33.32961120168067
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 16.04554,
+      "p50_ms": 16.480608,
+      "p95_ms": 16.769885,
+      "p99_ms": 17.441499,
+      "max_ms": 17.521373,
+      "mean_ms": 16.52198192222222
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 38.690287,
+      "p95_ms": 43.364975,
+      "max_ms": 48.953242
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.109912,
+      "p50_ms": 4.012192,
+      "p95_ms": 4.70684,
+      "p99_ms": 13.213453,
+      "max_ms": 13.64341,
+      "mean_ms": 4.348161422222222
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07342199999999999,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 32.36001,
+    "steady_subperiod_intervals": 9
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 19.055024,
+      "p50_ms": 33.334296,
+      "p95_ms": 33.443123,
+      "p99_ms": 34.329441,
+      "max_ms": 47.55377,
+      "mean_ms": 33.334099369747896
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 16.709845,
+      "p50_ms": 16.778957499999997,
+      "p95_ms": 16.863842,
+      "p99_ms": 17.717377,
+      "max_ms": 30.954449,
+      "mean_ms": 16.958451011111112
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 38.8789015,
+      "p95_ms": 44.367831,
+      "max_ms": 53.035946
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.233111,
+      "p50_ms": 3.929368,
+      "p95_ms": 4.283615,
+      "p99_ms": 13.616082,
+      "max_ms": 14.972496,
+      "mean_ms": 4.236658
+    },
+    "events": 144,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.079774,
+      "p50_ms": 0.154799,
+      "p95_ms": 0.213251,
+      "p99_ms": 0.231787,
+      "max_ms": 1.890383,
+      "mean_ms": 0.17560825842696628
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.0807119999999999,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 19.055024,
+    "steady_subperiod_intervals": 9
+  },
+  {
+    "phase_ns": 16666666,
+    "trial": "2-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 33.021236,
+      "p50_ms": 33.333429,
+      "p95_ms": 33.349228,
+      "p99_ms": 33.363297,
+      "max_ms": 33.762525,
+      "mean_ms": 33.33294940336135
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 15.420007,
+      "p50_ms": 16.490930499999997,
+      "p95_ms": 16.566357,
+      "p99_ms": 16.82239,
+      "max_ms": 16.903967,
+      "mean_ms": 16.494556866666667
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 38.745583999999994,
+      "p95_ms": 41.39779,
+      "max_ms": 46.212808
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.918445,
+      "p50_ms": 4.0488025,
+      "p95_ms": 4.749322,
+      "p99_ms": 10.636128,
+      "max_ms": 12.152249,
+      "mean_ms": 4.299095588888889
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.0721520000000001,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 33.021236,
+    "steady_subperiod_intervals": 5
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 27.55487,
+      "p50_ms": 33.337469,
+      "p95_ms": 34.938475,
+      "p99_ms": 38.245499,
+      "max_ms": 39.083776,
+      "mean_ms": 33.33429014285714
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 24.946051,
+      "p50_ms": 25.04396,
+      "p95_ms": 26.6105,
+      "p99_ms": 30.01367,
+      "max_ms": 30.195371,
+      "mean_ms": 25.328268666666666
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 46.6175755,
+      "p95_ms": 49.275905,
+      "max_ms": 52.36478
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.541239,
+      "p50_ms": 3.8837475,
+      "p95_ms": 4.191311,
+      "p99_ms": 4.402217,
+      "max_ms": 4.469586,
+      "mean_ms": 3.7985844
+    },
+    "events": 144,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.073111,
+      "p50_ms": 0.130552,
+      "p95_ms": 0.186499,
+      "p99_ms": 0.195898,
+      "max_ms": 0.207971,
+      "mean_ms": 0.13103851685393259
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07851599999999997,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 28.201277,
+    "steady_subperiod_intervals": 15
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "0-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.496031,
+      "p50_ms": 33.333818,
+      "p95_ms": 33.516669,
+      "p99_ms": 33.733708,
+      "max_ms": 34.172042,
+      "mean_ms": 33.33329562184874
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 24.75457,
+      "p50_ms": 24.8429005,
+      "p95_ms": 25.067853,
+      "p99_ms": 25.266296,
+      "max_ms": 25.353152,
+      "mean_ms": 24.86652638888889
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 46.9001795,
+      "p95_ms": 49.06311,
+      "max_ms": 52.218243
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.596495,
+      "p50_ms": 4.0339215,
+      "p95_ms": 4.666064,
+      "p99_ms": 6.958644,
+      "max_ms": 7.259194,
+      "mean_ms": 4.138851144444445
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07511499999999993,
+    "evdi_cpu_seconds": 0.1200000000000001,
+    "steady_min_interval_ms": 32.82193,
+    "steady_subperiod_intervals": 8
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 25.97025,
+      "p50_ms": 33.336641,
+      "p95_ms": 34.968999,
+      "p99_ms": 36.966089,
+      "max_ms": 40.669077,
+      "mean_ms": 33.33451411764706
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 25.2446,
+      "p50_ms": 25.322511,
+      "p95_ms": 26.845507,
+      "p99_ms": 28.931969,
+      "max_ms": 32.558891,
+      "mean_ms": 25.619625522222222
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 47.309506,
+      "p95_ms": 49.204095,
+      "max_ms": 52.37743
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.600705,
+      "p50_ms": 3.9074535,
+      "p95_ms": 4.421094,
+      "p99_ms": 4.542808,
+      "max_ms": 6.791093,
+      "mean_ms": 3.8466550111111113
+    },
+    "events": 144,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.085184,
+      "p50_ms": 0.15047,
+      "p95_ms": 0.209083,
+      "p99_ms": 0.229973,
+      "max_ms": 2.636333,
+      "mean_ms": 0.1796302808988764
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.08307200000000003,
+    "evdi_cpu_seconds": 0.10999999999999943,
+    "steady_min_interval_ms": 25.97025,
+    "steady_subperiod_intervals": 17
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "1-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.859766,
+      "p50_ms": 33.333577,
+      "p95_ms": 33.662174,
+      "p99_ms": 33.759069,
+      "max_ms": 33.819177,
+      "mean_ms": 33.3362697394958
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 24.732406,
+      "p50_ms": 24.8671715,
+      "p95_ms": 25.156253,
+      "p99_ms": 25.274402,
+      "max_ms": 25.360406,
+      "mean_ms": 24.894817744444445
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 46.9268335,
+      "p95_ms": 50.374266,
+      "max_ms": 58.576168
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.333708,
+      "p50_ms": 4.099314,
+      "p95_ms": 5.489525,
+      "p99_ms": 7.388696,
+      "max_ms": 15.98494,
+      "mean_ms": 4.4079002
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07664599999999999,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 32.859766,
+    "steady_subperiod_intervals": 12
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 29.349985,
+      "p50_ms": 33.334498,
+      "p95_ms": 36.133155,
+      "p99_ms": 36.872211,
+      "max_ms": 37.288452,
+      "mean_ms": 33.35882259663865
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 25.070254,
+      "p50_ms": 25.1952445,
+      "p95_ms": 27.881335,
+      "p99_ms": 29.140262,
+      "max_ms": 29.198063,
+      "mean_ms": 25.5690688
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 47.4740005,
+      "p95_ms": 49.382055,
+      "max_ms": 51.397952
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.510371,
+      "p50_ms": 3.9013625000000003,
+      "p95_ms": 4.270234,
+      "p99_ms": 4.499086,
+      "max_ms": 4.640369,
+      "mean_ms": 3.810062455555556
+    },
+    "events": 144,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.073742,
+      "p50_ms": 0.137825,
+      "p95_ms": 0.187531,
+      "p99_ms": 0.224472,
+      "max_ms": 0.241496,
+      "mean_ms": 0.1389021797752809
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.08446100000000001,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 29.361338,
+    "steady_subperiod_intervals": 18
+  },
+  {
+    "phase_ns": 25000000,
+    "trial": "2-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.882403,
+      "p50_ms": 33.333224,
+      "p95_ms": 33.370595,
+      "p99_ms": 33.66439,
+      "max_ms": 33.801484,
+      "mean_ms": 33.333167260504204
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 24.725455,
+      "p50_ms": 24.827207,
+      "p95_ms": 24.906955,
+      "p99_ms": 25.16373,
+      "max_ms": 25.310784,
+      "mean_ms": 24.840016366666667
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 46.9131495,
+      "p95_ms": 49.909804,
+      "max_ms": 51.210322
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.359177,
+      "p50_ms": 4.0202314999999995,
+      "p95_ms": 5.724177,
+      "p99_ms": 7.069832,
+      "max_ms": 7.690399,
+      "mean_ms": 4.1881596666666665
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07539099999999999,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 32.882403,
+    "steady_subperiod_intervals": 5
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "0-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 32.095131,
+      "p50_ms": 33.334949,
+      "p95_ms": 33.39225,
+      "p99_ms": 33.939012,
+      "max_ms": 34.531382,
+      "mean_ms": 33.33416775630252
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 9.282885,
+      "p50_ms": 9.3914385,
+      "p95_ms": 9.468272,
+      "p99_ms": 10.403723,
+      "max_ms": 10.598428,
+      "mean_ms": 9.420222433333333
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 31.2581845,
+      "p95_ms": 35.924214,
+      "max_ms": 46.101161
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.606089,
+      "p50_ms": 3.826168,
+      "p95_ms": 7.584886,
+      "p99_ms": 16.680269,
+      "max_ms": 18.032441,
+      "mean_ms": 4.2862069
+    },
+    "events": 147,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.091126,
+      "p50_ms": 0.158686,
+      "p95_ms": 0.214914,
+      "p99_ms": 0.241165,
+      "max_ms": 0.269779,
+      "mean_ms": 0.16257060674157303
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.080295,
+    "evdi_cpu_seconds": 0.11000000000000032,
+    "steady_min_interval_ms": 32.095131,
+    "steady_subperiod_intervals": 11
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "0-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 33.281289,
+      "p50_ms": 33.33322,
+      "p95_ms": 33.36006,
+      "p99_ms": 33.379077,
+      "max_ms": 33.385299,
+      "mean_ms": 33.33321549579832
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 7.871175,
+      "p50_ms": 8.161324,
+      "p95_ms": 8.227662,
+      "p99_ms": 8.265014,
+      "max_ms": 8.27326,
+      "mean_ms": 8.165359588888888
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 30.2997995,
+      "p95_ms": 34.35616,
+      "max_ms": 44.915942
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 3.017279,
+      "p50_ms": 3.91084,
+      "p95_ms": 4.621679,
+      "p99_ms": 10.988057,
+      "max_ms": 11.016461,
+      "mean_ms": 4.2194366
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07034100000000001,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 33.281289,
+    "steady_subperiod_intervals": 4
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "1-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 10.78552,
+      "p50_ms": 33.331507,
+      "p95_ms": 33.379999,
+      "p99_ms": 33.392544,
+      "max_ms": 55.850682,
+      "mean_ms": 33.33416206722689
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 8.382983,
+      "p50_ms": 8.438816,
+      "p95_ms": 8.510248,
+      "p99_ms": 8.533002,
+      "max_ms": 30.924662,
+      "mean_ms": 8.697515144444445
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 30.1245905,
+      "p95_ms": 35.144639,
+      "max_ms": 55.573118
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.900806,
+      "p50_ms": 3.8874715,
+      "p95_ms": 4.467594,
+      "p99_ms": 18.806106,
+      "max_ms": 18.810254,
+      "mean_ms": 4.4606129
+    },
+    "events": 141,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.086086,
+      "p50_ms": 0.155529,
+      "p95_ms": 0.220634,
+      "p99_ms": 0.234822,
+      "max_ms": 2.06632,
+      "mean_ms": 0.1825459213483146
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07899999999999996,
+    "evdi_cpu_seconds": 0.1200000000000001,
+    "steady_min_interval_ms": 10.78552,
+    "steady_subperiod_intervals": 8
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "1-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 33.286925,
+      "p50_ms": 33.333395,
+      "p95_ms": 33.347823,
+      "p99_ms": 33.365617,
+      "max_ms": 33.388773,
+      "mean_ms": 33.33318982352941
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 7.233601,
+      "p50_ms": 8.14434,
+      "p95_ms": 8.220191,
+      "p99_ms": 8.232805,
+      "max_ms": 8.233457,
+      "mean_ms": 8.131883333333333
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 30.0618595,
+      "p95_ms": 31.946505,
+      "max_ms": 38.267898
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.415352,
+      "p50_ms": 3.9134465,
+      "p95_ms": 4.506648,
+      "p99_ms": 11.64156,
+      "max_ms": 12.19696,
+      "mean_ms": 4.217423966666667
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.06896500000000005,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 33.286925,
+    "steady_subperiod_intervals": 3
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "2-gpu-damage",
+    "cadence": {
+      "count": 119,
+      "min_ms": 10.744605,
+      "p50_ms": 33.331983,
+      "p95_ms": 33.461772,
+      "p99_ms": 33.822135,
+      "max_ms": 55.923605,
+      "mean_ms": 33.33418768067227
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 8.305067,
+      "p50_ms": 8.392831000000001,
+      "p95_ms": 8.487338,
+      "p99_ms": 8.66973,
+      "max_ms": 10.809811,
+      "mean_ms": 8.4289735
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 30.498159,
+      "p95_ms": 39.903672,
+      "max_ms": 48.490771
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.603214,
+      "p50_ms": 3.852711,
+      "p95_ms": 13.650132,
+      "p99_ms": 18.046129,
+      "max_ms": 20.480639,
+      "mean_ms": 5.252331011111111
+    },
+    "events": 172,
+    "changed_event_age_from_latest_submission": {
+      "count": 89,
+      "min_ms": 0.082709,
+      "p50_ms": 0.155489,
+      "p95_ms": 0.227468,
+      "p99_ms": 0.240634,
+      "max_ms": 0.273837,
+      "mean_ms": 0.1606542584269663
+    },
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.08243500000000004,
+    "evdi_cpu_seconds": 0.1200000000000001,
+    "steady_min_interval_ms": 30.852165,
+    "steady_subperiod_intervals": 16
+  },
+  {
+    "phase_ns": 8333333,
+    "trial": "2-gpu-same",
+    "cadence": {
+      "count": 119,
+      "min_ms": 33.282843,
+      "p50_ms": 33.333419,
+      "p95_ms": 33.36516,
+      "p99_ms": 33.373638,
+      "max_ms": 33.386043,
+      "mean_ms": 33.33323194117647
+    },
+    "source_to_capture": {
+      "count": 90,
+      "min_ms": 6.938023,
+      "p50_ms": 8.1437805,
+      "p95_ms": 8.215694,
+      "p99_ms": 8.244329,
+      "max_ms": 8.276049,
+      "mean_ms": 8.097497055555555
+    },
+    "source_to_ack": {
+      "samples": 90,
+      "p50_ms": 29.0606665,
+      "p95_ms": 31.79555,
+      "max_ms": 37.754695
+    },
+    "capture_to_packet": {
+      "count": 90,
+      "min_ms": 2.572424,
+      "p50_ms": 3.9468069999999997,
+      "p95_ms": 4.593617,
+      "p99_ms": 11.339891,
+      "max_ms": 12.296203,
+      "mean_ms": 4.137188844444444
+    },
+    "events": 0,
+    "changed_event_age_from_latest_submission": null,
+    "ack_count": 120,
+    "encoder_cpu_seconds": 0.07011300000000009,
+    "evdi_cpu_seconds": 0.1299999999999999,
+    "steady_min_interval_ms": 33.282843,
+    "steady_subperiod_intervals": 5
+  }
+]

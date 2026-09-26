@@ -53,7 +53,8 @@ geometry/copy work, and ACKs are host receipt of Android render callbacks.
 None is an optical presentation timestamp. Damage-arrival timestamps were not
 instrumented, so this does not isolate every compositor/event-queue delay.
 
-T593 remains open. Next: explicitly sweep source/capture start phase and record
+Historical next step at this stage (subsequently completed by the
+[controlled phase sweep](2026-09-26-controlled-gpu-phase.md)): explicitly sweep source/capture start phase and record
 XDamage arrival alongside the existing frame identities. Any production change
 also needs permanent timing/ownership regressions, sparse updates, cursor-only
 motion and no catch-up bursts. The schedule-preserving candidate changes the
