@@ -145,6 +145,12 @@ Host settings live in `~/.config/blent/config.toml`; edit them with
 `blent-gui` or override supported settings with CLI flags. The tablet’s ⚙
 sheet stores app preferences locally; **Apply** sends its shared streaming
 settings to the host. Brightness/refresh preferences take effect immediately.
+The desktop **Video** tab keeps encoder, frame rate and resolution visible;
+**Advanced video settings** contains quality, bitrate, calibration and worker/pipe
+capacity controls. The tablet groups display/input, video, camera and app controls;
+bitrate is under **Advanced video settings**, and update/statistics switches are
+under **App & diagnostics**. Camera Start/Stop is explicit and independent of
+display sharing; opening settings or pressing Apply does not start capture.
 The tray controls the running daemon.
 When `XDG_CONFIG_HOME` is an absolute path, host settings instead use
 `$XDG_CONFIG_HOME/blent/config.toml`. Empty or relative values use the default.

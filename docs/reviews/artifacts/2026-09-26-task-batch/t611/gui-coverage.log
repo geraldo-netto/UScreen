@@ -1,0 +1,91 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+   Compiling blent-gui v1.2.3 (/backups/disk2/projects/blent/gui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.62s
+     Running unittests src/main.rs (target/llvm-cov-target/debug/deps/blent_gui-af296d0c3c6da80d)
+
+running 71 tests
+test camera_preview::tests::t543_preview_uses_exported_lens_and_clears_texture_after_stop ... ok
+test camera_settings::tests::t543_portable_backend_contract_and_status_are_separate_from_preferences ... ok
+test platform::appimage_tests::t308_gui_uses_outer_image_and_refuses_moved_images ... ok
+test platform::appimage_tests::t308_outer_launcher_child ... ok
+test platform::appimage_tests::t541_pipe_publication_validates_and_preserves_previous_request ... ok
+test platform_diagnostics::tests::t533_gui_uses_the_cli_evidence_and_keeps_pending_state_explicit ... ok
+test settings::tests::t332_invalid_display_mode_cannot_save_or_restart ... ok
+test settings::tests::t378_restart_runs_once_after_commit_and_never_after_save_failure ... ok
+test settings::tests::t415_live_pipe_save_persists_then_publishes_without_restart ... ok
+test settings::tests::t415_publish_failure_does_not_lose_saved_preferences ... ok
+test settings::tests::t429_profile_switches_persist_before_one_restart_and_report_failure ... ok
+test settings::tests::t463_concurrent_saves_cannot_publish_older_pipe_request_last ... ok
+test settings::tests::t474_save_preserves_capacity_and_restarts_once_after_commit ... ok
+test status_poll::regression_tests::t516_dynamic_inventory_requires_success_and_recovers ... ok
+test status_poll::tests::t409_capability_ttl_reduces_probes_and_preserves_dynamic_refresh ... ok
+test status_poll::tests::t409_external_changes_expire_and_actions_force_refresh ... ok
+test status_poll::tests::t409_no_idle_adb_calls_and_live_assignment_refresh ... ok
+test status_worker::tests::t409_dropping_owner_stops_polling_after_inflight_probe ... ok
+test status_worker::tests::t409_pending_refresh_cannot_outlive_owner ... ok
+test tests::coverage::t497_action_retirement_reports_failure_and_refreshes_status ... ok
+test tests::coverage::t497_display_dropdowns_change_only_the_requested_preference ... ok
+test tests::coverage::t497_header_links_only_request_the_expected_fork_pages ... ok
+test tests::coverage::t497_setup_and_lifecycle_actions_use_private_stub_commands ... ok
+test tests::coverage::t497_setup_errors_preserve_the_program_failure ... ok
+test tests::coverage::t537_profile_cache_test_preserves_external_configuration ... ok
+test tests::t014_packaged_daemon_wins_over_stale_local_install ... ok
+test tests::t015_system_setup_installs_uinput_rule_and_reloads_udev ... ok
+test tests::t015_unwritable_uinput_is_visible_even_when_evdi_is_ready ... ok
+test tests::t016_service_actions_use_systemd_including_restart ... ok
+test tests::t053_displaying_bitrate_slider_does_not_rewrite_supported_low_values ... ok
+test tests::t053_slider_can_select_the_supported_one_mbps_minimum ... ok
+test tests::t094_service_action_does_not_block_ui ... ok
+test tests::t097_gui_setup_creates_missing_configuration_directories ... ok
+test tests::t123_update_versions_follow_shared_validation_and_precedence ... ok
+test tests::t135_missing_sessions_do_not_claim_a_charging_phone ... ok
+test tests::t135_tablet_status_uses_live_assignments_and_all_models ... ok
+test tests::t136_setup_adds_missing_devices_and_persists_capacity ... ok
+test tests::t136_setup_readiness_requires_all_configured_tablets ... ok
+test tests::t162_tabs_keep_one_visible_shared_apply_button ... ok
+test tests::t231_autostart_supports_a_desktop_without_a_user_manager ... ok
+test tests::t232_executable_discovery_without_which ... ok
+test tests::t240_gui_selects_hevc_vaapi_and_preserves_depth_and_device ... ok
+test tests::t259_vaapi_bitrate_is_dormant_and_other_backends_restore_editing ... ok
+test tests::t260_gui_recovers_daemons_and_routes_actions_without_trusting_pid_files ... ok
+test tests::t268_over_budget_stop_is_reaped_and_prevents_restart ... ok
+test tests::t268_slow_valid_stop_completes_before_restart ... ok
+test tests::t288_old_invalid_file_stays_visible_until_user_repairs_it ... ok
+test tests::t288_pen_mode_dependency_holds_in_both_toggle_orders ... ok
+test tests::t295_compatibility_url_prefills_the_actual_issue_form ... ok
+test tests::t328_setup_timeout_reports_continued_work ... ok
+test tests::t332_t321_invalid_display_draft_explains_error_before_save ... ok
+test tests::t344_idle_input_settings_preserve_dormant_pointer_preference ... ok
+test tests::t344_pen_toggle_save_reload_and_discard_preserve_pointer ... ok
+test tests::t374_release_json_contract ... ok
+test tests::t378_held_config_lock_does_not_block_apply_or_lose_edits ... ok
+test tests::t378_save_failure_retains_baseline_and_edits_for_retry ... ok
+test tests::t400_gui_persists_explicit_low_latency_vaapi_selection ... ok
+test tests::t409_idle_repaints_stop_while_action_completion_stays_visible ... ok
+test tests::t415_dropdown_has_exact_choices_and_shows_effective_per_tablet_capacity ... ok
+test tests::t415_linux_video_settings_show_pipe_capacity ... ok
+test tests::t427_daemon_lookup_skips_unusable_candidates ... ok
+test tests::t434_gui_persists_automatic_and_explicit_av1_choices ... ok
+test tests::t436_autostart_fixture_ignores_unrelated_live_daemon ... ok
+test tests::t474_conversion_control_switches_auto_manual_and_preserves_custom_capacity ... ok
+test tests::t480_profile_cache_checkbox_is_opt_in_and_persists ... ok
+test tests::t492_idle_option_is_explicit_and_keeps_motion_fps ... ok
+test tests::t543_camera_tab_controls_only_camera_profile_and_saves_without_display_restart ... ok
+test tests::t582_general_settings_allow_normal_and_high_priority ... ok
+test tests::t611_narrow_settings_keep_labels_inside_window ... ok
+test tests::t611_video_disclosure_keeps_basics_visible_and_preserves_drafts ... ok
+test tests::t612_worker_control_preserves_manual_capacity_and_auto ... ok
+
+test result: ok. 71 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 30.53s
+
+     Running tests/startup.rs (target/llvm-cov-target/debug/deps/startup-57643b3853514fd6)
+
+running 1 test
+test t078_workspace_gui_and_accessibility_start_without_worker_panics ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.03s
+
+
+    Finished report saved to /tmp/blent-batch-t611/gui.lcov

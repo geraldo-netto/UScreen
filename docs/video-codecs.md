@@ -217,7 +217,7 @@ are fixed for a daemon session. The optional in-process encoder build maps
 
 `encoder_workers = 0` (Auto), or `blent --encoder-workers auto start`, compares
 1, 2 and 4 libx264 workers inside the existing selector. The Linux settings control
-is **Software encoder workers**. Manual values 1–128 fix the software H.264
+is **Software encoder workers**, under **Video > Advanced video settings**. Manual values 1–128 fix the software H.264
 budget; changing the saved value requires Apply & restart. CLI overrides do not
 persist. Explicit libx264 and the optional in-process build use one worker for
 Auto; the latter accepts manual counts but does not run CLI calibration. Hardware
@@ -248,7 +248,7 @@ historical CPU/RSS observations do not establish current resource performance.
 
 ### Optional historical profile cache
 
-Linux Video settings expose **Reuse a recent measured profile** (`profile_cache
+Linux **Video > Advanced video settings** exposes **Reuse a recent measured profile** (`profile_cache
 = true` in `config.toml`). It is off by default and affects only automatic
 selection with the normal FFmpeg CLI adapter. Manual encoder choices take
 precedence. An old peer without a software fingerprint always uses normal

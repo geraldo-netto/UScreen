@@ -1,0 +1,20 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+   Compiling blent-gui v1.2.3 (/backups/disk2/projects/blent/gui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.22s
+     Running unittests src/main.rs (target/debug/deps/blent_gui-af296d0c3c6da80d)
+
+running 1 test
+test tests::t611_video_disclosure_keeps_basics_visible_and_preserves_drafts ...
+thread 'tests::t611_video_disclosure_keeps_basics_visible_and_preserves_drafts' (211901) panicked at gui/src/main.rs:1203:9:
+T611: advanced capacity is exposed before disclosure
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::t611_video_disclosure_keeps_basics_visible_and_preserves_drafts
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p blent-gui --bin blent-gui`

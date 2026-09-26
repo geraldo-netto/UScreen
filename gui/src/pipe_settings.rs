@@ -55,7 +55,7 @@ fn command(ui: &mut egui::Ui, text: &str) {
 }
 
 fn show_limit_help(ui: &mut egui::Ui, ceiling: Option<u32>) {
-    ui.collapsing("How to allow larger pipes in Linux", |ui| {
+    ui.collapsing("Linux pipe limits", |ui| {
         let value = ceiling.map(size_label).unwrap_or_else(|| "unknown".into());
         ui.label(format!("Current per-pipe ceiling: {value}. These commands affect all unprivileged applications, not just Blent. Record the old value first; only raise it if below 8 MiB."));
         ui.monospace("cat /proc/sys/fs/pipe-max-size");

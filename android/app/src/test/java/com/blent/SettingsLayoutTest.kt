@@ -88,6 +88,7 @@ class SettingsLayoutTest {
                 assertEquals(60, session.settings.fps)
             }
             compose.onNodeWithText("Settings rejected:", substring = true).performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Advanced video settings").performScrollTo().performClick()
             compose.onNodeWithText("Bitrate: 20 Mbps").performScrollTo().assertIsDisplayed()
         } finally { session.stop() }
     }
@@ -252,6 +253,18 @@ class SettingsLayoutTest {
         compose.runOnIdle { assertTrue(applied); assertTrue(dismissed) }
     }
 
+    @Test fun t611_shortLandscapeConnectionInstructionsRemainReachableWithLargeFonts() {
+        compose.setContent { BlentTheme {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.8f)) { BlentMain({}) }
+        } }
+        compose.onNodeWithText("An already paired network connection", substring = true)
+            .performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Open settings").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Advanced video settings").performScrollTo().performClick()
+        compose.onNodeWithText("Bitrate:", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Apply").performScrollTo().assertIsDisplayed()
+    }
+
     @Test fun t337_githubLinkWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Open GitHub")
     @Test fun t337_updatePillWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Update 9.9.9 available")
     @Test fun t337_settingsUpdateWithoutBrowserKeepsScreenAlive() = checkWebLinks(false, "Update available: 9.9.9")
@@ -317,26 +330,26 @@ class SettingsLayoutTest {
         val presentation = StreamPresentation(receiver, null)
         compose.setContent { BlentTheme { BlentMain({}, presentation = presentation) } }
         try {
-            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.onNodeWithText("Waiting for your computer…").assertIsDisplayed()
             compose.runOnIdle {
                 running.set(receiver, true)
                 // Joining on the UI thread leaves the worker's UI update queued.
                 Thread { receiver.onConnected!!.invoke() }.apply { start(); join(3000); assertFalse(isAlive) }
                 receiver.stop()
             }
-            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.onNodeWithText("Waiting for your computer…").assertIsDisplayed()
             compose.runOnIdle {
                 running.set(receiver, true)
                 receiver.onConnected!!.invoke()
             }
-            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.onNodeWithText("Waiting for your computer…").assertDoesNotExist()
             compose.runOnIdle {
                 Thread { receiver.onDisconnected!!.invoke() }.apply { start(); join(3000); assertFalse(isAlive) }
                 receiver.onConnected!!.invoke()
             }
-            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.onNodeWithText("Waiting for your computer…").assertDoesNotExist()
             compose.runOnIdle { receiver.stop() }
-            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.onNodeWithText("Waiting for your computer…").assertIsDisplayed()
         } finally { receiver.stop() }
     }
 
@@ -345,14 +358,14 @@ class SettingsLayoutTest {
         val presentation = StreamPresentation(receiver, null)
         compose.setContent { BlentTheme { BlentMain({}, presentation = presentation) } }
         try {
-            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.onNodeWithText("Waiting for your computer…").assertIsDisplayed()
             compose.runOnIdle {
                 VideoReceiver::class.java.getDeclaredField("isRunning").apply { isAccessible = true }.set(receiver, true)
                 receiver.onConnected!!.invoke()
             }
-            compose.onNodeWithText("Waiting for the host…").assertDoesNotExist()
+            compose.onNodeWithText("Waiting for your computer…").assertDoesNotExist()
             compose.runOnIdle { receiver.stop() }
-            compose.onNodeWithText("Waiting for the host…").assertIsDisplayed()
+            compose.onNodeWithText("Waiting for your computer…").assertIsDisplayed()
         } finally { receiver.stop() }
     }
 
@@ -390,7 +403,7 @@ class SettingsLayoutTest {
             compose.onNodeWithText(draw).assertIsDisplayed()
             compose.runOnIdle { listener.onFailure(old, java.io.IOException("USB detached"), null) }
             compose.onNodeWithText(draw).assertDoesNotExist()
-            compose.onNodeWithText("Reconnecting to the host…").assertIsDisplayed()
+            compose.onNodeWithText("Reconnecting to your computer…").assertIsDisplayed()
             compose.runOnIdle {
                 install(capture, fresh)
                 listener.onOpen(fresh, response)

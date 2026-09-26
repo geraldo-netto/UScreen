@@ -1,0 +1,29 @@
+[
+  {
+    "viewport": [
+      380,
+      560
+    ],
+    "device": "Computer",
+    "tasks": "pair, start display, apply without camera start, permission denial, explicit camera start/stop, advanced settings, unsupported capabilities",
+    "horizontal_overflow": false
+  },
+  {
+    "viewport": [
+      960,
+      360
+    ],
+    "device": "Tablet",
+    "tasks": "pair, start display, apply without camera start, permission denial, explicit camera start/stop, advanced settings, unsupported capabilities",
+    "horizontal_overflow": false
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "device": "Tablet",
+    "tasks": "pair, start display, apply without camera start, permission denial, explicit camera start/stop, advanced settings, unsupported capabilities",
+    "horizontal_overflow": false
+  }
+]

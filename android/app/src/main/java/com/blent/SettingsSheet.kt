@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +56,9 @@ internal fun SettingsSheet(
             UpdateNotice(updateAvailable, onOpenUpdate)
             settings.streamError?.let { Text("Settings rejected: $it", color = MaterialTheme.colorScheme.error) }
 
+            SettingsSection("Display & input")
+            Text("Display and app switches apply immediately.", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(8.dp))
             DisplayControls(settings, displayRefreshRates, onSettingsEvent)
             Spacer(Modifier.height(20.dp))
 
@@ -61,15 +66,21 @@ internal fun SettingsSheet(
 
             OrientationControls(settings.orientation) { onSettingsEvent(SettingsEvent.Orientation(it)) }
 
+            if (!penOnly) {
+                SettingsSection("Video stream")
+                StreamControls(bitrateMbps, fpsChoice, { bitrateMbps = it }, { fpsChoice = it })
+            }
+
             cameraControls()
 
-            if (!penOnly) StreamControls(bitrateMbps, fpsChoice, { bitrateMbps = it }, { fpsChoice = it })
-
+            SettingsSection("App")
             SettingsSwitch("Battery saver", "Reduce background work while keeping your brightness and frame-rate settings.", settings.batterySaver) { onSettingsEvent(SettingsEvent.BatterySaver(it)) }
             Spacer(Modifier.height(16.dp))
-            SettingsSwitch("Show stats overlay", "FPS and bandwidth in the corner", settings.showStats) { onSettingsEvent(SettingsEvent.ShowStats(it)) }
-            Spacer(Modifier.height(16.dp))
-            SettingsSwitch("Check for newer releases", "One request to GitHub when the app opens. Nothing installs itself.", settings.checkUpdates) { onSettingsEvent(SettingsEvent.CheckUpdates(it)) }
+            AdvancedSettings("App & diagnostics") {
+                SettingsSwitch("Show stats overlay", "FPS and bandwidth in the corner", settings.showStats) { onSettingsEvent(SettingsEvent.ShowStats(it)) }
+                Spacer(Modifier.height(16.dp))
+                SettingsSwitch("Check for newer releases", "One request to GitHub when the app opens. Nothing installs itself.", settings.checkUpdates) { onSettingsEvent(SettingsEvent.CheckUpdates(it)) }
+            }
             Spacer(Modifier.height(24.dp))
 
             if (!penOnly) {
@@ -85,7 +96,7 @@ internal fun SettingsSheet(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Applying restarts the stream for a moment.",
+                    "Apply updates frame rate and bitrate, briefly restarting display sharing. Camera sharing keeps its current state.",
                     fontSize = 11.sp,
                     color = Color(0xFF6A6A7E),
                     textAlign = TextAlign.Center,
@@ -95,6 +106,25 @@ internal fun SettingsSheet(
             Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+@Composable
+internal fun SettingsSection(title: String) {
+    HorizontalDivider(color = Color(0xFF343444), modifier = Modifier.padding(bottom = 12.dp))
+    Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White,
+        modifier = Modifier.semantics { heading() })
+    Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun AdvancedSettings(title: String, content: @Composable () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+        .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }) {
+        Text(title, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+        Text(if (expanded) "Hide" else "Show")
+    }
+    if (expanded) content()
 }
 
 @Composable
@@ -156,6 +186,13 @@ private fun OrientationControls(orientation: Int, onOrientationChange: (Int) -> 
 
 @Composable
 private fun StreamControls(bitrateMbps: Float, fpsChoice: Int, onBitrateChange: (Float) -> Unit, onFpsChange: (Int) -> Unit) {
+    FrameRateControls(fpsChoice, onFpsChange)
+    AdvancedSettings("Advanced video settings") { BitrateControls(bitrateMbps, onBitrateChange) }
+    Spacer(Modifier.height(20.dp))
+}
+
+@Composable
+private fun BitrateControls(bitrateMbps: Float, onBitrateChange: (Float) -> Unit) {
     Text(
         "Bitrate: ${bitrateMbps.roundToInt()} Mbps",
         fontSize = 14.sp,
@@ -170,13 +207,16 @@ private fun StreamControls(bitrateMbps: Float, fpsChoice: Int, onBitrateChange: 
         colors = SliderDefaults.colors(thumbColor = Accent, activeTrackColor = Accent)
     )
     Text(
-        "This setting depends on the host encoder. VAAPI constant quality (CQP) has no bitrate cap; " +
-            "adjust Quality in the Linux app instead. Auto may select VAAPI.",
+        "This setting depends on your computer's encoder. VAAPI constant quality (CQP) has no bitrate cap; " +
+            "adjust Quality in Blent on your computer instead. Auto may select VAAPI.",
         fontSize = 11.sp,
         color = Color(0xFF6A6A7E)
     )
     Spacer(Modifier.height(20.dp))
+}
 
+@Composable
+private fun FrameRateControls(fpsChoice: Int, onFpsChange: (Int) -> Unit) {
     Text("Frame rate", fontSize = 14.sp, color = Color(0xFFB0B0C0))
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

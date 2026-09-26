@@ -5,6 +5,8 @@ import android.view.SurfaceView
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +19,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -82,17 +87,17 @@ internal fun BlentMain(
         StreamSurface(onSurfaceReady, onSurfaceDestroyed)
         ConnectionLayers(penOnly, isConnected, controlConnected(presentation), settings.showStats, presentation?.fps ?: 0f, presentation?.mbps ?: 0f)
 
-        // Subtle settings handle (top-right). Sits above the video surface, so
-        // taps here are NOT forwarded to the Linux host.
+        // Keep settings above the video surface so its taps stay on the tablet.
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(10.dp)
-                .size(38.dp)
-                .alpha(if (isConnected) 0.35f else 0.9f)
+                .size(48.dp)
+                .alpha(if (isConnected) 0.75f else 1f)
                 .clip(CircleShape)
                 .background(Color(0xAA20202C))
-                .clickable { showSettings = true },
+                .semantics { contentDescription = "Open settings" }
+                .clickable(role = Role.Button) { showSettings = true },
             contentAlignment = Alignment.Center
         ) {
             Text("⚙", fontSize = 18.sp, color = Color.White)
@@ -302,7 +307,11 @@ private fun ConnectionScreen(penOnly: Boolean) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.widthIn(max = 520.dp).verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 56.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
                 text = "Blent",
                 fontSize = 42.sp,
@@ -310,17 +319,17 @@ private fun ConnectionScreen(penOnly: Boolean) {
                 color = Color.White
             )
             Text(
-                text = "USB second display",
+                text = "Display & input sharing",
                 fontSize = 15.sp,
                 color = AccentSoft
             )
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(
                 color = Accent,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(40.dp)
             )
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0x8C1A1A2A))
@@ -330,7 +339,7 @@ private fun ConnectionScreen(penOnly: Boolean) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (penOnly) "Reconnecting to the host…" else "Waiting for the host…",
+                        text = if (penOnly) "Reconnecting to your computer…" else "Waiting for your computer…",
                         fontSize = 16.sp,
                         color = Warn,
                         fontWeight = FontWeight.Medium
@@ -339,7 +348,8 @@ private fun ConnectionScreen(penOnly: Boolean) {
                     Text(
                         text = "1. Connect the USB cable\n" +
                             "2. Allow USB debugging if asked\n" +
-                            "3. Make sure blent is running on your PC",
+                            "3. Open Blent on your computer and start sharing\n\n" +
+                            "An already paired network connection reconnects automatically.",
                         fontSize = 13.sp,
                         lineHeight = 22.sp,
                         color = Color(0xFF9A9AAE),

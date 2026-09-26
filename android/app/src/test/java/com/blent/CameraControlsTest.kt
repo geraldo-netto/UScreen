@@ -21,6 +21,45 @@ import org.robolectric.annotation.LooperMode
 class CameraControlsTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun t611_browsingAndApplyStayOffWhileExplicitStopAndRestartRespectPermission() {
+        val invitations = MutableStateFlow<CameraEndpoint?>(null)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        var permission = true
+        var requests = 0
+        var opened = 0
+        var closed = 0
+        val events = mutableListOf<SettingsEvent>()
+        val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, { requests++ }, { permission },
+            { _, _, _, resources -> opened++; resources.own { closed++ }; awaitCancellation() }, invitations, scope)
+        binding.start()
+        compose.setContent { BlentTheme {
+            SettingsSheet(SettingsValues(), null, {}, false, {}, onSettingsEvent = events::add,
+                cameraControls = { CameraControls(binding) })
+        } }
+        try {
+            compose.onNodeWithText("Start camera").performScrollTo().assertIsNotEnabled()
+            compose.onNodeWithText("Apply").performScrollTo().performClick()
+            compose.runOnIdle {
+                assertEquals(0, opened)
+                assertEquals(listOf(SettingsEvent.Stream(20000, 60)), events)
+                invitations.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000, requestedLens = CameraLens.FRONT)
+            }
+            compose.onNodeWithText("Stop camera").performScrollTo().performClick()
+            compose.runOnIdle {
+                assertEquals(1, opened); assertEquals(1, closed)
+                assertEquals(1, events.size) // Camera stop did not change display/input settings.
+                permission = false
+            }
+            compose.onNodeWithText("Start camera").performScrollTo().performClick()
+            compose.runOnIdle { assertEquals(1, requests); binding.permissionResult(false); assertEquals(1, opened); permission = true }
+            compose.onNodeWithText("Start camera").performScrollTo().performClick()
+            compose.runOnIdle { assertEquals(2, opened) }
+            compose.onNodeWithText("Stop camera").performScrollTo().performClick()
+            compose.runOnIdle { assertEquals(2, closed); invitations.value = null }
+            compose.onNodeWithText("Start camera").assertIsNotEnabled()
+        } finally { compose.runOnIdle { binding.shutdown(); scope.cancel() } }
+    }
+
     @Test fun t539_webcamSelectionRequiresHostAndSwitchesOneCamera() {
         val invitations = MutableStateFlow<CameraEndpoint?>(null)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)

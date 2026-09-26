@@ -74,6 +74,7 @@ class SettingsControlContractTest {
         compose.onNodeWithText("Camera up").performScrollTo().performClick().assertIsSelected()
         compose.onNodeWithText("Camera down").performClick().assertIsSelected()
         toggleBeside("Rotate automatically").performScrollTo().performClick()
+        compose.onNodeWithText("App & diagnostics").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Show stats overlay").performScrollTo().performClick().assertIsOn()
         compose.onNodeWithContentDescription("Check for newer releases").performScrollTo().performClick().assertIsOff()
         compose.runOnIdle {
@@ -84,6 +85,7 @@ class SettingsControlContractTest {
             assertEquals(0, dismissals)
         }
         compose.onNodeWithText("30 fps").performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithText("Advanced video settings").performScrollTo().performClick()
         val bitrate = SemanticsMatcher("stream bitrate range") {
             it.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo)?.range ==
                 (Prefs.MIN_BITRATE_KBPS / 1000f)..(Prefs.MAX_BITRATE_KBPS / 1000f)

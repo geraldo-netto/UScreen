@@ -2,8 +2,10 @@
 
 The host **Cameras** tab controls camera sharing: Front/Rear, resolution, frame
 rate, bitrate, clockwise rotation (0°, 90°, 180° or 270°), mirroring and whether sharing continues while the tablet app is
-hidden or its screen is locked. Android shows status and its required camera
-permission prompt; it has no camera configuration controls.
+hidden or its screen is locked. Lens and resolution stay visible; the remaining
+profile controls are under **Advanced camera settings**. Android shows status,
+its required camera permission prompt, and explicit **Start camera** / **Stop
+camera** actions; camera profile configuration stays on the computer.
 
 Choose a lens and press **Start camera**. Open Blent on the tablet and grant
 camera permission if requested. In Google Meet or another application, select
@@ -26,7 +28,11 @@ ADB reverse mapping. Camera operations never attach EVDI or restart display shar
 **Apply** saves camera preferences without starting capture. **Start camera**
 uses the current controls; **Restart camera** applies changed controls to an
 active camera. Opening the host never restores capture automatically. After
-an error, correct its cause and press Start/Restart to retry.
+an error, correct its cause and press Start/Restart to retry. The tablet can stop
+capture or restart the existing computer request while that session remains
+available. Its Start action is disabled without a request. Tablet Stop ends
+capture without stopping display/input or deleting the computer’s camera outputs;
+use Stop on the computer to retire the entire camera session.
 
 **Continue while hidden or locked** defaults off. When enabled, Android starts a
 camera foreground service with a persistent notification and holds a CPU wake

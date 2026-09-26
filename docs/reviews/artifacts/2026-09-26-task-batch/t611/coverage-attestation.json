@@ -1,0 +1,12 @@
+{
+  "unchanged_rust_source_files": 243,
+  "recollected_sources": [
+    "gui/src/camera_settings.rs",
+    "gui/src/main.rs",
+    "gui/src/pipe_settings.rs",
+    "gui/src/tests/coverage.rs"
+  ],
+  "prior": "T625 manifest.json.gz + attested.lcov.gz",
+  "current": "T611 manifest.json + gui.lcov",
+  "rule": "Only byte-identical sources retain prior counters; all counters for changed sources replaced."
+}

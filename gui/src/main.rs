@@ -307,7 +307,6 @@ impl App {
                     self.show_header(ui, &status);
                     self.show_setup(ui, &status);
                     self.show_status(ui, &status);
-                    self.show_daemon_control(ui, status.daemon_running);
                     ui.add_space(14.0);
                     ui.separator();
                     ui.add_space(8.0);
@@ -398,7 +397,7 @@ impl App {
     fn show_header(&mut self, ui: &mut egui::Ui, status: &Status) {
         ui.add_space(6.0);
         ui.heading(egui::RichText::new("Blent").size(26.0));
-        ui.label(egui::RichText::new("USB second display for your tablet").weak());
+        ui.label(egui::RichText::new("Display, input and camera sharing").weak());
         ui.horizontal(|ui| {
             if ui.small_button("Report compatibility").on_hover_text(
                 "Opens a GitHub issue pre-filled with your setup. Nothing is sent until you submit it.").clicked()
@@ -495,6 +494,7 @@ impl App {
     fn show_status(&mut self, ui: &mut egui::Ui, status: &Status) {
         if !capabilities().daemon {
             platform_diagnostics::show(ui, status.diagnostics.as_deref(), capabilities());
+            self.show_daemon_control(ui, false);
             return;
         }
         // ----- Status -----
@@ -506,15 +506,11 @@ impl App {
                     ui,
                     status.daemon_running,
                     if status.daemon_running {
-                        "Daemon running"
+                        "Display service running"
                     } else {
-                        "Daemon stopped"
+                        "Display service stopped"
                     },
-                    &if status.daemon_running {
-                        format!("PID {}", status.daemon_pid)
-                    } else {
-                        String::new()
-                    },
+                    "",
                 );
                 ui.add_space(4.0);
                 status_dot(
@@ -523,7 +519,7 @@ impl App {
                     if status.tablet_connected {
                         "Tablet connected"
                     } else {
-                        "No tablet detected"
+                        "Tablet not connected"
                     },
                     &status.tablet_model,
                 );
@@ -531,12 +527,18 @@ impl App {
                     ui.add_space(4.0);
                     ui.label(
                         egui::RichText::new(
-                            "Plug in via USB and enable USB debugging on the tablet",
+                            if status.daemon_running {
+                                "Connect by USB, enable USB debugging and allow this computer on your tablet."
+                            } else {
+                                "Start display & input, then open Blent on your tablet."
+                            },
                         )
                         .weak()
                         .size(11.0),
                     );
                 }
+                ui.add_space(8.0);
+                self.show_daemon_control(ui, status.daemon_running);
             });
 
         ui.add_space(10.0);
@@ -549,7 +551,7 @@ impl App {
         }
         ui.horizontal(|ui| {
             let big = egui::vec2(ui.available_width(), 34.0);
-            let label = if running { "Stop" } else { "Start" };
+            let label = if running { "Stop display & input" } else { "Start display & input" };
             if ui
                 .add_sized(
                     big,
@@ -566,11 +568,11 @@ impl App {
         self.run_action(move || {
             if running {
                 stop_daemon()
-                    .map(|_| "Daemon stopped".into())
+                    .map(|_| "Display service stopped".into())
                     .unwrap_or_else(|e| e)
             } else {
                 start_daemon()
-                    .map(|_| "Daemon starting…".into())
+                    .map(|_| "Display service starting…".into())
                     .unwrap_or_else(|e| e)
             }
         });
@@ -923,16 +925,26 @@ impl App {
     }
 
     fn show_video_settings(&mut self, ui: &mut egui::Ui) {
-        self.setting_encoder(ui);
+        settings_grid(ui, "video-basics", |ui| {
+            self.setting_encoder(ui);
+            self.setting_frame_rate(ui);
+            self.setting_resolution(ui);
+        });
+        ui.add_space(10.0);
+        egui::CollapsingHeader::new("Advanced video settings").id_salt("video-advanced")
+            .show(ui, |ui| {
+                settings_grid(ui, "video-advanced-grid", |ui| self.show_advanced_video_settings(ui));
+            });
+    }
+
+    fn show_advanced_video_settings(&mut self, ui: &mut egui::Ui) {
         if capabilities().daemon {
             self.setting_profile_cache(ui);
             self.setting_adaptive_idle(ui);
         }
         self.setting_quality(ui);
         self.setting_bitrate(ui);
-        self.setting_frame_rate(ui);
         self.setting_colour_depth(ui);
-        self.setting_resolution(ui);
         self.setting_stream_detail(ui);
         if capabilities().conversion_pool {
             conversion_settings::show(ui, &mut self.cfg.conversion_threads);
@@ -978,7 +990,7 @@ impl App {
     fn show_settings(&mut self, ui: &mut egui::Ui, status: &Status) {
         ui.label(egui::RichText::new("Settings").strong().size(15.0));
         ui.add_space(6.0);
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (tab, name) in [
                 (Tab::Video, "Video"),
                 (Tab::Display, "Display & input"),
@@ -989,17 +1001,31 @@ impl App {
             }
         });
         ui.add_space(8.0);
+        if self.tab == Tab::Video {
+            self.show_video_settings(ui);
+            return;
+        }
+        if self.tab == Tab::Camera {
+            self.camera.show(ui, &mut self.cfg.camera.options);
+            return;
+        }
         // Each tab retains its own grid ID and remembered column widths.
-        egui::Grid::new(("settings", self.tab))
-            .num_columns(2)
-            .spacing([16.0, 10.0])
-            .show(ui, |ui| match self.tab {
-                Tab::Video => self.show_video_settings(ui),
+        settings_grid(ui, ("settings", self.tab), |ui| match self.tab {
                 Tab::Display => self.show_display_settings(ui),
                 Tab::General => self.show_general_settings(ui, status),
-                Tab::Camera => self.camera.show(ui, &mut self.cfg.camera.options),
+                _ => {},
             });
     }
+}
+
+// Shared native layout keeps wrapping and column budgets consistent across tabs.
+fn settings_grid(ui: &mut egui::Ui, id: impl std::hash::Hash, render: impl FnOnce(&mut egui::Ui)) {
+    let width = (ui.available_width() - 16.0) / 2.0;
+    egui::Grid::new(id).num_columns(2).spacing([16.0, 10.0]).max_col_width(width)
+        .show(ui, |ui| {
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+            render(ui);
+        });
 }
 
 fn main() -> eframe::Result {
@@ -1174,19 +1200,53 @@ mod tests {
     fn t415_linux_video_settings_show_pipe_capacity() {
         let mut app = settings_test_app(Tab::Video);
         let ctx = egui::Context::default();
-        let output = ctx.run(egui::RawInput::default(), |ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                egui::Grid::new("pipe-regression").show(ui, |ui| app.show_video_settings(ui));
-            });
-        });
-        let mut text = Vec::new();
-        for shape in output.shapes {
-            collect_text_rects(&shape.shape, &mut text);
-        }
+        ctx.style_mut(|style| style.animation_time = 0.0);
+        click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
+        let text = video_test_frame(&mut app, &ctx, vec![]);
         assert!(
             text.iter().any(|(label, _)| label == "Capture pipe buffer"),
             "T415: {text:?}"
         );
+    }
+
+    #[test]
+    fn t611_video_disclosure_keeps_basics_visible_and_preserves_drafts() {
+        let mut app = settings_test_app(Tab::Video);
+        let ctx = egui::Context::default();
+        ctx.style_mut(|style| style.animation_time = 0.0);
+        let before = app.cfg.clone();
+        let labels = video_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels.iter().any(|(text, _)| text == "Encoder"));
+        assert!(!labels.iter().any(|(text, _)| text == "Capture pipe buffer"), "T611: advanced capacity is exposed before disclosure");
+        click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
+        let labels = video_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels.iter().any(|(text, _)| text == "Capture pipe buffer"));
+        assert_eq!(app.cfg, before);
+        click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
+        assert!(!video_test_frame(&mut app, &ctx, vec![]).iter().any(|(text, _)| text == "Capture pipe buffer"));
+    }
+
+    #[test]
+    fn t611_narrow_settings_keep_labels_inside_window() {
+        for tab in [Tab::Video, Tab::Display, Tab::General, Tab::Camera] {
+            let mut app = settings_test_app(tab);
+            let ctx = egui::Context::default();
+            ctx.style_mut(|style| style.animation_time = 0.0);
+            let frame = |app: &mut App, events| sized_window_frame(app, &ctx, events, egui::vec2(380.0, 2000.0));
+            frame(&mut app, vec![]);
+            let text = frame(&mut app, vec![]);
+            if let Some((_, rect)) = text.iter().find(|(text, _)| text.starts_with("Advanced ")) {
+                let pos = rect.center();
+                for pressed in [true, false] {
+                    frame(&mut app, vec![egui::Event::PointerMoved(pos), egui::Event::PointerButton {
+                        pos, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE,
+                    }]);
+                }
+            }
+            for (label, rect) in frame(&mut app, vec![]) {
+                assert!(rect.right() <= 380.0, "T611: clipped label {label:?} at {rect:?}");
+            }
+        }
     }
 
     fn settings_test_app(tab: Tab) -> App {
@@ -1378,16 +1438,21 @@ mod tests {
         settings_test_frame(app, ctx, events, render)
     }
 
-    fn window_test_frame(
+    fn window_test_frame(app: &mut App, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {
+        sized_window_frame(app, ctx, events, egui::vec2(700.0, 900.0))
+    }
+
+    fn sized_window_frame(
         app: &mut App,
         ctx: &egui::Context,
         events: Vec<egui::Event>,
+        size: egui::Vec2,
     ) -> Vec<(String, egui::Rect)> {
         let output = ctx.run(
             egui::RawInput {
                 screen_rect: Some(egui::Rect::from_min_size(
                     egui::Pos2::ZERO,
-                    egui::vec2(700.0, 900.0),
+                    size,
                 )),
                 events,
                 ..Default::default()
@@ -1534,6 +1599,10 @@ mod tests {
         assert_eq!(app.cfg, app.saved_cfg);
         assert!(!app.cfg.input_pen);
         assert!(app.cfg.input_pointer);
+    }
+
+    fn video_test_frame(app: &mut App, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {
+        sized_window_frame(app, ctx, events, egui::vec2(700.0, 2000.0))
     }
 
     fn encoder_test_frame(
@@ -1756,7 +1825,7 @@ mod tests {
         click_settings_text(
             &mut app,
             &ctx,
-            "How to allow larger pipes in Linux",
+            "Linux pipe limits",
             pipe_test_frame,
         );
         let text = pipe_test_frame(&mut app, &ctx, vec![]);
@@ -1882,6 +1951,8 @@ mod tests {
         let calls = Rc::new(RefCell::new((CameraState::Stopped, Vec::new())));
         app.camera.backend = Some(Box::new(Backend(calls.clone())));
         let ctx = egui::Context::default();
+        ctx.style_mut(|style| style.animation_time = 0.0);
+        click_settings_text(&mut app, &ctx, "Advanced camera settings", camera_test_frame);
         click_settings_text(&mut app, &ctx, "Rear", camera_test_frame);
         click_settings_text(&mut app, &ctx, "0°", camera_test_frame);
         click_settings_text(&mut app, &ctx, "180°", camera_test_frame);

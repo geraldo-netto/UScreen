@@ -22,19 +22,29 @@ impl Default for Panel {
 
 impl Panel {
     pub(super) fn show(&mut self, ui: &mut egui::Ui, options: &mut CameraProfile) {
-        ui.label("Camera sharing");
         ui.vertical(|ui| {
-            let state = self.state();
-            ui.label(state_label(&state));
-            if let Some(error) = &self.error { ui.colored_label(egui::Color32::RED, error); }
-            self.buttons(ui, options, &state);
-            ui.label(egui::RichText::new("Start/Restart camera applies these settings. Apply only saves preferences. Camera changes never restart display sharing.").weak().size(11.0));
-            ui.label(egui::RichText::new("Keep this host window open while sharing. Select Blent Front or Blent Rear in your video call; only the selected lens is live.").weak().size(11.0));
+            self.summary(ui, options);
+            super::settings_grid(ui, "camera-basic-grid", |ui| {
+                let frame = self.backend.as_ref().and_then(|backend| backend.preview());
+                self.preview.show(ui, frame);
+                profile(ui, options);
+            });
+            egui::CollapsingHeader::new("Advanced camera settings").id_salt("camera-advanced")
+                .show(ui, |ui| {
+                    super::settings_grid(ui, "camera-advanced-grid", |ui| advanced_profile(ui, options));
+                });
         });
-        ui.end_row();
-        let frame = self.backend.as_ref().and_then(|backend| backend.preview());
-        self.preview.show(ui, frame);
-        profile(ui, options);
+    }
+
+    fn summary(&mut self, ui: &mut egui::Ui, options: &CameraProfile) {
+        ui.label(egui::RichText::new("Camera sharing").strong());
+        let state = self.state();
+        ui.label(state_label(&state));
+        if let Some(error) = &self.error { ui.colored_label(egui::Color32::RED, error); }
+        self.buttons(ui, options, &state);
+        ui.label(egui::RichText::new("Start/Restart camera applies these settings. Apply only saves preferences. Camera changes never restart display sharing.").weak().size(11.0));
+        ui.label(egui::RichText::new("Keep this window open while sharing. Select Blent Front or Blent Rear in your video call; only the selected lens is live.").weak().size(11.0));
+        ui.add_space(10.0);
     }
 
     fn state(&self) -> CameraState {
@@ -51,7 +61,7 @@ impl Panel {
                 | CameraState::Streaming
                 | CameraState::Stopping
         );
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             let label = if active {
                 "Restart camera"
             } else {
@@ -129,6 +139,9 @@ fn profile(ui: &mut egui::Ui, options: &mut CameraProfile) {
     });
     ui.end_row();
     resolution(ui, options);
+}
+
+fn advanced_profile(ui: &mut egui::Ui, options: &mut CameraProfile) {
     rotation(ui, &mut options.rotation);
     ui.label("Frame rate");
     ui.add(egui::Slider::new(&mut options.fps, 5..=30).suffix(" FPS"));
@@ -203,7 +216,7 @@ fn device(ui: &mut egui::Ui, options: &mut CameraProfile) {
         .add(
             egui::TextEdit::singleline(&mut serial)
                 .hint_text("Automatic (one connected tablet)")
-                .desired_width(190.0),
+                .desired_width(190.0_f32.min(ui.available_width())),
         )
         .changed()
     {

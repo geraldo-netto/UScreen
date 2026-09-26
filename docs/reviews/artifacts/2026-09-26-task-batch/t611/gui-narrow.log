@@ -1,0 +1,15 @@
+   Compiling blent-gui v1.2.3 (/backups/disk2/projects/blent/gui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.82s
+     Running unittests src/main.rs (target/debug/deps/blent_gui-af296d0c3c6da80d)
+
+running 2 tests
+test tests::t611_narrow_settings_keep_labels_inside_window ... ok
+test tests::t611_video_disclosure_keeps_basics_visible_and_preserves_drafts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.06s
+
+     Running tests/startup.rs (target/debug/deps/startup-57643b3853514fd6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
