@@ -1,6 +1,6 @@
 """Strict source-line coverage contracts for T497; missing evidence never passes."""
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import hashlib
 
 
@@ -16,14 +16,36 @@ class Function:
     body: int = 0
 
 
-def source_path(root, name, prefix=None):
-    root = root.resolve()
-    path = Path(name)
+def windows_relative(path, prefix):
+    origin = PureWindowsPath(str(prefix or ''))
+    if not path.is_absolute() or not origin.is_absolute():
+        return None
+    try:
+        return Path(path.relative_to(origin).as_posix())
+    except ValueError:
+        return None
+
+
+def report_path(name, prefix):
+    windows = PureWindowsPath(name)
+    if windows.drive:
+        return windows_relative(windows, prefix)
+    if windows.root and not name.startswith('/'):
+        return None
+    path = Path(name.replace('\\', '/'))
     if prefix is not None and path.is_absolute():
         try:
             path = path.relative_to(prefix)
         except ValueError:
             return None
+    return path
+
+
+def source_path(root, name, prefix=None):
+    root = root.resolve()
+    path = report_path(str(name), prefix)
+    if path is None:
+        return None
     if not path.is_absolute():
         path = root / path
     try:

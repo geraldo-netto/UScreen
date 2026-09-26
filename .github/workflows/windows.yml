@@ -12,6 +12,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 25
     steps:
+      - name: Preserve source bytes for native coverage fingerprints
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Test portable policy without platform features
@@ -31,6 +33,23 @@ jobs:
       - name: Build the preview with every feature selected
         # Linux libavcodec remains target-gated; this does not enable Windows capture.
         run: cargo build --locked --workspace --all-features
+      - name: Install native coverage tools
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-llvm-cov --version 0.8.7 --locked
+      - name: Measure native Windows service contracts
+        run: |
+          python -c "import hashlib,json,pathlib; root=pathlib.Path('.'); paths=sorted(root.glob('common/src/**/*.rs')); pathlib.Path('windows-sources.json').write_text(json.dumps({p.as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},indent=2))"
+          cargo llvm-cov --locked -p blent-config --remap-path-prefix --lcov --output-path windows-common.lcov
+      - name: Preserve native counters and source revision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-common-coverage-${{ github.sha }}
+          path: |
+            windows-common.lcov
+            windows-sources.json
+          if-no-files-found: warn
 
   cross-gnu:
     name: Linux to Windows GNU build

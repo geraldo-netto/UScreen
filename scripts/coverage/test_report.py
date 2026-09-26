@@ -77,6 +77,33 @@ class ContractTest(unittest.TestCase):
         readers.jacoco(self.fixture('jacoco.xml', xml), self.root, self.root, data)
         self.assertEqual(data, {'a.py': {1: 1, 2: 0}, 'a.c': {1: 4, 2: 0}, 'com/example/A.kt': {1: 2, 2: 0}})
 
+    def test_t636_windows_lcov_paths_merge_without_losing_zero_counters(self):
+        report = b'SF:common\\src\\windows\\private.rs\nDA:20,1\nDA:21,0\nend_of_record\nSF:common/src/windows/private.rs\nDA:22,3\nend_of_record\n'
+        data = {}
+        readers.lcov(self.fixture('windows.lcov', report), self.root, data)
+        self.assertEqual(data, {'common/src/windows/private.rs': {20: 1, 21: 0, 22: 3}})
+
+    def test_t636_absolute_windows_paths_require_an_explicit_matching_origin(self):
+        origin = Path(r'D:\work\repo')
+        self.assertEqual(model.source_path(self.root, r'd:\WORK\repo\common\src\a.rs', origin), 'common/src/a.rs')
+        self.assertEqual(model.source_path(self.root, r'\\server\share\repo\a.rs', Path(r'\\server\share\repo')), 'a.rs')
+        for name in [r'D:\work\repository\a.rs', r'C:\work\repo\a.rs', r'D:a.rs', r'\rooted\a.rs']:
+            self.assertIsNone(model.source_path(self.root, name, origin), name)
+        self.assertIsNone(model.source_path(self.root, r'D:\work\repo\a.rs'))
+
+    def test_t636_windows_traversal_cannot_escape_the_source_tree(self):
+        for levels in range(1, 9):
+            relative = '..\\' * levels + 'outside.rs'
+            self.assertIsNone(model.source_path(self.root, relative))
+            self.assertIsNone(model.source_path(self.root, 'D:\\repo\\' + relative, Path(r'D:\repo')))
+        self.assertEqual(model.source_path(self.root, r'common\src\..\a.rs'), 'common/a.rs')
+
+    def test_t636_source_fingerprints_still_require_identical_checkout_bytes(self):
+        path = self.fixture('a.rs', b'fn a() {}\n')
+        manifest = {'a.rs': model.fingerprint(path)}
+        path.write_bytes(b'fn a() {}\r\n')
+        with self.assertRaises(ValueError): model.verify_sources(self.root, manifest)
+
     def test_t497_oversized_compressed_reports_fail_before_parsing(self):
         path = self.fixture('oversize.gz', gzip.compress(b'x' * 129))
         with patch.object(readers, 'LIMIT', 128):

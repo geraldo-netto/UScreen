@@ -1,0 +1,39 @@
+.......F.FF
+======================================================================
+FAIL: test_t636_absolute_windows_paths_require_an_explicit_matching_origin (test_report.ContractTest.test_t636_absolute_windows_paths_require_an_explicit_matching_origin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/coverage/test_report.py", line 88, in test_t636_absolute_windows_paths_require_an_explicit_matching_origin
+    self.assertEqual(model.source_path(self.root, r'd:\WORK\repo\common\src\a.rs', origin), 'common/src/a.rs')
+AssertionError: 'd:\\WORK\\repo\\common\\src\\a.rs' != 'common/src/a.rs'
+- d:\WORK\repo\common\src\a.rs
++ common/src/a.rs
+
+
+======================================================================
+FAIL: test_t636_windows_lcov_paths_merge_without_losing_zero_counters (test_report.ContractTest.test_t636_windows_lcov_paths_merge_without_losing_zero_counters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/coverage/test_report.py", line 84, in test_t636_windows_lcov_paths_merge_without_losing_zero_counters
+    self.assertEqual(data, {'common/src/windows/private.rs': {20: 1, 21: 0, 22: 3}})
+AssertionError: {'common\\src\\windows\\private.rs': {20: 1, 21: [40 chars]: 3}} != {'common/src/windows/private.rs': {20: 1, 21: 0, 22: 3}}
+- {'common/src/windows/private.rs': {22: 3},
+?                                          ^
+
++ {'common/src/windows/private.rs': {20: 1, 21: 0, 22: 3}}
+?                                    ++++++++++++++      ^
+
+-  'common\\src\\windows\\private.rs': {20: 1, 21: 0}}
+
+======================================================================
+FAIL: test_t636_windows_traversal_cannot_escape_the_source_tree (test_report.ContractTest.test_t636_windows_traversal_cannot_escape_the_source_tree)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/coverage/test_report.py", line 97, in test_t636_windows_traversal_cannot_escape_the_source_tree
+    self.assertIsNone(model.source_path(self.root, relative))
+AssertionError: '..\\outside.rs' is not None
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.008s
+
+FAILED (failures=3)
