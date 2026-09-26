@@ -156,13 +156,27 @@ async fn t588_vp9_timing_fixture_preserves_every_luma_sample() {
     let decoded = Command::new("ffmpeg")
         .args(["-v", "error", "-i"])
         .arg(path)
-        .args(["-fps_mode", "passthrough", "-pix_fmt", "nv12", "-f", "rawvideo", "pipe:1"])
-        .output_bounded().await.unwrap();
+        .args([
+            "-fps_mode",
+            "passthrough",
+            "-pix_fmt",
+            "nv12",
+            "-f",
+            "rawvideo",
+            "pipe:1",
+        ])
+        .output_bounded()
+        .await
+        .unwrap();
     assert!(decoded.status.success());
     assert_eq!(decoded.stdout.len(), 40 * 64 * 64 * 3 / 2);
     for (index, frame) in decoded.stdout.chunks_exact(64 * 64 * 3 / 2).enumerate() {
-        assert!(frame[..64 * 64].iter().all(|&value| value == 16 + index as u8 * 4),
-            "T588: lossy encoding corrupted timing marker {index}");
+        assert!(
+            frame[..64 * 64]
+                .iter()
+                .all(|&value| value == 16 + index as u8 * 4),
+            "T588: lossy encoding corrupted timing marker {index}"
+        );
         assert!(frame[64 * 64..].iter().all(|&value| value == 128));
     }
 }

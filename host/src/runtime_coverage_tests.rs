@@ -190,13 +190,18 @@ async fn t497_stop_timeout_leaves_a_nonresponsive_owned_daemon_reported() {
 
 #[tokio::test]
 async fn t590_extra_session_releases_idle_ports_without_opening_devices() {
-    if crate::test_logging::isolated("runtime_coverage_tests::t590_extra_session_releases_idle_ports_without_opening_devices") {
+    if crate::test_logging::isolated(
+        "runtime_coverage_tests::t590_extra_session_releases_idle_ports_without_opening_devices",
+    ) {
         return;
     }
     // Reserve both candidate ports while selecting them; no fixed CI ports.
     let video = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let input = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-    let ports = (video.local_addr().unwrap().port(), input.local_addr().unwrap().port());
+    let ports = (
+        video.local_addr().unwrap().port(),
+        input.local_addr().unwrap().port(),
+    );
     let (_, template, _stop) = crate::discovery_tests::monitor_inputs(1, ports);
     drop((video, input));
     let session = spawn_extra_session(&template, 0).await.unwrap();

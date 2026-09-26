@@ -439,7 +439,12 @@ mod tests {
         if crate::test_logging::isolated("capture::cli_encoder::tests::t590_dimension_logs_distinguish_scaling_from_wrong_geometry") {
             return;
         }
-        let config = CaptureConfig { width: 1280, height: 720, stream_scale: 2, ..Default::default() };
+        let config = CaptureConfig {
+            width: 1280,
+            height: 720,
+            stream_scale: 2,
+            ..Default::default()
+        };
         let encoder = CliEncoder { config: &config };
         encoder.log_encoder_dimensions(640, 360);
         encoder.log_encoder_dimensions(800, 600);
