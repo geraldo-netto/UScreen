@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 import shutil
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -57,8 +58,15 @@ class DistributionTest(unittest.TestCase):
                 # paths and packaging. evdi_modules tests the real module link.
                 for module in ['conversion', 'frame_exchange', 'fifo_writer', 'capture', 'raw_ring', 'writer']:
                     write(f'host/evdi/{module}.c', '/* distribution fixture */\n')
+                # T642: model an installed compiler library that precedes LIBRARY_PATH.
+                competing = root / 'compiler libraries'
+                competing.mkdir()
+                write('competing.c', 'int unrelated_evdi(void) { return 0; }\n')
+                subprocess.run(['cc', '-shared', '-fPIC', 'competing.c', '-o', str(competing / 'libevdi.so')], cwd=root, check=True)
+                compiler = ['gcc', '-B', str(competing) + '/']
                 library = root / "library's space/libevdi.so.1.15.0"
                 library.parent.mkdir()
+                compiler.extend(['-L', str(library.parent)])
                 subprocess.run(['cc', '-shared', '-fPIC', '-Wl,-soname,libevdi.so.1', 'library.c', '-o', str(library)], cwd=root, check=True)
                 (library.parent / 'libevdi.so').symlink_to(library.name)
                 (library.parent / 'libevdi.so.1').symlink_to(library.name)
@@ -71,7 +79,7 @@ class DistributionTest(unittest.TestCase):
                 release_signing_fixture.install_tools(root / "bin")
                 env = dict(os.environ, LIBRARY_PATH=str(library.parent),
                            PATH=f'{root}/bin:{os.environ["PATH"]}')
-                result = subprocess.run(['make', 'dist-local', 'CARGO=true', f'LIBEVDI={library}'], cwd=root, env=env, capture_output=True, text=True)
+                result = subprocess.run(['make', 'dist-local', 'CARGO=true', f'LIBEVDI={library}', 'CC=' + shlex.join(compiler)], cwd=root, env=env, capture_output=True, text=True)
                 if mode != 'success':
                     self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
                 else:
