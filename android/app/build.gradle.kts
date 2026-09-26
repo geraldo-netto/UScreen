@@ -15,7 +15,8 @@ val keystoreProps = Properties().apply {
 
 // Stable across launches; source or build-input changes invalidate cached profiles.
 val sourceDigest = MessageDigest.getInstance("SHA-256")
-val identityInputs = fileTree("src/main").files + listOf(
+val identityInputs = fileTree("src/main").files + fileTree("src/profile").files +
+    fileTree("../../scripts/benchmarks/android-allocations").files + listOf(
     file("build.gradle.kts"), file("proguard-rules.pro"), rootProject.file("build.gradle.kts"),
     rootProject.file("gradle.properties"),
     rootProject.file("settings.gradle.kts"), rootProject.file("gradle/wrapper/gradle-wrapper.properties")
@@ -55,6 +56,11 @@ android {
     }
 
     buildTypes {
+        create("profile") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".profile"
+            matchingFallbacks += listOf("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -68,6 +74,8 @@ android {
         }
     }
 
+    sourceSets.getByName("profile").java.srcDir("../../scripts/benchmarks/android-allocations")
+    sourceSets.getByName("testProfile").java.srcDir("../../scripts/benchmarks/android-allocation-tests")
     sourceSets.getByName("test").resources.srcDir("../../testdata")
     // Exercise the isolated replay's transport lifetime in the normal suite.
     sourceSets.getByName("test").java.srcDir("../../scripts/benchmarks/android-decoder/input")
@@ -100,7 +108,7 @@ android {
 }
 
 // Per-variant generated Kotlin avoids conflating debug and release software.
-listOf("debug", "release").forEach { variant ->
+listOf("debug", "release", "profile").forEach { variant ->
     val title = variant.replaceFirstChar { it.uppercaseChar() }
     val profileSource = layout.buildDirectory.dir("generated/source/profile/$variant")
     val generateProfileIdentity = tasks.register("generate${title}ProfileIdentity") {

@@ -49,3 +49,63 @@ The fixture requires working Linux user/mount namespaces. Ordinary-user executio
 passes on the development host. Container CI grants SYS_ADMIN and disables its
 mount-blocking AppArmor profile only for the regression container; namespace
 setup failure fails the test explicitly. No production behavior was changed.
+
+## T589 — Android packet allocation profiling
+
+`assembleProfile` builds `io.github.geraldo_netto.blent.profile`, a separate,
+explicitly debuggable/profileable development application. Its shell-protected
+activity runs production `VideoPacketReader` and `CameraWire.packet` with bounded
+synthetic payloads; development sources live under `scripts/benchmarks` and do
+not enter release builds. No main-app setting, signing identity or system power
+setting changes. The normal release remains installed.
+
+Reproduce with:
+
+```sh
+./android/gradlew -p android :app:assembleProfile :app:testProfileUnitTest
+adb -s DEVICE install -r android/app/build/outputs/apk/profile/app-profile.apk
+python3 scripts/benchmarks/android-allocations.py --serial DEVICE --output /tmp/new-allocation-run
+```
+
+Three fresh-process trials ran on the connected RugKing tablet. Every trial
+measures steady packets, keyframe-sized packets, changing packet sizes, maximum
+legal packets, a delayed consumer, reader recreation and camera packet writes.
+The first five cases contain 300 packets; recreation and camera contain 1,200.
+The harness observes backing-array identities/capacity and ART process counters.
+
+| Reader workload | Storage replacements after initial buffer | Retained capacity |
+| --- | ---: | ---: |
+| Steady 64 KiB | 0 | 524,288 bytes |
+| 2 MiB keyframe followed by 64 KiB | 1 | 3,145,728 bytes |
+| 64 KiB / 512 KiB / 2 MiB resize sequence | 1 | 3,145,728 bytes |
+| Maximum legal packet followed by 64 KiB | 1 | 8,388,609 bytes |
+| Slow consumer, 64 KiB packets | 0 | 524,288 bytes |
+| Recreate reader for every packet | 1,200 | 524,288 bytes in final reader |
+
+Array identities/capacities match across all trials. Recreation requests roughly
+634.6–635.2 MB of process allocations and reports 169–254 ms aggregate blocking
+GC time. This is an intentionally extreme recreation workload, not observed
+network reconnect frequency or evidence of a streaming leak.
+
+Camera writes send exactly 117,964,800 payload bytes/trial. Process allocation
+counters report 184.6–185.1 MB, with 1–8 collections and 54–277 ms aggregate GC
+time; reported blocking-GC time is zero. `CameraWire.packet` creates one payload
+array and one duplicate view per call; Okio and harness/process work also
+contribute. This motivates the bounded scratch-reuse comparison in T594, rather
+than attributing every allocated byte to one array or claiming a pooling gain.
+
+ART counters are process-wide, can update in batches, and expose aggregate GC
+time rather than individual pause distributions or complete object-allocation
+stacks. Explicit GC requests before/after workloads are recorded separately;
+Android may ignore them. Zero counter movement is not proof of zero allocation.
+These are production packet-path workloads on ART, not real camera-sensor,
+MediaCodec, live resize, network or end-to-end latency measurements. Keep existing
+reader reuse and its legal-size cap; no additional trimming/pooling is enabled.
+
+Permanent profile framing tests pass on API 27/34. Python tests preserve unknown
+and reset counters. The broader Android run passed 524 tests and lint; subsequent
+T571 extraction passed its six focused executions. Retained
+[native observations](artifacts/2026-09-26-next-batch/t589-native.tar.gz),
+[summary](artifacts/2026-09-26-next-batch/t589-summary.json),
+[device/APK identity](artifacts/2026-09-26-next-batch/t589-metadata.json), and
+[build/test log](artifacts/2026-09-26-next-batch/android-final.log.gz).
