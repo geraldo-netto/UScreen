@@ -1,0 +1,8 @@
+{
+  "x_server_dri3": "1.0",
+  "required_for_buffers_from_pixmap": "1.2",
+  "probe_sha256": "4c391f956f10cd0aee31d28b5f120e40108803fb5fbc0ccd02a6c8cd91d56ef3",
+  "source_revision": "a1d5d6d3342df233c30417d43ad1d12fe743b49f",
+  "source_scope": "archived development-only copy; same-node guard bypassed only in this probe; production guard unchanged",
+  "result": "explicit-layout probe rejects unsupported DRI3 version before image import"
+}
