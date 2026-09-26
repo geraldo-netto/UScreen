@@ -43,6 +43,7 @@ fn t484_decoder_only_change_restarts_encoder_without_restarting_helper() {
         operating_rate: Some(120),
     };
     selected.selection = Some(crate::selection::Selected {
+                    workers: 0,
         key: crate::selection::Key::new(&selected),
         encoder: manager.config.encoder.clone(),
         reason: "T484 decoder-only trial".into(),
@@ -753,4 +754,37 @@ fn t436_capture_fixtures_survive_shared_umask() {
         }
     }
     assert!(failures.is_empty(), "T436: {}", failures.join("\n"));
+}
+
+#[cfg(not(feature = "inproc-encoder"))]
+#[test]
+fn t612_budget_restarts_only_encoder_and_expires_with_geometry_or_peer() {
+    let manager = test_manager();
+    let mut selected = manager_settings(&manager);
+    selected.encoder = "auto".into();
+    let before = selected.clone();
+    selected.selection = Some(crate::selection::Selected {
+        workers: 2, key: crate::selection::Key::new(&selected),
+        encoder: manager.config.encoder.clone(), reason: "T612 worker trial".into(),
+        verified: false, decoder: None,
+    });
+    assert_eq!(selected.selected_workers(), 2);
+    assert!(!selected.same_stream(&before));
+    assert!(!manager.helper_settings_changed(&selected));
+    assert!(manager.stream_settings_changed(&selected));
+    let mut resized = selected.clone();
+    resized.width += 2;
+    assert_eq!(resized.selected_workers(), 0);
+    selected.clear_decoders();
+    assert_eq!(selected.selected_workers(), 0);
+}
+
+#[test]
+fn t612_capture_budget_prefers_manual_and_falls_back_to_one() {
+    let mut config = CaptureConfig::default();
+    assert_eq!(config.worker_count(), 1);
+    config.selected_workers = 2;
+    assert_eq!(config.worker_count(), 2);
+    config.encoder_workers = 7;
+    assert_eq!(config.worker_count(), 7);
 }

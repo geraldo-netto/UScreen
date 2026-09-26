@@ -112,12 +112,13 @@ async fn cached(
     let candidate = cache.load(cache::now(), snapshot, candidates)?;
     let key = Key::new(snapshot);
     let choice = candidate.decoder.clone();
+    let workers = candidate.measurement.workers_requested;
     let mut retirement = Box::pin(cache.retired());
     let result = tokio::select! {
         _ = &mut retirement => None,
         result = choose(settings, &key, fallback_encoder(snapshot), vec![candidate], |name| {
             let key = &key; let choice = choice.as_ref();
-            async move { rendered(latency, key, &name, choice).await }
+            async move { rendered(latency, key, &name, choice, workers).await }
         }) => result,
     };
     if let Some((candidate, _)) = result {

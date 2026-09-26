@@ -1,0 +1,60 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.35s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 52 tests
+test selection::health::tests::t465_idle_content_and_isolated_frames_do_not_indicate_failure ... ok
+test selection::health::tests::t465_progress_before_monitor_subscription_and_decoder_recovery_are_observed ... ok
+test selection::health::tests::t465_repeated_encoder_restarts_without_output_do_not_reset_recovery_deadline ... ok
+test selection::health::tests::t465_retired_ack_cannot_hide_failed_replacement ... ok
+test selection::health::tests::t568_delayed_ack_cannot_disable_watchdog_after_output_stops ... ok
+test selection::resources::linux::tests::t612_linux_counters_keep_process_identity_and_reject_invalid_bounds ... ok
+test selection::resources::tests::t612_resources_are_generation_bound_and_unknown_never_zero ... ok
+test selection::trial::tests::t479_measured_tail_improves_over_a_host_only_winner ... ok
+test selection::trial::tests::t479_noise_unmatched_rates_and_worse_tail_do_not_displace_incumbent ... ok
+test selection::trial::tests::t479_restarted_generation_needs_its_own_warmup_and_window ... ok
+test selection::trial::tests::t479_sparse_stalled_dropped_and_too_short_trials_are_not_speed_proof ... ok
+test selection::trial::tests::t479_tablet_interaction_cancels_work_and_quiet_wait_is_bounded ... ok
+test selection::worker::cache::tests::t480_age_context_future_time_and_manual_preference_invalidate ... ok
+test selection::worker::cache::tests::t480_atomic_private_roundtrip_ignores_interrupted_writes ... ok
+test selection::worker::cache::tests::t480_cache_requires_opt_in_and_fresh_software_context ... ok
+test selection::worker::cache::tests::t480_decoder_alternative_hints_are_rechecked ... ok
+test selection::worker::cache::tests::t480_historical_choice_is_not_ranked_as_this_session_and_requires_fresh_acks ... ok
+test selection::worker::cache::tests::t480_invalid_and_out_of_bounds_observations_never_load ... ok
+test selection::worker::cache::tests::t480_invalid_record_schema_quality_and_unknown_fields_are_rejected ... ok
+test selection::worker::cache::tests::t480_malformed_oversized_and_symlinked_cache_is_ignored ... ok
+test selection::worker::cache::tests::t480_profile_must_pass_fresh_encoder_quality_capacity_and_decoder_support ... ok
+test selection::worker::cache::tests::t480_proven_identity_and_attachment_retirement_bound_cache_use ... ok
+test selection::worker::cache::tests::t480_seeded_corruption_is_bounded_and_never_panics ... ok
+test selection::worker::cache::tests::t480_unknown_software_caps_format_host_route_and_capture_invalidate ... ok
+test selection::worker::cache::tests::t612_cached_worker_and_requested_budget_must_match ... ok
+test selection::worker::coverage_tests::t497_calibration_respects_geometry_peer_support_and_cancellation ... ok
+test selection::worker::measured::tests::t479_benchmark_compares_later_trials_and_retains_success_after_deadline ... ok
+test selection::worker::measured::tests::t479_latency_tie_prefers_materially_better_measured_fidelity ... ok
+test selection::worker::measured::tests::t479_render_latency_beats_host_probe_order_without_switching_for_noise ... ok
+test selection::worker::measured::tests::t479_trials_bound_work_and_require_measured_quality_and_capacity ... ok
+test selection::worker::measured::tests::t497_hint_and_decoder_variants_require_new_measurements ... ok
+test selection::worker::measured::tests::t612_failed_one_worker_baseline_cannot_certify_higher_auto_budget ... ok
+test selection::worker::measured::tests::t612_worker_quality_uses_one_worker_even_when_probe_rank_differs ... ok
+test selection::worker::measured::tests::t612_worker_trials_start_with_one_and_require_resource_evidence ... ok
+test selection::worker::preparation::tests::t480_failed_fresh_render_check_discards_cache_and_preserves_fallback ... ok
+test selection::worker::preparation::tests::t480_interaction_cancels_calibration_without_claiming_success ... ok
+test selection::worker::preparation::tests::t480_legacy_peers_use_uncached_host_path_and_optional_save_failures_do_not_escape ... ok
+test selection::worker::preparation::tests::t480_reused_profile_failure_releases_admission_and_restarts_measurements ... ok
+test selection::worker::tests::t434_closed_display_watch_terminates_selector ... ok
+test selection::worker::tests::t434_failed_render_trials_fall_through_and_preserve_fallback ... ok
+test selection::worker::tests::t434_old_peers_stale_formats_and_explicit_choices_do_not_select_candidates ... ok
+test selection::worker::tests::t434_only_fresh_acks_from_matching_encoder_certify_a_trial ... ok
+test selection::worker::tests::t434_peer_change_cancels_pending_work_but_selection_updates_do_not ... ok
+test selection::worker::tests::t434_ranking_uses_measured_capacity_then_decoder_class_and_tail_cadence ... ok
+test selection::worker::tests::t434_unverified_candidate_is_never_a_rollback_target ... ok
+test selection::worker::tests::t465_exhaustion_keeps_fallback_without_retrying_failed_candidates ... ok
+test selection::worker::tests::t465_retired_encoder_cannot_certify_a_trial_after_late_acks ... ok
+test selection::worker::tests::t465_verified_stream_failure_advances_without_control_reconnect ... ok
+test selection::worker::tests::t478_rich_selection_requires_actual_profile_and_conversion_intersection ... ok
+test selection::worker::tests::t484_old_decoder_acks_cannot_certify_a_new_decoder_only_trial ... ok
+test selection::worker::tests::t612_legacy_peer_keeps_one_worker_and_manual_budget_is_fixed ... ok
+test selection::worker::tests::t612_previous_worker_receipts_cannot_verify_a_new_budget ... ok
+
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 332 filtered out; finished in 16.96s
+

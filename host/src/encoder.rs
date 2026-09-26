@@ -36,6 +36,7 @@ pub struct Encoder {
 
 impl Encoder {
     /// `name` is an libavcodec encoder name such as `h264_nvenc`.
+    #[cfg(test)]
     pub fn new(
         name: &str,
         width: u32,
@@ -44,8 +45,13 @@ impl Encoder {
         bitrate_kbps: u32,
         quality: u32,
     ) -> Result<Self> {
+        Self::with_workers(name, width, height, fps, bitrate_kbps, quality, 1)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_workers(name: &str, width: u32, height: u32, fps: u32, bitrate_kbps: u32, quality: u32, workers: u32) -> Result<Self> {
         crate::config::validate_encoder_for_build(name)?;
-        let profile = blent_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?;
+        let profile = blent_config::encoding::Profile::new(name, fps, bitrate_kbps, quality)?.with_workers(workers)?;
         ffmpeg_next::init().context("initialise libavcodec")?;
 
         let codec = ffmpeg_next::encoder::find_by_name(name)
@@ -182,10 +188,11 @@ pub fn run(
     latency: crate::latency::LatencyTracker,
     raw_socket: Option<crate::raw_socket::Socket>,
     raw_slots: u32,
+    workers: u32,
 ) -> Result<()> {
     use std::sync::atomic::Ordering;
 
-    let mut enc = Encoder::new(encoder_name, width, height, fps, bitrate_kbps, quality)?;
+    let mut enc = Encoder::with_workers(encoder_name, width, height, fps, bitrate_kbps, quality, workers)?;
 
     let mut input = shared::Input::open(fifo_path, raw_socket, (width, height), raw_slots)?;
     tracing::info!(
@@ -442,6 +449,7 @@ mod tests {
                 latency,
                 None,
                 4,
+                1,
             )
         });
         let mut writer = std::fs::OpenOptions::new()

@@ -43,6 +43,7 @@ impl Key {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Selected {
+    pub workers: u32,
     pub key: Key,
     pub encoder: String,
     pub reason: String,

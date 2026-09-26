@@ -1739,6 +1739,7 @@ fi
             self.tx.send_modify(|current| {
                 current.decoder_epoch += 1;
                 current.selection = Some(crate::selection::Selected {
+                    workers: 0,
                     key: crate::selection::Key::new(current),
                     encoder: "h264_vaapi".into(),
                     reason: "T472 concurrent selector".into(),

@@ -4,6 +4,7 @@ pub mod adb_reverse;
 pub mod android;
 pub mod camera;
 pub mod display;
+pub mod encoder_workers;
 pub mod encoding;
 pub mod idle;
 pub mod model;

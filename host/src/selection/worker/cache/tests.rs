@@ -27,6 +27,7 @@ pub(in crate::selection::worker) fn setup() -> (EncoderSettings, Candidate) {
     row.measurement.stream = Some(stream.clone());
     row.decoder = snapshot.decoders.as_ref().unwrap().choose(&stream, true);
     row.observation = Some(Observation {
+            resources: None,
         p50_us: 1000,
         p95_us: 2000,
         p99_us: 3000,
@@ -340,4 +341,23 @@ fn t480_invalid_record_schema_quality_and_unknown_fields_are_rejected() {
             "{field}"
         );
     }
+}
+
+#[test]
+fn t612_cached_worker_and_requested_budget_must_match() {
+    let root = tempfile::tempdir().unwrap();
+    let cache = store(root.path().join("cache"));
+    let (snapshot, mut row) = setup();
+    row.measurement.workers_requested = 2;
+    assert!(cache.save(100, &row).is_err());
+    row.observation.as_mut().unwrap().resources = Some(crate::selection::resources::Usage { cpu_us_per_frame: 100.0, peak_rss_bytes: 1000 });
+    cache.save(100, &row).unwrap();
+    assert_eq!(cache.load(100, &snapshot, &[row.clone()]).unwrap().measurement.workers_requested, 2);
+    row.measurement.workers_requested = 1;
+    assert!(cache.load(100, &snapshot, &[row]).is_none());
+    let mut base = CaptureConfig::default();
+    let identity = ("T612 tablet".into(), "usb");
+    let automatic = context::fingerprint(&identity, "host", &snapshot, &base).unwrap();
+    base.encoder_workers = 2;
+    assert_ne!(context::fingerprint(&identity, "host", &snapshot, &base).unwrap(), automatic);
 }

@@ -116,6 +116,8 @@ pub struct FileConfig {
     pub pipe_capacity_mib: u32,
     /// Linux conversion participants per helper, including caller. Zero = Auto.
     pub conversion_threads: u32,
+    /// libx264 workers: zero tunes 1/2/4 with Auto encoder; explicit values are preserved.
+    pub encoder_workers: u32,
     /// Use the tablet as a graphics tablet for the laptop's own screen rather
     /// than as a second display: no capture, no encoding, nothing streamed —
     /// the pen and touch simply drive the screen you are already looking at.
@@ -190,6 +192,7 @@ impl Default for FileConfig {
             stream_scale: 1,
             pipe_capacity_mib: 1,
             conversion_threads: 0,
+            encoder_workers: 0,
             pen_only: false,
             position: "right".into(),
             ten_bit: false,
@@ -323,6 +326,9 @@ impl FileConfig {
         self.stream_scale = self.stream_scale.clamp(1, 4);
         self.pipe_capacity_mib = validated_pipe_capacity(self.pipe_capacity_mib);
         self.conversion_threads = validated_conversion_threads(self.conversion_threads);
+        self.encoder_workers = self
+            .encoder_workers
+            .min(crate::encoder_workers::MAX_WORKERS);
         self.max_tablets = self.max_tablets.clamp(1, 4);
         self.width = self.width.clamp(640, MAX_DIMENSION);
         self.height = self.height.clamp(480, MAX_DIMENSION);
@@ -340,6 +346,22 @@ impl FileConfig {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn t612_worker_capacity_roundtrip_and_sanitize() {
+        for value in [0, 1, 2, 128] {
+            let config: FileConfig = toml::from_str(&format!("encoder_workers = {value}")).unwrap();
+            assert_eq!(config.encoder_workers, value);
+            let restored: FileConfig = toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+            assert_eq!(restored.encoder_workers, value);
+        }
+        let mut invalid = FileConfig {
+            encoder_workers: u32::MAX,
+            ..Default::default()
+        };
+        invalid.sanitize();
+        assert_eq!(invalid.encoder_workers, 128);
+    }
+
     #[test]
     fn t492_adaptive_idle_preference_round_trips_without_changing_motion_rate() {
         let config: super::FileConfig = toml::from_str("adaptive_idle = true\nfps = 30").unwrap();

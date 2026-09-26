@@ -10,3 +10,6 @@ mod trial;
 mod worker;
 #[cfg(not(feature = "inproc-encoder"))]
 pub(crate) use worker::spawn;
+
+#[cfg(not(feature = "inproc-encoder"))]
+mod resources;

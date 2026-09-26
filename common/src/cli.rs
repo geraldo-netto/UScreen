@@ -47,6 +47,10 @@ pub struct Cli {
     #[arg(long = "conversion-threads", value_parser = parse_conversion_threads)]
     pub conversion_threads: Option<u32>,
 
+    /// libx264 workers: auto compares 1/2/4 with Auto encoder; manual 1–128.
+    #[arg(long = "encoder-workers", value_parser = parse_conversion_threads)]
+    pub encoder_workers: Option<u32>,
+
     /// Drive the laptop's own screen with the pen instead of streaming a second
     /// display to the tablet.
     #[arg(long = "pen-only")]
@@ -95,6 +99,16 @@ pub enum Commands {
 #[cfg(test)]
 mod camera_tests {
     use super::*;
+
+    #[test]
+    fn t612_worker_cli_bounds_and_auto_are_explicit() {
+        for value in ["auto", "0", "1", "2", "128"] {
+            assert!(Cli::try_parse_from(["blent", "--encoder-workers", value]).is_ok());
+        }
+        for value in ["-1", "129", "4294967296", "NaN", ""] {
+            assert!(Cli::try_parse_from(["blent", "--encoder-workers", value]).is_err());
+        }
+    }
 
     #[test]
     fn t539_camera_command_is_separate_from_display_startup() {

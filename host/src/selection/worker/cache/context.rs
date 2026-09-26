@@ -64,6 +64,7 @@ pub(super) fn fingerprint(
             base.ten_bit,
             base.stream_scale,
             base.conversion_threads,
+            base.encoder_workers,
             &base.edid_path,
         ),
     ))

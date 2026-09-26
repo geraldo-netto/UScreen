@@ -936,6 +936,7 @@ impl App {
         self.setting_stream_detail(ui);
         if capabilities().conversion_pool {
             conversion_settings::show(ui, &mut self.cfg.conversion_threads);
+            conversion_settings::encoder_workers(ui, &mut self.cfg.encoder_workers);
         }
         if capabilities().pipe_capacity {
             let status = self.status.lock().unwrap().clone();
@@ -1619,6 +1620,33 @@ mod tests {
             "Reduce idle updates when measured safe",
             idle_test_frame,
         );
+        assert_eq!(app.cfg, app.saved_cfg);
+    }
+
+    fn encoder_workers_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            conversion_settings::encoder_workers(ui, &mut app.cfg.encoder_workers);
+        })
+    }
+
+    #[test]
+    fn t612_worker_control_preserves_manual_capacity_and_auto() {
+        let mut app = settings_test_app(Tab::Video);
+        app.cfg = app.saved_cfg.clone();
+        let ctx = egui::Context::default();
+        click_settings_text(&mut app, &ctx, "Auto", encoder_workers_test_frame);
+        click_settings_text(&mut app, &ctx, "Manual", encoder_workers_test_frame);
+        assert_eq!(app.cfg.encoder_workers, 1);
+        assert!(app.cfg.requires_restart_from(&app.saved_cfg));
+        app.cfg.encoder_workers = 64;
+        encoder_workers_test_frame(&mut app, &ctx, vec![]);
+        assert_eq!(app.cfg.encoder_workers, 64);
+        click_settings_text(&mut app, &ctx, "Manual", encoder_workers_test_frame);
+        click_settings_text(&mut app, &ctx, "Auto", encoder_workers_test_frame);
         assert_eq!(app.cfg, app.saved_cfg);
     }
 

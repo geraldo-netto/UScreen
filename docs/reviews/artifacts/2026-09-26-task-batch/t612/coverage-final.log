@@ -1,0 +1,10 @@
+{
+  "rust": {
+    "functions": 1252,
+    "passing": 1252,
+    "below_80": 0,
+    "unmeasured": 0
+  }
+}
+Non-Linux functions remain visible in all-platforms.json: 61
+Linux PASS

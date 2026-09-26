@@ -239,6 +239,7 @@ them. See the README for config paths and the app gear-menu controls.
 | `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
 | `stream_scale` | 1 | Integer 1–4; divides stream dimensions, not capture dimensions |
 | `pipe_capacity_mib` | 1 | Linux raw capture pipe request per tablet: 1, 2, 4 or 8 MiB; [live apply, kernel limits and actual capacity](pipe-buffer.md) |
+| `encoder_workers` | 0 (Auto) | Software H.264 workers: Auto compares 1/2/4 with the CLI Auto encoder; manual 1–128. One worker remains fallback; explicit restart required |
 | `conversion_threads` | 0 (Auto) | Linux conversion capacity per helper: 1–128 participants including the caller; explicit restart required |
 | `adaptive_idle` | false | Experimental Linux CLI capture: measure the current automatic encoder/named decoder before trying 2 idle updates/s; fall back to 5 on missing or worse evidence. Motion retains `fps`; explicit restart required. See [admission and limits](reviews/2026-09-21-reliability-batch.md#item-2--adaptive-idle-capture). |
 | `position` / `pen_only` | `right` / false | Placement / graphics-tablet mode |

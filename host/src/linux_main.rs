@@ -106,6 +106,7 @@ fn effective_config(cli: &Cli, saved: &config::FileConfig) -> config::FileConfig
         quality: cli.quality.unwrap_or(saved.quality),
         stream_scale: cli.stream_scale.unwrap_or(saved.stream_scale),
         conversion_threads: cli.conversion_threads.unwrap_or(saved.conversion_threads),
+        encoder_workers: cli.encoder_workers.unwrap_or(saved.encoder_workers),
         video_port: cli.video_port.unwrap_or(saved.video_port),
         input_port: cli.input_port.unwrap_or(saved.input_port),
         pen_only: cli.pen_only || saved.pen_only,
@@ -153,6 +154,18 @@ exit 1
             config.validate().is_err(),
             "T321: invalid explicit mode accepted"
         );
+    }
+
+    #[test]
+    fn t612_cli_worker_override_preserves_saved_preference() {
+        use super::*;
+        let saved = config::FileConfig { encoder_workers: 64, ..Default::default() };
+        assert_eq!(effective_config(&Cli::try_parse_from(["blent"]).unwrap(), &saved).encoder_workers, 64);
+        for (value, expected) in [("auto", 0), ("2", 2), ("128", 128)] {
+            let cli = Cli::try_parse_from(["blent", "--encoder-workers", value]).unwrap();
+            assert_eq!(effective_config(&cli, &saved).encoder_workers, expected);
+        }
+        assert_eq!(saved.encoder_workers, 64);
     }
 
     #[test]
@@ -1569,6 +1582,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             height_mm: edid::DEFAULT_HEIGHT_MM,
             stream_scale,
             conversion_threads: effective.conversion_threads,
+            encoder_workers: effective.encoder_workers,
+            selected_workers: 0,
             position: config::Position::parse_or_default(&file_cfg.position),
             ten_bit: file_cfg.ten_bit,
             instance: 0,

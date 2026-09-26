@@ -99,6 +99,8 @@ impl Drop for EncoderActivity {
 /// Delayed acknowledgements from a retired encoder cannot certify its successor.
 #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
 pub struct EncoderEvidence {
+    pub workers: u32,
+    pub process_id: Option<u32>,
     pub name: String,
     pub format: (u32, u32, u32, u32, u32),
     pub epoch: u64,
@@ -192,9 +194,22 @@ impl LatencyTracker {
         format: (u32, u32, u32, u32, u32),
         decoder: Option<blent_config::negotiation::DecoderChoice>,
     ) -> Arc<EncoderEvidence> {
+        self.encoder_started_with_budget(name, format, decoder, 0, None)
+    }
+
+    pub fn encoder_started_with_budget(
+        &self,
+        name: &str,
+        format: (u32, u32, u32, u32, u32),
+        decoder: Option<blent_config::negotiation::DecoderChoice>,
+        workers: u32,
+        process_id: Option<u32>,
+    ) -> Arc<EncoderEvidence> {
         let mut state = self.inner.lock().unwrap();
         state.encoder_epoch = state.encoder_epoch.wrapping_add(1);
         let evidence = Arc::new(EncoderEvidence {
+            workers,
+            process_id,
             name: name.into(),
             format,
             epoch: state.encoder_epoch,

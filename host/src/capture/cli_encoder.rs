@@ -205,7 +205,7 @@ impl CliEncoder<'_> {
             self.config.fps,
             self.config.bitrate,
             self.config.quality,
-        )?;
+        )?.with_workers(self.config.worker_count())?;
         args.extend(
             profile
                 .cli_options(ten_bit)

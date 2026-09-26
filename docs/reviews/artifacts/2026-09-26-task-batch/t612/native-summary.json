@@ -1,0 +1,13 @@
+{
+  "geometry": [
+    1280,
+    800
+  ],
+  "encoder": "libx264",
+  "fallback_requested_workers": 1,
+  "automatic_observations": 0,
+  "render_epoch": 4,
+  "higher_worker_winner": "not established; see T627",
+  "host_sha256": "4ebec6dcd540501a2e0a92d9cac4a7feb86db348d36222d5acb39ad717628538",
+  "helper_sha256": "45ad06d7abad659fbec2cc01e6e88c8cf44e2f1e2a14cb14de4db202d8c2e3cc"
+}

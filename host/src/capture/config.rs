@@ -27,6 +27,8 @@ pub struct CaptureConfig {
     pub stream_scale: u32,
     /// Maximum Linux conversion participants including the caller; 0 = Auto.
     pub conversion_threads: u32,
+    pub encoder_workers: u32,
+    pub selected_workers: u32,
     /// Which edge of the existing desktop the virtual screen sits against.
     /// Not an encoder setting: changing it moves a window, it does not
     /// restart a stream.
@@ -41,6 +43,10 @@ pub struct CaptureConfig {
 }
 
 impl CaptureConfig {
+    pub(crate) fn worker_count(&self) -> u32 {
+        if self.encoder_workers > 0 { self.encoder_workers } else { self.selected_workers.max(1) }
+    }
+
     /// Auto admits only the native adapter/codec combination measured in T418.
     pub(super) fn shared_raw(&self) -> bool {
         self.shared_raw_for(&self.encoder)
@@ -77,6 +83,8 @@ impl Default for CaptureConfig {
             height_mm: crate::edid::DEFAULT_HEIGHT_MM,
             stream_scale: 1,
             conversion_threads: 0,
+            encoder_workers: 0,
+            selected_workers: 0,
             position: crate::config::Position::Right,
             ten_bit: false,
             instance: 0,

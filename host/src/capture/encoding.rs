@@ -85,10 +85,12 @@ impl EncoderProcess {
         let codec = crate::media::Codec::from_encoder(&config.encoder);
         // Unknown dimensions cannot certify a matching automatic trial.
         let (w, h) = mode.unwrap_or((0, 0));
-        let evidence = output.latency.encoder_started_with_decoder(
+        let evidence = output.latency.encoder_started_with_budget(
             &config.encoder,
             (w, h, config.fps, config.bitrate, config.quality),
             config.decoder.clone(),
+            if config.encoder == "libx264" { config.worker_count() } else { 0 },
+            self.child.as_ref().and_then(|child| child.id()),
         );
         let idle = super::idle::start(
             config,
@@ -130,6 +132,7 @@ impl EncoderProcess {
         }
         let fifo = super::fifo_path_for(config.instance)?;
         let raw_slots = config.raw_slots;
+        let workers = config.worker_count();
         let stop = crate::encoder_io::StopSignal::new()?;
         let stopc = stop.clone();
         let handle = tokio::task::spawn_blocking(move || {
@@ -148,6 +151,7 @@ impl EncoderProcess {
                 output.latency,
                 output.raw_socket,
                 raw_slots,
+                workers,
             )
         });
         Ok(EncoderTask { handle, stop })

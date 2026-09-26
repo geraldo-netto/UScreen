@@ -145,7 +145,8 @@ adds bounded live comparisons:
 - Admit only candidates meeting target host-probe FPS and a first-frame PSNR
   no more than 0.5 dB below the measured libx264 reference. Unknown fidelity or
   a missing reference retains fallback. Keep at most four encoder candidates,
-  prioritizing libx264 and the low-latency VAAPI H.264 profile, then the host
+  prioritizing libx264 worker budgets 1, 2 and 4 in that order, followed by the
+  low-latency VAAPI H.264 profile, then the host
   ranking. Explore up to two variants of the measured winner: supported hints
   disabled and the next compatible named decoder.
 - Each trial gets at most six seconds. Ignore its first three ACKs; require at
@@ -212,6 +213,39 @@ epoch. Explicit encoder preferences are never migrated. The GPU path and depth
 are fixed for a daemon session. The optional in-process encoder build maps
 `auto` to `libx264`; these CLI measurements do not rank that adapter.
 
+### Software encoder worker capacity
+
+`encoder_workers = 0` (Auto), or `blent --encoder-workers auto start`, compares
+1, 2 and 4 libx264 workers inside the existing selector. The Linux settings control
+is **Software encoder workers**. Manual values 1–128 fix the software H.264
+budget; changing the saved value requires Apply & restart. CLI overrides do not
+persist. Explicit libx264 and the optional in-process build use one worker for
+Auto; the latter accepts manual counts but does not run CLI calibration. Hardware
+encoders keep their existing options. Legacy peers keep the one-worker fallback.
+
+Requested and effective counts are distinct: effective x264 workers are parsed
+from the first-frame user-data SEI when available and otherwise remain unknown.
+Worker changes restart only the encoder. Receipts from another worker budget
+cannot certify a trial. Current geometry, decoder and peer epochs still govern
+cancellation and reconnect/resize invalidation.
+
+Live observations include sampled encoder-process CPU microseconds per rendered
+frame and peak sampled RSS. A Linux adapter reads unprivileged `/proc` counters;
+the comparison policy has no OS dependency. It requires at least eight samples,
+one second and twelve delivered frames, preserving unknown or retired counters
+as unavailable. A replacement needs the existing delivery/PSNR/p95/p99/rate and
+startup gates, CPU/frame no more than 10% above the incumbent, and sampled RSS
+no more than 20% above it. These are conservative admission tolerances, not user
+CPU/RAM limits or proof of total-machine efficiency. Missing evidence preserves
+the incumbent; failed one-worker measurement cannot certify a higher Auto budget.
+No runtime-worker or conversion-pool default changes. Ordinary calibration uses
+no privileged tracing. Futex counts remain attribution evidence only.
+
+The cache schema retains the chosen worker budget and historical resource
+observations; its context includes the requested budget. Old records are ignored.
+Fresh host probes and matching render receipts remain mandatory for reuse;
+historical CPU/RSS observations do not establish current resource performance.
+
 ### Optional historical profile cache
 
 Linux Video settings expose **Reuse a recent measured profile** (`profile_cache
@@ -228,7 +262,7 @@ includes proven physical tablet identity, USB versus network route, capabilities
 without the transient scope, Android firmware/app source-build fingerprint,
 host/FFmpeg/helper binaries, FFmpeg version report, kernel/boot identity, pipe
 request/limit, stream geometry/rate/bitrate/quality, GPU path, depth, scale,
-conversion threads and EDID path. Credentials and raw tablet identities are
+conversion threads, requested encoder-worker budget and EDID path. Credentials and raw tablet identities are
 not written to the cache. Rebooting conservatively invalidates the entry.
 
 Reuse requires an age of at most 24 hours, unchanged context, a **fresh host

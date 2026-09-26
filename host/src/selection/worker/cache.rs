@@ -24,6 +24,7 @@ pub(super) struct Cache {
 #[serde(deny_unknown_fields)]
 struct Record {
     schema: u32,
+    workers: u32,
     fingerprint: String,
     saved_at: u64,
     encoder: String,
@@ -88,7 +89,8 @@ impl Cache {
     pub fn save(&self, now: u64, candidate: &Candidate) -> anyhow::Result<()> {
         anyhow::ensure!(self.active(), "retired cache context");
         let record = Record {
-            schema: 1,
+            schema: 2,
+            workers: candidate.measurement.workers_requested,
             fingerprint: self.fingerprint.clone(),
             saved_at: now,
             encoder: candidate.measurement.encoder.clone(),
@@ -143,8 +145,15 @@ impl Cache {
 }
 
 impl Record {
+    fn worker_evidence_valid(&self) -> bool {
+        self.workers <= blent_config::encoder_workers::MAX_WORKERS
+            && self.observation.resources.as_ref().is_none_or(|value| value.valid())
+            && (self.workers <= 1 || self.observation.resources.is_some())
+    }
+
     fn valid(&self, now: u64) -> bool {
-        self.schema == 1
+        self.schema == 2
+            && self.worker_evidence_valid()
             && now
                 .checked_sub(self.saved_at)
                 .is_some_and(|age| age <= MAX_AGE)
@@ -180,15 +189,12 @@ fn compatible(
     if !supported {
         return None;
     }
-    let reference = fresh
-        .iter()
-        .find(|c| c.measurement.encoder == "libx264")?
-        .measurement
-        .quality_db?;
+    let reference = super::measured::quality_reference(fresh)?;
     fresh
         .iter()
         .find(|c| {
             c.measurement.encoder == record.encoder
+                && c.measurement.workers_requested == record.workers
                 && c.measurement.stream.as_ref() == Some(&record.decoder.stream)
                 && super::measured::quality_capacity(c, reference, snapshot.fps)
         })

@@ -129,6 +129,7 @@ pub struct Profile {
     bitrate_kbps: u32,
     quality: u32,
     buffer_kbits: Option<u32>,
+    workers: u32,
 }
 
 impl Profile {
@@ -147,7 +148,13 @@ impl Profile {
             bitrate_kbps,
             quality,
             buffer_kbits,
+            workers: 1,
         })
+    }
+
+    pub fn with_workers(mut self, count: u32) -> Result<Self> {
+        self.workers = crate::encoder_workers::validate(count)?.max(1);
+        Ok(self)
     }
 
     fn codec_options(&self) -> Vec<(&'static str, String)> {
@@ -199,6 +206,9 @@ impl Profile {
             .iter()
             .map(|&(key, value)| (key, value.into()))
             .collect::<Vec<_>>();
+        if let Some((_, count)) = options.iter_mut().find(|(key, _)| *key == "threads") {
+            *count = self.workers.to_string();
+        }
         options.push((quality_key, self.quality.to_string()));
         options
     }
@@ -268,6 +278,35 @@ impl Profile {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t612_manual_workers_use_shared_policy_and_preserve_default() {
+        for workers in [0, 1, 2, 4, 128] {
+            let profile = Profile::new("libx264", 60, 20000, 18)
+                .unwrap()
+                .with_workers(workers)
+                .unwrap();
+            assert!(profile
+                .cli_options(false)
+                .contains(&("-threads".into(), workers.max(1).to_string())));
+            assert!(profile
+                .inproc_options()
+                .unwrap()
+                .contains(&("threads", workers.max(1).to_string())));
+        }
+        assert!(Profile::new("libx264", 60, 20000, 18)
+            .unwrap()
+            .with_workers(129)
+            .is_err());
+        let profile = Profile::new("h264_vaapi", 60, 20000, 18)
+            .unwrap()
+            .with_workers(4)
+            .unwrap();
+        assert!(!profile
+            .cli_options(false)
+            .iter()
+            .any(|(key, _)| key == "-threads"));
+    }
 
     #[test]
     fn t613_x264_defaults_to_one_worker_in_both_adapters() {

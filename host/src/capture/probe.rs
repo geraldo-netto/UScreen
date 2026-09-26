@@ -12,6 +12,8 @@ use tokio::{io::AsyncWriteExt, process::Command};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Measurement {
+    pub workers_requested: u32,
+    pub workers_effective: Option<u32>,
     pub encoder: String,
     pub first_us: u64,
     pub p95_us: u64,
@@ -50,7 +52,11 @@ async fn run(config: &CaptureConfig) -> Result<Measurement> {
     let ((), (times, sample)) = tokio::try_join!(feed(stdin, w, h), drain(stdout, codec, started))?;
     ensure!(child.wait().await?.success(), "Encoder probe failed");
     let mut measured = summarize(&config.encoder, &times)?;
+    measured.workers_requested = if config.encoder == "libx264" { config.worker_count() } else { 0 };
     if let Some(sample) = sample {
+        if config.encoder == "libx264" {
+            measured.workers_effective = blent_config::encoder_workers::effective_x264(&sample.data);
+        }
         measured.stream = super::probe_format::inspect(codec, w, h, &sample)
             .await
             .ok();
@@ -142,6 +148,8 @@ fn summarize(encoder: &str, times: &[u64]) -> Result<Measurement> {
         .collect::<Vec<_>>();
     intervals.sort_unstable();
     Ok(Measurement {
+        workers_requested: 0,
+        workers_effective: None,
         encoder: encoder.into(),
         stream: None,
         quality_db: None,

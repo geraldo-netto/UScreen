@@ -1,0 +1,9 @@
+{
+  "unchanged_source_hashes_verified_against": "coverage-manifest.json",
+  "recollected_entire_files": [
+    "host/src/selection/worker/cache.rs",
+    "host/src/selection/worker/measured.rs"
+  ],
+  "new_counters": "selection-final.lcov",
+  "excluded_old_counters_for_changed_files": true
+}

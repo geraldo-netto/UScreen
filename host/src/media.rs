@@ -106,8 +106,16 @@ pub struct EncoderSettings {
 pub use blent_config::negotiation::DecoderCapabilities;
 
 impl EncoderSettings {
+    pub fn selected_workers(&self) -> u32 {
+        self.selection
+            .as_ref()
+            .filter(|s| s.key.matches(self))
+            .map_or(0, |s| s.workers)
+    }
+
     pub fn same_stream(&self, other: &Self) -> bool {
         self.effective_encoder() == other.effective_encoder()
+            && self.selected_workers() == other.selected_workers()
             && self.decoder_choice() == other.decoder_choice()
             && self.helper_geometry() == other.helper_geometry()
             && (self.bitrate, self.quality, self.geometry_ready)

@@ -12,17 +12,20 @@ pub(super) async fn observe(
     key: &Key,
     encoder: &str,
     decoder: Option<&DecoderChoice>,
+    workers: u32,
 ) -> Option<Observation> {
     let started = tokio::time::Instant::now();
     let before = tracker.encoder_evidence().map(|e| (e.epoch, e.rendered()));
     let mut updates = tracker.activity_updates();
+    let mut resources = super::resources::Window::default();
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
-            if let Some(result) = tracker
-                .encoder_evidence()
-                .and_then(|e| observations(&e, key, encoder, decoder, before, started))
-            {
-                return Some(result);
+            if let Some(evidence) = tracker.encoder_evidence().filter(|e| e.workers == workers) {
+                resources.poll(evidence.epoch, evidence.process_id, evidence.rendered(), started.elapsed(), &super::resources::linux::Process);
+                if let Some(mut result) = observations(&evidence, key, encoder, decoder, before, started) {
+                    result.resources = resources.finish();
+                    return Some(result);
+                }
             }
             if updates.changed().await.is_err() {
                 return None;
@@ -96,6 +99,8 @@ pub(super) async fn uninterrupted<T>(
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(super) struct Observation {
+    #[serde(default)]
+    pub resources: Option<super::resources::Usage>,
     pub p50_us: u32,
     pub p95_us: u32,
     pub p99_us: u32,
@@ -119,6 +124,7 @@ impl Observation {
         times.sort_unstable();
         let percentile = |percent: usize| times[((times.len() - 1) * percent).div_ceil(100)];
         Some(Self {
+            resources: None,
             p50_us: percentile(50),
             p95_us: percentile(95),
             p99_us: percentile(99),
@@ -178,7 +184,7 @@ mod tests {
         let worker = tokio::spawn({
             let tracker = tracker.clone();
             let key = key.clone();
-            async move { observe(&tracker, &key, "libx264", None).await }
+            async move { observe(&tracker, &key, "libx264", None, 0).await }
         });
         tokio::task::yield_now().await;
         let old = tracker.encoder_started("libx264", key.format);

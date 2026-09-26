@@ -1,0 +1,24 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.69s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test selection::worker::measured::tests::t612_worker_quality_uses_one_worker_even_when_probe_rank_differs ... FAILED
+
+failures:
+
+---- selection::worker::measured::tests::t612_worker_quality_uses_one_worker_even_when_probe_rank_differs stdout ----
+
+thread 'selection::worker::measured::tests::t612_worker_quality_uses_one_worker_even_when_probe_rank_differs' (136650) panicked at host/src/selection/worker/measured.rs:263:9:
+assertion `left == right` failed
+  left: 2
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    selection::worker::measured::tests::t612_worker_quality_uses_one_worker_even_when_probe_rank_differs
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 383 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --bin blent`

@@ -114,7 +114,8 @@ async fn supervise(
     while let Some((candidate, remaining)) = choose(settings, &key, &fallback, pending, |name| {
         let key = &key;
         let decoder = settings.borrow().decoder_choice().cloned();
-        async move { rendered(latency, key, &name, decoder.as_ref()).await }
+        let workers = settings.borrow().selected_workers();
+        async move { rendered(latency, key, &name, decoder.as_ref(), workers).await }
     })
     .await
     {
@@ -159,6 +160,7 @@ async fn choose<F: Future<Output = bool>>(
             &candidate.measurement.encoder,
             &reason,
             candidate.decoder.clone(),
+            candidate.measurement.workers_requested,
         ) {
             return None;
         }
@@ -178,6 +180,7 @@ async fn choose<F: Future<Output = bool>>(
                     return false;
                 }
                 current.selection = Some(Selected {
+                    workers: candidate.measurement.workers_requested,
                     key: key.clone(),
                     encoder: candidate.measurement.encoder.clone(),
                     reason: verified.clone(),
@@ -205,7 +208,7 @@ fn publish(
     encoder: &str,
     reason: &str,
 ) -> bool {
-    publish_choice(settings, key, encoder, reason, None)
+    publish_choice(settings, key, encoder, reason, None, 0)
 }
 
 fn publish_choice(
@@ -214,12 +217,14 @@ fn publish_choice(
     encoder: &str,
     reason: &str,
     decoder: Option<blent_config::negotiation::DecoderChoice>,
+    workers: u32,
 ) -> bool {
     settings.send_if_modified(|current| {
         if !key.matches(current) {
             return false;
         }
         current.selection = Some(Selected {
+            workers,
             key: key.clone(),
             encoder: encoder.into(),
             reason: reason.into(),
@@ -236,12 +241,13 @@ async fn rendered(
     key: &Key,
     name: &str,
     decoder: Option<&blent_config::negotiation::DecoderChoice>,
+    workers: u32,
 ) -> bool {
     let mut updates = latency.activity_updates();
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
     tokio::time::timeout(Duration::from_secs(6), async {
         loop {
-            if matches_evidence(latency.encoder_evidence(), key, name, previous, decoder) {
+            if matches_evidence(latency.encoder_evidence().filter(|e| e.workers == workers), key, name, previous, decoder) {
                 return true;
             }
             if updates.changed().await.is_err() {
@@ -286,28 +292,36 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
     let mut candidates = Vec::new();
     let mut encoders = blent_config::encoding::ENCODERS;
     encoders.sort_by_key(|encoder| probe_order(encoder.name));
-    for encoder in encoders {
+    'probes: for encoder in encoders {
         let codec = crate::media::Codec::from_encoder(encoder.name);
         if !snapshot.decoder_supports(codec) {
             continue;
         }
-        let config = probe_config(base, snapshot, encoder.name);
-        let Ok(result) = tokio::time::timeout_at(deadline, probe::measure(&config)).await else {
-            break;
-        };
-        match result {
-            Ok(measurement) => {
-                if let Some(candidate) = compatible_candidate(snapshot, measurement, base.ten_bit) {
-                    candidates.push(candidate);
+        for workers in probe_budgets(base, snapshot, encoder.name) {
+            let mut config = probe_config(base, snapshot, encoder.name);
+            config.selected_workers = workers;
+            let Ok(result) = tokio::time::timeout_at(deadline, probe::measure(&config)).await else {
+                break 'probes;
+            };
+            match result {
+                Ok(measurement) => {
+                    if let Some(candidate) = compatible_candidate(snapshot, measurement, base.ten_bit) {
+                        candidates.push(candidate);
+                    }
                 }
-            }
-            Err(error) => {
-                tracing::info!(encoder = encoder.name, %error, "Automatic encoder probe rejected candidate")
+                Err(error) => tracing::info!(encoder = encoder.name, workers, %error, "Automatic encoder probe rejected candidate"),
             }
         }
     }
     candidates.sort_by(|a, b| rank(a, b, snapshot.fps));
     candidates
+}
+
+fn probe_budgets(base: &CaptureConfig, settings: &EncoderSettings, name: &str) -> Vec<u32> {
+    let requested = if settings.decoders.as_ref().is_some_and(|d| d.protocol == 2) {
+        base.encoder_workers
+    } else { base.encoder_workers.max(1) };
+    blent_config::encoder_workers::candidates(name, requested)
 }
 
 fn probe_order(encoder: &str) -> u8 {

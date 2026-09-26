@@ -33,6 +33,8 @@ pub(super) fn candidate(name: &str, hardware: bool, fps: f64, p95: u64) -> Candi
         decoder: None,
         observation: None,
         measurement: Measurement {
+            workers_requested: 0,
+            workers_effective: None,
             encoder: name.into(),
             fps,
             p95_us: p95,
@@ -429,4 +431,43 @@ fn t465_retired_encoder_cannot_certify_a_trial_after_late_acks() {
         None,
         None
     ));
+}
+
+#[tokio::test(start_paused = true)]
+async fn t612_previous_worker_receipts_cannot_verify_a_new_budget() {
+    let tracker = LatencyTracker::new();
+    let key = Key::new(&settings());
+    let old = tracker.encoder_started_with_budget("libx264", key.format, None, 1, None);
+    let task = tokio::spawn({
+        let tracker = tracker.clone();
+        let key = key.clone();
+        async move { rendered(&tracker, &key, "libx264", None, 2).await }
+    });
+    tokio::task::yield_now().await;
+    for _ in 0..4 {
+        let seq = tracker.next_sequence();
+        tracker.on_encoded_for(seq, &old);
+        tracker.on_rendered(seq, 100);
+    }
+    tokio::task::yield_now().await;
+    assert!(!task.is_finished());
+    let current = tracker.encoder_started_with_budget("libx264", key.format, None, 2, None);
+    for _ in 0..3 {
+        let seq = tracker.next_sequence();
+        tracker.on_encoded_for(seq, &current);
+        tracker.on_rendered(seq, 100);
+    }
+    assert!(task.await.unwrap());
+}
+
+#[test]
+fn t612_legacy_peer_keeps_one_worker_and_manual_budget_is_fixed() {
+    let mut snapshot = settings();
+    let mut base = CaptureConfig::default();
+    assert_eq!(probe_budgets(&base, &snapshot, "libx264"), [1]);
+    snapshot.decoders.as_mut().unwrap().protocol = 2;
+    assert_eq!(probe_budgets(&base, &snapshot, "libx264"), [1, 2, 4]);
+    base.encoder_workers = 7;
+    assert_eq!(probe_budgets(&base, &snapshot, "libx264"), [7]);
+    assert_eq!(probe_budgets(&base, &snapshot, "h264_vaapi"), [0]);
 }
