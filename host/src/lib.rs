@@ -6,9 +6,11 @@ pub mod camera_control;
 // Shared wire/session state is built for every host target.
 pub mod attachment;
 pub mod config;
+pub mod ffmpeg_args;
 pub mod latency;
 pub mod media;
 pub mod media_storage;
+pub mod pipe_encoder;
 pub mod raw_transfer;
 #[path = "selection_types.rs"]
 pub mod selection;

@@ -1,0 +1,516 @@
+{
+  "revision": "b0cd0ae14ba6615756861b66ebe665273c59f2fe",
+  "platform": "Linux x86_64, native LLVM in fresh target directory",
+  "sources": {
+    "common/src/commands.rs": "ec9f5e6821a11ae9fb3ea69188c8d109eca7c714a46232504c6d155fbc4b3c5c",
+    "common/src/commands/owned.rs": "da2bc29cb7005fffbb7aa2f7b851c9a0f7f87a8d2d5e6e6b88a87b1688ef03c5",
+    "host/src/ffmpeg_args.rs": "61a81949b427a034e0ba2e562d96beb60c2fdc33434eefe6a061c99b466d2509",
+    "host/src/pipe_encoder.rs": "8ca2029a092598d4868866ef3386920505ab0ff09b7e657030baa515a603f8a4",
+    "host/src/capture/cli_encoder.rs": "8a0a82592f409b7919be42b6a0cb30f55060126b3a2a5ff347d06fa33b401557"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "common/src/commands.rs",
+      "name": "spawn_reaped",
+      "line": 15,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "daemon_command_timeout",
+      "line": 35,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 44,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "new",
+      "line": 56,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "finish",
+      "line": 62,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "timed_out",
+      "line": 76,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "prepare_group",
+      "line": 83,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "terminate_group",
+      "line": 100,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "retire_sync",
+      "line": 117,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "reap_after_signal",
+      "line": 123,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "drop",
+      "line": 137,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_timeout",
+      "line": 147,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_bounded",
+      "line": 182,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_timeout",
+      "line": 197,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands.rs",
+      "name": "output_input_timeout",
+      "line": 201,
+      "language": "rust",
+      "covered": 28,
+      "total": 28,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "spawn",
+      "line": 16,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "id",
+      "line": 33,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "take_stdin",
+      "line": 37,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "take_stdout",
+      "line": 41,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "finish",
+      "line": 47,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/ffmpeg_args.rs",
+      "name": "profile",
+      "line": 18,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/ffmpeg_args.rs",
+      "name": "arguments",
+      "line": 22,
+      "language": "rust",
+      "covered": 98,
+      "total": 98,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/ffmpeg_args.rs",
+      "name": "video_filter",
+      "line": 134,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "start",
+      "line": 33,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "spawn",
+      "line": 50,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "validate",
+      "line": 67,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_write",
+      "line": 106,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_flush",
+      "line": 117,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_shutdown",
+      "line": 124,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "success",
+      "line": 145,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "log_encoder_dimensions",
+      "line": 31,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "encoder_command",
+      "line": 51,
+      "language": "rust",
+      "covered": 26,
+      "total": 26,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "encoder_arguments",
+      "line": 84,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "encoder_quality_args",
+      "line": 102,
+      "language": "rust",
+      "covered": 19,
+      "total": 20,
+      "percent": 95.0,
+      "passes": true,
+      "missing": [
+        113
+      ]
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "supports_async_depth",
+      "line": 127,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "timestamp_us",
+      "line": 153,
+      "language": "rust",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        156
+      ]
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "new",
+      "line": 159,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "codec_config",
+      "line": 166,
+      "language": "rust",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        169
+      ]
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "read_from",
+      "line": 172,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "read_loop_with_idle",
+      "line": 195,
+      "language": "rust",
+      "covered": 43,
+      "total": 43,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "publish_packets",
+      "line": 246,
+      "language": "rust",
+      "covered": 21,
+      "total": 21,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "trace_packet",
+      "line": 270,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "publish_initial_codec_config",
+      "line": 283,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "encoder_throughput_rates",
+      "line": 301,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "name": "report_encoder_throughput",
+      "line": 310,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

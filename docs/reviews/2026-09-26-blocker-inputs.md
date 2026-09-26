@@ -15,7 +15,7 @@ The Linux host has 32 AMD-V CPU threads, 90 GiB RAM, accessible `/dev/kvm`, QEMU
 live outside the repository in `~/.local/share/blent-dev/windows-vm/`.
 
 Install only Windows and necessary development tools: MSVC compiler/Windows SDK,
-minimal Rust/Cargo, Git and guest integration needed to control the VM. No Visual
+minimal Rust/Cargo, Git, the stock FFmpeg CLI needed by encoder tests and guest integration needed to control the VM. No Visual
 Studio IDE. Remove gaming/Xbox/Copilot packages; disable Windows Search UI and
 indexing, web-search suggestions, widgets and consumer promotions. Record and
 verify the resulting installed state; a prepared policy is not proof it applied.
@@ -34,9 +34,12 @@ including ACLs, leases, token privacy, junction rejection and child retirement.
 T583 scheduling and owned-child propagation/denial acceptance also passed.
 This CI uses Windows Server 2022; Windows 11 VM repetition remains T633.
 
-KVM, UEFI and TPM emulator startup passed. As of 18:10 UTC, the official ISO was
-still downloading (about 0.9 of 6.6 GiB physically written), so Windows and the
-minimal package policies were **not yet installed/validated**. T633 tracks completion. Retain the VM, disk, firmware/TPM state and setup files after testing, as requested. The guest bootstrap runs portable tests, full native workspace tests and an all-features build before reporting readiness. The active user
+KVM, UEFI and TPM emulator startup passed. As of 19:30 UTC, the official ISO was
+still downloading (about 4.1 of 6.6 GiB physically written), so Windows and the
+minimal package policies were **not yet installed/validated**. T633 tracks
+completion. Retain the VM, disk, firmware/TPM state and setup files after testing,
+as requested. The guest bootstrap runs portable tests, full native workspace
+tests and an all-features build before reporting readiness. The active user
 service `blent-windows-vm.service` waits for the download, verifies Microsoft’s
 SHA-256 and starts unattended installation once. Its private setup scripts and
 status live outside the repository; a repeated installation is refused. Open
@@ -64,7 +67,7 @@ does not enable Blent display/input/camera sharing.
 | T525 | Tablet/USB availability when connection acceptance is ready. | Implement ADB transport after T524; physical acceptance under T522. |
 | T527 | Driver strategy: validated upstream ownership extension/exclusive instance, or a Blent-owned IDD. An owned driver also needs an agreed signing/maintenance/distribution owner. | Current upstream VDD is a lab candidate only: its global count/reload interface cannot retire only Blent-owned outputs. Do not buy a certificate before deciding this route. |
 | T528 | No independent preference after T527's driver decision. | Implement and validate capture on the selected output; lifecycle, mode changes and device loss remain mandatory. |
-| T529 | Nothing now. | Current queue: native encoder-pipe acceptance after completed T583/T493. Complete capture/connection integration after T525/T528. |
+| T529 | No new choice for the encoder adapter; T527 still needs the driver decision. | Native pipe/software-encoder implementation and coverage passed after T583/T493. T529 now waits for T525 connection ownership and T528 capture integration; it remains in TODO. |
 | T530 | Compatible GPU access under T522. | T529 first, then actual hardware initialization/measurements and fallback. Advertised encoder names are insufficient. |
 | T531, T532 | Nothing now. | Tray waits for T524/T525 status/lifecycle; autostart waits for T524 single-instance handling. |
 | T534 | Installer format and dependency distribution. Suggested starting point: per-user EXE installer, pinned ADB/FFmpeg bundled, separately installed driver. Confirm publisher/signing route before distribution. | Functioning milestones, redistribution notices, reproducible package checks, upgrade/uninstall ownership and T522 evidence. This suggestion is not an accepted decision. |

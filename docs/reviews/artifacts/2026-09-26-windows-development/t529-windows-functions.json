@@ -1,0 +1,203 @@
+{
+  "run": "https://github.com/geraldo-netto/UScreen/actions/runs/36266085893",
+  "revision": "b0cd0ae14ba6615756861b66ebe665273c59f2fe",
+  "platform": "Windows Server 2022 x64, native MSVC",
+  "sources": {
+    "common/src/commands/owned.rs": "da2bc29cb7005fffbb7aa2f7b851c9a0f7f87a8d2d5e6e6b88a87b1688ef03c5",
+    "host/src/pipe_encoder.rs": "8ca2029a092598d4868866ef3386920505ab0ff09b7e657030baa515a603f8a4",
+    "host/src/raw_transfer.rs": "8711de3b4220f8e2b28f294a6acaff371b0ad2fb317f9ebbf4ad047992c59489"
+  },
+  "minimum_percent": 80,
+  "passes": true,
+  "functions": [
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "spawn",
+      "line": 16,
+      "language": "rust",
+      "covered": 13,
+      "total": 14,
+      "percent": 92.85714285714286,
+      "passes": true,
+      "missing": [
+        25
+      ]
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "id",
+      "line": 33,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "take_stdin",
+      "line": 37,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "take_stdout",
+      "line": 41,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "name": "finish",
+      "line": 47,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "start",
+      "line": 33,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "spawn",
+      "line": 50,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "validate",
+      "line": 67,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_write",
+      "line": 106,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_flush",
+      "line": 117,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "poll_shutdown",
+      "line": 124,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "name": "success",
+      "line": 145,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "new",
+      "line": 25,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "write_frame",
+      "line": 46,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "shutdown",
+      "line": 60,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "invalid",
+      "line": 70,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "name": "retired",
+      "line": 74,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

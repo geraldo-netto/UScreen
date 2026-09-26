@@ -45,6 +45,12 @@ T497 retains broader host/GUI and combined coverage work.
 This CI uses Windows Server 2022; Windows 11 VM acceptance remains separate.
 See [build and native evidence](reviews/2026-09-26-windows-build-boundary.md).
 
+[T529's stock-FFmpeg pipe adapter](reviews/2026-09-26-pipe-encoder.md) now passes
+native Windows software encode/decode, partial-write retirement and shutdown
+regressions. Its 17 transport/process functions meet native coverage; FFmpeg
+arguments and framing are shared with Linux. Capture/ADB session integration
+still waits for T525/T528, so this does not enable Windows display support.
+
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
 or distinguish a missing program from an unverified failed/malformed check.

@@ -1,0 +1,20 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 29.54s
+test pipe_encoder::tests::t529_encoder_exit_start_failure_and_missing_pipes_are_errors ... ok
+test pipe_encoder::tests::t529_encoder_fixture ... ok
+test pipe_encoder::tests::t529_invalid_encoder_settings_are_rejected_before_launch ... ok
+test pipe_encoder::tests::t529_owned_input_flush_and_shutdown_are_repeatable ... ok
+test pipe_encoder::tests::t529_partial_pipe_timeout_and_cancellation_retire_encoder ... ok
+test pipe_encoder::tests::t529_shutdown_reports_an_unfinished_native_write_even_after_zero_exit ... ok
+test pipe_encoder::tests::t529_stock_software_encoder_round_trips_fresh_sessions_and_geometry ... Input #0, rawvideo, from 'pipe:0':
+test raw_transfer::tests::t635_bounded_bad_lengths_and_resize_never_touch_the_stream ... ok
+test raw_transfer::tests::t635_cancelling_a_pending_frame_closes_the_stream ... ok
+test raw_transfer::tests::t635_geometry_and_write_budget_are_bounded ... ok
+test raw_transfer::tests::t635_partial_writes_preserve_complete_frame_boundaries ... ok
+test raw_transfer::tests::t635_reader_exit_retires_the_writer ... ok
+test raw_transfer::tests::t635_timeout_retires_partial_input_and_fresh_session_recovers ... ok
+test raw_transfer::tests::t635_zero_writes_and_shutdown_failures_retire_input ... ok
+test result: ok. 180 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.55s
+test result: ok. 383 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 65.26s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 111 filtered out; finished in 0.40s
+test result: ok. 112 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.06s
+    Finished report saved to /tmp/blent-t529-final.lcov
