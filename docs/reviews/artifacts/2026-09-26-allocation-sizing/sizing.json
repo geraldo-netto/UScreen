@@ -1,0 +1,87 @@
+{
+  "kind": "logical_allocation_model",
+  "initial": 524288,
+  "maximum_packet": 8388609,
+  "workloads": {
+    "steady_64k": {
+      "current_growth": {
+        "allocations": 1,
+        "requested_array_bytes": 524288,
+        "final_capacity": 524288,
+        "maximum_resize_overlap": 524288
+      },
+      "capped_growth": {
+        "allocations": 1,
+        "requested_array_bytes": 524288,
+        "final_capacity": 524288,
+        "maximum_resize_overlap": 524288
+      },
+      "exact_growth": {
+        "allocations": 1,
+        "requested_array_bytes": 524288,
+        "final_capacity": 524288,
+        "maximum_resize_overlap": 524288
+      }
+    },
+    "six_mib_then_max_then_small": {
+      "current_growth": {
+        "allocations": 2,
+        "requested_array_bytes": 9961472,
+        "final_capacity": 9437184,
+        "maximum_resize_overlap": 9961472
+      },
+      "capped_growth": {
+        "allocations": 2,
+        "requested_array_bytes": 8912897,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 8912897
+      },
+      "exact_growth": {
+        "allocations": 3,
+        "requested_array_bytes": 15204353,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 14680065
+      }
+    },
+    "maximum_then_small": {
+      "current_growth": {
+        "allocations": 2,
+        "requested_array_bytes": 13107201,
+        "final_capacity": 12582913,
+        "maximum_resize_overlap": 13107201
+      },
+      "capped_growth": {
+        "allocations": 2,
+        "requested_array_bytes": 8912897,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 8912897
+      },
+      "exact_growth": {
+        "allocations": 2,
+        "requested_array_bytes": 8912897,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 8912897
+      }
+    },
+    "gradual_growth": {
+      "current_growth": {
+        "allocations": 8,
+        "requested_array_bytes": 29720583,
+        "final_capacity": 10518529,
+        "maximum_resize_overlap": 17498114
+      },
+      "capped_growth": {
+        "allocations": 8,
+        "requested_array_bytes": 27590663,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 15368194
+      },
+      "exact_growth": {
+        "allocations": 122,
+        "requested_array_bytes": 539754617,
+        "final_capacity": 8388609,
+        "maximum_resize_overlap": 16711682
+      }
+    }
+  }
+}

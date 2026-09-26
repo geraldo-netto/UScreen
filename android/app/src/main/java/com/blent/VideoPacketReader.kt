@@ -29,7 +29,8 @@ internal class VideoPacketReader(private val input: InputStream) {
             Log.w(TAG, "Invalid packet size: $size, reconnecting")
             return false
         }
-        if (data.size < size) data = ByteArray(size + size / 2)
+        // T587: retain growth headroom only where a future legal packet can use it.
+        if (data.size < size) data = ByteArray(minOf(size + size / 2, MAX_FRAME_SIZE + 1))
         readExact(data, size)
         return true
     }

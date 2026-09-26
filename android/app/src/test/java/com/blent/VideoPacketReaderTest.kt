@@ -91,6 +91,30 @@ class VideoPacketReaderTest {
         assertArrayEquals(small, sink.frames[1].second)
     }
 
+    // T587: capacity above the largest legal packet can never serve another read.
+    @Test fun t587_growthNeverReservesUnusableProtocolCapacity() {
+        val first = ByteArray(6 * 1024 * 1024) { 42 }
+        val maximum = ByteArray(VideoReceiver.MAX_FRAME_SIZE - 4) { 17 }
+        val small = byteArrayOf(8, 9)
+        val input = packet(1, first, 1) + packet(1, maximum, 2) + packet(1, small, 3)
+        val reader = VideoPacketReader(input.inputStream())
+        val backing = mutableListOf<ByteArray>()
+        val observed = mutableListOf<List<Int>>()
+        val sink = object : VideoPacketSink {
+            override fun configuration(data: ByteArray, offset: Int, size: Int) { fail("unexpected config") }
+            override fun frame(sequence: Int, data: ByteArray, offset: Int, size: Int) {
+                backing.add(data)
+                observed.add(listOf(sequence, size, data[offset].toInt(), data[offset + size - 1].toInt()))
+            }
+        }
+        repeat(3) { assertTrue(reader.read()); assertTrue(reader.dispatch(sink)) }
+        assertEquals(listOf(listOf(1, first.size, 42, 42), listOf(2, maximum.size, 17, 17),
+            listOf(3, small.size, 8, 9)), observed)
+        assertSame(backing[0], backing[1])
+        assertSame(backing[1], backing[2])
+        assertEquals(VideoReceiver.MAX_FRAME_SIZE + 1, backing[0].size)
+    }
+
     @Test fun t376_timingBoundaryUsesInjectedMonotonicClock() {
         var now = 1_000_000_000L
         val timing = FrameTiming { now }
