@@ -1,0 +1,15 @@
+{
+  "suite_tests": 526,
+  "CameraWire.connect": {
+    "covered_lines": 14,
+    "missed_lines": 0
+  },
+  "CameraWire.greeting": {
+    "covered_lines": 4,
+    "missed_lines": 0
+  },
+  "CameraWire.packet": {
+    "covered_lines": 10,
+    "missed_lines": 0
+  }
+}

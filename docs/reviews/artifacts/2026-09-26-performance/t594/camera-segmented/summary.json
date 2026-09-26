@@ -1,0 +1,272 @@
+[
+  {
+    "trial": 0,
+    "source": "66630021417ab01460be0a7934984e380ea40348a7c6ed536d5050044f308548:profile",
+    "workloads": [
+      {
+        "name": "steady",
+        "packets": 300,
+        "elapsed_ns": 1460118076,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 750240,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "keyframe",
+        "packets": 300,
+        "elapsed_ns": 553587576,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3182592,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "resize",
+        "packets": 300,
+        "elapsed_ns": 459500615,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3149824,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "maximum",
+        "packets": 300,
+        "elapsed_ns": 2137539729,
+        "storage_replacements": 1,
+        "retained_capacity": 8388609,
+        "allocated_bytes": 8425568,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "slow-consumer",
+        "packets": 300,
+        "elapsed_ns": 784762807,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 0,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "reconnect",
+        "packets": 1200,
+        "elapsed_ns": 330707115,
+        "storage_replacements": 1200,
+        "retained_capacity": 524288,
+        "allocated_bytes": 634650624,
+        "workload_gc_count": 7,
+        "workload_gc_time_ms": 253,
+        "workload_blocking_gc_time_ms": 153,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "camera-packets",
+        "packets": 1200,
+        "elapsed_ns": 228449462,
+        "storage_replacements": null,
+        "retained_capacity": null,
+        "allocated_bytes": 131072,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      }
+    ]
+  },
+  {
+    "trial": 1,
+    "source": "66630021417ab01460be0a7934984e380ea40348a7c6ed536d5050044f308548:profile",
+    "workloads": [
+      {
+        "name": "steady",
+        "packets": 300,
+        "elapsed_ns": 1171755230,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 750240,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "keyframe",
+        "packets": 300,
+        "elapsed_ns": 553723077,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3182592,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "resize",
+        "packets": 300,
+        "elapsed_ns": 459321962,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3149824,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "maximum",
+        "packets": 300,
+        "elapsed_ns": 2136478306,
+        "storage_replacements": 1,
+        "retained_capacity": 8388609,
+        "allocated_bytes": 8425568,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "slow-consumer",
+        "packets": 300,
+        "elapsed_ns": 788322807,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 0,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "reconnect",
+        "packets": 1200,
+        "elapsed_ns": 316496692,
+        "storage_replacements": 1200,
+        "retained_capacity": 524288,
+        "allocated_bytes": 634650624,
+        "workload_gc_count": 6,
+        "workload_gc_time_ms": 235,
+        "workload_blocking_gc_time_ms": 175,
+        "boundary_gc_count": 1
+      },
+      {
+        "name": "camera-packets",
+        "packets": 1200,
+        "elapsed_ns": 228347307,
+        "storage_replacements": null,
+        "retained_capacity": null,
+        "allocated_bytes": 106496,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      }
+    ]
+  },
+  {
+    "trial": 2,
+    "source": "66630021417ab01460be0a7934984e380ea40348a7c6ed536d5050044f308548:profile",
+    "workloads": [
+      {
+        "name": "steady",
+        "packets": 300,
+        "elapsed_ns": 1437154037,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 750240,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "keyframe",
+        "packets": 300,
+        "elapsed_ns": 554082884,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3182592,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "resize",
+        "packets": 300,
+        "elapsed_ns": 460100038,
+        "storage_replacements": 1,
+        "retained_capacity": 3145728,
+        "allocated_bytes": 3149824,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "maximum",
+        "packets": 300,
+        "elapsed_ns": 2137430499,
+        "storage_replacements": 1,
+        "retained_capacity": 8388609,
+        "allocated_bytes": 8392704,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "slow-consumer",
+        "packets": 300,
+        "elapsed_ns": 788440114,
+        "storage_replacements": 0,
+        "retained_capacity": 524288,
+        "allocated_bytes": 0,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      },
+      {
+        "name": "reconnect",
+        "packets": 1200,
+        "elapsed_ns": 324060692,
+        "storage_replacements": 1200,
+        "retained_capacity": 524288,
+        "allocated_bytes": 634716160,
+        "workload_gc_count": 7,
+        "workload_gc_time_ms": 236,
+        "workload_blocking_gc_time_ms": 139,
+        "boundary_gc_count": 1
+      },
+      {
+        "name": "camera-packets",
+        "packets": 1200,
+        "elapsed_ns": 228302462,
+        "storage_replacements": null,
+        "retained_capacity": null,
+        "allocated_bytes": 106496,
+        "workload_gc_count": 0,
+        "workload_gc_time_ms": 0,
+        "workload_blocking_gc_time_ms": 0,
+        "boundary_gc_count": 0
+      }
+    ]
+  }
+]

@@ -39,8 +39,14 @@ internal object CameraWire {
         require(size in 1..MAX_PACKET) { "Invalid camera packet size" }
         require(offset >= 0 && offset <= source.limit() - size) { "Invalid camera buffer bounds" }
         val view = source.duplicate().apply { position(offset); limit(offset + size) }
-        val bytes = ByteArray(size)
-        view.get(bytes)
-        sink.writeInt(size).write(bytes).flush()
+        sink.writeInt(size)
+        // Emit one Okio segment at a time. Copying the complete payload into
+        // Buffer before emitting would still allocate up to MAX_PACKET bytes.
+        val end = offset + size
+        while (view.position() < end) {
+            view.limit(minOf(end, view.position() + 8192))
+            sink.write(view)
+        }
+        sink.flush()
     }
 }

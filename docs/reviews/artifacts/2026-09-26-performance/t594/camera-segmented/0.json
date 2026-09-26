@@ -1,0 +1,270 @@
+{
+  "source": "66630021417ab01460be0a7934984e380ea40348a7c6ed536d5050044f308548:profile",
+  "workloads": [
+    {
+      "name": "steady",
+      "packets": 300,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "4440624",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "5124848",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "5190864",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "elapsed_ns": 1460118076,
+      "storage_replacements": 0,
+      "maximum_capacity": 524288,
+      "retained_capacity": 524288
+    },
+    {
+      "name": "keyframe",
+      "packets": 300,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "5719248",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "8869072",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "8901840",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "elapsed_ns": 553587576,
+      "storage_replacements": 1,
+      "maximum_capacity": 3145728,
+      "retained_capacity": 3145728
+    },
+    {
+      "name": "resize",
+      "packets": 300,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "9430224",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "12580048",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "12580048",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "elapsed_ns": 459500615,
+      "storage_replacements": 1,
+      "maximum_capacity": 3145728,
+      "retained_capacity": 3145728
+    },
+    {
+      "name": "maximum",
+      "packets": 300,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "13108432",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "21534000",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "21534000",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "elapsed_ns": 2137539729,
+      "storage_replacements": 1,
+      "maximum_capacity": 8388609,
+      "retained_capacity": 8388609
+    },
+    {
+      "name": "slow-consumer",
+      "packets": 300,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "22062384",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "22062384",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "22062384",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "elapsed_ns": 784762807,
+      "storage_replacements": 0,
+      "maximum_capacity": 524288,
+      "retained_capacity": 524288
+    },
+    {
+      "name": "reconnect",
+      "packets": 1200,
+      "before": {
+        "art.gc.blocking-gc-count": "0",
+        "art.gc.gc-time": "0",
+        "art.gc.bytes-allocated": "22590768",
+        "art.gc.bytes-freed": "0",
+        "art.gc.gc-count-rate-histogram": "",
+        "art.gc.blocking-gc-count-rate-histogram": "",
+        "art.gc.gc-count": "0",
+        "art.gc.blocking-gc-time": "0"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "1",
+        "art.gc.gc-time": "253",
+        "art.gc.bytes-allocated": "657241392",
+        "art.gc.bytes-freed": "594962288",
+        "art.gc.gc-count-rate-histogram": "0:1",
+        "art.gc.blocking-gc-count-rate-histogram": "0:1",
+        "art.gc.gc-count": "7",
+        "art.gc.blocking-gc-time": "153"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "1",
+        "art.gc.gc-time": "253",
+        "art.gc.bytes-allocated": "657241392",
+        "art.gc.bytes-freed": "594962288",
+        "art.gc.gc-count-rate-histogram": "0:1",
+        "art.gc.blocking-gc-count-rate-histogram": "0:1",
+        "art.gc.gc-count": "7",
+        "art.gc.blocking-gc-time": "153"
+      },
+      "elapsed_ns": 330707115,
+      "storage_replacements": 1200,
+      "maximum_capacity": 524288,
+      "retained_capacity": 524288
+    },
+    {
+      "name": "camera-packets",
+      "packets": 1200,
+      "before": {
+        "art.gc.blocking-gc-count": "1",
+        "art.gc.gc-time": "253",
+        "art.gc.bytes-allocated": "658294528",
+        "art.gc.bytes-freed": "594962288",
+        "art.gc.gc-count-rate-histogram": "0:1",
+        "art.gc.blocking-gc-count-rate-histogram": "0:1",
+        "art.gc.gc-count": "7",
+        "art.gc.blocking-gc-time": "153"
+      },
+      "after": {
+        "art.gc.blocking-gc-count": "1",
+        "art.gc.gc-time": "253",
+        "art.gc.bytes-allocated": "658392832",
+        "art.gc.bytes-freed": "594962288",
+        "art.gc.gc-count-rate-histogram": "0:1",
+        "art.gc.blocking-gc-count-rate-histogram": "0:1",
+        "art.gc.gc-count": "7",
+        "art.gc.blocking-gc-time": "153"
+      },
+      "settled_after": {
+        "art.gc.blocking-gc-count": "1",
+        "art.gc.gc-time": "253",
+        "art.gc.bytes-allocated": "658425600",
+        "art.gc.bytes-freed": "594962288",
+        "art.gc.gc-count-rate-histogram": "0:1",
+        "art.gc.blocking-gc-count-rate-histogram": "0:1",
+        "art.gc.gc-count": "7",
+        "art.gc.blocking-gc-time": "153"
+      },
+      "elapsed_ns": 228449462,
+      "payload_bytes": 117964800
+    }
+  ],
+  "scope": "Production packet reader and camera packet writer on ART; synthetic payloads; no codec, sensor or display latency measurement"
+}
