@@ -86,3 +86,17 @@ claim battery/latency improvements from these counts.
 Evidence: [sizing model](artifacts/2026-09-26-allocation-sizing/sizing.json),
 [Rust replay](artifacts/2026-09-26-allocation-sizing/rust-replay.log.gz), and
 [regression failure](artifacts/2026-09-26-allocation-sizing/red.log.gz).
+
+## Native follow-up after tablet connection
+
+The signed Blent release was installed and verified against its APK hash. Saved
+motion snapshots report total PSS of 68,082 KiB before app restart and 69,595 KiB
+after restart/warmup; these are separate observations, not a controlled comparison.
+The immediate startup snapshot is 9,640 KiB before steady streaming. Java/native
+heap and total RSS values are retained in the [deployment evidence](artifacts/2026-09-26-blent-deployment/).
+
+These samples do not identify allocation frequency, object retention, GC pause
+cost, or the receiver array's current capacity. No memory or latency improvement
+is inferred. The signed release is non-debuggable and lacks shell profiling
+opt-in; T589 now tracks an instrumented variant and fixed workloads rather than
+a missing-device blocker. Further pool/trim policy changes remain evidence-led.

@@ -1,10 +1,50 @@
-# T586: Blent Linux deployment and prepared Android APK
+# T586: Blent Linux and Android deployment
 
-Linux deployment is complete. Android installation and end-to-end tablet
-acceptance remain blocked: neither installed ADB client nor Linux USB
-enumeration exposes the reported connected tablet. T586 remains unresolved.
+Both applications are installed and running under the new Blent identity. The
+tablet appeared in ADB after the cable check. USB display, touch, app reconnect
+and Linux daemon restart are verified; no old settings were migrated.
 
-## Artifacts
+Native acceptance exposed the pre-existing X11 naming issue T577. Its EDID-based
+fix is deployed and verified. Stylus pressure/tilt and late Xorg pen-tool creation
+remain T592; camera sharing was not enabled and audio remains unsupported.
+
+## Final installed artifacts and acceptance
+
+The Linux AppImage includes `cc529f1` (T577). SHA-256:
+`435e4ac4071314f7bce58c7041938a9c2a1a75cd9f3c8da1f46375787bf6cecd`.
+The Android APK remains the signed T585/T587 build, SHA-256:
+`4a9c8e578ba45ba2410fd924ea4fde0ea16b8cdd780ff5e22dbb9e1181bb8d80`.
+The APK pulled back from the tablet and the installed AppImage both match their
+respective build artifacts byte-for-byte. Version: 1.2.3. Linux GUI was reopened
+from the updated installation; the service remains active.
+
+The RugKing Pad 2 Pro runs `io.github.geraldo_netto.blent/com.blent.MainActivity`.
+Fresh installation was recorded at 04:34 local time. A moving barcode/rectangle
+fixture on the 1280x800 virtual output appeared correctly on Android, with
+continuing render acknowledgements. App force-stop/relaunch reconnected; the
+Linux deployment restart also reconnected and resumed capture. This is logical
+reconnection evidence, not a forced cable-unplug or suspend campaign.
+
+Touch/pointer matrices read back `[0.25,0,0.75; 0,0.370370,0; 0,0,1]`, matching
+1280x800 at desktop `(3840,0)` within a 5120x2160 desktop. Android tap `(640,400)`
+arrived at desktop `(4479,399)` inside the owned test window. Original pointer
+position was restored and the temporary pattern window closed. The physical
+stylus path is not inferred from this touch result.
+
+During the fixed 30-update/s scene, representative host packet-ready-to-render-ACK
+windows reported p50 around 18–20 ms and p95 around 21–25 ms. These are acceptance
+observations under concurrent validation load, not optical latency, an A/B
+benchmark, allocation measurements or claimed performance improvements.
+
+[Hashes and native evidence](artifacts/2026-09-26-blent-deployment/) include the
+owned test-pattern screenshot, mapping/stream logs and bounded memory snapshots.
+T589 remains open for instrumented allocation/GC profiling; snapshots cannot
+establish per-packet allocation counts or whether further trimming is beneficial.
+
+The sections below retain the initial build/deployment snapshot for provenance.
+The original no-tablet blocker and original AppImage hash are historical.
+
+## Initial artifacts
 
 Built from the T585 rename and T587 allocation change (`77ca590`, `d410952`):
 
@@ -26,7 +66,7 @@ Source and packaged MIT license hashes match the original. The ABI check
 reports glibc requirements of 2.34 for daemon/helper, 2.35 for GUI and 2.33 for
 libevdi; this is not validation of every Linux distribution or GPU backend.
 
-## Installed Linux state
+## Initial Linux state
 
 The old user service was stopped and disabled. Its service, autostart/menu
 entries and command symlinks were moved to
@@ -47,7 +87,7 @@ FFmpeg, ADB and ffprobe. KScreen is absent on this non-KDE desktop. No tablet
 capture helper is running because there is no attached ADB device. Startup
 alone does not validate display, pen, camera, audio or reconnect behavior.
 
-## Automated validation and coverage limits
+## Initial automated validation and coverage limits
 
 - Default Linux workspace: 805 passed, three existing ignored tests.
 - Optional in-process encoder workspace: 689 passed, two existing ignored tests.
@@ -70,10 +110,10 @@ retains another 59 Windows-only functions and the existing native prerequisites.
 No full-project coverage pass is claimed.
 
 The T421 VP9/AV1 picture-content fixture passed with bundled FFmpeg 6.1.6 and
-matching codec libraries, but failed with Debian FFmpeg 5.1.9. T588 records the
-required baseline/range investigation; no regression was skipped or weakened.
+matching codec libraries, but failed with Debian FFmpeg 5.1.9. T588 subsequently corrected the lossy VP9 fixture assumption, retaining all
+timing/order assertions and adding exact-pixel coverage; see the follow-up report.
 
-## Remaining native acceptance
+## Initial native acceptance checklist (completed within limits above)
 
 Once the target tablet is visible and authorized in ADB, install the verified
 release APK, stop the old UScreen app and explicitly launch
@@ -100,3 +140,5 @@ it. They cover reordered/nested guards, boolean alternatives, unknown features,
 module descendants, and rejection of foreign counters. Existing shared-module
 ownership regressions remain. All 58 coverage-tool tests pass; complexity audit
 measures 5,615 functions with none above nine. No application behavior changed.
+
+Current follow-up results, including T588/T590/T577, are in [validation](2026-09-26-blent-validation.md).

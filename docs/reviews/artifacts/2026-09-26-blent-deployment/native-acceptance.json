@@ -1,0 +1,13 @@
+{
+  "android_package": "io.github.geraldo_netto.blent",
+  "version": "1.2.3",
+  "apk_sha256": "4a9c8e578ba45ba2410fd924ea4fde0ea16b8cdd780ff5e22dbb9e1181bb8d80",
+  "installed_apk_matches": true,
+  "appimage_sha256": "435e4ac4071314f7bce58c7041938a9c2a1a75cd9f3c8da1f46375787bf6cecd",
+  "installed_appimage_matches": true,
+  "linux_source_commit": "cc529f1",
+  "android_source_commits": [
+    "77ca590",
+    "d410952"
+  ]
+}
