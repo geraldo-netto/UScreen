@@ -31,9 +31,11 @@ pub(super) fn run() -> Result<()> {
 async fn serve(path: &Path) -> Result<()> {
     let session = lifecycle::Session::start(path)?;
     println!("Blent daemon running; display and input unsupported on Windows");
+    let shutdown = tokio::signal::ctrl_c();
+    tokio::pin!(shutdown);
     loop {
         tokio::select! {
-            result = tokio::signal::ctrl_c() => { result?; return Ok(()); },
+            result = &mut shutdown => { result?; return Ok(()); },
             _ = tokio::time::sleep(Duration::from_millis(50)) => {
                 if session.stop_requested() { return Ok(()); }
             }

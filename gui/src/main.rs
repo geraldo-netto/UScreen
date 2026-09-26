@@ -578,11 +578,25 @@ impl App {
         self.run_action(move || {
             if running {
                 stop_daemon()
-                    .map(|_| "Blent daemon stopped".into())
+                    .map(|_| {
+                        if capabilities().display {
+                            "Display service stopped"
+                        } else {
+                            "Blent daemon stopped"
+                        }
+                        .into()
+                    })
                     .unwrap_or_else(|e| e)
             } else {
                 start_daemon()
-                    .map(|_| "Blent daemon starting…".into())
+                    .map(|_| {
+                        if capabilities().display {
+                            "Display service starting…"
+                        } else {
+                            "Blent daemon starting…"
+                        }
+                        .into()
+                    })
                     .unwrap_or_else(|e| e)
             }
         });

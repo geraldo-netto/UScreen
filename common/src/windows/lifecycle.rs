@@ -72,7 +72,7 @@ fn publish(path: &Path, name: &str, identity: &Identity) -> Result<()> {
 fn existing(path: &Path) -> Result<Option<Directory>> {
     anyhow::ensure!(path.is_absolute(), "runtime path must be absolute");
     match std::fs::symlink_metadata(path) {
-        Ok(_) => Ok(Some(Directory::create(path)?)),
+        Ok(_) => Ok(Some(Directory::open(path)?)),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error.into()),
     }

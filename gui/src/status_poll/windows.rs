@@ -15,7 +15,7 @@ impl Source for Platform {
         }
     }
     fn dynamic(&mut self, capabilities: &Capabilities) -> Status {
-        let owner = blent_config::windows::runtime::runtime_dir()
+        let owner = crate::platform::runtime_path()
             .ok()
             .and_then(|path| blent_config::windows::lifecycle::status(&path).ok())
             .flatten();

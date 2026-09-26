@@ -74,6 +74,10 @@ fn t524_partial_start_and_malformed_requests_fail_closed() {
     assert!(runtime::owner_at(&directory).is_none());
     stop(&path, Duration::ZERO).unwrap();
     assert!(status(Path::new("relative")).is_err());
+    assert!(Directory::open(Path::new("relative")).is_err());
+    let missing = root.path().join("missing");
+    assert!(Directory::open(&missing).is_err());
+    assert!(!missing.exists());
     let file = root.path().join("file");
     std::fs::write(&file, b"not a directory").unwrap();
     assert!(status(&file).is_err());
