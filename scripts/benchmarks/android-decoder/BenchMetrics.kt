@@ -9,6 +9,9 @@ import org.json.JSONObject
 /** Identical instrumentation replaces the native dequeue call sites in both
  * source snapshots. Counts are calls, not inferred scheduler wakeups. */
 internal object BenchMetrics {
+    private val timingHits = AtomicLong()
+    private val timingMisses = AtomicLong()
+    fun timingLookup(hit: Boolean) { if (hit) timingHits.incrementAndGet() else timingMisses.incrementAndGet() }
     private val inputs = AtomicLong()
     private val outputs = AtomicLong()
     private val inputNanos = AtomicLong()
@@ -48,4 +51,5 @@ internal object BenchMetrics {
     }
     fun snapshot() = JSONObject().put("input_calls", inputs.get()).put("output_calls", outputs.get())
         .put("input_ns", inputNanos.get()).put("output_ns", outputNanos.get())
+        .put("timing_cache_hits", timingHits.get()).put("timing_cache_misses", timingMisses.get())
 }

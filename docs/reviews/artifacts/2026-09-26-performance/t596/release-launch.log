@@ -1,0 +1,7 @@
+Starting: Intent { cmp=io.github.geraldo_netto.blent/com.blent.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.github.geraldo_netto.blent/com.blent.MainActivity
+TotalTime: 484
+WaitTime: 527
+Complete

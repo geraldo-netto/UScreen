@@ -1,0 +1,179 @@
+{
+  "sampled_cpu_ns": 3532662875,
+  "threads": [
+    [
+      "MediaCodec_loop-26279/27105",
+      1201004875
+    ],
+    [
+      "blent-render-26279/27111",
+      778894375
+    ],
+    [
+      "DefaultDispatch-26279/26884",
+      351758750
+    ],
+    [
+      "HwBinder:26279_-26279/26559",
+      251256250
+    ],
+    [
+      "blent-frame-cb-26279/27110",
+      195979875
+    ],
+    [
+      "8891/... writer-26279/26524",
+      130653250
+    ],
+    [
+      "8891/... writer-26279/26541",
+      115577875
+    ],
+    [
+      "CodecLooper-26279/27106",
+      100502500
+    ],
+    [
+      "io.github.geraldo_netto.blent.profile-26279/26279",
+      90452250
+    ],
+    [
+      "OkHttp TaskRunn-26279/26541",
+      75376875
+    ],
+    [
+      "OkHttp TaskRunn-26279/26524",
+      70351750
+    ],
+    [
+      "binder:26279_4-26279/26292",
+      60301500
+    ],
+    [
+      "Okio Watchdog-26279/26519",
+      35175875
+    ],
+    [
+      "DefaultDispatch-26279/26528",
+      30150750
+    ],
+    [
+      "DefaultExecutor-26279/26999",
+      20100500
+    ],
+    [
+      "binder:26279_1-26279/26566",
+      10050250
+    ],
+    [
+      "1:8891/... ping-26279/26541",
+      5025125
+    ],
+    [
+      "DefaultDispatch-26279/26527",
+      5025125
+    ]
+  ],
+  "self": [
+    [
+      "__futex_wait_ex(void volatile*, bool, int, bool, timespec const*)",
+      467336625
+    ],
+    [
+      "ioctl",
+      231155750
+    ],
+    [
+      "sendto",
+      120603000
+    ],
+    [
+      "art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)",
+      90452250
+    ],
+    [
+      "pthread_cond_signal",
+      80402000
+    ],
+    [
+      "pthread_cond_broadcast",
+      75376875
+    ],
+    [
+      "art_jni_trampoline",
+      70351750
+    ],
+    [
+      "art::(anonymous namespace)::CheckJNI::CallMethodV(char const*, _JNIEnv*, _jobject*, _jclass*, _jmethodID*, std::__va_list, art::Primitive::Type, art::InvokeType) (.__uniq.99033978352804627313491551960229047428)",
+      65326625
+    ],
+    [
+      "com.blent.DecoderSession.startOutputThread$lambda$12",
+      65326625
+    ],
+    [
+      "com.blent.DecoderSession$startOutputThread$1$index$1.invoke",
+      60301500
+    ],
+    [
+      "arm::mapper::common::import_buffer(native_handle const*, imported_handle**)",
+      50251250
+    ],
+    [
+      "scudo_malloc",
+      45226125
+    ],
+    [
+      "java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock",
+      45226125
+    ],
+    [
+      "android::ALooper::loop()",
+      45226125
+    ],
+    [
+      "android::MediaCodec::onMessageReceived(android::sp<android::AMessage> const&)",
+      45226125
+    ],
+    [
+      "android::AMessage::deliver()",
+      40201000
+    ],
+    [
+      "android::C2DmaBufAllocation::mapInternal(unsigned long, unsigned long, unsigned long, int, int, void**, void**)",
+      40201000
+    ],
+    [
+      "java.lang.Thread.setName",
+      30150750
+    ],
+    [
+      "poll",
+      30150750
+    ],
+    [
+      "arm::mapper::common::free_buffer(void*)",
+      30150750
+    ],
+    [
+      "android::C2DmaBufAllocation::unmap(void*, unsigned long, C2Fence*)",
+      30150750
+    ],
+    [
+      "okhttp3.internal.concurrent.TaskRunner.runTask",
+      25125625
+    ],
+    [
+      "android::AHandler::deliverMessage(android::sp<android::AMessage> const&)",
+      25125625
+    ],
+    [
+      "android::AMessage::~AMessage()",
+      25125625
+    ],
+    [
+      "android::Looper::pollOnce(int, int*, int*, void**)",
+      25125625
+    ]
+  ]
+}

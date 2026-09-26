@@ -29,6 +29,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
             if (intent.hasExtra("usb_port")) UsbReplay(holder.surface, active).run(intent.getIntExtra("usb_port", 0))
             else replay(holder)
         } catch (error: Exception) { JSONObject().put("error", error.stackTraceToString()) }
+        result.put("metrics", com.blent.BenchMetrics.snapshot())
         result.put("display_hz", windowManager.defaultDisplay.refreshRate)
         File(filesDir, "result.json").writeText(result.toString(2))
         runOnUiThread { finish() }

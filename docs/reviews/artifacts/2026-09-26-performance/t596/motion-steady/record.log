@@ -1,0 +1,164 @@
+WARNING: Kernel address maps (/proc/{kallsyms,modules}) are restricted,
+check /proc/sys/kernel/kptr_restrict and /proc/sys/kernel/perf_event_paranoid.
+
+Samples in kernel functions may not be resolved if a suitable vmlinux
+file is not found in the buildid cache or in the vmlinux path.
+
+Samples in kernel modules won't be resolved at all.
+
+If some relocation was applied (e.g. kexec) symbols may be misresolved
+even with a suitable vmlinux or kallsyms file.
+
+Couldn't record kernel reference relocation symbol
+Symbol resolution may be skewed if relocation was used (e.g. kexec).
+Check /proc/kallsyms permission or run as root.
+simpleperf W kallsyms.cpp:163] Access to kernel symbol addresses is restricted. If possible, please do `echo 0 >/proc/sys/kernel/kptr_restrict` to fix this.
+[ perf record: Woken up 23 times to write data ]
+[ perf record: Captured and wrote 9.049 MB /tmp/blent-performance/motion-steady/host.data (534 samples) ]
+simpleperf I cmd_record.cpp:840] Recorded for 19.8398 seconds. Start post processing.
+simpleperf I cmd_record.cpp:941] Samples recorded: 1,714. Samples lost: 0.
+strace: Process 290532 attached with 36 threads
+strace: Process 290576 attached with 6 threads
+strace: Process 290619 attached with 31 threads
+strace: Process 505729 attached with 43 threads
+strace: Process 506742 attached
+strace: Process 506743 attached
+strace: Process 506744 attached
+strace: Process 506745 attached
+strace: Process 506746 attached
+strace: Process 506748 attached
+strace: Process 506749 attached
+strace: Process 506750 attached
+strace: Process 506751 attached
+strace: Process 506752 attached
+strace: Process 506784 attached
+strace: Process 506785 attached
+strace: Process 506786 attached
+strace: Process 506787 attached
+strace: Process 506788 attached
+strace: Process 506789 attached
+strace: Process 506790 attached
+strace: Process 506791 attached
+strace: Process 506792 attached
+strace: Process 506793 attached
+strace: Process 506803 attached
+strace: Process 506804 attached
+strace: Process 506805 attached
+strace: Process 506806 attached
+strace: Process 506807 attached
+strace: Process 290581 detached
+strace: Process 505769 detached
+strace: Process 505772 detached
+strace: Process 505771 detached
+strace: Process 505770 detached
+strace: Process 505768 detached
+strace: Process 505767 detached
+strace: Process 505766 detached
+strace: Process 505765 detached
+strace: Process 505764 detached
+strace: Process 505763 detached
+strace: Process 505762 detached
+strace: Process 505761 detached
+strace: Process 505760 detached
+strace: Process 505759 detached
+strace: Process 505758 detached
+strace: Process 505757 detached
+strace: Process 505756 detached
+strace: Process 505755 detached
+strace: Process 505754 detached
+strace: Process 505753 detached
+strace: Process 505752 detached
+strace: Process 505751 detached
+strace: Process 505750 detached
+strace: Process 505749 detached
+strace: Process 505748 detached
+strace: Process 505747 detached
+strace: Process 505746 detached
+strace: Process 505745 detached
+strace: Process 505744 detached
+strace: Process 505743 detached
+strace: Process 505742 detached
+strace: Process 505741 detached
+strace: Process 505740 detached
+strace: Process 505739 detached
+strace: Process 505738 detached
+strace: Process 505737 detached
+strace: Process 505736 detached
+strace: Process 505735 detached
+strace: Process 505734 detached
+strace: Process 505733 detached
+strace: Process 505732 detached
+strace: Process 505731 detached
+strace: Process 505729 detached
+strace: Process 291928 detached
+strace: Process 291927 detached
+strace: Process 291926 detached
+strace: Process 291925 detached
+strace: Process 291924 detached
+strace: Process 291923 detached
+strace: Process 291922 detached
+strace: Process 291921 detached
+strace: Process 291920 detached
+strace: Process 291919 detached
+strace: Process 291918 detached
+strace: Process 291917 detached
+strace: Process 291916 detached
+strace: Process 291915 detached
+strace: Process 291914 detached
+strace: Process 291913 detached
+strace: Process 291912 detached
+strace: Process 291911 detached
+strace: Process 291910 detached
+strace: Process 291908 detached
+strace: Process 291907 detached
+strace: Process 291906 detached
+strace: Process 291905 detached
+strace: Process 291904 detached
+strace: Process 291903 detached
+strace: Process 291902 detached
+strace: Process 291901 detached
+strace: Process 291900 detached
+strace: Process 291899 detached
+strace: Process 291898 detached
+strace: Process 290619 detached
+strace: Process 290582 detached
+strace: Process 290579 detached
+strace: Process 290578 detached
+strace: Process 290577 detached
+strace: Process 290576 detached
+strace: Process 290570 detached
+strace: Process 290569 detached
+strace: Process 290567 detached
+strace: Process 290565 detached
+strace: Process 290564 detached
+strace: Process 290563 detached
+strace: Process 290562 detached
+strace: Process 290561 detached
+strace: Process 290560 detached
+strace: Process 290559 detached
+strace: Process 290558 detached
+strace: Process 290557 detached
+strace: Process 290556 detached
+strace: Process 290555 detached
+strace: Process 290554 detached
+strace: Process 290553 detached
+strace: Process 290552 detached
+strace: Process 290551 detached
+strace: Process 290550 detached
+strace: Process 290549 detached
+strace: Process 290548 detached
+strace: Process 290547 detached
+strace: Process 290546 detached
+strace: Process 290545 detached
+strace: Process 290544 detached
+strace: Process 290543 detached
+strace: Process 290542 detached
+strace: Process 290541 detached
+strace: Process 290540 detached
+strace: Process 290539 detached
+strace: Process 290538 detached
+strace: Process 290537 detached
+strace: Process 290536 detached
+strace: Process 290535 detached
+strace: Process 290534 detached
+strace: Process 290532 detached

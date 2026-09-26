@@ -95,7 +95,8 @@ def instrument_timing(name, text):
     if name == 'VideoTiming.kt':
         signature = 'fun noteReleased(seq: Int, expectedEpoch: Epoch = epoch) {'
         assert text.count(signature) == 1, 'timing release hook changed'
-        return text.replace(signature, signature + '\n        BenchMetrics.released(seq)')
+        text = text.replace(signature, signature + '\n        BenchMetrics.released(seq)')
+        return instrument_cache(text)
     if name == 'DecoderSession.kt':
         listener = 'codec.setOnFrameRenderedListener({ _, presentationTimeUs, _ ->'
         assert text.count(listener) == 1, 'render callback hook changed'
@@ -104,6 +105,14 @@ def instrument_timing(name, text):
         text = text.replace('{ discardedCount.incrementAndGet() }',
                             '{ sequence -> BenchMetrics.discarded(sequence); discardedCount.incrementAndGet() }')
     return text
+
+
+def instrument_cache(text):
+    hit = 'if (cached >= 0 && valid[cached] && arrivalSeq[cached] == seq) return cached'
+    if hit not in text:  # Older source snapshots predate the timing cache.
+        return text
+    return text.replace(hit, 'if (cached >= 0 && valid[cached] && arrivalSeq[cached] == seq) { '
+                        'BenchMetrics.timingLookup(true); return cached }\n        BenchMetrics.timingLookup(false)')
 
 
 def codec_observer(directory):

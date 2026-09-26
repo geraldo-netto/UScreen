@@ -1,0 +1,1498 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="774" onload="init(evt)" viewBox="0 0 1200 774" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom(true);
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				// we have basically done a clearzoom so clear the url
+				var params = get_params();
+				if (params.x) delete params.x;
+				if (params.y) delete params.y;
+				history.replaceState(null, null, parse_params(params));
+				unzoombtn.classList.add("hide");
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		var sl = t.getSubStringLength(0, txt.length);
+		// check if only whitespace or if we can fit the entire string into width w
+		if (/^ *$/.test(txt) || sl < w)
+			return;
+
+		// this isn't perfect, but gives a good starting point
+		// and avoids calling getSubStringLength too often
+		var start = Math.floor((w/sl) * txt.length);
+		for (var x = start; x > 0; x = x-2) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom(dont_update_text) {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			if(!dont_update_text) update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+		if (currentSearchTerm === null) return;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="774.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Blent motion-steady host CPU samples</text>
+<text id="details" x="10.00" y="757" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="757" > </text>
+<g id="frames">
+<g >
+<title>[ffmpeg: unresolved] (55,276,375 sampled CPU ns, 2.06%)</title><rect x="1064.0" y="581" width="24.4" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1067.04" y="591.5" >[..</text>
+</g>
+<g >
+<title>__folio_put (45,226,125 sampled CPU ns, 1.69%)</title><rect x="56.4" y="549" width="19.9" height="15.0" fill="rgb(231,121,28)" rx="2" ry="2" />
+<text  x="59.40" y="559.5" ></text>
+</g>
+<g >
+<title>ip_local_out (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="389" width="2.2" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="1170.90" y="399.5" ></text>
+</g>
+<g >
+<title>&lt;&amp;mio::net::tcp::stream::TcpStream as std::io::Read&gt;::read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="693" width="2.2" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="1170.90" y="703.5" ></text>
+</g>
+<g >
+<title>__libc_start_main@@GLIBC_2.34 (708,542,625 sampled CPU ns, 26.40%)</title><rect x="184.6" y="677" width="311.5" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="187.57" y="687.5" >__libc_start_main@@GLIBC_2.34</text>
+</g>
+<g >
+<title>&lt;blent::media_storage::MediaBytes as core::convert::From&lt;alloc::vec::Vec&lt;u8&gt;&gt;&gt;::from (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1179.0" y="677" width="2.2" height="15.0" fill="rgb(225,95,22)" rx="2" ry="2" />
+<text  x="1181.95" y="687.5" ></text>
+</g>
+<g >
+<title>ip_rcv (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="133" width="2.2" height="15.0" fill="rgb(216,52,12)" rx="2" ry="2" />
+<text  x="1170.90" y="143.5" ></text>
+</g>
+<g >
+<title>__libc_recv (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="661" width="2.2" height="15.0" fill="rgb(233,129,31)" rx="2" ry="2" />
+<text  x="1170.90" y="671.5" ></text>
+</g>
+<g >
+<title>ksys_read (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="629" width="50.8" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="57.19" y="639.5" >ksys_..</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (60,301,500 sampled CPU ns, 2.25%)</title><rect x="1061.8" y="629" width="26.6" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1064.84" y="639.5" >[..</text>
+</g>
+<g >
+<title>convert_job (175,879,375 sampled CPU ns, 6.55%)</title><rect x="105.0" y="677" width="77.4" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="108.02" y="687.5" >convert_..</text>
+</g>
+<g >
+<title>_copy_to_user (311,557,750 sampled CPU ns, 11.61%)</title><rect x="328.2" y="373" width="137.0" height="15.0" fill="rgb(213,38,9)" rx="2" ry="2" />
+<text  x="331.20" y="383.5" >_copy_to_user</text>
+</g>
+<g >
+<title>obj_cgroup_charge_pages (15,075,375 sampled CPU ns, 0.56%)</title><rect x="502.8" y="501" width="6.6" height="15.0" fill="rgb(253,222,53)" rx="2" ry="2" />
+<text  x="505.77" y="511.5" ></text>
+</g>
+<g >
+<title>__rcu_read_unlock (15,075,375 sampled CPU ns, 0.56%)</title><rect x="60.8" y="517" width="6.7" height="15.0" fill="rgb(210,23,5)" rx="2" ry="2" />
+<text  x="63.82" y="527.5" ></text>
+</g>
+<g >
+<title>__dev_queue_xmit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="293" width="2.2" height="15.0" fill="rgb(251,212,50)" rx="2" ry="2" />
+<text  x="1170.90" y="303.5" ></text>
+</g>
+<g >
+<title>rmqueue.isra.0 (20,100,500 sampled CPU ns, 0.75%)</title><rect x="544.8" y="501" width="8.8" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="547.76" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;core::future::poll_fn::PollFn&lt;F&gt; as core::future::future::Future&gt;::poll (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1172.3" y="677" width="2.2" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="1175.32" y="687.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (623,115,500 sampled CPU ns, 23.22%)</title><rect x="566.9" y="677" width="274.0" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="569.85" y="687.5" >[libx264.so.164: unresolved]</text>
+</g>
+<g >
+<title>free_pcppages_bulk (5,025,125 sampled CPU ns, 0.19%)</title><rect x="74.1" y="485" width="2.2" height="15.0" fill="rgb(217,56,13)" rx="2" ry="2" />
+<text  x="77.08" y="495.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="405" width="4.5" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1086.93" y="415.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="645" width="2.2" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1188.58" y="655.5" ></text>
+</g>
+<g >
+<title>__x64_sys_recvfrom (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="597" width="2.2" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="1170.90" y="607.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (10,050,250 sampled CPU ns, 0.37%)</title><rect x="549.2" y="453" width="4.4" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="552.18" y="463.5" ></text>
+</g>
+<g >
+<title>schedule (5,025,125 sampled CPU ns, 0.19%)</title><rect x="38.7" y="581" width="2.2" height="15.0" fill="rgb(211,29,7)" rx="2" ry="2" />
+<text  x="41.73" y="591.5" ></text>
+</g>
+<g >
+<title>do_ioctl (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="533" width="278.4" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="191.99" y="543.5" >do_ioctl</text>
+</g>
+<g >
+<title>read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="661" width="2.2" height="15.0" fill="rgb(252,216,51)" rx="2" ry="2" />
+<text  x="1188.58" y="671.5" ></text>
+</g>
+<g >
+<title>x264_8_trellis_coefn (135,678,375 sampled CPU ns, 5.06%)</title><rect x="1108.2" y="693" width="59.7" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="1111.24" y="703.5" >x264_8..</text>
+</g>
+<g >
+<title>anon_pipe_read (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="581" width="50.8" height="15.0" fill="rgb(238,154,36)" rx="2" ry="2" />
+<text  x="57.19" y="591.5" >anon_..</text>
+</g>
+<g >
+<title>__ip_queue_xmit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="405" width="2.2" height="15.0" fill="rgb(210,23,5)" rx="2" ry="2" />
+<text  x="1170.90" y="415.5" ></text>
+</g>
+<g >
+<title>rmqueue_bulk (10,050,250 sampled CPU ns, 0.37%)</title><rect x="549.2" y="469" width="4.4" height="15.0" fill="rgb(241,168,40)" rx="2" ry="2" />
+<text  x="552.18" y="479.5" ></text>
+</g>
+<g >
+<title>std::time::Instant::now (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1183.4" y="693" width="2.2" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="1186.37" y="703.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (5,025,125 sampled CPU ns, 0.19%)</title><rect x="74.1" y="469" width="2.2" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="77.08" y="479.5" ></text>
+</g>
+<g >
+<title>uncharge_batch (5,025,125 sampled CPU ns, 0.19%)</title><rect x="67.5" y="517" width="2.2" height="15.0" fill="rgb(227,102,24)" rx="2" ry="2" />
+<text  x="70.45" y="527.5" ></text>
+</g>
+<g >
+<title>drm_ioctl (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="517" width="278.4" height="15.0" fill="rgb(231,121,29)" rx="2" ry="2" />
+<text  x="191.99" y="527.5" >drm_ioctl</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (55,276,375 sampled CPU ns, 2.06%)</title><rect x="1064.0" y="597" width="24.4" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1067.04" y="607.5" >[..</text>
+</g>
+<g >
+<title>[callchain unavailable] (15,075,375 sampled CPU ns, 0.56%)</title><rect x="1172.3" y="693" width="6.7" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="1175.32" y="703.5" ></text>
+</g>
+<g >
+<title>ip_queue_xmit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="389" width="2.2" height="15.0" fill="rgb(237,149,35)" rx="2" ry="2" />
+<text  x="13.00" y="399.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (160,804,000 sampled CPU ns, 5.99%)</title><rect x="496.1" y="693" width="70.8" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="499.14" y="703.5" >entry_S..</text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (30,150,750 sampled CPU ns, 1.12%)</title><rect x="1070.7" y="469" width="13.2" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1073.67" y="479.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="645" width="2.2" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1170.90" y="655.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="453" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="463.5" ></text>
+</g>
+<g >
+<title>post_alloc_hook (65,326,625 sampled CPU ns, 2.43%)</title><rect x="516.0" y="501" width="28.8" height="15.0" fill="rgb(234,134,32)" rx="2" ry="2" />
+<text  x="519.03" y="511.5" >po..</text>
+</g>
+<g >
+<title>android::base::WriteStringToFile(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, bool) (5,025,125 sampled CPU ns, 0.19%)</title><rect x="18.8" y="693" width="2.2" height="15.0" fill="rgb(241,169,40)" rx="2" ry="2" />
+<text  x="21.84" y="703.5" ></text>
+</g>
+<g >
+<title>ip_local_deliver (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="117" width="2.2" height="15.0" fill="rgb(236,146,34)" rx="2" ry="2" />
+<text  x="1170.90" y="127.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="421" width="4.5" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1086.93" y="431.5" ></text>
+</g>
+<g >
+<title>futex_wake (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="373" width="4.5" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="1086.93" y="383.5" ></text>
+</g>
+<g >
+<title>tcp_cleanup_rbuf (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="469" width="2.2" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="13.00" y="479.5" ></text>
+</g>
+<g >
+<title>sock_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="533" width="2.2" height="15.0" fill="rgb(212,35,8)" rx="2" ry="2" />
+<text  x="13.00" y="543.5" ></text>
+</g>
+<g >
+<title>__napi_poll (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="197" width="2.2" height="15.0" fill="rgb(254,225,53)" rx="2" ry="2" />
+<text  x="1170.90" y="207.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="14.4" y="677" width="2.2" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="17.42" y="687.5" ></text>
+</g>
+<g >
+<title>wake_up_q (15,075,375 sampled CPU ns, 0.56%)</title><rect x="1101.6" y="597" width="6.6" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="1104.61" y="607.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1092.8" y="661" width="2.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1095.77" y="671.5" ></text>
+</g>
+<g >
+<title>inet_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="517" width="2.2" height="15.0" fill="rgb(212,35,8)" rx="2" ry="2" />
+<text  x="13.00" y="527.5" ></text>
+</g>
+<g >
+<title>fdget_pos (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="565" width="2.2" height="15.0" fill="rgb(250,210,50)" rx="2" ry="2" />
+<text  x="1188.58" y="575.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1088.4" y="693" width="2.2" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1091.35" y="703.5" ></text>
+</g>
+<g >
+<title>__mem_cgroup_uncharge (25,125,625 sampled CPU ns, 0.94%)</title><rect x="58.6" y="533" width="11.1" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="61.61" y="543.5" ></text>
+</g>
+<g >
+<title>check_stack_object (5,025,125 sampled CPU ns, 0.19%)</title><rect x="465.2" y="373" width="2.2" height="15.0" fill="rgb(222,79,19)" rx="2" ry="2" />
+<text  x="468.21" y="383.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (55,276,375 sampled CPU ns, 2.06%)</title><rect x="1064.0" y="613" width="24.4" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1067.04" y="623.5" >[..</text>
+</g>
+<g >
+<title>__tcp_transmit_skb (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="437" width="2.2" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="1170.90" y="447.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="182.4" y="677" width="2.2" height="15.0" fill="rgb(244,179,42)" rx="2" ry="2" />
+<text  x="185.36" y="687.5" ></text>
+</g>
+<g >
+<title>proc_do_submiturb (25,125,625 sampled CPU ns, 0.94%)</title><rect x="27.7" y="597" width="11.0" height="15.0" fill="rgb(224,88,21)" rx="2" ry="2" />
+<text  x="30.68" y="607.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (160,804,000 sampled CPU ns, 5.99%)</title><rect x="496.1" y="677" width="70.8" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="499.14" y="687.5" >do_sysc..</text>
+</g>
+<g >
+<title>_start (708,542,625 sampled CPU ns, 26.40%)</title><rect x="184.6" y="693" width="311.5" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="187.57" y="703.5" >_start</text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="629" width="2.2" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1188.58" y="639.5" ></text>
+</g>
+<g >
+<title>__alloc_frozen_pages_noprof (120,603,000 sampled CPU ns, 4.49%)</title><rect x="500.6" y="533" width="53.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="503.56" y="543.5" >__all..</text>
+</g>
+<g >
+<title>copy_page_to_iter (45,226,125 sampled CPU ns, 1.69%)</title><rect x="78.5" y="565" width="19.9" height="15.0" fill="rgb(216,52,12)" rx="2" ry="2" />
+<text  x="81.50" y="575.5" ></text>
+</g>
+<g >
+<title>usbdev_ioctl (35,175,875 sampled CPU ns, 1.31%)</title><rect x="25.5" y="629" width="15.4" height="15.0" fill="rgb(231,124,29)" rx="2" ry="2" />
+<text  x="28.47" y="639.5" ></text>
+</g>
+<g >
+<title>alloc_pages_mpol (125,628,125 sampled CPU ns, 4.68%)</title><rect x="498.4" y="549" width="55.2" height="15.0" fill="rgb(210,27,6)" rx="2" ry="2" />
+<text  x="501.35" y="559.5" >alloc..</text>
+</g>
+<g >
+<title>__rcu_read_lock (5,025,125 sampled CPU ns, 0.19%)</title><rect x="511.6" y="517" width="2.2" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="514.61" y="527.5" ></text>
+</g>
+<g >
+<title>convert_job (60,301,500 sampled CPU ns, 2.25%)</title><rect x="469.6" y="517" width="26.5" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="472.63" y="527.5" >c..</text>
+</g>
+<g >
+<title>evdi_handle_events (703,517,500 sampled CPU ns, 26.22%)</title><rect x="186.8" y="613" width="309.3" height="15.0" fill="rgb(222,78,18)" rx="2" ry="2" />
+<text  x="189.78" y="623.5" >evdi_handle_events</text>
+</g>
+<g >
+<title>__x64_sys_futex (5,025,125 sampled CPU ns, 0.19%)</title><rect x="496.1" y="645" width="2.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="499.14" y="655.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (45,226,125 sampled CPU ns, 1.69%)</title><rect x="1068.5" y="485" width="19.9" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1071.46" y="495.5" ></text>
+</g>
+<g >
+<title>[adb: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="40.9" y="677" width="2.2" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="43.94" y="687.5" ></text>
+</g>
+<g >
+<title>capture_run (708,542,625 sampled CPU ns, 26.40%)</title><rect x="184.6" y="629" width="311.5" height="15.0" fill="rgb(213,38,9)" rx="2" ry="2" />
+<text  x="187.57" y="639.5" >capture_run</text>
+</g>
+<g >
+<title>[adb: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="18.8" y="677" width="2.2" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="21.84" y="687.5" ></text>
+</g>
+<g >
+<title>ip_finish_output (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="357" width="2.2" height="15.0" fill="rgb(249,203,48)" rx="2" ry="2" />
+<text  x="1170.90" y="367.5" ></text>
+</g>
+<g >
+<title>ipv4_conntrack_local [nf_conntrack] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="309" width="2.2" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="13.00" y="319.5" ></text>
+</g>
+<g >
+<title>tcp_cleanup_rbuf (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="501" width="2.2" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="1170.90" y="511.5" ></text>
+</g>
+<g >
+<title>operator new(unsigned long) (5,025,125 sampled CPU ns, 0.19%)</title><rect x="40.9" y="693" width="2.2" height="15.0" fill="rgb(233,131,31)" rx="2" ry="2" />
+<text  x="43.94" y="703.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (55,276,375 sampled CPU ns, 2.06%)</title><rect x="1064.0" y="565" width="24.4" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1067.04" y="575.5" >[..</text>
+</g>
+<g >
+<title>pthread_cond_broadcast@@GLIBC_2.3.2 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="469" width="4.5" height="15.0" fill="rgb(208,17,4)" rx="2" ry="2" />
+<text  x="1086.93" y="479.5" ></text>
+</g>
+<g >
+<title>__tcp_cleanup_rbuf (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="453" width="2.2" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="13.00" y="463.5" ></text>
+</g>
+<g >
+<title>neigh_hh_output (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="309" width="2.2" height="15.0" fill="rgb(219,67,16)" rx="2" ry="2" />
+<text  x="1170.90" y="319.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1081.7" y="453" width="2.2" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1084.72" y="463.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="469" width="278.4" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="191.99" y="479.5" >do_syscall_64</text>
+</g>
+<g >
+<title>__sys_recvfrom (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="581" width="2.2" height="15.0" fill="rgb(254,227,54)" rx="2" ry="2" />
+<text  x="1170.90" y="591.5" ></text>
+</g>
+<g >
+<title>__futex_unqueue (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1099.4" y="581" width="2.2" height="15.0" fill="rgb(224,89,21)" rx="2" ry="2" />
+<text  x="1102.40" y="591.5" ></text>
+</g>
+<g >
+<title>utf8::decode (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1176.7" y="677" width="2.3" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="1179.74" y="687.5" ></text>
+</g>
+<g >
+<title>do_futex (5,025,125 sampled CPU ns, 0.19%)</title><rect x="496.1" y="629" width="2.3" height="15.0" fill="rgb(251,214,51)" rx="2" ry="2" />
+<text  x="499.14" y="639.5" ></text>
+</g>
+<g >
+<title>blent::annex_b::AnnexBPacketizer::emit_pending_access_unit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1179.0" y="693" width="2.2" height="15.0" fill="rgb(223,87,20)" rx="2" ry="2" />
+<text  x="1181.95" y="703.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (1,125,628,000 sampled CPU ns, 41.95%)</title><rect x="566.9" y="693" width="494.9" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="569.85" y="703.5" >[callchain unavailable]</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (40,201,000 sampled CPU ns, 1.50%)</title><rect x="1090.6" y="693" width="17.6" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1093.56" y="703.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (25,125,625 sampled CPU ns, 0.94%)</title><rect x="43.1" y="693" width="11.1" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="46.15" y="703.5" ></text>
+</g>
+<g >
+<title>fifo_pipe_write (155,778,875 sampled CPU ns, 5.81%)</title><rect x="498.4" y="597" width="68.5" height="15.0" fill="rgb(216,52,12)" rx="2" ry="2" />
+<text  x="501.35" y="607.5" >fifo_pi..</text>
+</g>
+<g >
+<title>free_frozen_pages (15,075,375 sampled CPU ns, 0.56%)</title><rect x="69.7" y="533" width="6.6" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="72.66" y="543.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="661" width="2.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1184.16" y="671.5" ></text>
+</g>
+<g >
+<title>tcp_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="533" width="2.2" height="15.0" fill="rgb(240,165,39)" rx="2" ry="2" />
+<text  x="1170.90" y="543.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (50,251,250 sampled CPU ns, 1.87%)</title><rect x="1066.3" y="533" width="22.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="543.5" >[..</text>
+</g>
+<g >
+<title>ip_local_deliver_finish (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="101" width="2.2" height="15.0" fill="rgb(232,125,30)" rx="2" ry="2" />
+<text  x="1170.90" y="111.5" ></text>
+</g>
+<g >
+<title>__posix_memalign (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="437" width="2.2" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="1069.25" y="447.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="661" width="50.8" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="57.19" y="671.5" >x64_s..</text>
+</g>
+<g >
+<title>__x64_sys_read (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="645" width="50.8" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="57.19" y="655.5" >__x64..</text>
+</g>
+<g >
+<title>__next_zones_zonelist (5,025,125 sampled CPU ns, 0.19%)</title><rect x="509.4" y="517" width="2.2" height="15.0" fill="rgb(230,116,27)" rx="2" ry="2" />
+<text  x="512.40" y="527.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1088.4" y="677" width="2.2" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1091.35" y="687.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="629" width="2.2" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1170.90" y="639.5" ></text>
+</g>
+<g >
+<title>__check_object_size (5,025,125 sampled CPU ns, 0.19%)</title><rect x="189.0" y="389" width="2.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="191.99" y="399.5" ></text>
+</g>
+<g >
+<title>x264_8_trellis_coefn (502,512,500 sampled CPU ns, 18.73%)</title><rect x="840.9" y="677" width="220.9" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="843.86" y="687.5" >x264_8_trellis_coefn</text>
+</g>
+<g >
+<title>drm_ioctl_kernel (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="405" width="278.4" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="191.99" y="415.5" >drm_ioctl_kernel</text>
+</g>
+<g >
+<title>grab_now (698,492,375 sampled CPU ns, 26.03%)</title><rect x="189.0" y="565" width="307.1" height="15.0" fill="rgb(242,170,40)" rx="2" ry="2" />
+<text  x="191.99" y="575.5" >grab_now</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="485" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="495.5" ></text>
+</g>
+<g >
+<title>process_backlog (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="181" width="2.2" height="15.0" fill="rgb(231,120,28)" rx="2" ry="2" />
+<text  x="1170.90" y="191.5" ></text>
+</g>
+<g >
+<title>_mid_memalign.isra.0 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="421" width="2.2" height="15.0" fill="rgb(229,114,27)" rx="2" ry="2" />
+<text  x="1069.25" y="431.5" ></text>
+</g>
+<g >
+<title>__x64_sys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="597" width="2.2" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="13.00" y="607.5" ></text>
+</g>
+<g >
+<title>read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="661" width="2.2" height="15.0" fill="rgb(252,216,51)" rx="2" ry="2" />
+<text  x="13.00" y="671.5" ></text>
+</g>
+<g >
+<title>dmx0:rawvideo/505729 (140,703,500 sampled CPU ns, 5.24%)</title><rect x="43.1" y="709" width="61.9" height="15.0" fill="rgb(220,72,17)" rx="2" ry="2" />
+<text  x="46.15" y="719.5" >dmx0:r..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="453" width="4.5" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1086.93" y="463.5" ></text>
+</g>
+<g >
+<title>__ip_finish_output (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="341" width="2.2" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="1170.90" y="351.5" ></text>
+</g>
+<g >
+<title>ip_output (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="373" width="2.2" height="15.0" fill="rgb(253,223,53)" rx="2" ry="2" />
+<text  x="1170.90" y="383.5" ></text>
+</g>
+<g >
+<title>tokio::runtime::scheduler::multi_thread::worker::&lt;impl tokio::runtime::scheduler::multi_thread::handle::Handle&gt;::schedule_local (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1187.8" y="693" width="2.2" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="1190.79" y="703.5" ></text>
+</g>
+<g >
+<title>drm_ioctl (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="421" width="278.4" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="191.99" y="431.5" >drm_ioctl</text>
+</g>
+<g >
+<title>__x64_sys_futex (30,150,750 sampled CPU ns, 1.12%)</title><rect x="1095.0" y="645" width="13.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1097.98" y="655.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="693" width="50.8" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="57.19" y="703.5" >entry..</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="501" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="511.5" ></text>
+</g>
+<g >
+<title>page_counter_uncharge (5,025,125 sampled CPU ns, 0.19%)</title><rect x="67.5" y="485" width="2.2" height="15.0" fill="rgb(254,229,54)" rx="2" ry="2" />
+<text  x="70.45" y="495.5" ></text>
+</g>
+<g >
+<title>&lt;std::io::pipe::PipeReader as std::io::Read&gt;::read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="677" width="2.2" height="15.0" fill="rgb(220,72,17)" rx="2" ry="2" />
+<text  x="1188.58" y="687.5" ></text>
+</g>
+<g >
+<title>__memcg_kmem_charge_page (20,100,500 sampled CPU ns, 0.75%)</title><rect x="500.6" y="517" width="8.8" height="15.0" fill="rgb(223,87,20)" rx="2" ry="2" />
+<text  x="503.56" y="527.5" ></text>
+</g>
+<g >
+<title>inet_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="549" width="2.2" height="15.0" fill="rgb(212,35,8)" rx="2" ry="2" />
+<text  x="1170.90" y="559.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (55,276,375 sampled CPU ns, 2.06%)</title><rect x="1064.0" y="549" width="24.4" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1067.04" y="559.5" >[..</text>
+</g>
+<g >
+<title>x264_encoder_encode (45,226,125 sampled CPU ns, 1.69%)</title><rect x="1068.5" y="501" width="19.9" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="1071.46" y="511.5" ></text>
+</g>
+<g >
+<title>free_frozen_page_commit.isra.0 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="74.1" y="501" width="2.2" height="15.0" fill="rgb(216,51,12)" rx="2" ry="2" />
+<text  x="77.08" y="511.5" ></text>
+</g>
+<g >
+<title>tcp_v4_do_rcv (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="53" width="2.2" height="15.0" fill="rgb(217,55,13)" rx="2" ry="2" />
+<text  x="1170.90" y="63.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="14.4" y="693" width="2.2" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="17.42" y="703.5" ></text>
+</g>
+<g >
+<title>copy_page_from_iter (30,150,750 sampled CPU ns, 1.12%)</title><rect x="553.6" y="565" width="13.3" height="15.0" fill="rgb(216,51,12)" rx="2" ry="2" />
+<text  x="556.60" y="575.5" ></text>
+</g>
+<g >
+<title>__libc_start_main@@GLIBC_2.34 (60,301,500 sampled CPU ns, 2.25%)</title><rect x="1061.8" y="677" width="26.6" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="1064.84" y="687.5" >_..</text>
+</g>
+<g >
+<title>epoll_wait (5,025,125 sampled CPU ns, 0.19%)</title><rect x="18.8" y="661" width="2.2" height="15.0" fill="rgb(238,154,36)" rx="2" ry="2" />
+<text  x="21.84" y="671.5" ></text>
+</g>
+<g >
+<title>ip_local_out (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="357" width="2.2" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="13.00" y="367.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="677" width="50.8" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="57.19" y="687.5" >do_sy..</text>
+</g>
+<g >
+<title>free_frozen_pages (5,025,125 sampled CPU ns, 0.19%)</title><rect x="76.3" y="549" width="2.2" height="15.0" fill="rgb(218,60,14)" rx="2" ry="2" />
+<text  x="79.29" y="559.5" ></text>
+</g>
+<g >
+<title>ip_finish_output2 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="325" width="2.2" height="15.0" fill="rgb(226,97,23)" rx="2" ry="2" />
+<text  x="1170.90" y="335.5" ></text>
+</g>
+<g >
+<title>_copy_to_iter (5,025,125 sampled CPU ns, 0.19%)</title><rect x="54.2" y="565" width="2.2" height="15.0" fill="rgb(234,134,32)" rx="2" ry="2" />
+<text  x="57.19" y="575.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="437" width="4.5" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1086.93" y="447.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (35,175,875 sampled CPU ns, 1.31%)</title><rect x="25.5" y="661" width="15.4" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="28.47" y="671.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (30,150,750 sampled CPU ns, 1.12%)</title><rect x="1095.0" y="661" width="13.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1097.98" y="671.5" ></text>
+</g>
+<g >
+<title>__free_frozen_pages (15,075,375 sampled CPU ns, 0.56%)</title><rect x="69.7" y="517" width="6.6" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="72.66" y="527.5" ></text>
+</g>
+<g >
+<title>evdi_painter_grabpix_ioctl [evdi] (472,361,750 sampled CPU ns, 17.60%)</title><rect x="259.7" y="389" width="207.7" height="15.0" fill="rgb(208,14,3)" rx="2" ry="2" />
+<text  x="262.70" y="399.5" >evdi_painter_grabpix_ioctl ..</text>
+</g>
+<g >
+<title>tcp_rcv_established (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="37" width="2.2" height="15.0" fill="rgb(248,200,47)" rx="2" ry="2" />
+<text  x="1170.90" y="47.5" ></text>
+</g>
+<g >
+<title>do_softirq.part.0 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="261" width="2.2" height="15.0" fill="rgb(240,161,38)" rx="2" ry="2" />
+<text  x="1170.90" y="271.5" ></text>
+</g>
+<g >
+<title>mutex_lock (15,075,375 sampled CPU ns, 0.56%)</title><rect x="98.4" y="565" width="6.6" height="15.0" fill="rgb(223,87,20)" rx="2" ry="2" />
+<text  x="101.39" y="575.5" ></text>
+</g>
+<g >
+<title>kernel_init_pages (65,326,625 sampled CPU ns, 2.43%)</title><rect x="516.0" y="485" width="28.8" height="15.0" fill="rgb(224,89,21)" rx="2" ry="2" />
+<text  x="519.03" y="495.5" >ke..</text>
+</g>
+<g >
+<title>clock_gettime@@GLIBC_2.17 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="186.8" y="565" width="2.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="189.78" y="575.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (20,100,500 sampled CPU ns, 0.75%)</title><rect x="45.4" y="677" width="8.8" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="48.36" y="687.5" ></text>
+</g>
+<g >
+<title>adb/290576 (75,376,875 sampled CPU ns, 2.81%)</title><rect x="10.0" y="709" width="33.1" height="15.0" fill="rgb(206,6,1)" rx="2" ry="2" />
+<text  x="13.00" y="719.5" >ad..</text>
+</g>
+<g >
+<title>handle_softirqs (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="229" width="2.2" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="1170.90" y="239.5" ></text>
+</g>
+<g >
+<title>evdi_handle_event (703,517,500 sampled CPU ns, 26.22%)</title><rect x="186.8" y="597" width="309.3" height="15.0" fill="rgb(214,45,10)" rx="2" ry="2" />
+<text  x="189.78" y="607.5" >evdi_handle_event</text>
+</g>
+<g >
+<title>[[unknown]: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="693" width="2.2" height="15.0" fill="rgb(216,54,12)" rx="2" ry="2" />
+<text  x="13.00" y="703.5" ></text>
+</g>
+<g >
+<title>tcp_recvmsg_locked (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="517" width="2.2" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="1170.90" y="527.5" ></text>
+</g>
+<g >
+<title>plist_del (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1099.4" y="565" width="2.2" height="15.0" fill="rgb(218,62,14)" rx="2" ry="2" />
+<text  x="1102.40" y="575.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (40,201,000 sampled CPU ns, 1.50%)</title><rect x="1090.6" y="677" width="17.6" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1093.56" y="687.5" ></text>
+</g>
+<g >
+<title>ksys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="629" width="2.2" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="1184.16" y="639.5" ></text>
+</g>
+<g >
+<title>main (708,542,625 sampled CPU ns, 26.40%)</title><rect x="184.6" y="645" width="311.5" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="187.57" y="655.5" >main</text>
+</g>
+<g >
+<title>_copy_from_iter (30,150,750 sampled CPU ns, 1.12%)</title><rect x="553.6" y="549" width="13.3" height="15.0" fill="rgb(234,134,32)" rx="2" ry="2" />
+<text  x="556.60" y="559.5" ></text>
+</g>
+<g >
+<title>all (2,683,416,750 sampled CPU ns, 100%)</title><rect x="10.0" y="725" width="1180.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="13.00" y="735.5" ></text>
+</g>
+<g >
+<title>futex_wake_mark (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1099.4" y="597" width="2.2" height="15.0" fill="rgb(253,223,53)" rx="2" ry="2" />
+<text  x="1102.40" y="607.5" ></text>
+</g>
+<g >
+<title>sock_read_iter (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="549" width="2.2" height="15.0" fill="rgb(223,87,20)" rx="2" ry="2" />
+<text  x="13.00" y="559.5" ></text>
+</g>
+<g >
+<title>__GI___ioctl (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="501" width="278.4" height="15.0" fill="rgb(232,128,30)" rx="2" ry="2" />
+<text  x="191.99" y="511.5" >__GI___ioctl</text>
+</g>
+<g >
+<title>net_rx_action (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="213" width="2.2" height="15.0" fill="rgb(247,194,46)" rx="2" ry="2" />
+<text  x="1170.90" y="223.5" ></text>
+</g>
+<g >
+<title>do_futex (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="389" width="4.5" height="15.0" fill="rgb(251,214,51)" rx="2" ry="2" />
+<text  x="1086.93" y="399.5" ></text>
+</g>
+<g >
+<title>__x64_sys_write (155,778,875 sampled CPU ns, 5.81%)</title><rect x="498.4" y="645" width="68.5" height="15.0" fill="rgb(252,219,52)" rx="2" ry="2" />
+<text  x="501.35" y="655.5" >__x64_s..</text>
+</g>
+<g >
+<title>tcp_v4_rcv (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="69" width="2.2" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="1170.90" y="79.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="677" width="2.2" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="1184.16" y="687.5" ></text>
+</g>
+<g >
+<title>tcp_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="501" width="2.2" height="15.0" fill="rgb(240,165,39)" rx="2" ry="2" />
+<text  x="13.00" y="511.5" ></text>
+</g>
+<g >
+<title>__rcu_read_lock (5,025,125 sampled CPU ns, 0.19%)</title><rect x="58.6" y="517" width="2.2" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="61.61" y="527.5" ></text>
+</g>
+<g >
+<title>nf_hook_slow (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="325" width="2.2" height="15.0" fill="rgb(249,205,49)" rx="2" ry="2" />
+<text  x="13.00" y="335.5" ></text>
+</g>
+<g >
+<title>try_to_wake_up (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="341" width="4.5" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="1086.93" y="351.5" ></text>
+</g>
+<g >
+<title>__x64_sys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="645" width="2.2" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="1184.16" y="655.5" ></text>
+</g>
+<g >
+<title>tcp_send_ack (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="469" width="2.2" height="15.0" fill="rgb(221,73,17)" rx="2" ry="2" />
+<text  x="1170.90" y="479.5" ></text>
+</g>
+<g >
+<title>__tcp_send_ack.part.0 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="453" width="2.2" height="15.0" fill="rgb(253,222,53)" rx="2" ry="2" />
+<text  x="1170.90" y="463.5" ></text>
+</g>
+<g >
+<title>[adb: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="12.2" y="693" width="2.2" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="15.21" y="703.5" ></text>
+</g>
+<g >
+<title>tokio::io::poll_evented::PollEvented&lt;E&gt;::poll_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="693" width="2.2" height="15.0" fill="rgb(249,206,49)" rx="2" ry="2" />
+<text  x="1188.58" y="703.5" ></text>
+</g>
+<g >
+<title>vfs_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="565" width="2.2" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="13.00" y="575.5" ></text>
+</g>
+<g >
+<title>ksys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="581" width="2.2" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="1188.58" y="591.5" ></text>
+</g>
+<g >
+<title>[callchain unavailable] (180,904,500 sampled CPU ns, 6.74%)</title><rect x="105.0" y="693" width="79.6" height="15.0" fill="rgb(212,33,7)" rx="2" ry="2" />
+<text  x="108.02" y="703.5" >[callchai..</text>
+</g>
+<g >
+<title>__libc_start_call_main (60,301,500 sampled CPU ns, 2.25%)</title><rect x="1061.8" y="661" width="26.6" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="1064.84" y="671.5" >_..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (45,226,125 sampled CPU ns, 1.69%)</title><rect x="21.0" y="693" width="19.9" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="24.05" y="703.5" ></text>
+</g>
+<g >
+<title>nf_conntrack_in [nf_conntrack] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="293" width="2.2" height="15.0" fill="rgb(214,41,9)" rx="2" ry="2" />
+<text  x="13.00" y="303.5" ></text>
+</g>
+<g >
+<title>&lt;&amp;std::os::unix::net::stream::UnixStream as std::io::Read&gt;::read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="677" width="2.2" height="15.0" fill="rgb(241,169,40)" rx="2" ry="2" />
+<text  x="1170.90" y="687.5" ></text>
+</g>
+<g >
+<title>__x64_sys_ioctl (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="437" width="278.4" height="15.0" fill="rgb(206,4,1)" rx="2" ry="2" />
+<text  x="191.99" y="447.5" >__x64_sys_ioctl</text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (60,301,500 sampled CPU ns, 2.25%)</title><rect x="1061.8" y="693" width="26.6" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1064.84" y="703.5" >[..</text>
+</g>
+<g >
+<title>vfs_write (155,778,875 sampled CPU ns, 5.81%)</title><rect x="498.4" y="613" width="68.5" height="15.0" fill="rgb(207,9,2)" rx="2" ry="2" />
+<text  x="501.35" y="623.5" >vfs_write</text>
+</g>
+<g >
+<title>do_syscall_64 (45,226,125 sampled CPU ns, 1.69%)</title><rect x="21.0" y="677" width="19.9" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="24.05" y="687.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="613" width="2.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="13.00" y="623.5" ></text>
+</g>
+<g >
+<title>ip_queue_xmit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="421" width="2.2" height="15.0" fill="rgb(237,149,35)" rx="2" ry="2" />
+<text  x="1170.90" y="431.5" ></text>
+</g>
+<g >
+<title>try_to_wake_up (15,075,375 sampled CPU ns, 0.56%)</title><rect x="1101.6" y="581" width="6.6" height="15.0" fill="rgb(226,100,24)" rx="2" ry="2" />
+<text  x="1104.61" y="591.5" ></text>
+</g>
+<g >
+<title>ip_protocol_deliver_rcu (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="85" width="2.2" height="15.0" fill="rgb(222,79,18)" rx="2" ry="2" />
+<text  x="1170.90" y="95.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1066.3" y="469" width="2.2" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="479.5" ></text>
+</g>
+<g >
+<title>__tcp_send_ack.part.0 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="421" width="2.2" height="15.0" fill="rgb(253,222,53)" rx="2" ry="2" />
+<text  x="13.00" y="431.5" ></text>
+</g>
+<g >
+<title>tcp_recvmsg_locked (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="485" width="2.2" height="15.0" fill="rgb(233,130,31)" rx="2" ry="2" />
+<text  x="13.00" y="495.5" ></text>
+</g>
+<g >
+<title>fifo_pipe_read (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="597" width="50.8" height="15.0" fill="rgb(240,162,38)" rx="2" ry="2" />
+<text  x="57.19" y="607.5" >fifo_..</text>
+</g>
+<g >
+<title>__do_softirq (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="245" width="2.2" height="15.0" fill="rgb(253,221,52)" rx="2" ry="2" />
+<text  x="1170.90" y="255.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="693" width="2.2" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="1184.16" y="703.5" ></text>
+</g>
+<g >
+<title>on_update_ready (703,517,500 sampled CPU ns, 26.22%)</title><rect x="186.8" y="581" width="309.3" height="15.0" fill="rgb(211,30,7)" rx="2" ry="2" />
+<text  x="189.78" y="591.5" >on_update_ready</text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (15,075,375 sampled CPU ns, 0.56%)</title><rect x="1101.6" y="565" width="6.6" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="1104.61" y="575.5" ></text>
+</g>
+<g >
+<title>try_charge_memcg (15,075,375 sampled CPU ns, 0.56%)</title><rect x="502.8" y="485" width="6.6" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="505.77" y="495.5" ></text>
+</g>
+<g >
+<title>alloc_pages_noprof (125,628,125 sampled CPU ns, 4.68%)</title><rect x="498.4" y="565" width="55.2" height="15.0" fill="rgb(239,160,38)" rx="2" ry="2" />
+<text  x="501.35" y="575.5" >alloc..</text>
+</g>
+<g >
+<title>__local_bh_enable_ip (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="277" width="2.2" height="15.0" fill="rgb(243,177,42)" rx="2" ry="2" />
+<text  x="1170.90" y="287.5" ></text>
+</g>
+<g >
+<title>&lt;tokio::sync::broadcast::Recv&lt;T&gt; as core::future::future::Future&gt;::poll (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1170.1" y="693" width="2.2" height="15.0" fill="rgb(236,144,34)" rx="2" ry="2" />
+<text  x="1173.11" y="703.5" ></text>
+</g>
+<g >
+<title>sock_recvmsg (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="565" width="2.2" height="15.0" fill="rgb(212,35,8)" rx="2" ry="2" />
+<text  x="1170.90" y="575.5" ></text>
+</g>
+<g >
+<title>__libc_start_call_main (708,542,625 sampled CPU ns, 26.40%)</title><rect x="184.6" y="661" width="311.5" height="15.0" fill="rgb(210,26,6)" rx="2" ry="2" />
+<text  x="187.57" y="671.5" >__libc_start_call_main</text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="613" width="2.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1170.90" y="623.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (50,251,250 sampled CPU ns, 1.87%)</title><rect x="1066.3" y="517" width="22.1" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1069.25" y="527.5" >[..</text>
+</g>
+<g >
+<title>__tcp_transmit_skb (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="405" width="2.2" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="13.00" y="415.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="629" width="2.2" height="15.0" fill="rgb(215,50,12)" rx="2" ry="2" />
+<text  x="13.00" y="639.5" ></text>
+</g>
+<g >
+<title>evdi_grab_pixels (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="549" width="278.4" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="191.99" y="559.5" >evdi_grab_pixels</text>
+</g>
+<g >
+<title>__android_log_get_minimum_priority (5,025,125 sampled CPU ns, 0.19%)</title><rect x="16.6" y="693" width="2.2" height="15.0" fill="rgb(236,146,35)" rx="2" ry="2" />
+<text  x="19.63" y="703.5" ></text>
+</g>
+<g >
+<title>anon_pipe_write (155,778,875 sampled CPU ns, 5.81%)</title><rect x="498.4" y="581" width="68.5" height="15.0" fill="rgb(214,45,10)" rx="2" ry="2" />
+<text  x="501.35" y="591.5" >anon_pi..</text>
+</g>
+<g >
+<title>conv_pool_convert (65,326,625 sampled CPU ns, 2.43%)</title><rect x="467.4" y="533" width="28.7" height="15.0" fill="rgb(233,132,31)" rx="2" ry="2" />
+<text  x="470.42" y="543.5" >co..</text>
+</g>
+<g >
+<title>get_page_from_freelist (90,452,250 sampled CPU ns, 3.37%)</title><rect x="513.8" y="517" width="39.8" height="15.0" fill="rgb(208,18,4)" rx="2" ry="2" />
+<text  x="516.82" y="527.5" >get..</text>
+</g>
+<g >
+<title>ksys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="581" width="2.2" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="13.00" y="591.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irqrestore (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="325" width="4.5" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="1086.93" y="335.5" ></text>
+</g>
+<g >
+<title>tokio-rt-worker/290532 (50,251,250 sampled CPU ns, 1.87%)</title><rect x="1167.9" y="709" width="22.1" height="15.0" fill="rgb(241,167,40)" rx="2" ry="2" />
+<text  x="1170.90" y="719.5" >t..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="645" width="2.2" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="13.00" y="655.5" ></text>
+</g>
+<g >
+<title>inode_set_ctime_current (5,025,125 sampled CPU ns, 0.19%)</title><rect x="25.5" y="597" width="2.2" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="28.47" y="607.5" ></text>
+</g>
+<g >
+<title>[adb: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="677" width="2.2" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="13.00" y="687.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@@GLIBC_2.2.5 (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1088.4" y="645" width="2.2" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="1091.35" y="655.5" ></text>
+</g>
+<g >
+<title>futex_wake (25,125,625 sampled CPU ns, 0.94%)</title><rect x="1097.2" y="613" width="11.0" height="15.0" fill="rgb(225,94,22)" rx="2" ry="2" />
+<text  x="1100.19" y="623.5" ></text>
+</g>
+<g >
+<title>blent::input::ControllerDispatch::text (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1174.5" y="677" width="2.2" height="15.0" fill="rgb(209,21,5)" rx="2" ry="2" />
+<text  x="1177.53" y="687.5" ></text>
+</g>
+<g >
+<title>ffmpeg/505729 (1,366,834,000 sampled CPU ns, 50.94%)</title><rect x="566.9" y="709" width="601.0" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="569.85" y="719.5" >ffmpeg/505729</text>
+</g>
+<g >
+<title>mutex_spin_on_owner (15,075,375 sampled CPU ns, 0.56%)</title><rect x="98.4" y="517" width="6.6" height="15.0" fill="rgb(223,86,20)" rx="2" ry="2" />
+<text  x="101.39" y="527.5" ></text>
+</g>
+<g >
+<title>do_futex (30,150,750 sampled CPU ns, 1.12%)</title><rect x="1095.0" y="629" width="13.2" height="15.0" fill="rgb(251,214,51)" rx="2" ry="2" />
+<text  x="1097.98" y="639.5" ></text>
+</g>
+<g >
+<title>anon_pipe_buf_release (50,251,250 sampled CPU ns, 1.87%)</title><rect x="56.4" y="565" width="22.1" height="15.0" fill="rgb(227,104,24)" rx="2" ry="2" />
+<text  x="59.40" y="575.5" >a..</text>
+</g>
+<g >
+<title>tcp_send_ack (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="437" width="2.2" height="15.0" fill="rgb(221,73,17)" rx="2" ry="2" />
+<text  x="13.00" y="447.5" ></text>
+</g>
+<g >
+<title>__rmqueue_pcplist (20,100,500 sampled CPU ns, 0.75%)</title><rect x="544.8" y="485" width="8.8" height="15.0" fill="rgb(237,148,35)" rx="2" ry="2" />
+<text  x="547.76" y="495.5" ></text>
+</g>
+<g >
+<title>drm_clflush_virt_range (155,778,875 sampled CPU ns, 5.81%)</title><rect x="191.2" y="389" width="68.5" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="194.20" y="399.5" >drm_clf..</text>
+</g>
+<g >
+<title>reap_as (5,025,125 sampled CPU ns, 0.19%)</title><rect x="38.7" y="597" width="2.2" height="15.0" fill="rgb(247,197,47)" rx="2" ry="2" />
+<text  x="41.73" y="607.5" ></text>
+</g>
+<g >
+<title>vfs_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1181.2" y="613" width="2.2" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="1184.16" y="623.5" ></text>
+</g>
+<g >
+<title>__x64_sys_read (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="597" width="2.2" height="15.0" fill="rgb(226,98,23)" rx="2" ry="2" />
+<text  x="1188.58" y="607.5" ></text>
+</g>
+<g >
+<title>[[vdso]: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="43.1" y="677" width="2.3" height="15.0" fill="rgb(213,37,8)" rx="2" ry="2" />
+<text  x="46.15" y="687.5" ></text>
+</g>
+<g >
+<title>wake_up_q (10,050,250 sampled CPU ns, 0.37%)</title><rect x="1083.9" y="357" width="4.5" height="15.0" fill="rgb(244,181,43)" rx="2" ry="2" />
+<text  x="1086.93" y="367.5" ></text>
+</g>
+<g >
+<title>__netif_receive_skb (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="165" width="2.2" height="15.0" fill="rgb(224,90,21)" rx="2" ry="2" />
+<text  x="1170.90" y="175.5" ></text>
+</g>
+<g >
+<title>__tcp_cleanup_rbuf (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="485" width="2.2" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="1170.90" y="495.5" ></text>
+</g>
+<g >
+<title>__mutex_lock.constprop.0 (15,075,375 sampled CPU ns, 0.56%)</title><rect x="98.4" y="533" width="6.6" height="15.0" fill="rgb(232,125,30)" rx="2" ry="2" />
+<text  x="101.39" y="543.5" ></text>
+</g>
+<g >
+<title>[libx264.so.164: unresolved] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1088.4" y="661" width="2.2" height="15.0" fill="rgb(222,80,19)" rx="2" ry="2" />
+<text  x="1091.35" y="671.5" ></text>
+</g>
+<g >
+<title>evdi_helper/290619 (1,050,251,125 sampled CPU ns, 39.14%)</title><rect x="105.0" y="709" width="461.9" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="108.02" y="719.5" >evdi_helper/290619</text>
+</g>
+<g >
+<title>nf_conntrack_tcp_packet [nf_conntrack] (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="277" width="2.2" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="13.00" y="287.5" ></text>
+</g>
+<g >
+<title>__ip_local_out (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="341" width="2.2" height="15.0" fill="rgb(212,35,8)" rx="2" ry="2" />
+<text  x="13.00" y="351.5" ></text>
+</g>
+<g >
+<title>_raw_spin_lock (5,025,125 sampled CPU ns, 0.19%)</title><rect x="266.3" y="341" width="2.2" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="269.33" y="351.5" ></text>
+</g>
+<g >
+<title>__check_object_size (150,753,750 sampled CPU ns, 5.62%)</title><rect x="261.9" y="373" width="66.3" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="264.91" y="383.5" >__check..</text>
+</g>
+<g >
+<title>x64_sys_call (160,804,000 sampled CPU ns, 5.99%)</title><rect x="496.1" y="661" width="70.8" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="499.14" y="671.5" >x64_sys..</text>
+</g>
+<g >
+<title>find_vmap_area (135,678,375 sampled CPU ns, 5.06%)</title><rect x="268.5" y="341" width="59.7" height="15.0" fill="rgb(240,162,38)" rx="2" ry="2" />
+<text  x="271.54" y="351.5" >find_v..</text>
+</g>
+<g >
+<title>__x64_sys_ioctl (35,175,875 sampled CPU ns, 1.31%)</title><rect x="25.5" y="645" width="15.4" height="15.0" fill="rgb(206,4,1)" rx="2" ry="2" />
+<text  x="28.47" y="655.5" ></text>
+</g>
+<g >
+<title>_raw_spin_unlock_irq (25,125,625 sampled CPU ns, 0.94%)</title><rect x="27.7" y="581" width="11.0" height="15.0" fill="rgb(221,76,18)" rx="2" ry="2" />
+<text  x="30.68" y="591.5" ></text>
+</g>
+<g >
+<title>memcg_uncharge (5,025,125 sampled CPU ns, 0.19%)</title><rect x="67.5" y="501" width="2.2" height="15.0" fill="rgb(232,124,29)" rx="2" ry="2" />
+<text  x="70.45" y="511.5" ></text>
+</g>
+<g >
+<title>publish_frame (65,326,625 sampled CPU ns, 2.43%)</title><rect x="467.4" y="549" width="28.7" height="15.0" fill="rgb(218,61,14)" rx="2" ry="2" />
+<text  x="470.42" y="559.5" >pu..</text>
+</g>
+<g >
+<title>__ip_queue_xmit (5,025,125 sampled CPU ns, 0.19%)</title><rect x="10.0" y="373" width="2.2" height="15.0" fill="rgb(210,23,5)" rx="2" ry="2" />
+<text  x="13.00" y="383.5" ></text>
+</g>
+<g >
+<title>ksys_write (155,778,875 sampled CPU ns, 5.81%)</title><rect x="498.4" y="629" width="68.5" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="501.35" y="639.5" >ksys_wr..</text>
+</g>
+<g >
+<title>check_heap_object (150,753,750 sampled CPU ns, 5.62%)</title><rect x="261.9" y="357" width="66.3" height="15.0" fill="rgb(247,195,46)" rx="2" ry="2" />
+<text  x="264.91" y="367.5" >check_h..</text>
+</g>
+<g >
+<title>__netif_receive_skb_one_core (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1167.9" y="149" width="2.2" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="1170.90" y="159.5" ></text>
+</g>
+<g >
+<title>x64_sys_call (5,025,125 sampled CPU ns, 0.19%)</title><rect x="1185.6" y="613" width="2.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="1188.58" y="623.5" ></text>
+</g>
+<g >
+<title>_copy_to_iter (40,201,000 sampled CPU ns, 1.50%)</title><rect x="80.7" y="549" width="17.7" height="15.0" fill="rgb(234,134,32)" rx="2" ry="2" />
+<text  x="83.71" y="559.5" ></text>
+</g>
+<g >
+<title>vfs_read (115,577,875 sampled CPU ns, 4.31%)</title><rect x="54.2" y="613" width="50.8" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="57.19" y="623.5" >vfs_r..</text>
+</g>
+<g >
+<title>x64_sys_call (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="453" width="278.4" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="191.99" y="463.5" >x64_sys_call</text>
+</g>
+<g >
+<title>usbdev_do_ioctl (35,175,875 sampled CPU ns, 1.31%)</title><rect x="25.5" y="613" width="15.4" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="28.47" y="623.5" ></text>
+</g>
+<g >
+<title>[ffmpeg: unresolved] (60,301,500 sampled CPU ns, 2.25%)</title><rect x="1061.8" y="645" width="26.6" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="1064.84" y="655.5" >[..</text>
+</g>
+<g >
+<title>__mutex_lock_slowpath (15,075,375 sampled CPU ns, 0.56%)</title><rect x="98.4" y="549" width="6.6" height="15.0" fill="rgb(235,139,33)" rx="2" ry="2" />
+<text  x="101.39" y="559.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (633,165,750 sampled CPU ns, 23.60%)</title><rect x="189.0" y="485" width="278.4" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="191.99" y="495.5" >entry_SYSCALL_64_after_hwframe</text>
+</g>
+</g>
+</svg>

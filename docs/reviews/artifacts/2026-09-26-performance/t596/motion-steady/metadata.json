@@ -1,0 +1,28 @@
+{
+  "android_package": "io.github.geraldo_netto.blent.profile",
+  "android_pid": 26279,
+  "processes": {
+    "290532": {
+      "name": "blent",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/blent",
+      "cmd": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/blent start "
+    },
+    "290576": {
+      "name": "adb",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/libexec/adb",
+      "cmd": "adb -L tcp:5037 fork-server server --reply-fd 8 "
+    },
+    "290619": {
+      "name": "evdi_helper",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/evdi_helper",
+      "cmd": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/bin/evdi_helper --edid /home/netto/.local/share/blent/edid/auto-v7-1280x800@60-218x136mm.bin --fps 60 --conversion-threads 0 --capture-fifo /run/user/1000/blent/capture.fifo --pipe-size-file /run/user/1000/blent/pipe-capacity-mib "
+    },
+    "505729": {
+      "name": "ffmpeg",
+      "exe": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/libexec/ffmpeg",
+      "cmd": "/tmp/appimage_extracted_824b434424e35424899e9ea294d4e3e8/usr/libexec/ffmpeg -hide_banner -probesize 32 -analyzeduration 0 -flags low_delay -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv -f rawvideo -pix_fmt nv12 -s 1280x800 -framerate 60 -use_wallclock_as_timestamps 1 -i /run/user/1000/blent/capture.fifo -vf settb=1/1000000,setpts='if(isnan(PREV_OUTPTS),PTS,max(PTS,PREV_OUTPTS+1))' -enc_time_base 1:1000000 -c:v libx264 -fps_mode passthrough -force_key_frames expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+1)) -preset ultrafast -tune zerolatency -crf 18 -maxrate 20000k -g 60 -bufsize 666k -x264-params scenecut=0 -map 0:v:0 -f tee [f=framecrc:flush_packets=1]pipe:1|[f=data:flush_packets=1]pipe:1 "
+    }
+  },
+  "source": "a1d5d6d3342df233c30417d43ad1d12fe743b49f",
+  "host_config_sha256": "d55283c1646056b9e5c5401dc5221610e46dd7a3cae19c8408e88c1efb41b858"
+}

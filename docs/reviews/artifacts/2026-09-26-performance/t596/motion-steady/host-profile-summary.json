@@ -1,0 +1,158 @@
+{
+  "kernel_symbol_source": "same-boot kallsyms; nearest preceding text symbol, maximum 64 KiB displacement; unresolved addresses retained",
+  "samples": 534,
+  "callchain_unavailable": 269,
+  "sampled_cpu_ns": 2683416750,
+  "top_self": [
+    {
+      "thread": "ffmpeg",
+      "symbol": "[libx264.so.164: unresolved]",
+      "ns": 658291375
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "x264_8_trellis_coefn",
+      "ns": 638190875
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_copy_to_user_[k]",
+      "ns": 311557750
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "convert_job",
+      "ns": 236180875
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "drm_clflush_virt_range_[k]",
+      "ns": 155778875
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "find_vmap_area_[k]",
+      "ns": 135678375
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "kernel_init_pages_[k]",
+      "ns": 65326625
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "_copy_to_iter_[k]",
+      "ns": 45226125
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_copy_from_iter_[k]",
+      "ns": 30150750
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "_raw_spin_unlock_irqrestore_[k]",
+      "ns": 25125625
+    },
+    {
+      "thread": "adb",
+      "symbol": "_raw_spin_unlock_irq_[k]",
+      "ns": 25125625
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "[ffmpeg: unresolved]",
+      "ns": 20100500
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "__rcu_read_unlock_[k]",
+      "ns": 15075375
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "mutex_spin_on_owner_[k]",
+      "ns": 15075375
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "try_charge_memcg_[k]",
+      "ns": 15075375
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "__rmqueue_pcplist_[k]",
+      "ns": 10050250
+    },
+    {
+      "thread": "adb",
+      "symbol": "do_syscall_64_[k]",
+      "ns": 10050250
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "check_heap_object_[k]",
+      "ns": 10050250
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "[ffmpeg: unresolved]",
+      "ns": 10050250
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_raw_spin_unlock_irqrestore_[k]",
+      "ns": 10050250
+    },
+    {
+      "thread": "adb",
+      "symbol": "[adb: unresolved]",
+      "ns": 10050250
+    },
+    {
+      "thread": "dmx0:rawvideo",
+      "symbol": "__free_frozen_pages_[k]",
+      "ns": 10050250
+    },
+    {
+      "thread": "tokio-rt-worker",
+      "symbol": "<blent::media_storage::MediaBytes as core::convert::From<alloc::vec::Vec<u8>>>::from",
+      "ns": 5025125
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "do_futex_[k]",
+      "ns": 5025125
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "get_page_from_freelist_[k]",
+      "ns": 5025125
+    },
+    {
+      "thread": "tokio-rt-worker",
+      "symbol": "fdget_pos_[k]",
+      "ns": 5025125
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "conv_pool_convert",
+      "ns": 5025125
+    },
+    {
+      "thread": "ffmpeg",
+      "symbol": "_mid_memalign.isra.0",
+      "ns": 5025125
+    },
+    {
+      "thread": "evdi_helper",
+      "symbol": "_raw_spin_lock_[k]",
+      "ns": 5025125
+    },
+    {
+      "thread": "tokio-rt-worker",
+      "symbol": "std::time::Instant::now",
+      "ns": 5025125
+    }
+  ]
+}

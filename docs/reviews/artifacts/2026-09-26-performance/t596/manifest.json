@@ -1,0 +1,11 @@
+{
+  "release_apk_sha256": "364d4633d4dd59ce56573b3eb17e26a2559c2aa8e4f6668b9b2bcc031c6d6597",
+  "device_apk_sha256": "364d4633d4dd59ce56573b3eb17e26a2559c2aa8e4f6668b9b2bcc031c6d6597",
+  "camera_source_sha256": "69a1e86e6b4401a69562ee4bfda0f00a9bb814ce5c948c34a00c0c8cc298e9a1",
+  "host_config_unchanged_sha256": "d55283c1646056b9e5c5401dc5221610e46dd7a3cae19c8408e88c1efb41b858",
+  "flamegraph_revision": "41fee1f99f9276008b7cd112fca19dc3ea84ac32",
+  "simpleperf_ndk": "27.3.13750724",
+  "host_kernel": "7.0.0-31-generic",
+  "boot_id": "942407fa-7033-48e7-bb96-5acc7df579bc",
+  "artifacts_scope": "CPU samples and separate syscall/off-CPU windows; profile APK debuggable; raw traces private; no camera activation"
+}
