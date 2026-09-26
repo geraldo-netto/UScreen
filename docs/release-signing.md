@@ -43,12 +43,15 @@ backup private key signed a temporary JAR, which passed strict verification
 against the primary keystore. This checks key usability and backup recovery;
 it does not establish the signing identity of any existing or published APK.
 
-The local custody README and `identity.json` describe the active fork identity
-and completed T250 package migration/certificate gate. Their stale pre-migration
-notes were corrected in both copies on 2026-09-19 (T536); all custody files were
-verified byte-identical across copies, with owner-only file permissions and
-unchanged key, password and public certificate. Keep these notes synchronized
-when the implemented signing workflow changes.
+The local custody README and `identity.json` describe the active Blent identity.
+T536 corrected the earlier fork-migration notes on 2026-09-19. T628 updated both
+copies on 2026-09-26 to `io.github.geraldo_netto.blent`, matching the fresh package
+selected that day; T250's designated-certificate publication gate remains active.
+Verification confirmed every custody file matches its backup on a separate
+filesystem, owner-only permissions remain intact, and key, password and public
+certificate bytes are unchanged. The public certificate's decoded DER and SHA-256
+also match this repository (PEM formatting differs). Keep these notes synchronized when the implemented identity changes;
+the historical key alias and custody directory names do not change the package.
 
 Inspect the tracked public certificate without accessing private material:
 
