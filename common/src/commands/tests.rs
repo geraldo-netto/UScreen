@@ -164,3 +164,79 @@ async fn t094_cancelled_command_is_reaped() {
     tokio::time::sleep(Duration::from_millis(50)).await;
     assert_reaped(&path);
 }
+
+#[cfg(target_os = "linux")]
+fn deny_kill_in_test_thread() {
+    // T590: emulate EPERM without signalling any real process or changing UID.
+    // The filter applies only to this isolated child's test thread.
+    let mut instructions = [
+        libc::sock_filter {
+            code: (libc::BPF_LD | libc::BPF_W | libc::BPF_ABS) as u16,
+            jt: 0,
+            jf: 0,
+            k: 0,
+        },
+        libc::sock_filter {
+            code: (libc::BPF_JMP | libc::BPF_JEQ | libc::BPF_K) as u16,
+            jt: 0,
+            jf: 1,
+            k: libc::SYS_kill as u32,
+        },
+        libc::sock_filter {
+            code: (libc::BPF_RET | libc::BPF_K) as u16,
+            jt: 0,
+            jf: 0,
+            k: libc::SECCOMP_RET_ERRNO | libc::EPERM as u32,
+        },
+        libc::sock_filter {
+            code: (libc::BPF_RET | libc::BPF_K) as u16,
+            jt: 0,
+            jf: 0,
+            k: libc::SECCOMP_RET_ALLOW,
+        },
+    ];
+    let filter = libc::sock_fprog {
+        len: instructions.len() as u16,
+        filter: instructions.as_mut_ptr(),
+    };
+    unsafe {
+        assert_eq!(libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), 0);
+        assert_eq!(
+            libc::prctl(libc::PR_SET_SECCOMP, libc::SECCOMP_MODE_FILTER, &filter),
+            0
+        );
+        assert_eq!(libc::kill(std::process::id() as libc::pid_t, 0), -1);
+    }
+    assert_eq!(io::Error::last_os_error().raw_os_error(), Some(libc::EPERM));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn t590_denied_group_signal_reports_unretired_work() {
+    const NAME: &str = "commands::tests::t590_denied_group_signal_reports_unretired_work";
+    if std::env::var_os("BLENT_T590_DENIED_SIGNAL").is_none() {
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", NAME, "--nocapture"])
+            .env("BLENT_T590_DENIED_SIGNAL", "1")
+            .output_timeout(Duration::from_secs(10))
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let log = tempfile::NamedTempFile::new().unwrap();
+    let subscriber = tracing_subscriber::fmt()
+        .without_time()
+        .with_ansi(false)
+        .with_writer(log.reopen().unwrap())
+        .finish();
+    deny_kill_in_test_thread();
+    tracing::subscriber::with_default(subscriber, || terminate_group(std::process::id()));
+    assert!(std::fs::read_to_string(log.path())
+        .unwrap()
+        .contains("Command group could not be terminated; delegated work may continue"));
+}

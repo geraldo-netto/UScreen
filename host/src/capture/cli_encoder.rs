@@ -433,6 +433,22 @@ fn report_encoder_throughput(frames: &mut u64, total: &mut u64, last_log: &mut I
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t590_dimension_logs_distinguish_scaling_from_wrong_geometry() {
+        if crate::test_logging::isolated("capture::cli_encoder::tests::t590_dimension_logs_distinguish_scaling_from_wrong_geometry") {
+            return;
+        }
+        let config = CaptureConfig { width: 1280, height: 720, stream_scale: 2, ..Default::default() };
+        let encoder = CliEncoder { config: &config };
+        encoder.log_encoder_dimensions(640, 360);
+        encoder.log_encoder_dimensions(800, 600);
+        let log = crate::test_logging::text();
+        assert!(log.contains("Encoding at 640x360 (desktop 1280x720, stream scale 2)"));
+        assert!(log.contains("Encoding at 800x600, expected 640x360"));
+        assert!(log.contains("compositor did not honour"));
+    }
+
     #[test]
     fn t497_throughput_accounting_keeps_frames_until_the_log_deadline() {
         let mut frames = 30;

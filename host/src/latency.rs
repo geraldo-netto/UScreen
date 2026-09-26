@@ -454,6 +454,29 @@ mod tests {
     }
 
     #[test]
+    fn t590_pre_subscriber_latency_keeps_loss_and_clock_units() {
+        if crate::test_logging::isolated(
+            "latency::tests::t590_pre_subscriber_latency_keeps_loss_and_clock_units",
+        ) {
+            return;
+        }
+        let mut report = Report {
+            samples: vec![],
+            decode_samples: vec![],
+            lost: 2,
+            inflight: 1,
+        };
+        report.log();
+        report.samples = vec![90_000, 10_000, 20_000];
+        report.log();
+        let log = crate::test_logging::text();
+        assert!(log.contains("no frames acknowledged by the tablet (2 aged out)"));
+        assert!(log
+            .contains("packet-ready→render-ACK (host clock): p50 20.0ms  p95 90.0ms  max 90.0ms"));
+        assert!(log.contains("3 samples, 1 in flight, 2 aged out"));
+    }
+
+    #[test]
     fn t479_observation_windows_are_bounded_and_never_mix_generations() {
         let tracker = LatencyTracker::new();
         let old = tracker.encoder_started("libx264", (640, 480, 60, 20000, 18));

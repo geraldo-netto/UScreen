@@ -34,3 +34,44 @@ Normalized two test-only parity checks to `is_multiple_of(2)`. Clippy on the
 repository's Rust 1.90.0 validation toolchain reproduced `manual_is_multiple_of`
 before the change. `cargo clippy --locked --workspace --all-targets --all-features
 -- -D warnings` passes afterward. No production behavior changed.
+
+## T590: remaining command, scheduling and host coverage
+
+Eight gaps are closed by retained isolated tests and native Linux evidence:
+
+| Function | Executable-line coverage |
+| --- | ---: |
+| `commands::terminate_group` | 85.71% |
+| `scheduling::linux::apply_pid` | 100% |
+| `scheduling::linux::apply_server` | 100% |
+| `scheduling::apply_configured` | 100% |
+| `CliEncoder::log_encoder_dimensions` | 100% |
+| `latency::Report::log` | 100% |
+| `ensure_single_daemon` | 88.24% |
+| `spawn_extra_session` | 100% |
+
+T590 adds a child-local seccomp denial of `kill`, verifies the warning without
+signalling real processes, captures pre-subscriber diagnostics in isolated
+processes, checks idle session listener retirement without opening devices, and
+extends the private-namespace daemon test to refuse an untracked live owner.
+The existing T582 native test runs on this Linux desktop, verifying effective
+weights, thread/child inheritance, a private fake ADB process and denied manager
+fallback. It never changes the real ADB server's scheduling.
+
+Default workspace: 810 pass, three pre-existing ignored tests. Two tooling
+tests initially lacked system Python modules in the isolated venv; their reruns
+passed after exposing the installed system packages. Other passing counters
+were retained, and the remaining suites completed. Optional in-process host
+library/binary: 401 pass, two pre-existing ignored tests. Strict all-target,
+all-feature workspace Clippy and formatting pass. Complexity: 5,622 functions,
+none above nine.
+
+Final combined Linux scope: 1,220/1,222 functions meet 80%, none unmeasured.
+**The overall gate still fails** for T572's camera `open_device` (75%) and
+`run_native` (28.57%). All 61 non-Linux functions remain unmeasured in the full
+report; no foreign-platform runtime validation is claimed.
+
+The [artifact directory](artifacts/2026-09-26-blent-validation/) retains the exact
+source manifest, merged default/optional LLVM counters, additional native
+scheduling counters, reports and logs. Native counters use the unchanged common
+production sources; test-only additions do not alter those source locations.

@@ -146,6 +146,15 @@ fn lifecycle(cli_stop: bool) {
         !duplicate.status.success(),
         "T497: a second daemon claimed the same namespace"
     );
+    // T590: losing the PID file must not admit a second owner of EVDI.
+    let pid_path = fixture.root.path().join(".local/share/blent/blent.pid");
+    let pid = std::fs::read(&pid_path).unwrap();
+    std::fs::remove_file(&pid_path).unwrap();
+    let untracked = fixture.command().output().unwrap();
+    assert!(!untracked.status.success());
+    assert!(String::from_utf8_lossy(&untracked.stderr).contains("untracked"));
+    assert!(child.0.try_wait().unwrap().is_none());
+    std::fs::write(pid_path, pid).unwrap();
     if cli_stop {
         let stopped = fixture.command().arg("stop").output().unwrap();
         assert!(
