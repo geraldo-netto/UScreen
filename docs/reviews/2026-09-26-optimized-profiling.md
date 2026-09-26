@@ -106,3 +106,18 @@ The original Android activity was restored; runtime config was not changed.
 T598 closes its profiling investigation. T600 owns actual budget comparisons;
 T599 owns the EVDI readback question. Complete host unwinding and device-wide
 vendor/kernel CPU attribution remain measurement limitations, not claimed wins.
+
+## Reusable recipe correction (T606)
+
+The original profiling runs passed the session token to host ADB as a process
+argument. This differed from the production launch path and could expose it
+through host process inspection. The curated `profile.py.gz` and
+`scheduler.py.gz` recipes now send the validated launch command through stdin;
+original raw recipes remain in the private evidence archive. No token literal
+is saved in either recipe. Measurement results are unchanged.
+
+`test_profiling_recipe_tokens.py` executes the actual archived launch statements
+against fake subprocess/path adapters. Both original recipes fail its
+no-token-in-argv assertion; corrected recipes pass and still transport the
+complete token through stdin. This permanent test runs in normal Python test
+discovery. Red/green evidence is retained alongside the curated recipes.
