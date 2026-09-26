@@ -11,7 +11,7 @@ import okio.sink
 internal object CameraWire {
     const val MAX_PACKET = 2 * 1024 * 1024
 
-    fun connect(endpoint: CameraEndpoint, lens: CameraLens, rotation: Int, resources: CameraResources): BufferedSink {
+    fun connect(endpoint: CameraEndpoint, lens: CameraLens, rotation: Int, resources: CameraResources): CameraLink {
         val socket = Socket()
         resources.own { socket.close() }
         try {
@@ -26,13 +26,13 @@ internal object CameraWire {
         greeting(sink, endpoint.token, lens, rotation)
         val input = socket.getInputStream()
         check(input.read() == 'O'.code && input.read() == 'K'.code) { "Desktop rejected camera connection" }
-        return sink
+        return CameraLink(sink, java.io.DataInputStream(input))
     }
 
     fun greeting(sink: BufferedSink, token: String, lens: CameraLens, rotation: Int) {
         require(token.matches(Regex("[0-9a-f]{64}")))
         require(rotation in 0..3)
-        sink.writeUtf8("BLCAM001").writeUtf8(token).writeByte(lens.wire).writeByte(rotation).flush()
+        sink.writeUtf8("BLCAM002").writeUtf8(token).writeByte(lens.wire).writeByte(rotation).flush()
     }
 
     fun packet(sink: BufferedSink, source: ByteBuffer, offset: Int, size: Int) {

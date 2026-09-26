@@ -1,0 +1,22 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/uscreen/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.55s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 1 test
+test camera::tests::t539_real_h264_upload_decodes_only_to_selected_endpoint ... FAILED
+
+failures:
+
+---- camera::tests::t539_real_h264_upload_decodes_only_to_selected_endpoint stdout ----
+
+thread 'camera::tests::t539_real_h264_upload_decodes_only_to_selected_endpoint' (770774) panicked at host/src/camera/tests.rs:120:20:
+T614 missing bounded camera feedback: Elapsed(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    camera::tests::t539_real_h264_upload_decodes_only_to_selected_endpoint
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 158 filtered out; finished in 0.59s
+
+error: test failed, to rerun pass `-p blent --lib`

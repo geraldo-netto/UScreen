@@ -2,7 +2,7 @@
 use anyhow::{ensure, Result};
 use tokio::io::{AsyncRead, AsyncReadExt};
 
-pub const MAGIC: &[u8; 8] = b"BLCAM001";
+pub const MAGIC: &[u8; 8] = b"BLCAM002";
 pub const MAX_PACKET: usize = 2 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

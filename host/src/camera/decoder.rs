@@ -112,12 +112,19 @@ async fn transfer(
         .context("camera decoder stdout missing")?;
     socket.write_all(b"OK").await?;
     let receive = async {
+        let mut sequence = 0u64;
         loop {
             let packet =
                 tokio::time::timeout(Duration::from_secs(5), protocol::packet(socket)).await??;
             tokio::time::timeout(Duration::from_secs(2), input.write_all(&packet))
                 .await
                 .context("camera decoder input stalled")??;
+            sequence = sequence
+                .checked_add(1)
+                .context("camera sequence exhausted")?;
+            tokio::time::timeout(Duration::from_secs(2), socket.write_u64(sequence))
+                .await
+                .context("camera feedback stalled")??;
         }
         #[allow(unreachable_code)]
         Ok::<(), anyhow::Error>(())

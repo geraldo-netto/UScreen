@@ -60,7 +60,7 @@ class CameraContractTest {
     @Test fun t539_wireAndBoundedInvalidInputPreserveSourceBuffer() {
         val buffer = Buffer()
         CameraWire.greeting(buffer, endpoint().token, CameraLens.REAR, 3)
-        assertEquals("BLCAM001", buffer.readUtf8(8))
+        assertEquals("BLCAM002", buffer.readUtf8(8))
         assertEquals(endpoint().token, buffer.readUtf8(64))
         assertEquals(1, buffer.readByte().toInt())
         assertEquals(3, buffer.readByte().toInt())
@@ -87,13 +87,13 @@ class CameraContractTest {
                     java.io.DataInputStream(peer.getInputStream()).readFully(greeting)
                     peer.getOutputStream().write("OK".toByteArray())
                     java.io.DataInputStream(peer.getInputStream()).readInt().let { length ->
-                        ByteArray(length).also { java.io.DataInputStream(peer.getInputStream()).readFully(it) }
+                        ByteArray(length).also { java.io.DataInputStream(peer.getInputStream()).readFully(it); java.io.DataOutputStream(peer.getOutputStream()).writeLong(1) }
                     }
                 }
             }
             val resources = CameraResources()
             val sink = CameraWire.connect(endpoint(server.localPort), CameraLens.FRONT, 0, resources)
-            CameraWire.packet(sink, ByteBuffer.wrap(byteArrayOf(4, 5)), 0, 2)
+            sink.send(ByteBuffer.wrap(byteArrayOf(4, 5)), 0, 2, 0)
             assertArrayEquals(byteArrayOf(4, 5), received.get(5, TimeUnit.SECONDS))
             resources.close()
         }

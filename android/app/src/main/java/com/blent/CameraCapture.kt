@@ -11,7 +11,6 @@ import android.util.Range
 import android.util.Size
 import android.view.Surface
 import kotlinx.coroutines.*
-import okio.BufferedSink
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -28,6 +27,7 @@ internal class CameraCapture(context: Context) {
             validateSize(metadata, endpoint)
             val sensor = metadata.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
             val rotation = rotation(sensor, displayRotation, lens)
+            android.util.Log.i("BlentCamera", "timestampSource=${metadata.get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE)} age=relative-encoder-queue")
             val sink = CameraWire.connect(endpoint, lens, rotation, resources)
             val codec = encoder(endpoint, resources)
             val surface = codec.createInputSurface()
@@ -99,31 +99,35 @@ internal class CameraCapture(context: Context) {
         session.setRepeatingRequest(request, null, handler)
     }
 
-    private suspend fun drain(codec: MediaCodec, sink: BufferedSink): Nothing {
+    private suspend fun drain(codec: MediaCodec, sink: CameraLink): Nothing {
         val info = MediaCodec.BufferInfo()
+        val clock = CameraFrameClock()
         var progress = android.os.SystemClock.elapsedRealtime()
         while (true) {
             currentCoroutineContext().ensureActive()
             val index = codec.dequeueOutputBuffer(info, 10_000)
             when {
-                index >= 0 -> { sendBuffer(codec, sink, info, index); progress = android.os.SystemClock.elapsedRealtime() }
+                index >= 0 -> { sendBuffer(codec, sink, info, index, clock); progress = android.os.SystemClock.elapsedRealtime() }
                 index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> sendConfiguration(codec.outputFormat, sink)
             }
             check(android.os.SystemClock.elapsedRealtime() - progress < 5000) { "Camera encoder stopped producing frames" }
         }
     }
 
-    private fun sendBuffer(codec: MediaCodec, sink: BufferedSink, info: MediaCodec.BufferInfo, index: Int) {
+    private fun sendBuffer(codec: MediaCodec, sink: CameraLink, info: MediaCodec.BufferInfo, index: Int, clock: CameraFrameClock) {
         try {
-            if (info.size > 0) CameraWire.packet(sink, requireNotNull(codec.getOutputBuffer(index)), info.offset, info.size)
+            if (info.size > 0) {
+                val age = clock.ageUs(info.presentationTimeUs, System.nanoTime() / 1000)
+                sink.send(requireNotNull(codec.getOutputBuffer(index)), info.offset, info.size, age)
+            }
             check(info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM == 0) { "Camera encoder stopped" }
         } finally { codec.releaseOutputBuffer(index, false) }
     }
 
-    private fun sendConfiguration(format: MediaFormat, sink: BufferedSink) {
+    private fun sendConfiguration(format: MediaFormat, sink: CameraLink) {
         for (key in listOf("csd-0", "csd-1")) {
             val buffer = format.getByteBuffer(key) ?: continue
-            CameraWire.packet(sink, buffer, buffer.position(), buffer.remaining())
+            sink.send(buffer, buffer.position(), buffer.remaining(), 0)
         }
     }
 

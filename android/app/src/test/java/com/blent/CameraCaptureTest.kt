@@ -147,7 +147,10 @@ class CameraCaptureTest {
                         peer.soTimeout = 2000
                         val input = java.io.DataInputStream(peer.getInputStream())
                         input.readFully(ByteArray(74)); peer.getOutputStream().write("OK".toByteArray())
-                        while (true) packets.add(ByteArray(input.readInt()).also { input.readFully(it) })
+                        while (true) {
+                            packets.add(ByteArray(input.readInt()).also { input.readFully(it) })
+                            java.io.DataOutputStream(peer.getOutputStream()).writeLong(packets.size.toLong())
+                        }
                     }
                 } catch (_: java.io.IOException) {}
             }

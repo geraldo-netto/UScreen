@@ -95,11 +95,20 @@ Larger profiles cost USB bandwidth, decoding/encoding work and tablet power.
 The desktop uses one persistent FFmpeg producer per virtual camera and an
 FFmpeg decoder for the selected camera. Android uses Camera2 and MediaCodec.
 A dedicated authenticated local TCP connection crosses a temporary ADB reverse
-mapping, independent of the display and pen connections. Its `BLCAM001` header
+mapping, independent of the display and pen connections. Its `BLCAM002` header
 contains the session credential, lens identity and rotation, followed by bounded
 big-endian length-prefixed H.264 packets. Packets are capped at 2 MiB; connection,
 read/write and encoder-progress deadlines bound stalled sessions. Each new lens
 connection gets a new decoder; no encoded history crosses the switch.
+Both applications must be updated together. After each complete packet reaches
+the host decoder input, the host sends an eight-byte big-endian acceptance counter
+starting at one per connection. Android permits only one packet in flight and
+rejects unexpected feedback; acceptance is not decoding or presentation.
+`BlentCamera` logs every 30 accepted packets: sender-side feedback duration and
+extra encoder-queue age relative to the first encoded timestamp. Initial capture
+and encoder delay are excluded. No host/tablet clock subtraction is performed;
+the sensor timestamp source is logged, but does not establish that MediaCodec
+has preserved that clock without compensation.
 FFmpeg's decoder pixel budget includes alignment padding; individual allocations
 are capped at 64 MiB. Output frames always use the selected desktop dimensions.
 

@@ -115,6 +115,12 @@ async fn t539_real_h264_upload_decodes_only_to_selected_endpoint() {
         assert_eq!(&ack, b"OK");
         client.write_u32(encoded.stdout.len() as u32).await.unwrap();
         client.write_all(&encoded.stdout).await.unwrap();
+        // T614: feedback acknowledges decoder-input acceptance, not presentation.
+        let accepted = tokio::time::timeout(Duration::from_millis(500), client.read_u64())
+            .await
+            .expect("T614 missing bounded camera feedback")
+            .unwrap();
+        assert_eq!(accepted, 1);
         tokio::time::timeout(Duration::from_secs(3), front_rx.changed())
             .await
             .unwrap()
