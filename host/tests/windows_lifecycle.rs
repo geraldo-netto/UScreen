@@ -202,3 +202,35 @@ fn t524_default_invocation_uses_the_same_owned_lifecycle() {
     wait_ready(&path, &mut child);
     stop(&path, &mut child);
 }
+
+#[test]
+fn t524_stop_reports_cleanup_failure_and_retires_other_resources() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("runtime");
+    let mut child = start(&path);
+    wait_ready(&path, &mut child);
+    std::fs::create_dir(path.join("sessions.json")).unwrap();
+    let output = command(&path, "stop")
+        .output_timeout(Duration::from_secs(8))
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "T524: stop falsely reported successful cleanup"
+    );
+    assert!(
+        !path.join("token").exists(),
+        "T524: stop retained token after a ledger failure"
+    );
+    blent_config::lifecycle::wait_until(Duration::from_secs(3), || {
+        Ok(child
+            .0
+            .try_wait()?
+            .map(|status| {
+                assert!(!status.success());
+                true
+            })
+            .unwrap_or(false))
+    })
+    .unwrap();
+    assert!(path.join("sessions.json").is_dir());
+}

@@ -11,3 +11,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --locked -p blent-config t524_cleanup_failure_still_retires_token_and_reports_failed_stop -- --nocapture
+      - if: always()
+        run: cargo test --locked -p blent --test windows_lifecycle t524_stop_reports_cleanup_failure_and_retires_other_resources -- --nocapture
