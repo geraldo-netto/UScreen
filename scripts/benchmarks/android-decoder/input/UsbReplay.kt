@@ -21,8 +21,9 @@ internal class UsbReplay(private val surface: Surface, private val active: Atomi
     private val controlledRestart = AtomicBoolean()
     private val decoder = DecoderSession(Any(), active::get, FrameTiming(), object : DecoderEvents {
         override fun rendered(sequence: Int, decodeMicros: Int) {
-            stats.rendered(sequence, decodeMicros)
+            // Publish the ACK obligation before exposing render completion (T571).
             send { it.writeByte(1); it.writeInt(sequence); it.writeInt(decodeMicros) }
+            stats.rendered(sequence, decodeMicros)
         }
         override fun invalidated() {
             stats.invalidated()
@@ -50,7 +51,7 @@ internal class UsbReplay(private val surface: Surface, private val active: Atomi
             val deadline = System.nanoTime() + 750_000_000L
             while (active.get() && stats.count() < count && System.nanoTime() < deadline) LockSupport.parkNanos(1_000_000)
             while (active.get() && pending.get() > 0 && System.nanoTime() < deadline) LockSupport.parkNanos(1_000_000)
-            return JSONObject().put("completed", active.get()).put("sent", count).put("stats", stats.finish())
+            return JSONObject().put("completed", completed()).put("sent", count).put("stats", stats.finish())
                 .put("metadata", metadata).put("selection_receipt", replayReceipt(decoder))
         } finally {
             socket.close()
@@ -59,6 +60,8 @@ internal class UsbReplay(private val surface: Surface, private val active: Atomi
             decoder.releaseCodec()
         }
     }
+
+    private fun completed(): Boolean = active.get() && stats.count() == count && pending.get() == 0
 
     private fun format(metadata: JSONObject): DecoderFormat {
         val width = metadata.getInt("width")

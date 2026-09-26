@@ -54,6 +54,66 @@ class UsbReplayTest {
         } finally { worker.shutdownNow(); decoder.releaseCodec(); surface.release() }
     }
 
+    private fun field(replay: UsbReplay, name: String): Any =
+        UsbReplay::class.java.getDeclaredField(name).apply { isAccessible = true }.get(replay)!!
+
+    @Test fun t571_ackObligationExistsBeforeRenderCountCanBePublished() {
+        val surface = Surface(SurfaceTexture(1))
+        val replay = UsbReplay(surface, AtomicBoolean(true))
+        val stats = field(replay, "stats") as ReplayStats
+        val decoder = field(replay, "decoder") as DecoderSession
+        val events = DecoderSession::class.java.getDeclaredField("events").apply { isAccessible = true }
+            .get(decoder) as DecoderEvents
+        val callback = Thread { events.rendered(1, 10) }
+        stats.begin(1)
+        try {
+            synchronized(stats) {
+                callback.start()
+                val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+                while (callback.state != Thread.State.BLOCKED && System.nanoTime() < deadline) Thread.yield()
+                assertEquals(Thread.State.BLOCKED, callback.state)
+                // Completion must never observe the final render before its ACK obligation.
+                assertEquals(1, (field(replay, "pending") as java.util.concurrent.atomic.AtomicInteger).get())
+            }
+        } finally { callback.join(2000); surface.release() }
+        assertFalse(callback.isAlive)
+        assertEquals(1, stats.count())
+    }
+
+    @Test fun t571_deadlineCannotReportMissingRenderOrUndrainedAckAsComplete() {
+        assertIncomplete(true)
+        assertIncomplete(false)
+    }
+
+    private fun assertIncomplete(missingRender: Boolean) {
+        val surface = Surface(SurfaceTexture(1))
+        val replay = UsbReplay(surface, AtomicBoolean(true))
+        val decoder = field(replay, "decoder") as DecoderSession
+        decoder.createCodec = { MediaCodec.createDecoderByType(it.mimeType) }
+        if (missingRender) {
+            UsbReplay::class.java.getDeclaredField("count").apply { isAccessible = true }.setInt(replay, 1)
+        } else {
+            (field(replay, "pending") as java.util.concurrent.atomic.AtomicInteger).set(1)
+        }
+        val worker = Executors.newSingleThreadExecutor()
+        try {
+            ServerSocket(0).use { server ->
+                server.soTimeout = 3000
+                val task = worker.submit<JSONObject> { replay.run(server.localPort) }
+                server.accept().use { socket ->
+                    socket.soTimeout = 3000
+                    val input = DataInputStream(socket.getInputStream())
+                    val output = DataOutputStream(socket.getOutputStream())
+                    output.writeUTF(metadata().toString())
+                    assertReady(input)
+                    output.writeInt(2)
+                    val result = task.get(3, TimeUnit.SECONDS)
+                    assertFalse(result.toString(), result.getBoolean("completed"))
+                }
+            }
+        } finally { worker.shutdownNow(); decoder.releaseCodec(); surface.release() }
+    }
+
     private fun metadata(): JSONObject {
         val request = JSONObject(javaClass.getResource("/decoder-selection.json")!!.readText())
         return JSONObject().put("width", 1280).put("height", 800).put("fps", 60)
