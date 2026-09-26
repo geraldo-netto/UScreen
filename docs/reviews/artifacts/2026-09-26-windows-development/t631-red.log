@@ -1,0 +1,118 @@
+    Checking blent v1.2.3 (/backups/disk2/projects/blent/host)
+error[E0433]: cannot find `unix` in `os`
+ --> host/examples/../src/camera/outputs.rs:6:9
+  |
+6 |     os::unix::{
+  |         ^^^^ could not find `unix` in `os`
+
+error[E0433]: cannot find `runtime` in `blent_config`
+  --> host/examples/../src/camera/protocol.rs:20:23
+   |
+20 |         blent_config::runtime::token_matches(token, presented),
+   |                       ^^^^^^^ could not find `runtime` in `blent_config`
+   |
+note: found an item that was configured out
+  --> common/src/lib.rs:46:36
+   |
+45 | #[cfg(all(target_os = "linux", feature = "platform"))]
+   |           ------------------- the item is gated behind the `linux` feature
+46 | pub use linux::{daemon_is_running, runtime};
+   |                                    ^^^^^^^
+
+error[E0433]: cannot find `runtime` in `blent_config`
+  --> host/examples/camera-feedback-probe.rs:45:31
+   |
+45 |     let token = blent_config::runtime::random_token()?;
+   |                               ^^^^^^^ could not find `runtime` in `blent_config`
+   |
+note: found an item that was configured out
+  --> common/src/lib.rs:46:36
+   |
+45 | #[cfg(all(target_os = "linux", feature = "platform"))]
+   |           ------------------- the item is gated behind the `linux` feature
+46 | pub use linux::{daemon_is_running, runtime};
+   |                                    ^^^^^^^
+
+error[E0433]: cannot find `runtime` in `blent_config`
+  --> host/examples/camera-feedback-probe.rs:60:31
+   |
+60 |     let token = blent_config::runtime::random_token()?;
+   |                               ^^^^^^^ could not find `runtime` in `blent_config`
+   |
+note: found an item that was configured out
+  --> common/src/lib.rs:46:36
+   |
+45 | #[cfg(all(target_os = "linux", feature = "platform"))]
+   |           ------------------- the item is gated behind the `linux` feature
+46 | pub use linux::{daemon_is_running, runtime};
+   |                                    ^^^^^^^
+
+error[E0599]: no method named `custom_flags` found for mutable reference `&mut std::fs::OpenOptions` in the current scope
+  --> host/examples/../src/camera/outputs.rs:27:10
+   |
+24 |       let file = std::fs::OpenOptions::new()
+   |  ________________-
+25 | |         .read(true)
+26 | |         .write(true)
+27 | |         .custom_flags(libc::O_NOFOLLOW)
+   | |         -^^^^^^^^^^^^ method not found in `&mut std::fs::OpenOptions`
+   | |_________|
+   |
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `OpenOptionsExt` which provides `custom_flags` is implemented but not in scope; perhaps you want to import it
+   |
+ 2 + use std::os::windows::fs::OpenOptionsExt;
+   |
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:27:23
+   |
+27 |         .custom_flags(libc::O_NOFOLLOW)
+   |                       ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:42:9
+   |
+42 |         libc::major(metadata.rdev()),
+   |         ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:43:9
+   |
+43 |         libc::minor(metadata.rdev())
+   |         ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:49:27
+   |
+49 |     let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+   |                           ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:49:57
+   |
+49 |     let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+   |                                                         ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `libc` in this scope
+  --> host/examples/../src/camera/outputs.rs:49:73
+   |
+49 |     let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+   |                                                                         ^^^^ use of unresolved module or unlinked crate `libc`
+   |
+   = help: if you wanted to use a crate named `libc`, use `cargo add libc` to add it to your `Cargo.toml`
+
+Some errors have detailed explanations: E0433, E0599.
+For more information about an error, try `rustc --explain E0433`.
+error: could not compile `blent` (example "camera-feedback-probe") due to 11 previous errors

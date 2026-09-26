@@ -16,6 +16,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Test portable policy without platform features
         run: cargo test --locked -p blent-config --no-default-features
+      - name: T631 reject the Linux camera probe on Windows
+        shell: pwsh
+        run: |
+          $output = & cargo run --locked -p blent --example camera-feedback-probe 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 2 -or $output -notmatch 'requires the Linux camera backend') {
+            Write-Output $output
+            throw 'T631: Linux camera probe must build and explicitly reject Windows'
+          }
+          exit 0
       - name: Test native paths, ACLs, leases, jobs and preview applications
         # T493 security/lease tests remain mandatory; Wine cannot replace them.
         run: cargo test --locked --workspace
@@ -34,5 +43,7 @@ jobs:
           targets: x86_64-pc-windows-gnu
       - name: Install MinGW linker
         run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: T631 compile the camera probe platform boundary
+        run: cargo check --locked -p blent --example camera-feedback-probe --target x86_64-pc-windows-gnu
       - name: Link all Windows preview applications and regression executables
         run: cargo test --locked --workspace --all-features --target x86_64-pc-windows-gnu --no-run
