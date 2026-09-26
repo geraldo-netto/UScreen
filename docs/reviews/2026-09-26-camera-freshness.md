@@ -17,6 +17,20 @@ and the Android camera suite pass. JaCoCo measured all 34 functions in the
 changed Android files ≥80%; LLVM measured all six functions in decoder/protocol
 ≥80%. Complexity: 5,825 functions, none above nine. [Evidence](artifacts/2026-09-26-camera/freshness/).
 
-Subsequent stale-frame dropping, whole-packet deadlines/reconnect and rate
+Whole-packet deadlines/reconnect and rate
 adaptation are tracked separately in TODO.md until implemented. No native
 performance improvement or absolute camera-to-display latency is claimed here.
+
+## T616 — stale encoded-frame recovery
+
+A permanent Camera2/MediaCodec adapter regression first observed seven packets
+where only four were safe. It now observes four: configuration, initial keyframe,
+fresh recovery keyframe and its dependent frame. Three stale/dependent frames
+are dropped, exactly one sync request is issued, and every dequeued buffer is
+released. Pure policy tests cover the exact freshness boundary, initial keyframe
+wait, missing keyframe timeout and invalid budgets. Initial budget is 150 ms,
+configurable 50–2000 ms through the portable profile, invitation, CLI and GUI.
+
+Android changed-file coverage: 35/35 functions ≥80%. Rust profile, bridge and
+camera settings: 20/20 functions ≥80%, including the full GUI suite. Camera host
+suite remains 19/19 passing. Complexity: 5,832 functions, none above nine.

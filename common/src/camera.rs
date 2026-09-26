@@ -45,6 +45,9 @@ pub struct CameraProfile {
     /// Camera H.264 target bitrate in kbit/s; independent of display bitrate.
     #[cfg_attr(feature = "platform", arg(long, default_value_t = 3000))]
     pub bitrate: u32,
+    /// Extra encoder-queue age and transport budget; not glass-to-glass latency.
+    #[cfg_attr(feature = "platform", arg(long, default_value_t = 150))]
+    pub freshness_ms: u32,
     /// Additional clockwise rotation after Android sensor/display correction.
     #[cfg_attr(feature = "platform", arg(long, default_value_t = 0))]
     pub rotation: u16,
@@ -83,6 +86,7 @@ impl Default for CameraProfile {
             height: 720,
             fps: 30,
             bitrate: 3000,
+            freshness_ms: 150,
             mirror: false,
             rotation: 0,
         }
@@ -91,6 +95,7 @@ impl Default for CameraProfile {
 
 impl CameraProfile {
     pub fn validate(&self) -> Result<()> {
+        self.validate_freshness()?;
         ensure!(
             matches!(self.rotation, 0 | 90 | 180 | 270),
             "camera rotation must be 0, 90, 180 or 270 degrees"
@@ -111,6 +116,14 @@ impl CameraProfile {
         ensure!(
             (256..=20000).contains(&self.bitrate),
             "camera bitrate must be 256–20000 kbit/s"
+        );
+        Ok(())
+    }
+
+    fn validate_freshness(&self) -> Result<()> {
+        ensure!(
+            (50..=2000).contains(&self.freshness_ms),
+            "camera freshness must be 50–2000 ms"
         );
         Ok(())
     }
@@ -139,6 +152,15 @@ mod tests {
             panic!()
         };
         options
+    }
+
+    #[test]
+    fn t616_freshness_budget_is_bounded() {
+        for value in [0, 49, 50, 150, 2000, 2001, u32::MAX] {
+            let mut candidate = options();
+            candidate.freshness_ms = value;
+            assert_eq!(candidate.validate().is_ok(), (50..=2000).contains(&value));
+        }
     }
 
     #[test]

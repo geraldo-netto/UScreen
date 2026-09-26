@@ -1,0 +1,84 @@
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.3.2' is experimental.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugProfileIdentity
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :app:generateDebugUnitTestConfig UP-TO-DATE
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+
+> Task :app:compileDebugUnitTestKotlin
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:31:74 Parameter 'timeout' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:47:41 Parameter 'index' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:61:36 Parameter 'id' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:79:45 Parameter 'request' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:79:70 Parameter 'callback' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:79:119 Parameter 'handler' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:86:54 Parameter 'id' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:86:66 Parameter 'callback' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:86:104 Parameter 'handler' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:86:122 Parameter 'metadata' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:86:155 Parameter 'target' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:54 Parameter 'id' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:66 Parameter 'callback' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:104 Parameter 'executor' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:124 Parameter 'metadata' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:157 Parameter 'physical' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:203 Parameter 'target' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:216 Parameter 'context' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:90:46 Parameter 'surfaces' is never used
+w: file:///backups/disk2/projects/uscreen/android/app/src/test/java/com/blent/CameraCaptureTest.kt:96:46 Parameter 'template' is never used
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest
+
+com.blent.CameraCaptureTest > t616_staleGapDiscardsDependentFramesUntilFreshKeyframe[27] FAILED
+    java.lang.AssertionError at CameraCaptureTest.kt:208
+
+com.blent.CameraCaptureTest > t616_staleGapDiscardsDependentFramesUntilFreshKeyframe FAILED
+    java.lang.AssertionError at CameraCaptureTest.kt:208
+
+2 tests completed, 2 failed
+
+> Task :app:testDebugUnitTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///backups/disk2/projects/uscreen/android/app/build/reports/tests/testDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+BUILD FAILED in 6s
+27 actionable tasks: 7 executed, 20 up-to-date

@@ -112,6 +112,16 @@ has preserved that clock without compensation.
 FFmpeg's decoder pixel budget includes alignment padding; individual allocations
 are capped at 64 MiB. Output frames always use the selected desktop dimensions.
 
+Freshness defaults to 150 ms (`--freshness-ms`, saved `camera.freshness_ms`,
+or the Camera tab slider; range 50–2000 ms). This experimental budget controls
+extra encoder-queue age, not initial camera/codec latency. A stale encoded frame
+is dropped before transmission. All dependent frames are discarded until a
+fresh keyframe arrives; one sync request is sent per gap. Codec configuration
+is preserved, and a two-second wait without a fresh keyframe stops the session.
+Lower budgets favor freshness but can cause more freezing on slow routes.
+The sender retains only the current MediaCodec buffer and 8 KiB packet staging;
+there is no additional frame-copy queue.
+
 ## Backend boundary
 
 `common/src/camera.rs` defines the portable settings, state and `CameraBackend`

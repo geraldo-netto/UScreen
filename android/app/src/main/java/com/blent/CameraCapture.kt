@@ -16,7 +16,7 @@ import kotlin.coroutines.resumeWithException
 
 /** Camera2/MediaCodec resources belong to one foreground, explicitly selected run. */
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class CameraCapture(context: Context) {
+internal class CameraCapture(context: Context, private val nowUs: () -> Long = { System.nanoTime() / 1000 }) {
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val handler = Handler(Looper.getMainLooper())
 
@@ -36,7 +36,7 @@ internal class CameraCapture(context: Context) {
             val camera = withTimeout(5000) { open(id).also { device -> resources.own { device.close() } } }
             val session = withTimeout(5000) { session(camera, surface).also { configured -> resources.own { configured.close() } } }
             repeat(camera, session, surface, frameRate(metadata, endpoint.fps))
-            drain(codec, sink)
+            drain(codec, sink, endpoint.freshnessMs)
         }
 
     private fun cameraId(lens: CameraLens): String {
@@ -99,29 +99,49 @@ internal class CameraCapture(context: Context) {
         session.setRepeatingRequest(request, null, handler)
     }
 
-    private suspend fun drain(codec: MediaCodec, sink: CameraLink): Nothing {
+    private suspend fun drain(codec: MediaCodec, sink: CameraLink, freshnessMs: Int): Nothing {
         val info = MediaCodec.BufferInfo()
         val clock = CameraFrameClock()
+        val freshness = CameraFreshness(freshnessMs * 1000L)
         var progress = android.os.SystemClock.elapsedRealtime()
         while (true) {
             currentCoroutineContext().ensureActive()
             val index = codec.dequeueOutputBuffer(info, 10_000)
             when {
-                index >= 0 -> { sendBuffer(codec, sink, info, index, clock); progress = android.os.SystemClock.elapsedRealtime() }
+                index >= 0 -> { sendBuffer(codec, sink, info, index, clock, freshness); progress = android.os.SystemClock.elapsedRealtime() }
                 index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> sendConfiguration(codec.outputFormat, sink)
             }
             check(android.os.SystemClock.elapsedRealtime() - progress < 5000) { "Camera encoder stopped producing frames" }
         }
     }
 
-    private fun sendBuffer(codec: MediaCodec, sink: CameraLink, info: MediaCodec.BufferInfo, index: Int, clock: CameraFrameClock) {
+    private fun sendBuffer(codec: MediaCodec, sink: CameraLink, info: MediaCodec.BufferInfo, index: Int, clock: CameraFrameClock, freshness: CameraFreshness) {
         try {
             if (info.size > 0) {
-                val age = clock.ageUs(info.presentationTimeUs, System.nanoTime() / 1000)
-                sink.send(requireNotNull(codec.getOutputBuffer(index)), info.offset, info.size, age)
+                val buffer = requireNotNull(codec.getOutputBuffer(index))
+                sendFrame(codec, sink, buffer, info, clock, freshness)
             }
             check(info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM == 0) { "Camera encoder stopped" }
         } finally { codec.releaseOutputBuffer(index, false) }
+    }
+
+    private fun sendFrame(codec: MediaCodec, sink: CameraLink, buffer: java.nio.ByteBuffer,
+        info: MediaCodec.BufferInfo, clock: CameraFrameClock, freshness: CameraFreshness) {
+        if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+            sink.send(buffer, info.offset, info.size, 0)
+            return
+        }
+        val now = nowUs()
+        val age = clock.ageUs(info.presentationTimeUs, now)
+        val key = info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0
+        when (freshness.choose(age, key, now)) {
+            CameraFreshness.Decision.SEND -> sink.send(buffer, info.offset, info.size, age)
+            CameraFreshness.Decision.DROP -> Unit
+            CameraFreshness.Decision.REQUEST_SYNC -> {
+                android.util.Log.i("BlentCamera", "freshnessGap dropped=${freshness.dropped} queueAgeUs=$age")
+                codec.setParameters(android.os.Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
+            }
+        }
     }
 
     private fun sendConfiguration(format: MediaFormat, sink: CameraLink) {

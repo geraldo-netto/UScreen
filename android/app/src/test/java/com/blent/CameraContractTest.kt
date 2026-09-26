@@ -54,6 +54,8 @@ class CameraContractTest {
         for (value in listOf(0, 255, 256, 20000, 20001)) assertEquals(value in 256..20000, endpoint().copy(bitrate = value).valid())
         for (value in listOf(-1, 0, 1, 65535, 65536)) assertEquals(value in 1..65535, endpoint(value).valid())
         assertFalse(endpoint().copy(token = "g".repeat(64)).valid())
+        for (value in listOf(Int.MIN_VALUE, 49, 50, 150, 2000, 2001, Int.MAX_VALUE))
+            assertEquals(value in 50..2000, endpoint().copy(freshnessMs = value).valid())
         CameraInvitations.endpoint.value = null
     }
 

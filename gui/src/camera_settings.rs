@@ -136,6 +136,10 @@ fn profile(ui: &mut egui::Ui, options: &mut CameraProfile) {
     ui.label("Camera bitrate");
     ui.add(egui::Slider::new(&mut options.bitrate, 256..=20000).suffix(" kbit/s"));
     ui.end_row();
+    ui.label("Freshness budget");
+    ui.add(egui::Slider::new(&mut options.freshness_ms, 50..=2000).suffix(" ms"))
+        .on_hover_text("Lower budgets discard backlog sooner, but may freeze more often on a slow route. This is not total camera latency.");
+    ui.end_row();
     ui.label("Mirror");
     ui.checkbox(&mut options.mirror, "Flip video horizontally");
     ui.end_row();

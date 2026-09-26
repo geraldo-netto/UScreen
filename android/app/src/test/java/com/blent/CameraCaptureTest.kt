@@ -26,14 +26,23 @@ import org.robolectric.shadows.*
 
 @Implements(MediaCodec::class)
 class CameraEncoderShadow : ShadowMediaCodec() {
-    companion object { var step = 0; var releases = 0; var afterPacket: () -> Unit = {} }
+    companion object { var step = 0; var releases = 0; var afterPacket: () -> Unit = {}; var frames: List<Triple<Long, Long, Int>> = emptyList(); var nowUs = 0L; var syncRequests = 0 }
     @Implementation fun createInputSurface() = Surface(SurfaceTexture(0))
     @Implementation fun dequeueOutputBuffer(info: MediaCodec.BufferInfo, timeout: Long): Int {
+        if (frames.isNotEmpty() && step in 1..frames.size) {
+            val (pts, now, flags) = frames[step++ - 1]
+            nowUs = now
+            info.set(1, 3, pts, flags)
+            return 0
+        }
         return when (step++) {
             0 -> MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
-            1 -> { info.set(1, 3, 1000, 0); 0 }
+            1 -> { info.set(1, 3, 1000, MediaCodec.BUFFER_FLAG_KEY_FRAME); 0 }
             else -> { info.set(0, 0, 2000, MediaCodec.BUFFER_FLAG_END_OF_STREAM); 0 }
         }
+    }
+    @Implementation fun setParameters(parameters: android.os.Bundle) {
+        if (parameters.containsKey(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME)) syncRequests++
     }
     @Implementation fun getOutputBuffer(index: Int): ByteBuffer = ByteBuffer.wrap(byteArrayOf(9, 1, 2, 3, 9))
     @Implementation override fun getOutputFormat(): MediaFormat = MediaFormat().apply {
@@ -120,6 +129,7 @@ class CameraCaptureTest {
         capture = CameraCapture(context)
         CameraEncoderShadow.step = 0; CameraEncoderShadow.releases = 0
         CameraEncoderShadow.afterPacket = {}
+        CameraEncoderShadow.frames = emptyList(); CameraEncoderShadow.nowUs = 0; CameraEncoderShadow.syncRequests = 0
         CameraManagerCaptureShadow.failure = 0; CameraDeviceCaptureShadow.failSession = false
         CameraManagerCaptureShadow.beforeOpen = {}; CameraDeviceCaptureShadow.beforeSession = {}
         CameraManagerCaptureShadow.created = null; CameraDeviceCaptureShadow.created = null
@@ -182,6 +192,23 @@ class CameraCaptureTest {
             Shadows.shadowOf(Looper.getMainLooper()).idle()
             Thread.sleep(5)
         }
+    }
+
+    @Test fun t616_staleGapDiscardsDependentFramesUntilFreshKeyframe() {
+        capture = CameraCapture(RuntimeEnvironment.getApplication()) { CameraEncoderShadow.nowUs }
+        addCamera("rear-id", CameraCharacteristics.LENS_FACING_BACK)
+        CameraEncoderShadow.frames = listOf(
+            Triple(0L, 0L, MediaCodec.BUFFER_FLAG_KEY_FRAME),
+            Triple(33_000L, 250_000L, 0),
+            Triple(66_000L, 260_000L, 0),
+            Triple(100_000L, 270_000L, MediaCodec.BUFFER_FLAG_KEY_FRAME),
+            Triple(300_000L, 310_000L, MediaCodec.BUFFER_FLAG_KEY_FRAME),
+            Triple(333_000L, 340_000L, 0))
+        val (failure, packets) = exercise()
+        assertEquals("Camera encoder stopped", failure?.message)
+        assertEquals("T616 stale/dependent packets reached the wire", 4, packets.size)
+        assertEquals(1, CameraEncoderShadow.syncRequests)
+        assertEquals(7, CameraEncoderShadow.releases)
     }
 
     @Test fun t539_nativeAdaptersSendConfigurationAndFramedCameraBytes() {

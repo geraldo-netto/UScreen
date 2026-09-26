@@ -48,7 +48,7 @@ print('Broadcast completed: result=1')"#,
     let args: Vec<String> = serde_json::from_str(&argv).unwrap();
     assert_eq!(args, ["-s", &bridge.serial, "shell"]);
     let command = std::fs::read_to_string(root.path().join("stdin")).unwrap();
-    assert_eq!(command, format!("am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port 34567 --ei width 160 --ei height 120 --ei fps {} --ei lens 0 --ez background false --ei bitrate {}\n", options().fps, options().bitrate));
+    assert_eq!(command, format!("am broadcast -n io.github.geraldo_netto.blent/com.blent.CameraReceiver --es token {token} --ei port 34567 --ei width 160 --ei height 120 --ei fps {} --ei lens 0 --ez background false --ei bitrate {} --ei freshness_ms {}\n", options().fps, options().bitrate, options().freshness_ms));
 }
 
 #[tokio::test]
