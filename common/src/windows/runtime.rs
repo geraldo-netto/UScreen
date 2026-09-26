@@ -72,6 +72,9 @@ impl Lease {
     pub fn directory(&self) -> &Path {
         self.directory.path()
     }
+    pub fn private_directory(&self) -> &Directory {
+        &self.directory
+    }
     pub fn identity(&self) -> &Identity {
         &self.identity
     }

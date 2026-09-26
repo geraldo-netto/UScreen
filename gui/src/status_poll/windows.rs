@@ -1,4 +1,4 @@
-//! Discovery-only status: no runtime state is created or backend implied.
+//! Read-only daemon identity and dependency status; no tablet backend is implied.
 use super::{Capabilities, Source};
 use crate::Status;
 #[derive(Default)]
@@ -15,7 +15,13 @@ impl Source for Platform {
         }
     }
     fn dynamic(&mut self, capabilities: &Capabilities) -> Status {
+        let owner = blent_config::windows::runtime::runtime_dir()
+            .ok()
+            .and_then(|path| blent_config::windows::lifecycle::status(&path).ok())
+            .flatten();
         Status {
+            daemon_running: owner.is_some(),
+            daemon_pid: owner.map(|identity| identity.pid).unwrap_or_default(),
             daemon_binary: capabilities.daemon_binary,
             ffmpeg_ok: capabilities.ffmpeg,
             adb_ok: capabilities.adb,

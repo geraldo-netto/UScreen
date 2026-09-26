@@ -492,9 +492,14 @@ impl App {
     }
 
     fn show_status(&mut self, ui: &mut egui::Ui, status: &Status) {
-        if !capabilities().daemon {
+        if !capabilities().display {
             platform_diagnostics::show(ui, status.diagnostics.as_deref(), capabilities());
-            self.show_daemon_control(ui, false);
+            ui.label(if status.daemon_running {
+                "Blent daemon running"
+            } else {
+                "Blent daemon stopped"
+            });
+            self.show_daemon_control(ui, status.daemon_running);
             return;
         }
         // ----- Status -----
@@ -551,10 +556,11 @@ impl App {
         }
         ui.horizontal(|ui| {
             let big = egui::vec2(ui.available_width(), 34.0);
-            let label = if running {
-                "Stop display & input"
-            } else {
-                "Start display & input"
+            let label = match (capabilities().display, running) {
+                (true, true) => "Stop display & input",
+                (true, false) => "Start display & input",
+                (false, true) => "Stop daemon",
+                (false, false) => "Start daemon",
             };
             if ui
                 .add_sized(
@@ -572,11 +578,11 @@ impl App {
         self.run_action(move || {
             if running {
                 stop_daemon()
-                    .map(|_| "Display service stopped".into())
+                    .map(|_| "Blent daemon stopped".into())
                     .unwrap_or_else(|e| e)
             } else {
                 start_daemon()
-                    .map(|_| "Display service starting…".into())
+                    .map(|_| "Blent daemon starting…".into())
                     .unwrap_or_else(|e| e)
             }
         });
@@ -945,7 +951,7 @@ impl App {
     }
 
     fn show_advanced_video_settings(&mut self, ui: &mut egui::Ui) {
-        if capabilities().daemon {
+        if capabilities().display {
             self.setting_profile_cache(ui);
             self.setting_adaptive_idle(ui);
         }

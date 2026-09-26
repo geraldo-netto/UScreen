@@ -204,8 +204,7 @@ pub(crate) fn restart_with(
     if managed {
         return run("restart", true);
     }
-    run("stop", false)?;
-    start()
+    blent_config::lifecycle::restart(|| run("stop", false), start)
 }
 
 pub(crate) fn start_daemon() -> Result<(), String> {

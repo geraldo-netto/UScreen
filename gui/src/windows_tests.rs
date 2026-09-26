@@ -48,7 +48,9 @@ fn t495_preview_hides_linux_setup_and_capacity_controls() {
         "Capture pipe buffer",
         "Conversion threads",
         "Setup needed",
-        "Daemon stopped",
+        "Display service running",
+        "Start display & input",
+        "Stop display & input",
         "Plug in via USB",
         "Set up display and input (asks for password)",
     ] {
@@ -62,9 +64,6 @@ fn t495_preview_hides_linux_setup_and_capacity_controls() {
 #[test]
 fn t495_unsupported_actions_never_report_success() {
     for result in [
-        start_daemon(),
-        stop_daemon(),
-        restart_daemon(),
         set_autostart(true),
         set_autostart(false),
         run_system_setup(4),

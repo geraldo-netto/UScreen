@@ -38,7 +38,13 @@ fn wait_ready(path: &Path, child: &mut Daemon) {
             child.0.try_wait().unwrap().is_none(),
             "T524: daemon exited before readiness"
         );
-        if path.join("ready.json").exists() {
+        if std::fs::read(path.join("ready.json"))
+            .ok()
+            .and_then(|bytes| {
+                serde_json::from_slice::<blent_config::windows::process::Identity>(&bytes).ok()
+            })
+            .is_some_and(|owner| owner.pid == child.0.id())
+        {
             return;
         }
         assert!(Instant::now() < deadline, "T524: startup timed out");
@@ -122,4 +128,51 @@ fn t524_stopped_status_and_stop_do_not_create_runtime() {
         assert!(result.status.success(), "T524: {result:?}");
         assert!(!path.exists());
     }
+}
+
+#[test]
+fn t524_gui_controller_launch_restart_and_failed_start_retirement() {
+    use blent_config::windows::lifecycle;
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("controller café 東京");
+    let program = Path::new(env!("CARGO_BIN_EXE_blent"));
+    lifecycle::launch(program, &path, Duration::from_secs(10)).unwrap();
+    let first = lifecycle::status(&path).unwrap().unwrap();
+    // A successful concurrent launch converges on the existing owner.
+    lifecycle::launch(&root.path().join("missing.exe"), &path, Duration::ZERO).unwrap();
+    assert_eq!(lifecycle::status(&path).unwrap(), Some(first.clone()));
+    blent_config::lifecycle::restart(
+        || lifecycle::stop(&path, Duration::from_secs(5)).map_err(|e| e.to_string()),
+        || lifecycle::launch(program, &path, Duration::from_secs(10)).map_err(|e| e.to_string()),
+    )
+    .unwrap();
+    assert_ne!(lifecycle::status(&path).unwrap(), Some(first));
+    lifecycle::stop(&path, Duration::from_secs(5)).unwrap();
+    assert!(lifecycle::launch(
+        &root.path().join("missing.exe"),
+        &path,
+        Duration::from_secs(1)
+    )
+    .is_err());
+    assert!(lifecycle::status(&path).unwrap().is_none());
+    assert!(lifecycle::launch(program, &path, Duration::ZERO).is_err());
+    assert!(lifecycle::status(&path).unwrap().is_none());
+    lifecycle::stop(&path, Duration::from_secs(5)).unwrap();
+}
+
+#[test]
+fn t524_doctor_and_unsupported_operations_report_backend_truth() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("absent");
+    let doctor = command(&path, "doctor")
+        .output_timeout(Duration::from_secs(8))
+        .unwrap();
+    assert!(doctor.status.success(), "{doctor:?}");
+    assert!(String::from_utf8_lossy(&doctor.stdout).contains("Display: unavailable (unsupported)"));
+    let unsupported = command(&path, "list-displays")
+        .output_timeout(Duration::from_secs(3))
+        .unwrap();
+    assert!(!unsupported.status.success());
+    assert!(String::from_utf8_lossy(&unsupported.stderr).contains("unsupported"));
+    assert!(!path.exists());
 }
