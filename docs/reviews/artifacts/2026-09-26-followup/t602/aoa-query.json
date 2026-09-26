@@ -1,0 +1,8 @@
+{
+  "vid": "18d1",
+  "pid": "4ee8",
+  "opened": true,
+  "returned_bytes": 2,
+  "protocol": 2,
+  "scope": "AOA GET_PROTOCOL only; no interface claim, strings, START_ACCESSORY, reset or mode switch"
+}
