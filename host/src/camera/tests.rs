@@ -314,6 +314,46 @@ async fn t539_stalled_decoder_cannot_hold_camera_session_forever() {
     assert!(completed.unwrap().0.is_err());
 }
 
+// T620: shared harness must stop even when a producer dies before handshake.
+async fn fixture_outcome(
+    server: impl std::future::Future<Output = Result<()>>,
+    clients: impl std::future::Future<Output = ()>,
+) -> (Result<()>, bool) {
+    tokio::pin!(server, clients);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::select! {
+            result = &mut server => (result, false),
+            _ = &mut clients => (server.await, true),
+        }
+    })
+    .await
+    .expect("T620 camera fixture exceeded its total deadline")
+}
+
+#[tokio::test]
+async fn t620_early_producer_exit_cancels_pending_handshake() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let mut client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let outcome = tokio::time::timeout(
+        Duration::from_millis(250),
+        fixture_outcome(
+            async { anyhow::bail!("fixture producer retired before accept") },
+            async {
+                client.read_exact(&mut [0; 2]).await.unwrap();
+            },
+        ),
+    )
+    .await
+    .expect("T620 fixture hung waiting for handshake after server retirement");
+    assert!(outcome.0.is_err());
+    assert!(
+        !outcome.1,
+        "T620 an unfinished handshake cannot count as completed"
+    );
+}
+
 #[tokio::test]
 async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
     let root = tempfile::tempdir().unwrap();
@@ -321,7 +361,10 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
     let ffmpeg = script(
         root.path(),
         "producer",
-        "import signal, sys\nsignal.alarm(1)\nwhile sys.stdin.buffer.read(4096): pass",
+        &format!(
+            "import pathlib, select, sys\nstop = pathlib.Path({:?})\nwhile not stop.exists():\n if select.select([sys.stdin.buffer], [], [], 0.01)[0]:\n  if not sys.stdin.buffer.read1(4096): break",
+            root.path().join("retire-producers")
+        ),
     );
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let bridge = bridge::Bridge {
@@ -350,6 +393,7 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
         client.read_exact(&mut ack).await.unwrap();
         assert_eq!(&ack, b"OK");
         client.shutdown().await.unwrap();
+        std::fs::write(root.path().join("retire-producers"), "").unwrap();
     };
     let (_stop, mut stopped) = watch::channel(false);
     let (status, _) = watch::channel(State::Starting);
@@ -357,7 +401,7 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
         state: status,
         preview: watch::channel(None).0,
     };
-    let (result, _) = tokio::join!(
+    let (result, clients_finished) = fixture_outcome(
         serve(
             &listener,
             &bridge,
@@ -365,10 +409,12 @@ async fn t539_producer_failure_retires_session_and_rejects_foreign_clients() {
             &ffmpeg,
             &profile,
             &mut stopped,
-            &status
+            &status,
         ),
-        clients
-    );
+        clients,
+    )
+    .await;
+    assert!(clients_finished);
     assert!(result.is_err());
     let mut invalid = profile;
     invalid.front_device = root.path().join("missing");
