@@ -170,6 +170,7 @@ async fn t390_device_jobs_cancel_without_ever_starting_queued_work() {
 
 fn isolated_monitor_test(name: &str) -> Option<tempfile::TempDir> {
     if std::env::var_os("BLENT_T390_ROOT").is_some() {
+        let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         unsafe {
             libc::alarm(15);
             assert_eq!(libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0), 0);
@@ -372,7 +373,7 @@ struct PublishedSessions {
     sessions: Vec<runtime::TabletSession>,
 }
 
-async fn wait_sessions(expected: usize) -> Vec<runtime::TabletSession> {
+async fn wait_sessions(expected: usize, adb: &std::path::Path) -> Vec<runtime::TabletSession> {
     tokio::time::timeout(Duration::from_secs(2), async {
         loop {
             // The fixture executable is a Cargo test binary, not a running
@@ -389,7 +390,11 @@ async fn wait_sessions(expected: usize) -> Vec<runtime::TabletSession> {
         }
     })
     .await
-    .expect("T390: independently ready devices never became active")
+    .unwrap_or_else(|error| {
+        let snapshot = std::fs::read_to_string(runtime::runtime_dir().unwrap().join("sessions.json"));
+        let commands = std::fs::read_to_string(adb.with_extension("commands"));
+        panic!("T390: independently ready devices never became active: {error}; snapshot={snapshot:?}; ADB={commands:?}");
+    })
 }
 
 fn scaling_adb(root: &std::path::Path, count: u32) -> PathBuf {
@@ -398,23 +403,50 @@ fn scaling_adb(root: &std::path::Path, count: u32) -> PathBuf {
     let devices = (1..=count)
         .map(|id| format!("FAST{id}\\tdevice\\n"))
         .collect::<String>();
-    let source = source.replace("FAST\\tdevice\\n", &devices).replace(
-        "printf ready > \"$0.slow-started\"",
-        "echo $$ > \"$0.slow-started\"",
-    );
+    let source = source
+        .replace(
+            "#!/bin/sh\n",
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$0.commands\"\n",
+        )
+        .replace("FAST\\tdevice\\n", &devices)
+        .replace(
+            "printf ready > \"$0.slow-started\"",
+            "echo $$ > \"$0.slow-started\"",
+        );
     std::fs::write(&path, source).unwrap();
     path
+}
+
+// T708: the PID is not a port reservation. Reserve the complete slot range
+// before handing it to the real session listener constructors.
+fn scaling_ports(count: u32) -> Vec<std::net::TcpListener> {
+    for _ in 0..128 {
+        let first = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let base = first.local_addr().unwrap().port();
+        let Some(last) = base.checked_add((2 * count - 1) as u16) else {
+            continue;
+        };
+        let rest: std::io::Result<Vec<_>> = (base + 1..=last)
+            .map(|port| std::net::TcpListener::bind(("127.0.0.1", port)))
+            .collect();
+        if let Ok(rest) = rest {
+            return std::iter::once(first).chain(rest).collect();
+        }
+    }
+    panic!("T708: cannot reserve a complete {count}-slot fixture range");
 }
 
 async fn scaling_case(root: &std::path::Path, count: u32) {
     let folder = root.join(format!("scale-{count}"));
     std::fs::create_dir(&folder).unwrap();
     let adb = scaling_adb(&folder, count);
-    let video_port = 20000 + (std::process::id() % 4000) as u16 * 8;
+    let reserved = scaling_ports(count);
+    let video_port = reserved[0].local_addr().unwrap().port();
     let ports = (video_port, video_port + 1);
     let (tablet, extra, stop) = monitor_inputs(count, ports);
     let command = adb.to_str().unwrap().to_owned();
     let start = std::time::Instant::now();
+    drop(reserved);
     let task = tokio::spawn(async move {
         adb_monitor_using(
             ports.0,
@@ -429,7 +461,7 @@ async fn scaling_case(root: &std::path::Path, count: u32) {
         .await;
     });
     wait_file(&adb.with_extension("slow-started")).await;
-    let sessions = wait_sessions(count as usize).await;
+    let sessions = wait_sessions(count as usize, &adb).await;
     let connected = start.elapsed();
     assert!(sessions
         .iter()
@@ -496,4 +528,17 @@ async fn t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled() {
     for count in [1, 2, 4] {
         scaling_case(&root, count).await;
     }
+}
+
+#[tokio::test]
+async fn t708_scaling_fixture_avoids_an_occupied_pid_derived_slot() {
+    if isolated_monitor_test("t708_scaling_fixture_avoids_an_occupied_pid_derived_slot").is_some() {
+        return;
+    }
+    let root = PathBuf::from(std::env::var_os("BLENT_T390_ROOT").unwrap());
+    let port = 20000 + (std::process::id() % 4000) as u16 * 8 + 2;
+    // Either this listener or an existing owner occupies the old second slot.
+    let occupied = std::net::TcpListener::bind(("127.0.0.1", port)).ok();
+    scaling_case(&root, 2).await;
+    drop(occupied);
 }

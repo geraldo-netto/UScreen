@@ -1,0 +1,15 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.66s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 8 tests
+test discovery_tests::t390_device_jobs_cancel_without_ever_starting_queued_work ... ok
+test discovery_tests::t390_device_jobs_complete_independently_and_bound_concurrency ... ok
+test discovery_tests::t390_initial_discovery_connects_fast_tablet_before_slow_probe ... ok
+test discovery_tests::t390_one_two_four_tablets_connect_and_stop_while_probe_is_stalled ... ok
+test discovery_tests::t390_slow_token_delivery_cannot_delay_another_tablet ... ok
+test discovery_tests::t435_shared_umask_keeps_monitor_fixture_private ... ok
+test discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4 ... ok
+test discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 379 filtered out; finished in 0.31s

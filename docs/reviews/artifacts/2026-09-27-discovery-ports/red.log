@@ -1,0 +1,34 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.33s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot ...
+thread 'discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot' (1023947) panicked at host/src/discovery_tests.rs:199:5:
+
+running 1 test
+test discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot ... FAILED
+
+failures:
+
+failures:
+    discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 386 filtered out; finished in 2.01s
+
+
+thread 'discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot' (1023949) panicked at host/src/discovery_tests.rs:392:6:
+T390: independently ready devices never became active: Elapsed(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    discovery_tests::t708_scaling_fixture_avoids_an_occupied_pid_derived_slot
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 386 filtered out; finished in 2.01s
+
+error: test failed, to rerun pass `-p blent --bin blent`
