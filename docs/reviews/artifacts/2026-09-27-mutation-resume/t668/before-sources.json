@@ -1,0 +1,91 @@
+{
+  "source_commit": "dbea904545e71ab2217b23b1f7241f7d6fa5fb4d",
+  "sources": {
+    "common/src/negotiation/tests.rs": "db289c2a2a45d2652b3185f8e98beb25da0b624ab540d88f03e07a57f7cca7a5",
+    "common/src/negotiation.rs": "f2aae70dfe830c4c7f85ba0bf525beec09230a22bfdf7d3622930e6991fd2326"
+  },
+  "profile": "shared-policy",
+  "selection": {
+    "platforms": [
+      "linux",
+      "win32"
+    ],
+    "packages": [
+      "blent-config"
+    ],
+    "files": [
+      "common/src/version.rs",
+      "common/src/release.rs",
+      "common/src/negotiation.rs",
+      "common/src/idle.rs",
+      "common/src/encoder_workers.rs",
+      "common/src/video.rs",
+      "common/src/tablets.rs",
+      "common/src/raw_frame.rs"
+    ],
+    "cargo_args": [
+      "--lib"
+    ],
+    "test_args": [
+      "--",
+      "version::",
+      "release::",
+      "negotiation::",
+      "idle::",
+      "encoder_workers::",
+      "video::",
+      "tablets::",
+      "raw_frame::"
+    ],
+    "scope": "Portable release, negotiation, idle, encoder-worker, media and tablet policy. Android command builders require host-consumer tests; native adapters, persistence and supervisor discovery are separate."
+  },
+  "platform": "linux",
+  "version": "cargo-mutants 27.1.0",
+  "command": [
+    "cargo",
+    "mutants",
+    "--no-config",
+    "--baseline=run",
+    "--copy-target=false",
+    "--output",
+    "/backups/disk2/blent-mutation-evidence/recovery/shared-policy-final",
+    "--timeout",
+    "60",
+    "--build-timeout",
+    "600",
+    "--jobs",
+    "2",
+    "--jobserver-tasks",
+    "6",
+    "--cargo-arg=--locked",
+    "--colors=never",
+    "--package",
+    "blent-config",
+    "--file",
+    "common/src/version.rs",
+    "--file",
+    "common/src/release.rs",
+    "--file",
+    "common/src/negotiation.rs",
+    "--file",
+    "common/src/idle.rs",
+    "--file",
+    "common/src/encoder_workers.rs",
+    "--file",
+    "common/src/video.rs",
+    "--file",
+    "common/src/tablets.rs",
+    "--file",
+    "common/src/raw_frame.rs",
+    "--cargo-arg=--lib",
+    "--cargo-test-arg=--",
+    "--cargo-test-arg=version::",
+    "--cargo-test-arg=release::",
+    "--cargo-test-arg=negotiation::",
+    "--cargo-test-arg=idle::",
+    "--cargo-test-arg=encoder_workers::",
+    "--cargo-test-arg=video::",
+    "--cargo-test-arg=tablets::",
+    "--cargo-test-arg=raw_frame::"
+  ]
+}

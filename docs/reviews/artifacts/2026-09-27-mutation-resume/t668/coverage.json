@@ -1,0 +1,221 @@
+{
+  "rust_platforms": [
+    "linux"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/negotiation.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 18,
+      "passing": 18,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "receipt",
+      "line": 60,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid",
+      "line": 76,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid_software",
+      "line": 83,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid_families",
+      "line": 89,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid_extension",
+      "line": 96,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid_details",
+      "line": 104,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "matches",
+      "line": 111,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "choose",
+      "line": 118,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "choices",
+      "line": 123,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid",
+      "line": 142,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "supports",
+      "line": 152,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid",
+      "line": 158,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "valid",
+      "line": 164,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "covers",
+      "line": 180,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "level_valid",
+      "line": 189,
+      "language": "rust",
+      "covered": 13,
+      "total": 14,
+      "percent": 92.85714285714286,
+      "passes": true,
+      "missing": [
+        200
+      ]
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "family",
+      "line": 205,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "identifier",
+      "line": 209,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "name": "unique_decoders",
+      "line": 213,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

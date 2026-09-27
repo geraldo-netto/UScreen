@@ -130,3 +130,120 @@ fn t480_software_fingerprint_is_bounded_and_optional_for_older_peers() {
         .valid());
     assert!(report().valid());
 }
+
+#[test]
+fn t668_report_dimensions_and_rate_are_independently_bounded() {
+    for (field, lower, upper) in [("width", 2, 4096), ("height", 2, 4096), ("fps", 10, 90)] {
+        for value in [0, lower - 1, lower, upper, upper + 1, u32::MAX] {
+            let mut raw = serde_json::to_value(report()).unwrap();
+            raw[field] = value.into();
+            let decoded: DecoderCapabilities = serde_json::from_value(raw).unwrap();
+            assert_eq!(
+                decoded.valid(),
+                (lower..=upper).contains(&value),
+                "T668: {field}={value}"
+            );
+        }
+    }
+}
+
+#[test]
+fn t668_codec_families_and_hardware_subset_are_validated() {
+    let mut good = report();
+    good.codecs = ["h264", "hevc", "vp9", "av1"].map(str::to_owned).into();
+    good.hardware = good.codecs.clone();
+    assert!(good.valid());
+    let mut too_many = good.clone();
+    too_many.codecs.push("h264".into());
+    assert!(!too_many.valid());
+    too_many = good.clone();
+    too_many.hardware.push("h264".into());
+    assert!(!too_many.valid());
+    for unknown in ["", "H264", "foreign", "h264\0", "vp9 "] {
+        let mut invalid = good.clone();
+        invalid.codecs[3] = unknown.into();
+        invalid.hardware.clear();
+        assert!(!invalid.valid(), "T668: unknown family {unknown:?}");
+    }
+    let mut missing_family = report();
+    missing_family.hardware = vec!["av1".into()];
+    assert!(!missing_family.valid());
+}
+
+#[test]
+fn t668_legacy_reports_reject_either_rich_extension() {
+    let mut legacy = report();
+    legacy.protocol = 1;
+    legacy.scope = None;
+    legacy.details.clear();
+    assert!(legacy.valid());
+    let mut with_scope = legacy.clone();
+    with_scope.scope = Some("7".into());
+    assert!(!with_scope.valid());
+    legacy.details = report().details;
+    assert!(!legacy.valid());
+    assert!(legacy.choices(&stream("baseline", 8, 31), false).is_empty());
+}
+
+#[test]
+fn t668_invalid_reports_and_streams_cannot_offer_decoder_choices() {
+    let mut invalid = report();
+    invalid.width = 0;
+    assert!(invalid
+        .choices(&stream("baseline", 8, 31), false)
+        .is_empty());
+    for bad in [
+        stream("baseline", 8, 0),
+        stream("baseline", 10, 31),
+        stream("foreign", 8, 31),
+    ] {
+        assert!(!bad.valid());
+        assert!(report().choices(&bad, false).is_empty());
+    }
+}
+
+#[test]
+fn t668_hardware_choices_precede_software_without_losing_identity() {
+    let mut caps = report();
+    let mut software = caps.details[0].clone();
+    software.name = "software.avc".into();
+    software.hardware = Some(false);
+    caps.details.insert(0, software);
+    let choices = caps.choices(&stream("baseline", 8, 31), true);
+    let names: Vec<_> = choices.iter().map(|choice| choice.name.as_str()).collect();
+    assert_eq!(names, ["vendor.avc", "software.avc"]);
+}
+
+#[test]
+fn t668_codec_profile_depth_and_level_contracts_are_independent() {
+    for (codec, profile, depth, level) in [
+        ("h264", "baseline", 8, 9),
+        ("hevc", "main", 8, 10),
+        ("hevc", "main10", 10, 62),
+        ("vp9", "profile0", 8, 11),
+        ("vp9", "profile2", 10, 62),
+        ("av1", "main", 8, 20),
+        ("av1", "main", 10, 73),
+    ] {
+        let valid = StreamProfile {
+            codec: codec.into(),
+            format: Profile {
+                profile: profile.into(),
+                depth,
+                level,
+            },
+        };
+        assert!(valid.valid(), "T668: supported {valid:?}");
+        for invalid_level in [0, 1, 8, 74, u32::MAX] {
+            let mut invalid = valid.clone();
+            invalid.format.level = invalid_level;
+            assert!(!invalid.valid(), "T668: invalid level {invalid:?}");
+        }
+        let mut invalid = valid.clone();
+        invalid.format.depth = 12;
+        assert!(!invalid.valid());
+        invalid = valid;
+        invalid.format.profile = "foreign".into();
+        assert!(!invalid.valid());
+    }
+}
