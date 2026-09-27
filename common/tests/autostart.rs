@@ -13,6 +13,47 @@ fn t653_probe_child() {
 }
 
 #[test]
+fn t656_disable_child() {
+    if std::env::var_os("BLENT_T656_CHILD").is_none() {
+        return;
+    }
+    let entry = autostart::desktop_path().unwrap();
+    std::fs::create_dir_all(&entry).unwrap();
+    std::fs::write(entry.join("unrelated"), "preserve").unwrap();
+    assert!(autostart::set_enabled(false, Path::new("/fixture/blent")).is_err());
+    assert_eq!(
+        std::fs::read_to_string(entry.join("unrelated")).unwrap(),
+        "preserve"
+    );
+    std::fs::remove_file(entry.join("unrelated")).unwrap();
+    std::fs::remove_dir(&entry).unwrap();
+    assert!(autostart::set_enabled(false, Path::new("/fixture/blent")).is_ok());
+}
+
+#[test]
+fn t656_disable_reports_nonmissing_filesystem_errors() {
+    let root = tempfile::tempdir().unwrap();
+    let systemctl = root.path().join("systemctl");
+    std::fs::write(&systemctl, "#!/bin/sh\nexit 1\n").unwrap();
+    std::fs::set_permissions(systemctl, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let result = Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "t656_disable_child", "--nocapture"])
+        .env("PATH", root.path())
+        .env("HOME", root.path())
+        .env("XDG_CONFIG_HOME", root.path().join("config"))
+        .env_remove(blent_config::linux::appimage::LAUNCHER)
+        .env("BLENT_T656_CHILD", "1")
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "T656: {}{}",
+        String::from_utf8_lossy(&result.stdout),
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+#[test]
 fn t653_systemd_probes_require_success_and_exact_state() {
     let root = tempfile::tempdir().unwrap();
     let systemctl = root.path().join("systemctl");
