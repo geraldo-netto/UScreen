@@ -29,6 +29,11 @@ safe transitions. Existing T386 measurements do not justify changing defaults.
 
 ## Validation boundary
 
+Update 2026-09-28: [T701](2026-09-28-compose-test-lifecycle.md) corrected the
+shared-worker lifecycle and the current full instrumented Android suite passes.
+The collection limits below describe the original T417 run and remain historical
+evidence; the decoder UI scope decision and physical measurement limits remain.
+
 Normal-suite tests cover supported/unsupported/unknown capability values,
 API27/API34, missing native metadata, malformed hint values, invalid/range-boundary
 inputs, exact configured requests, codec/stream changes, stopped/late startup,

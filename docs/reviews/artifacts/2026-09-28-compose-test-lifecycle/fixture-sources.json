@@ -1,0 +1,5 @@
+{
+  "android/app/src/test/java/com/blent/BlentTestApplication.kt": "23d08bde9c8abe9b319beec8e8cf3b04b63e4cf4948487e1b0e14c3c92aa99cc",
+  "android/app/src/test/java/com/blent/ComposeOrderTest.kt": "939dae2660bea8a4968d5613dd0980894877b7e626da3869601a570c35636f1f",
+  "android/app/src/test/resources/robolectric.properties": "433c2ad535ee63336bd41cecbf9fb4413294f1d0670dc109ee92c8af0f55b86a"
+}
