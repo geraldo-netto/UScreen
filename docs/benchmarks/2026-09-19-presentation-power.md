@@ -239,9 +239,9 @@ negotiated. These are planned interfaces, not implemented protocol features.
    do not reattach EVDI through unresolved T222 to create a benchmark display.
 
 The relevant existing boundaries are
-[`VideoPacketReader`](../../android/app/src/main/java/com/uscreen/VideoPacketReader.kt),
-[`VideoReceiver`](../../android/app/src/main/java/com/uscreen/VideoReceiver.kt),
-[`DecoderSession`](../../android/app/src/main/java/com/uscreen/DecoderSession.kt)
+[`VideoPacketReader`](../../android/app/src/main/java/com/blent/VideoPacketReader.kt),
+[`VideoReceiver`](../../android/app/src/main/java/com/blent/VideoReceiver.kt),
+[`DecoderSession`](../../android/app/src/main/java/com/blent/DecoderSession.kt)
 and the host [`StreamServer`](../../host/src/stream.rs). Pure framing, recovery
 and retirement tests should precede device tests. The trusted local `TR41`
 fixture format lacks these network/lifecycle guarantees and must not simply

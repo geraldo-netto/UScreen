@@ -30,9 +30,9 @@ Current implementation has no camera capture/export path:
 
 - [`AndroidManifest.xml`](../../android/app/src/main/AndroidManifest.xml) declares
   no `CAMERA` permission; the foreground service type is `connectedDevice`.
-- [`VideoTransport.kt`](../../android/app/src/main/java/com/uscreen/VideoTransport.kt)
+- [`VideoTransport.kt`](../../android/app/src/main/java/com/blent/VideoTransport.kt)
   receives host video, and
-  [`StreamingService.kt`](../../android/app/src/main/java/com/uscreen/StreamingService.kt)
+  [`StreamingService.kt`](../../android/app/src/main/java/com/blent/StreamingService.kt)
   manages the existing notification and power locks.
 - [`host/src/linux_main.rs`](../../host/src/linux_main.rs) establishes ADB reverse
   mappings; [`host/src/stream.rs`](../../host/src/stream.rs) sends display video,
