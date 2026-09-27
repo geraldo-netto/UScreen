@@ -22,5 +22,31 @@
     "cargo_args": ["--lib", "--test=autostart", "--test=appimage"],
     "test_args": ["--", "linux::autostart::", "t536_", "t653_", "t656_", "t308_"],
     "scope": "Linux login registration adapter with isolated normal-suite fixtures."
+  },
+  "shared-policy": {
+    "platforms": ["linux", "win32"],
+    "packages": ["blent-config"],
+    "files": ["common/src/version.rs", "common/src/release.rs", "common/src/negotiation.rs", "common/src/idle.rs", "common/src/encoder_workers.rs", "common/src/tablets.rs", "common/src/raw_frame.rs"],
+    "cargo_args": ["--lib"],
+    "test_args": ["--", "version::", "release::", "negotiation::", "idle::", "encoder_workers::", "tablets::", "raw_frame::"],
+    "scope": "Portable release, negotiation, idle, encoder-worker, tablet and raw-layout policy; codec identity and Android commands have separate consumer-test profiles."
+  },
+  "shared-video": {
+    "platforms": ["linux", "win32"],
+    "packages": ["blent-config", "blent"],
+    "test_packages": ["blent-config", "blent"],
+    "files": ["common/src/video.rs"],
+    "cargo_args": ["--lib", "--bins"],
+    "test_args": ["--", "video::", "encoding::", "media::", "ffmpeg_args::"],
+    "scope": "Shared codec identity and its host/encoding consumers; no native capture mutation."
+  },
+  "android-commands": {
+    "platforms": ["linux", "win32"],
+    "packages": ["blent-config", "blent"],
+    "test_packages": ["blent-config", "blent"],
+    "files": ["common/src/android.rs"],
+    "cargo_args": ["--lib", "--bins"],
+    "test_args": ["--", "usb::", "t250_activity_and_token_targets", "t039_host_sends_tokens"],
+    "scope": "Rust Android command builders and normal host consumers using fake ADB; this is not Android/Kotlin mutation coverage."
   }
 }

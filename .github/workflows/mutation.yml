@@ -6,7 +6,7 @@ on:
       profile:
         type: choice
         description: Native campaign (not a whole-project mutation gate)
-        options: [usb, linux-autostart, windows-autostart]
+        options: [usb, linux-autostart, windows-autostart, shared-policy, shared-video, android-commands]
         default: usb
 
 permissions:

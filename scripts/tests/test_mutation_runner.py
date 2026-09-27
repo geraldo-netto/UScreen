@@ -168,6 +168,17 @@ class MutationIsolationTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             mutation.profile('linux-autostart', 'win32')
 
+    def test_t652_shared_video_includes_consumer_tests(self):
+        selected = mutation.profile('shared-video', sys.platform)
+        args = argparse.Namespace(test_timeout=60, build_timeout=600, jobs=2, build_jobs=6)
+        command = mutation.command(selected, args, Path('/tmp/evidence'))
+        packages = [command[index + 1] for index, value in enumerate(command)
+                    if value == '--test-package']
+        self.assertEqual(packages, ['blent-config', 'blent'])
+        self.assertEqual(selected['packages'], packages, 'Baseline must include consumers')
+        self.assertIn('--cargo-arg=--bins', command)
+        self.assertIn('--cargo-test-arg=media::', command)
+
     def test_t671_consumer_packages_are_explicit_baseline_arguments(self):
         selected = dict(packages=['producer'], test_packages=['producer', 'consumer'],
                         files=['source.rs'], cargo_args=['--lib'])

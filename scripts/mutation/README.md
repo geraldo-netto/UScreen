@@ -15,6 +15,11 @@ python3 scripts/mutation/run.py --profile usb --output /absolute/new/evidence
 
 Use `linux-autostart` on Linux or `windows-autostart` on native Windows.
 `usb` supports both platforms; each execution records its actual platform.
+`shared-policy` tests release, negotiation, idle, encoder-worker, tablet and
+raw-layout policy. `shared-video` adds existing host consumers for codec identity;
+`android-commands` adds host tests for Rust-generated Android commands. The latter
+does not measure Kotlin. These three profiles have Linux campaign evidence;
+their Windows campaigns remain unmeasured.
 Windows execution must use an ordinary account. Tests use isolated registry keys,
 fake ADB processes and owned sockets; no physical device acceptance is implied.
 The Python orchestration command is validated on Linux and native Windows under
@@ -48,6 +53,10 @@ also lists foreign-platform candidates. Never credit Linux execution for Windows
 code disabled by `cfg`. A file with no generated candidates is not a tested file.
 Macro bodies and operators unsupported by cargo-mutants are not exhaustive fault
 coverage. Android, C and essential Python/Shell campaigns remain pending T652.
+
+Pure policy and consumer integration use separate profiles to keep normal test
+selection explicit. A cross-package profile records the consumer packages in
+`test_packages`; its source `files` still restrict what gets mutated.
 
 For each survivor, first verify its selected tests include existing integration
 coverage. Then classify equivalent changes with a concrete semantic explanation
