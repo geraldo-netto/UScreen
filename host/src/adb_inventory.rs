@@ -48,6 +48,14 @@ fn known_state(state: &str) -> bool {
         .contains(&state)
 }
 
+fn record(line: &str) -> Option<(&str, &str)> {
+    let (serial, state) = line.split_once('\t')?;
+    if serial.is_empty() || serial.contains('\0') || !known_state(state) {
+        return None;
+    }
+    Some((serial, state))
+}
+
 pub fn parse(text: &str) -> Option<Vec<String>> {
     let mut lines = text.lines().map(str::trim).filter(|line| !line.is_empty());
     if lines.next()? != "List of devices attached" {
@@ -56,9 +64,8 @@ pub fn parse(text: &str) -> Option<Vec<String>> {
     let mut seen = std::collections::HashSet::new();
     let mut ready = Vec::new();
     for line in lines {
-        let (serial, state) = line.split_once('\t')?;
-        if serial.is_empty() || serial.contains('\0') || !known_state(state) || !seen.insert(serial)
-        {
+        let (serial, state) = record(line)?;
+        if !seen.insert(serial) {
             return None;
         }
         if state == "device" {

@@ -1,0 +1,2 @@
+host/src/adb_inventory.rs:51	parse	10
+6213 functions; 1 exceed cyclomatic complexity 9

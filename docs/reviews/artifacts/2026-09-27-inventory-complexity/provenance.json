@@ -1,0 +1,52 @@
+{
+  "changed_sources": [
+    "host/src/adb_inventory.rs"
+  ],
+  "old_sources": {
+    "host/src/adb_inventory.rs": "4a73dd088ae3dc5f645e62e4f59f55b705511f0205dedb387c7ffc6b50d79d69"
+  },
+  "new_sources": {
+    "host/src/adb_inventory.rs": "abaa8ca05e2a347dbdb72e4a4e6b7ce84344f33040314e6232f9f52507383620"
+  },
+  "unchanged_source_count": 426,
+  "baseline_inputs": [
+    {
+      "source": "/backups/disk2/blent-batch-evidence/t650/baseline-default.lcov",
+      "sha256": "058a5f0a1b288ce6777a01a991b3a03633f38470da8f8ec4b699f62bfffa5402",
+      "filtered_output": "baseline-0.lcov",
+      "excluded_changed_file_records": 0
+    },
+    {
+      "source": "/backups/disk2/blent-batch-evidence/t650/baseline-all-features.lcov",
+      "sha256": "aac98b2f52325a6781e4143b56379a72668a24c9e324cd4b6c28bf078b953e87",
+      "filtered_output": "baseline-1.lcov",
+      "excluded_changed_file_records": 0
+    },
+    {
+      "source": "/backups/disk2/blent-batch-evidence/t650/baseline-native-command.lcov",
+      "sha256": "ef36ffc6e5a136f2d88dc72d5934cbdcb91bc640d7e8268565a166d18256fc37",
+      "filtered_output": "baseline-2.lcov",
+      "excluded_changed_file_records": 0
+    },
+    {
+      "source": "/backups/disk2/blent-batch-evidence/t650/baseline-windows.lcov",
+      "sha256": "1dbf67aec83be72eae757fea69dc82197d7319a6ed10827cad47b574ada73a8c",
+      "filtered_output": "baseline-3.lcov",
+      "excluded_changed_file_records": 0
+    },
+    {
+      "source": "/backups/disk2/blent-batch-evidence/t650/linux.lcov",
+      "sha256": "2fa11a3ee849370506edc4bf111f6e63ee499cd02979583a99d6cdb5911fd893",
+      "filtered_output": "baseline-4.lcov",
+      "excluded_changed_file_records": 1
+    },
+    {
+      "source": "/tmp/blent-t650-native/windows.lcov",
+      "sha256": "f6ffd8809bb5cf6a0b80538a25737fd0862917cf6a235c98337806a5b2233f38",
+      "filtered_output": "baseline-5.lcov",
+      "excluded_changed_file_records": 1
+    }
+  ],
+  "fresh_linux_tests": 197,
+  "fresh_windows_tests": 87
+}
