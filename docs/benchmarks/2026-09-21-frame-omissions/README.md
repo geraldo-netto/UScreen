@@ -43,19 +43,22 @@ change was made.
 
 ## Optional host diagnostics
 
-The CLI encoder now emits `Packet ready` events on the dedicated
-`uscreen::frame_timing` TRACE target: encoder epoch, sequence, media timestamp
+T687 refreshed this startup recipe for the Blent rename on 2026-09-27. The
+original trace/artifact names and measurements below remain historical.
+
+The current Blent CLI encoder emits `Packet ready` events on the dedicated
+`blent::frame_timing` TRACE target: encoder epoch, sequence, media timestamp
 when available, packet bytes, keyframe flag and monotonic microseconds since
 that encoder stdout drain began. `Render ACK received` events include epoch,
 sequence and packet-ready-to-ACK duration, only after receipt validation and
 sequence lookup. Duplicate or unmatched ACKs produce no timing event.
 No payload, token or camera contents are logged.
 
-Default `uscreen=info` logging remains unchanged. At a safe future normal
+Default `blent=info` logging remains unchanged. At a safe future normal
 startup, enable only this diagnostic target with:
 
 ```sh
-RUST_LOG='uscreen=info,uscreen::frame_timing=trace'
+RUST_LOG='blent=info,blent::frame_timing=trace'
 ```
 
 Set that environment on the host daemon using the usual launch mechanism;
