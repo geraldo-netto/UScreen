@@ -1,0 +1,2 @@
+T703: first save mirror=true, second save fps=15 -> mirror=false fps=15
+T702: after A disappears and B is available, sessions=[], video_listener_retained=true, input_listener_retained=true

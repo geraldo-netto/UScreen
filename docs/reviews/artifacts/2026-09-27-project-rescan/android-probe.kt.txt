@@ -1,0 +1,45 @@
+package com.blent
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk=[27,34])
+class ReviewCameraProbe {
+ @Test fun oldServiceStopRetiresReplacement() {
+  val commands=MutableStateFlow<CameraEndpoint?>(null)
+  val scope=CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
+  val binding=CameraBinding(RuntimeEnvironment.getApplication(), {0}, {}, {true},
+    {_,_,_,_->awaitCancellation()}, commands, scope, {})
+  try {
+   binding.start()
+   val old=CameraEndpoint("a".repeat(64),12345,1280,720,30,3000,CameraLens.FRONT,true)
+   commands.value=old
+   binding.choose(null)
+   commands.value=old.copy(port=12346)
+   assertEquals(CameraLens.FRONT,binding.selected)
+   binding.backgroundStopped()
+   println("T706: delayed old-service teardown cleared replacement="+(binding.selected==null))
+   assertNull(binding.selected)
+  } finally { binding.shutdown(); scope.cancel() }
+ }
+ @Test fun cameraCloseRunsOnStopCaller() {
+  val commands=MutableStateFlow<CameraEndpoint?>(null)
+  val scope=CoroutineScope(SupervisorJob()+Dispatchers.Unconfined)
+  var closer: Thread?=null
+  val caller=Thread.currentThread()
+  val binding=CameraBinding(RuntimeEnvironment.getApplication(), {0}, {}, {true},
+    {_,_,_,owned->owned.own {closer=Thread.currentThread()}; awaitCancellation()}, commands, scope, {})
+  try {
+   binding.start()
+   commands.value=CameraEndpoint("a".repeat(64),12345,1280,720,30,3000,CameraLens.FRONT,false)
+   binding.stop()
+   println("T707: native resource closer runs on stop caller="+(closer===caller))
+   assertSame(caller,closer)
+  } finally {binding.shutdown();scope.cancel()}
+ }
+}

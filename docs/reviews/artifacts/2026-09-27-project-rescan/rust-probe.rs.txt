@@ -1,0 +1,45 @@
+use blent::usb::{Adb, Commands, CommandFuture, monitor::Monitor};
+use blent_config::FileConfig;
+use std::{collections::BTreeMap, sync::{Arc, Mutex}, process::{Output, ExitStatus}, os::unix::process::ExitStatusExt};
+#[derive(Default)] struct State { device: String, routes: BTreeMap<(String,String),String> }
+#[derive(Clone)] struct Fake(Arc<Mutex<State>>);
+fn reply(ok: bool, text: String) -> Output { Output { status: ExitStatus::from_raw(if ok {0} else {256}), stdout:text.into_bytes(), stderr:Vec::new() } }
+impl Commands for Fake {
+ fn execute(&self, args: Vec<String>, _: Option<Vec<u8>>) -> CommandFuture<'_> {
+  Box::pin(async move {
+   let mut s=self.0.lock().unwrap();
+   if args == ["devices"] { return Ok(reply(true,format!("List of devices attached\n{}\tdevice\n",s.device))); }
+   if args[1] != s.device { return Ok(reply(false,"device not found".into())); }
+   if args[2] == "shell" { return Ok(reply(true, if args[3] == "pm" {"package:/data/app/blent/base.apk"} else {""}.into())); }
+   let serial=args[1].clone();
+   let out=match args[3].as_str() {
+    "--list" => s.routes.iter().filter(|((dev,_),_)|dev==&serial).map(|((_,port),target)|format!("UsbFfs {port} {target}\n")).collect(),
+    "--no-rebind" => { s.routes.insert((serial,args[4].clone()),args[5].clone()); String::new() },
+    "--remove" => { s.routes.remove(&(serial,args[4].clone())); String::new() },
+    _ => panic!("unexpected command {args:?}")
+   };
+   Ok(reply(true,out))
+  })
+ }
+}
+#[tokio::main] async fn main() {
+ let initial=FileConfig::default(); let mut a=initial.clone(); a.camera.options.mirror=true;
+ let mut b=initial.clone(); b.camera.options.fps=15;
+ let merged=b.merge_edits(&initial,a).unwrap();
+ println!("T703: first save mirror=true, second save fps=15 -> mirror={} fps={}",merged.camera.options.mirror,merged.camera.options.fps);
+ assert!(!merged.camera.options.mirror);
+ let video=std::net::TcpListener::bind("127.0.0.1:0").unwrap(); let vp=video.local_addr().unwrap().port();
+ let input=std::net::TcpListener::bind("127.0.0.1:0").unwrap(); let ip=input.local_addr().unwrap().port();
+ drop(video); drop(input);
+ let state=Arc::new(Mutex::new(State{device:"USB_A".into(),..Default::default()}));
+ let (stop,rx)=tokio::sync::watch::channel(false);
+ let mut monitor=Monitor::new(Adb(Fake(state.clone())),FileConfig{video_port:vp,input_port:ip,..Default::default()},rx).unwrap();
+ monitor.poll().await; assert_eq!(monitor.sessions()[0].serial,"USB_A");
+ state.lock().unwrap().device="USB_B".into();
+ for _ in 0..3 { monitor.poll().await; }
+ let vb=tokio::net::TcpListener::bind(("127.0.0.1",vp)).await;
+ let ib=tokio::net::TcpListener::bind(("127.0.0.1",ip)).await;
+ println!("T702: after A disappears and B is available, sessions={:?}, video_listener_retained={}, input_listener_retained={}",monitor.sessions(),vb.is_err(),ib.is_err());
+ assert!(monitor.sessions().is_empty() && vb.is_err() && ib.is_err());
+ state.lock().unwrap().device="USB_A".into(); stop.send_replace(true); monitor.shutdown().await.unwrap();
+}

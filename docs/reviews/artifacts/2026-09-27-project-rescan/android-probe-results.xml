@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.blent.ReviewCameraProbe" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T20:06:32" hostname="morpheus" time="1.467">
+  <properties/>
+  <testcase name="cameraCloseRunsOnStopCaller[27]" classname="com.blent.ReviewCameraProbe" time="0.713"/>
+  <testcase name="oldServiceStopRetiresReplacement[27]" classname="com.blent.ReviewCameraProbe" time="0.017"/>
+  <testcase name="cameraCloseRunsOnStopCaller" classname="com.blent.ReviewCameraProbe" time="0.714"/>
+  <testcase name="oldServiceStopRetiresReplacement" classname="com.blent.ReviewCameraProbe" time="0.021"/>
+  <system-out><![CDATA[T707: native resource closer runs on stop caller=true
+T706: delayed old-service teardown cleared replacement=true
+T707: native resource closer runs on stop caller=true
+T706: delayed old-service teardown cleared replacement=true
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

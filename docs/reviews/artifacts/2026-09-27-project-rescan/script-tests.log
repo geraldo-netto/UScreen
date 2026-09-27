@@ -1,0 +1,96 @@
+........................................................{'scene': 'static', 'codec': 'avc', 'rate': 1, 'trials': 2, 'mean_current_ma': 360.0, 'per_trial_mean_current_ma': [360.0, 360.0], 'gauge_net_charge_mah': [1.5, 1.5], 'integrated_net_charge_mah': [1.5, 1.5]}
+{'presented_in_surface_history': 9}
+0 motion 60 libx264 2 ACKs
+........................................................................E.........................EE.......................invalid video packet: invalid video length: 0
+invalid video packet: invalid video length: 1
+invalid video packet: invalid video length: 8388610
+invalid video packet: frame has no payload
+invalid video packet: unknown video type: 7
+......../usr/lib/python3.12/tarfile.py:2301: DeprecationWarning: Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata. Use the filter argument to control this behavior.
+  warnings.warn(
+.............................................................s.F..................................................F.....
+======================================================================
+ERROR: test_benchmark_visibility (unittest.loader._FailedTest.test_benchmark_visibility)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_benchmark_visibility
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/unittest/loader.py", line 394, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/loader.py", line 337, in _get_module_from_name
+    __import__(name)
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 18, in <module>
+    from xvisibility import XVisibility
+  File "/backups/disk2/projects/blent/scripts/benchmarks/xvisibility.py", line 4, in <module>
+    from Xlib import X, display
+ModuleNotFoundError: No module named 'Xlib'
+
+
+======================================================================
+ERROR: test_codec_corpus (unittest.loader._FailedTest.test_codec_corpus)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_codec_corpus
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/unittest/loader.py", line 394, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/loader.py", line 337, in _get_module_from_name
+    __import__(name)
+  File "/backups/disk2/projects/blent/scripts/tests/test_codec_corpus.py", line 9, in <module>
+    from PIL import Image
+ModuleNotFoundError: No module named 'PIL'
+
+
+======================================================================
+ERROR: test_codec_research_contracts (unittest.loader._FailedTest.test_codec_research_contracts)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_codec_research_contracts
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/unittest/loader.py", line 394, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/loader.py", line 337, in _get_module_from_name
+    __import__(name)
+  File "/backups/disk2/projects/blent/scripts/tests/test_codec_research_contracts.py", line 16, in <module>
+    from PIL import Image, ImageFont
+ModuleNotFoundError: No module named 'PIL'
+
+
+======================================================================
+FAIL: test_t129_tar_appimage_rpm_and_arch_include_notices (test_notices.NoticeTest.test_t129_tar_appimage_rpm_and_arch_include_notices)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 50, in test_t129_tar_appimage_rpm_and_arch_include_notices
+    run('bash', 'packaging/build-packages.sh')
+  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 38, in run
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 127 != 0 : blent-packages: line 16: rpmbuild: command not found
+
+
+======================================================================
+FAIL: test_t302_next_release_keeps_distribution_coverage (test_version_fixtures.VersionFixtureTest.test_t302_next_release_keeps_distribution_coverage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_version_fixtures.py", line 37, in test_t302_next_release_keeps_distribution_coverage
+    self.assertFalse(result.errors + result.failures,
+AssertionError: [(<test_notices.NoticeTest testMethod=test_t129_tar_appimage_rpm_and_arch_include_notices>, 'Traceback (most recent call last):\n  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 50, in test_t129_tar_appimage_rpm_and_arch_include_notices\n    run(\'bash\', \'packaging/build-packages.sh\')\n  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 38, in run\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\nAssertionError: 127 != 0 : blent-packages: line 16: rpmbuild: command not found\n\n')] is not false : Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 50, in test_t129_tar_appimage_rpm_and_arch_include_notices
+    run('bash', 'packaging/build-packages.sh')
+  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 38, in run
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 127 != 0 : blent-packages: line 16: rpmbuild: command not found
+
+
+
+----------------------------------------------------------------------
+Ran 307 tests in 141.894s
+
+FAILED (failures=2, errors=3, skipped=1)
+codec config: 5 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+fixture: glibc 2.36
