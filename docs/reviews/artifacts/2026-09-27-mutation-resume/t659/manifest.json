@@ -1,0 +1,9 @@
+{
+  "version": "cargo-mutants 27.1.0",
+  "working_tree_overlay": true,
+  "elevated": false,
+  "user": "BLENT-WIN11\\blentdev",
+  "platform": "windows",
+  "source_commit": "8c4722e3ea2f4cddb874b6d6107741c4857d8c77",
+  "whole_project_mutation_score": null
+}

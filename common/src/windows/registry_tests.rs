@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn t659_registry_drop_child() {
+    if std::env::var_os("BLENT_T659_CHILD").is_none() {
+        return;
+    }
+    let path = format!(
+        "Software\\BlentTests\\T659-{}",
+        crate::credentials::random_token().unwrap()
+    );
+    let key = Key::create(&path).unwrap();
+    let handle = key.0;
+    let name = super::super::native::wide("value".as_ref()).unwrap();
+    key.write("value", &[65]).unwrap();
+    let mut size = 0;
+    assert_eq!(
+        unsafe {
+            RegQueryValueExW(
+                handle,
+                name.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut size,
+            )
+        },
+        0
+    );
+    drop(key);
+    let status = unsafe {
+        RegQueryValueExW(
+            handle,
+            name.as_ptr(),
+            std::ptr::null(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &mut size,
+        )
+    };
+    let path = super::super::native::wide(path.as_ref()).unwrap();
+    assert_eq!(
+        unsafe { RegDeleteTreeW(HKEY_CURRENT_USER, path.as_ptr()) },
+        0
+    );
+    assert_eq!(status, windows_sys::Win32::Foundation::ERROR_INVALID_HANDLE);
+}
+
+#[test]
+fn t659_registry_drop_closes_owned_handle() {
+    let result = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "windows::registry::tests::t659_registry_drop_child",
+            "--nocapture",
+        ])
+        .env("BLENT_T659_CHILD", "1")
+        .output()
+        .unwrap();
+    assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed"));
+    assert!(
+        result.status.success(),
+        "T659: {}{}",
+        String::from_utf8_lossy(&result.stdout),
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
+
+#[test]
 fn t532_registry_rejects_permission_failures_and_malformed_values() {
     let path = format!(
         "Software\\BlentTests\\T532-registry-{}",
