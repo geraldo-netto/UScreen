@@ -265,24 +265,59 @@ async fn t525_bounded_invalid_tokens_serials_and_ports_cause_no_commands() {
 }
 
 fn free_port_pairs() -> ((u16, u16), Vec<std::net::TcpListener>) {
+    // Keep each multi-socket reservation atomic with respect to sibling tests.
+    static ALLOCATION: Mutex<()> = Mutex::new(());
+    let _allocation = ALLOCATION.lock().unwrap();
     for _ in 0..64 {
         let video = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let video_port = video.local_addr().unwrap().port();
+        let Some(next_video) = video_port.checked_add(2) else {
+            continue;
+        };
+        // T655: reserve the sibling before requesting another ephemeral port.
+        // Interleaved Windows allocations must not choose video + 2 as input.
+        let Ok(extra_video) = std::net::TcpListener::bind(("127.0.0.1", next_video)) else {
+            continue;
+        };
         let input = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let ports = (
-            video.local_addr().unwrap().port(),
-            input.local_addr().unwrap().port(),
-        );
+        let ports = (video_port, input.local_addr().unwrap().port());
         let Ok(pairs) = blent_config::slot_ports(ports.0, ports.1, 2) else {
             continue;
         };
-        let [Ok(extra_video), Ok(extra_input)] =
-            [pairs[1].0, pairs[1].1].map(|port| std::net::TcpListener::bind(("127.0.0.1", port)))
-        else {
+        let Ok(extra_input) = std::net::TcpListener::bind(("127.0.0.1", pairs[1].1)) else {
             continue;
         };
         return (ports, vec![video, input, extra_video, extra_input]);
     }
     panic!("T525: no two-slot listener fixture available");
+}
+
+#[test]
+fn t655_concurrent_listener_fixtures_reserve_disjoint_pairs() {
+    for _ in 0..16 {
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(8));
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    free_port_pairs()
+                })
+            })
+            .collect();
+        let reservations: Vec<_> = handles
+            .into_iter()
+            .map(|thread| thread.join().unwrap())
+            .collect();
+        let mut seen = std::collections::BTreeSet::new();
+        for (ports, listeners) in &reservations {
+            assert_eq!(listeners.len(), 4);
+            assert!(blent_config::slot_ports(ports.0, ports.1, 2).is_ok());
+            for listener in listeners {
+                assert!(seen.insert(listener.local_addr().unwrap().port()));
+            }
+        }
+    }
 }
 async fn monitor_fixture() -> (
     Adb<Fake>,
