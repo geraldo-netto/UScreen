@@ -14,6 +14,13 @@ pub(super) fn run() -> Result<()> {
         .runtime_dir
         .map(Ok)
         .unwrap_or_else(runtime::runtime_dir)?;
+    if cli.login {
+        anyhow::ensure!(
+            cli.command.is_none(),
+            "--login cannot be combined with a command"
+        );
+        return lifecycle::launch(&std::env::current_exe()?, &path, Duration::from_secs(5));
+    }
     match cli.command {
         None | Some(Commands::Start) => tokio::runtime::Builder::new_current_thread()
             .enable_all()

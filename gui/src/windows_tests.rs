@@ -63,13 +63,9 @@ fn t495_preview_hides_linux_setup_and_capacity_controls() {
 
 #[test]
 fn t495_unsupported_actions_never_report_success() {
-    for result in [
-        set_autostart(true),
-        set_autostart(false),
-        run_system_setup(4),
-    ] {
-        assert!(result.unwrap_err().contains("not implemented on Windows"));
-    }
+    assert!(run_system_setup(4)
+        .unwrap_err()
+        .contains("not implemented on Windows"));
 }
 
 #[test]

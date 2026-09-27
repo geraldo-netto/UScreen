@@ -68,7 +68,8 @@ service does not enable Blent display/input/camera sharing.
 | T528 | No independent preference after T527's driver decision. | Implement and validate capture on the selected output; lifecycle, mode changes and device loss remain mandatory. |
 | T529 | No new choice for the encoder adapter; T527 still needs the driver decision. | Native pipe/software-encoder implementation and coverage passed after T583/T493. T529 now waits for T525 connection ownership and T528 capture integration; it remains in TODO. |
 | T530 | Compatible GPU access under T522. | T529 first, then actual hardware initialization/measurements and fallback. Advertised encoder names are insufficient. |
-| T531, T532 | Nothing now. | Tray still waits for T525 connection status. Autostart is actionable now that T524 single-instance handling is validated. |
+| T531 | Nothing now. | Tray still waits for T525 connection status. |
+| T532 | Nothing now. | Resolved: per-user registration, repeated-login ownership, native failure regressions and ordinary-user coverage pass; see [autostart results](2026-09-27-windows-autostart.md). |
 | T534 | Installer format and dependency distribution. Suggested starting point: per-user EXE installer, pinned ADB/FFmpeg bundled, separately installed driver. Confirm publisher/signing route before distribution. | Functioning milestones, redistribution notices, reproducible package checks, upgrade/uninstall ownership and T522 evidence. This suggestion is not an accepted decision. |
 | T535 | A controlled benchmark window on the T522 machine/tablet. | Working T525/T528/T529 stream first; test accelerated candidates only where T530 validates them. |
 | T388 | An uninterrupted **60–90 minute** host/tablet window, keeping desktop focus and workload stable. | Balanced USB normal/saver comparisons plus streaming-off control; prior incomplete samples do not establish a power saving. |

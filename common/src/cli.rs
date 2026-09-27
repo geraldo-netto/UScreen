@@ -17,6 +17,11 @@ pub struct Cli {
     #[arg(long, hide = true)]
     pub runtime_dir: Option<PathBuf>,
 
+    /// Internal per-user login launcher; ordinary daemon startup remains unchanged.
+    #[cfg(windows)]
+    #[arg(long, hide = true)]
+    pub login: bool,
+
     /// Explicit EDID override. By default an EDID is generated at runtime
     /// for the configured (or tablet-reported) resolution.
     #[arg(long = "edid")]

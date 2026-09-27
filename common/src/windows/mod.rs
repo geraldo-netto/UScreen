@@ -8,4 +8,9 @@ pub mod runtime;
 mod security;
 
 #[cfg(feature = "platform")]
+pub mod autostart;
+#[cfg(feature = "platform")]
+mod registry;
+
+#[cfg(feature = "platform")]
 pub mod lifecycle;

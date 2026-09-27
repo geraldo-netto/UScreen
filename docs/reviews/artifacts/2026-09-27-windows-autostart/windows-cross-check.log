@@ -1,0 +1,18 @@
+    Checking windows-sys v0.61.2
+    Checking anstyle-wincon v3.0.11
+    Checking socket2 v0.6.4
+    Checking mio v1.2.1
+    Checking anstyle-query v1.1.5
+    Checking tempfile v3.27.0
+    Checking nu-ansi-term v0.50.3
+    Checking anstream v1.0.0
+    Checking tracing-subscriber v0.3.23
+    Checking tokio v1.52.3
+    Checking clap_builder v4.6.0
+    Checking clap v4.6.1
+    Checking blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+    Checking tokio-util v0.7.18
+    Checking tokio-tungstenite v0.21.0
+    Checking blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Checking blent-gui v1.2.3 (/backups/disk2/projects/blent/gui)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.59s

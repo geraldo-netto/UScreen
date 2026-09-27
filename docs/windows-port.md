@@ -61,7 +61,10 @@ restart requires successful stop. A private lease serializes startup, random tok
 rotate on startup, and graceful retirement removes owned token/session state.
 After forced termination, the next start or stop reclaims abandoned state under
 the same exclusive lease. Cleanup errors remain errors and cannot skip independent
-token retirement. No Windows service, autostart, tray or display driver is installed.
+token retirement. No Windows service, tray or display driver is installed.
+[T532 optional autostart](reviews/2026-09-27-windows-autostart.md) is available
+through the GUI preference and a single per-user Run registration. Repeated login
+retains the running daemon; normal startup does not require elevation.
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,

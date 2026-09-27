@@ -30,7 +30,7 @@ pub const fn capabilities() -> Capabilities {
         display: linux,
         input: linux,
         system_setup: linux,
-        autostart: linux,
+        autostart: linux || cfg!(windows),
         pipe_capacity: linux,
         conversion_pool: linux,
     }
@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(caps.display, cfg!(target_os = "linux"));
         assert_eq!(caps.input, cfg!(target_os = "linux"));
         assert_eq!(caps.system_setup, cfg!(target_os = "linux"));
-        assert_eq!(caps.autostart, cfg!(target_os = "linux"));
+        assert_eq!(caps.autostart, cfg!(any(target_os = "linux", windows)));
         assert_eq!(caps.pipe_capacity, cfg!(target_os = "linux"));
         assert_eq!(caps.conversion_pool, cfg!(target_os = "linux"));
         assert_eq!(

@@ -1,14 +1,25 @@
-//! Interactive-user Windows lifecycle; setup and autostart remain unsupported.
-use blent_config::windows::{lifecycle, runtime};
+//! Interactive-user Windows lifecycle and per-user login preferences.
+use blent_config::windows::{autostart, lifecycle, runtime};
 use std::time::Duration;
 fn unsupported() -> Result<(), String> {
-    Err("System setup and autostart are not implemented on Windows".into())
+    Err("System setup is not implemented on Windows".into())
 }
 pub(crate) fn autostart_enabled() -> bool {
-    false
+    autostart::Registration::at(&autostart_key())
+        .enabled()
+        .unwrap_or(false)
 }
-pub(crate) fn set_autostart(_on: bool) -> Result<(), String> {
-    unsupported()
+pub(crate) fn set_autostart(on: bool) -> Result<(), String> {
+    autostart::Registration::at(&autostart_key())
+        .set_enabled(on, super::find_blent_bin().as_deref())
+        .map_err(|error| error.to_string())
+}
+fn autostart_key() -> String {
+    #[cfg(test)]
+    if let Some(path) = TEST_AUTOSTART.with(|value| value.borrow().clone()) {
+        return path;
+    }
+    autostart::RUN_KEY.into()
 }
 pub(crate) fn start_daemon() -> Result<(), String> {
     let program = super::find_blent_bin().ok_or("blent binary not found")?;
@@ -34,6 +45,7 @@ pub(crate) fn os_release_name() -> String {
 #[cfg(test)]
 thread_local! {
     static TEST_RUNTIME: std::cell::RefCell<Option<std::path::PathBuf>> = const { std::cell::RefCell::new(None) };
+    static TEST_AUTOSTART: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
 }
 pub(crate) fn runtime_path() -> Result<std::path::PathBuf, String> {
     #[cfg(test)]
@@ -47,6 +59,47 @@ pub(crate) fn runtime_path() -> Result<std::path::PathBuf, String> {
 mod tests {
     use super::*;
     use blent_config::commands::SyncCommandExt;
+    #[test]
+    fn t532_gui_preference_tracks_registration_and_stale_executable() {
+        if let Some(key) = std::env::var_os("BLENT_T532_GUI_KEY") {
+            TEST_AUTOSTART
+                .with(|value| *value.borrow_mut() = Some(key.to_string_lossy().into_owned()));
+            set_autostart(false).unwrap();
+            assert!(!autostart_enabled());
+            set_autostart(true).unwrap();
+            assert!(autostart_enabled());
+            let program = super::super::find_blent_bin().unwrap();
+            std::fs::remove_file(program).unwrap();
+            assert!(!autostart_enabled());
+            set_autostart(false).unwrap();
+            assert!(!autostart_enabled());
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        let key = format!(
+            "Software\\BlentTests\\GuiT532-{}",
+            blent_config::credentials::random_token().unwrap()
+        );
+        let runner = root.path().join("gui-tests.exe");
+        std::fs::copy(std::env::current_exe().unwrap(), &runner).unwrap();
+        std::fs::copy(&runner, root.path().join("blent.exe")).unwrap();
+        let result = std::process::Command::new(runner)
+            .args(["--exact", "platform::windows::tests::t532_gui_preference_tracks_registration_and_stale_executable", "--nocapture"])
+            .env("BLENT_T532_GUI_KEY", &key)
+            .env("PATH", root.path())
+            .output_timeout(Duration::from_secs(15)).unwrap();
+        let reg = std::path::PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+            .join("System32/reg.exe");
+        let cleanup = std::process::Command::new(reg)
+            .args(["delete", &format!("HKCU\\{key}"), "/f"])
+            .output_bounded()
+            .unwrap();
+        assert!(
+            cleanup.status.success(),
+            "T532: fixture cleanup failed: {cleanup:?}"
+        );
+        assert!(result.status.success(), "T532: {result:?}");
+    }
     #[test]
     fn t524_gui_routes_lifecycle_and_preserves_startup_errors() {
         if let Some(path) = std::env::var_os("BLENT_T524_GUI_RUNTIME") {

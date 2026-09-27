@@ -24,8 +24,9 @@ jobs; the next start or stop reclaims abandoned files under a new exclusive leas
 Replacement identity records are preserved. An independent cleanup failure must
 not leave another removable secret behind or make stop report successful cleanup.
 
-Display, input, camera, ADB connection, tray, autostart and system setup remain
-unsupported on Windows. GUI labels say daemon rather than display service on this
+Display, input, camera, ADB connection, tray and system setup remain
+unsupported on Windows. Optional [per-user autostart](2026-09-27-windows-autostart.md)
+now uses this lifecycle and preserves existing daemon identity at repeated login. GUI labels say daemon rather than display service on this
 backend. Diagnostic command success means the report ran, not that streaming works.
 
 ## Permanent tests and evidence
