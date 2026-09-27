@@ -114,4 +114,5 @@ fresh native counters with the unchanged, source-matched complete CI counters
 passes the same Linux gate: 1,283/1,283 functions. [Replay evidence](artifacts/2026-09-27-sysfs-coverage/README.md) retains the failing baseline and passing combined
 report. This resolves the coverage portability defect; no new remote run was
 started because this batch must remain unpushed. T644's historical Xvfb stall
-remains a separate open finding.
+remains unresolved, blocked on a recurrence with the [new owned-child
+diagnostics](artifacts/2026-09-27-xvfb-diagnostics/README.md).

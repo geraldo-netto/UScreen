@@ -1,0 +1,25 @@
+F
+======================================================================
+FAIL: test_t644_exited_child_retains_unavailable_proc_and_stderr (__main__.VisibilityIntegrityTests.test_t644_exited_child_retains_unavailable_proc_and_stderr)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 51, in test_t644_exited_child_retains_unavailable_proc_and_stderr
+    result = startup_diagnostics(server, 'fixture\nstderr')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 26, in startup_diagnostics
+    with Path(f'/proc/{server.pid}/{name}').open() as source:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1134, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1138, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1193, in _execute_mock_call
+    raise effect
+AssertionError: T644: reaped PID must not be inspected
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)

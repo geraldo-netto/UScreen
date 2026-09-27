@@ -19,7 +19,44 @@ from xvisibility import XVisibility
 from Xlib import X, display
 
 
+def startup_diagnostics(server, error):
+    code = server.poll()
+    fields = [f'pid={server.pid}', f'exit={code}', f'stderr={error!r}']
+    for name in ['status', 'wchan', 'syscall']:
+        value = 'unavailable: process already exited'
+        if code is None:
+            try:
+                with Path(f'/proc/{server.pid}/{name}').open() as source:
+                    value = source.read(4096)
+            except OSError as failure:
+                value = f'unavailable: {failure}'
+        fields.append(f'proc/{name}={value!r}')
+    return '; '.join(fields)
+
+
 class VisibilityIntegrityTests(unittest.TestCase):
+    def test_t644_readiness_timeout_retains_live_child_diagnostics(self):
+        real_popen = subprocess.Popen
+        def stalled_server(command, **kwargs):
+            return real_popen([sys.executable, '-c', 'import time; time.sleep(60)'], **kwargs)
+        fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+        try:
+            with patch('subprocess.Popen', side_effect=stalled_server), patch('select.select', return_value=([], [], [])):
+                with self.assertRaisesRegex(AssertionError, r'pid=\d+.*exit=None.*proc/status='):
+                    fixture.setUp()
+        finally:
+            fixture.doCleanups()
+
+    def test_t644_exited_child_retains_unavailable_proc_and_stderr(self):
+        server = MagicMock(pid=-1)
+        server.poll.return_value = 23
+        with patch.object(Path, 'open', side_effect=AssertionError('T644: reaped PID must not be inspected')):
+            result = startup_diagnostics(server, 'fixture\nstderr')
+        self.assertIn('exit=23', result)
+        self.assertIn("stderr='fixture\\nstderr'", result)
+        for name in ['status', 'wchan', 'syscall']:
+            self.assertRegex(result, rf"proc/{name}=['\"]unavailable:")
+
     def test_t643_early_xvfb_exit_preserves_startup_error(self):
         real_popen = subprocess.Popen
         def failing_server(command, **kwargs):
@@ -150,7 +187,8 @@ class XVisibilityTests(unittest.TestCase):
             ready = select.select([read_fd], [], [], 5)[0]
             log.seek(0)
             error = log.read(65536)
-            self.assertTrue(ready, 'T424: private Xvfb startup timed out: ' + error)
+            if not ready:
+                self.fail('T424: private Xvfb startup timed out: ' + startup_diagnostics(server, error))
             number = os.read(read_fd, 100).decode().strip()
             self.assertTrue(number.isascii() and number.isdigit(),
                             'T643: Xvfb did not publish a private display: ' + error)

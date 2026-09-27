@@ -1,0 +1,17 @@
+F
+======================================================================
+FAIL: test_t644_readiness_timeout_retains_live_child_diagnostics (__main__.VisibilityIntegrityTests.test_t644_readiness_timeout_retains_live_child_diagnostics)
+----------------------------------------------------------------------
+AssertionError: [] is not true : T424: private Xvfb startup timed out: 
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 30, in test_t644_readiness_timeout_retains_live_child_diagnostics
+    with self.assertRaisesRegex(AssertionError, r'pid=\d+.*exit=None.*proc/status='):
+AssertionError: "pid=\d+.*exit=None.*proc/status=" does not match "[] is not true : T424: private Xvfb startup timed out: "
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (failures=1)
