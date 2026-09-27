@@ -200,6 +200,31 @@ mod tests {
     }
 
     #[test]
+    fn t669_slot_offsets_partition_the_allocation_without_overlap() {
+        for (width, height) in [(2, 2), (66, 800), (1280, 800), (4096, 4096)] {
+            for slots in 2..=MAX_SLOTS {
+                let layout = Layout::new(width, height, slots).unwrap();
+                let mut next_offset = CONTROL_BYTES;
+                for slot in 0..slots {
+                    assert_eq!(
+                        layout.slot_offset(slot).unwrap(),
+                        next_offset,
+                        "T669: slot {slot}"
+                    );
+                    next_offset += layout.slot_bytes as usize;
+                }
+                assert_eq!(next_offset as u64, layout.total_bytes);
+                for invalid in [slots, slots + 1, u32::MAX] {
+                    assert!(
+                        layout.slot_offset(invalid).is_err(),
+                        "T669: invalid slot {invalid}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn t418_raw_transport_settings_are_explicit_and_round_trip() {
         let defaults = crate::FileConfig::default();
         assert_eq!(defaults.raw_transport, RawTransport::Auto);

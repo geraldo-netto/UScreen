@@ -1,0 +1,87 @@
+{
+  "rust_platforms": [
+    "linux"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/raw_frame.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 6,
+      "passing": 6,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "new",
+      "line": 39,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "frame_bytes",
+      "line": 63,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "slot_offset",
+      "line": 67,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "encode",
+      "line": 85,
+      "language": "rust",
+      "covered": 30,
+      "total": 30,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "decode",
+      "line": 116,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "name": "validate",
+      "line": 138,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}
