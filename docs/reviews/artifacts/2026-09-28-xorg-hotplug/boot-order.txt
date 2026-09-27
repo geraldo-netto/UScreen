@@ -1,0 +1,25 @@
+[    0.592261] host kernel: simple-framebuffer simple-framebuffer.0: [drm] Registered 1 planes with drm panic
+[    0.592281] host kernel: [drm] Initialized simpledrm 1.0.0 for simple-framebuffer.0 on minor 0
+[    0.593117] host kernel: simple-framebuffer simple-framebuffer.0: [drm] fb0: simpledrmdrmfb frame buffer device
+[   13.501480] host kernel: [drm] Initialized evdi 1.14.15 for evdi.0 on minor 1
+[   13.502005] host kernel: [drm] Initialized evdi 1.14.15 for evdi.1 on minor 2
+[   16.715038] host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+[   16.715051] host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+[   16.715062] host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+[   16.715071] host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+[   16.729335] host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.729347] host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.729450] host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.729460] host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.738775] host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.738784] host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.738793] host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.738799] host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.963221] host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.963231] host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.963241] host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   16.963249] host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+[   17.129324] host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   17.145173] host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+[   17.837846] host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:03:00.0 on minor 3
+[   18.000966] host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:08:00.0 on minor 4

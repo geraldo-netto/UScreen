@@ -1,0 +1,18 @@
+Temporary breakpoint 1 at 0x4f360: file ../../../../dix/stubmain.c, line 33.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Temporary breakpoint 1, main (argc=1, argv=0x7fffffffdc18, envp=0x7fffffffdc28) at ../../../../dix/stubmain.c:33
+$1 = 1
+
+Program received signal SIGABRT, Aborted.
+0x00007ffff789ec0c in pthread_kill () from /lib/x86_64-linux-gnu/libc.so.6
+warning: 33	../../../../dix/stubmain.c: No such file or directory
+Xorg: ../../../../dix/privates.c:382: dixRegisterPrivateKey: Assertion `!global_keys[type].created' failed.
+/backups/disk2/projects/blent/docs/reviews/artifacts/2026-09-28-xorg-hotplug/private-order.gdb:12: Error in sourced command file:
+The program being debugged was signaled while in a function called from GDB.
+GDB remains in the frame where the signal was received.
+To change this behavior use "set unwind-on-signal on".
+Evaluation of the expression containing the function
+(dixRegisterPrivateKey) will be abandoned.
+When the function is done executing, GDB will silently stop.

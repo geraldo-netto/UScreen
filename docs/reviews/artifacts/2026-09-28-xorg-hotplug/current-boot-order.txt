@@ -1,0 +1,7 @@
+[    0.739163] host kernel: simple-framebuffer simple-framebuffer.0: [drm] Registered 1 planes with drm panic
+[    0.739179] host kernel: [drm] Initialized simpledrm 1.0.0 for simple-framebuffer.0 on minor 0
+[    0.739981] host kernel: simple-framebuffer simple-framebuffer.0: [drm] fb0: simpledrmdrmfb frame buffer device
+[   16.325353] host kernel: [drm] Initialized evdi 1.14.15 for evdi.0 on minor 1
+[   16.326440] host kernel: [drm] Initialized evdi 1.14.15 for evdi.1 on minor 2
+[   20.696793] host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:03:00.0 on minor 3
+[   20.876326] host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:08:00.0 on minor 4

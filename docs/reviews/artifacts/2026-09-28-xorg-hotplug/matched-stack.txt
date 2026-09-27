@@ -1,0 +1,16 @@
+#14 0x0000640587dae444 in dixRegisterPrivateKey (key=key@entry=0x704b3ee9a8e0 <glamor_pixmap_private_key>, type=type@entry=PRIVATE_PIXMAP, size=size@entry=120) at ../../../../dix/privates.c:382
+#15 0x0000704b3ee6f70b in glamor_init (screen=0x6405949f0790, flags=1) at ../../../../glamor/glamor.c:647
+#16 0x0000704b3f27a7d8 in drmmode_init (pScrn=pScrn@entry=0x64059589fab0, drmmode=drmmode@entry=0x6405965c6828) at ../../../../../../../hw/xfree86/drivers/modesetting/drmmode_display.c:3737
+#17 0x0000704b3f27035f in ScreenInit (pScreen=pScreen@entry=0x6405949f0790, argc=argc@entry=0, argv=argv@entry=0x0) at ../../../../../../../hw/xfree86/drivers/modesetting/driver.c:1881
+#18 0x0000640587d8cf10 in AddGPUScreen (pfnInit=0x704b3f270180 <ScreenInit>, argc=argc@entry=0, argv=argv@entry=0x0) at ../../../../dix/dispatch.c:4050
+#19 0x0000640587dec8f0 in xf86platformAddDevice (index=3) at ../../../../../../hw/xfree86/common/xf86platformBus.c:662
+#20 0x0000640587df29f8 in NewGPUDeviceRequest (attribs=<optimized out>) at ../../../../../../../hw/xfree86/os-support/linux/lnx_platform.c:184
+#21 0x0000640587deec62 in device_added (udev_device=udev_device@entry=0x640594a0df90) at ../../../../config/udev.c:140
+#22 0x0000640587def240 in socket_handler (fd=<optimized out>, ready=<optimized out>, data=<optimized out>) at ../../../../config/udev.c:375
+#23 0x0000640587f0cb9a in ospoll_wait (ospoll=0x64059484ca00, timeout=<optimized out>) at ../../../../os/ospoll.c:657
+#24 0x0000640587f054f5 in WaitForSomething (are_ready=0) at ../../../../os/WaitFor.c:208
+#25 0x0000640587d8c86a in Dispatch () at ../../../../dix/dispatch.c:492
+#26 0x0000640587d90eda in dix_main (argc=11, argv=<optimized out>, envp=<optimized out>) at ../../../../dix/main.c:274
+#27 0x0000704b3f62a1ca in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#28 0x0000704b3f62a28b in __libc_start_main () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#29 0x0000640587d79395 in _start ()

@@ -1,5 +1,11 @@
 # T222 follow-up: distinguish Xorg failure signatures
 
+Historical evidence below was collected on September 27. The
+[September 28 T700 follow-up](2026-09-28-xorg-hotplug.md) now analyzes the
+maintainer-exported PID1918 core with matching symbols: late AMD hotplug after
+a simpledrm primary screen triggered glamor pixmap-key registration. The other
+cores, including T222’s original gamma fault, were not exported in that follow-up.
+
 Fresh read-only journal/coredump metadata contains seven Xorg aborts. They do not
 all match the original T222 RandR gamma crash:
 

@@ -1,0 +1,9 @@
+Selected GDB output; unrelated library-loading warnings omitted.
+Xorg core build ID 2dc631fda11e081777c5d43ba3ad1d6ce8a5a6fd matches True
+glamor core build ID 8ea749d0abf3e1030a6f2d63352ec16067df6aa2 matches True
+$1 = {offset = 0, size = 0, initialized = 0, allocated = 0, type = PRIVATE_XSELINUX, next = 0x0}
+$2 = {key = 0x640587fcf3e0 <damagePixPrivateKeyRec>, offset = 16, created = 7, allocated = 0}
+$3 = {path = 0x6405965ca140 "/dev/dri/card4", syspath = 0x640594a33340 "/sys/devices/pci0000:00/0000:00:08.1/0000:08:00.0/drm/card4", busid = 0x6405965ca1e0 "pci:0000:08:00.0", fd = -1, major = 226, minor = 4, driver = 0x6405965c66b0 "amdgpu"}
+$4 = {path = 0x640594872bb0 "/dev/dri/card0", syspath = 0x640594884c40 "/sys/devices/pci0000:00/0000:00:08.1/0000:08:00.0/simple-framebuffer.0/drm/card0", busid = 0x640594872bd0 "pci:0000:08:00.0-platform-simple-framebuffer.0", fd = -1, major = 226, minor = 0, driver = 0x640594872ca0 "simpledrm"}
+$5 = 0
+$6 = {handle = 1, size = 1921024, ptr = 0x704b2f82b000, pitch = 3200}

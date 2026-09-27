@@ -1,0 +1,20 @@
+warning: Can't open file /dev/dri/card4 during file-backed mapping note processing
+warning: Can't open file /dev/dri/card0 (deleted) during file-backed mapping note processing
+warning: Can't open file /dev/dri/card2 during file-backed mapping note processing
+warning: Can't open file /dev/dri/card1 during file-backed mapping note processing
+$1 = {handle = 1, size = 1921024, ptr = 0x704b2f82b000, pitch = 3200}
+$2 = 3
+$3 = 4
+$4 = 0
+$5 = 0
+$6 = 1
+      0x704b2e7ff000     0x704b2e9ff000   0x200000 0x1021a6000 /dev/dri/card4
+      0x704b2e9ff000     0x704b2ebff000   0x200000 0x101fa6000 /dev/dri/card4
+      0x704b2f82b000     0x704b2fa00000   0x1d5000 0x1001d5000 /dev/dri/card0 (deleted)
+      0x704b2fa00000     0x704b2fd00000   0x300000 0x100004000 /dev/dri/card2
+      0x704b2fd00000     0x704b30000000   0x300000 0x100004000 /dev/dri/card1
+      0x704b3eea8000     0x704b3eeac000     0x4000 0x1003aa000 /dev/dri/card0 (deleted)
+      0x704b3eeac000     0x704b3eeb0000     0x4000 0x100000000 /dev/dri/card2
+      0x704b3eeb0000     0x704b3eeb4000     0x4000 0x100000000 /dev/dri/card1
+      0x704b3fe1a000     0x704b3fe1b000     0x1000 0x1028a6000 /dev/dri/card4
+      0x704b3fe1b000     0x704b3fe1c000     0x1000 0x101fa5000 /dev/dri/card4
