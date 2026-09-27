@@ -3,6 +3,64 @@
 use blent_config::linux::autostart;
 use std::{os::unix::fs::PermissionsExt, path::Path, process::Command, time::Duration};
 
+#[test]
+fn t653_probe_child() {
+    let Ok(expected) = std::env::var("BLENT_T653_EXPECT") else {
+        return;
+    };
+    assert_eq!(autostart::systemd_available(), expected == "available");
+    assert_eq!(autostart::enabled(), expected == "enabled");
+}
+
+#[test]
+fn t653_systemd_probes_require_success_and_exact_state() {
+    let root = tempfile::tempdir().unwrap();
+    let systemctl = root.path().join("systemctl");
+    std::fs::write(
+        &systemctl,
+        "#!/bin/sh\n/bin/cat \"$BLENT_T653_OUTPUT\"\nexit \"$BLENT_T653_EXIT\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(systemctl, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let output = root.path().join("reply");
+    let cases: &[(&[u8], &str)] = &[
+        (b"loaded", "available"),
+        (b"\t loaded\r\n", "available"),
+        (b"enabled", "enabled"),
+        (b" enabled \n", "enabled"),
+        (b"", "none"),
+        (b"masked", "none"),
+        (b"disabled", "none"),
+        (b"not-found", "none"),
+        (b"enabled\nextra", "none"),
+        (b"loaded\0", "none"),
+        (b"\xffenabled", "none"),
+    ];
+    for code in [0, 1, 3, 255] {
+        for (text, state) in cases {
+            std::fs::write(&output, text).unwrap();
+            let expected = if code == 0 { *state } else { "none" };
+            let result = Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "t653_probe_child", "--nocapture"])
+                .env("PATH", root.path())
+                .env("HOME", root.path())
+                .env("XDG_CONFIG_HOME", root.path().join("config"))
+                .env_remove(blent_config::linux::appimage::LAUNCHER)
+                .env("BLENT_T653_OUTPUT", &output)
+                .env("BLENT_T653_EXIT", code.to_string())
+                .env("BLENT_T653_EXPECT", expected)
+                .output()
+                .unwrap();
+            assert!(
+                result.status.success(),
+                "T653: {code}, {text:?}: {}{}",
+                String::from_utf8_lossy(&result.stdout),
+                String::from_utf8_lossy(&result.stderr)
+            );
+        }
+    }
+}
+
 fn wait_for_starts(state: &Path, expected: usize) {
     let deadline = std::time::Instant::now() + Duration::from_secs(3);
     loop {

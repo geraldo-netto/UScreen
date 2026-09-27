@@ -1,0 +1,12 @@
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 02s
+     Running tests/autostart.rs (target/debug/deps/autostart-83212879de8a19ac)
+
+running 4 tests
+test t536_autostart_child ... ok
+test t536_managed_autostart_works_without_graphical_target_and_disables_cleanly ... ok
+test t653_probe_child ... ok
+test t653_systemd_probes_require_success_and_exact_state ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
+
