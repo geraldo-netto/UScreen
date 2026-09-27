@@ -15,6 +15,7 @@ impl Monitor {
         self.retiring_slots.insert(instance);
         self.retiring_routes.insert(serial.clone(), instance);
         let adb = self.config.adb.clone();
+        let routes = self.routes.remove(&serial);
         self.retiring.spawn(async move {
             if let Some(task) = task {
                 let _ = task.await;
@@ -22,7 +23,13 @@ impl Monitor {
             if let Some(session) = session {
                 session.stop().await;
             }
-            retire_routes(&serial, &adb).await;
+            if let Some(routes) = routes {
+                if let Err(error) = routes.retire(&adb).await {
+                    // Offline cleanup remains bounded; credentials were revoked
+                    // before retirement, and foreign routes are never removed.
+                    warn!("Could not retire owned routes on {serial}: {error}");
+                }
+            }
             (serial, instance)
         });
     }
@@ -47,24 +54,6 @@ impl Monitor {
         let instance = session.as_ref().map_or(0, |session| session.instance);
         if (assigned || session.is_some()) && !self.retiring_routes.contains_key(serial) {
             self.retire(serial.into(), instance, session, task);
-        }
-    }
-}
-
-async fn retire_routes(serial: &str, adb: &str) {
-    if is_fake_serial(serial) {
-        return;
-    }
-    for port in [APP_VIDEO_PORT, APP_INPUT_PORT] {
-        let remote = format!("tcp:{port}");
-        let result = tokio::process::Command::new(adb)
-            .args(["-s", serial, "reverse", "--remove", &remote])
-            .output_bounded()
-            .await;
-        if !result.is_ok_and(|output| output.status.success()) {
-            // Offline devices cannot acknowledge removal. Revoked credentials
-            // still reject their late tunnels; tokenless mode cannot promise this.
-            warn!("Could not retire {remote} on {serial}");
         }
     }
 }

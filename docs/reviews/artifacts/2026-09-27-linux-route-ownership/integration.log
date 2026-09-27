@@ -1,0 +1,45 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+warning: unused import: `blent::ffmpeg_args::TEE_OUTPUT`
+  --> host/src/framed_annex_b.rs:12:16
+   |
+12 | pub(crate) use blent::ffmpeg_args::TEE_OUTPUT;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `encoder_quality_args` is never used
+   --> host/src/capture/cli_encoder.rs:102:19
+    |
+ 30 | impl CliEncoder<'_> {
+    | ------------------- method in this implementation
+...
+102 |     pub(super) fn encoder_quality_args(
+    |                   ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `blent` (bin "blent") generated 2 warnings (run `cargo fix --bin "blent" -p blent` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.56s
+     Running tests/linux_lifecycle.rs (target/debug/deps/linux_lifecycle-cdcfab185deaecaa)
+
+running 2 tests
+test t497_diagnostics_and_display_inventory_are_read_only_without_devices ... ok
+test t497_idle_daemon_starts_and_reaps_without_attaching_a_display ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+
+     Running tests/portable_usb.rs (target/debug/deps/portable_usb-2908f3a916f5035d)
+
+running 1 test
+test t525_native_adb_argv_stdin_bounds_and_owned_routes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/wifi_setup.rs (target/debug/deps/wifi_setup-1fc4af91e4a05ce6)
+
+running 3 tests
+test t514_failed_address_probes_do_not_admit_their_stdout ... ok
+test t514_failed_connect_does_not_persist_a_new_address ... ok
+test t514_successful_address_fallback_and_off_preserve_the_cli_contract ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.12s

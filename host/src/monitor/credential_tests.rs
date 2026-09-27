@@ -10,6 +10,15 @@ fn fixture(root: &std::path::Path) -> Monitor {
         r#"#!/bin/sh
 printf '%s\n' "$*" >> "$0.actions"
 if [ "$3" = shell ]; then cat >> "$0.commands"; fi
+if [ "$3" = reverse ]; then
+    file="$0.$2.routes"
+    touch "$file"
+    case "$4" in
+    --list) cat "$file" ;;
+    --no-rebind) printf 'UsbFfs %s %s\n' "$5" "$6" >> "$file" ;;
+    --remove) awk -v remote="$5" '$2 != remote' "$file" > "$file.next"; mv "$file.next" "$file" ;;
+    esac
+fi
 "#,
     )
     .unwrap();
@@ -52,7 +61,7 @@ async fn t444_replacement_removes_both_old_routes_before_slot_reuse() {
     let actions = std::fs::read_to_string(root.path().join("adb.actions")).unwrap();
     for port in [8890, 8891] {
         let remove = actions.find(&format!("-s USB-A reverse --remove tcp:{port}"));
-        let replace = actions.find(&format!("-s USB-B reverse tcp:{port}"));
+        let replace = actions.find(&format!("-s USB-B reverse --no-rebind tcp:{port}"));
         assert!(
             matches!((remove, replace), (Some(a), Some(b)) if a < b),
             "T444: slot reused before old route retirement: {actions}"
@@ -182,9 +191,9 @@ async fn t444_unwritable_token_publication_never_prepares_a_route() {
     state.mutation_ready(serial, result);
     assert!(!state.ready.contains("USB"));
     drained(&mut state).await;
-    let actions = std::fs::read_to_string(root.path().join("adb.actions")).unwrap();
+    let actions = std::fs::read_to_string(root.path().join("adb.actions")).unwrap_or_default();
     assert!(
-        !actions.contains("reverse tcp:"),
+        !actions.contains("reverse"),
         "T444: route prepared despite publication error"
     );
     state.stop().await;
@@ -195,17 +204,17 @@ async fn t444_inflight_route_is_cancelled_before_replacement() {
     let root = tempfile::tempdir().unwrap();
     let mut state = fixture(root.path());
     let adb = root.path().join("adb");
-    std::fs::write(
-        &adb,
-        r#"#!/bin/sh
-printf '%s\n' "$*" >> "$0.actions"
-if [ "$2" = USB-A ] && [ "$3" = reverse ] && [ "$4" != --remove ]; then
+    let source = std::fs::read_to_string(&adb).unwrap();
+    let gate = r#"
+if [ "$2" = USB-A ] && [ "$4" = --no-rebind ] && [ "$5" = tcp:8891 ]; then
     touch "$0.entered"
     sleep 10
     echo late-forward >> "$0.actions"
 fi
-if [ "$3" = shell ]; then cat >> "$0.commands"; fi
-"#,
+"#;
+    std::fs::write(
+        &adb,
+        source.replace("#!/bin/sh\n", &format!("#!/bin/sh\n{gate}")),
     )
     .unwrap();
     state.change_primary(&Some("USB-A".into()));
@@ -222,9 +231,10 @@ if [ "$3" = shell ]; then cat >> "$0.commands"; fi
     let actions = std::fs::read_to_string(root.path().join("adb.actions")).unwrap();
     assert!(!actions.contains("late-forward"));
     assert!(
-        actions.find("USB-A reverse --remove tcp:8891").unwrap()
-            < actions.find("USB-B reverse tcp:8890").unwrap()
+        actions.find("USB-A reverse --remove tcp:8890").unwrap()
+            < actions.find("USB-B reverse --no-rebind tcp:8890").unwrap()
     );
+    assert!(!actions.contains("USB-A reverse --remove tcp:8891"));
     assert!(!state.mutations.contains("USB-A"));
     state.stop().await;
 }

@@ -10,6 +10,16 @@ pub struct Routes {
 impl Routes {
     pub fn new(serial: &str, ports: (u16, u16)) -> Result<Self> {
         ensure!(valid_serial(serial), "Invalid USB serial");
+        Self::for_transport(serial, ports)
+    }
+
+    /// Shared route ownership also applies to Linux network/mDNS transports.
+    /// USB connection admission continues to use the stricter `new` boundary.
+    pub fn for_transport(serial: &str, ports: (u16, u16)) -> Result<Self> {
+        ensure!(
+            !serial.is_empty() && serial.len() <= 1024 && !serial.chars().any(char::is_control),
+            "Invalid ADB serial"
+        );
         blent_config::slot_ports(ports.0, ports.1, 1)?;
         Ok(Self {
             serial: serial.into(),

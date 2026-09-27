@@ -755,7 +755,7 @@ exit 1
             r#"#!/bin/sh
 printf '%s\n' "$*" >> "$0.log"
 if [ "$3" = reverse ]; then
-    case "$2:$4" in PRIMARY:tcp:8890|EXTRA:tcp:8891)
+    case "$2:$4:$5" in PRIMARY:--no-rebind:tcp:8890|EXTRA:--no-rebind:tcp:8891)
         if [ ! -e "$0.$2.failed" ]; then touch "$0.$2.failed"; exit 1; fi;;
     esac
 else
@@ -768,6 +768,7 @@ fi
         let now = std::time::Instant::now();
         for (serial, port) in [("PRIMARY", 19000), ("EXTRA", 19002)] {
             let request = TabletConnection {
+                routes: Default::default(),
                 serial,
                 video_port: port,
                 input_port: port + 1,
@@ -799,8 +800,13 @@ fi
             }
             assert!(ready, "unchanged serial never recovered");
             let passed = std::fs::read_to_string(&log).unwrap();
-            assert!(passed.contains(&format!("-s {serial} reverse tcp:8890 tcp:{port}")));
-            assert!(passed.contains(&format!("-s {serial} reverse tcp:8891 tcp:{}", port + 1)));
+            assert!(passed.contains(&format!(
+                "-s {serial} reverse --no-rebind tcp:8890 tcp:{port}"
+            )));
+            assert!(passed.contains(&format!(
+                "-s {serial} reverse --no-rebind tcp:8891 tcp:{}",
+                port + 1
+            )));
             assert_eq!(passed.matches(&format!("-s {serial} shell")).count(), 1);
         }
     }
@@ -2424,6 +2430,7 @@ fn announce_transport(serial: &str) {
 }
 
 struct TabletConnection<'a> {
+    routes: monitor::RouteOwner,
     serial: &'a str,
     video_port: u16,
     input_port: u16,
@@ -2440,7 +2447,9 @@ impl TabletConnection<'_> {
         if !retry.allow(now) {
             return false;
         }
-        match setup_adb_forwarding_with(self.serial, self.video_port, self.input_port, self.adb)
+        match self
+            .routes
+            .prepare(self.serial, (self.video_port, self.input_port), self.adb)
             .await
         {
             Ok(()) => {
@@ -2706,31 +2715,6 @@ async fn adb_devices_using(adb: &str) -> Vec<String> {
 /// ports for the first tablet, base + 2 per instance for the others.
 const APP_VIDEO_PORT: u16 = 8890;
 const APP_INPUT_PORT: u16 = 8891;
-
-async fn setup_adb_forwarding_with(
-    serial: &str,
-    video_port: u16,
-    input_port: u16,
-    adb: &str,
-) -> Result<()> {
-    for (remote, local) in [(APP_VIDEO_PORT, video_port), (APP_INPUT_PORT, input_port)] {
-        let remote = format!("tcp:{}", remote);
-        let local = format!("tcp:{}", local);
-        let r = tokio::process::Command::new(adb)
-            .args(["-s", serial, "reverse", &remote, &local])
-            .output_bounded()
-            .await?;
-        if !r.status.success() {
-            anyhow::bail!(
-                "adb reverse {} {} failed: {}",
-                remote,
-                local,
-                String::from_utf8_lossy(&r.stderr).trim()
-            );
-        }
-    }
-    Ok(())
-}
 
 async fn stop_pids(pids: &[u32]) -> Result<()> {
     for &pid in pids {

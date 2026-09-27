@@ -19,8 +19,9 @@ impl Monitor {
             }
             let adb = self.config.adb.clone();
             let device = serial.clone();
+            let routes = self.routes.entry(serial.clone()).or_default().clone();
             self.mutations.schedule(serial, async move {
-                if let Err(error) = repair(&adb, &device, ports).await {
+                if let Err(error) = routes.prepare(&device, ports, &adb).await {
                     warn!("Could not verify ADB forwarding for {device}: {error}; retry scheduled");
                 }
                 Mutation::Forwarding
@@ -41,39 +42,14 @@ impl Monitor {
     }
 }
 
-async fn repair(adb: &str, serial: &str, ports: (u16, u16)) -> Result<()> {
-    let listing = tokio::process::Command::new(adb)
-        .args(["-s", serial, "reverse", "--list"])
-        .output_bounded()
-        .await?;
-    anyhow::ensure!(listing.status.success(), "ADB reverse listing failed");
-    let text = std::str::from_utf8(&listing.stdout)?;
-    let expected = [(APP_VIDEO_PORT, ports.0), (APP_INPUT_PORT, ports.1)];
-    for (remote, local) in config::adb_reverse::missing(text, &expected)? {
-        let result = tokio::process::Command::new(adb)
-            .args([
-                "-s",
-                serial,
-                "reverse",
-                "--no-rebind",
-                &format!("tcp:{remote}"),
-                &format!("tcp:{local}"),
-            ])
-            .output_bounded()
-            .await?;
-        anyhow::ensure!(
-            result.status.success(),
-            "Could not restore missing ADB reverse tcp:{remote}"
-        );
-        info!("Restored missing ADB reverse tcp:{remote} to tcp:{local} for {serial}");
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    async fn repair(adb: &str, serial: &str, ports: (u16, u16)) -> Result<()> {
+        RouteOwner::default().prepare(serial, ports, adb).await
+    }
 
     fn fake_adb(root: &std::path::Path, listing: &[u8]) -> PathBuf {
         let adb = root.join("adb");

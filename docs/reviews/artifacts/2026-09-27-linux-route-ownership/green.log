@@ -1,0 +1,11 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.68s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 4 tests
+test monitor::route_tests::t705_conflicting_initial_routes_remain_foreign ... ok
+test monitor::route_tests::t705_matching_external_and_replaced_routes_survive_retirement ... ok
+test monitor::route_tests::t705_partial_preparation_retires_only_successfully_owned_routes ... ok
+test monitor::route_tests::t705_repaired_routes_are_owned_and_retired ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 387 filtered out; finished in 0.05s

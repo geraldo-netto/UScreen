@@ -9,6 +9,8 @@ mod forwarding;
 mod launch_policy;
 mod preparation;
 mod retirement;
+mod routes;
+pub(crate) use routes::RouteOwner;
 
 pub(crate) struct Config {
     pub ports: (u16, u16),
@@ -65,6 +67,7 @@ struct Monitor {
     retiring_slots: HashSet<u32>,
     retiring: JoinSet<(String, u32)>,
     retiring_routes: HashMap<String, u32>,
+    routes: HashMap<String, RouteOwner>,
     discovery: discovery::Discovery,
     mutations: device_tasks::DeviceTasks<Mutation>,
     inventory: JoinSet<Inventory>,
@@ -93,6 +96,7 @@ impl Monitor {
             retiring_slots: HashSet::new(),
             retiring: JoinSet::new(),
             retiring_routes: HashMap::new(),
+            routes: HashMap::new(),
             discovery: discovery::Discovery::new(),
             mutations: device_tasks::DeviceTasks::new(4),
             inventory: JoinSet::new(),
@@ -263,6 +267,7 @@ impl Monitor {
             .map_or(&self.config.tablet, |session| &session.tablet_tx);
         self.attachments.insert(serial.clone(), tablet.clone());
         let work = preparation::Preparation {
+            routes: self.routes.entry(serial.clone()).or_default().clone(),
             serial: serial.clone(),
             ports,
             token: tablet.token(),
@@ -673,3 +678,6 @@ mod credential_tests;
 
 #[cfg(test)]
 mod coverage_tests;
+
+#[cfg(test)]
+mod route_tests;

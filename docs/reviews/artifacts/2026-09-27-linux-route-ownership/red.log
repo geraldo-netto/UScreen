@@ -1,0 +1,39 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.01s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 4 tests
+test monitor::route_tests::t705_conflicting_initial_routes_remain_foreign ... FAILED
+test monitor::route_tests::t705_matching_external_and_replaced_routes_survive_retirement ... FAILED
+test monitor::route_tests::t705_partial_preparation_retires_only_successfully_owned_routes ... FAILED
+test monitor::route_tests::t705_repaired_routes_are_owned_and_retired ... ok
+
+failures:
+
+---- monitor::route_tests::t705_conflicting_initial_routes_remain_foreign stdout ----
+
+thread 'monitor::route_tests::t705_conflicting_initial_routes_remain_foreign' (1034797) panicked at host/src/monitor/route_tests.rs:49:5:
+T705: conflicting initial route was rebound
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- monitor::route_tests::t705_matching_external_and_replaced_routes_survive_retirement stdout ----
+
+thread 'monitor::route_tests::t705_matching_external_and_replaced_routes_survive_retirement' (1034833) panicked at host/src/monitor/route_tests.rs:62:5:
+assertion `left == right` failed: T705: retired external mappings
+  left: ""
+ right: "UsbFfs tcp:8890 tcp:18000\nUsbFfs tcp:8891 tcp:2222\n"
+
+---- monitor::route_tests::t705_partial_preparation_retires_only_successfully_owned_routes stdout ----
+
+thread 'monitor::route_tests::t705_partial_preparation_retires_only_successfully_owned_routes' (1034854) panicked at host/src/monitor/route_tests.rs:76:5:
+T705: attempted unowned removal
+
+
+failures:
+    monitor::route_tests::t705_conflicting_initial_routes_remain_foreign
+    monitor::route_tests::t705_matching_external_and_replaced_routes_survive_retirement
+    monitor::route_tests::t705_partial_preparation_retires_only_successfully_owned_routes
+
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 387 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `-p blent --bin blent`

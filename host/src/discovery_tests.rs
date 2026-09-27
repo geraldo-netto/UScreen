@@ -328,7 +328,7 @@ async fn t390_initial_discovery_connects_fast_tablet_before_slow_probe() {
         "T390: ready FAST tablet waited for unrelated SLOW identity probe"
     );
     let forwards = std::fs::read_to_string(adb.with_extension("reverse")).unwrap();
-    assert!(forwards.contains("-s FAST reverse tcp:8890 tcp:18000"));
+    assert!(forwards.contains("-s FAST reverse --no-rebind tcp:8890 tcp:18000"));
 }
 
 pub(crate) fn monitor_inputs(
@@ -500,17 +500,17 @@ async fn scaling_case(root: &std::path::Path, count: u32) {
 fn assert_forward_pair(log: &str, session: &runtime::TabletSession) {
     let entries: Vec<_> = log
         .lines()
-        .filter(|line| line.starts_with(&format!("-s {} ", session.serial)))
+        .filter(|line| line.starts_with(&format!("-s {} reverse --no-rebind ", session.serial)))
         .collect();
     assert_eq!(
         entries,
         [
             format!(
-                "-s {} reverse tcp:8890 tcp:{}",
+                "-s {} reverse --no-rebind tcp:8890 tcp:{}",
                 session.serial, session.video_port
             ),
             format!(
-                "-s {} reverse tcp:8891 tcp:{}",
+                "-s {} reverse --no-rebind tcp:8891 tcp:{}",
                 session.serial, session.input_port
             )
         ]

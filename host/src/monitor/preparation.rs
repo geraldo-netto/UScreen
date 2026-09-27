@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) struct Preparation {
+    pub routes: RouteOwner,
     pub serial: String,
     pub ports: (u16, u16),
     pub token: Result<Option<String>>,
@@ -21,6 +22,7 @@ impl Preparation {
         let ready = match token {
             Ok(token) => {
                 let request = TabletConnection {
+                    routes: self.routes.clone(),
                     serial: &self.serial,
                     video_port: self.ports.0,
                     input_port: self.ports.1,

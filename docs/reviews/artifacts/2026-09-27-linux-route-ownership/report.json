@@ -1,0 +1,540 @@
+{
+  "rust_platforms": [
+    "linux"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/monitor",
+    "host/src/usb/routes.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 45,
+      "passing": 45,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/monitor/credentials.rs",
+      "name": "publish",
+      "line": 6,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "name": "check_forwarding",
+      "line": 7,
+      "language": "rust",
+      "covered": 23,
+      "total": 23,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "name": "forwarding_ports",
+      "line": 32,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "observe",
+      "line": 28,
+      "language": "rust",
+      "covered": 21,
+      "total": 21,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "retain",
+      "line": 52,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "refresh",
+      "line": 59,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "observe",
+      "line": 67,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "take",
+      "line": 87,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "name": "already_launched",
+      "line": 109,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/preparation.rs",
+      "name": "run",
+      "line": 17,
+      "language": "rust",
+      "covered": 30,
+      "total": 30,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/preparation.rs",
+      "name": "prepare_route",
+      "line": 52,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/retirement.rs",
+      "name": "retire",
+      "line": 5,
+      "language": "rust",
+      "covered": 29,
+      "total": 29,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/retirement.rs",
+      "name": "retired",
+      "line": 37,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/retirement.rs",
+      "name": "remove_assignment",
+      "line": 44,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/routes.rs",
+      "name": "prepare",
+      "line": 9,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor/routes.rs",
+      "name": "retire",
+      "line": 21,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "new",
+      "line": 83,
+      "language": "rust",
+      "covered": 28,
+      "total": 28,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "event",
+      "line": 112,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "tick",
+      "line": 134,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "queue_inventory",
+      "line": 143,
+      "language": "rust",
+      "covered": 33,
+      "total": 35,
+      "percent": 94.28571428571429,
+      "passes": true,
+      "missing": [
+        165,
+        171
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "inventory_ready",
+      "line": 183,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "probe_ready",
+      "line": 203,
+      "language": "rust",
+      "covered": 10,
+      "total": 12,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        209,
+        210
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "revalidate_identity",
+      "line": 216,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "change_primary",
+      "line": 229,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "can_prepare",
+      "line": 253,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare",
+      "line": 263,
+      "language": "rust",
+      "covered": 22,
+      "total": 22,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare_primary",
+      "line": 287,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "available_slot",
+      "line": 312,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepare_extra",
+      "line": 323,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "reconcile",
+      "line": 358,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "remove_gone",
+      "line": 380,
+      "language": "rust",
+      "covered": 10,
+      "total": 12,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        389,
+        390
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "prepared",
+      "line": 393,
+      "language": "rust",
+      "covered": 22,
+      "total": 24,
+      "percent": 91.66666666666667,
+      "passes": true,
+      "missing": [
+        413,
+        414
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "mutation_ready",
+      "line": 421,
+      "language": "rust",
+      "covered": 15,
+      "total": 16,
+      "percent": 93.75,
+      "passes": true,
+      "missing": [
+        432
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "redeliver",
+      "line": 440,
+      "language": "rust",
+      "covered": 16,
+      "total": 18,
+      "percent": 88.88888888888889,
+      "passes": true,
+      "missing": [
+        445,
+        453
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "primary_token",
+      "line": 462,
+      "language": "rust",
+      "covered": 14,
+      "total": 14,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "extra_token",
+      "line": 478,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "publish",
+      "line": 491,
+      "language": "rust",
+      "covered": 24,
+      "total": 26,
+      "percent": 92.3076923076923,
+      "passes": true,
+      "missing": [
+        493,
+        517
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "stop",
+      "line": 521,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "apply_event",
+      "line": 541,
+      "language": "rust",
+      "covered": 9,
+      "total": 11,
+      "percent": 81.81818181818181,
+      "passes": true,
+      "missing": [
+        549,
+        550
+      ]
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "name": "run",
+      "line": 554,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "name": "new",
+      "line": 11,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "name": "for_transport",
+      "line": 18,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "name": "serial",
+      "line": 30,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "name": "prepare",
+      "line": 34,
+      "language": "rust",
+      "covered": 22,
+      "total": 22,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "name": "retire",
+      "line": 58,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}
