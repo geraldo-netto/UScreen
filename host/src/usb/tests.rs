@@ -12,6 +12,7 @@ struct State {
     other_routes: BTreeMap<String, BTreeMap<u16, u16>>,
     calls: Vec<(Vec<String>, Option<Vec<u8>>)>,
     inventory: String,
+    inventory_code: u32,
     fail: Option<String>,
     installed: bool,
 }
@@ -52,7 +53,7 @@ impl Commands for Fake {
 }
 fn fake_reply(state: &mut State, args: &[String]) -> Output {
     if args == ["devices"] {
-        return output(0, &state.inventory);
+        return output(state.inventory_code, &state.inventory);
     }
     match args[2].as_str() {
         "reverse" => reverse_for(state, &args[1], &args[3..]),
@@ -130,6 +131,27 @@ fn fixture() -> (Adb<Fake>, connection::Connection) {
         Adb(fake),
         connection::Connection::new(attachment, (9000, 9001), true).unwrap(),
     )
+}
+
+#[tokio::test]
+async fn t654_inventory_status_and_size_are_independent_requirements() {
+    let (adb, _) = fixture();
+    let listing = "List of devices attached\nUSB\tdevice\n";
+    for size in [65535, 65536, 65537, 65538, 131072] {
+        for code in [0, 1, 7, 255] {
+            {
+                let mut state = adb.0 .0.lock().unwrap();
+                state.inventory = format!("{listing}{}", " ".repeat(size - listing.len()));
+                state.inventory_code = code;
+            }
+            let expected = (code == 0 && size <= 65536).then(|| vec!["USB".into()]);
+            assert_eq!(
+                adb.inventory().await,
+                expected,
+                "T654: size={size}, exit={code}"
+            );
+        }
+    }
 }
 
 #[tokio::test]
