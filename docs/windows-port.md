@@ -115,6 +115,20 @@ These are remaining tasks, not enabled capabilities. Each implementation retains
 its own permanent tests and per-function coverage; native fixtures and physical
 acceptance remain separate evidence. The completed T531 tray is not pending work.
 
+## Feature-parity gate
+
+New operating-system support must reach the existing supported feature set,
+subject to explicitly accepted exclusions. Windows remains a preview while its
+native backends and acceptance are incomplete. The maintainer retained touch/mouse
+and declined stylus; macOS is not being reopened. Backend APIs and installation
+mechanisms may differ while user-visible behavior and ownership guarantees agree.
+
+The [source-backed parity audit](reviews/2026-09-27-windows-parity.md) maps existing
+milestones and additional gaps: Wi-Fi T691, camera interface/output T692/T693,
+CLI/configuration T694, adaptive idle T695, tray updates T696 and user-controlled
+capture capacity T697. These are planned requirements, not implemented support.
+A successful Windows build or one working streaming path does not close them.
+
 ## Decisions and resources needed
 
 | Decision or resource | Recommendation | Condition to proceed |
