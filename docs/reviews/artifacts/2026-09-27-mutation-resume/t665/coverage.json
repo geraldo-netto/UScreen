@@ -1,0 +1,54 @@
+{
+  "rust_platforms": [
+    "linux"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/encoder_workers.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 3,
+      "passing": 3,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/encoder_workers.rs",
+      "name": "validate",
+      "line": 4,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/encoder_workers.rs",
+      "name": "candidates",
+      "line": 12,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/encoder_workers.rs",
+      "name": "effective_x264",
+      "line": 23,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

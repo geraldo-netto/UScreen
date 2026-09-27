@@ -46,6 +46,24 @@ pub fn effective_x264(packet: &[u8]) -> Option<u32> {
 mod tests {
     use super::*;
     #[test]
+    fn t665_worker_fields_require_the_exact_x264_marker() {
+        let valid = b"x264 - core 164 threads=12 ";
+        assert_eq!(effective_x264(valid), Some(12));
+        for packet in [b" threads=12 ".as_slice(), b"encoder=foreign threads=12 "] {
+            assert_eq!(effective_x264(packet), None, "T665: absent x264 marker");
+        }
+        for index in 0..b"x264 - core ".len() {
+            let mut corrupted = valid.to_vec();
+            corrupted[index] ^= 1;
+            assert_eq!(
+                effective_x264(&corrupted),
+                None,
+                "T665: corrupted marker byte {index}"
+            );
+        }
+    }
+
+    #[test]
     fn t612_budget_order_manual_override_and_bounds() {
         assert_eq!(candidates("libx264", 0), [1, 2, 4]);
         assert_eq!(candidates("libx264", 7), [7]);
