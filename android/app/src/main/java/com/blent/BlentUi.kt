@@ -117,6 +117,7 @@ internal fun BlentMain(
                 displayRefreshRates = displayRefreshRates,
                 onSettingsEvent = onSettingsEvent,
                 cameraControls = cameraControls,
+                decoderDiagnostics = decoderDiagnostics(presentation),
             )
         }
     }
@@ -151,6 +152,10 @@ private fun StreamSurface(onSurfaceReady: (SurfaceView) -> Unit, onSurfaceDestro
     )
 
 }
+
+@Composable
+private fun decoderDiagnostics(presentation: StreamPresentation?): DecoderDiagnostics =
+    presentation?.decoderDiagnostics?.collectAsState()?.value ?: DecoderDiagnostics()
 
 @Composable
 private fun controlConnected(presentation: StreamPresentation?): Boolean =

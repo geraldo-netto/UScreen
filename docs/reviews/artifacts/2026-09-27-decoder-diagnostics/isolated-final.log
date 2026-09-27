@@ -1,0 +1,656 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.5/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.3.2' is experimental.
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugProfileIdentity UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :app:generateDebugUnitTestConfig UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest
+
+com.blent.ActivityUiContractTest > t497_realActivityCompositionRoutesDisplayChangesAndRetiresItsSession[27] PASSED
+
+com.blent.ActivityUiContractTest > t539_cameraSelectionUsesAndroidPermissionResultAndForegroundOwner[27] PASSED
+
+com.blent.ActivityUiContractTest > t497_realActivityCompositionRoutesDisplayChangesAndRetiresItsSession PASSED
+
+com.blent.ActivityUiContractTest > t539_cameraSelectionUsesAndroidPermissionResultAndForegroundOwner PASSED
+
+com.blent.CallbackDecoderTest > t497_codecErrorRetiresOnlyItsCurrentOwner[27] PASSED
+
+com.blent.CallbackDecoderTest > t386_retiredCallbacksCannotQueueReleaseOrAcknowledgeNewCodec[27] PASSED
+
+com.blent.CallbackDecoderTest > t497_closedHandlerRejectsInputAndCodecErrorsCloseAdmission[27] PASSED
+
+com.blent.CallbackDecoderTest > t386_mailboxBoundsAdmissionAndRetirementWakesBlockedProducer[27] PASSED
+
+com.blent.CallbackDecoderTest > t386_callbackInputOwnsBytesAndPreservesConfigurationSequenceAndOrder[27] PASSED
+
+com.blent.CallbackDecoderTest > t386_callbackInputDeadlineRetiresInsteadOfDroppingReferenceFrames[27] PASSED
+
+com.blent.CallbackDecoderTest > t497_codecErrorRetiresOnlyItsCurrentOwner PASSED
+
+com.blent.CallbackDecoderTest > t386_retiredCallbacksCannotQueueReleaseOrAcknowledgeNewCodec PASSED
+
+com.blent.CallbackDecoderTest > t497_closedHandlerRejectsInputAndCodecErrorsCloseAdmission PASSED
+
+com.blent.CallbackDecoderTest > t386_mailboxBoundsAdmissionAndRetirementWakesBlockedProducer PASSED
+
+com.blent.CallbackDecoderTest > t386_callbackInputOwnsBytesAndPreservesConfigurationSequenceAndOrder PASSED
+
+com.blent.CallbackDecoderTest > t386_callbackInputDeadlineRetiresInsteadOfDroppingReferenceFrames PASSED
+
+com.blent.CodecReportTest > t468_creationFailureNamesTheChosenDecoderWithoutSilentFallback[27] PASSED
+
+com.blent.CodecReportTest > t468_legacyDecoderCreationUsesTheAdvertisedCompatibleSelection[27] PASSED
+
+com.blent.CodecReportTest > t468_unsupportedLegacyFormatNeverAllocatesTheDefaultDecoder[27] PASSED
+
+com.blent.CodecReportTest > t468_creationFailureNamesTheChosenDecoderWithoutSilentFallback PASSED
+
+com.blent.CodecReportTest > t468_legacyDecoderCreationUsesTheAdvertisedCompatibleSelection PASSED
+
+com.blent.CodecReportTest > t468_unsupportedLegacyFormatNeverAllocatesTheDefaultDecoder PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_latest_preserves_decoding_and_presents_only_last_ready_output[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t497_sessionReportsDiscardedDecodedOutputsAndHonorsRetirement[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_sparse_or_format_change_preserves_the_available_frame[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_default_releases_every_output_without_lookahead[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_continuous_output_cannot_starve_presentation[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_retirement_during_lookahead_cannot_present_an_old_surface_frame[27] PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_latest_preserves_decoding_and_presents_only_last_ready_output PASSED
+
+com.blent.DecodedOutputDrainerTest > t497_sessionReportsDiscardedDecodedOutputsAndHonorsRetirement PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_sparse_or_format_change_preserves_the_available_frame PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_default_releases_every_output_without_lookahead PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_continuous_output_cannot_starve_presentation PASSED
+
+com.blent.DecodedOutputDrainerTest > t399_retirement_during_lookahead_cannot_present_an_old_surface_frame PASSED
+
+com.blent.DecoderConfigurationTest > t386_fallbackAndUnhintedProfilesNeverProbeOrEnablePerformanceHints[27] PASSED
+
+com.blent.DecoderConfigurationTest > t386_supportedProfileUsesActualFeaturesAndRateHeadroom[27] PASSED
+
+com.blent.DecoderConfigurationTest > t386_fallbackAndUnhintedProfilesNeverProbeOrEnablePerformanceHints PASSED
+
+com.blent.DecoderConfigurationTest > t386_supportedProfileUsesActualFeaturesAndRateHeadroom PASSED
+
+com.blent.DecoderDiagnosticsTest > t417_invalidRangesAndMalformedOptionalHintsRemainUnknown[27] PASSED
+
+com.blent.DecoderDiagnosticsTest > t417_nativeCapabilitiesRemainSeparateFromRequestedHints[27] PASSED
+
+com.blent.DecoderDiagnosticsTest > t417_invalidRangesAndMalformedOptionalHintsRemainUnknown PASSED
+
+com.blent.DecoderDiagnosticsTest > t417_nativeCapabilitiesRemainSeparateFromRequestedHints PASSED
+
+com.blent.DecoderDiagnosticsUiTest > t417_settingsShowInactiveAndChangingReadOnlyDecoderState[27] PASSED
+
+com.blent.DecoderDiagnosticsUiTest > t417_settingsShowInactiveAndChangingReadOnlyDecoderState PASSED
+
+com.blent.DecoderNegotiationTest > t478_newProtocolEchoesScopeButLegacyHostKeepsVersionOne[27] PASSED
+
+com.blent.DecoderNegotiationTest > t432_staleCapabilityQueryCannotPublishAfterReconnect[27] PASSED
+
+com.blent.DecoderNegotiationTest > t332_lateRejectionCannotReplaceANewerRequest[27] PASSED
+
+com.blent.DecoderNegotiationTest > t478_lateInventoryCannotPublishAcrossIdenticalFormatScopes[27] PASSED
+
+com.blent.DecoderNegotiationTest > t276_sharedScaledGreetingUsesEncodedDimensionsForCapabilities[27] PASSED
+
+com.blent.DecoderNegotiationTest > t478_newProtocolEchoesScopeButLegacyHostKeepsVersionOne PASSED
+
+com.blent.DecoderNegotiationTest > t432_staleCapabilityQueryCannotPublishAfterReconnect PASSED
+
+com.blent.DecoderNegotiationTest > t332_lateRejectionCannotReplaceANewerRequest PASSED
+
+com.blent.DecoderNegotiationTest > t478_lateInventoryCannotPublishAcrossIdenticalFormatScopes PASSED
+
+com.blent.DecoderNegotiationTest > t276_sharedScaledGreetingUsesEncodedDimensionsForCapabilities PASSED
+
+com.blent.DecoderSchedulingTest > t386_retirementDoesNotWaitForBlockedNativeInput[27] PASSED
+
+com.blent.DecoderSchedulingTest > t386_recreatedReceiverWaitsForRetiredNativeOwner[27] PASSED
+
+com.blent.DecoderSchedulingTest > t386_inputWaitDoesNotHoldReceiverMonitor[27] PASSED
+
+com.blent.DecoderSchedulingTest > t386_retirementDoesNotWaitForBlockedNativeInput PASSED
+
+com.blent.DecoderSchedulingTest > t386_recreatedReceiverWaitsForRetiredNativeOwner PASSED
+
+com.blent.DecoderSchedulingTest > t386_inputWaitDoesNotHoldReceiverMonitor PASSED
+
+com.blent.DecoderSetupTest > t333_videoConnectHasABoundedDeadline[27] PASSED
+
+com.blent.DecoderSetupTest > t134_outputFailureRetiresStreamWithoutWaitingForInput[27] PASSED
+
+com.blent.DecoderSetupTest > t134_nullInputReconnects[27] PASSED
+
+com.blent.DecoderSetupTest > t134_inputTimeoutReconnects[27] PASSED
+
+com.blent.DecoderSetupTest > t089_startFailureReleasesResources[27] PASSED
+
+com.blent.DecoderSetupTest > t243_invalidPacketReportsDisconnectionBeforeRetry[27] PASSED
+
+com.blent.DecoderSetupTest > t333_stopCancelsPendingVideoConnect[27] PASSED
+
+com.blent.DecoderSetupTest > t329_firstVideoFrameSurvivesLateUiSubscriptionAndStop[27] PASSED
+
+com.blent.DecoderSetupTest > t134_surfaceReplacementReconnects[27] PASSED
+
+com.blent.DecoderSetupTest > t120_decoderHintsUseTheEffectiveRateAcrossRestarts[27] PASSED
+
+com.blent.DecoderSetupTest > t243_decoderResetReportsDisconnectionBeforeRetry[27] PASSED
+
+com.blent.DecoderSetupTest > t329_firstVideoFrameSurvivesLateUiSubscriptionAndDisconnect[27] PASSED
+
+com.blent.DecoderSetupTest > t404_stalePacketCannotRecordArrivalInCurrentTimingEpoch[27] PASSED
+
+com.blent.DecoderSetupTest > t134_feedErrorReconnects[27] PASSED
+
+com.blent.DecoderSetupTest > t089_configureFailureReleasesResources[27] PASSED
+
+com.blent.DecoderSetupTest > t134_oversizedInputReconnects[27] PASSED
+
+com.blent.DecoderSetupTest > t089_listenerFailureReleasesResources[27] PASSED
+
+com.blent.DecoderSetupTest > t333_videoConnectHasABoundedDeadline PASSED
+
+com.blent.DecoderSetupTest > t134_outputFailureRetiresStreamWithoutWaitingForInput PASSED
+
+com.blent.DecoderSetupTest > t134_nullInputReconnects PASSED
+
+com.blent.DecoderSetupTest > t134_inputTimeoutReconnects PASSED
+
+com.blent.DecoderSetupTest > t089_startFailureReleasesResources PASSED
+
+com.blent.DecoderSetupTest > t243_invalidPacketReportsDisconnectionBeforeRetry PASSED
+
+com.blent.DecoderSetupTest > t333_stopCancelsPendingVideoConnect PASSED
+
+com.blent.DecoderSetupTest > t329_firstVideoFrameSurvivesLateUiSubscriptionAndStop PASSED
+
+com.blent.DecoderSetupTest > t134_surfaceReplacementReconnects PASSED
+
+com.blent.DecoderSetupTest > t120_decoderHintsUseTheEffectiveRateAcrossRestarts PASSED
+
+com.blent.DecoderSetupTest > t243_decoderResetReportsDisconnectionBeforeRetry PASSED
+
+com.blent.DecoderSetupTest > t329_firstVideoFrameSurvivesLateUiSubscriptionAndDisconnect PASSED
+
+com.blent.DecoderSetupTest > t404_stalePacketCannotRecordArrivalInCurrentTimingEpoch PASSED
+
+com.blent.DecoderSetupTest > t134_feedErrorReconnects PASSED
+
+com.blent.DecoderSetupTest > t089_configureFailureReleasesResources PASSED
+
+com.blent.DecoderSetupTest > t134_oversizedInputReconnects PASSED
+
+com.blent.DecoderSetupTest > t089_listenerFailureReleasesResources PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeStart[27] PASSED
+
+com.blent.DecoderStartupTest > t497_factoryFailureRetiresStartupAndAcknowledgementsIgnoreRetiredCodec[27] PASSED
+
+com.blent.DecoderStartupTest > t425_surfaceCallbackDefersNativeSetup[27] PASSED
+
+com.blent.DecoderStartupTest > t425_surfaceDestructionDuringNativeConfiguration[27] PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeConfiguration[27] PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeCreation[27] PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeStart PASSED
+
+com.blent.DecoderStartupTest > t497_factoryFailureRetiresStartupAndAcknowledgementsIgnoreRetiredCodec PASSED
+
+com.blent.DecoderStartupTest > t425_surfaceCallbackDefersNativeSetup PASSED
+
+com.blent.DecoderStartupTest > t425_surfaceDestructionDuringNativeConfiguration PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeConfiguration PASSED
+
+com.blent.DecoderStartupTest > t425_stopDuringNativeCreation PASSED
+
+com.blent.DecoderWatchdogTest > t339_zeroFrameStallsReachFallback[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_aShortBurstIsNotSustainedRecovery[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_oneFrameStallsReachFallback[27] PASSED
+
+com.blent.DecoderWatchdogTest > t404_inflightCallbackCannotAcknowledgeReplacement[27] PASSED
+
+com.blent.DecoderWatchdogTest > t417_diagnosticsTrackCodecChangesRetirementAndWatchdogFallback[27] PASSED
+
+com.blent.DecoderWatchdogTest > t484_renderReceiptsFollowPublishedCodecConfiguration[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_fallbackSurvivesRecoveryStopStartAndCodecChanges[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_gapsBetweenIsolatedFramesDoNotClearFailures[27] PASSED
+
+com.blent.DecoderWatchdogTest > t404_codecReplacementRetiresTimingHistory[27] PASSED
+
+com.blent.DecoderWatchdogTest > t386_retiredOutputCannotUpdateReplacementWatchdog[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_eachReplacementNeedsItsOwnRecoveryWindow[27] PASSED
+
+com.blent.DecoderWatchdogTest > t376_retiredCodecCallbacksCannotAcknowledgeReplacement[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_sustainedOutputResetsStallHistory[27] PASSED
+
+com.blent.DecoderWatchdogTest > t339_zeroFrameStallsReachFallback PASSED
+
+com.blent.DecoderWatchdogTest > t339_aShortBurstIsNotSustainedRecovery PASSED
+
+com.blent.DecoderWatchdogTest > t339_oneFrameStallsReachFallback PASSED
+
+com.blent.DecoderWatchdogTest > t404_inflightCallbackCannotAcknowledgeReplacement PASSED
+
+com.blent.DecoderWatchdogTest > t417_diagnosticsTrackCodecChangesRetirementAndWatchdogFallback PASSED
+
+com.blent.DecoderWatchdogTest > t484_renderReceiptsFollowPublishedCodecConfiguration PASSED
+
+com.blent.DecoderWatchdogTest > t339_fallbackSurvivesRecoveryStopStartAndCodecChanges PASSED
+
+com.blent.DecoderWatchdogTest > t339_gapsBetweenIsolatedFramesDoNotClearFailures PASSED
+
+com.blent.DecoderWatchdogTest > t404_codecReplacementRetiresTimingHistory PASSED
+
+com.blent.DecoderWatchdogTest > t386_retiredOutputCannotUpdateReplacementWatchdog PASSED
+
+com.blent.DecoderWatchdogTest > t339_eachReplacementNeedsItsOwnRecoveryWindow PASSED
+
+com.blent.DecoderWatchdogTest > t376_retiredCodecCallbacksCannotAcknowledgeReplacement PASSED
+
+com.blent.DecoderWatchdogTest > t339_sustainedOutputResetsStallHistory PASSED
+
+com.blent.DirectDecoderInputTest > t403_fill_uses_codec_owned_storage_and_preserves_csd_and_unsigned_sequence[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_partial_eof_never_queues_a_codec_sample[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_blocked_channel_read_is_cancelled_without_holding_receiver_monitor[27] PASSED
+
+com.blent.DirectDecoderInputTest > t497_inputLengthFuzzRejectsBoundsBeforeReadingOrQueueing[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_short_fill_cannot_queue_stale_codec_slot_bytes[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_callback_profile_never_uses_synchronous_direct_input[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_late_fill_cannot_queue_after_native_owner_retirement[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_capacity_is_checked_before_transport_reads[27] PASSED
+
+com.blent.DirectDecoderInputTest > t403_fill_uses_codec_owned_storage_and_preserves_csd_and_unsigned_sequence PASSED
+
+com.blent.DirectDecoderInputTest > t403_partial_eof_never_queues_a_codec_sample PASSED
+
+com.blent.DirectDecoderInputTest > t403_blocked_channel_read_is_cancelled_without_holding_receiver_monitor PASSED
+
+com.blent.DirectDecoderInputTest > t497_inputLengthFuzzRejectsBoundsBeforeReadingOrQueueing PASSED
+
+com.blent.DirectDecoderInputTest > t403_short_fill_cannot_queue_stale_codec_slot_bytes PASSED
+
+com.blent.DirectDecoderInputTest > t403_callback_profile_never_uses_synchronous_direct_input PASSED
+
+com.blent.DirectDecoderInputTest > t403_late_fill_cannot_queue_after_native_owner_retirement PASSED
+
+com.blent.DirectDecoderInputTest > t403_capacity_is_checked_before_transport_reads PASSED
+
+com.blent.DisplaySettingsTest > t497_invalidPersistedRefreshValuesFallBackWithoutChangingValidOverrides[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_nearestSupportedRefreshPreservesResolution[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_newActivityDefaultsToHalfBrightness[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_systemRefreshOptionClearsAppPreference[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_defaultRefreshPreservesResolution[27] PASSED
+
+com.blent.DisplaySettingsTest > t497_activitySettingsEventsApplyWindowAndOrientationPoliciesImmediately[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_savedOverridesSurviveFocusAndRelaunch[27] PASSED
+
+com.blent.DisplaySettingsTest > t349_focusRegainReappliesAppDefaultsOnly[27] PASSED
+
+com.blent.DisplaySettingsTest > t497_invalidPersistedRefreshValuesFallBackWithoutChangingValidOverrides PASSED
+
+com.blent.DisplaySettingsTest > t349_nearestSupportedRefreshPreservesResolution PASSED
+
+com.blent.DisplaySettingsTest > t349_newActivityDefaultsToHalfBrightness PASSED
+
+com.blent.DisplaySettingsTest > t349_systemRefreshOptionClearsAppPreference PASSED
+
+com.blent.DisplaySettingsTest > t349_defaultRefreshPreservesResolution PASSED
+
+com.blent.DisplaySettingsTest > t497_activitySettingsEventsApplyWindowAndOrientationPoliciesImmediately PASSED
+
+com.blent.DisplaySettingsTest > t349_savedOverridesSurviveFocusAndRelaunch PASSED
+
+com.blent.DisplaySettingsTest > t349_focusRegainReappliesAppDefaultsOnly PASSED
+
+com.blent.FramedDecoderTest > t433_wireConfigurationCreatesAv1DecoderAtEncodedDimensionsAndRejectsRetiredRun[27] PASSED
+
+com.blent.FramedDecoderTest > t497_framedSetupRejectsRetiredSurfaceWrongDimensionsAndFailedAllocation[27] PASSED
+
+com.blent.FramedDecoderTest > t432_wireConfigurationCreatesDecoderAtEncodedDimensionsAndRejectsRetiredRun[27] PASSED
+
+com.blent.FramedDecoderTest > t627_surfaceSetupPreservesNegotiatedDecoderAndReceiptAcrossReconnect[27] PASSED
+
+com.blent.FramedDecoderTest > t497_surfaceCodecRequiresCurrentReadySurfaceAndReusesItsOwner[27] PASSED
+
+com.blent.FramedDecoderTest > t433_wireConfigurationCreatesAv1DecoderAtEncodedDimensionsAndRejectsRetiredRun PASSED
+
+com.blent.FramedDecoderTest > t497_framedSetupRejectsRetiredSurfaceWrongDimensionsAndFailedAllocation PASSED
+
+com.blent.FramedDecoderTest > t432_wireConfigurationCreatesDecoderAtEncodedDimensionsAndRejectsRetiredRun PASSED
+
+com.blent.FramedDecoderTest > t627_surfaceSetupPreservesNegotiatedDecoderAndReceiptAcrossReconnect PASSED
+
+com.blent.FramedDecoderTest > t497_surfaceCodecRequiresCurrentReadySurfaceAndReusesItsOwner PASSED
+
+com.blent.NumericFormatBoundsTest > t517_streamNumbersRejectLossyCoercionBeforeDecoderSetup[27] PASSED
+
+com.blent.NumericFormatBoundsTest > t517_streamNumbersRejectLossyCoercionBeforeDecoderSetup PASSED
+
+com.blent.RegressionTest > t039_launcherIntentCannotOverwriteTrustedToken[27] PASSED
+
+com.blent.RegressionTest > t039_tokenDeliveryRequiresShellPermissionAndFrontsLauncher[27] PASSED
+
+com.blent.RegressionTest > t123_updateVersionsFollowSharedValidationAndPrecedence[27] PASSED
+
+com.blent.RegressionTest > t088_lateOldCleanupLeavesReplacementSocketAndDecoderAlive[27] PASSED
+
+com.blent.RegressionTest > t112_closedSocketCannotOpenAgain[27] PASSED
+
+com.blent.RegressionTest > t042_controlSocketPingsDetectDeadLinks[27] PASSED
+
+com.blent.RegressionTest > t312_nonpositiveIntervalsKeepPendingCounts[27] PASSED
+
+com.blent.RegressionTest > t040_backgroundActivityDisablesTiltSensor[27] PASSED
+
+com.blent.RegressionTest > t146_motionCoordinatesStayNormalizedIncludingReleases[27] PASSED
+
+com.blent.RegressionTest > t250_forkPackageKeepsProtectedOriginalClasses[27] PASSED
+
+com.blent.RegressionTest > t303_platformPalmCannotBecomeAFingerContact[27] PASSED
+
+com.blent.RegressionTest > t319_latePalmClassificationReleasesOnlyItsExistingTouch[27] PASSED
+
+com.blent.RegressionTest > t037_cleartextPolicyOnlyPermitsLoopback[27] PASSED
+
+com.blent.RegressionTest > t282_concurrentControlMessagesFollowAuthentication[27] PASSED
+
+com.blent.RegressionTest > t312_trafficRatesUseMonotonicElapsedTime[27] PASSED
+
+com.blent.RegressionTest > t041_oneMbpsSettingMatchesHostMinimum[27] PASSED
+
+com.blent.RegressionTest > t309_receiverRestartsRetireTrafficStatistics[27] PASSED
+
+com.blent.RegressionTest > t253_arrivalHistorySurvivesCounterOverflowAndRingWraps[27] PASSED
+
+com.blent.RegressionTest > t133_tokenRotationRestartsActiveReconnectsOnly[27] PASSED
+
+com.blent.RegressionTest > t120_applyRebuildsRunningDecoderWithSelectedRate[27] PASSED
+
+com.blent.RegressionTest > t120_hostGreetingUpdatesEffectiveDecoderRate[27] PASSED
+
+com.blent.RegressionTest > t087_sparsePointerIdsKeepDistinctSlotsAcrossReordering[27] PASSED
+
+com.blent.RegressionTest > t062_disabledDevicesSendNoTouchPenHoverOrButtonEvents[27] PASSED
+
+com.blent.RegressionTest > t112_queuedGreetingCannotAffectReplacementSession[27] PASSED
+
+com.blent.RegressionTest > t112_backgroundModeAndCodecCallbacksCannotStartVideo[27] PASSED
+
+com.blent.RegressionTest > t036_sessionTokenIsExcludedFromBackup[27] PASSED
+
+com.blent.RegressionTest > t112_replacedAndDisconnectedCallbacksCannotResurrectControl[27] PASSED
+
+com.blent.RegressionTest > t039_launcherIntentCannotOverwriteTrustedToken PASSED
+
+com.blent.RegressionTest > t039_tokenDeliveryRequiresShellPermissionAndFrontsLauncher PASSED
+
+com.blent.RegressionTest > t123_updateVersionsFollowSharedValidationAndPrecedence PASSED
+
+com.blent.RegressionTest > t088_lateOldCleanupLeavesReplacementSocketAndDecoderAlive PASSED
+
+com.blent.RegressionTest > t112_closedSocketCannotOpenAgain PASSED
+
+com.blent.RegressionTest > t042_controlSocketPingsDetectDeadLinks PASSED
+
+com.blent.RegressionTest > t312_nonpositiveIntervalsKeepPendingCounts PASSED
+
+com.blent.RegressionTest > t040_backgroundActivityDisablesTiltSensor PASSED
+
+com.blent.RegressionTest > t146_motionCoordinatesStayNormalizedIncludingReleases PASSED
+
+com.blent.RegressionTest > t250_forkPackageKeepsProtectedOriginalClasses PASSED
+
+com.blent.RegressionTest > t303_platformPalmCannotBecomeAFingerContact PASSED
+
+com.blent.RegressionTest > t319_latePalmClassificationReleasesOnlyItsExistingTouch PASSED
+
+com.blent.RegressionTest > t037_cleartextPolicyOnlyPermitsLoopback PASSED
+
+com.blent.RegressionTest > t282_concurrentControlMessagesFollowAuthentication PASSED
+
+com.blent.RegressionTest > t312_trafficRatesUseMonotonicElapsedTime PASSED
+
+com.blent.RegressionTest > t041_oneMbpsSettingMatchesHostMinimum PASSED
+
+com.blent.RegressionTest > t309_receiverRestartsRetireTrafficStatistics PASSED
+
+com.blent.RegressionTest > t253_arrivalHistorySurvivesCounterOverflowAndRingWraps PASSED
+
+com.blent.RegressionTest > t133_tokenRotationRestartsActiveReconnectsOnly PASSED
+
+com.blent.RegressionTest > t120_applyRebuildsRunningDecoderWithSelectedRate PASSED
+
+com.blent.RegressionTest > t120_hostGreetingUpdatesEffectiveDecoderRate PASSED
+
+com.blent.RegressionTest > t087_sparsePointerIdsKeepDistinctSlotsAcrossReordering PASSED
+
+com.blent.RegressionTest > t062_disabledDevicesSendNoTouchPenHoverOrButtonEvents PASSED
+
+com.blent.RegressionTest > t112_queuedGreetingCannotAffectReplacementSession PASSED
+
+com.blent.RegressionTest > t112_backgroundModeAndCodecCallbacksCannotStartVideo PASSED
+
+com.blent.RegressionTest > t036_sessionTokenIsExcludedFromBackup PASSED
+
+com.blent.RegressionTest > t112_replacedAndDisconnectedCallbacksCannotResurrectControl PASSED
+
+com.blent.SessionSurfaceContractTest > t497_firstRenderedFrameThanksOnceAndSurfaceRetirementStaysOffline[27] PASSED
+
+com.blent.SessionSurfaceContractTest > t497_firstRenderedFrameThanksOnceAndSurfaceRetirementStaysOffline PASSED
+
+com.blent.SettingsAccessibilityTest > t611_advancedControlsDiscloseWithoutApplyingDraftOrStartingCamera[27] PASSED
+
+com.blent.SettingsAccessibilityTest > t509_modeAndOrientationSwitchesHaveDescriptiveAccessibleActions[27] PASSED
+
+com.blent.SettingsAccessibilityTest > t611_settingsButtonHasAccessibleNameAndMinimumTouchTarget[27] PASSED
+
+com.blent.SettingsAccessibilityTest > t611_advancedControlsDiscloseWithoutApplyingDraftOrStartingCamera PASSED
+
+com.blent.SettingsAccessibilityTest > t509_modeAndOrientationSwitchesHaveDescriptiveAccessibleActions PASSED
+
+com.blent.SettingsAccessibilityTest > t611_settingsButtonHasAccessibleNameAndMinimumTouchTarget PASSED
+
+com.blent.SettingsControlContractTest > t497_displayChoicesExcludeNonfiniteNegativeAndDuplicatePanelModes[27] PASSED
+
+com.blent.SettingsControlContractTest > t497_settingsSheetAllowsAnAbsentSettingsObserver[27] PASSED
+
+com.blent.SettingsControlContractTest > t497_optionalMainCallbacksPermitDismissalAndSettings[27] PASSED
+
+com.blent.SettingsControlContractTest > t497_settingsControlsDeliverTheirUserSelectedValues[27] PASSED
+
+com.blent.SettingsControlContractTest > t497_displayChoicesExcludeNonfiniteNegativeAndDuplicatePanelModes PASSED
+
+com.blent.SettingsControlContractTest > t497_settingsSheetAllowsAnAbsentSettingsObserver PASSED
+
+com.blent.SettingsControlContractTest > t497_optionalMainCallbacksPermitDismissalAndSettings PASSED
+
+com.blent.SettingsControlContractTest > t497_settingsControlsDeliverTheirUserSelectedValues PASSED
+
+com.blent.SettingsLayoutTest > t337_browserReceivesAllForkLinks[27] PASSED
+
+com.blent.SettingsLayoutTest > t388_hidden_stats_do_not_schedule_presentation_samples[27] PASSED
+
+com.blent.SettingsLayoutTest > t337_updatePillWithoutBrowserKeepsScreenAlive[27] PASSED
+
+com.blent.SettingsLayoutTest > t388_pen_only_power_requires_live_host_acknowledgement[27] PASSED
+
+com.blent.SettingsLayoutTest > t090_shortLandscapeWithLargeFontsCanScrollToApply[27] PASSED
+
+com.blent.SettingsLayoutTest > t332_rejectedStreamSettingsRestoreConfirmedValuesAndShowReason[27] PASSED
+
+com.blent.SettingsLayoutTest > t388_battery_toggle_is_opt_in_persistent_and_preserves_display_and_stream[27] PASSED
+
+com.blent.SettingsLayoutTest > t349_displayDefaultsCanBeChangedInPenMode[27] PASSED
+
+com.blent.SettingsLayoutTest > t377_recompositionAndLocalSettingsPreserveReceiverOwnership[27] PASSED
+
+com.blent.SettingsLayoutTest > t337_settingsUpdateWithoutBrowserKeepsScreenAlive[27] PASSED
+
+com.blent.SettingsLayoutTest > t300_queuedVideoCallbacksCannotUndoNewerConnectionState[27] PASSED
+
+com.blent.SettingsLayoutTest > t611_shortLandscapeConnectionInstructionsRemainReachableWithLargeFonts[27] PASSED
+
+com.blent.SettingsLayoutTest > t349_displayDefaultsCanBeChangedWhileStreaming[27] PASSED
+
+com.blent.SettingsLayoutTest > t337_githubLinkWithoutBrowserKeepsScreenAlive[27] PASSED
+
+com.blent.SettingsLayoutTest > t241_t247_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo[27] PASSED
+
+com.blent.SettingsLayoutTest > t248_stoppingVideoRestoresTheWaitingScreen[27] PASSED
+
+com.blent.SettingsLayoutTest > t332_newRequestBeforeUiCallbackCaptureStillWins[27] PASSED
+
+com.blent.SettingsLayoutTest > t332_queuedRejectionCannotRollBackANewerUiEdit[27] PASSED
+
+com.blent.SettingsLayoutTest > t337_browserReceivesAllForkLinks PASSED
+
+com.blent.SettingsLayoutTest > t388_hidden_stats_do_not_schedule_presentation_samples PASSED
+
+com.blent.SettingsLayoutTest > t337_updatePillWithoutBrowserKeepsScreenAlive PASSED
+
+com.blent.SettingsLayoutTest > t388_pen_only_power_requires_live_host_acknowledgement PASSED
+
+com.blent.SettingsLayoutTest > t090_shortLandscapeWithLargeFontsCanScrollToApply PASSED
+
+com.blent.SettingsLayoutTest > t332_rejectedStreamSettingsRestoreConfirmedValuesAndShowReason PASSED
+
+com.blent.SettingsLayoutTest > t388_battery_toggle_is_opt_in_persistent_and_preserves_display_and_stream PASSED
+
+com.blent.SettingsLayoutTest > t349_displayDefaultsCanBeChangedInPenMode PASSED
+
+com.blent.SettingsLayoutTest > t377_recompositionAndLocalSettingsPreserveReceiverOwnership PASSED
+
+com.blent.SettingsLayoutTest > t337_settingsUpdateWithoutBrowserKeepsScreenAlive PASSED
+
+com.blent.SettingsLayoutTest > t300_queuedVideoCallbacksCannotUndoNewerConnectionState PASSED
+
+com.blent.SettingsLayoutTest > t611_shortLandscapeConnectionInstructionsRemainReachableWithLargeFonts PASSED
+
+com.blent.SettingsLayoutTest > t349_displayDefaultsCanBeChangedWhileStreaming PASSED
+
+com.blent.SettingsLayoutTest > t337_githubLinkWithoutBrowserKeepsScreenAlive PASSED
+
+com.blent.SettingsLayoutTest > t241_t247_penModeRequiresAuthenticatedControlAndRecoversWithoutVideo PASSED
+
+com.blent.SettingsLayoutTest > t248_stoppingVideoRestoresTheWaitingScreen PASSED
+
+com.blent.SettingsLayoutTest > t332_newRequestBeforeUiCallbackCaptureStillWins PASSED
+
+com.blent.SettingsLayoutTest > t332_queuedRejectionCannotRollBackANewerUiEdit PASSED
+
+com.blent.StreamFormatTest > t497_legacyCodecCallbacksPreservePenModeAndRejectUnknownFormats[27] PASSED
+
+com.blent.StreamFormatTest > t466_resizeAndReconnectRetireOldFormatWithLegacyFallback[27] PASSED
+
+com.blent.StreamFormatTest > t466_scaledFormatReachesDecoderAndNativeUpdatesCannotReplaceIt[27] PASSED
+
+com.blent.StreamFormatTest > t478_decoderSelectionChangesRetireEvenWithIdenticalGeometry[27] PASSED
+
+com.blent.StreamFormatTest > t466_liveFormatChangeRestartsOnceAndIdenticalFormatKeepsSession[27] PASSED
+
+com.blent.StreamFormatTest > t466_queuedRetiredFormatAndMalformedDimensionsCannotReachDecoder[27] PASSED
+
+com.blent.StreamFormatTest > t497_legacyCodecCallbacksPreservePenModeAndRejectUnknownFormats PASSED
+
+com.blent.StreamFormatTest > t466_resizeAndReconnectRetireOldFormatWithLegacyFallback PASSED
+
+com.blent.StreamFormatTest > t466_scaledFormatReachesDecoderAndNativeUpdatesCannotReplaceIt PASSED
+
+com.blent.StreamFormatTest > t478_decoderSelectionChangesRetireEvenWithIdenticalGeometry PASSED
+
+com.blent.StreamFormatTest > t466_liveFormatChangeRestartsOnceAndIdenticalFormatKeepsSession PASSED
+
+com.blent.StreamFormatTest > t466_queuedRetiredFormatAndMalformedDimensionsCannotReachDecoder PASSED
+
+com.blent.SurfaceCallbackContractTest > t497_surfaceCallbacksPublishCurrentViewAndRetireOnDestruction[27] PASSED
+
+com.blent.SurfaceCallbackContractTest > t497_surfaceRetirementAllowsAnAbsentObserver[27] PASSED
+
+com.blent.SurfaceCallbackContractTest > t497_surfaceCallbacksPublishCurrentViewAndRetireOnDestruction PASSED
+
+com.blent.SurfaceCallbackContractTest > t497_surfaceRetirementAllowsAnAbsentObserver PASSED
+
+com.blent.TokenDeliveryTest > t420_live_token_delivery_restarts_waiting_control_without_activity_launch[27] PASSED
+
+com.blent.TokenDeliveryTest > t420_background_delivery_stays_stopped_and_is_consumed_on_resume[27] PASSED
+
+com.blent.TokenDeliveryTest > t420_receiver_requires_shell_permission_and_never_launches_ui_or_service[27] PASSED
+
+com.blent.TokenDeliveryTest > t420_live_token_delivery_restarts_waiting_control_without_activity_launch PASSED
+
+com.blent.TokenDeliveryTest > t420_background_delivery_stays_stopped_and_is_consumed_on_resume PASSED
+
+com.blent.TokenDeliveryTest > t420_receiver_requires_shell_permission_and_never_launches_ui_or_service PASSED
+
+> Task :app:profileCoverage
+
+BUILD SUCCESSFUL in 1m 42s
+28 actionable tasks: 3 executed, 25 up-to-date

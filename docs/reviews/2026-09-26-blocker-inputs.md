@@ -90,7 +90,7 @@ service does not enable Blent display/input/camera sharing.
 | T545 | After camera acceptance T621/T540, prioritize and specify audio direction and desired OS device behavior. | Routing/buffering/backend design depends on that decision. T543 is implemented; this work remains deferred. |
 | T546 | After camera acceptance T621/T540, prioritize and choose NFC operations/use cases such as tag reading/writing versus card emulation. | Research tablet/Android/desktop limits before defining implementation or promising an OS NFC device. Remains deferred. |
 | T487, T683 | Explicitly prioritize each after T388, with its own uninterrupted window and network/power prerequisites. | Network and alternative supply remain deferred controlled experiments; T538 identifies the current hub arrangement, not a comparative power result. Pen experiment T682 was declined on 2026-09-27. |
-| T417 | Resumed 2026-09-27; read-only diagnostics versus profile controls question pending. | Expose actual/advertised/requested decoder state accurately; controls would additionally require persistence and safe transitions. |
+| T417 | Read-only diagnostics implemented; final read-only versus controls scope decision pending. | [304 isolated tests and scoped function coverage](2026-09-27-decoder-diagnostics.md) pass. T701 retains the combined-worker stall; controls require policy/persistence/transition work if chosen. |
 
 T592 stylus investigation/acceptance and T682 pen power testing were declined by
 the maintainer on 2026-09-27. Existing code, regressions and historical evidence

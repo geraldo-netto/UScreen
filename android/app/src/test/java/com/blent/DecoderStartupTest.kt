@@ -126,6 +126,7 @@ class DecoderStartupTest {
             stop.start()
             assertTrue("T425: native setup blocked lifecycle shutdown", stopped.await(300, TimeUnit.MILLISECONDS))
             assertNull(receiver.decoder.mediaCodec)
+            assertNull("T417: unfinished/retired startup must not publish diagnostics", receiver.decoder.diagnostics.value.active)
             recreatedReceiverCannotAllocate(surface)
         } finally {
             StartupCodecShadow.resume.countDown()
@@ -135,6 +136,7 @@ class DecoderStartupTest {
             surface.release()
         }
         error.get()?.let { throw AssertionError("T425: setup worker", it) }
+        assertNull("T417: late startup diagnostics escaped retirement", receiver.decoder.diagnostics.value.active)
         assertFalse("T425: setup did not retire", setup.isAlive)
         assertEquals("T425: late setup published an obsolete codec", false, result.get())
         assertNull(receiver.decoder.mediaCodec)

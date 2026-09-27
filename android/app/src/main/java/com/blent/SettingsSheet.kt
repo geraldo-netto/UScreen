@@ -33,6 +33,7 @@ internal fun SettingsSheet(
     displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
     onSettingsEvent: (SettingsEvent) -> Unit = {},
     cameraControls: @Composable () -> Unit = {},
+    decoderDiagnostics: DecoderDiagnostics = DecoderDiagnostics(),
 ) {
     var bitrateMbps by remember(settings.bitrateKbps) {
         mutableStateOf(settings.bitrateKbps / 1000f)
@@ -80,6 +81,8 @@ internal fun SettingsSheet(
                 SettingsSwitch("Show stats overlay", "FPS and bandwidth in the corner", settings.showStats) { onSettingsEvent(SettingsEvent.ShowStats(it)) }
                 Spacer(Modifier.height(16.dp))
                 SettingsSwitch("Check for newer releases", "One request to GitHub when the app opens. Nothing installs itself.", settings.checkUpdates) { onSettingsEvent(SettingsEvent.CheckUpdates(it)) }
+                Spacer(Modifier.height(16.dp))
+                DecoderDiagnosticsContent(decoderDiagnostics)
             }
             Spacer(Modifier.height(24.dp))
 

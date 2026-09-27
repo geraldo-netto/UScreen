@@ -7,6 +7,8 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.blent.VideoReceiver.Companion.ACK_EVERY
 import com.blent.VideoReceiver.Companion.TAG
 
@@ -45,6 +47,8 @@ internal class DecoderSession(
     private var retiring: CodecLifetime? = null
     private var callbackDecoder: CallbackDecoder? = null
     var profile = DecoderProfile()
+    private val diagnosticState = MutableStateFlow(DecoderDiagnostics())
+    val diagnostics = diagnosticState.asStateFlow()
 
     private class Startup(val epoch: FrameTiming.Epoch, val profile: DecoderProfile,
                           val hints: Boolean, val valid: () -> Boolean) {
@@ -52,6 +56,7 @@ internal class DecoderSession(
         var thread: HandlerThread? = null
         var callbacks: CallbackDecoder? = null
         var decoderReceipt: String? = null
+        var diagnostics: ActiveDecoderDiagnostics? = null
     }
     private var startup: Startup? = null // guarded by monitor
 
@@ -92,6 +97,7 @@ internal class DecoderSession(
     private fun configureStartup(attempt: Startup, codec: MediaCodec, surface: Surface, parameters: DecoderFormat) {
         val format = DecoderConfiguration.format(codec, parameters, attempt.profile, attempt.hints)
         attempt.decoderReceipt = parameters.selection?.receipt(attempt.hints)
+        attempt.diagnostics = DecoderDiagnosticProbe.capture(codec, parameters, format)
         if (!startupCurrent(attempt)) return
         val thread = callbackThreadFactory().also { attempt.thread = it; it.start() }
         val handler = Handler(thread.looper)
@@ -119,6 +125,7 @@ internal class DecoderSession(
         frameCallbackThread = attempt.thread
         codecAlive = true
         if (attempt.callbacks == null) startOutputThread(owner.codec, attempt.epoch)
+        diagnosticState.value = DecoderDiagnostics(attempt.diagnostics, !attempt.hints)
         startup = null
         Log.i(TAG, "Codec configured and started with surface")
         true
@@ -325,6 +332,7 @@ internal class DecoderSession(
             timing.retire(timingEpoch)
             val owner = mediaCodec?.let { ownerFor(it) } ?: lifetime
             mediaCodec = null
+            diagnosticState.value = DecoderDiagnostics(watchdogFallback = !outputWatchdog.lowLatencyHints)
             lifetime = null
             callbackDecoder?.close()
             callbackDecoder = null

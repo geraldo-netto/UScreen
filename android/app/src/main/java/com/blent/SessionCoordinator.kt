@@ -14,6 +14,7 @@ internal class StreamPresentation(private val receiver: VideoReceiver?, control:
     var connected by mutableStateOf(false); private set
     var fps by mutableStateOf(0f); private set
     var mbps by mutableStateOf(0f); private set
+    val decoderDiagnostics = receiver?.decoder?.diagnostics ?: MutableStateFlow(DecoderDiagnostics())
     val connectionState = control?.connectionState ?: MutableStateFlow(ControlConnection())
     val controlConnected: StateFlow<Boolean> = control?.controlConnected ?: MutableStateFlow(false)
     init {

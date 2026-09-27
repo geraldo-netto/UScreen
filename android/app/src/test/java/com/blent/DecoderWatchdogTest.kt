@@ -262,6 +262,35 @@ class DecoderWatchdogTest {
         override fun close() { receiver.stop(); socket.close(); surface.release() }
     }
 
+    @Test fun t417_diagnosticsTrackCodecChangesRetirementAndWatchdogFallback() {
+        Fixture().use { fixture ->
+            val decoder = fixture.receiver.decoder
+            assertNull(decoder.diagnostics.value.active)
+            fixture.restart()
+            assertEquals("video/avc", decoder.diagnostics.value.active!!.mime)
+            assertTrue(decoder.diagnostics.value.active!!.requested.isNotEmpty())
+            fixture.stall()
+            assertNull(decoder.diagnostics.value.active)
+            assertFalse(decoder.diagnostics.value.watchdogFallback)
+            fixture.receiver.mimeType = "video/hevc"
+            fixture.receiver.formatWidth = 640
+            fixture.receiver.formatHeight = 480
+            fixture.receiver.streamFps = 30
+            fixture.restart()
+            val changed = decoder.diagnostics.value.active!!
+            assertEquals("video/hevc", changed.mime)
+            assertEquals(listOf(640, 480, 30), listOf(changed.width, changed.height, changed.fps))
+            fixture.stall()
+            assertNull(decoder.diagnostics.value.active)
+            assertTrue(decoder.diagnostics.value.watchdogFallback)
+            fixture.restart()
+            assertTrue(decoder.diagnostics.value.active!!.requested.isEmpty())
+            assertTrue(decoder.diagnostics.value.watchdogFallback)
+            fixture.receiver.stop()
+            assertNull(decoder.diagnostics.value.active)
+        }
+    }
+
     private fun repeatedStalls(frames: Int) {
         Fixture().use { fixture ->
             repeat(2) {

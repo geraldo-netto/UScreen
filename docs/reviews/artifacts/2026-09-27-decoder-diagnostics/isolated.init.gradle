@@ -1,0 +1,9 @@
+// Collection-only isolation while T701's normal multi-class worker stall is investigated.
+allprojects { project ->
+    project.afterEvaluate {
+        tasks.withType(Test).configureEach {
+            forkEvery = 1
+            testLogging { events 'passed', 'failed', 'skipped'; exceptionFormat 'full' }
+        }
+    }
+}
