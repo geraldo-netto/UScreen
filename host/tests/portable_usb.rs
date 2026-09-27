@@ -11,6 +11,11 @@ async fn t525_native_adb_argv_stdin_bounds_and_owned_routes() {
     let adb = Adb(NativeCommands(
         directory.join(blent_config::platform::executable_name("adb")),
     ));
+    // T650: exercise the shared query entry point with the same native fixture.
+    assert_eq!(
+        blent::adb_inventory::query(adb.0 .0.to_str().unwrap()).await,
+        Some(vec!["USB".into()])
+    );
     assert_eq!(adb.inventory().await, Some(vec!["USB".into()]));
     assert_eq!(adb.installed("USB").await, Some(true));
     let mut routes = Routes::new("USB", (9000, 9001)).unwrap();

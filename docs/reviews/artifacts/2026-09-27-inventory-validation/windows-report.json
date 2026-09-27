@@ -1,0 +1,80 @@
+{
+  "rust_platforms": [
+    "windows"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/adb_inventory.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 5,
+      "passing": 5,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/adb_inventory.rs",
+      "name": "query",
+      "line": 5,
+      "language": "rust",
+      "covered": 10,
+      "total": 11,
+      "percent": 90.9090909090909,
+      "passes": true,
+      "missing": [
+        12
+      ]
+    },
+    {
+      "file": "host/src/adb_inventory.rs",
+      "name": "with_synthetic",
+      "line": 17,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/adb_inventory.rs",
+      "name": "known_state",
+      "line": 31,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/adb_inventory.rs",
+      "name": "parse",
+      "line": 51,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/adb_inventory.rs",
+      "name": "package_presence",
+      "line": 72,
+      "language": "rust",
+      "covered": 12,
+      "total": 13,
+      "percent": 92.3076923076923,
+      "passes": true,
+      "missing": [
+        74
+      ]
+    }
+  ]
+}

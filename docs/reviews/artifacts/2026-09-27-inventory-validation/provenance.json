@@ -1,0 +1,21 @@
+{
+  "changed_sources": [
+    "host/src/adb_inventory.rs",
+    "host/src/usb/tests.rs",
+    "host/tests/portable_usb.rs"
+  ],
+  "replaced_production_source": "host/src/adb_inventory.rs",
+  "old_sources": {
+    "host/tests/portable_usb.rs": "fd599fff1497ed8caca36351e5dbdeaf1ab900669c6cc475064ff5cdd83b3e7e",
+    "host/src/usb/tests.rs": "ebf7dc7a55d37bb1c28e71923322b7fad72cf7383461559ead169401dd4e25eb",
+    "host/src/adb_inventory.rs": "d1e70f8eed29e98a87a42837396f210d8651f079f7aefa72420bae29696e465d"
+  },
+  "new_sources": {
+    "host/tests/portable_usb.rs": "50b8742bf770beb311350002f21c8863872ff7ccc15b28dd8a79ea560aab1581",
+    "host/src/usb/tests.rs": "59120b803c5d749c1cfdc53cb584852fd035675791c0fec465e70d8a35dee9c8",
+    "host/src/adb_inventory.rs": "4a73dd088ae3dc5f645e62e4f59f55b705511f0205dedb387c7ffc6b50d79d69"
+  },
+  "unchanged_source_count": 424,
+  "fresh_linux_tests": 197,
+  "fresh_windows_tests": 87
+}

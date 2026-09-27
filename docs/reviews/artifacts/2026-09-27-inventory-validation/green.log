@@ -1,0 +1,10 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.12s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 2 tests
+test adb_inventory::tests::t650_native_argument_nul_never_confirms_inventory ... ok
+test usb::tests::t650_malformed_serial_preserves_connected_attachment_and_credential ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 194 filtered out; finished in 0.00s
+

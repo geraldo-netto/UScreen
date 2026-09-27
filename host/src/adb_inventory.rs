@@ -57,7 +57,8 @@ pub fn parse(text: &str) -> Option<Vec<String>> {
     let mut ready = Vec::new();
     for line in lines {
         let (serial, state) = line.split_once('\t')?;
-        if serial.is_empty() || !known_state(state) || !seen.insert(serial) {
+        if serial.is_empty() || serial.contains('\0') || !known_state(state) || !seen.insert(serial)
+        {
             return None;
         }
         if state == "device" {
@@ -87,6 +88,24 @@ pub fn package_presence(out: &std::process::Output) -> Option<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t650_native_argument_nul_never_confirms_inventory() {
+        for position in 0..=64 {
+            let mut serial = "x".repeat(64);
+            serial.insert(position, '\0');
+            let inventory = format!("List of devices attached\n{serial}\tdevice\n");
+            assert_eq!(
+                parse(&inventory),
+                None,
+                "T650: NUL at serial offset {position}"
+            );
+        }
+        assert_eq!(
+            parse("List of devices attached\nUSB-café\tdevice\n"),
+            Some(vec!["USB-café".into()])
+        );
+    }
 
     #[test]
     fn t443_synthetic_devices_work_without_inventing_real_disconnects() {

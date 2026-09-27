@@ -1,0 +1,33 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.98s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 2 tests
+test adb_inventory::tests::t650_native_argument_nul_never_confirms_inventory ... FAILED
+test usb::tests::t650_malformed_serial_preserves_connected_attachment_and_credential ... FAILED
+
+failures:
+
+---- adb_inventory::tests::t650_native_argument_nul_never_confirms_inventory stdout ----
+
+thread 'adb_inventory::tests::t650_native_argument_nul_never_confirms_inventory' (1091902) panicked at host/src/adb_inventory.rs:97:13:
+assertion `left == right` failed: T650: NUL at serial offset 0
+  left: Some(["\0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"])
+ right: None
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- usb::tests::t650_malformed_serial_preserves_connected_attachment_and_credential stdout ----
+
+thread 'usb::tests::t650_malformed_serial_preserves_connected_attachment_and_credential' (1091903) panicked at host/src/usb/tests.rs:558:9:
+assertion `left == right` failed: T650: malformed inventory detached known tablet
+  left: []
+ right: [TabletSession { serial: "USB", instance: 0, video_port: 39937, input_port: 38217 }]
+
+
+failures:
+    adb_inventory::tests::t650_native_argument_nul_never_confirms_inventory
+    usb::tests::t650_malformed_serial_preserves_connected_attachment_and_credential
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 194 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --lib`
