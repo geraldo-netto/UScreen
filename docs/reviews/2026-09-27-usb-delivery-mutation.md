@@ -8,8 +8,10 @@ interval using Tokio's paused clock. It also shuts down its owned monitor.
 
 The unmodified baseline passes. Changing either the initial or renewed deadline
 from addition to subtraction fails the new regression. Production code remains
-unchanged. The final Linux USB campaign catches 113 mutations with 12 unviable
-edits and no survivors; unviable edits are not counted as caught. The same final
+unchanged. The corrected final Linux USB campaign catches 112 mutations with 12 unviable
+edits and one equivalent survivor. T664 invalidates the older report's extra
+"caught" result, which came from an unrelated port-fixture failure. Unviable
+edits and the equivalent survivor are not counted as caught. The same final
 normal suite passes native Windows (the T655 retained evidence includes this test).
 
 [Evidence](artifacts/2026-09-27-mutation-resume/t657/) retains both selected
