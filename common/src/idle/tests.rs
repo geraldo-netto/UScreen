@@ -165,3 +165,108 @@ fn t492_active_epoch_rejects_regression_and_sequence_wrap_is_valid() {
         Some(sample(0, 1))
     ));
 }
+
+// T667: independently exercise timing predicates and admission boundaries.
+fn measured_trial(latency: impl Fn(u32) -> u64) -> (Policy, Sample) {
+    let mut policy = Policy::new(true);
+    let mut frame = sample(0, 0);
+    for index in 0..=WINDOW as u32 {
+        frame = sample(index, i64::from(index) * 200_000);
+        frame.ack_us = frame.ready_us + latency(index);
+        policy.observe(frame);
+        let expected = if index == WINDOW as u32 {
+            Phase::Trial
+        } else {
+            Phase::Baseline
+        };
+        assert_eq!(policy.phase, expected, "T667: admission at sample {index}");
+    }
+    (policy, frame)
+}
+
+#[test]
+fn t667_tick_preserves_baseline_and_exact_sparse_deadline() {
+    let mut baseline = Policy::new(true);
+    baseline.observe(sample(0, 0));
+    baseline.tick(u64::MAX);
+    assert_eq!(baseline.phase, Phase::Baseline);
+    let (mut policy, frame) = trial();
+    for elapsed in [0, 1_499_999, 1_500_000] {
+        policy.tick(frame.ack_us + elapsed);
+        assert_eq!(policy.phase, Phase::Trial, "T667: elapsed {elapsed}");
+    }
+    policy.tick(frame.ack_us + 1_500_001);
+    assert_eq!(policy.phase, Phase::Rejected);
+}
+
+#[test]
+fn t667_baseline_ack_limit_is_inclusive_and_never_admits_slow_frames() {
+    for latency in [0, 1, 99_999, 100_000] {
+        measured_trial(|_| latency);
+    }
+    for latency in [100_001, 150_000, 1_000_000] {
+        let mut policy = Policy::new(true);
+        for index in 0..40 {
+            let mut frame = sample(index, i64::from(index) * 200_000);
+            frame.ack_us = frame.ready_us + latency;
+            policy.observe(frame);
+            assert_eq!(policy.phase, Phase::Baseline, "T667: slow frame {index}");
+        }
+    }
+}
+
+#[test]
+fn t667_trial_waits_for_the_complete_sample_window() {
+    let (mut policy, mut frame) = trial();
+    for index in 1..=WINDOW {
+        frame = next(frame, 500_000);
+        policy.observe(frame);
+        let expected = if index == WINDOW {
+            Phase::Active
+        } else {
+            Phase::Trial
+        };
+        assert_eq!(policy.phase, expected, "T667: trial sample {index}");
+    }
+}
+
+#[test]
+fn t667_pending_cadence_grace_expires_at_one_second() {
+    let (mut policy, previous) = trial();
+    let pending = next(previous, 999_999);
+    policy.observe(pending);
+    assert_eq!(policy.phase, Phase::Trial);
+    policy.observe(next(pending, 1));
+    assert_eq!(policy.phase, Phase::Baseline);
+}
+
+#[test]
+fn t667_ack_limit_is_independent_of_relative_cost_margin() {
+    for (latency, expected) in [(100_000, Phase::Trial), (100_001, Phase::Rejected)] {
+        let (mut policy, previous) = measured_trial(|_| 90_000);
+        let mut frame = next(previous, 500_000);
+        frame.ack_us = frame.ready_us + latency;
+        policy.observe(frame);
+        assert_eq!(policy.phase, expected, "T667: trial ACK latency {latency}");
+    }
+}
+
+#[test]
+fn t667_percentile_uses_the_ordered_window_and_exact_cost_margin() {
+    // Sixteen costs descending from 26ms to 11ms have a 95th percentile of 26ms.
+    for (latency, expected) in [
+        (6_000, Phase::Trial),
+        (46_000, Phase::Trial),
+        (5_999, Phase::Rejected),
+        (46_001, Phase::Rejected),
+    ] {
+        let (mut policy, previous) = measured_trial(|index| 27_000 - u64::from(index) * 1_000);
+        let mut frame = next(previous, 500_000);
+        frame.ack_us = frame.ready_us + latency;
+        policy.observe(frame);
+        assert_eq!(
+            policy.phase, expected,
+            "T667: percentile margin at {latency}"
+        );
+    }
+}
