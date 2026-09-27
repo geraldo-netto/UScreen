@@ -3,7 +3,8 @@
 Status: staged implementation, updated 2026-09-27. Linux remains the supported
 runtime for streaming. Windows daemon lifecycle, optional autostart and an
 authenticated USB connection preview are implemented; capture, native input
-and packaging remain unavailable. Physical tablet acceptance remains T522.
+and packaging remain unavailable. Physical connection/pen acceptance remains
+T522; extended-display acceptance is T674.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
@@ -72,7 +73,7 @@ retains the running daemon; normal startup does not require elevation.
 invocation, per-slot listeners, owned reverse routes, credential delivery and
 reconnect/cleanup. The daemon publishes prepared USB assignments for CLI/GUI
 status. Native fixture tests exercise the real Windows daemon and existing
-Android wire contract; they do not substitute for T522 physical acceptance.
+Android wire contract; they do not substitute for T522 physical connection acceptance.
 Capture/input capabilities remain false, and display-mode requests are rejected.
 
 [T531 notification-area tray](reviews/2026-09-27-windows-tray.md) consumes the same
@@ -96,6 +97,19 @@ that exit status does not mean streaming is supported.
 Delivery sequence: **Windows compilation → pen-only operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.
+
+The current [TODO ledger](../TODO.md) separates independently reviewable work:
+
+| Milestone | Implementation and prerequisites | Physical acceptance |
+| --- | --- | --- |
+| Pen-only | T672 monitor mapping + T526 native injection → T673 session integration; T525 USB is implemented | T522, without a virtual-display driver |
+| Extended display | T527 driver/ownership decision and adapter → T675 modes + T528 frame acquisition → T676 recovery → T529 stream integration | T674 on the same PC/tablet |
+| Hardware encoding | T685 missing AMF/QSV recipes + T530 discovery/probes can start independently of capture; the current pipe adapter admits only libx264 | T677 real GPU/session validation, then T535 performance measurements |
+| Packaging | T534 reproducible contents → T678 install/upgrade/uninstall; format, dependency distribution and signing decisions remain pending | Accepted runtime milestones and native installation checks before release |
+
+These are remaining tasks, not enabled capabilities. Each implementation retains
+its own permanent tests and per-function coverage; native fixtures and physical
+acceptance remain separate evidence. The completed T531 tray is not pending work.
 
 ## Decisions and resources needed
 
@@ -231,8 +245,8 @@ desktop locking and repeated reconnects. Cleanup removes only owned resources.
 - Measure latency, frame pacing, CPU/GPU use and recovery. Direct GPU-texture
   encoding is a separate optimization requiring implementation and measurement;
   the current raw-frame encoder path does not establish zero-copy operation.
-- Finish tray integration, diagnostics, optional autostart, dependencies,
-  installer/upgrade/uninstall behavior and distribution notices.
+- Retain the implemented tray, diagnostics and optional autostart while
+  completing dependencies, installer/upgrade/uninstall behavior and notices.
 - Document driver setup, supported versions, limitations and recovery.
 
 Acceptance: fresh installation and normal-user operation work on the supported

@@ -1,7 +1,10 @@
 # Inputs needed for the reviewed TODO items
 
-Reviewed 2026-09-26 against the current implementation and TODO ledger. This is
-an input/dependency map, not authorization to resume every deferred experiment.
+Implementation/dependency map refreshed 2026-09-27 after T525, T531 and T652.
+Physical observations below retain their original dates; devices were not
+reprobed for this documentation review. [TODO.md](../../TODO.md) is the current
+work ledger; [the row review](2026-09-27-todo-review.md) records the decomposition.
+This map is not authorization to resume deferred experiments.
 
 ## Windows development environment
 
@@ -55,34 +58,36 @@ service does not enable Blent display/input/camera sharing.
 | T578 | Choose a separate graphics-stack test window or prioritize an explicit linear/exportable-surface implementation. | Current X server exposes DRI3 1.0; cross-GPU implicit import is corrupt. A validated explicit-layout path is needed before removing the fallback guard. A Windows VM does not solve this Linux graphics limitation. |
 | T583 | Resolved; nothing needed. | Native priority, child propagation and denied-handle checks pass, with 100% affected-function coverage. Windows 11 native acceptance also passed under T633; no macOS work required. |
 | T561 | A short normal sharing/trace window with the tablet available. No forced lock or special EVDI detach is needed. | Correlate capture/encode/transport sequence timing to establish the historical omission cause before changing pacing. |
+| T492, T679 | A functional adaptive-idle sharing window; separately, the requested roughly 25-minute battery window or an explicit deferral decision. | T492 checks complete-pipeline/watchdog/join/reconnect behavior. T679 compares sustained power only after functional acceptance; isolated raw-write savings are insufficient. |
 | T549 | Timestamp and preceding action if the lock recurs, or a coordinated reproduction window when you can manually unlock. | Correlate power/activity/keyguard records; the historical caller is unknown. Do not force-lock the live session to create evidence. |
 | T564 | Access to compatible NVIDIA NVENC and/or VP9/AV1 VAAPI encoding hardware/drivers. | Bounded tests using the bundled FFmpeg. The current GPU/software VM does not supply these missing encoder capabilities. |
-| T540 | Be present to unplug/replug the physical USB cable during an explicitly authorized camera test. | Release, inactive black output and explicit selection after reconnect. Combine with T621 once devices exist. |
+| T540 | Be present to unplug/replug the physical USB cable during an explicitly authorized camera test. | Release, inactive black output and explicit selection after reconnect. Coordinate with T621 and recheck the provisioned devices. |
 | T538 | Exact hub and charger models, and which device/cable connects to each port; then a stable test below full battery. | Establish a working data/power arrangement and sustained net charging. Advertised current and brief near-full samples do not prove it. |
-| T493, T497 | Resolved; nothing needed. | Native foundation and host/GUI lifecycle acceptance pass. The archived local combined gate passed all 2,230 maintained functions/methods. Remote Linux reproducibility remains open under T645; see the coverage report. |
+| T493, T497 | Resolved; nothing needed. | Native foundation/lifecycle and the archived combined per-function gate passed. T645 subsequently fixed empty-sysfs native coverage reproducibility; [its evidence](artifacts/2026-09-27-sysfs-coverage/README.md) is separate from the still-unattributed T644 Xvfb stall. |
 | T520 | **Answered: Windows 11 x64 first.** | Resolved and removed from TODO; target encoded in the support/build plan. |
-| T522 | A Windows PC/tester with the existing tablet, Windows build/GPU details and a USB test window; administrator access only for the chosen driver installation. | Physical GPU/display/input, lock/sleep/reconnect and cleanup acceptance. A basic VM covers isolated contracts, not this complete result. |
+| T522, T674 | One Windows 11 x64 PC/tester with the existing tablet, GPU/driver/USB details and a physical window; a stylus for pen attributes. | T522 covers connection/pen-only input after T672/T526/T673; T674 adds extended display after T527/T675/T528/T676/T529. Administrator access is only for the selected driver installation. VM/CI evidence is not physical acceptance. |
 | T524 | Resolved; nothing needed. | Native start/stop/restart/status, single-instance ownership and cleanup acceptance pass. Capture/input remain unsupported. |
-| T525 | Tablet/USB availability when connection acceptance is ready. | T524 is validated; implement ADB transport next. Physical acceptance remains under T522. |
+| T672, T526, T673 | No virtual-display choice needed for pen-only implementation. | Mapping and native injection can proceed independently; T673 replaces unavailable preview sinks and integrates settings/session retirement. Physical acceptance remains T522. |
+| T525 | No implementation choice remains; physical USB availability belongs to T522. | Authenticated USB preview, owned reverse routes, credentials, native fixtures and cleanup are implemented. Capture/input remain unavailable until their adapters and integration are accepted. See [USB results](2026-09-27-windows-usb.md). |
 | T527 | Driver strategy: validated upstream ownership extension/exclusive instance, or a Blent-owned IDD. An owned driver also needs an agreed signing/maintenance/distribution owner. | Current upstream VDD is a lab candidate only: its global count/reload interface cannot retire only Blent-owned outputs. Do not buy a certificate before deciding this route. |
-| T528 | No independent preference after T527's driver decision. | Implement and validate capture on the selected output; lifecycle, mode changes and device loss remain mandatory. |
-| T529 | No new choice for the encoder adapter; T527 still needs the driver decision. | Native pipe/software-encoder implementation and coverage passed after T583/T493. T529 now waits for T525 connection ownership and T528 capture integration; it remains in TODO. |
-| T530 | Compatible GPU access under T522. | T529 first, then actual hardware initialization/measurements and fallback. Advertised encoder names are insufficient. |
-| T531 | Nothing now. | Tray still waits for T525 connection status. |
+| T528, T676 | No independent preference after T527’s driver/control choice; native output compatibility must be demonstrated. | T528 acquires/converts frames; T676 adds bounded access-loss/lock/mode recovery, using T675 mode control. Native resource and cancellation tests accompany both. |
+| T529 | No new choice for the software pipe adapter; T527 still needs the driver decision. | The libx264 pipe adapter and T525 USB ownership are available. T529 waits for capture/recovery and output modes, not another ADB implementation; see T528/T676/T675. |
+| T685, T530, T677 | GPU/tablet access is needed for T677, not for starting recipe/discovery/probe tooling. | AMF/QSV recipes are absent and the pipe adapter admits libx264 only. T685 adds tested recipes; T530 isolates inventory/probe/selection orchestration; T677 requires real GPU and integrated session evidence before hardware enablement. |
+| T531 | Resolved; nothing needed. | Native Windows tray now consumes USB status, opens Settings, requests normal Quit cleanup and restores the icon after Explorer recreation. [Native tests and changed-function coverage](2026-09-27-windows-tray.md) pass. This does not resolve deferred Linux ksni teardown T537. |
 | T532 | Nothing now. | Resolved: per-user registration, repeated-login ownership, native failure regressions and ordinary-user coverage pass; see [autostart results](2026-09-27-windows-autostart.md). |
-| T534 | Installer format and dependency distribution. Suggested starting point: per-user EXE installer, pinned ADB/FFmpeg bundled, separately installed driver. Confirm publisher/signing route before distribution. | Functioning milestones, redistribution notices, reproducible package checks, upgrade/uninstall ownership and T522 evidence. This suggestion is not an accepted decision. |
-| T535 | A controlled benchmark window on the T522 machine/tablet. | Working T525/T528/T529 stream first; test accelerated candidates only where T530 validates them. |
+| T534, T678 | Installer format, ADB/FFmpeg bundling versus prerequisites, and application signing route; driver responsibilities remain under T527. | A per-user EXE with pinned dependencies was only a suggestion. T534 covers reproducible package contents; T678 covers install/upgrade/uninstall ownership. Shipping needs accepted Windows milestones and T522/T674 evidence. |
+| T535 | A controlled benchmark window on the same T522/T674 machine/tablet. | Requires working T529 streaming; compare accelerated candidates only where T677 validates them. No additional machine/tablet campaign. |
 | T388 | An uninterrupted **60–90 minute** host/tablet window, keeping desktop focus and workload stable. | Balanced USB normal/saver comparisons plus streaming-off control; prior incomplete samples do not establish a power saving. |
-| T419 | Decide whether RGB fidelity/CPU benefits justify implementation independently of battery. Otherwise keep the repeatable battery-advantage gate. | The earlier battery advantage did not repeat; wire integrity, bounded decoding and lifecycle work remains before production use. |
+| T419, T680, T681, T686 | Choose RGB fidelity/CPU independently of battery, or retain the repeatable battery-advantage gate; later supply a comparative device window. | T419 bounded wire/replay; T680 renderer retirement/fallback; T681 live source/freshness integration; T686 complete-path comparison. Prior CPU savings did not establish repeatable battery savings. |
 | T597 | Nothing; keep deferred unless report sizes/frequency grow or profiling identifies meaningful cost. | Current bounded sorting cost is too small to justify the change. |
 | T414 | Explicitly resume it and identify a recurring audio-gap window, ideally with timestamps. | Correlate Chrome/PipeWire/Bluetooth and scheduling; do not introduce audio transport or delay without a separate decision. |
 | T537 | Explicitly resume the deferred tray-shutdown investigation. | Reproduce under an isolated D-Bus watcher; no EVDI attachment is needed. No additional hardware decision. |
 | T222 | Only a new occurrence, with its timestamp and readable crash evidence. | Remains deferred; it does not block ordinary authorized reloads or other work. |
 | T558 | A suitable stock upstream fix, or an explicit revised decision allowing dependency changes. | Stock libevdi is intentionally preserved; do not bypass display ownership or grant root. |
-| T544 | Accept the camera milestone after remaining acceptance; then prioritize microphone sharing and define latency/echo needs. | Explicit microphone consent/lifecycle and native audio-backend design. Still deferred. |
-| T545 | After camera acceptance, specify audio direction: computer audio to tablet speakers, tablet audio to computer, or both; identify desired OS device behavior. | Routing/buffering/lifecycle design depends on that answer. Still deferred. |
-| T546 | After camera acceptance, choose NFC operations such as tag reading/writing versus card emulation, with the intended use case. | Research actual tablet/Android/desktop limits before promising a generic OS NFC device. Still deferred. |
-| T487 | Explicitly prioritize it after T388; provide the relevant network/power arrangement and uninterrupted window. Pen measurements also need a stylus. | Keep transport, pen and power-source comparisons separate; remains deferred. |
+| T544 | Accept the camera milestone after T621/T540, then prioritize microphone sharing and define desktop backends and latency/echo needs. | T543 camera controls already exist. Microphone consent/foreground lifecycle and implementation remain deferred; further splitting needs the audio requirements. |
+| T545 | After camera acceptance T621/T540, prioritize and specify audio direction and desired OS device behavior. | Routing/buffering/backend design depends on that decision. T543 is implemented; this work remains deferred. |
+| T546 | After camera acceptance T621/T540, prioritize and choose NFC operations/use cases such as tag reading/writing versus card emulation. | Research tablet/Android/desktop limits before defining implementation or promising an OS NFC device. Remains deferred. |
+| T487, T682, T683 | Explicitly prioritize each after T388, with its own uninterrupted window and network/stylus/power prerequisites. | Network, pen interaction and alternative supply are distinct controlled experiments. All remain deferred; T538 identifies the current hub arrangement, not a comparative power result. |
 | T417 | Choose read-only decoder diagnostics or profile-selection controls. Read-only is the smaller first step. | Preserve current defaults; controls additionally need persistence and measured safe transitions. Still deferred. |
 
 T592 remains skipped/blocked for lack of a physical stylus, as already directed.
@@ -90,8 +95,9 @@ No additional tablet or broad large-machine campaign is required.
 
 ## One-time Linux camera prerequisite
 
-The maintainer has now loaded `/dev/video20` as **Blent Front** and `/dev/video21`
-as **Blent Rear**, both with exclusive capabilities enabled. No reload is needed.
+The retained provisioning check recorded `/dev/video20` as **Blent Front** and `/dev/video21`
+as **Blent Rear**, both with exclusive capabilities enabled. Recheck availability
+at the next accepted test window; this review did not reload or probe them.
 For reference, the one-time load command is:
 
 ```sh
