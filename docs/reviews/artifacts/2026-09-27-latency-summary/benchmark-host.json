@@ -1,0 +1,6 @@
+{
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "command": "rustc -O --edition=2021 scripts/benchmarks/latency-percentiles.rs; 5 repetitions of 50,000 calls per fixture, including identical input reset",
+  "claims": "Single-host microbenchmark; no pipeline or battery speedup claimed"
+}

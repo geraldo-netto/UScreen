@@ -1,0 +1,11 @@
+{
+    "explorer":  [
+                     {
+                         "Id":  5564,
+                         "SessionId":  1
+                     }
+                 ],
+    "elevated":  false,
+    "user":  "BLENT-WIN11\\blentdev",
+    "session":  1
+}

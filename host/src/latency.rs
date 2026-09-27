@@ -25,6 +25,9 @@ const MAX_TRACKED: usize = 256;
 /// Samples kept for the percentile report. One report covers ~5s.
 const MAX_SAMPLES: usize = 1024;
 
+#[path = "latency_summary.rs"]
+mod summary;
+
 #[cfg(test)]
 #[path = "latency_pending_tests.rs"]
 mod pending_tests;
@@ -392,7 +395,7 @@ struct Report {
 }
 impl Report {
     fn log(&mut self) {
-        if self.samples.is_empty() {
+        let Some([p50, p95, max]) = summary::percentiles(&mut self.samples) else {
             if self.lost > 0 {
                 info!(
                     "Latency: no frames acknowledged by the tablet ({} aged out)",
@@ -400,31 +403,24 @@ impl Report {
                 );
             }
             return;
-        }
-        self.samples.sort_unstable();
+        };
         info!(
             "Latency packet-ready→render-ACK (host clock): p50 {:.1}ms  p95 {:.1}ms  max {:.1}ms  ({} samples, {} in flight, {} aged out)",
-            percentile(&self.samples, 0.50), percentile(&self.samples, 0.95), percentile(&self.samples, 1.0),
+            p50, p95, max,
             self.samples.len(), self.inflight, self.lost
         );
         self.log_decode();
     }
     fn log_decode(&mut self) {
-        if self.decode_samples.is_empty() {
+        let Some([p50, p95, _]) = summary::percentiles(&mut self.decode_samples) else {
             return;
-        }
-        self.decode_samples.sort_unstable();
+        };
         info!(
             "Latency tablet arrival→render-callback (tablet clock): p50 {:.1}ms  p95 {:.1}ms  ({} samples)",
-            percentile(&self.decode_samples, 0.50),
-            percentile(&self.decode_samples, 0.95),
+            p50, p95,
             self.decode_samples.len()
         );
     }
-}
-fn percentile(values: &[u32], p: f64) -> f64 {
-    let index = ((values.len() as f64 - 1.0) * p).round() as usize;
-    values[index] as f64 / 1000.0
 }
 
 #[cfg(test)]
@@ -683,7 +679,7 @@ mod tests {
         assert_eq!(state.samples.len(), 1);
         assert_eq!(state.decode_samples, [u32::MAX]);
         assert!(!state.discontinuous);
-        assert_eq!(percentile(&[1, 7, 9, 17], 0.5), 0.009);
-        assert_eq!(percentile(&[1, 7, 9, 17], 0.95), 0.017);
+        assert_eq!(summary::percentiles(&mut [1, 7, 9, 17]).unwrap()[0], 0.009);
+        assert_eq!(summary::percentiles(&mut [1, 7, 9, 17]).unwrap()[1], 0.017);
     }
 }
