@@ -12,6 +12,10 @@ The full installer and native package hooks preserve loaded EVDI devices.
 They load the module if needed and add missing capacity up to two devices;
 failed provisioning reports that setup must be checked and deferred to reboot.
 Boot configuration changes take effect on the next module load.
+Source/tarball reinstallation preserves an existing `blent-evdi.conf` verbatim,
+including capacity provisioned through GUI setup and other module options.
+It creates the two-device boot default only when that file is absent; existing
+empty, invalid or externally managed configurations require manual review.
 `make setup-system` uses the same provisioning script. GUI setup also adds
 only missing devices, using its configured tablet count.
 

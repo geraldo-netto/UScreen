@@ -1,0 +1,443 @@
+{
+  "rust_platforms": [
+    "all"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "scripts/install.sh"
+  ],
+  "passes": true,
+  "summary": {
+    "shell": {
+      "functions": 38,
+      "passing": 38,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "scripts/install.sh",
+      "name": "xdg_base",
+      "line": 11,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "info",
+      "line": 22,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "warn",
+      "line": 23,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "error",
+      "line": 24,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_prebuilt",
+      "line": 26,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "has_evdi_library",
+      "line": 28,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_evdi_library",
+      "line": 43,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_ostree_booted",
+      "line": 55,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_layered_deps",
+      "line": 59,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_runtime_deps",
+      "line": 65,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_rpm_evdi_module",
+      "line": 70,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "enable_fedora_rpmfusion",
+      "line": 76,
+      "language": "shell",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        85
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_fedora_deps",
+      "line": 88,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_enterprise_deps",
+      "line": 99,
+      "language": "shell",
+      "covered": 5,
+      "total": 6,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        103
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_deps",
+      "line": 110,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_arch_deps",
+      "line": 123,
+      "language": "shell",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_suse_deps",
+      "line": 140,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_distro_deps",
+      "line": 156,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_deps",
+      "line": 169,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_deps",
+      "line": 178,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_path",
+      "line": 191,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "build_if_needed",
+      "line": 200,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "stage_install_binaries",
+      "line": 211,
+      "language": "shell",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_binaries",
+      "line": 230,
+      "language": "shell",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_entry",
+      "line": 252,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_icons",
+      "line": 260,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_user_service",
+      "line": 274,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_installed_user_service",
+      "line": 278,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_autostart_entry",
+      "line": 290,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_autostart",
+      "line": 301,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_managed_autostart",
+      "line": 309,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_user_service",
+      "line": 320,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_files",
+      "line": 334,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_boot_modules",
+      "line": 342,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_uinput",
+      "line": 365,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "activate_evdi",
+      "line": 380,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "system_setup",
+      "line": 384,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "main",
+      "line": 391,
+      "language": "shell",
+      "covered": 21,
+      "total": 21,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

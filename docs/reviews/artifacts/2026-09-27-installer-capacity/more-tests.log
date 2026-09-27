@@ -1,0 +1,35 @@
+......................
+----------------------------------------------------------------------
+Ran 22 tests in 106.762s
+
+OK
+warning: unused import: `blent::ffmpeg_args::TEE_OUTPUT`
+  --> host/src/framed_annex_b.rs:12:16
+   |
+12 | pub(crate) use blent::ffmpeg_args::TEE_OUTPUT;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `encoder_quality_args` is never used
+   --> host/src/capture/cli_encoder.rs:102:19
+    |
+ 30 | impl CliEncoder<'_> {
+    | ------------------- method in this implementation
+...
+102 |     pub(super) fn encoder_quality_args(
+    |                   ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+warning: `blent` (bin "blent") generated 2 warnings (run `cargo fix --bin "blent" -p blent` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s
+     Running tests/tooling.rs (target/debug/deps/tooling-e9d500f59a2a1ff5)
+
+running 3 tests
+test t141_installers_launch_desktop_paths_with_reserved_characters ... ok
+test t214_installer_preserves_dependency_and_setup_commands ... ok
+test t233_user_installers_share_xdg_paths ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 33 filtered out; finished in 15.04s

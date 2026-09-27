@@ -298,7 +298,7 @@ install_debian_deps
         output = self.run_installer(r'''
 sudo() {
     printf 'sudo %s\n' "$*" >&3
-    if [ "$1" = tee ]; then command cat >&3; fi
+    if [[ $1 == tee || ( $1 == sh && ${2:-} == -c ) ]]; then command cat >&3; fi
 }
 lsmod() { echo 'evdi 123 0'; }
 cat() {

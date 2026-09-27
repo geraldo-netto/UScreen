@@ -1,0 +1,106 @@
+FFFF.FFFF
+======================================================================
+FAIL: test_t709_dangling_configuration_link_is_preserved (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_dangling_configuration_link_is_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 68, in test_t709_dangling_configuration_link_is_preserved
+    self.assertFalse(destination.exists(), 'T709: installer followed a managed link')
+AssertionError: True is not false : T709: installer followed a managed link
+
+======================================================================
+FAIL: test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced) (content='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 57, in test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced
+    self.assertEqual(config.read_text(), content)
+AssertionError: 'options evdi initial_device_count=2\n' != ''
+- options evdi initial_device_count=2
+
+
+======================================================================
+FAIL: test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced) (content='# intentionally managed elsewhere\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 57, in test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced
+    self.assertEqual(config.read_text(), content)
+AssertionError: 'options evdi initial_device_count=2\n' != '# intentionally managed elsewhere\n'
+- options evdi initial_device_count=2
++ # intentionally managed elsewhere
+
+
+======================================================================
+FAIL: test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced) (content='options evdi initial_device_count=invalid\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 57, in test_t709_existing_empty_or_unrecognized_configuration_is_not_replaced
+    self.assertEqual(config.read_text(), content)
+AssertionError: 'options evdi initial_device_count=2\n' != 'options evdi initial_device_count=invalid\n'
+- options evdi initial_device_count=2
+?                                   ^
++ options evdi initial_device_count=invalid
+?                                   ^^^^^^^
+
+
+======================================================================
+FAIL: test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim) (count=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 40, in test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim
+    self.assertEqual(config.read_text(), before, 'T709: installer overwrote provisioned boot settings')
+AssertionError: 'options evdi initial_device_count=2\n' != '# local configuration\noptions evdi initi[52 chars]pu\n'
++ # local configuration
+- options evdi initial_device_count=2
+?                                   ^
++ options evdi initial_device_count=1 loglevel=3
+?                                   ^^^^^^^^^^^^
++ softdep evdi pre: amdgpu
+ : T709: installer overwrote provisioned boot settings
+
+======================================================================
+FAIL: test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim) (count=2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 40, in test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim
+    self.assertEqual(config.read_text(), before, 'T709: installer overwrote provisioned boot settings')
+AssertionError: 'options evdi initial_device_count=2\n' != '# local configuration\noptions evdi initi[52 chars]pu\n'
++ # local configuration
+- options evdi initial_device_count=2
++ options evdi initial_device_count=2 loglevel=3
+?                                    +++++++++++
++ softdep evdi pre: amdgpu
+ : T709: installer overwrote provisioned boot settings
+
+======================================================================
+FAIL: test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim) (count=3)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 40, in test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim
+    self.assertEqual(config.read_text(), before, 'T709: installer overwrote provisioned boot settings')
+AssertionError: 'options evdi initial_device_count=2\n' != '# local configuration\noptions evdi initi[52 chars]pu\n'
++ # local configuration
+- options evdi initial_device_count=2
+?                                   ^
++ options evdi initial_device_count=3 loglevel=3
+?                                   ^^^^^^^^^^^^
++ softdep evdi pre: amdgpu
+ : T709: installer overwrote provisioned boot settings
+
+======================================================================
+FAIL: test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim (test_installer_boot_capacity.InstallerBootCapacityTest.test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim) (count=4)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_boot_capacity.py", line 40, in test_t709_reinstall_preserves_capacity_and_unrelated_options_verbatim
+    self.assertEqual(config.read_text(), before, 'T709: installer overwrote provisioned boot settings')
+AssertionError: 'options evdi initial_device_count=2\n' != '# local configuration\noptions evdi initi[52 chars]pu\n'
++ # local configuration
+- options evdi initial_device_count=2
+?                                   ^
++ options evdi initial_device_count=4 loglevel=3
+?                                   ^^^^^^^^^^^^
++ softdep evdi pre: amdgpu
+ : T709: installer overwrote provisioned boot settings
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.109s
+
+FAILED (failures=8)

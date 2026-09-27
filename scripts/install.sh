@@ -344,7 +344,16 @@ configure_boot_modules() {
     # set -e a missing one used to kill the whole script here, silently, with
     # the binaries already copied and the udev rule not yet installed.
     sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
-    echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/blent-evdi.conf >/dev/null \
+    # Reinstallation must retain GUI/admin-provisioned capacity and other
+    # module options. A new install gets the default; noclobber also protects
+    # a configuration created between the existence check and the write.
+    echo "options evdi initial_device_count=2" | sudo sh -c '
+        if [ -e "$1" ] || [ -L "$1" ]; then
+            cat >/dev/null
+        else
+            (set -C; cat > "$1")
+        fi
+    ' sh /etc/modprobe.d/blent-evdi.conf \
         || warn "Could not write /etc/modprobe.d/blent-evdi.conf"
     printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/blent.conf >/dev/null \
         || warn "Could not write /etc/modules-load.d/blent.conf"

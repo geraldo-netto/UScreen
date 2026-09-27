@@ -108,7 +108,7 @@ echo preserved
 
     def test_t497_boot_configuration_errors_are_reported_without_aborting(self):
         output = self.execute('''
-sudo() { if [[ $1 == tee ]]; then command cat >/dev/null; return 9; fi; }
+sudo() { if [[ $1 == tee || ( $1 == sh && ${2:-} == -c ) ]]; then command cat >/dev/null; return 9; fi; }
 configure_boot_modules
 ''')
         self.assertIn('Could not write /etc/modprobe.d/blent-evdi.conf', output)
