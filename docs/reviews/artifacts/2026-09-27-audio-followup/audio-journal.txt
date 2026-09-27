@@ -1,0 +1,66 @@
+Sep 27 01:20:39 host wireplumber[2693]: 0x611212f60668: error 24
+Sep 27 01:20:39 host wireplumber[2693]: (bluez_output.HEADSET.1-56) running -> error (Received error event)
+Sep 27 01:20:39 host wireplumber[2693]: Failure in Bluetooth audio transport /org/bluez/hci1/dev_HEADSET/fd1
+Sep 27 01:20:39 host pipewire[2690]: pw.node: (bluez_output.HEADSET.1-56) running -> error (Received error event)
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+CHLD=?
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+BTRH?
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+CCWA=1
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+CGMI
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+CGMM
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+NREC=0
+Sep 27 01:21:04 host wireplumber[2693]: RFCOMM receive command but modem not available: AT+CSCS="UTF-8"
+Sep 27 12:55:04 host systemd[2677]: Stopping wireplumber.service - Multimedia Service Session Manager...
+Sep 27 12:55:04 host wireplumber[2693]: stopped by signal: Terminated
+Sep 27 12:55:04 host wireplumber[2693]: disconnected from pipewire
+Sep 27 12:55:04 host systemd[2677]: Stopped wireplumber.service - Multimedia Service Session Manager.
+Sep 27 12:55:04 host systemd[2677]: wireplumber.service: Consumed 1min 33.142s CPU time, 12.4M memory peak, 0B memory swap peak.
+Sep 27 12:55:04 host systemd[2677]: Stopping pipewire.service - PipeWire Multimedia Service...
+Sep 27 12:55:04 host systemd[2677]: Stopped pipewire.service - PipeWire Multimedia Service.
+Sep 27 12:55:04 host systemd[2677]: pipewire.service: Consumed 6.312s CPU time, 17.7M memory peak, 0B memory swap peak.
+-- Boot boundary --
+Sep 27 13:52:41 host systemd[2409]: Started pipewire.service - PipeWire Multimedia Service.
+Sep 27 13:52:41 host systemd[2409]: Started wireplumber.service - Multimedia Service Session Manager.
+Sep 27 13:52:41 host pipewire[2421]: mod.jackdbus-detect: Failed to receive jackdbus reply: org.freedesktop.DBus.Error.ServiceUnknown: The name org.jackaudio.service was not provided by any .service files
+Sep 27 13:52:41 host wireplumber[2424]: SPA handle 'api.libcamera.enum.manager' could not be loaded; is it installed?
+Sep 27 13:52:41 host wireplumber[2424]: PipeWire's libcamera SPA missing or broken. libcamera not supported.
+Sep 27 13:52:41 host wireplumber[2424]: ofono running, but not configured as HFP/HSP backend: it may interfere with HFP/HSP functionality.
+Sep 27 13:52:41 host wireplumber[2424]: listen(): Address already in use
+Sep 27 13:52:41 host wireplumber[2424]: ofono running, but not configured as HFP/HSP backend: it may interfere with HFP/HSP functionality.
+Sep 27 13:52:41 host wireplumber[2424]: RegisterProfile() failed: org.bluez.Error.NotPermitted
+Sep 27 13:52:41 host wireplumber[2424]: <WpSiAudioAdapter:0x561cc6513390> Object activation aborted: proxy destroyed
+Sep 27 13:52:41 host wireplumber[2424]: <WpSiAudioAdapter:0x561cc6513390> failed to activate item: Object activation aborted: proxy destroyed
+-- Boot boundary --
+Sep 27 14:59:16 host systemd[2440]: Started pipewire.service - PipeWire Multimedia Service.
+Sep 27 14:59:16 host systemd[2440]: Started wireplumber.service - Multimedia Service Session Manager.
+Sep 27 14:59:16 host pipewire[2452]: mod.jackdbus-detect: Failed to receive jackdbus reply: org.freedesktop.DBus.Error.ServiceUnknown: The name org.jackaudio.service was not provided by any .service files
+Sep 27 14:59:16 host wireplumber[2455]: SPA handle 'api.libcamera.enum.manager' could not be loaded; is it installed?
+Sep 27 14:59:16 host wireplumber[2455]: PipeWire's libcamera SPA missing or broken. libcamera not supported.
+Sep 27 14:59:16 host wireplumber[2455]: ofono running, but not configured as HFP/HSP backend: it may interfere with HFP/HSP functionality.
+Sep 27 14:59:16 host wireplumber[2455]: listen(): Address already in use
+Sep 27 14:59:16 host wireplumber[2455]: ofono running, but not configured as HFP/HSP backend: it may interfere with HFP/HSP functionality.
+Sep 27 14:59:16 host wireplumber[2455]: RegisterProfile() failed: org.bluez.Error.NotPermitted
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CHLD=?
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+BTRH?
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CCWA=1
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMI
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMM
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+NREC=0
+Sep 27 16:19:51 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CSCS="UTF-8"
+Sep 27 16:35:08 host wireplumber[2455]: 0x599a9f7a1538: error 24
+Sep 27 16:35:08 host wireplumber[2455]: Failed to release transport /org/bluez/hci0/dev_HEADSET/sep1/fd0: Method "Release" with signature "" on interface "org.bluez.MediaTransport1" doesn't exist
+Sep 27 16:35:38 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CHLD=?
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+BTRH?
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CCWA=1
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMI
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMM
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+NREC=0
+Sep 27 16:35:39 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CSCS="UTF-8"
+Sep 27 16:38:41 host wireplumber[2455]: 0x599a9f7a1538: error 24
+Sep 27 16:38:41 host wireplumber[2455]: Failed to release transport /org/bluez/hci0/dev_HEADSET/sep1/fd1: Method "Release" with signature "" on interface "org.bluez.MediaTransport1" doesn't exist
+Sep 27 16:39:40 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CHLD=?
+Sep 27 16:39:40 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+BTRH?
+Sep 27 16:39:40 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CCWA=1
+Sep 27 16:39:41 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMI
+Sep 27 16:39:41 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CGMM
+Sep 27 16:39:41 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+NREC=0
+Sep 27 16:39:41 host wireplumber[2455]: RFCOMM receive command but modem not available: AT+CSCS="UTF-8"

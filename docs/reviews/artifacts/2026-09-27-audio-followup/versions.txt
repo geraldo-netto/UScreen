@@ -1,0 +1,5 @@
+bluez	5.72-0ubuntu5.5
+pipewire:amd64	1.0.5-1ubuntu3.3
+wireplumber	0.4.17-1ubuntu4.1
+xserver-xorg-core	2:21.1.12-1ubuntu1.8
+xserver-xorg-video-amdgpu	23.0.0-1ubuntu0.24.04.1
