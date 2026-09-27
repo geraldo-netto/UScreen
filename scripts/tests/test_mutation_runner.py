@@ -178,6 +178,7 @@ class MutationIsolationTest(unittest.TestCase):
         self.assertEqual(selected['packages'], packages, 'Baseline must include consumers')
         self.assertIn('--cargo-arg=--bins', command)
         self.assertIn('--cargo-test-arg=media::', command)
+        self.assertIn('--cargo-test-arg=t438_', command, 'T670: diagnostic consumers omitted')
 
     def test_t671_consumer_packages_are_explicit_baseline_arguments(self):
         selected = dict(packages=['producer'], test_packages=['producer', 'consumer'],

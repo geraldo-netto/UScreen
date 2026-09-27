@@ -37,7 +37,7 @@
     "test_packages": ["blent-config", "blent"],
     "files": ["common/src/video.rs"],
     "cargo_args": ["--lib", "--bins"],
-    "test_args": ["--", "video::", "encoding::", "media::", "ffmpeg_args::"],
+    "test_args": ["--", "video::", "encoding::", "media::", "ffmpeg_args::", "doctor::codecs::", "t438_"],
     "scope": "Shared codec identity and its host/encoding consumers; no native capture mutation."
   },
   "android-commands": {

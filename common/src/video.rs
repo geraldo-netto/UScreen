@@ -44,3 +44,34 @@ impl Codec {
         matches!(self, Self::Vp9 | Self::Av1)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t670_codec_labels_preserve_the_public_names() {
+        let labels: Vec<_> = Codec::ALL.into_iter().map(Codec::label).collect();
+        assert_eq!(labels, ["H.264", "HEVC", "VP9", "AV1"]);
+        let wire: Vec<_> = Codec::ALL.into_iter().map(Codec::wire_name).collect();
+        assert_eq!(wire, ["h264", "hevc", "vp9", "av1"]);
+        let muxers: Vec<_> = Codec::ALL.into_iter().map(Codec::muxer).collect();
+        assert_eq!(muxers, ["h264", "hevc", "ivf", "ivf"]);
+        let framed: Vec<_> = Codec::ALL.into_iter().map(Codec::framed).collect();
+        assert_eq!(framed, [false, false, true, true]);
+    }
+
+    #[test]
+    fn t670_vp9_encoder_aliases_keep_their_bitstream_identity() {
+        for name in ["libvpx-vp9", "vp9_vaapi"] {
+            assert_eq!(Codec::from_encoder(name), Codec::Vp9, "T670: {name}");
+        }
+        for name in ["", "libvpx", "vp9", "VP9_VAAPI", "vp9_vaapi\0"] {
+            assert_eq!(
+                Codec::from_encoder(name),
+                Codec::H264,
+                "T670: unknown {name:?}"
+            );
+        }
+    }
+}
