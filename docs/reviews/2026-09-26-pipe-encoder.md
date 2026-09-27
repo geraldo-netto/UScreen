@@ -30,13 +30,13 @@ frames at each of two sizes; tests independently verify packet checksums and
 decode the unchanged H.264 payload back to the expected NV12 dimensions/pixels.
 No camera, tablet, display driver or active desktop is used.
 
-Native [run 36265768764](https://github.com/geraldo-netto/UScreen/actions/runs/36265768764)
+Native [run 36265768764](https://github.com/geraldo-netto/blent/actions/runs/36265768764)
 at `7497368` reproduced a shutdown bug: a child read only a prefix and exited
 with status zero, concealing the pending Windows write error. The permanent
 `t529_shutdown_reports_an_unfinished_native_write_even_after_zero_exit` regression
 fails before the fix ([red evidence](artifacts/2026-09-26-windows-development/t529-shutdown-red.log)).
 Shutdown now polls the native flush result before closing stdin; this observes
-Windows Tokio's pending blocking write. [Run 36266085893](https://github.com/geraldo-netto/UScreen/actions/runs/36266085893)
+Windows Tokio's pending blocking write. [Run 36266085893](https://github.com/geraldo-netto/blent/actions/runs/36266085893)
 at `b0cd0ae` passes the unchanged regression and the full native workspace suite,
 plus the all-features MSVC build and GNU executable linking. The 17 raw-transfer, owned-child and pipe-encoder functions each pass native
 Windows coverage (minimum 92.86%); all 215 common/host source fingerprints match

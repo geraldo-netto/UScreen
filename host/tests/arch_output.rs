@@ -15,7 +15,7 @@ fn executable(root: &Path, name: &str, text: &str) {
 }
 
 fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
-    let source = root.join(format!("UScreen-{version}"));
+    let source = root.join(format!("blent-{version}"));
     write(
         &source,
         "Cargo.toml",

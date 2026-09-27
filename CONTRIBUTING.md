@@ -2,13 +2,13 @@
 
 Compatibility reports should identify the distribution, desktop/session type,
 GPU/encoder, tablet, Android version, installation method and **fork commit**.
-Use the [compatibility template](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml).
+Use the [compatibility template](https://github.com/geraldo-netto/blent/issues/new?template=compatibility.yml).
 Reports can be added to [docs/compatibility.md](docs/compatibility.md) with their
 version, source and limitations; a successful build is not hardware validation.
 
 ## Bugs and questions
 
-Use the [fork issue tracker](https://github.com/geraldo-netto/UScreen/issues).
+Use the [fork issue tracker](https://github.com/geraldo-netto/blent/issues).
 Explain the expected result, actual result and reproducible steps. Include
 `blent doctor` output and relevant logs: `journalctl --user -u blent -n 200`
 for a service launch, or `~/.local/share/blent/daemon.log` for a direct GUI
@@ -76,7 +76,7 @@ For optional encoder changes, also run:
 cargo test --release -p blent --features inproc-encoder --bin blent
 ```
 
-Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
+Run the [cyclomatic complexity gate](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/scripts/complexity/README.md)
 for refactors. Its pinned parser setup, boundary tests and scope limitations
 are documented there; CI workflows remain available through GitHub Actions “Run workflow” (manual dispatch); pushes and pull requests do not start them automatically.
 

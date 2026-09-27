@@ -1,7 +1,7 @@
 # Windows camera-probe build boundary (T631)
 
 The normal native MSVC and GNU cross-build commands failed at `3bcb11f` in
-[run 36259429008](https://github.com/geraldo-netto/UScreen/actions/runs/36259429008):
+[run 36259429008](https://github.com/geraldo-netto/blent/actions/runs/36259429008):
 the camera timing example imported Linux camera modules on Windows.
 
 The example now delegates to a Linux-only module. Other platforms build a small
@@ -30,7 +30,7 @@ native ACL/lifecycle, scheduling and coverage acceptance remain T493/T583/T497.
 
 ## Native follow-up
 
-[Run 36261150896](https://github.com/geraldo-netto/UScreen/actions/runs/36261150896)
+[Run 36261150896](https://github.com/geraldo-netto/blent/actions/runs/36261150896)
 at `e92835f` passed both new T631 regressions and the full GNU workspace link.
 MSVC workspace compilation succeeded and native tests executed. The remaining
 CI failure at that revision was T493 runtime-directory pinning, not camera-probe compilation:
@@ -42,7 +42,7 @@ was not reached after this test failure.
 ## Later native acceptance
 
 T634 fixed directory pinning; T637 fixed explicit runtime-file ownership.
-[Run 36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+[Run 36264925943](https://github.com/geraldo-netto/blent/actions/runs/36264925943)
 at `44b939e` passed native workspace tests, all-features MSVC and GNU linking.
 [T493 foundation acceptance](2026-09-26-windows-foundation.md) and
 [T583 scheduling acceptance](2026-09-26-windows-scheduling.md) are complete.

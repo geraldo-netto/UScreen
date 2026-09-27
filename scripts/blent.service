@@ -1,6 +1,6 @@
 [Unit]
 Description=Blent - USB Second Display Server
-Documentation=https://github.com/geraldo-netto/UScreen
+Documentation=https://github.com/geraldo-netto/blent
 # Bound to the desktop session rather than to login: the daemon talks to the
 # compositor (to place the virtual output and to map the tablet's touch and pen
 # onto it), so starting before KWin exists would leave it retrying for nothing.

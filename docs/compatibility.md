@@ -3,7 +3,7 @@
 The tables preserve **upstream** hardware reports, not a certification of
 the current fork. “Maintainer” in those rows means the upstream maintainer.
 Report your fork commit, installation method and hardware through the
-[compatibility template](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml).
+[compatibility template](https://github.com/geraldo-netto/blent/issues/new?template=compatibility.yml).
 Container installation/build checks are described in [development.md](development.md).
 
 ## Host
@@ -57,7 +57,7 @@ capabilities, but only a real stream validates the selected configuration.
 
 ## Current fork limitations
 
-The full actionable list is [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md). In particular:
+The full actionable list is [TODO.md](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md). In particular:
 
 - **T222:** Cinnamon/Xorg crashed during virtual-display attachment; cause and
   mitigation remain unverified. See the [incident report](reviews/2026-09-17-cinnamon-restart.md).

@@ -33,15 +33,15 @@ window checks used Wine; subsequent native MSVC suites cover the lifecycle adapt
 T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/windows.yml).
 Shell-free command fixtures run as Windows executables; Linux process-group
 assertions remain in the Linux suite. Local policy and library execution passed
-under Wine. The native CI workflow is available. Historical [run 35528506377](https://github.com/geraldo-netto/UScreen/actions/runs/35528506377)
+under Wine. The native CI workflow is available. Historical [run 35528506377](https://github.com/geraldo-netto/blent/actions/runs/35528506377)
 failed before ACL/lease tests at `2b91e77`; run 36259429008 at `3bcb11f` exposed
 the Linux camera-probe build boundary, subsequently fixed by T631.
-[Run 36261150896](https://github.com/geraldo-netto/UScreen/actions/runs/36261150896)
+[Run 36261150896](https://github.com/geraldo-netto/blent/actions/runs/36261150896)
 at `e92835f` passed both T631 regressions and full GNU linking. Native MSVC
 workspace tests compiled and ran: 9 of 10 Windows platform tests passed, but the
 runtime-directory pinning test failed because renaming the held directory
 succeeded. This historical failure was fixed by T634. Later native run
-[36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+[36264925943](https://github.com/geraldo-netto/blent/actions/runs/36264925943)
 at `44b939e` passed the full suite, expanded ACL/token/junction acceptance and
 all 46 foundation-function coverage gates. T583 scheduling acceptance passed;
 T497 now passes the [combined per-function gate](reviews/2026-09-26-function-coverage.md),

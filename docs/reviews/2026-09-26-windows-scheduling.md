@@ -8,7 +8,7 @@ separates current-process selection from applying a class to a handle, keeping
 native permission failure directly testable without changing the caller's
 process rights or relying on a privileged test account.
 
-[Run 36263320613](https://github.com/geraldo-netto/UScreen/actions/runs/36263320613)
+[Run 36263320613](https://github.com/geraldo-netto/blent/actions/runs/36263320613)
 at `47efa7a` passed these regressions in the normal workspace suite and native
 coverage run. `apply_current`, `apply_process` and owned-child `child_priority`
 each measure **100% executable-line coverage**. All native source fingerprints

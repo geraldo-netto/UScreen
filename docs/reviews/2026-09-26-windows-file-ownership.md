@@ -1,7 +1,7 @@
 # Explicit Windows runtime-file ownership (T637)
 
 The permanent native token and lease tests failed in
-[run 36264487601](https://github.com/geraldo-netto/UScreen/actions/runs/36264487601)
+[run 36264487601](https://github.com/geraldo-netto/blent/actions/runs/36264487601)
 at `374bdba`: `user.matches(owner)` was false for newly published runtime files.
 Windows selects the process token's default owner unless creation supplies an
 explicit owner; that SID can differ from the current user. This contradicted
@@ -16,7 +16,7 @@ validated directory, so tests and future lifecycle code retain explicit ownershi
 instead of reopening global token state. Location lookup has no write side effect.
 
 The same owner assertions, plus single-user access-control checks, pass in
-[run 36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+[run 36264925943](https://github.com/geraldo-netto/blent/actions/runs/36264925943)
 at `44b939e`. `set_file_owner` and token creation measure 100% native executable-line
 coverage. Atomic token replacement, failed publication cleanup and lease-record
 retirement checks remain in the normal suite. The unrelated junction fixture now

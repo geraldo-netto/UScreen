@@ -41,15 +41,15 @@ backend. Diagnostic command success means the report ran, not that streaming wor
   routing and error propagation, truthful labels/capabilities, retained settings tests.
 - `common/src/lifecycle.rs`: bounded transitions, probe errors and restart ordering.
 
-Native red run [36267606020](https://github.com/geraldo-netto/UScreen/actions/runs/36267606020)
+Native red run [36267606020](https://github.com/geraldo-netto/blent/actions/runs/36267606020)
 proved the old application lacked lifecycle startup/status. Native full-workspace
-run [36269676965](https://github.com/geraldo-netto/UScreen/actions/runs/36269676965)
+run [36269676965](https://github.com/geraldo-netto/blent/actions/runs/36269676965)
 passed the initial implementation and measured all 77 Windows-specific production
 functions at the 80% threshold. Review then found an independent cleanup failure
 could retain the token and make stop falsely succeed. Permanent native regressions
-in [36271039059](https://github.com/geraldo-netto/UScreen/actions/runs/36271039059)
+in [36271039059](https://github.com/geraldo-netto/blent/actions/runs/36271039059)
 failed with both exact failures before the cleanup fix. Final native run
-[36271915764](https://github.com/geraldo-netto/UScreen/actions/runs/36271915764)
+[36271915764](https://github.com/geraldo-netto/blent/actions/runs/36271915764)
 at `f5cb33cea4e198b025bb0a3a1aa5fbb0dcf42cee` passes workspace tests, all-feature
 builds, GNU linking and native coverage. All **80 Windows-specific production
 functions** meet 80%; native source fingerprints match the committed application

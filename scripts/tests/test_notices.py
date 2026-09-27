@@ -63,7 +63,7 @@ class NoticeTest(unittest.TestCase):
             # RPM normally cleans BUILDROOT; the archive inventory remains authoritative.
             for folder in rpm_roots:
                 self.verify_docs(folder)
-            source = root / f'UScreen-{version}'
+            source = root / f'blent-{version}'
             shutil.copytree(docs, source)
             (source / 'target/release').mkdir(parents=True)
             (source / 'host/evdi').mkdir(parents=True)

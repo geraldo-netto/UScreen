@@ -33,7 +33,7 @@ class ScriptLifecycleTests(unittest.TestCase):
             root = Path(directory)
             package = REPO/'packaging/arch/PKGBUILD'
             version = re.search(r'^pkgver=(.+)$', package.read_text(), re.M)[1]
-            source = root/('UScreen-' + version)
+            source = root/('blent-' + version)
             (source/'host/evdi').mkdir(parents=True)
             (root/'evdi-1.15.0/library').mkdir(parents=True)
             bin = root/'bin'

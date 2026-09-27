@@ -113,7 +113,7 @@ GCC's ASan/UBSan/TSan runtimes must be installed with the compiler. The GUI
 startup test uses an isolated Xvfb session and accessibility bus. Android
 tests use Robolectric API 27 and 34; Gradle downloads their test images.
 
-The separate [complexity gate](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/scripts/complexity/README.md)
+The separate [complexity gate](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/scripts/complexity/README.md)
 checks the maximum of nine across owned source and tests. It uses pinned Python
 parsers and a checksum-verified Kotlin compiler; follow its setup and boundary
 test instructions before running `scripts/complexity/check.py`. CI runs both

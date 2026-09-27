@@ -1,9 +1,9 @@
 # Architecture and responsibility review — 2026-09-17
 
 Reviewed source snapshot:
-[`6a49e9761c541fdcb224bdd6c9216f53581a1c6c`](https://github.com/geraldo-netto/UScreen/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c).
+[`6a49e9761c541fdcb224bdd6c9216f53581a1c6c`](https://github.com/geraldo-netto/blent/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c).
 This is a review, not a refactor. Findings are recorded in the repository's
-[TODO ledger](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
+[TODO ledger](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md).
 The companion [performance and scalability research](2026-09-17-performance-scalability.md)
 describes experiments and their acceptance criteria.
 
@@ -166,9 +166,9 @@ not fix or remove the underlying finding.
 
 ## Source entry points
 
-- [Host startup and sessions](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/main.rs)
-- [Capture and packetization](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/capture.rs), [input](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/input.rs), [encoder](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/encoder.rs)
-- [Configuration](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/common/src/lib.rs) and [GUI](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/gui/src/main.rs)
-- [Owned C helper](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/evdi/evdi_helper.c)
-- [Android production sources](https://github.com/geraldo-netto/UScreen/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/android/app/src/main/java/com/uscreen)
-- [Bundle staging](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/scripts/stage-linux-bundle.sh) and [Makefile](https://github.com/geraldo-netto/UScreen/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/Makefile)
+- [Host startup and sessions](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/main.rs)
+- [Capture and packetization](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/capture.rs), [input](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/input.rs), [encoder](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/src/encoder.rs)
+- [Configuration](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/common/src/lib.rs) and [GUI](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/gui/src/main.rs)
+- [Owned C helper](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/host/evdi/evdi_helper.c)
+- [Android production sources](https://github.com/geraldo-netto/blent/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/android/app/src/main/java/com/uscreen)
+- [Bundle staging](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/scripts/stage-linux-bundle.sh) and [Makefile](https://github.com/geraldo-netto/blent/blob/6a49e9761c541fdcb224bdd6c9216f53581a1c6c/Makefile)

@@ -229,7 +229,7 @@ need implementation and measurement.
 - No measurement yet of AMD/Intel VAAPI encoders or of libx264.
 
 Reports with other hardware are welcome as
-[compatibility issues](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml);
+[compatibility issues](https://github.com/geraldo-netto/blent/issues/new?template=compatibility.yml);
 include the exact commit, hardware, encoder/settings, workload and several
 `Latency packet-ready→render-ACK` log lines. The log label alone does not describe a
 reproducible benchmark.

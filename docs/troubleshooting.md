@@ -24,7 +24,7 @@ echo 'options evdi initial_device_count=2' | sudo tee /etc/modprobe.d/blent-evdi
 Use GUI system setup to add missing capacity for a larger tablet count.
 Reboot if a changed boot setting needs to take effect. **Do not unload EVDI
 from a running display session**: it can disrupt the display server. Installer
-reload behavior remains tracked as T269 in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
+reload behavior remains tracked as T269 in [TODO.md](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md).
 
 ## "Failed to open /dev/uinput"
 
@@ -129,6 +129,6 @@ card/connector state in reports without removing another application's display.
 
 ## Getting more help
 
-Open a [fork issue](https://github.com/geraldo-netto/UScreen/issues) with the
+Open a [fork issue](https://github.com/geraldo-netto/blent/issues) with the
 build commit, `blent doctor` output and relevant log excerpt. Remove tokens,
 device serials and other personal information before posting.

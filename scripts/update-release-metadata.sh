@@ -42,7 +42,7 @@ RULES = {
         (r'"downloadUrl": null', '"downloadUrl": null'),
         (rf'"dateModified": "{DAY}"', f'"dateModified": "{date}"'),
         (r'<a id="release-download"[^>]*>[^<]*</a>',
-         f'<a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/releases/tag/v{version}">Download {version}</a>'),
+         f'<a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/blent/releases/tag/v{version}">Download {version}</a>'),
         (r'<p id="release-status">.*?</p>',
          f'<p id="release-status">Release candidate {version}; check the release page for publication and available files. Build from source if it is not published.</p>'),
         (rf'<span id="source-version">{NUM}</span>', f'<span id="source-version">{version}</span>'),

@@ -1,6 +1,6 @@
 # Retired Android SDK package in CI (T639)
 
-Build run [36273300317](https://github.com/geraldo-netto/UScreen/actions/runs/36273300317)
+Build run [36273300317](https://github.com/geraldo-netto/blent/actions/runs/36273300317)
 failed in Android SDK setup before any application build or coverage collection:
 
 ```text

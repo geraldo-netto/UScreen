@@ -203,7 +203,7 @@ class ReleaseTest(unittest.TestCase):
         self.assertGreaterEqual(len(requests), 7)
         self.assertTrue(all(json.loads(line)['authorized'] for line in requests))
 
-    def test_t225_publisher_routes_every_request_to_fork(self):
+    def test_t225_t661_publisher_routes_every_request_to_fork(self):
         import json
         from urllib.parse import urlsplit
         self.enable_uploads()
@@ -214,10 +214,10 @@ class ReleaseTest(unittest.TestCase):
         for line in requests:
             url = urlsplit(json.loads(line)['url'])
             self.assertIn(url.netloc, ['api.github.com', 'uploads.github.com'])
-            self.assertTrue(url.path.startswith('/repos/geraldo-netto/UScreen/releases'), url.geturl())
-        self.assertIn('https://github.com/geraldo-netto/UScreen/releases/tag/v1.2.3', result.stdout)
+            self.assertTrue(url.path.startswith('/repos/geraldo-netto/blent/releases'), url.geturl())
+        self.assertIn('https://github.com/geraldo-netto/blent/releases/tag/v1.2.3', result.stdout)
 
-    def test_t225_active_project_links_target_fork(self):
+    def test_t225_t661_active_project_links_target_fork(self):
         # T393: Rust consumers share the endpoint through common::release.
         files = [
             'README.md', 'CHANGELOG.md', 'CITATION.cff', 'host/src/update.rs',
@@ -236,9 +236,9 @@ class ReleaseTest(unittest.TestCase):
                 self.assertNotIn('majmichu1.github.io/', text)
         for name in ['common/src/release.rs',
                      'android/app/src/main/java/com/blent/UpdateCheck.kt']:
-            self.assertIn('https://api.github.com/repos/geraldo-netto/UScreen/releases/latest',
+            self.assertIn('https://api.github.com/repos/geraldo-netto/blent/releases/latest',
                           (REPO / name).read_text())
-        self.assertIn('https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz',
+        self.assertIn('https://github.com/geraldo-netto/blent/archive/refs/tags/v$pkgver.tar.gz',
                       (REPO / 'packaging/arch/PKGBUILD').read_text())
 
     def test_t100_newer_head_rejected(self):

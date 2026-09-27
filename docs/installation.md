@@ -4,7 +4,7 @@ Build the Linux daemon/GUI/helper and Android app from the same checkout.
 As of 2026-09-17 this fork has no published releases; start with
 [building from source](development.md#building-from-source). Upstream releases
 do not contain the unreleased fork changes. The instructions below also cover
-artifacts produced locally or available in a future [fork release](https://github.com/geraldo-netto/UScreen/releases).
+artifacts produced locally or available in a future [fork release](https://github.com/geraldo-netto/blent/releases).
 
 Before attaching a display, check [current limitations](compatibility.md#current-fork-limitations).
 A Cinnamon/Xorg session crash during EVDI attachment remains unresolved (T222).

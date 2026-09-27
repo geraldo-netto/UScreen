@@ -6,19 +6,19 @@
 <title>Blent for Linux: Android Tablet as a USB Second Monitor</title>
 <meta name="description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
 <!-- GitHub Pages deployment is not verified; use the fork repository as canonical. -->
-<link rel="canonical" href="https://github.com/geraldo-netto/UScreen">
+<link rel="canonical" href="https://github.com/geraldo-netto/blent">
 <meta name="theme-color" content="#141311">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Blent for Linux">
 <meta property="og:title" content="Blent for Linux: Android Tablet as a USB Second Monitor">
 <meta property="og:description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
-<meta property="og:url" content="https://github.com/geraldo-netto/UScreen">
+<meta property="og:url" content="https://github.com/geraldo-netto/blent">
 <!-- og:image / twitter:image: replace with docs/assets/blent-social.png (1280×640) once a real photo of the tablet running Blent exists. -->
-<meta property="og:image" content="https://opengraph.githubassets.com/1/geraldo-netto/UScreen">
+<meta property="og:image" content="https://opengraph.githubassets.com/1/geraldo-netto/blent">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Blent for Linux: Android Tablet as a USB Second Monitor">
 <meta name="twitter:description" content="Open-source SuperDisplay alternative for Linux. Use an Android tablet as a real USB second monitor with S Pen pressure and tilt—no Wi-Fi or tethering.">
-<meta name="twitter:image" content="https://opengraph.githubassets.com/1/geraldo-netto/UScreen">
+<meta name="twitter:image" content="https://opengraph.githubassets.com/1/geraldo-netto/blent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -33,14 +33,14 @@
   "softwareVersion": "1.2.3",
   "datePublished": null,
   "dateModified": "2026-09-17",
-  "releaseNotes": "https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md",
+  "releaseNotes": "https://github.com/geraldo-netto/blent/blob/configurable-input-devices/CHANGELOG.md",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-  "url": "https://github.com/geraldo-netto/UScreen",
-  "sameAs": ["https://github.com/geraldo-netto/UScreen"],
+  "url": "https://github.com/geraldo-netto/blent",
+  "sameAs": ["https://github.com/geraldo-netto/blent"],
   "downloadUrl": null,
-  "codeRepository": "https://github.com/geraldo-netto/UScreen",
+  "codeRepository": "https://github.com/geraldo-netto/blent",
   "author": {"@type": "Person", "name": "majmichu1", "url": "https://github.com/majmichu1", "sameAs": ["https://github.com/majmichu1"]},
   "maintainer": {"@type": "Person", "name": "geraldo-netto", "url": "https://github.com/geraldo-netto"},
   "description": "Open-source SuperDisplay alternative for Linux: an Android tablet as a real extended USB display and graphics tablet with S Pen pressure, tilt, eraser and button support. Direct ADB-over-USB, no Wi-Fi, tethering, dummy HDMI plug or cloud account.",
@@ -246,7 +246,7 @@
     <a href="#numbers">Numbers</a>
     <a href="#compare">Compare</a>
     <a href="#faq">FAQ</a>
-    <a href="https://github.com/geraldo-netto/UScreen">GitHub</a>
+    <a href="https://github.com/geraldo-netto/blent">GitHub</a>
   </nav>
 </header>
 
@@ -257,7 +257,7 @@
     <h1>Your Android tablet, as a <em>real</em> second monitor. Over one USB cable.</h1>
     <p class="lead">Blent creates an extended display on the Linux side, streams it to the tablet with the selected encoder, and hands the <strong>S Pen back as a graphics tablet</strong> — pressure, tilt, eraser, button. No Wi-Fi, no tethering, no dummy plug, no account.</p>
     <div class="cta">
-      <a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/development.md#building-from-source">Build from source</a>
+      <a id="release-download" class="btn primary" href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/development.md#building-from-source">Build from source</a>
       <a class="btn" href="#install">Install in three steps</a>
       <span class="meta">MIT · Linux + Android 8.1+ · docs updated <time datetime="2026-09-17">2026-09-17</time></span>
     </div>
@@ -322,7 +322,7 @@
   <div><div class="v">4<small>formats</small></div><div class="k">of Linux packaging outputs</div></div>
 </div>
 
-<p style="margin:28px var(--gutter)">Current fork limitations include an unresolved Cinnamon/Xorg crash during EVDI attachment and a graphics-tablet status-message mismatch. Read <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/compatibility.md#current-fork-limitations">compatibility and known limitations</a> before setup.</p>
+<p style="margin:28px var(--gutter)">Current fork limitations include an unresolved Cinnamon/Xorg crash during EVDI attachment and a graphics-tablet status-message mismatch. Read <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/compatibility.md#current-fork-limitations">compatibility and known limitations</a> before setup.</p>
 
 <section id="why">
   <div class="sec-head">
@@ -361,7 +361,7 @@
     <div><h3>Plug the cable in</h3><p>The daemon forwards the ports over adb and launches the app on the tablet. Accept the USB-debugging prompt once.</p></div>
     <div><h3>Use it like a monitor</h3><p>It is in Display settings, sized to the tablet. Input mapping depends on the desktop and tools; check the compatibility guide. Graphics-tablet mode targets a host screen; the current status-message mismatch can leave its reconnect overlay visible.</p></div>
   </div>
-  <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
+  <p style="margin-top:28px;color:var(--text-2);max-width:var(--measure)">Details, including exactly what the installer changes on the system, in <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/installation.md">docs/installation.md</a>. Update both halves together: since 1.1.0 they share a session token.</p>
 </section>
 
 <section id="numbers">
@@ -384,7 +384,7 @@
     <b>blent::latency</b> Latency encode→display: p50 <b>19.3ms</b>  p95 <b>22.9ms</b>  max 28.7ms  (25 samples, 1 in flight, 0 aged out)<br>
     <b>blent::latency</b>   of which tablet decode+render p50 <b>13.1ms</b>  p95 16.9ms  → wire ~6.2ms
   </div>
-  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt preserves historical output: “encode→display” includes the return acknowledgement. The legacy “wire ~6.2 ms” subtracts independent medians and is an invalid decomposition, not a measurement of transport or queueing; current logs omit it. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
+  <p style="margin-top:20px;color:var(--text-2);max-width:var(--measure)">The excerpt preserves historical output: “encode→display” includes the return acknowledgement. The legacy “wire ~6.2 ms” subtracts independent medians and is an invalid decomposition, not a measurement of transport or queueing; current logs omit it. Reference hardware: Bazzite (KDE Plasma 6, Wayland), NVIDIA RTX 5060 Laptop, Galaxy Tab S9 Ultra at 2960×1848. Full method, CPU figures and limitations in <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/benchmarks.md">docs/benchmarks.md</a>.</p>
 </section>
 
 <section id="compare">
@@ -410,7 +410,7 @@
 <section id="faq">
   <div class="sec-head">
     <h2>Questions people ask</h2>
-    <p>Short answers. Longer ones in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/faq.md">docs/faq.md</a>.</p>
+    <p>Short answers. Longer ones in <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/faq.md">docs/faq.md</a>.</p>
   </div>
   <details open><summary>Does it need Wi-Fi or USB tethering?</summary><p>No. It uses the adb connection that USB debugging provides, over a normal data-capable USB cable — USB debugging has to be on, USB tethering does not. Wi-Fi is optional; historical tests had longer tail delays.</p></details>
   <details><summary>Is it a mirror or an extension?</summary><p>An extension — a real monitor in your display settings. Graphics-tablet mode is a separate, non-display mode.</p></details>
@@ -421,13 +421,13 @@
   <details><summary>Which Android versions?</summary><p>8.1/API 27 and newer; the decoder must also support the selected stream.</p></details>
   <details><summary>Is anything sent to the cloud?</summary><p>No. Screen and input data travel between your computer and tablet over USB, or over your local network with optional Wi-Fi transport. The only automatic internet request is an optional check of the latest release tag on GitHub, with <code>check_updates = false</code> disabling host checks and the app’s separate switch disabling tablet checks.</p></details>
   <details><summary>How is it different from Weylus?</summary><p>Weylus makes the tablet's browser an input device and can show the screen in it; a virtual display has to be set up separately. Blent creates an EVDI output and uses a native Android app. Both offer Linux pen input; Weylus also documents Android USB through adb reverse.</p></details>
-  <details><summary>How do I uninstall it completely?</summary><p>Follow the instructions for your installation method, custom paths and residual system state in <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
+  <details><summary>How do I uninstall it completely?</summary><p>Follow the instructions for your installation method, custom paths and residual system state in <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/SECURITY.md">SECURITY.md</a>.</p></details>
 </section>
 
 <section class="provenance" aria-label="Provenance">
   <dl>
     <div><dt>Fork maintained by</dt><dd><a href="https://github.com/geraldo-netto">geraldo-netto</a> · original author <a href="https://github.com/majmichu1">majmichu1</a></dd></div>
-    <div><dt>Source version</dt><dd><span id="source-version">1.2.3</span> (unreleased fork; identify builds by commit) · <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md">changelog</a></dd></div>
+    <div><dt>Source version</dt><dd><span id="source-version">1.2.3</span> (unreleased fork; identify builds by commit) · <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/CHANGELOG.md">changelog</a></dd></div>
     <div><dt>Last updated</dt><dd><time datetime="2026-09-17">2026-09-17</time></dd></div>
     <div><dt>Upstream verified on</dt><dd>Bazzite KDE Wayland (upstream maintainer) · Arch Linux KDE Wayland, installer and PKGBUILD (report 1 (historical upstream), report 2 (historical upstream)) · Fedora 44 KDE with a Tab S9 FE (report 3 (historical upstream))</dd></div>
   </dl>
@@ -437,10 +437,10 @@
 <footer>
   <span>Blent for Linux · MIT · not affiliated with Blent.tv, SuperDisplay or DisplayLink</span>
   <span>
-    <a href="https://github.com/geraldo-netto/UScreen">source</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/issues">issues</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md">security</a> ·
-    <a href="https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md">changelog</a> ·
+    <a href="https://github.com/geraldo-netto/blent">source</a> ·
+    <a href="https://github.com/geraldo-netto/blent/issues">issues</a> ·
+    <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/SECURITY.md">security</a> ·
+    <a href="https://github.com/geraldo-netto/blent/blob/configurable-input-devices/CHANGELOG.md">changelog</a> ·
     <a href="llms.txt">llms.txt</a>
   </span>
 </footer>

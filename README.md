@@ -5,7 +5,7 @@ Android 8.1+ tablet into a real extended USB display and a pressure-sensitive
 graphics tablet, with touch, S Pen pressure, tilt, eraser and stylus-button
 support.
 
-Blent is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
+Blent is maintained at [geraldo-netto/blent](https://github.com/geraldo-netto/blent),
 Original UScreen copyright (c) 2026 majmichu1; retained under the MIT license.
 Original Blent contributions copyright (c) 2026 Geraldo Netto; see
 [COPYRIGHT.md](COPYRIGHT.md) for attribution and provenance.
@@ -59,7 +59,7 @@ before setup. Packaging recipes target several Linux distribution families.
 **1. Linux side** — for the current fork, follow the
 [source-build instructions](docs/development.md#building-from-source). The
 packaging tools can produce the files below; use them only when present on
-the [fork releases page](https://github.com/geraldo-netto/UScreen/releases)
+the [fork releases page](https://github.com/geraldo-netto/blent/releases)
 or produced from the checkout you intend to install:
 
 | file | distribution |
@@ -88,7 +88,7 @@ setup problems. It cannot establish that every configuration is safe or supporte
 Update both halves together: since 1.1.0 they share a session token.
 
 If Blent replaced a second monitor for you, a star on the repo and a
-[compatibility report](https://github.com/geraldo-netto/UScreen/issues/new?template=compatibility.yml)
+[compatibility report](https://github.com/geraldo-netto/blent/issues/new?template=compatibility.yml)
 help the next Linux user find it.
 
 ## Historical upstream compatibility
@@ -275,13 +275,13 @@ also only a proposal and would need a supported transport, a native client,
 build/signing resources and a distribution plan. No particular Apple
 platform or regional distribution route has been selected or verified.
 
-Current defects and blocked decisions remain in [TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
+Current defects and blocked decisions remain in [TODO.md](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md).
 
 ## Contributing
 
 Compatibility reports are the most useful thing right now; see
 [CONTRIBUTING.md](CONTRIBUTING.md). Questions and reports go to
-[Issues](https://github.com/geraldo-netto/UScreen/issues).
+[Issues](https://github.com/geraldo-netto/blent/issues).
 
 ## License
 

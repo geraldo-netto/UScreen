@@ -18,9 +18,9 @@ remain byte-identical. Distribution tests retain notices and matching source
 assets. Current documentation removes original UScreen repository hyperlinks;
 authorship stays as plain text and required third-party source/license links
 remain. Historical measurement artifacts retain their original identities.
-The local Git upstream remote was removed. The maintainer's own hosted fork
-still exists at `geraldo-netto/UScreen`, so its real URLs and archive root are
-retained; no hosted rename or publication was performed.
+The local Git upstream remote was removed. At this historical checkpoint, the maintainer's hosted fork still used its
+original repository name, so URLs and the archive root retained that name.
+T661 subsequently renamed the hosted fork to `geraldo-netto/blent`.
 
 Permanent T585 identity tests failed before the rename. A new EDID regression
 also caught the shorter name's required padding before correction; both now

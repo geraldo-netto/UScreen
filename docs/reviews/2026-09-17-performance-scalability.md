@@ -1,11 +1,11 @@
 # Performance and scalability research — 2026-09-17
 
 Scope: Android client and Rust/C Linux host at
-[`6a49e9761c541fdcb224bdd6c9216f53581a1c6c`](https://github.com/geraldo-netto/UScreen/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c).
+[`6a49e9761c541fdcb224bdd6c9216f53581a1c6c`](https://github.com/geraldo-netto/blent/tree/6a49e9761c541fdcb224bdd6c9216f53581a1c6c).
 Read alongside the [architecture review](2026-09-17-architecture.md),
 [historical benchmarks](../benchmarks.md) and [Windows integration plan](../windows-port.md).
 Actionable work is tracked as T382–T392 in the
-[TODO ledger](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md).
+[TODO ledger](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md).
 
 The first priority is a reproducible current-fork baseline. The code supports
 specific optimization hypotheses, but this review ran no hardware streaming,

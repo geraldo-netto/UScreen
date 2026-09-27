@@ -233,7 +233,7 @@ private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> U
                 Row(modifier = Modifier.padding(top = 10.dp)) {
                     Text("Open GitHub", fontSize = 13.sp, color = Accent,
                         modifier = Modifier.clickable {
-                            if (openWebLink(context, "https://github.com/geraldo-netto/UScreen")) {
+                            if (openWebLink(context, "https://github.com/geraldo-netto/blent")) {
                                 onDismissThanks()
                             }
                         }.padding(end = 20.dp))

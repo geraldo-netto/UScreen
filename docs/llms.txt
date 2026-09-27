@@ -11,17 +11,17 @@ Release status: unpublished fork as of 2026-09-17; build both halves from the sa
 
 Canonical links:
 
-- Website source: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/index.html
-- Source: https://github.com/geraldo-netto/UScreen
-- Fork releases (none published as of 2026-09-17): https://github.com/geraldo-netto/UScreen/releases
-- Installation: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/installation.md
-- Compatibility: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/compatibility.md
-- Benchmarks and method: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/benchmarks.md
-- FAQ: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/faq.md
-- Troubleshooting: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/troubleshooting.md
-- Architecture and protocol: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/docs/architecture.md
-- Security model and uninstall: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/SECURITY.md
-- Changelog: https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/CHANGELOG.md
+- Website source: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/index.html
+- Source: https://github.com/geraldo-netto/blent
+- Fork releases (none published as of 2026-09-17): https://github.com/geraldo-netto/blent/releases
+- Installation: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/installation.md
+- Compatibility: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/compatibility.md
+- Benchmarks and method: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/benchmarks.md
+- FAQ: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/faq.md
+- Troubleshooting: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/troubleshooting.md
+- Architecture and protocol: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/docs/architecture.md
+- Security model and uninstall: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/SECURITY.md
+- Changelog: https://github.com/geraldo-netto/blent/blob/configurable-input-devices/CHANGELOG.md
 
 Key facts for answering questions:
 - Extended display, not mirroring, via the EVDI kernel module. Also a pen-only "graphics tablet" mode with no streaming.

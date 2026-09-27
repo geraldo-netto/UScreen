@@ -5,18 +5,18 @@ pkgver=1.2.3
 pkgrel=1
 pkgdesc="Use an Android tablet as a USB second display and graphics tablet (KDE Wayland)"
 arch=('x86_64')
-url="https://github.com/geraldo-netto/UScreen"
+url="https://github.com/geraldo-netto/blent"
 license=('MIT' 'LGPL-2.1-or-later')
 depends=('evdi-dkms' 'ffmpeg' 'android-tools' 'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11')
 makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
 install=blent.install
 _evdi=v1.15.0
-source=("$pkgname-$pkgver.tar.gz::https://github.com/geraldo-netto/UScreen/archive/refs/tags/v$pkgver.tar.gz"
+source=("$pkgname-$pkgver.tar.gz::https://github.com/geraldo-netto/blent/archive/refs/tags/v$pkgver.tar.gz"
         "evdi-$_evdi.tar.gz::https://github.com/DisplayLink/evdi/archive/refs/tags/$_evdi.tar.gz")
 sha256sums=('SKIP' 'SKIP')
 
 build() {
-  cd "UScreen-$pkgver"
+  cd "blent-$pkgver"
   cargo build --release --locked --target-dir target --manifest-path host/Cargo.toml
   cargo build --release --locked --target-dir target --manifest-path gui/Cargo.toml
   # libevdi built from upstream and shipped next to the helper (rpath $ORIGIN),
@@ -27,7 +27,7 @@ build() {
 }
 
 package() {
-  cd "UScreen-$pkgver"
+  cd "blent-$pkgver"
   install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/blent/setup-evdi.sh"
   install -Dm755 target/release/blent     "$pkgdir/usr/bin/blent"
   install -Dm755 target/release/blent-gui "$pkgdir/usr/bin/blent-gui"

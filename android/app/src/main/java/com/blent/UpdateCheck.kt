@@ -7,8 +7,8 @@ package com.blent
  * the question and hands over the release page.
  */
 object UpdateCheck {
-    const val RELEASES_PAGE = "https://github.com/geraldo-netto/UScreen/releases/latest"
-    private const val API = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest"
+    const val RELEASES_PAGE = "https://github.com/geraldo-netto/blent/releases/latest"
+    private const val API = "https://api.github.com/repos/geraldo-netto/blent/releases/latest"
 
     internal val requests: ReleaseChecks = HttpReleaseChecks(API)
 

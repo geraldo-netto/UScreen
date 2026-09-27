@@ -1,6 +1,6 @@
 //! Release metadata policy shared by synchronous and asynchronous consumers.
-pub const API: &str = "https://api.github.com/repos/geraldo-netto/UScreen/releases/latest";
-pub const PAGE: &str = "https://github.com/geraldo-netto/UScreen/releases/latest";
+pub const API: &str = "https://api.github.com/repos/geraldo-netto/blent/releases/latest";
+pub const PAGE: &str = "https://github.com/geraldo-netto/blent/releases/latest";
 
 pub fn tag_from_json(body: &str) -> Option<String> {
     let value: serde_json::Value = serde_json::from_str(body).ok()?;

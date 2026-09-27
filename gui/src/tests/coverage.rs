@@ -111,9 +111,9 @@ fn t497_header_links_only_request_the_expected_fork_pages() {
     for (label, expected) in [
         (
             "Report compatibility",
-            "https://github.com/geraldo-netto/UScreen/issues/new?",
+            "https://github.com/geraldo-netto/blent/issues/new?",
         ),
-        ("Star on GitHub", "https://github.com/geraldo-netto/UScreen"),
+        ("Star on GitHub", "https://github.com/geraldo-netto/blent"),
         ("open release page", RELEASES_PAGE),
     ] {
         click_settings_text(&mut app, &ctx, label, links_frame);

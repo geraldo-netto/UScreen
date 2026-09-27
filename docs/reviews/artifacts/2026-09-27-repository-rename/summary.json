@@ -1,0 +1,12 @@
+{
+  "repository_id_before": 1373334703,
+  "repository_id_after": 1373334703,
+  "repository": "geraldo-netto/blent",
+  "rust_changed_functions": 52,
+  "android_methods": 593,
+  "essential_python_functions": 61,
+  "essential_shell_functions": 60,
+  "minimum_line_percent_per_function": 80,
+  "all_listed_functions_pass": true,
+  "scope": "Changed shared Rust functions, full Android and essential scripts; Windows GUI adapter evidence retained separately under T660. No new whole-project mutation score."
+}

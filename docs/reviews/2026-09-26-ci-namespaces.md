@@ -1,6 +1,6 @@
 # Private namespace prerequisite in CI (T640)
 
-[Run 36273559974](https://github.com/geraldo-netto/UScreen/actions/runs/36273559974)
+[Run 36273559974](https://github.com/geraldo-netto/blent/actions/runs/36273559974)
 failed the retained `camera::native_tests::t572_isolated_native_devices_and_session_cleanup`
 regression before coverage reporting:
 

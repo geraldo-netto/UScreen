@@ -5,8 +5,8 @@ abstract: "Open-source SuperDisplay alternative for Linux: an Android tablet as 
 authors:
   - name: "majmichu1"
   - name: "geraldo-netto"
-repository-code: "https://github.com/geraldo-netto/UScreen"
-url: "https://github.com/geraldo-netto/UScreen"
+repository-code: "https://github.com/geraldo-netto/blent"
+url: "https://github.com/geraldo-netto/blent"
 license: MIT
 version: "1.2.3"
 # date-released: unpublished

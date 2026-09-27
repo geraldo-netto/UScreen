@@ -20,7 +20,8 @@ class ArchBuildTest(unittest.TestCase):
             root = Path(directory)
             package = REPO/'packaging/arch/PKGBUILD'
             version = re.search(r'^pkgver=(.+)$', package.read_text(), re.M)[1]
-            source = root/('UScreen-' + version)
+            # T661: GitHub archives use the renamed repository as their root.
+            source = root/('blent-' + version)
             (source/'host/evdi').mkdir(parents=True)
             (root/'evdi-1.15.0/library').mkdir(parents=True)
             bin = root/'bin'

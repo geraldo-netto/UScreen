@@ -18,13 +18,13 @@ The archived source-matched **local** combined gate passed
 
 The local Linux Rust measurement passed 1,283 functions. All 80 Windows-specific
 production functions pass native coverage, with a minimum of 80%.
-[Native run 36271915764](https://github.com/geraldo-netto/UScreen/actions/runs/36271915764)
+[Native run 36271915764](https://github.com/geraldo-netto/blent/actions/runs/36271915764)
 collected revision `f5cb33cea4e198b025bb0a3a1aa5fbb0dcf42cee` on Windows Server 2022;
 its application source fingerprints match the T524 implementation. Windows 11
 VM acceptance is tracked separately under T633. Historical measurements do not
 substitute for current source fingerprints.
 
-The subsequent [CI run 36276441908, attempt 2](https://github.com/geraldo-netto/UScreen/actions/runs/36276441908/attempts/2)
+The subsequent [CI run 36276441908, attempt 2](https://github.com/geraldo-netto/blent/actions/runs/36276441908/attempts/2)
 at `9330d93` passed both Linux Rust test configurations but failed the Linux
 coverage gate: `evdi_cards` measured 12/25 lines (48%) and `evdi_connectors`
 17/30 (56.67%) in `host/src/vdisplay.rs`. T645 tracks deterministic sysfs coverage

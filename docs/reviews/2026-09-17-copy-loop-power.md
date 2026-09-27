@@ -1,6 +1,6 @@
 # Copy, mapping, loop and power review — 2026-09-17
 
-Reviewed source: [`1e7b045`](https://github.com/geraldo-netto/UScreen/tree/1e7b045).
+Reviewed source: [`1e7b045`](https://github.com/geraldo-netto/blent/tree/1e7b045).
 The repository inventory covered 215 owned files across Rust/C, Android, GUI,
 common code, scripts, packaging, tests and documentation. Generated code,
 dependencies, caches and build outputs were excluded, using the exclusions in

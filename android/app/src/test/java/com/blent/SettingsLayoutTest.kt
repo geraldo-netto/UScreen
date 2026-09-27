@@ -282,7 +282,7 @@ class SettingsLayoutTest {
         shadow.checkActivities(true)
         try {
             for (label in labels) {
-                val url = if (label == "Open GitHub") "https://github.com/geraldo-netto/UScreen"
+                val url = if (label == "Open GitHub") "https://github.com/geraldo-netto/blent"
                           else UpdateCheck.RELEASES_PAGE
                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
                 if (browserAvailable) registerBrowser(app, intent)

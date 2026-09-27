@@ -27,7 +27,7 @@ separate hardware exercise. GPU or USB passthrough would require explicit device
 allocation and validation; do not detach hardware used by the Linux session.
 
 T631 and the native pinning/ownership failures (T634/T637) are fixed.
-[Run 36264925943](https://github.com/geraldo-netto/UScreen/actions/runs/36264925943)
+[Run 36264925943](https://github.com/geraldo-netto/blent/actions/runs/36264925943)
 at `44b939e` passed the full native workspace suite and MSVC/GNU builds. T493's
 46 Windows foundation functions each meet the 80% executable-line threshold,
 including ACLs, leases, token privacy, junction rejection and child retirement.

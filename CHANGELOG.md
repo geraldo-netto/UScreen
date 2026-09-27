@@ -4,7 +4,7 @@ Entries through 1.2.3 describe releases of the
 original UScreen project. The fork changes below
 are unreleased as of 2026-09-17; the source version remains 1.2.3.
 Use the commit ID to distinguish fork builds. Future fork releases belong on
-the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
+the [fork releases page](https://github.com/geraldo-netto/blent/releases).
 
 ## Unreleased
 
@@ -13,7 +13,7 @@ the [fork releases page](https://github.com/geraldo-netto/UScreen/releases).
   compatibility is provided.
 
 Selected fork changes (the commit history contains the individual fixes;
-[TODO.md](https://github.com/geraldo-netto/UScreen/blob/configurable-input-devices/TODO.md) retains unresolved issues):
+[TODO.md](https://github.com/geraldo-netto/blent/blob/configurable-input-devices/TODO.md) retains unresolved issues):
 
 - Android brightness defaults to 50% and the display-mode preference to 60 Hz.
   Both are adjustable, persistent and scoped to Blent's window; switching
@@ -30,7 +30,7 @@ Selected fork changes (the commit history contains the individual fixes;
 - Portable build/package checks cover installed GUI runtime dependencies,
   user-space execution and distribution notices in disposable containers.
   They do not validate real EVDI/compositor attachment.
-- Fork URLs and update checks target geraldo-netto/UScreen. A Windows
+- Fork URLs and update checks target geraldo-netto/blent. A Windows
   integration plan is saved in [docs/windows-port.md](docs/windows-port.md);
   Windows host support is not implemented.
 

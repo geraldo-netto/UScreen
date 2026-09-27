@@ -121,7 +121,7 @@ fn compatibility_url(distro: &str, encoder: &str, tablet: &str, version: &str) -
     .map(|(key, value)| format!("{key}={}", urlencode(value)))
     .collect::<Vec<_>>()
     .join("&");
-    format!("https://github.com/geraldo-netto/UScreen/issues/new?{query}")
+    format!("https://github.com/geraldo-netto/blent/issues/new?{query}")
 }
 
 use blent_config::release::newer_from_json as release_from_response;
@@ -407,7 +407,7 @@ impl App {
                 ui.ctx().open_url(egui::OpenUrl::new_tab(url));
             }
             if ui.small_button("Star on GitHub").clicked() {
-                ui.ctx().open_url(egui::OpenUrl::new_tab("https://github.com/geraldo-netto/UScreen"));
+                ui.ctx().open_url(egui::OpenUrl::new_tab("https://github.com/geraldo-netto/blent"));
             }
         });
         if let Some(v) = self.update.lock().ok().and_then(|g| g.clone()) {
@@ -1166,7 +1166,7 @@ mod tests {
         let (destination, query) = url.split_once('?').unwrap();
         assert_eq!(
             destination,
-            "https://github.com/geraldo-netto/UScreen/issues/new"
+            "https://github.com/geraldo-netto/blent/issues/new"
         );
         let fields: std::collections::BTreeMap<_, _> = query
             .split('&')

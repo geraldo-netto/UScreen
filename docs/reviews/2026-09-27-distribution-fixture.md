@@ -1,6 +1,6 @@
 # Distribution fixture library ownership (T642)
 
-[Run 36274495310](https://github.com/geraldo-netto/UScreen/actions/runs/36274495310)
+[Run 36274495310](https://github.com/geraldo-netto/blent/actions/runs/36274495310)
 failed T102 and its T302 version-bump repetition because the compiler selected
 installed libevdi before the fixture's `LIBRARY_PATH`. The system library correctly
 lacks the fixture-only `blent_distribution_probe` symbol.

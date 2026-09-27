@@ -1,6 +1,6 @@
 # Private Xvfb startup diagnostics (T643)
 
-[Run 36274495310](https://github.com/geraldo-netto/UScreen/actions/runs/36274495310)
+[Run 36274495310](https://github.com/geraldo-netto/blent/actions/runs/36274495310)
 reported a private-Xvfb startup timeout. The fixture discarded stderr and kept
 its own copy of the display-number pipe's writer open, so an early server exit
 could not reach EOF and its actual error was lost.
