@@ -1,0 +1,512 @@
+{
+  "rust_platforms": [
+    "linux"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/model",
+    "common/src/storage"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 44,
+      "passing": 44,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/model/merge.rs",
+      "name": "tables",
+      "line": 5,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "slot_ports",
+      "line": 29,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "ffmpeg_encoder_name",
+      "line": 54,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "supported_encoder",
+      "line": 58,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "validated_conversion_threads",
+      "line": 65,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "validated_pipe_capacity",
+      "line": 73,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "default",
+      "line": 178,
+      "language": "rust",
+      "covered": 35,
+      "total": 35,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "as_str",
+      "line": 225,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "parse",
+      "line": 234,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "parse_or_default",
+      "line": 246,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "validate",
+      "line": 252,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "validate_input_mode",
+      "line": 259,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "requires_restart_from",
+      "line": 267,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "merge_edits",
+      "line": 277,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "sanitize",
+      "line": 298,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/model.rs",
+      "name": "sanitize_requested",
+      "line": 306,
+      "language": "rust",
+      "covered": 31,
+      "total": 31,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "name": "changes",
+      "line": 7,
+      "language": "rust",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "name": "fields",
+      "line": 29,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "name": "flatten",
+      "line": 36,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "name": "display_key",
+      "line": 48,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "name": "display_value",
+      "line": 60,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "config_home",
+      "line": 11,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "linux_config_home",
+      "line": 19,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "config_path",
+      "line": 32,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "default",
+      "line": 44,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "new",
+      "line": 52,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "path",
+      "line": 56,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "load",
+      "line": 62,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "update",
+      "line": 71,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "update_cancellable",
+      "line": 78,
+      "language": "rust",
+      "covered": 16,
+      "total": 17,
+      "percent": 94.11764705882354,
+      "passes": true,
+      "missing": [
+        95
+      ]
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "save_edits",
+      "line": 101,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "save_edits_then",
+      "line": 108,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "read_locked",
+      "line": 126,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "load",
+      "line": 133,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "load_at",
+      "line": 137,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "save",
+      "line": 149,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "update",
+      "line": 154,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "save_edits",
+      "line": 158,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "lock_at",
+      "line": 162,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "open_lock_at",
+      "line": 168,
+      "language": "rust",
+      "covered": 11,
+      "total": 12,
+      "percent": 91.66666666666667,
+      "passes": true,
+      "missing": [
+        171
+      ]
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "update_at",
+      "line": 181,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "update_locked_at",
+      "line": 186,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "save_at",
+      "line": 201,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/storage.rs",
+      "name": "write_at",
+      "line": 206,
+      "language": "rust",
+      "covered": 18,
+      "total": 19,
+      "percent": 94.73684210526316,
+      "passes": true,
+      "missing": [
+        210
+      ]
+    }
+  ]
+}

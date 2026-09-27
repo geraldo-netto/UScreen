@@ -1,0 +1,13 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.93s
+     Running tests/config_location.rs (/backups/disk2/blent-work/t703/target/debug/deps/config_location-ff15019f215fdd35)
+
+running 2 tests
+test t493_invalid_home_is_an_error_without_relative_writes ... ok
+test t497_default_adapters_publish_only_the_isolated_current_preference ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+    Finished report saved to /backups/disk2/blent-work/t703/linux.lcov

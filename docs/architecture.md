@@ -259,8 +259,12 @@ can outlive both. The [packet-storage report](benchmarks/2026-09-17-packet-stora
 describes the ownership tests, fallback and measured stage costs.
 
 `blent-config::model` owns the portable settings schema, sanitization and edit
-merging. Its `storage` adapter owns transactional files; `commands` owns bounded
-process execution; `linux` owns Linux process/runtime state. Default features
+merging. Saves compare each field with the editor's original snapshot, including
+nested camera fields, and merge changes into the latest locked configuration.
+Unchanged fields retain the latest saved value; the last edited save wins for
+the same field. Clearing an optional field counts as an edit. Arrays are merged
+as complete values. Its `storage` adapter owns transactional files; `commands`
+owns bounded process execution; `linux` owns Linux process/runtime state. Default features
 retain the existing Linux API, while `--no-default-features` builds policy and
 version comparison without filesystem/process adapters. CI checks that boundary
 on WebAssembly; this does not make the daemon or GUI Windows-compatible.

@@ -4,6 +4,8 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 mod diff;
 #[cfg(test)]
+mod merge_tests;
+#[cfg(test)]
 mod write_tests;
 
 pub fn config_home() -> Result<PathBuf> {

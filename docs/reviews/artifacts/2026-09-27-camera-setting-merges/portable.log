@@ -1,0 +1,72 @@
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.82s
+     Running unittests src/lib.rs (target/debug/deps/blent_config-ac00fa46cffe8eef)
+
+running 65 tests
+test adb::tests::t278_mdns_service_and_domain_forms_are_network_routes ... ok
+test adb_reverse::tests::t557_bounded_malformed_listing_fuzz_fails_closed ... ok
+test adb_reverse::tests::t557_only_absent_routes_are_repaired_without_stealing_destinations ... ok
+test android::tests::t250_fork_components_keep_original_class_namespace ... ok
+test camera::preview::tests::t543_preview_bounds_colours_and_shape_preserve_exported_pixels ... ok
+test display::tests::t321_invalid_and_boundary_numeric_corpus_never_wraps_or_admits_low_clock ... ok
+test display::tests::t321_low_clock_is_rejected_with_supported_refresh_alternative ... ok
+test display::tests::t321_minimum_refresh_and_rounded_clock_boundaries_agree ... ok
+test display::tests::t321_saved_low_clock_preserves_geometry_and_raises_refresh ... ok
+test encoder_workers::tests::t612_budget_order_manual_override_and_bounds ... ok
+test encoder_workers::tests::t612_effective_count_is_evidence_not_requested_capacity ... ok
+test encoder_workers::tests::t665_worker_fields_require_the_exact_x264_marker ... ok
+test encoding::tests::t373_registry_preserves_aliases_and_adapter_capabilities ... ok
+test encoding::tests::t400_low_latency_vaapi_is_distinct_from_stock_encoder_name ... ok
+test encoding::tests::t433_av1_profiles_use_framed_stock_cli_and_reject_inproc ... ok
+test encoding::tests::t612_manual_workers_use_shared_policy_and_preserve_default ... ok
+test encoding::tests::t613_x264_defaults_to_one_worker_in_both_adapters ... ok
+test idle::tests::t492_active_epoch_rejects_regression_and_sequence_wrap_is_valid ... ok
+test idle::tests::t492_busy_or_unmeasured_stream_remains_at_compatible_cadence ... ok
+test idle::tests::t492_current_profile_needs_measured_baseline_and_sparse_trial ... ok
+test idle::tests::t492_missing_frames_keys_and_invalid_samples_cannot_certify_idle ... ok
+test idle::tests::t492_slow_ack_encoder_queue_growth_and_clock_steps_restore_compatibility ... ok
+test idle::tests::t492_timestamp_conversion_is_bounded_and_preserves_wall_time_gaps ... ok
+test idle::tests::t667_ack_limit_is_independent_of_relative_cost_margin ... ok
+test idle::tests::t667_baseline_ack_limit_is_inclusive_and_never_admits_slow_frames ... ok
+test idle::tests::t667_pending_cadence_grace_expires_at_one_second ... ok
+test idle::tests::t667_percentile_uses_the_ordered_window_and_exact_cost_margin ... ok
+test idle::tests::t667_tick_preserves_baseline_and_exact_sparse_deadline ... ok
+test idle::tests::t667_trial_waits_for_the_complete_sample_window ... ok
+test model::merge::tests::t703_changed_value_types_are_atomic_and_absent_removal_is_safe ... ok
+test model::merge::tests::t703_nested_fields_and_atomic_arrays_preserve_unedited_latest_values ... ok
+test model::tests::t017_merge_preserves_external_changes_and_applies_only_user_edits ... ok
+test model::tests::t061_dimensions_fit_edid_active_pixel_fields ... ok
+test model::tests::t063_unknown_encoder_is_not_persisted_as_valid_configuration ... ok
+test model::tests::t093_all_slot_ports_are_unique_nonzero_and_representable ... ok
+test model::tests::t415_pipe_capacity_round_trips_and_invalid_values_fall_back ... ok
+test model::tests::t434_auto_is_default_but_explicit_choices_survive ... ok
+test model::tests::t474_conversion_capacity_defaults_round_trips_and_rejects_invalid_values ... ok
+test model::tests::t474_conversion_edit_merges_and_requires_explicit_restart ... ok
+test model::tests::t480_profile_cache_is_opt_in_and_persists ... ok
+test model::tests::t492_adaptive_idle_preference_round_trips_without_changing_motion_rate ... ok
+test model::tests::t543_camera_preferences_round_trip_without_starting_or_restarting_display ... ok
+test model::tests::t612_worker_capacity_roundtrip_and_sanitize ... ok
+test negotiation::tests::t478_avc_level_one_b_orders_between_one_and_one_one ... ok
+test negotiation::tests::t478_old_peer_and_duplicate_identity_are_not_rich_support ... ok
+test negotiation::tests::t478_scope_format_version_and_bounds_are_validated ... ok
+test negotiation::tests::t478_shared_report_round_trips_and_intersects_exact_profiles ... ok
+test negotiation::tests::t478_unknown_unsupported_depth_level_and_profile_never_authorize ... ok
+test negotiation::tests::t480_software_fingerprint_is_bounded_and_optional_for_older_peers ... ok
+test negotiation::tests::t484_decoder_receipt_matches_shared_android_vector_and_changes_with_hints ... ok
+test negotiation::tests::t668_codec_families_and_hardware_subset_are_validated ... ok
+test negotiation::tests::t668_codec_profile_depth_and_level_contracts_are_independent ... ok
+test negotiation::tests::t668_hardware_choices_precede_software_without_losing_identity ... ok
+test negotiation::tests::t668_invalid_reports_and_streams_cannot_offer_decoder_choices ... ok
+test negotiation::tests::t668_legacy_reports_reject_either_rich_extension ... ok
+test negotiation::tests::t668_report_dimensions_and_rate_are_independently_bounded ... ok
+test raw_frame::tests::t418_descriptor_layout_roundtrips_with_bounded_arithmetic ... ok
+test raw_frame::tests::t418_malformed_descriptors_and_bounded_mutation_fuzz_never_escape_layout ... ok
+test raw_frame::tests::t418_raw_transport_settings_are_explicit_and_round_trip ... ok
+test raw_frame::tests::t669_slot_offsets_partition_the_allocation_without_overlap ... ok
+test release::tests::t374_shared_release_response_contract ... ok
+test scheduling::tests::t582_high_default_and_normal_override_round_trip_and_merge ... ok
+test version::tests::t123_shared_release_version_contract ... ok
+test video::tests::t670_codec_labels_preserve_the_public_names ... ok
+test video::tests::t670_vp9_encoder_aliases_keep_their_bitstream_identity ... ok
+
+test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s

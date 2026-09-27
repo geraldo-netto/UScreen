@@ -1,6 +1,7 @@
 //! Portable settings schema, validation and edit merging. No OS services.
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+mod merge;
 
 /// Maximum accepted configured bitrate, in kbps. This is a project policy
 /// limit, not a measured capacity for every USB link. VAAPI CQP does not
@@ -270,8 +271,9 @@ impl FileConfig {
         without_pipe_edit != *previous
     }
 
-    /// Merge only fields edited since the GUI opened into the latest disk
-    /// snapshot. Future schema fields participate without a second field list.
+    /// Merge edited leaves into the latest disk snapshot, including nested
+    /// camera settings. For the same leaf, the last edited save wins; unchanged
+    /// leaves retain the latest value. Optional-field removal counts as an edit.
     pub fn merge_edits(&self, baseline: &Self, latest: Self) -> Result<Self> {
         let edited = toml::Value::try_from(self)?;
         let baseline = toml::Value::try_from(baseline)?;
@@ -279,11 +281,11 @@ impl FileConfig {
         let table = merged
             .as_table_mut()
             .context("config must be a TOML table")?;
-        for (key, value) in edited.as_table().context("config must be a TOML table")? {
-            if baseline.get(key) != Some(value) {
-                table.insert(key.clone(), value.clone());
-            }
-        }
+        merge::tables(
+            edited.as_table().context("config must be a TOML table")?,
+            baseline.as_table().context("config must be a TOML table")?,
+            table,
+        );
         let mut config: Self = merged.try_into()?;
         config.sanitize_requested();
         Ok(config)
