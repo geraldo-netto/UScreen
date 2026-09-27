@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.blent.RegressionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T16:04:30" hostname="morpheus" time="1.058">
+  <properties/>
+  <testcase name="t123_updateVersionsFollowSharedValidationAndPrecedence" classname="com.blent.RegressionTest" time="1.058"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

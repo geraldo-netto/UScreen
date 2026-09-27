@@ -1,0 +1,4278 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "file": "android/app/src/main/java/com/blent/ActivityWindowPolicy.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "d3bc4ce2fd8c4b8fee6b556bf971936f8f7bc6a0cece78ed170902f14841c83d",
+      "maintained_functions": 16,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/BlentUi.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "f65c853f1f2b5d8d4b482ab331a6db740a4a8436497db93d506aa06a45966f02",
+      "maintained_functions": 44,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CallbackDecoder.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "99e146a75abca8a5e3eee024adfa50372ca48153fbc7d1623402cfcceff7767a",
+      "maintained_functions": 22,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraBinding.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "fb1c717ba188f465cc0c9b1b15195a3218a8eb573706e66919d2c66b98549643",
+      "maintained_functions": 15,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraCapture.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "6fd9544972fa950c4b64a70cc7aec1f294e8edaf812729fecd7c52d337bc808f",
+      "maintained_functions": 46,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraControls.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "2bb9da92b4359b027546c32f080a506ec6d361500c3bc9dc38abb00ac58d4379",
+      "maintained_functions": 6,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraEndpoint.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "d37e00485eac5cb5f9de65258b13f80a24c1b937f18781156d9f75a8e2280b72",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraFreshness.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "6f5b28c56def8931c5c0459550eae09560deda495f1ec4aabf0831dc7fe238b0",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraLink.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "4d056d612195d9457f2aa72d0f27427f1ceb98596acf9627edf0165d6e84d83e",
+      "maintained_functions": 11,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraOwner.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "0d514413e89b09b88f94fb12374f7d5bb170edc7b139c0d476ac83578760cd65",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraRate.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "2b3b8f5f070a29cfe89dc9822c8f6b7cc295236140bbc5a86aa543c274dab663",
+      "maintained_functions": 5,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraRecovery.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "146cd71b37b80aa38d515ac34dd7c17b489d475fee1b359f62fda17a43f2036f",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraResources.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "a27875b17cffb4dde3d26abd4973ebead0ab45e338c133b223309c82ef629ade",
+      "maintained_functions": 6,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraService.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "a360ff29797e2cee605f72f3a28a8bc52107acfa7e4071a90b0a0487b0476c00",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CameraWire.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "b8fc58fd580704257a622951932c60c20fa1e9c4dce3d69e0a9630bd104cf4c3",
+      "maintained_functions": 10,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/ChannelPacketReader.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "30ebf2fb4d6554c7162c2d365c4f52fd3d457caf65b9c7401efac5ef3974af33",
+      "maintained_functions": 10,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CodecLifetime.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "575a5af980d262fb522f67980174d970846ed22868126aeda2c2a981a81a5ef0",
+      "maintained_functions": 17,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/CodecReportReceiver.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "87273bfeca99405239a85e872d4dea9a4a1aca56345ac402c5b98f5282fcee75",
+      "maintained_functions": 11,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/ControlSession.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "5cede7e0ed7a1d1d92da8b26f66596204df99257d274e16484d6920fa2010c0e",
+      "maintained_functions": 61,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/ControlStatistics.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "f839d368bcab4283336ebb5c39ff30b395d3a041e6ae5d7adb77b58da060e7fd",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecodedOutputDrainer.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "c1b6a83d7f763ee3cf32c83f054b1f79b81bc6ba4d3713999f9c1326d792be14",
+      "maintained_functions": 3,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderConfiguration.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "960789bbe0102222bd7b77419a05fd12e10d7dc4a9a83d9faf1b59bf08686b96",
+      "maintained_functions": 8,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderInput.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "0c1b227b14a7cf9df84f5d0719cc37db70f021976d2d3edc6d1b1d2570658e02",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderMailbox.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "5b1dc0ca86cd3f45b7e5bae2173d5ad38439c4f786b1002eeff5f18ab1bd27a6",
+      "maintained_functions": 11,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderOutputWatchdog.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "336de8fef198beaa3186ad9391bc7cb573949d8b03078f2a252ca6b1bafadf05",
+      "maintained_functions": 3,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderSelection.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "bca33eb08dafc8dd6513dbbbe8eb686cfa0c4b0274c4915d003db112ab00bd50",
+      "maintained_functions": 18,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DecoderSession.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "35d3b1fb30cab5c05cdef2086aa255c65bf548beb71f9745fa504d6da7cec66f",
+      "maintained_functions": 62,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/DisplayControls.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "5b8cc2423ef1ba3cdad23f0f1f24f39855df57967ef21f2335edbe37c5163e47",
+      "maintained_functions": 9,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/HttpReleaseChecks.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "65eeac7373debbdfde54ddd62e22b73130afbcd4a71bc106e027d435a60df2e8",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/InputMessages.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "00198869525d8e78c207927e584bcdf4c4ceb9d6a3ace45543686a2e5f94e82f",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/JsonNumbers.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "b9b8bc6d66e0240ae0a6016e7d986a99cfc3d7279a3928cead8381e1c859188b",
+      "maintained_functions": 4,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/MainActivity.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "5b9ec85d674f1d17e5dc013cdb260e33c2368248a59504b47807caf36368a57a",
+      "maintained_functions": 19,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/MediaInventory.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "7e0ef329b392567453c623f8ca5068a7ab1907a5e0495ea181d8f3a4e1133493",
+      "maintained_functions": 13,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/MediaProfiles.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "84b1be57b9c723da3d6546f0abbf57159af56a190ca6f1962ae73986bb317719",
+      "maintained_functions": 11,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/MotionTranslator.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "6699b46baa0ea27b3f6012dac5962d6de10475c5b985e6b001d446ce1f6ca2c7",
+      "maintained_functions": 28,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/OrientationPolicy.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "22b0d920d2f5ce064ee89d48bb2f0e0c61eea20cb6e811971548793bb122f6f9",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/Prefs.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "2501f100e27b384e962ae951135bda5bef8805cbe5ab901fa32d925ffff18fa2",
+      "maintained_functions": 26,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/ProfileSoftware.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "8387fd90c8dd45e81254f05d1482ff377ff38fccafff7f2c73bb1fb44f55171f",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/ReleaseCheck.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "a8f266c02fb3587201ae9b7770f02177c6b80abbcdeee450c81654feddfc349c",
+      "maintained_functions": 9,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/SessionCoordinator.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "0434a0da3ff20678fc8738c15a3aabce5c02b2207b58d004726f6da1572d2bc4",
+      "maintained_functions": 44,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/SettingsSheet.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "21795d61d73219f2ea3c7a92f613c71aaf787a13815e5a9a14e5a054f70812cc",
+      "maintained_functions": 54,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/StreamFormat.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "4f20db92eb1860f245624b3a5305192ce417f7f834bde2ce08cf9ace222cf1d1",
+      "maintained_functions": 8,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/StreamingPower.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "05189ffda1d62e7dded071439dcc538ce480aa6abd76bf02347c2e89835b8162",
+      "maintained_functions": 5,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/StreamingPowerBinding.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "cfaef2b96a1f28111a9b257127a2d960bf090dc88a7361136304af85523fd5b0",
+      "maintained_functions": 5,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/StreamingService.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "fe9829c22ed7b6357ba20be549215a9ec3c9abd1bcb603c7ef3be394fbc1527e",
+      "maintained_functions": 20,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/TokenActivity.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "ff0ea5517f342389081f947259129299a61216c273dd981270240037ff701147",
+      "maintained_functions": 1,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/TokenReceiver.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "65e2ea88b419b893f342290ff2291f9d021530a797087a9af1fbacd2c8fb037b",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/TouchCapture.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "92ce1b70bdd46279076d20bfc8c2028de10945a723881a634604281b22b18465",
+      "maintained_functions": 31,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/UpdateCheck.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "1ac87b55b4d9b26e996e621becc492b81627666e50bc334a7db56b2dc22b8f05",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [
+        "KT01",
+        "KT02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/VideoCodec.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "59eee1a004c9bae34184afed0473578fb47ab553aaa96b8d0ebb92dc35d89603",
+      "maintained_functions": 25,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/VideoPacketReader.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "d2a3e00b64e3e63a77d270e34a746840a34b30c32a641a0384cfe5b1c4cda3be",
+      "maintained_functions": 4,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/VideoReceiver.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "641916978df0d387e19f7509069597027e8b12df9cf3c9281d5a6e2ef37aedc8",
+      "maintained_functions": 51,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/VideoTiming.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "5cc6fa85c80690101da008200cb8093b220c53a445179e77b8eca182c01c2dca",
+      "maintained_functions": 17,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "android/app/src/main/java/com/blent/VideoTransport.kt",
+      "language": "kotlin",
+      "languages": [
+        "kotlin"
+      ],
+      "sha256": "e5a574ff4dc151379c6bfadaa4b04925ae15f9640b8c6ca9c73965c0cd7fc4be",
+      "maintained_functions": 9,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/adb.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "54c83e3f943aef0281b90c27b8b4a06d667813ed0692ecefc2eba14a5eb77d4b",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/adb_reverse.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "800be5bff45b4e20c25ea857643129959cfccf35b1f36b08bcacaf224c8d7a8c",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 20,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/android.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "66e2df41ccbcffc709e784ea6ad03f531ddfefc42aaad39f612231b8bbad9197",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/camera.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "9c4b0a0f31adb2468f1d61865fa654d03fd497e52a29f629564cfd3ba2c8c49c",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 11,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/camera/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3df524cf790d87fec4542305eb946c92d1b8246fccd6280d5d07171e2d36f3bf",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 3,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/camera/preview.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "48187758c907871ba7d76645b9bf4f2cfc206e50da275ccbb1c0af9791e8041f",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 86,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/cli.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "507d666ccf99c16d87a53c42269c58c2a3cd804e2184948be02fbcc36a4baa58",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/commands.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "ec9f5e6821a11ae9fb3ea69188c8d109eca7c714a46232504c6d155fbc4b3c5c",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 31,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/commands/owned.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "da2bc29cb7005fffbb7aa2f7b851c9a0f7f87a8d2d5e6e6b88a87b1688ef03c5",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 9,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/commands/windows.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "2978eff960c426c49b72b19687058bc5c1d92306846852d3c8ce03945a473267",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 17,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/credentials.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "34a3eea496f7d59db3a65e9b5ae5c03cb21bd8cc49effa8905cbc8f19bb05ea6",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 11,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/diagnostics.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0ac22d13b75b8909ea83dcab869422543684012d832405010ff5c37114b2cb5a",
+      "maintained_functions": 11,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 34,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/diagnostics/native.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "755db843cb547eb3b90a026e0479a321b69417df51debee0fa90c2cc29a1acda",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 10,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/display.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f7e306f1dfaf8a5aa6ce4601dc1f7fcbbb9b2f19e1ab6c43f1be5ad7efe62162",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 32,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/encoder_workers.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "2b64e42fd43db0b2126a2eeb74c8d019aedf9587b5a1c1ac02fe34c9cc0a9eea",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 23,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/encoding.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "a9f685109b51000caca7c93285f53e379870322afa3cf7fdfe90a7c515f3e9b1",
+      "maintained_functions": 11,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 35,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/idle.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1dc9f725a90b02df8d8eb383eb55057c8586f76e79e2f4708b383a6248549809",
+      "maintained_functions": 13,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 86,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/lifecycle.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "21d87407065f6bd6670e3485b43df73134ba6edfc2996ae2dbbaec86873a5978",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 2,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/appimage.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "45c58d2c0c16a08fc58d64f5b17ef25705df46edb657cf978539a57031b137e6",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 13,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/autostart.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "2557dd9783e41c770d45fc877a26e3dd35740ef166beac4fe427cfb0742c7e09",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 32,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/daemon.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "b42a8593bb67f4834d7f7503033781aff1e150b74376d433a9ff67b887cd5956",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 17,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/daemon/status.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "4acd92ed415f6b4a2313a4f02e8a1b54e018e00d38431f64bc67c089e5b09dd4",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 16,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/mod.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d44de8f4949bdf3707999df6dc522d77f25a04a2f84433165ddaf7e4b3ea361d",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 7,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/pipe.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "a06d228317546d4276bfd39f0a40fd5cf628b5cddbed56f1e7a64a9494206991",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 8,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/pipe/report.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c35d110a9abe15d13a0dbc9791ab137bcd1a0880306d8220ed312690817264bf",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 26,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/processes.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "4303c6c4cb4791279faef0e41832551b36d91f8d1934773c70b2f6ddb6f8e41b",
+      "maintained_functions": 18,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 66,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/programs.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "5f82c3e383471088ba9328bf33dafef2add040ddbe5def23fec1648dcbbd3e11",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 11,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/linux/runtime.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "af9e9508380a3f2aef6b8bc93a3c0d5389b518eb9241d9761f9b4ad7997456a4",
+      "maintained_functions": 13,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 26,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/model.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6b605fb27eede5faf304e0d7b28d441d5976bd84b9e39278ee3aed8a8d67e9cf",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 39,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/negotiation.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f2aae70dfe830c4c7f85ba0bf525beec09230a22bfdf7d3622930e6991fd2326",
+      "maintained_functions": 18,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 99,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/platform.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "52a8709c7fa121d07ab8618e12f253bcc5b8404c9d6d66b1071cc3ef380eb115",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/raw_frame.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c2877fcdd963715ba628c25b411c913166689aebbafaa23e57639f3ac602320a",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 24,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/release.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "5188d295b9a6767a5c11d5c836835415053aaefc723ef64167405166744b82a5",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 9,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/scheduling.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "9b35b3395d0f4e87cf5e689b334e99d1abb46ec63f9deafa6dbed0e825aa8cfe",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 5,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/scheduling/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "b200d5fa7896fad84351b9195cc13c457556975ab56aed2f61bb478c4e604f4a",
+      "maintained_functions": 14,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 45,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/scheduling/macos.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d0df81826e38dbc276330c0ea2b32369403cbbb33f3a0475512c6bab0c333dec",
+      "maintained_functions": 1,
+      "native_rust_files": [],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 3,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/scheduling/windows.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "841bc0c142fa089cc173f1fbff1525f4765212d74714ba6f9b2ca66a1bdc9eaf",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 4,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/storage.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3662d72cca762235b56f6e62f4181a0ce4036a97979c813a2caa32b5fbf62edc",
+      "maintained_functions": 23,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 26,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/storage/diff.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "7940412f8c95c37a341684f0852a6b1adbcfa4bc685a256ae13223672a7df6e2",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 16,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/version.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d60cb22363da4e57508f78fb1e4530aac51277a3c9f004876c0e7dd09b0bb595",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/video.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1dff85b52eb8455fb83f474167d182edbccee8222680ee022909d153cf59163a",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 14,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/autostart.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "50714780bf94707900fca23e1b531f4d254dcd4805a420869a661dffc2a40633",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 20,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/lifecycle.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "02b3c45d22d19f31ed074e3332df247445da851b53c2aa477cbc578ba05310b7",
+      "maintained_functions": 16,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 42,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/native.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "dd3351fd19bbdb021dc22787ce7bdb9d151fd8ceca1262f0bb07a9b01a29b76e",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 9,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/paths.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "78676c3862221effb699aa246b3390ad57b88734c6673501ee11a049c5b74c36",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 7,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/private.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "70d300afa3138b6dd02d3086a9af2dae5e71c6174ab935942d59decf7687d446",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 15,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/process.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "7ba785d45b4634b5fdd5a3f140cd1bb45e0ff1a2d088bf3651d959f8043954ab",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 17,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/programs.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "00c1b10e1c91c38cf95303178c5d6eb1bf9a0a4126f8bab4e817106c01f94c2b",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 13,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6c3520cb188da6cc651b86a63bd12a16a48ac38da51d7c8a7be284856e5edb08",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 21,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/runtime.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "933bd5d9cc0cd2d6fa2c669318b97613abfffd8d838ffba61a954beff0a4027c",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 16,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "common/src/windows/security.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "4e1b17fd056b490a1be359f8747f2cdbb132f225578f1e1cede12d1fb7da51e4",
+      "maintained_functions": 12,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 28,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/camera_preview.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "a033a8c1d104fc3e83c62fd26879878a5f2c812981c5667f62ffc41cfbeb84ce",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 2,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/camera_settings.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3cb31561db14865b5b37f2d912ab9693f08c20efdebce1cf220082d6b5c2ecbd",
+      "maintained_functions": 13,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 19,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/conversion_settings.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "322745c801c8f279bdd2e5792d12f040fab62b9308d36e2240170765b8fe83a3",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 4,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/main.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c66095df3a8aeaac01d4373c28ee355ca7817eb928ae3a89b26e9f6f9a67261b",
+      "maintained_functions": 49,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 220,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/pipe_settings.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6a2ae79378ebb51a04d68eb541c4e85e0829bfb9ddea16a511dbdae958f622d2",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 6,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/platform.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e064d9132fc906c13d3061f362a1553c4b815381dc8eea9a271514febb564d81",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 7,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/platform/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "87d95b7d0c8fa280c75b9ee0791583bc08983e03c9819312e1e45287de68779a",
+      "maintained_functions": 21,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 46,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/platform/windows.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "04ef1fc351b277ab58cac5037512df50bd8f0bef469e4b207d8662bbdba2ae38",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 13,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/platform_diagnostics.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f15e9466954d89b81fc02d1996656c852aab2cbea62cb792ba070ad8232a8374",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 1,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/settings.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d3f4e3b48a375179a60758e1bd4d0b605728e75ee91fb044950a934e8777321f",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 13,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/status_poll.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c880b71f4bec9e4185cb28d8b70000345410cbad2681f37bab97bf6760e5b8ef",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 4,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/status_poll/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0386a201b9521fb63fd8512ce6bca9908ad3ba7e5abc4e841f62327e1e64d1bb",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 18,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/status_poll/windows.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "94657ea344634ec23864a8d5fd5a06d43dfe3bb7918e5648ac45a2fc7db4e4d3",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 14,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "gui/src/status_worker.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "5830bcafa5f19e358169040cbe8916ae8e2b45c12e4fb8be6a7b45db74db86bc",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 4,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/capture.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "e0af33bc6cace7174ae8c3f8cf8ced3c52db6d1712b69bb11545b80d35a52bfc",
+      "maintained_functions": 34,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/conversion.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "9ce1d59ee7425b50891aa9194dd5c1152d95f55c0e13afabea80144ac027904d",
+      "maintained_functions": 18,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [
+        "C01",
+        "C02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/evdi_helper.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "dce20ed2a49167d181810af913bc6ad4d228e80f5c688a74bcb0bb6b1f0fc9ac",
+      "maintained_functions": 28,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/fifo_writer.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "af9c42ce08d807cd303a1627b048200438c50b5444905e3432aebb7ff57e3430",
+      "maintained_functions": 13,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/frame_exchange.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "e0cdb589b6fb67105c6d65c1f528b35fb4c460629af4a420421e1b4ac51dfc8f",
+      "maintained_functions": 19,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/pixel_damage.h",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "8fa80effd4ad794dbca843cf09edc2b5b1a8b5d9230074d53ba2f0af364d8baf",
+      "maintained_functions": 4,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/raw_ring.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "d01a37cc989951fcd855c56cf3d9530e7e472c23de14615c37145a7ff51ed53e",
+      "maintained_functions": 22,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/evdi/writer.c",
+      "language": "c",
+      "languages": [
+        "c"
+      ],
+      "sha256": "9bcf7940f3412a76f4a20b98fc43f9c3abb62652aede7c9a4add8ecffb05ed0c",
+      "maintained_functions": 15,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/adb_inventory.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "abaa8ca05e2a347dbdb72e4a4e6b7ce84344f33040314e6232f9f52507383620",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 37,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/annex_b.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1ef05a633c0aeadbd0faa32c3ebd0e64654298f1bcac8b718f95b38634d282be",
+      "maintained_functions": 21,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/attachment.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "738ee330f444a1838c54eadd01f5302a54a2c0a16279070a06948adc9c60a67a",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 39,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/attachment/auth.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d6e5a2ae8e3d986d4fb09d734175f966afb2b796ede6ede016665e11479181a0",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 9,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6094684beef61b76dd986eb3b87d3d1a95351a9a07928ee018efe0f39eb632a9",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 12,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera/bridge.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c771761e80bfafde0a0aea5487e2dc1d7b0f8290bcc7b80b60fef8643047d4d8",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 12,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera/decoder.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e5c7c5319d27a49d7489cd8333ef968ee4ac44a796373d5833fab428074eac18",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 20,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera/outputs.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0d459b80cb02e3b3008be43742ae8939e6ef7331691389229cfbfa1af5374d94",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 20,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera/protocol.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d1e0380aa37078d7c5ee272a913586c3e0b16d1833a7ab8cef85c29303a3bab5",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 8,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/camera_control.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "31aef9297d207ca98e83cd8208970be2a277a8f8b3d239e9ec032f23653b3d91",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 14,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/capture.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "da409e07beec0fe1eb4138b9b68dfb5a57a94b4189755057f94ec025218baac5",
+      "maintained_functions": 31,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/cli_encoder.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8a0a82592f409b7919be42b6a0cb30f55060126b3a2a5ff347d06fa33b401557",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/config.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "401b8387cfc5a261b25ca417dd91a893178325e7e76de9fcd429e4eaada690fe",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/encoding.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "841b2532cade59090c0ff0d323bc9ed38d1e25464e50a24f269f748a02b0a6b8",
+      "maintained_functions": 11,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/fifo.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "084423e6a9c0039ee119463f651e83565b367717bca04fd8b223d670bfcb0a09",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/gpu.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "60ee78e69225f65ec31efa65191315b934c6c9cbec1d05ac626dbb0739519f63",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/helper.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "69cdd5013d16cda9f4d47cc41f04e4cd060ea604dc77d9b8454153ec23c3a3c6",
+      "maintained_functions": 20,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/idle.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3a0624543c7db2d8b185547480bb0a5c105e57b0df406aec68893b28b059c876",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/placement.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "ef34a94a57843fbd28b1c5914fd729d462fe0984b6f3097492993a18a799d1b4",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/probe.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "551fd851e762ea000e4455c38af0c99f2ff29b1766d2a791beaa7ce64f7e22e5",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/probe_format.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "230e55d4547f3a07e0b66e79f25396be3c7d9b94bb4916c7f68193a6eae90f1f",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/probe_quality.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "cee83f5272854acba148792621078018073d7b642f7ef83c5da3a90a491cf6f9",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/capture/process.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "028b1c6ca4c1069db0c3d9bdc6dcf248963b17e251e6865391a1afb7cf3a2c2f",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/config.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "36abb74c7bbb60c47d2b41041d5ce5c6ede401bf992d023924e4f876084abeab",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 2,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/desktop.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e7e68f8e4a517c8c2b332f963b944cacccaa3373212f689fd4c7b04fb3d71be7",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/device_tasks.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1fdbcb3f3c658c1194eef913cc0696a5e648a5989f54fd29891028bf8994df0d",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/discovery.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "01cb7eede22981690f96bb5272b9bf33339128de02f667e6807a94fd74841615",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/doctor.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e66604f54c4f5941adb9324e9fd5ca95addc56fadc3c2a2d2be6fa91001fd2dc",
+      "maintained_functions": 58,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/doctor/codecs.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c7f20bab6f89033d607cfa4e648ff952ebd3b7313d75886c110776d1c8e28d8f",
+      "maintained_functions": 11,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/edid.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "bb1a25a8caa01c7c7f9d131b7c2c086fa6c2549719530a36ae020f5e620b32bc",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "fd1e82526e6b6ce58b291f3afec6a6b02cd8ff44eef6115ca43cfde82647b034",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder_fifo.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "7102e8671ae2e1e62225afb21ca3f356f4c2289ec5d681cb5bf85c4a9dded753",
+      "maintained_functions": 15,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder_frame.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "4f7227e627939e55b0ee123d784ae5b7a5b163533d14acae1f72a3bfde4c38eb",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder_io.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d4fb2692659fa0a238099ca95068009f7ec4888b4e57cafa9b77b6c6d381c886",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder_shared.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "dc8b9746a07f00ab1c23c2f6a07437962cb7dba379e60b7316225cabaa40ec3c",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/encoder_storage.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e873a158108239586604e5ffcd0c619c6ddb76437ad2744d63e4a3e4784b6aab",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/ffmpeg_args.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "61a81949b427a034e0ba2e562d96beb60c2fdc33434eefe6a061c99b466d2509",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 5,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/framed_annex_b.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "ea373586dfed1945579f2f00363f44fabecda3d9781c90386d3468f1dffdc97d",
+      "maintained_functions": 12,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/input.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "03aabfb9262ed422d730d317efee88a1a20c6c951e6c0f838ab5efd2b8ce6c25",
+      "maintained_functions": 20,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 1990,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/backend.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "4745eaffe97831a1b8de0b2d6f4b8449eb8cf550f3aa61df818d54339a9a26e1",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 3,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/config.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "dce8db0b9e4df69b644ced973b3bcdcb89bd9e5dd78c246bfd3589bacfdbb744",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 30,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/event_writer.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1c442ae0178f7c74012f48d34cd04cc0dc32462aa61fa1488317d8b740a603fd",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 19,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "064de9ff9b100f638e511e85f4874aa473dbe19640f5d3e03ace51034258ef4f",
+      "maintained_functions": 46,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 173,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/linux/cursor.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e5ac32f02e18d44e8e586420bfc353dee3e9ccb1f98a35eadaba5ca77b5698f5",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 12,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/mapping.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "2095ef5c3e108ca626ca51dbe0593783c5fb776e74860b3c26260762341962ab",
+      "maintained_functions": 17,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 85,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/mapping/x11.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "ec63bda212a41f057c1bf7aa60a88d69723e4555570e47294e06a1749aa2fe55",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 50,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/mapping/x11_cache.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6ae8395e9aedb4bb2b928d942845001415f80f6db57d13246fdef59b2612ec16",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 22,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/input/settings.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "a6acde05b7f5ccbfc9c63a33279c82da1cc15586b02c9d5da7a11c723b916ecd",
+      "maintained_functions": 17,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 51,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/ivf.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "040948e8f7945de56586c16fa0a710af5949062ebf7615ce71301d1d0056b8c0",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/ivf/av1.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f17e6f7e04f6d2aaa7e9e04a4a901b1500f25cc8555d4b7bf80fa671cde8320e",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/kscreen.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3840c04e39c5340b155f692b54b17e7bedba5234046e4aacb84085ff1eaf7efe",
+      "maintained_functions": 20,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 92,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/kwin.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "24c572a0e84cfa4d3d1d12d32b0f9b100b51aaa3353fcdd636724544005b1296",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 24,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/latency.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f18e66554ac1d6cdba9e8068884b4e9f9af04c1f2cab087fb02dcaeb10504140",
+      "maintained_functions": 33,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 95,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/linux_main.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "09b0af35fc657abf30e634dc82d48f3f5a7e14aa8c1bb14438f9c0ac7266914c",
+      "maintained_functions": 63,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [
+        "RS01",
+        "RS02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/main.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "86f860dbb6974f1341f940022cb863bd1beedb3fdeeec7fbe29c7f3c11ca43d8",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 1,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/media.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8d4ffa9370ec585bbbd5aa445d2ace546dbd43321dbd20ddcdb16bd658e3d60b",
+      "maintained_functions": 17,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 114,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/media_storage.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "cbb93b8c32d8a77e20596469c91d23a2a39fa6742fb8b289657c9bb6dc1411b1",
+      "maintained_functions": 18,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 29,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/monitor.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "5abfc6a422e1103c5b693edccb60b09f078afa464ccaa44c10e1d8e64584f535",
+      "maintained_functions": 24,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/monitor/credentials.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "32a54475a042ebe0418882f276ffb6fc03519d76e56adb0dcb60b557b7258cb6",
+      "maintained_functions": 1,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/monitor/forwarding.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3463ae2ba7d0a9276b744a0228fabe9a337e5d2f14de4c544367928acea92c22",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/monitor/launch_policy.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "b6db40ef86df8a84b74f65317732e86c02b2ebc91205efe2256bc4e7ce283180",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/monitor/preparation.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "b6b277942e6056a1aea829d692e2ccfedac053841874502e1b566ed7b779de99",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/monitor/retirement.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8d4ac4b8fd55d3952d7473f7de907aaf34f54ddfadc9737ecbeef98e3785f2b6",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/osk.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0c1eab4af8371ce060e3796ab4f33bb2af0b4195e8587dc27555a46c922a653d",
+      "maintained_functions": 16,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 40,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/persistence.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "b03fc2743dbad08d33d3abdfb4cb92f2b140a9efb8a70f15a74a9f5b9321327f",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/pipe_encoder.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8ca2029a092598d4868866ef3386920505ab0ff09b7e657030baa515a603f8a4",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 19,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/raw_memory.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "ae1b89238caa39e6a5dbb03e0ceb45489287079c24905936359718b920cbead5",
+      "maintained_functions": 10,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/raw_socket.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "c7e205b5cc08356275564337d253aa4d433cc23016c4a0fffa75cb03cd4440e5",
+      "maintained_functions": 12,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/raw_transfer.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8711de3b4220f8e2b28f294a6acaff371b0ad2fb317f9ebbf4ad047992c59489",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 7,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/selection/health.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0a42fec79f0dfb438e313337001364cc6e6a864eeb686014c5ce7146d2d5411d",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/resources.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "21ae8a434be26df805ce672113c4407036bf051fc77d99ba69649b8afa89c9e8",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/resources/linux.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "fee360a5bda6308998fed0997976ec6cac60760c37ea8cd71642a8aa2b879bf2",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/trial.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f90d8690abef04c99693790a6a6316622ddc460735514b222d874378dcd97db7",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/worker.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "cf5e62f6f06cbbda33cef03ddc13452953808cd3e1353242d21f7f21a70c416f",
+      "maintained_functions": 19,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/worker/cache.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "20937d6ab8195f336ff0fa925cd3477abd0322ca1887b9ec65bab77193edc02d",
+      "maintained_functions": 14,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/worker/cache/context.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "f02bbb39c1c4b3ee6da627b9edfeca90d559d2eb26d576e2afa0cd96b19c06c3",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/worker/measured.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "3a4a73c35bbd780913bd7933098c644f00f57de7827869e90358a3c0542f8ed6",
+      "maintained_functions": 13,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection/worker/preparation.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "a66faac0e292fc76862fea3f56942fe1edae3a798ab2ca81f21d713c0f4ee496",
+      "maintained_functions": 6,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/selection_types.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "9c40e26d569273d8ea3ff496a2e930f797066653ad8ecb186e5fc6bce16b2449",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 10,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/session.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "09a27c9cf0b3058ae246a2e6dd5aafe738b135d75cd507dc0ee95761fab6b2dc",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/session_core.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "1bcbf4156c8b32aaa8987c29d4ff8ad289b5810c94ece292cce51f4945532efd",
+      "maintained_functions": 9,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 36,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/stream.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6e01c4b1e2663da57b1d13043d535072b58176c92a4386ed9961ac812780d2aa",
+      "maintained_functions": 19,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 50,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/tray.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "22ac143e5fee520aeae239ae8bcbf078041db07a2837226b423f86f6503f0d9d",
+      "maintained_functions": 14,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "984b4df6e0745d8e8e483c156cd34073e964e4e8411a3d5c76acccf62d201a62",
+      "maintained_functions": 5,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 12,
+      "reviewed_bounded_candidates": [
+        "WIN02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/update.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0fafcb049e9254382e744f9afdc2801b15ce2cde25b5247a600f7b1243d1d356",
+      "maintained_functions": 3,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [
+        "linux"
+      ],
+      "cargo_discovered_candidates": 0,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": true
+    },
+    {
+      "file": "host/src/usb.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "6d104dc470d35f8e5daa1eae83c8e397924ddec6ceb057b2bc3977a5e7db97cc",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 32,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/usb/connection.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e9c2cdb94747e65e6e4380dd6309c71d5782e7a43fcd8761357075804a1408c2",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 11,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/usb/monitor.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "d69f74e6b1307ed501c6ea256f30f39957504111e2bdf576de655e2677474cbb",
+      "maintained_functions": 11,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 32,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/usb/preview.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "be0496e00e541efcfe81d1f3305b6a3a164a5262bf2537d88427c66c0f042f32",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 8,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/usb/routes.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "8b5f66a0f619927c34e478d7b1df19601dce45ee33e7fdcdcce51b2ac8f831cc",
+      "maintained_functions": 4,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 5,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/vdisplay.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "18f8a92155514481ce9da6eb3ce47beb1c8b39575c0d5c06eb871394acf6e998",
+      "maintained_functions": 2,
+      "native_rust_files": [
+        "linux"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 8,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/video_queue.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "e4f00bca589daa6104ef242ec7074823dfd7a304ad30b1e5ca202e9d84bfbff3",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "linux",
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 43,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "30e74ec4946e2c66979e5e3e055d9939787cf44f2ae49e2c2c7524c59b58edbe",
+      "maintained_functions": 8,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 13,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "adf35c7e30a63360a77f9c58830066607e9045f8a0f71bf7ead0243aa91115d5",
+      "maintained_functions": 7,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 7,
+      "reviewed_bounded_candidates": [
+        "WIN01"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "58ffc19f40e4174b877c7c7ddbbda6c50b29ba2bc447b86235e0a8b4182522a4",
+      "maintained_functions": 13,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 26,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "language": "rust",
+      "languages": [
+        "rust"
+      ],
+      "sha256": "0570e589a08e59f05526d9277107c74ad1e0d6b499dcde18d06384d8bd85c486",
+      "maintained_functions": 12,
+      "native_rust_files": [
+        "windows"
+      ],
+      "rust_include_only": [],
+      "cargo_discovered_candidates": 38,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "938b078c9e4a045bae403de328928e91cd4063b2fb910dc9958e6b70c26a0f05",
+      "maintained_functions": 7,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "b76e01f32bcaf5f6a4d39864e4f12bdc49f7d685dcde62a88b45098e74f1c153",
+      "maintained_functions": 9,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "bec4f2c10377f83392db73ead022c2a867e0a528546b8913023448268c658377",
+      "maintained_functions": 13,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "c10cd3ea987a7a08ad59de0583810f7db95da2ce4e11f7deae7d1bb7a656b36b",
+      "maintained_functions": 12,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "2fff551516020f9ef4b10b20469b33ba3d4f0cddd8fa16cff8b1db5f46dcbb2a",
+      "maintained_functions": 12,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "e845f202370012221d64ffec3cf2e8aae273742f360a945560d8ae0bdcbf4933",
+      "maintained_functions": 6,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "88d31854089dfef3286c39c4790f8b9048900030e07ba0caf5e6f054a9ae11c9",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "7f6c13cee4e57de2590573180bc1396a52c88749768f3e9e648812c449c718ae",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/ci/verify-portability.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "a40aba97a5b89395e634f94ce37dc22671dd6acc9a4b024460e5b8e9f8a1c6b4",
+      "maintained_functions": 2,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "ff30cfd2493fee225ce0b226c7aa5d3ee3ebf5a7b7dabc89ba443e9696d985db",
+      "maintained_functions": 4,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [
+        "PY01",
+        "PY02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/install.sh",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "7f9ca63f8a271bc4ad185a3f4dc5d09a3e2d7c7ea7774037e70d3f79696b9b20",
+      "maintained_functions": 38,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "5797bb50a0f88120dc28a042af583fde887c1da69449dc9e63bfe631b8094b38",
+      "maintained_functions": 4,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [
+        "SH01",
+        "SH02"
+      ],
+      "disposition": "bounded candidates selected",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "language": "python",
+      "languages": [
+        "python"
+      ],
+      "sha256": "3928d7ea54d768f2ef90e959457c4e9da01c7baaea6f5b40c44dcae964ab3bd5",
+      "maintained_functions": 8,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/write-desktop-entry.sh",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "72ba05ab582ed713f7182f73a481855df98eb87fb5c0780a55fda648da2df6f2",
+      "maintained_functions": 1,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    },
+    {
+      "file": "scripts/write-systemd-service.sh",
+      "language": "shell",
+      "languages": [
+        "shell"
+      ],
+      "sha256": "b3da956dc856f3496304cdf790aff86a9e45a2dce37c93beab069a68f718a9b5",
+      "maintained_functions": 1,
+      "native_rust_files": null,
+      "rust_include_only": [],
+      "cargo_discovered_candidates": null,
+      "reviewed_bounded_candidates": [],
+      "disposition": "not selected by bounded catalog",
+      "no_generated_rust_candidates": false
+    }
+  ],
+  "whole_project_mutation_score": null,
+  "note": "File reachability is not function execution. Mixed cfg/feature branches still need native test evidence; discovery counts are not tested counts.",
+  "source_files_without_maintained_functions": [
+    "android/app/src/test/java/com/blent/ActivityUiContractTest.kt",
+    "android/app/src/test/java/com/blent/BackupRulesTest.kt",
+    "android/app/src/test/java/com/blent/CallbackDecoderTest.kt",
+    "android/app/src/test/java/com/blent/CameraCaptureTest.kt",
+    "android/app/src/test/java/com/blent/CameraContractTest.kt",
+    "android/app/src/test/java/com/blent/CameraControlsTest.kt",
+    "android/app/src/test/java/com/blent/CameraDeadlineTest.kt",
+    "android/app/src/test/java/com/blent/CameraFeedbackTest.kt",
+    "android/app/src/test/java/com/blent/CameraFreshnessTest.kt",
+    "android/app/src/test/java/com/blent/CameraHostControlTest.kt",
+    "android/app/src/test/java/com/blent/CameraManifestTest.kt",
+    "android/app/src/test/java/com/blent/CameraPacketBufferTest.kt",
+    "android/app/src/test/java/com/blent/CameraRateTest.kt",
+    "android/app/src/test/java/com/blent/CameraRecoveryTest.kt",
+    "android/app/src/test/java/com/blent/ChannelPacketReaderTest.kt",
+    "android/app/src/test/java/com/blent/CodecReportTest.kt",
+    "android/app/src/test/java/com/blent/ControlBackpressureTest.kt",
+    "android/app/src/test/java/com/blent/ControlLoadTest.kt",
+    "android/app/src/test/java/com/blent/DecodedOutputDrainerTest.kt",
+    "android/app/src/test/java/com/blent/DecoderConfigurationTest.kt",
+    "android/app/src/test/java/com/blent/DecoderInventoryRule.kt",
+    "android/app/src/test/java/com/blent/DecoderNegotiationTest.kt",
+    "android/app/src/test/java/com/blent/DecoderSchedulingTest.kt",
+    "android/app/src/test/java/com/blent/DecoderSetupTest.kt",
+    "android/app/src/test/java/com/blent/DecoderStartupTest.kt",
+    "android/app/src/test/java/com/blent/DecoderWatchdogTest.kt",
+    "android/app/src/test/java/com/blent/DirectDecoderInputTest.kt",
+    "android/app/src/test/java/com/blent/DisplaySettingsTest.kt",
+    "android/app/src/test/java/com/blent/FormatBoundaryCorpusTest.kt",
+    "android/app/src/test/java/com/blent/FrameTimingTest.kt",
+    "android/app/src/test/java/com/blent/FramedDecoderTest.kt",
+    "android/app/src/test/java/com/blent/InputAccessorBoundsTest.kt",
+    "android/app/src/test/java/com/blent/InputNumericBoundsTest.kt",
+    "android/app/src/test/java/com/blent/InputWireTest.kt",
+    "android/app/src/test/java/com/blent/MediaProfilesTest.kt",
+    "android/app/src/test/java/com/blent/NumericFormatBoundsTest.kt",
+    "android/app/src/test/java/com/blent/OrientationTest.kt",
+    "android/app/src/test/java/com/blent/PenLifecycleTest.kt",
+    "android/app/src/test/java/com/blent/ProfileLauncherTest.kt",
+    "android/app/src/test/java/com/blent/ProfileSoftwareTest.kt",
+    "android/app/src/test/java/com/blent/RegressionTest.kt",
+    "android/app/src/test/java/com/blent/ReleaseCheckTest.kt",
+    "android/app/src/test/java/com/blent/ReplayClipTest.kt",
+    "android/app/src/test/java/com/blent/ReplayPacingTest.kt",
+    "android/app/src/test/java/com/blent/SessionSurfaceContractTest.kt",
+    "android/app/src/test/java/com/blent/SettingsAccessibilityTest.kt",
+    "android/app/src/test/java/com/blent/SettingsControlContractTest.kt",
+    "android/app/src/test/java/com/blent/SettingsLayoutTest.kt",
+    "android/app/src/test/java/com/blent/SocketReplayTest.kt",
+    "android/app/src/test/java/com/blent/StreamFormatTest.kt",
+    "android/app/src/test/java/com/blent/StreamingBindingTest.kt",
+    "android/app/src/test/java/com/blent/StreamingPowerTest.kt",
+    "android/app/src/test/java/com/blent/SurfaceCallbackContractTest.kt",
+    "android/app/src/test/java/com/blent/TokenDeliveryTest.kt",
+    "android/app/src/test/java/com/blent/UsbReplayTest.kt",
+    "android/app/src/test/java/com/blent/VideoCodecTest.kt",
+    "android/app/src/test/java/com/blent/VideoConnectionBoundaryTest.kt",
+    "android/app/src/test/java/com/blent/VideoPacketReaderTest.kt",
+    "common/src/commands/tests.rs",
+    "common/src/idle/tests.rs",
+    "common/src/lib.rs",
+    "common/src/linux/cli.rs",
+    "common/src/negotiation/tests.rs",
+    "common/src/scheduling/linux/tests.rs",
+    "common/src/storage/write_tests.rs",
+    "common/src/tablets.rs",
+    "common/src/windows/autostart_tests.rs",
+    "common/src/windows/lifecycle_tests.rs",
+    "common/src/windows/mod.rs",
+    "common/src/windows/registry_tests.rs",
+    "common/src/windows/runtime_tests.rs",
+    "common/tests/appimage.rs",
+    "common/tests/autostart.rs",
+    "common/tests/command_lifetime.rs",
+    "common/tests/config_location.rs",
+    "common/tests/diagnostics.rs",
+    "common/tests/owned_stream.rs",
+    "common/tests/windows_platform.rs",
+    "gui/src/platform/registry_fixture.rs",
+    "gui/src/status_poll/regression_tests.rs",
+    "gui/src/tests/coverage.rs",
+    "gui/src/windows_tests.rs",
+    "gui/tests/startup.rs",
+    "host/evdi/capture.h",
+    "host/evdi/conversion.h",
+    "host/evdi/fifo_writer.h",
+    "host/evdi/frame_exchange.h",
+    "host/evdi/pixel_span.h",
+    "host/evdi/raw_ring.h",
+    "host/evdi/writer.h",
+    "host/src/allocation_probe.rs",
+    "host/src/camera/native_tests.rs",
+    "host/src/camera/tests.rs",
+    "host/src/capture/closed_settings_tests.rs",
+    "host/src/capture/coverage_tests.rs",
+    "host/src/capture/fifo_tests.rs",
+    "host/src/capture/frame_timing_tests.rs",
+    "host/src/capture/framing_profile.rs",
+    "host/src/capture/gpu_tests.rs",
+    "host/src/capture/helper/coverage_tests.rs",
+    "host/src/capture/idle/tests.rs",
+    "host/src/capture/inproc_tests.rs",
+    "host/src/capture/native_path_tests.rs",
+    "host/src/capture/orphan_tests.rs",
+    "host/src/capture/ownership_tests.rs",
+    "host/src/capture/raw_transport_tests.rs",
+    "host/src/capture/startup_packet_tests.rs",
+    "host/src/capture/tests.rs",
+    "host/src/capture/timestamp_tests.rs",
+    "host/src/capture_card_tests.rs",
+    "host/src/discovery_tests.rs",
+    "host/src/doctor/coverage_tests.rs",
+    "host/src/doctor/regression_tests.rs",
+    "host/src/encoder_fifo_tests.rs",
+    "host/src/encoder_frame_tests.rs",
+    "host/src/encoder_packet_tests.rs",
+    "host/src/encoder_storage_replay.rs",
+    "host/src/framed_annex_b/tests.rs",
+    "host/src/input/batching_tests.rs",
+    "host/src/input/contracts.rs",
+    "host/src/input/linux/coverage_tests.rs",
+    "host/src/input/linux/cursor/tests.rs",
+    "host/src/input/mapping/coverage_tests.rs",
+    "host/src/input/mapping/x11_cache/tests.rs",
+    "host/src/input/mapping/x11_tests.rs",
+    "host/src/input/wake_tests.rs",
+    "host/src/input/wire.rs",
+    "host/src/ivf/av1/tests.rs",
+    "host/src/ivf/tests.rs",
+    "host/src/kwin/coverage_tests.rs",
+    "host/src/kwin/regression_tests.rs",
+    "host/src/latency_pending_tests.rs",
+    "host/src/lib.rs",
+    "host/src/monitor/coverage_tests.rs",
+    "host/src/monitor/credential_tests.rs",
+    "host/src/monitor/inventory_tests.rs",
+    "host/src/monitor/launch_tests.rs",
+    "host/src/monitor/probe_tests.rs",
+    "host/src/monitor_test_support.rs",
+    "host/src/packet_batch_profile.rs",
+    "host/src/packetizer_decode_tests.rs",
+    "host/src/packetizer_limits_tests.rs",
+    "host/src/packetizer_profile.rs",
+    "host/src/packetizer_read_profile.rs",
+    "host/src/pipe_encoder/tests.rs",
+    "host/src/poll_probe.rs",
+    "host/src/raw_tests.rs",
+    "host/src/raw_transfer/tests.rs",
+    "host/src/runtime.rs",
+    "host/src/runtime_coverage_tests.rs",
+    "host/src/selection.rs",
+    "host/src/selection/health/tests.rs",
+    "host/src/selection/worker/cache/tests.rs",
+    "host/src/selection/worker/coverage_tests.rs",
+    "host/src/selection/worker/preparation/tests.rs",
+    "host/src/selection/worker/tests.rs",
+    "host/src/session/credential_tests.rs",
+    "host/src/stream/resources.rs",
+    "host/src/stream/wake_tests.rs",
+    "host/src/test_logging.rs",
+    "host/src/tray_tests.rs",
+    "host/src/update/coverage_tests.rs",
+    "host/src/usb/tests.rs",
+    "host/src/windows_tray/tests.rs",
+    "host/tests/arch_output.rs",
+    "host/tests/config_diagnostics.rs",
+    "host/tests/conversion.rs",
+    "host/tests/evdi_helper.rs",
+    "host/tests/evdi_modules.rs",
+    "host/tests/fixtures/usb_adb.rs",
+    "host/tests/frame_retirement.rs",
+    "host/tests/gpu_capture.rs",
+    "host/tests/linux_lifecycle.rs",
+    "host/tests/portable_host.rs",
+    "host/tests/portable_session.rs",
+    "host/tests/portable_usb.rs",
+    "host/tests/support/usb_adb.rs",
+    "host/tests/support/windows_tray.rs",
+    "host/tests/tooling.rs",
+    "host/tests/vdisplay.rs",
+    "host/tests/wifi_setup.rs",
+    "host/tests/windows_autostart.rs",
+    "host/tests/windows_cli.rs",
+    "host/tests/windows_lifecycle.rs",
+    "host/tests/windows_usb.rs",
+    "packaging/appimage/AppRun",
+    "packaging/build-packages.sh",
+    "packaging/deb/postinst",
+    "packaging/rpm/blent.spec",
+    "scripts/build-release.sh",
+    "scripts/ci/build-arch-package.sh",
+    "scripts/ci/build-artifacts.sh",
+    "scripts/copy-distribution-docs.sh",
+    "scripts/stage-linux-bundle.sh",
+    "testdata/daemon_process.rs",
+    "testdata/executable_lookup.rs"
+  ]
+}

@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running unittests src\lib.rs (C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded\tray\target\debug\deps\blent-354c6cfb4cf373ff.exe)
+
+running 5 tests
+test tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands ... ok
+test tray_state::tests::t531_status_preserves_backend_truth_and_invalid_bounds ... ok
+test tray_state::tests::t531_watch_coalesces_stale_snapshots_and_reports_producer_exit ... ok
+test windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement ... warning: ignoring --out-dir flag due to -o flag
+
+warning: 1 warning emitted
+
+ok
+test windows_tray::tests::t531_native_menu_bounds_failure_and_settings_failure ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 88 filtered out; finished in 1.15s

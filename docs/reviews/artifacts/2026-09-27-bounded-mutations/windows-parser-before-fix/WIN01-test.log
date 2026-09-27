@@ -1,0 +1,30 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.29s
+     Running unittests src\lib.rs (C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded\tray\target\debug\deps\blent-354c6cfb4cf373ff.exe)
+
+running 5 tests
+test tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands ... ok
+test tray_state::tests::t531_status_preserves_backend_truth_and_invalid_bounds ... ok
+test tray_state::tests::t531_watch_coalesces_stale_snapshots_and_reports_producer_exit ... ok
+test windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement ... warning: ignoring --out-dir flag due to -o flag
+
+warning: 1 warning emitted
+
+FAILED
+test windows_tray::tests::t531_native_menu_bounds_failure_and_settings_failure ... ok
+
+failures:
+
+---- windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement stdout ----
+Windows tray: Unspecified error (os error -2147467259)
+
+thread 'windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement' (5704) panicked at host\src\windows_tray\tests.rs:78:5:
+assertion failed: *stopped.borrow()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 88 filtered out; finished in 0.74s
+
+error: test failed, to rerun pass `-p blent --lib`

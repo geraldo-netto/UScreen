@@ -1,0 +1,156 @@
+[
+  {
+    "id": "RS01",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "--",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--no-run"
+      ],
+      "seconds": 8.128128149999611
+    },
+    "test": {
+      "status": "completed",
+      "code": 101,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "--",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--",
+        "t511_tablet_routes_require_valid_non_loopback_ipv4"
+      ],
+      "seconds": 0.16396551000070758
+    },
+    "evidence": {
+      "executed": 1,
+      "failures": [
+        "discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4"
+      ]
+    }
+  },
+  {
+    "id": "RS02",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "--",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--no-run"
+      ],
+      "seconds": 7.827144189999672
+    },
+    "test": {
+      "status": "completed",
+      "code": 101,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include",
+        "--",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--",
+        "t511_tablet_routes_require_valid_non_loopback_ipv4"
+      ],
+      "seconds": 0.16404818900082319
+    },
+    "evidence": {
+      "executed": 1,
+      "failures": [
+        "discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4"
+      ]
+    }
+  }
+]

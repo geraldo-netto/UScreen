@@ -1,0 +1,18 @@
+test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) ... ok
+test_t269_setup_failure_defers_to_reboot_without_unloading (test_evdi_setup.EvdiSetupTest.test_t269_setup_failure_defers_to_reboot_without_unloading) ... ok
+test_t497_capacity_is_confirmed_after_a_successful_sysfs_write (test_evdi_setup.EvdiSetupTest.test_t497_capacity_is_confirmed_after_a_successful_sysfs_write) ... ok
+test_t497_invalid_capacity_never_runs_system_commands (test_evdi_setup.EvdiSetupTest.test_t497_invalid_capacity_never_runs_system_commands) ...
+  test_t497_invalid_capacity_never_runs_system_commands (test_evdi_setup.EvdiSetupTest.test_t497_invalid_capacity_never_runs_system_commands) (value='0') ... FAIL
+
+======================================================================
+FAIL: test_t497_invalid_capacity_never_runs_system_commands (test_evdi_setup.EvdiSetupTest.test_t497_invalid_capacity_never_runs_system_commands) (value='0')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 120, in test_t497_invalid_capacity_never_runs_system_commands
+    self.assertEqual(result.returncode, 2)
+AssertionError: 1 != 2
+
+----------------------------------------------------------------------
+Ran 4 tests in 7.268s
+
+FAILED (failures=1)

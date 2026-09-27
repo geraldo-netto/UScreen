@@ -1,0 +1,11 @@
+--- scripts/gen-edid.py
++++ scripts/gen-edid.py
+@@ -232,7 +232,7 @@
+     edid[126] = 0
+ 
+     # Checksum
+-    edid[127] = (256 - sum(edid[:127]) % 256) % 256
++    edid[127] = (255 - sum(edid[:127]) % 256) % 256
+ 
+     return bytes(edid)
+ 

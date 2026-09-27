@@ -1,0 +1,25 @@
+test_t652_namespace_protects_external_file_and_allows_private_output (test_bounded_mutation.BoundedEvidenceTest.test_t652_namespace_protects_external_file_and_allows_private_output) ... Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.12/pathlib.py", line 1049, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmph7237z_d/owned/writable'
+ERROR
+
+======================================================================
+ERROR: test_t652_namespace_protects_external_file_and_allows_private_output (test_bounded_mutation.BoundedEvidenceTest.test_t652_namespace_protects_external_file_and_allows_private_output)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_bounded_mutation.py", line 152, in test_t652_namespace_protects_external_file_and_allows_private_output
+    subprocess.run(isolation.command([sys.executable, '-c', code, str(output/'writable')], output),
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['bwrap', '--unshare-user', '--unshare-pid', '--unshare-net', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--bind', '/tmp/tmph7237z_d/owned', '/tmp/tmph7237z_d/owned', '--tmpfs', '/tmp', '--unsetenv', 'COVERAGE_PROCESS_START', '--unsetenv', 'COVERAGE_FILE', '--unsetenv', 'BLENT_PYTHON_CALLS', '--unsetenv', 'BLENT_COVERAGE_ROOT', '--unsetenv', 'BLENT_COVERAGE_MANIFEST', '--unsetenv', 'BASH_ENV', '--unsetenv', 'BLENT_SHELL_COVERAGE_DIR', '--unsetenv', 'BLENT_SHELL_COVERAGE_ORIGINS', '--unsetenv', 'BLENT_SHELL_COVERAGE_PYTHON', '--unsetenv', 'PYTHONPATH', '--', '/usr/bin/python3', '-c', 'import os,pathlib,sys; assert not any(k in os.environ for k in ["COVERAGE_PROCESS_START","BLENT_PYTHON_CALLS","BASH_ENV"]); pathlib.Path(sys.argv[1]).write_text("changed")', '/tmp/tmph7237z_d/owned/writable']' returned non-zero exit status 1.
+
+----------------------------------------------------------------------
+Ran 1 test in 0.158s
+
+FAILED (errors=1)

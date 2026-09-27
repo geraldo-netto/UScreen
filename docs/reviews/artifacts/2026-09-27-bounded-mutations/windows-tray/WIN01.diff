@@ -1,0 +1,11 @@
+--- host/src/windows_tray.rs
++++ host/src/windows_tray.rs
+@@ -90,7 +90,7 @@
+             .context("Open Blent Settings")
+     }
+     fn quit(&self) {
+-        self.stop.send_replace(true);
++        self.stop.send_replace(false);
+     }
+ }
+ 

@@ -1,0 +1,35 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running unittests src\lib.rs (C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded-final\tray\target\debug\deps\blent-354c6cfb4cf373ff.exe)
+
+running 5 tests
+test tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands ... FAILED
+test tray_state::tests::t531_status_preserves_backend_truth_and_invalid_bounds ... ok
+test tray_state::tests::t531_watch_coalesces_stale_snapshots_and_reports_producer_exit ... ok
+test windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement ... warning: ignoring --out-dir flag due to -o flag
+
+warning: 1 warning emitted
+
+FAILED
+test windows_tray::tests::t531_native_menu_bounds_failure_and_settings_failure ... ok
+
+failures:
+
+---- tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands stdout ----
+
+thread 'tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands' (7844) panicked at host\src\tray_state.rs:128:9:
+assertion failed: State::Waiting.dispatch(SETTINGS, &failing).is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement stdout ----
+
+thread 'windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement' (3316) panicked at host\src\windows_tray\tests.rs:7:10:
+called `Result::unwrap()` on an `Err` value: daemon transition timed out
+
+
+failures:
+    tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands
+    windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement
+
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 88 filtered out; finished in 10.21s
+
+error: test failed, to rerun pass `-p blent --lib`

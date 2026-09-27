@@ -1,0 +1,17 @@
+test_t321_invalid_and_out_of_bounds_numeric_corpus (test_gen_edid.TimingTest.test_t321_invalid_and_out_of_bounds_numeric_corpus) ... ok
+test_t321_invalid_physical_dimensions_and_generator_cli (test_gen_edid.TimingTest.test_t321_invalid_physical_dimensions_and_generator_cli) ... FAIL
+test_t321_rejection_explains_low_clock_and_supported_refresh (test_gen_edid.TimingTest.test_t321_rejection_explains_low_clock_and_supported_refresh) ... ok
+
+======================================================================
+FAIL: test_t321_invalid_physical_dimensions_and_generator_cli (test_gen_edid.TimingTest.test_t321_invalid_physical_dimensions_and_generator_cli)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded-final\python-final\source\scripts\tests\test_gen_edid.py", line 49, in test_t321_invalid_physical_dimensions_and_generator_cli
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+FAILED (failures=1)

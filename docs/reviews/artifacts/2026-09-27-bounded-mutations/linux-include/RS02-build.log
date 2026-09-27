@@ -1,0 +1,3 @@
+   Compiling blent v1.2.3 (/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include/source/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.75s
+  Executable unittests src/main.rs (/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include/target/debug/deps/blent-6d9250988617caa0)

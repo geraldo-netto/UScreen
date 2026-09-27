@@ -1,0 +1,11 @@
+--- host/src/linux_main.rs
++++ host/src/linux_main.rs
+@@ -2400,7 +2400,7 @@
+     // "inet 192.168.1.42/24 …" or "… src 192.168.1.42 …"
+     let mut words = text.split_whitespace().peekable();
+     while let Some(w) = words.next() {
+-        if w != "inet" && w != "src" {
++        if w != "inet" || w != "src" {
+             continue;
+         }
+         let Some(value) = words.peek() else { continue };

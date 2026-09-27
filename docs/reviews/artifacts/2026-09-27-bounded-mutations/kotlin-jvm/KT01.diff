@@ -1,0 +1,11 @@
+--- android/app/src/main/java/com/blent/UpdateCheck.kt
++++ android/app/src/main/java/com/blent/UpdateCheck.kt
+@@ -28,7 +28,7 @@
+     fun isNewer(candidate: String, current: String): Boolean {
+         val a = parse(candidate) ?: return false
+         val b = parse(current) ?: return false
+-        for (i in 0..2) if (a.core[i] != b.core[i]) return a.core[i] > b.core[i]
++        for (i in 0..2) if (a.core[i] != b.core[i]) return a.core[i] < b.core[i]
+         return isNewerPrerelease(a.pre, b.pre)
+     }
+ 

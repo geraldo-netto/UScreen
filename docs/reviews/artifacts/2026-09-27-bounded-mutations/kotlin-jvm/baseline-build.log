@@ -1,0 +1,72 @@
+Picked up JAVA_TOOL_OPTIONS:  -Duser.home=/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/home
+
+Welcome to Gradle 8.5!
+
+Here are the highlights of this release:
+ - Support for running on Java 21
+ - Faster first use with Kotlin DSL
+ - Improved error and warning messages
+
+For more details see https://docs.gradle.org/8.5/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.5/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.3.2' is experimental.
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugProfileIdentity
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+
+> Task :app:compileDebugKotlin
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/main/java/com/blent/VideoTiming.kt:88:31 Variable 'report' initializer is redundant
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:bundleDebugClassesToCompileJar
+
+> Task :app:compileDebugUnitTestKotlin
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/ActivityUiContractTest.kt:131:26 'onRequestPermissionsResult(Int, Array<(out) String!>, IntArray): Unit' is deprecated. Deprecated in Java
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:31:74 Parameter 'timeout' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:48:41 Parameter 'index' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:62:36 Parameter 'id' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:80:45 Parameter 'request' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:80:70 Parameter 'callback' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:80:119 Parameter 'handler' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:54 Parameter 'id' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:66 Parameter 'callback' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:104 Parameter 'handler' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:122 Parameter 'metadata' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:87:155 Parameter 'target' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:54 Parameter 'id' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:66 Parameter 'callback' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:104 Parameter 'executor' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:124 Parameter 'metadata' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:157 Parameter 'physical' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:203 Parameter 'target' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:88:216 Parameter 'context' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:91:46 Parameter 'surfaces' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/CameraCaptureTest.kt:97:46 Parameter 'template' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/OrientationTest.kt:18:32 'ShadowSensor' is deprecated. Deprecated in Java
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/StreamingPowerTest.kt:112:24 Parameter 'mode' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/StreamingPowerTest.kt:112:35 Parameter 'tag' is never used
+w: file:///backups/disk2/blent-mutation-evidence/t652-bounded/kotlin/source/android/app/src/test/java/com/blent/StreamingPowerTest.kt:119:45 Parameter 'enabled' is never used
+
+BUILD SUCCESSFUL in 27s
+18 actionable tasks: 18 executed

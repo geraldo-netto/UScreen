@@ -1,0 +1,10 @@
+--- scripts/setup-evdi.sh
++++ scripts/setup-evdi.sh
+@@ -42,6 +42,6 @@
+ }
+ 
+ case "${1:-2}" in
+-    1|2|3|4) evdi_setup "${1:-2}" ;;
++    0|1|2|3|4) evdi_setup "${1:-2}" ;;
+     *) echo "Usage: setup-evdi.sh [1-4]" >&2; exit 2 ;;
+ esac

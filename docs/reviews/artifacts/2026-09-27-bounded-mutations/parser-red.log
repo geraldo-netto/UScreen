@@ -1,0 +1,15 @@
+F
+======================================================================
+FAIL: test_t652_interleaved_native_stderr_keeps_failed_test_identity (test_bounded_mutation.BoundedEvidenceTest.test_t652_interleaved_native_stderr_keeps_failed_test_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_bounded_mutation.py", line 69, in test_t652_interleaved_native_stderr_keeps_failed_test_identity
+    self.assertEqual(result, dict(executed=5, failures=['crate::test_contract']))
+AssertionError: {'executed': 5, 'failures': []} != {'executed': 5, 'failures': ['crate::test_contract']}
+- {'executed': 5, 'failures': []}
++ {'executed': 5, 'failures': ['crate::test_contract']}
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)

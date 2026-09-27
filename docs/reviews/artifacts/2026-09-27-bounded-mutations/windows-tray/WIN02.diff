@@ -1,0 +1,11 @@
+--- host/src/tray_state.rs
++++ host/src/tray_state.rs
+@@ -42,7 +42,7 @@
+         format!("Blent: {}\nDisplay and input unavailable", self.line())
+     }
+     pub fn dispatch(self, id: usize, actions: &impl Actions) -> Result<()> {
+-        if self == Self::Stopping {
++        if self != Self::Stopping {
+             return Ok(());
+         }
+         match id {

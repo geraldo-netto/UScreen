@@ -1,0 +1,11 @@
+--- scripts/setup-evdi.sh
++++ scripts/setup-evdi.sh
+@@ -28,7 +28,7 @@
+         return 1
+     }
+     if [ "$blent_existing" -lt "$blent_wanted" ]; then
+-        evdi_add_capacity "$((blent_wanted - blent_existing))" || return 1
++        evdi_add_capacity "$((blent_wanted + blent_existing))" || return 1
+         blent_existing=$(evdi_device_count) || {
+             evdi_setup_deferred "cannot confirm the new EVDI capacity"
+             return 1

@@ -18,5 +18,7 @@ jobs:
         run: python -m unittest discover -s scripts/complexity -p 'test_*.py'
       - name: Test coverage report contracts (T497)
         run: python -m unittest discover -s scripts/coverage -p 'test_*.py'
+      - name: Test mutation scope and include discovery (T652)
+        run: python -m unittest discover -s scripts/mutation -p test_scope.py
       - name: Enforce maximum cyclomatic complexity of nine
         run: python scripts/complexity/check.py

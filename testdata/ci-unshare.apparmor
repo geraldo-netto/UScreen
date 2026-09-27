@@ -4,3 +4,8 @@ include <tunables/global>
 profile unshare /usr/bin/unshare flags=(unconfined) {
   userns,
 }
+
+# T652: the mutation runner also confines its normal regression fixtures.
+profile blent-ci-bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+}

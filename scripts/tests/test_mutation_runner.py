@@ -144,6 +144,36 @@ class MutationIsolationTest(unittest.TestCase):
                 except ProcessLookupError:
                     pass
 
+    @unittest.skipUnless(os.name == 'nt', 'native Windows process ownership')
+    def test_t652_windows_deadline_kills_separate_group_descendants(self):
+        import ctypes
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.OpenProcess.restype = ctypes.c_void_p
+        kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+        kernel.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            leaf = 'import time; time.sleep(30)'
+            script = ('import subprocess,sys,time,pathlib; '
+                      f'p=subprocess.Popen([sys.executable,"-c",{leaf!r}], '
+                      'creationflags=subprocess.CREATE_NEW_PROCESS_GROUP); '
+                      'pathlib.Path("child.pid").write_text(str(p.pid)); time.sleep(30)')
+            result = process.execute([sys.executable, '-c', script], root, dict(os.environ),
+                                     root/'log', 2)
+            pid = int((root/'child.pid').read_text())
+            handle = kernel.OpenProcess(0x100001, False, pid)
+            try:
+                self.assertEqual(result['status'], 'timeout')
+                if handle:
+                    self.assertEqual(kernel.WaitForSingleObject(handle, 5000), 0,
+                                     'T652: descendant survived the campaign deadline')
+            finally:
+                if handle:
+                    kernel.TerminateProcess(handle, 1)
+                    kernel.WaitForSingleObject(handle, 5000)
+                    kernel.CloseHandle(handle)
+
     def test_t652_snapshot_copies_working_bytes_without_ignored_builds(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / 'repo'

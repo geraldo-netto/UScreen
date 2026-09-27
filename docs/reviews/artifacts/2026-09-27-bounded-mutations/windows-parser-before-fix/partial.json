@@ -1,0 +1,84 @@
+[
+  {
+    "id": "WIN01",
+    "outcome": "tool_error",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--no-run"
+      ],
+      "seconds": 6.031999999999243
+    },
+    "test": {
+      "status": "completed",
+      "code": 101,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--",
+        "tray_state::",
+        "windows_tray::"
+      ],
+      "seconds": 2.311999999999898
+    },
+    "evidence": {
+      "executed": 5,
+      "failures": []
+    }
+  },
+  {
+    "id": "WIN02",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--no-run"
+      ],
+      "seconds": 6.04700000000048
+    },
+    "test": {
+      "status": "completed",
+      "code": 101,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--",
+        "tray_state::",
+        "windows_tray::"
+      ],
+      "seconds": 11.764999999999418
+    },
+    "evidence": {
+      "executed": 5,
+      "failures": [
+        "tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands"
+      ]
+    }
+  }
+]

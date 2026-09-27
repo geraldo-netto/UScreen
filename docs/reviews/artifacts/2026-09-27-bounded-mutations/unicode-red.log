@@ -1,0 +1,19 @@
+E
+======================================================================
+ERROR: test_t652_candidate_restores_source_on_success_and_exception (test_bounded_mutation.BoundedEvidenceTest.test_t652_candidate_restores_source_on_success_and_exception)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_bounded_mutation.py", line 91, in test_t652_candidate_restores_source_on_success_and_exception
+    result = bounded.candidate(row(), source, root, {}, {}, None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/backups/disk2/projects/blent/scripts/mutation/bounded.py", line 147, in candidate
+    (output / (row['id'] + '.diff')).write_text(''.join(diff))
+  File "/usr/lib/python3.12/pathlib.py", line 1050, in write_text
+    return f.write(data)
+           ^^^^^^^^^^^^^
+UnicodeEncodeError: 'ascii' codec can't encode character '\xe9' in position 50: ordinal not in range(128)
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)

@@ -1,0 +1,11 @@
+--- android/app/src/main/java/com/blent/UpdateCheck.kt
++++ android/app/src/main/java/com/blent/UpdateCheck.kt
+@@ -18,7 +18,7 @@
+     private fun parse(value: String): Version? {
+         val match = syntax.matchEntire(value.trim().removePrefix("v")) ?: return null
+         val core = (1..3).map { index ->
+-            match.groupValues[index].toLongOrNull()?.takeIf { it <= 0xffff_ffffL } ?: return null
++            match.groupValues[index].toLongOrNull()?.takeIf { it <= 0x1ffff_ffffL } ?: return null
+         }
+         val pre = match.groupValues[4].takeIf { it.isNotEmpty() }?.split('.') ?: emptyList()
+         if (pre.any { it.all(Char::isDigit) && it.length > 1 && it.startsWith('0') }) return null

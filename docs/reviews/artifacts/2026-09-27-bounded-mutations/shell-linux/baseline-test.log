@@ -1,0 +1,9 @@
+test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) ... ok
+test_t269_setup_failure_defers_to_reboot_without_unloading (test_evdi_setup.EvdiSetupTest.test_t269_setup_failure_defers_to_reboot_without_unloading) ... ok
+test_t497_capacity_is_confirmed_after_a_successful_sysfs_write (test_evdi_setup.EvdiSetupTest.test_t497_capacity_is_confirmed_after_a_successful_sysfs_write) ... ok
+test_t497_invalid_capacity_never_runs_system_commands (test_evdi_setup.EvdiSetupTest.test_t497_invalid_capacity_never_runs_system_commands) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 6.680s
+
+OK

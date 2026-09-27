@@ -1,0 +1,147 @@
+[
+  {
+    "id": "SH01",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "sh",
+        "-n",
+        "scripts/setup-evdi.sh"
+      ],
+      "seconds": 0.007572725999125396
+    },
+    "test": {
+      "status": "completed",
+      "code": 1,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-v",
+        "-p",
+        "test_evdi_setup.py"
+      ],
+      "seconds": 6.072189041999081
+    },
+    "evidence": {
+      "executed": 4,
+      "failures": [
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity",
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity",
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity",
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity",
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity",
+        "test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity"
+      ]
+    }
+  },
+  {
+    "id": "SH02",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "sh",
+        "-n",
+        "scripts/setup-evdi.sh"
+      ],
+      "seconds": 0.0075670550013455795
+    },
+    "test": {
+      "status": "completed",
+      "code": 1,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/shell",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-v",
+        "-p",
+        "test_evdi_setup.py"
+      ],
+      "seconds": 7.324821308000537
+    },
+    "evidence": {
+      "executed": 4,
+      "failures": [
+        "test_t497_invalid_capacity_never_runs_system_commands"
+      ]
+    }
+  }
+]

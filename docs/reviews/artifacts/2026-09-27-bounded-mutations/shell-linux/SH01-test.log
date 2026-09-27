@@ -1,0 +1,63 @@
+test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) ...
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='script', existing=1) ... FAIL
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='installer', existing=1) ... FAIL
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='deb', existing=1) ... FAIL
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='rpm', existing=1) ... FAIL
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='post_install', existing=1) ... FAIL
+  test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='post_upgrade', existing=1) ... FAIL
+test_t269_setup_failure_defers_to_reboot_without_unloading (test_evdi_setup.EvdiSetupTest.test_t269_setup_failure_defers_to_reboot_without_unloading) ... ok
+test_t497_capacity_is_confirmed_after_a_successful_sysfs_write (test_evdi_setup.EvdiSetupTest.test_t497_capacity_is_confirmed_after_a_successful_sysfs_write) ... ok
+test_t497_invalid_capacity_never_runs_system_commands (test_evdi_setup.EvdiSetupTest.test_t497_invalid_capacity_never_runs_system_commands) ... ok
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='script', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='installer', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='deb', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='rpm', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='post_install', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+======================================================================
+FAIL: test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity (test_evdi_setup.EvdiSetupTest.test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity) (entry='post_upgrade', existing=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/blent-mutation-evidence/t652-bounded/shell/source/scripts/tests/test_evdi_setup.py", line 92, in test_t269_install_and_upgrade_never_unload_and_add_only_missing_capacity
+    self.assertEqual(int(final), max(count or 0, 2), 'T269: required capacity missing')
+AssertionError: 4 != 2 : T269: required capacity missing
+
+----------------------------------------------------------------------
+Ran 4 tests in 6.005s
+
+FAILED (failures=6)

@@ -1,0 +1,23 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src/main.rs (/backups/disk2/blent-mutation-evidence/t652-bounded/linux-include/target/debug/deps/blent-6d9250988617caa0)
+
+running 1 test
+test discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4 ... FAILED
+
+failures:
+
+---- discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4 stdout ----
+
+thread 'discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4' (14) panicked at host/src/discovery_tests.rs:13:9:
+assertion `left == right` failed
+  left: None
+ right: Some("192.168.1.42")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    discovery_tests::t511_tablet_routes_require_valid_non_loopback_ipv4
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 383 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --bin blent`

@@ -1,0 +1,136 @@
+{
+  "baseline": {
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--no-run"
+      ],
+      "seconds": 47.875
+    },
+    "test": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--",
+        "tray_state::",
+        "windows_tray::"
+      ],
+      "seconds": 2.686999999999898
+    },
+    "evidence": {
+      "executed": 5,
+      "failures": []
+    }
+  },
+  "outcomes": {
+    "caught": 2
+  },
+  "candidates": [
+    {
+      "id": "WIN01",
+      "outcome": "caught",
+      "build": {
+        "status": "completed",
+        "code": 0,
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "blent",
+          "--lib",
+          "--no-run"
+        ],
+        "seconds": 6.5
+      },
+      "test": {
+        "status": "completed",
+        "code": 101,
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "blent",
+          "--lib",
+          "--",
+          "tray_state::",
+          "windows_tray::"
+        ],
+        "seconds": 2.7659999999996217
+      },
+      "evidence": {
+        "executed": 5,
+        "failures": [
+          "windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement"
+        ]
+      }
+    },
+    {
+      "id": "WIN02",
+      "outcome": "caught",
+      "build": {
+        "status": "completed",
+        "code": 0,
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "blent",
+          "--lib",
+          "--no-run"
+        ],
+        "seconds": 6.593999999999141
+      },
+      "test": {
+        "status": "completed",
+        "code": 101,
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "blent",
+          "--lib",
+          "--",
+          "tray_state::",
+          "windows_tray::"
+        ],
+        "seconds": 12.218000000000757
+      },
+      "evidence": {
+        "executed": 5,
+        "failures": [
+          "tray_state::tests::t531_actions_reject_unknown_ids_and_stale_shutdown_commands",
+          "windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement"
+        ]
+      }
+    }
+  ],
+  "baseline_passed": true,
+  "snapshot_restored": true,
+  "complete": true,
+  "passes": true,
+  "whole_project_mutation_score": null,
+  "checkout_matches_snapshot": true
+}

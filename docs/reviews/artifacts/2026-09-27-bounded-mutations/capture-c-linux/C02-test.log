@@ -1,0 +1,82 @@
+warning: unused import: `blent::ffmpeg_args::TEE_OUTPUT`
+  --> host/src/framed_annex_b.rs:12:16
+   |
+12 | pub(crate) use blent::ffmpeg_args::TEE_OUTPUT;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `encoder_quality_args` is never used
+   --> host/src/capture/cli_encoder.rs:102:19
+    |
+ 30 | impl CliEncoder<'_> {
+    | ------------------- method in this implementation
+...
+102 |     pub(super) fn encoder_quality_args(
+    |                   ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `blent` (bin "blent") generated 2 warnings (run `cargo fix --bin "blent" -p blent` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running tests/conversion.rs (/backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/target/debug/deps/conversion-ce7c091d1003f4ce)
+
+running 8 tests
+test t383_conversion_matches_independent_oracle_and_preserves_three_histories ... FAILED
+test t383_empty_and_tiny_damage_does_not_wake_the_pool ... ok
+test t383_large_pool_balances_clustered_damage_without_waking_idle_workers ... FAILED
+test t383_large_pool_supports_128_workers_and_joins_them ... FAILED
+test t383_release_scalar_and_auto_vectorized_kernels_match_the_oracle ... FAILED
+test t452_extreme_damage_endpoints_clip_without_overflow ... ok
+test t454_empty_damage_intervals_preserve_all_histories ... ok
+test t554_regions_clip_fuzzed_bounds_preserve_pixels_and_follow_buffer_leases ... FAILED
+
+failures:
+
+---- t383_conversion_matches_independent_oracle_and_preserves_three_histories stdout ----
+
+thread 't383_conversion_matches_independent_oracle_and_preserves_three_histories' (14) panicked at host/tests/conversion.rs:34:5:
+[evdi-helper] NV12 conversion using 1 thread(s)
+conversion-test: /backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/source/host/tests/conversion_test.c:73: check_conversion: Assertion `memcmp(actual, expected, size + GUARD) == 0 && "T383: conversion/rounding/dirty/guard mismatch"' failed.
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- t383_large_pool_balances_clustered_damage_without_waking_idle_workers stdout ----
+
+thread 't383_large_pool_balances_clustered_damage_without_waking_idle_workers' (44) panicked at host/tests/conversion.rs:34:5:
+[evdi-helper] NV12 conversion using 128 thread(s)
+conversion-test: /backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/source/host/tests/conversion_test.c:187: density_dispatch: Assertion `memcmp(actual, expected, SIZE) == 0' failed.
+
+
+---- t383_large_pool_supports_128_workers_and_joins_them stdout ----
+
+thread 't383_large_pool_supports_128_workers_and_joins_them' (182) panicked at host/tests/conversion.rs:34:5:
+[evdi-helper] NV12 conversion using 128 thread(s)
+conversion-test: /backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/source/host/tests/conversion_test.c:73: check_conversion: Assertion `memcmp(actual, expected, size + GUARD) == 0 && "T383: conversion/rounding/dirty/guard mismatch"' failed.
+
+
+---- t383_release_scalar_and_auto_vectorized_kernels_match_the_oracle stdout ----
+
+thread 't383_release_scalar_and_auto_vectorized_kernels_match_the_oracle' (320) panicked at host/tests/conversion.rs:34:5:
+[evdi-helper] NV12 conversion using 1 thread(s)
+conversion-test: /backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/source/host/tests/conversion_test.c:73: check_conversion: Assertion `memcmp(actual, expected, size + GUARD) == 0 && "T383: conversion/rounding/dirty/guard mismatch"' failed.
+
+
+---- t554_regions_clip_fuzzed_bounds_preserve_pixels_and_follow_buffer_leases stdout ----
+
+thread 't554_regions_clip_fuzzed_bounds_preserve_pixels_and_follow_buffer_leases' (355) panicked at host/tests/conversion.rs:34:5:
+[evdi-helper] NV12 conversion using 4 thread(s)
+conversion-test: /backups/disk2/blent-mutation-evidence/t652-bounded/capture-c/source/host/tests/regions_test.c:96: convert_region_frame: Assertion `memcmp(f->fill, expected, f->size) == 0 && "T554: missed damage in recycled buffer history"' failed.
+
+
+
+failures:
+    t383_conversion_matches_independent_oracle_and_preserves_three_histories
+    t383_large_pool_balances_clustered_damage_without_waking_idle_workers
+    t383_large_pool_supports_128_workers_and_joins_them
+    t383_release_scalar_and_auto_vectorized_kernels_match_the_oracle
+    t554_regions_clip_fuzzed_bounds_preserve_pixels_and_follow_buffer_leases
+
+test result: FAILED. 3 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.98s
+
+error: test failed, to rerun pass `-p blent --test conversion`

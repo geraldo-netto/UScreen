@@ -1,0 +1,54 @@
+name: Bounded cross-language mutations
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: Reviewed bounded sample (no whole-project score)
+        options: [python, shell, capture-c, kotlin, linux-include]
+        default: python
+
+permissions:
+  contents: read
+
+jobs:
+  bounded:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MUTATION_PROFILE: ${{ inputs.profile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install namespace and native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap libssl-dev pkg-config
+          sudo apparmor_parser -r testdata/ci-unshare.apparmor
+          cargo fetch --locked
+      - name: Warm Android build and test dependencies before network isolation
+        if: inputs.profile == 'kotlin'
+        run: ./android/gradlew -p android --no-daemon testDebugUnitTest --tests com.blent.RegressionTest.t123_updateVersionsFollowSharedValidationAndPrecedence
+      - name: Test evidence and process ownership
+        run: |
+          python -m unittest discover -s scripts/tests -p 'test_*mutation*.py'
+          LC_ALL=C PYTHONUTF8=0 PYTHONCOERCECLOCALE=0 python -m unittest discover -s scripts/tests -p test_bounded_mutation.py -k candidate_restores
+      - name: Run the selected isolated sample
+        run: python scripts/mutation/bounded.py --profile "$MUTATION_PROFILE" --output '${{ runner.temp }}/bounded'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bounded-${{ inputs.profile }}
+          path: |
+            ${{ runner.temp }}/bounded/*.json
+            ${{ runner.temp }}/bounded/*.log
+            ${{ runner.temp }}/bounded/*.diff
+            ${{ runner.temp }}/bounded/*-junit/

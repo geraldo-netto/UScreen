@@ -1,5 +1,7 @@
 # Mutation testing progress after reboot recovery
 
+Historical checkpoint; superseded by [T652 bounded completion](2026-09-27-bounded-mutations.md).
+
 This supersedes the initial [pause checkpoint](2026-09-27-mutation-testing-handoff.md)
 for current work. T652 remains in progress; these scoped campaigns do not establish
 a whole-project mutation score. No mutation job is still running at this checkpoint.

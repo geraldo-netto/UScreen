@@ -1,0 +1,21 @@
+python.exe : F
+At C:\BlentSetup\run-native.ps1:8 char:5
++     & $command.Source @Arguments *> $Log
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (F:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+======================================================================
+FAIL: test_t652_windows_deadline_kills_separate_group_descendants
+(test_mutation_runner.MutationIsolationTest.test_t652_windows_deadline_kills_separate_group_descendants)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\blentdev\AppData\Local\Temp\blent-t531\source\scripts\tests\test_mutation_runner.py", line 169, in
+test_t652_windows_deadline_kills_separate_group_descendants
+    self.assertEqual(kernel.WaitForSingleObject(handle, 5000), 0,
+AssertionError: 258 != 0 : T652: descendant survived the campaign deadline
+
+----------------------------------------------------------------------
+Ran 1 test in 7.094s
+
+FAILED (failures=1)

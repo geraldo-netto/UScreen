@@ -1,0 +1,11 @@
+--- host/evdi/conversion.c
++++ host/evdi/conversion.c
+@@ -3,7 +3,7 @@
+ #include <string.h>
+ 
+ static inline int row_is_dirty(const unsigned char *mask, int cy) {
+-    return mask == NULL || (mask[cy >> 3] & (1u << (cy & 7)));
++    return mask == NULL || (mask[cy >> 3] & (1u << ((cy + 1) & 7)));
+ }
+ 
+ static inline pixel_span_t row_span(const conv_job_t *job, int cy) {

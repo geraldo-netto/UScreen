@@ -1,0 +1,3 @@
+   Compiling blent v1.2.3 (C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded-final\tray\source\host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.44s
+  Executable unittests src\lib.rs (C:\Users\blentdev\AppData\Local\Temp\blent-t652-bounded-final\tray\target\debug\deps\blent-354c6cfb4cf373ff.exe)

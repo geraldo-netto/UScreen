@@ -1,0 +1,150 @@
+[
+  {
+    "id": "KT01",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "compileDebugUnitTestKotlin"
+      ],
+      "seconds": 9.580868422999629
+    },
+    "test": {
+      "status": "completed",
+      "code": 1,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "testDebugUnitTest",
+        "--tests",
+        "com.blent.RegressionTest.t123_updateVersionsFollowSharedValidationAndPrecedence"
+      ],
+      "seconds": 6.975999686999785
+    },
+    "evidence": {
+      "executed": 1,
+      "failures": [
+        "t123_updateVersionsFollowSharedValidationAndPrecedence"
+      ]
+    }
+  },
+  {
+    "id": "KT02",
+    "outcome": "caught",
+    "build": {
+      "status": "completed",
+      "code": 0,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "compileDebugUnitTestKotlin"
+      ],
+      "seconds": 9.48028911899928
+    },
+    "test": {
+      "status": "completed",
+      "code": 1,
+      "command": [
+        "bwrap",
+        "--unshare-user",
+        "--unshare-pid",
+        "--unshare-net",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "/backups/disk2/blent-mutation-evidence/t652-bounded/kotlin",
+        "--dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--",
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "testDebugUnitTest",
+        "--tests",
+        "com.blent.RegressionTest.t123_updateVersionsFollowSharedValidationAndPrecedence"
+      ],
+      "seconds": 6.925004921000436
+    },
+    "evidence": {
+      "executed": 1,
+      "failures": [
+        "t123_updateVersionsFollowSharedValidationAndPrecedence"
+      ]
+    }
+  }
+]

@@ -1,0 +1,11 @@
+--- scripts/gen-edid.py
++++ scripts/gen-edid.py
+@@ -52,7 +52,7 @@
+         raise ValueError("EDID active dimensions must fit 12 bits and be positive")
+     if not MIN_FPS <= refresh <= MAX_FPS:
+         raise ValueError(f"EDID refresh must be within {MIN_FPS}..{MAX_FPS} Hz")
+-    if not (1 <= width_mm <= 4095 and 1 <= height_mm <= 4095):
++    if not (0 <= width_mm <= 4095 and 1 <= height_mm <= 4095):
+         raise ValueError("EDID physical dimensions must fit 12 bits and be positive")
+ 
+ 

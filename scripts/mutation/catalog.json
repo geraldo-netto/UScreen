@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "profiles": {
+    "python": {
+      "platforms": [
+        "linux",
+        "win32"
+      ],
+      "build": [
+        "{python}",
+        "-m",
+        "py_compile",
+        "scripts/gen-edid.py"
+      ],
+      "test": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-v",
+        "-p",
+        "test_gen_edid.py"
+      ],
+      "format": "unittest"
+    },
+    "shell": {
+      "platforms": [
+        "linux"
+      ],
+      "build": [
+        "sh",
+        "-n",
+        "scripts/setup-evdi.sh"
+      ],
+      "test": [
+        "{python}",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/tests",
+        "-v",
+        "-p",
+        "test_evdi_setup.py"
+      ],
+      "format": "unittest"
+    },
+    "capture-c": {
+      "platforms": [
+        "linux"
+      ],
+      "build": [
+        "cc",
+        "-std=c11",
+        "-O3",
+        "-g",
+        "-pthread",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fno-pie",
+        "-no-pie",
+        "-fsanitize=address,undefined",
+        "-I",
+        "host/evdi",
+        "host/tests/conversion_test.c",
+        "host/evdi/conversion.c",
+        "host/evdi/frame_exchange.c",
+        "-o",
+        "{output}/conversion-build"
+      ],
+      "test": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--test",
+        "conversion"
+      ],
+      "format": "rust"
+    },
+    "kotlin": {
+      "platforms": [
+        "linux"
+      ],
+      "build": [
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "compileDebugUnitTestKotlin"
+      ],
+      "test": [
+        "./android/gradlew",
+        "-p",
+        "android",
+        "--offline",
+        "--no-daemon",
+        "--max-workers=4",
+        "testDebugUnitTest",
+        "--tests",
+        "com.blent.RegressionTest.t123_updateVersionsFollowSharedValidationAndPrecedence"
+      ],
+      "format": "junit",
+      "junit": "android/app/build/test-results/testDebugUnitTest/TEST-*.xml",
+      "cache": "gradle"
+    },
+    "linux-include": {
+      "platforms": [
+        "linux"
+      ],
+      "build": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--no-run"
+      ],
+      "test": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--bin",
+        "blent",
+        "--",
+        "t511_tablet_routes_require_valid_non_loopback_ipv4"
+      ],
+      "format": "rust",
+      "include_strategy": "Edit linux_main.rs directly; compile the original main.rs include! graph without rewriting cfg or crate roots."
+    },
+    "windows-tray": {
+      "platforms": [
+        "win32"
+      ],
+      "build": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--no-run"
+      ],
+      "test": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "blent",
+        "--lib",
+        "--",
+        "tray_state::",
+        "windows_tray::"
+      ],
+      "format": "rust",
+      "isolation": "Native ordinary interactive session; only owned windows, icons, menus, fixture GUI process and watch channels."
+    }
+  },
+  "mutations": [
+    {
+      "id": "PY01",
+      "profile": "python",
+      "language": "python",
+      "file": "scripts/gen-edid.py",
+      "before": "edid[127] = (256 - sum(edid[:127]) % 256) % 256",
+      "after": "edid[127] = (255 - sum(edid[:127]) % 256) % 256",
+      "expected_failure": "test_t321_",
+      "operator": "arithmetic constant"
+    },
+    {
+      "id": "PY02",
+      "profile": "python",
+      "language": "python",
+      "file": "scripts/gen-edid.py",
+      "before": "1 <= width_mm <= 4095",
+      "after": "0 <= width_mm <= 4095",
+      "expected_failure": "test_t321_invalid_physical",
+      "operator": "lower-bound relaxation"
+    },
+    {
+      "id": "SH01",
+      "profile": "shell",
+      "language": "shell",
+      "file": "scripts/setup-evdi.sh",
+      "before": "blent_wanted - blent_existing",
+      "after": "blent_wanted + blent_existing",
+      "expected_failure": "test_t269_install",
+      "operator": "arithmetic operator"
+    },
+    {
+      "id": "SH02",
+      "profile": "shell",
+      "language": "shell",
+      "file": "scripts/setup-evdi.sh",
+      "before": "1|2|3|4) evdi_setup",
+      "after": "0|1|2|3|4) evdi_setup",
+      "expected_failure": "test_t497_invalid_capacity",
+      "operator": "invalid-case admission"
+    },
+    {
+      "id": "C01",
+      "profile": "capture-c",
+      "language": "c",
+      "file": "host/evdi/conversion.c",
+      "before": "1u << (cy & 7)",
+      "after": "1u << ((cy + 1) & 7)",
+      "expected_failure": "t383_conversion_matches",
+      "operator": "dirty-mask index offset"
+    },
+    {
+      "id": "C02",
+      "profile": "capture-c",
+      "language": "c",
+      "file": "host/evdi/conversion.c",
+      "before": "-26 * ar - 86 * ag + 112 * ab",
+      "after": "-26 * ar - 86 * ag + 111 * ab",
+      "expected_failure": "t383_conversion_matches",
+      "operator": "chroma coefficient"
+    },
+    {
+      "id": "KT01",
+      "profile": "kotlin",
+      "language": "kotlin",
+      "file": "android/app/src/main/java/com/blent/UpdateCheck.kt",
+      "before": "return a.core[i] > b.core[i]",
+      "after": "return a.core[i] < b.core[i]",
+      "expected_failure": "t123_updateVersions",
+      "operator": "relational inversion"
+    },
+    {
+      "id": "KT02",
+      "profile": "kotlin",
+      "language": "kotlin",
+      "file": "android/app/src/main/java/com/blent/UpdateCheck.kt",
+      "before": "it <= 0xffff_ffffL",
+      "after": "it <= 0x1ffff_ffffL",
+      "expected_failure": "t123_updateVersions",
+      "operator": "upper-bound relaxation"
+    },
+    {
+      "id": "RS01",
+      "profile": "linux-include",
+      "language": "rust",
+      "file": "host/src/linux_main.rs",
+      "before": "if !address.is_loopback() {",
+      "after": "if address.is_loopback() {",
+      "expected_failure": "t511_tablet_routes",
+      "operator": "predicate inversion"
+    },
+    {
+      "id": "RS02",
+      "profile": "linux-include",
+      "language": "rust",
+      "file": "host/src/linux_main.rs",
+      "before": "if w != \"inet\" && w != \"src\" {",
+      "after": "if w != \"inet\" || w != \"src\" {",
+      "expected_failure": "t511_tablet_routes",
+      "operator": "boolean operator"
+    },
+    {
+      "id": "WIN01",
+      "profile": "windows-tray",
+      "language": "rust",
+      "file": "host/src/windows_tray.rs",
+      "before": "self.stop.send_replace(true);",
+      "after": "self.stop.send_replace(false);",
+      "expected_failure": "t531_native_actions_latest_status",
+      "operator": "shutdown signal deletion"
+    },
+    {
+      "id": "WIN02",
+      "profile": "windows-tray",
+      "language": "rust",
+      "file": "host/src/tray_state.rs",
+      "before": "if self == Self::Stopping {",
+      "after": "if self != Self::Stopping {",
+      "expected_failure": "t531_actions_reject_unknown",
+      "operator": "shutdown guard inversion"
+    }
+  ]
+}

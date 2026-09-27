@@ -1,0 +1,73 @@
+{
+  "python-linux": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 3,
+    "selected_production_matches_checkout": {
+      "scripts/gen-edid.py": true
+    }
+  },
+  "shell-linux": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 4,
+    "selected_production_matches_checkout": {
+      "scripts/setup-evdi.sh": true
+    }
+  },
+  "capture-c-linux": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 8,
+    "selected_production_matches_checkout": {
+      "host/evdi/conversion.c": true
+    }
+  },
+  "kotlin-jvm": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 1,
+    "selected_production_matches_checkout": {
+      "android/app/src/main/java/com/blent/UpdateCheck.kt": true
+    }
+  },
+  "linux-include": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 1,
+    "selected_production_matches_checkout": {
+      "host/src/linux_main.rs": true
+    }
+  },
+  "windows-tray": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 5,
+    "selected_production_matches_checkout": {
+      "host/src/windows_tray.rs": true,
+      "host/src/tray_state.rs": true
+    }
+  },
+  "python-windows": {
+    "passes": true,
+    "outcomes": {
+      "caught": 2
+    },
+    "baseline_tests": 3,
+    "selected_production_matches_checkout": {
+      "scripts/gen-edid.py": true
+    }
+  }
+}

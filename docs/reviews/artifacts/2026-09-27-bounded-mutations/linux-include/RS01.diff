@@ -1,0 +1,11 @@
+--- host/src/linux_main.rs
++++ host/src/linux_main.rs
+@@ -2406,7 +2406,7 @@
+         let Some(value) = words.peek() else { continue };
+         let ip = value.split('/').next().unwrap_or(value);
+         if let Ok(address) = ip.parse::<std::net::Ipv4Addr>() {
+-            if !address.is_loopback() {
++            if address.is_loopback() {
+                 return Some(address.to_string());
+             }
+         }

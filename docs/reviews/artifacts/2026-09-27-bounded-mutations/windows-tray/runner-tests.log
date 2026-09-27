@@ -1,0 +1,66 @@
+python.exe : test_t652_ambiguous_noop_and_escaping_edits_are_rejected
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_ambiguous_noop_and_escaping_edits_are_rejected) ... ok
+At C:\BlentSetup\run-native.ps1:8 char:5
++     & $command.Source @Arguments *> $Log
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_t652_ambig...ejected) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+test_t652_build_test_timeout_and_expected_assertion_are_distinct
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_build_test_timeout_and_expected_assertion_are_distinct) ... ok
+test_t652_candidate_restores_source_on_success_and_exception
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_candidate_restores_source_on_success_and_exception) ... ok
+test_t652_catalog_rejects_empty_duplicate_foreign_and_unsafe_ids
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_catalog_rejects_empty_duplicate_foreign_and_unsafe_ids) ... ok
+test_t652_deadline_prevents_launch_and_argv_keeps_literal_paths
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_deadline_prevents_launch_and_argv_keeps_literal_paths) ... ok
+test_t652_interleaved_native_stderr_keeps_failed_test_identity
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_interleaved_native_stderr_keeps_failed_test_identity) ... ok
+test_t652_junit_stale_empty_and_skipped_results_cannot_pass
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_junit_stale_empty_and_skipped_results_cannot_pass) ... ok
+test_t652_namespace_protects_external_file_and_allows_private_output
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_namespace_protects_external_file_and_allows_private_output) ...
+skipped 'native Linux namespaces'
+test_t652_partial_failed_baseline_and_changed_sources_fail_closed
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_partial_failed_baseline_and_changed_sources_fail_closed) ... ok
+test_t652_test_evidence_requires_executed_tests_and_known_failure
+(test_bounded_mutation.BoundedEvidenceTest.test_t652_test_evidence_requires_executed_tests_and_known_failure) ... ok
+test_t652_caught_requires_real_failed_test_after_successful_build
+(test_mutation_runner.MutationEvidenceTest.test_t652_caught_requires_real_failed_test_after_successful_build) ... ok
+test_t652_incomplete_duplicate_empty_and_unknown_results_fail
+(test_mutation_runner.MutationEvidenceTest.test_t652_incomplete_duplicate_empty_and_unknown_results_fail) ... ok
+test_t652_missing_artifacts_never_pass
+(test_mutation_runner.MutationEvidenceTest.test_t652_missing_artifacts_never_pass) ... ok
+test_t652_only_complete_baselined_caught_runs_pass
+(test_mutation_runner.MutationEvidenceTest.test_t652_only_complete_baselined_caught_runs_pass) ... ok
+test_t652_timeouts_unviable_survivors_and_tool_errors_remain_distinct
+(test_mutation_runner.MutationEvidenceTest.test_t652_timeouts_unviable_survivors_and_tool_errors_remain_distinct) ...
+ok
+test_t652_zero_tests_and_missing_baselines_fail
+(test_mutation_runner.MutationEvidenceTest.test_t652_zero_tests_and_missing_baselines_fail) ... ok
+test_t671_different_or_missing_baseline_commands_never_pass
+(test_mutation_runner.MutationEvidenceTest.test_t671_different_or_missing_baseline_commands_never_pass) ... ok
+test_t671_package_order_versions_and_duplicates_are_equivalent
+(test_mutation_runner.MutationEvidenceTest.test_t671_package_order_versions_and_duplicates_are_equivalent) ... ok
+test_t652_deadline_and_missing_executable_are_not_caught
+(test_mutation_runner.MutationIsolationTest.test_t652_deadline_and_missing_executable_are_not_caught) ... ok
+test_t652_deadline_kills_descendants_with_separate_process_groups
+(test_mutation_runner.MutationIsolationTest.test_t652_deadline_kills_descendants_with_separate_process_groups) ...
+skipped 'native Linux process ownership'
+test_t652_positive_bounded_inputs_and_no_in_place_command
+(test_mutation_runner.MutationIsolationTest.test_t652_positive_bounded_inputs_and_no_in_place_command) ... ok
+test_t652_profiles_reject_foreign_platform
+(test_mutation_runner.MutationIsolationTest.test_t652_profiles_reject_foreign_platform) ... ok
+test_t652_shared_video_includes_consumer_tests
+(test_mutation_runner.MutationIsolationTest.test_t652_shared_video_includes_consumer_tests) ... ok
+test_t652_snapshot_copies_working_bytes_without_ignored_builds
+(test_mutation_runner.MutationIsolationTest.test_t652_snapshot_copies_working_bytes_without_ignored_builds) ... ok
+test_t652_windows_deadline_kills_separate_group_descendants
+(test_mutation_runner.MutationIsolationTest.test_t652_windows_deadline_kills_separate_group_descendants) ... ok
+test_t671_consumer_packages_are_explicit_baseline_arguments
+(test_mutation_runner.MutationIsolationTest.test_t671_consumer_packages_are_explicit_baseline_arguments) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 2.529s
+
+OK (skipped=2)
