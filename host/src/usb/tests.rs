@@ -418,6 +418,37 @@ async fn t525_monitor_reconnect_uses_shared_authenticated_protocol_and_retires_o
         .unwrap();
 }
 #[tokio::test(start_paused = true)]
+async fn t657_redelivery_waits_for_each_complete_interval() {
+    let (adb, mut monitor, _stop, _) = monitor_fixture().await;
+    monitor.poll().await;
+    for (nanoseconds, expected) in [
+        (0, 1),
+        (4_999_999_999, 1),
+        (1, 2),
+        (0, 2),
+        (4_999_999_999, 2),
+        (1, 3),
+    ] {
+        tokio::time::advance(Duration::from_nanos(nanoseconds)).await;
+        monitor.poll().await;
+        let deliveries = adb
+            .0
+             .0
+            .lock()
+            .unwrap()
+            .calls
+            .iter()
+            .filter(|(_, input)| input.is_some())
+            .count();
+        assert_eq!(
+            deliveries, expected,
+            "T657: after advancing {nanoseconds} ns"
+        );
+    }
+    monitor.shutdown().await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
 async fn t525_monitor_repairs_redelivers_and_reports_failed_cleanup() {
     let (adb, mut monitor, stop, _) = monitor_fixture().await;
     monitor.poll().await;
