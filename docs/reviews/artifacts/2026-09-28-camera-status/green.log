@@ -1,0 +1,43 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.35s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 22 tests
+test camera::bridge::tests::t539_cleanup_preserves_other_reverse_mappings ... ok
+test camera::native_tests::t572_isolated_native_devices_and_session_cleanup ... ok
+test camera::outputs::tests::t539_inactive_and_stale_outputs_never_replay_camera_frames ... ok
+test camera::protocol::tests::t539_header_identity_authentication_and_bounds ... ok
+test camera::protocol::tests::t539_packet_rejects_truncation_zero_and_oversize ... ok
+test camera::status_tests::t704_stop_and_lens_replacement_cannot_inherit_a_previous_deadline ... ok
+test camera::status_tests::t704_streaming_expires_at_two_seconds_and_recovers_on_selected_frames ... ok
+test camera::tests::t539_bridge_invitation_and_mapping_ownership ... ok
+test camera::tests::t539_graceful_output_stop_allows_final_blank_to_flush ... ok
+test camera::tests::t539_producer_failure_retires_session_and_rejects_foreign_clients ... ok
+test camera::tests::t539_real_h264_upload_decodes_only_to_selected_endpoint ... [vost#0:0/rawvideo @ 0x57c34c770680] Error submitting a packet to the muxer: Broken pipe
+[out#0/rawvideo @ 0x57c34c7b16c0] Error muxing a packet
+[out#0/rawvideo @ 0x57c34c7b16c0] Error writing trailer: Broken pipe
+[out#0/rawvideo @ 0x57c34c7b16c0] Error closing file: Broken pipe
+ok
+test camera::tests::t539_rejects_encoded_dimensions_above_negotiated_profile ... [h264 @ 0x5dac80070880] [IMGUTILS @ 0x7fffbd8dd110] Picture size 320x240 exceeds specified max pixel count 24576, see the documentation if you wish to increase it
+[h264 @ 0x5dac80070880] video_get_buffer: image parameters invalid
+[h264 @ 0x5dac80070880] get_buffer() failed
+[h264 @ 0x5dac80070880] decode_slice_header error
+[h264 @ 0x5dac80070880] no frame!
+[h264 @ 0x5dac800e8d00] [IMGUTILS @ 0x7fffbd8e5550] Picture size 320x240 exceeds specified max pixel count 24576, see the documentation if you wish to increase it
+[vist#0:0/h264 @ 0x5dac800ea3c0] Error while opening decoder: Invalid argument
+[vost#0:0/rawvideo @ 0x5dac800e9b40] Error initializing a simple filtergraph
+Error opening output file pipe:1.
+Error opening output files: Invalid argument
+ok
+test camera::tests::t539_rotation_and_mirroring_are_bounded_filter_choices ... ok
+test camera::tests::t539_stalled_decoder_cannot_hold_camera_session_forever ... ok
+test camera::tests::t539_virtual_camera_writes_black_on_start_and_stop ... ok
+test camera::tests::t543_desktop_rotation_combines_sensor_orientation_before_mirroring ... ok
+test camera::tests::t543_embedded_adapter_rejects_invalid_profile_before_native_work ... ok
+test camera::tests::t543_host_reports_frames_and_rejects_unselected_lens ... ok
+test camera::tests::t543_real_output_and_preview_rotate_the_same_asymmetric_picture ... ok
+test camera::tests::t609_invitation_token_uses_stdin_not_process_arguments ... ok
+test camera::tests::t609_rejects_shell_input_and_redacts_adb_diagnostics ... ok
+test camera::tests::t620_early_producer_exit_cancels_pending_handshake ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 184 filtered out; finished in 2.32s

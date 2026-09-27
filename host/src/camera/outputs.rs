@@ -130,9 +130,11 @@ async fn write_frames(
     }
 }
 
+pub(super) const FRESH_FRAME_AGE: Duration = Duration::from_secs(2);
+
 fn current_frame<'a>(frame: Option<&'a Vec<u8>>, black: &'a [u8], age: Duration) -> &'a [u8] {
     match frame {
-        Some(bytes) if age < Duration::from_secs(2) => bytes,
+        Some(bytes) if age < FRESH_FRAME_AGE => bytes,
         _ => black,
     }
 }

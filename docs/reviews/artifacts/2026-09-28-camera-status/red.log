@@ -1,0 +1,34 @@
+   Compiling blent-config v1.2.3 (/backups/disk2/projects/blent/common)
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.20s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 2 tests
+test camera::status_tests::t704_stop_and_lens_replacement_cannot_inherit_a_previous_deadline ... FAILED
+test camera::status_tests::t704_streaming_expires_at_two_seconds_and_recovers_on_selected_frames ... FAILED
+
+failures:
+
+---- camera::status_tests::t704_stop_and_lens_replacement_cannot_inherit_a_previous_deadline stdout ----
+
+thread 'camera::status_tests::t704_stop_and_lens_replacement_cannot_inherit_a_previous_deadline' (1097662) panicked at host/src/camera/status_tests.rs:31:9:
+assertion `left == right` failed: T704 freshness boundary
+  left: Streaming
+ right: Waiting
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- camera::status_tests::t704_streaming_expires_at_two_seconds_and_recovers_on_selected_frames stdout ----
+
+thread 'camera::status_tests::t704_streaming_expires_at_two_seconds_and_recovers_on_selected_frames' (1097663) panicked at host/src/camera/status_tests.rs:31:9:
+assertion `left == right` failed: T704 freshness boundary
+  left: Streaming
+ right: Waiting
+
+
+failures:
+    camera::status_tests::t704_stop_and_lens_replacement_cannot_inherit_a_previous_deadline
+    camera::status_tests::t704_streaming_expires_at_two_seconds_and_recovers_on_selected_frames
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 204 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `-p blent --lib`

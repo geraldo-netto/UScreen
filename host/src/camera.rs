@@ -8,6 +8,8 @@ mod native_tests;
 mod outputs;
 mod protocol;
 #[cfg(test)]
+mod status_tests;
+#[cfg(test)]
 mod tests;
 
 use anyhow::{Context, Result};
@@ -185,15 +187,23 @@ async fn frame_status(frames: &[outputs::Frames; 2], options: &CameraOptions, st
     }]
     .subscribe();
     let mut next_preview = tokio::time::Instant::now();
+    let mut expires = None;
     loop {
-        if selected.changed().await.is_err() {
-            return;
+        tokio::select! {
+            change = selected.changed() => if change.is_err() { return; },
+            _ = async { tokio::time::sleep_until(expires.unwrap()).await }, if expires.is_some() => {
+                expires = None;
+                status.update(State::Waiting);
+                continue;
+            }
         }
         let frame = selected.borrow_and_update().clone();
         let Some(frame) = frame else {
+            expires = None;
             status.update(State::Waiting);
             continue;
         };
+        expires = Some(tokio::time::Instant::now() + outputs::FRESH_FRAME_AGE);
         status.update(State::Streaming);
         if tokio::time::Instant::now() >= next_preview {
             let preview = blent_config::camera::CameraPreview::from_yuv420(
