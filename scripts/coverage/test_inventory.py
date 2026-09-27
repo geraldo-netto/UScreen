@@ -24,7 +24,7 @@ class InventoryTest(unittest.TestCase):
 
     def test_t497_application_scope_excludes_benchmarks_in_every_language(self):
         for name in ['host/src/main.rs', 'common/src/lib.rs', 'host/evdi/evdi_helper.c', 'android/app/src/main/java/com/blent/MainActivity.kt',
-                     'scripts/install.sh', 'scripts/setup-evdi.sh', 'scripts/ci/verify-portability.py',
+                     'scripts/install.sh', 'scripts/setup-evdi.sh', 'scripts/gpu-boot-order.sh', 'scripts/ci/verify-portability.py',
                      'packaging/appimage/build.py', 'packaging/arch/PKGBUILD', 'packaging/appimage/AppRun']:
             self.assertTrue(coverage_source(Path(name)), name)
         for name in ['common/examples/encoder-options.rs', 'host/benches/queue.rs', 'scripts/benchmarks/main.rs', 'scripts/benchmarks/helper.c',

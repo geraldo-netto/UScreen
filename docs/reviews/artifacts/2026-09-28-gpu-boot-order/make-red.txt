@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_t700_make_setup_configures_order_before_loading_evdi (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_make_setup_configures_order_before_loading_evdi)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 223, in test_t700_make_setup_configures_order_before_loading_evdi
+    self.assertIn(order, commands, 'T700: make setup omitted GPU boot ordering')
+AssertionError: 'sudo bash scripts/gpu-boot-order.sh' not found in 'sudo mkdir -p /etc/modprobe.d /etc/modules-load.d\necho "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/blent-evdi.conf\nprintf "evdi\\nuinput\\n" | sudo tee /etc/modules-load.d/blent.conf\nsudo install -Dm644 packaging/60-blent-uinput.rules /etc/udev/rules.d/60-blent-uinput.rules\nsudo udevadm control --reload\nsudo udevadm trigger --name-match=uinput\nsudo modprobe uinput || true\nsudo sh scripts/setup-evdi.sh 2\necho "✓ System setup done (EVDI device available now and at every boot)"\n' : T700: make setup omitted GPU boot ordering
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)

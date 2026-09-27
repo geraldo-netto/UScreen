@@ -558,6 +558,13 @@ fn t097_make_setup_creates_missing_configuration_directories() {
         .replace("/sys/", &format!("{}/sys/", sandbox.0.display()));
     sandbox.write("Makefile", &makefile);
     sandbox.write(
+        "scripts/gpu-boot-order.sh",
+        &std::fs::read_to_string(repo().join("scripts/gpu-boot-order.sh"))
+            .unwrap()
+            .replace("/sys/", &format!("{}/sys/", sandbox.0.display()))
+            .replace("/etc/", &format!("{}/etc/", sandbox.0.display())),
+    );
+    sandbox.write(
         "scripts/setup-evdi.sh",
         &std::fs::read_to_string(repo().join("scripts/setup-evdi.sh"))
             .unwrap()

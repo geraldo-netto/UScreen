@@ -6,7 +6,7 @@ License:        MIT AND LGPL-2.1-or-later
 URL:            https://github.com/geraldo-netto/blent
 Source0:        blent-%{version}-linux-x86_64.tar.gz
 BuildArch:      x86_64
-Requires:       ffmpeg android-tools
+Requires:       ffmpeg android-tools bash coreutils
 # Loaded by the GUI at runtime; automatic ELF dependency scans cannot see it.
 # SONAME works with both Fedora and openSUSE package names.
 Requires:       libxkbcommon-x11.so.0()(64bit)
@@ -28,6 +28,7 @@ plain graphics tablet for the host's own screen.
 %setup -q -n blent-%{version}
 
 %install
+install -Dm755 scripts/gpu-boot-order.sh %{buildroot}%{_datadir}/blent/gpu-boot-order.sh
 install -Dm755 scripts/setup-evdi.sh %{buildroot}%{_datadir}/blent/setup-evdi.sh
 install -Dm755 bin/blent          %{buildroot}%{_bindir}/blent
 install -Dm755 bin/blent-gui      %{buildroot}%{_bindir}/blent-gui
@@ -45,6 +46,7 @@ install -Dm644 packaging/60-blent-uinput.rules %{buildroot}%{_udevrulesdir}/60-b
 ./scripts/copy-distribution-docs.sh %{buildroot}%{_docdir}/blent
 
 %post
+bash %{_datadir}/blent/gpu-boot-order.sh || echo "blent: GPU boot ordering needs manual review" >&2
 sh %{_datadir}/blent/setup-evdi.sh 2 || true
 # Icon caches go by directory mtime; touch the theme so menus pick the
 # icon up without a logout.
@@ -56,6 +58,7 @@ udevadm trigger --name-match=uinput 2>/dev/null || true
 
 %files
 %{_datadir}/blent/setup-evdi.sh
+%{_datadir}/blent/gpu-boot-order.sh
 %{_bindir}/blent
 %{_bindir}/blent-gui
 %{_libdir}/blent/evdi_helper

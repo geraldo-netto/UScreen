@@ -344,6 +344,8 @@ configure_boot_modules() {
     # set -e a missing one used to kill the whole script here, silently, with
     # the binaries already copied and the udev rule not yet installed.
     sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
+    sudo bash "$SCRIPT_DIR/gpu-boot-order.sh" \
+        || warn "Could not configure GPU boot ordering; see docs/installation.md."
     # Reinstallation must retain GUI/admin-provisioned capacity and other
     # module options. A new install gets the default; noclobber also protects
     # a configuration created between the existence check and the write.

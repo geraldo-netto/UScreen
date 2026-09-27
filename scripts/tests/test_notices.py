@@ -44,6 +44,8 @@ class NoticeTest(unittest.TestCase):
             docs = extracted / f'blent-{version}'
             self.verify_docs(docs)
             self.assertEqual((docs / 'scripts/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: portable setup missing')
+            self.assertEqual((docs / 'scripts/gpu-boot-order.sh').read_bytes(),
+                             (REPO / 'scripts/gpu-boot-order.sh').read_bytes(), 'T700: portable GPU ordering missing')
             env['BLENT_TEST_BUILD'] = 'packages'
             import appimage_fixture
             appimage_fixture.install(root)
@@ -53,6 +55,7 @@ class NoticeTest(unittest.TestCase):
                              (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: AppImage setup missing')
             rpm_files = run('rpm', '-qpl', f'dist/blent-{version}-1.x86_64.rpm').splitlines()
             self.assertIn('/usr/share/blent/setup-evdi.sh', rpm_files, 'T269: RPM setup missing')
+            self.assertIn('/usr/share/blent/gpu-boot-order.sh', rpm_files, 'T700: RPM GPU ordering missing')
             for name in NOTICES:
                 self.assertIn('/usr/share/doc/blent/' + name, rpm_files)
             for link in re.findall(r'\]\(([^)]+)\)', (docs / 'README.md').read_text()):
@@ -75,6 +78,8 @@ class NoticeTest(unittest.TestCase):
             run('bash', '-c', 'set -e; source "$PWD/packaging/arch/PKGBUILD"; srcdir="$PWD"; pkgdir="$PWD/arch"; package')
             self.verify_docs(root / 'arch/usr/share/doc/blent')
             self.assertEqual((root / 'arch/usr/share/blent/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Arch setup missing')
+            self.assertEqual((root / 'arch/usr/share/blent/gpu-boot-order.sh').read_bytes(),
+                             (REPO / 'scripts/gpu-boot-order.sh').read_bytes(), 'T700: Arch GPU ordering missing')
 
     def copy_sources(self, root):
         for name in ['Makefile', 'README.md', 'LICENSE', 'COPYRIGHT.md', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',

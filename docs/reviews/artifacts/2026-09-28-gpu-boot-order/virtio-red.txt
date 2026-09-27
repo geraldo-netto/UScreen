@@ -1,0 +1,18 @@
+F
+======================================================================
+FAIL: test_t700_real_gpu_is_a_predependency_of_boot_evdi (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_real_gpu_is_a_predependency_of_boot_evdi) (module='virtio_pci')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 68, in test_t700_real_gpu_is_a_predependency_of_boot_evdi
+    self.assertEqual(config.read_text(), f'softdep evdi pre: {expected}\n')
+AssertionError: 'softdep evdi pre: virtio_pci\n' != 'softdep evdi pre: virtio_gpu\n'
+- softdep evdi pre: virtio_pci
+?                           ^^
++ softdep evdi pre: virtio_gpu
+?                          + ^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.995s
+
+FAILED (failures=1)

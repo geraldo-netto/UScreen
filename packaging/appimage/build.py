@@ -70,7 +70,7 @@ def stage_metadata(repo, appdir):
     copy(source / 'AppRun', appdir / 'AppRun', 0o755)
     share = appdir / 'usr/share/blent'
     copy(source / 'install-appimage.sh', share / 'install-appimage.sh', 0o755)
-    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'blent.service',
+    for name in ('write-desktop-entry.sh', 'write-systemd-service.sh', 'setup-evdi.sh', 'gpu-boot-order.sh', 'blent.service',
                  'blent-service-autostart.desktop'):
         copy(repo / 'scripts' / name, share / name)
     copy(repo / 'scripts/blent.desktop', share / 'blent.desktop')

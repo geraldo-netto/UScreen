@@ -72,9 +72,14 @@ class EvdiSetupTest(unittest.TestCase):
     [[ $1 == /usr/share/blent/setup-evdi.sh ]] || return 91
     command sh "$BLENT_SETUP_SCRIPT" "${@:2}"
 }
+bash() {
+    [[ $1 == /usr/share/blent/gpu-boot-order.sh ]] || return 92
+    command bash "$BLENT_GPU_SCRIPT" "$BLENT_SETUP_FIXTURE/drm" "$BLENT_SETUP_FIXTURE/modprobe.d"
+}
 ''' + source
             env = dict(os.environ, PATH=f'{root}/bin:{os.environ["PATH"]}', BLENT_SETUP_FIXTURE=tmp,
-                       BLENT_SETUP_SCRIPT=str(REPO / 'scripts/setup-evdi.sh'))
+                       BLENT_SETUP_SCRIPT=str(REPO / 'scripts/setup-evdi.sh'),
+                       BLENT_GPU_SCRIPT=str(REPO / 'scripts/gpu-boot-order.sh'))
             if failure:
                 env[failure] = '1'
             result = run_shell(source, args, env=env, cwd=REPO, capture_output=True, text=True, timeout=5)

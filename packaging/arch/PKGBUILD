@@ -7,7 +7,7 @@ pkgdesc="Use an Android tablet as a USB second display and graphics tablet (KDE 
 arch=('x86_64')
 url="https://github.com/geraldo-netto/blent"
 license=('MIT' 'LGPL-2.1-or-later')
-depends=('evdi-dkms' 'ffmpeg' 'android-tools' 'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11')
+depends=('evdi-dkms' 'ffmpeg' 'android-tools' 'bash' 'coreutils' 'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11')
 makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
 install=blent.install
 _evdi=v1.15.0
@@ -28,6 +28,7 @@ build() {
 
 package() {
   cd "blent-$pkgver"
+  install -Dm755 scripts/gpu-boot-order.sh "$pkgdir/usr/share/blent/gpu-boot-order.sh"
   install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/blent/setup-evdi.sh"
   install -Dm755 target/release/blent     "$pkgdir/usr/bin/blent"
   install -Dm755 target/release/blent-gui "$pkgdir/usr/bin/blent-gui"

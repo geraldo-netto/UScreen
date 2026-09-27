@@ -1,0 +1,18 @@
+F
+======================================================================
+FAIL: test_t700_drm_provider_takes_precedence_over_transport_module (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_drm_provider_takes_precedence_over_transport_module)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 145, in test_t700_drm_provider_takes_precedence_over_transport_module
+    self.assertEqual((root / 'etc/modprobe.d/blent-gpu-order.conf').read_text(),
+AssertionError: 'softdep evdi pre: virtio_pci\n' != 'softdep evdi pre: virtio_gpu\n'
+- softdep evdi pre: virtio_pci
+?                           ^^
++ softdep evdi pre: virtio_gpu
+?                          + ^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.012s
+
+FAILED (failures=1)

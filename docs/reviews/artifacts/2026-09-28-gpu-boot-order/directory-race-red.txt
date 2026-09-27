@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_t700_concurrent_directory_cannot_redirect_publication (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_concurrent_directory_cannot_redirect_publication)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 184, in test_t700_concurrent_directory_cannot_redirect_publication
+    self.assertNotEqual(result.returncode, 0, 'T700: publication followed a concurrent directory')
+AssertionError: 0 == 0 : T700: publication followed a concurrent directory
+
+----------------------------------------------------------------------
+Ran 1 test in 0.013s
+
+FAILED (failures=1)

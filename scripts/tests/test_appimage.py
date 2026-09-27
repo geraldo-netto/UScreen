@@ -66,6 +66,8 @@ class AppImageTest(unittest.TestCase):
 
     def installer_fixture(self):
         build.stage_metadata(REPO, self.app)
+        self.assertEqual((self.app / 'usr/share/blent/gpu-boot-order.sh').read_bytes(),
+                         (REPO / 'scripts/gpu-boot-order.sh').read_bytes(), 'T700: AppImage GPU ordering missing')
         (self.app / 'usr/bin/bash').symlink_to('/bin/bash')
         self.write(self.app / 'usr/bin/blent', '#!/bin/sh\nprintf "%s\\n" "${BLENT_TEST_STATE-blent is not running}"\n')
         self.write(self.app / 'usr/bin/systemctl', '#!/bin/sh\nexit 0\n')

@@ -20,7 +20,7 @@ def essential_script(path):
         return language(path) in {'python', 'shell', 'rpm'} or path.name == 'AppRun'
     return str(path) in {
         'scripts/build-release.sh', 'scripts/copy-distribution-docs.sh', 'scripts/gen-edid.py',
-        'scripts/install.sh', 'scripts/setup-evdi.sh', 'scripts/stage-linux-bundle.sh',
+        'scripts/install.sh', 'scripts/gpu-boot-order.sh', 'scripts/setup-evdi.sh', 'scripts/stage-linux-bundle.sh',
         'scripts/verify-release-apk.py', 'scripts/write-desktop-entry.sh', 'scripts/write-systemd-service.sh',
         'scripts/ci/build-artifacts.sh', 'scripts/ci/build-arch-package.sh',
         'scripts/ci/verify-portability.py',

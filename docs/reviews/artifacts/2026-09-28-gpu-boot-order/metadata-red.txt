@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_t700_invalid_module_metadata_never_becomes_configuration (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_invalid_module_metadata_never_becomes_configuration) (module="'amdgpu\\n'")
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 111, in test_t700_invalid_module_metadata_never_becomes_configuration
+    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 0 == 0 :
+
+----------------------------------------------------------------------
+Ran 1 test in 0.136s
+
+FAILED (failures=1)

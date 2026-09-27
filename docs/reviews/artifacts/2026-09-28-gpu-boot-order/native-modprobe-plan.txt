@@ -1,0 +1,18 @@
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/ttm/ttm.ko.zst pages_limit=15728640
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_ttm_helper.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/platform/wmi/wmi.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/acpi/video.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/i2c/algos/i2c-algo-bit.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/media/rc/rc-core.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/media/cec/core/cec.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/display/drm_display_helper.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_suballoc_helper.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_exec.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/ttm/ttm.ko.zst pages_limit=15728640
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_ttm_helper.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_buddy.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/scheduler/gpu-sched.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/drm_panel_backlight_quirks.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/amd/amdxcp/amdxcp.ko.zst
+insmod /lib/modules/7.0.0-34-generic/kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko.zst dcperformance=1 dcdebugmask=0x10
+insmod /lib/modules/7.0.0-34-generic/ubuntu/evdi/evdi.ko.zst

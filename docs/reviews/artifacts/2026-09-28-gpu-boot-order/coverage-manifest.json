@@ -1,0 +1,1294 @@
+{
+  "version": 1,
+  "scope": "Python and shell",
+  "sources": {
+    "host/tests/tooling.rs": "1ce078cb201980b9bdf52d5a7ae50364a5e4abfd0f92dbdfcb63e30df303e717",
+    "packaging/appimage/AppRun": "e0857ce5796ce069ab0531ac49098a3a800ffa9f01de5322faf547f80afd4235",
+    "packaging/appimage/build.py": "7baf0057ff6f7c2578f69774856052652eceb7f203669941a8e5e0b23029bf29",
+    "packaging/appimage/elf.py": "b76e01f32bcaf5f6a4d39864e4f12bdc49f7d685dcde62a88b45098e74f1c153",
+    "packaging/appimage/ffmpeg_bundle.py": "bec4f2c10377f83392db73ead022c2a867e0a528546b8913023448268c658377",
+    "packaging/appimage/install-appimage.sh": "c10cd3ea987a7a08ad59de0583810f7db95da2ce4e11f7deae7d1bb7a656b36b",
+    "packaging/appimage/sources.py": "2fff551516020f9ef4b10b20469b33ba3d4f0cddd8fa16cff8b1db5f46dcbb2a",
+    "packaging/appimage/tools.py": "e845f202370012221d64ffec3cf2e8aae273742f360a945560d8ae0bdcbf4933",
+    "packaging/arch/PKGBUILD": "4ff6adc81d990243186f0d51ffc014f34b5be057113cf1ca4510bb34ee89f146",
+    "packaging/arch/blent.install": "223fc8ab788b53e38218919c7bc10e15d1d06bab40842633fa96c37c9514e7fa",
+    "packaging/build-packages.sh": "19fd0941ed88ff1d9f5f34963ffc6b7a858633ac31c47e562d9bf2a07c5cf3c5",
+    "packaging/deb/postinst": "6f7ba831f9b5d357f8ce7deae3c3a166492e979309da21269e95e52e1e44648f",
+    "packaging/rpm/blent.spec": "e51ceb81d1b08555c4f4bfb4f20c633c6652f97da862bb0613de60971f80b9f8",
+    "scripts/build-release.sh": "b06fde7eaa40a429616a27824c330e1e0a21774fda519912751ab79748256678",
+    "scripts/ci/build-arch-package.sh": "c34c85ac9b7c55e3fbd57c68a7fcc5ed4d8deba4b5483b38f55f82fa5933c992",
+    "scripts/ci/build-artifacts.sh": "8f7fa48d5d1cc85d3eaa240f88237a197d258e5b98c6790082b7da01fc161858",
+    "scripts/ci/verify-portability.py": "a40aba97a5b89395e634f94ce37dc22671dd6acc9a4b024460e5b8e9f8a1c6b4",
+    "scripts/copy-distribution-docs.sh": "179a63b634cceaba8581d57523ec7f1d825d3c6f14ca8ed0a1d4451dfab66288",
+    "scripts/gen-edid.py": "ff30cfd2493fee225ce0b226c7aa5d3ee3ebf5a7b7dabc89ba443e9696d985db",
+    "scripts/gpu-boot-order.sh": "83fdf872f107284b5c3c47067a1323061ff6ab23bde485baf91aba7522e538e4",
+    "scripts/install.sh": "1a4618f02cbf0bdd4d12a4e427d889154a6ecc956eba1f71dd57b151cb972740",
+    "scripts/setup-evdi.sh": "5797bb50a0f88120dc28a042af583fde887c1da69449dc9e63bfe631b8094b38",
+    "scripts/stage-linux-bundle.sh": "f0402667903928922bfae1da3f62e67a36a1ade3590c55ba3a866753358ea051",
+    "scripts/verify-release-apk.py": "3928d7ea54d768f2ef90e959457c4e9da01c7baaea6f5b40c44dcae964ab3bd5",
+    "scripts/write-desktop-entry.sh": "72ba05ab582ed713f7182f73a481855df98eb87fb5c0780a55fda648da2df6f2",
+    "scripts/write-systemd-service.sh": "b3da956dc856f3496304cdf790aff86a9e45a2dce37c93beab069a68f718a9b5"
+  },
+  "functions": [
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "copy",
+      "first": 16,
+      "last": 20,
+      "language": "python",
+      "nested": [],
+      "entry": 16,
+      "body": 17
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage",
+      "first": 23,
+      "last": 48,
+      "language": "python",
+      "nested": [],
+      "entry": 23,
+      "body": 24
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stock_paths",
+      "first": 51,
+      "last": 53,
+      "language": "python",
+      "nested": [],
+      "entry": 51,
+      "body": 52
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage_stock",
+      "first": 56,
+      "last": 65,
+      "language": "python",
+      "nested": [],
+      "entry": 56,
+      "body": 57
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage_metadata",
+      "first": 68,
+      "last": 83,
+      "language": "python",
+      "nested": [],
+      "entry": 68,
+      "body": 69
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "build",
+      "first": 86,
+      "last": 108,
+      "language": "python",
+      "nested": [],
+      "entry": 86,
+      "body": 87
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "arguments",
+      "first": 111,
+      "last": 126,
+      "language": "python",
+      "nested": [],
+      "entry": 111,
+      "body": 112
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "run",
+      "first": 17,
+      "last": 18,
+      "language": "python",
+      "nested": [],
+      "entry": 17,
+      "body": 18
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "needed",
+      "first": 21,
+      "last": 27,
+      "language": "python",
+      "nested": [],
+      "entry": 21,
+      "body": 22
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "library_index",
+      "first": 30,
+      "last": 37,
+      "language": "python",
+      "nested": [],
+      "entry": 30,
+      "body": 31
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "verify_abi",
+      "first": 40,
+      "last": 44,
+      "language": "python",
+      "nested": [],
+      "entry": 40,
+      "body": 41
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "closure",
+      "first": 47,
+      "last": 62,
+      "language": "python",
+      "nested": [],
+      "entry": 47,
+      "body": 48
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "discover",
+      "first": 65,
+      "last": 75,
+      "language": "python",
+      "nested": [],
+      "entry": 65,
+      "body": 66
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "set_app_rpath",
+      "first": 78,
+      "last": 84,
+      "language": "python",
+      "nested": [],
+      "entry": 78,
+      "body": 81
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "stock_wrapper",
+      "first": 87,
+      "last": 99,
+      "language": "python",
+      "nested": [],
+      "entry": 87,
+      "body": 88
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "check_loaded",
+      "first": 102,
+      "last": 106,
+      "language": "python",
+      "nested": [],
+      "entry": 102,
+      "body": 103
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "configuration",
+      "first": 28,
+      "last": 34,
+      "language": "python",
+      "nested": [],
+      "entry": 28,
+      "body": 29
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "validate_input",
+      "first": 37,
+      "last": 45,
+      "language": "python",
+      "nested": [],
+      "entry": 37,
+      "body": 38
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "archives",
+      "first": 48,
+      "last": 56,
+      "language": "python",
+      "nested": [],
+      "entry": 48,
+      "body": 49
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "extract",
+      "first": 59,
+      "last": 68,
+      "language": "python",
+      "nested": [],
+      "entry": 59,
+      "body": 60
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "validate_member",
+      "first": 71,
+      "last": 76,
+      "language": "python",
+      "nested": [],
+      "entry": 71,
+      "body": 72
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "command",
+      "first": 79,
+      "last": 80,
+      "language": "python",
+      "nested": [],
+      "entry": 79,
+      "body": 80
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "compile_sources",
+      "first": 83,
+      "last": 93,
+      "language": "python",
+      "nested": [],
+      "entry": 83,
+      "body": 84
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "verify",
+      "first": 96,
+      "last": 108,
+      "language": "python",
+      "nested": [],
+      "entry": 96,
+      "body": 97
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "verify_encoders",
+      "first": 111,
+      "last": 116,
+      "language": "python",
+      "nested": [],
+      "entry": 111,
+      "body": 112
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "retain_sources",
+      "first": 119,
+      "last": 134,
+      "language": "python",
+      "nested": [],
+      "entry": 119,
+      "body": 120
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "prepare",
+      "first": 137,
+      "last": 148,
+      "language": "python",
+      "nested": [],
+      "entry": 137,
+      "body": 138
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "isolate_codecs",
+      "first": 151,
+      "last": 156,
+      "language": "python",
+      "nested": [],
+      "entry": 151,
+      "body": 152
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "corresponding_sources",
+      "first": 159,
+      "last": 170,
+      "language": "python",
+      "nested": [],
+      "entry": 159,
+      "body": 160
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "absolute_base",
+      "first": 8,
+      "last": 10,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "check_stopped",
+      "first": 16,
+      "last": 23,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_image",
+      "first": 25,
+      "last": 34,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_extracted",
+      "first": 36,
+      "last": 50,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_service",
+      "first": 52,
+      "last": 61,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_desktop",
+      "first": 63,
+      "last": 72,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "backup_gui_entry",
+      "first": 74,
+      "last": 81,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "link_gui_entry",
+      "first": 83,
+      "last": 90,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_gui_entry",
+      "first": 92,
+      "last": 107,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_entry",
+      "first": 109,
+      "last": 124,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "update_autostart",
+      "first": 126,
+      "last": 138,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "check_destination",
+      "first": 140,
+      "last": 146,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "package_for",
+      "first": 13,
+      "last": 21,
+      "language": "python",
+      "nested": [],
+      "entry": 13,
+      "body": 14
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "package_info",
+      "first": 24,
+      "last": 29,
+      "language": "python",
+      "nested": [],
+      "entry": 24,
+      "body": 25
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "debian_sources",
+      "first": 32,
+      "last": 43,
+      "language": "python",
+      "nested": [],
+      "entry": 32,
+      "body": 33
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "download_debian_source",
+      "first": 46,
+      "last": 55,
+      "language": "python",
+      "nested": [],
+      "entry": 46,
+      "body": 47
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "source_checksums",
+      "first": 58,
+      "last": 71,
+      "language": "python",
+      "nested": [],
+      "entry": 58,
+      "body": 59
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "rust_sources",
+      "first": 74,
+      "last": 82,
+      "language": "python",
+      "nested": [],
+      "entry": 74,
+      "body": 75
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "copy_crate",
+      "first": 85,
+      "last": 93,
+      "language": "python",
+      "nested": [],
+      "entry": 85,
+      "body": 86
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "copy_crate_notices",
+      "first": 96,
+      "last": 103,
+      "language": "python",
+      "nested": [],
+      "entry": 96,
+      "body": 97
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "runtime_sources",
+      "first": 106,
+      "last": 120,
+      "language": "python",
+      "nested": [],
+      "entry": 106,
+      "body": 107
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "runtime_dependencies",
+      "first": 123,
+      "last": 138,
+      "language": "python",
+      "nested": [],
+      "entry": 123,
+      "body": 124
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "verify_evdi",
+      "first": 141,
+      "last": 149,
+      "language": "python",
+      "nested": [],
+      "entry": 141,
+      "body": 142
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "collect",
+      "first": 152,
+      "last": 171,
+      "language": "python",
+      "nested": [],
+      "entry": 152,
+      "body": 153
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "digest",
+      "first": 10,
+      "last": 12,
+      "language": "python",
+      "nested": [],
+      "entry": 10,
+      "body": 11
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "validate",
+      "first": 15,
+      "last": 21,
+      "language": "python",
+      "nested": [],
+      "entry": 15,
+      "body": 16
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "download",
+      "first": 24,
+      "last": 26,
+      "language": "python",
+      "nested": [],
+      "entry": 24,
+      "body": 25
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "fetch",
+      "first": 29,
+      "last": 42,
+      "language": "python",
+      "nested": [],
+      "entry": 29,
+      "body": 30
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "transfer",
+      "first": 45,
+      "last": 51,
+      "language": "python",
+      "nested": [],
+      "entry": 45,
+      "body": 46
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "prepare",
+      "first": 54,
+      "last": 65,
+      "language": "python",
+      "nested": [],
+      "entry": 54,
+      "body": 55
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "name": "build",
+      "first": 18,
+      "last": 27,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "name": "package",
+      "first": 29,
+      "last": 48,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "name": "post_install",
+      "first": 2,
+      "last": 10,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "name": "post_upgrade",
+      "first": 11,
+      "last": 11,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/ci/verify-portability.py",
+      "name": "verify_abi",
+      "first": 9,
+      "last": 18,
+      "language": "python",
+      "nested": [],
+      "entry": 9,
+      "body": 10
+    },
+    {
+      "file": "scripts/ci/verify-portability.py",
+      "name": "verify_bundle",
+      "first": 21,
+      "last": 30,
+      "language": "python",
+      "nested": [],
+      "entry": 21,
+      "body": 22
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "encode_manufacturer_id",
+      "first": 30,
+      "last": 43,
+      "language": "python",
+      "nested": [],
+      "entry": 30,
+      "body": 31
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "validate_dimensions",
+      "first": 50,
+      "last": 56,
+      "language": "python",
+      "nested": [],
+      "entry": 50,
+      "body": 51
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "make_edid",
+      "first": 59,
+      "last": 237,
+      "language": "python",
+      "nested": [],
+      "entry": 59,
+      "body": 60
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "main",
+      "first": 240,
+      "last": 262,
+      "language": "python",
+      "nested": [],
+      "entry": 240,
+      "body": 241
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "warn",
+      "first": 5,
+      "last": 5,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_module",
+      "first": 7,
+      "last": 23,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_modules",
+      "first": 25,
+      "last": 33,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "write_gpu_boot_order",
+      "first": 35,
+      "last": 47,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "configure_gpu_boot_order",
+      "first": 49,
+      "last": 60,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "xdg_base",
+      "first": 11,
+      "last": 16,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "info",
+      "first": 22,
+      "last": 22,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "warn",
+      "first": 23,
+      "last": 23,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "error",
+      "first": 24,
+      "last": 24,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_prebuilt",
+      "first": 26,
+      "last": 26,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "has_evdi_library",
+      "first": 28,
+      "last": 41,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_evdi_library",
+      "first": 43,
+      "last": 49,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_ostree_booted",
+      "first": 55,
+      "last": 57,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_layered_deps",
+      "first": 59,
+      "last": 63,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_runtime_deps",
+      "first": 65,
+      "last": 68,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_rpm_evdi_module",
+      "first": 70,
+      "last": 74,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "enable_fedora_rpmfusion",
+      "first": 76,
+      "last": 86,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_fedora_deps",
+      "first": 88,
+      "last": 97,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_enterprise_deps",
+      "first": 99,
+      "last": 108,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_deps",
+      "first": 110,
+      "last": 121,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_arch_deps",
+      "first": 123,
+      "last": 138,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_suse_deps",
+      "first": 140,
+      "last": 154,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_distro_deps",
+      "first": 156,
+      "last": 167,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_deps",
+      "first": 169,
+      "last": 175,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_deps",
+      "first": 178,
+      "last": 186,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_path",
+      "first": 191,
+      "last": 198,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "build_if_needed",
+      "first": 200,
+      "last": 209,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "stage_install_binaries",
+      "first": 211,
+      "last": 228,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_binaries",
+      "first": 230,
+      "last": 250,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_entry",
+      "first": 252,
+      "last": 258,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_icons",
+      "first": 260,
+      "last": 272,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_user_service",
+      "first": 274,
+      "last": 276,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_installed_user_service",
+      "first": 278,
+      "last": 288,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_autostart_entry",
+      "first": 290,
+      "last": 299,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_autostart",
+      "first": 301,
+      "last": 307,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_managed_autostart",
+      "first": 309,
+      "last": 318,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_user_service",
+      "first": 320,
+      "last": 332,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_files",
+      "first": 334,
+      "last": 340,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_boot_modules",
+      "first": 342,
+      "last": 365,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_uinput",
+      "first": 367,
+      "last": 380,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "activate_evdi",
+      "first": 382,
+      "last": 384,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "system_setup",
+      "first": 386,
+      "last": 391,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "main",
+      "first": 393,
+      "last": 420,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_setup_deferred",
+      "first": 4,
+      "last": 7,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_device_count",
+      "first": 9,
+      "last": 13,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_add_capacity",
+      "first": 15,
+      "last": 18,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_setup",
+      "first": 20,
+      "last": 42,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "certificate_digest",
+      "first": 17,
+      "last": 25,
+      "language": "python",
+      "nested": [],
+      "entry": 17,
+      "body": 18
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "sdk_root",
+      "first": 28,
+      "last": 37,
+      "language": "python",
+      "nested": [],
+      "entry": 28,
+      "body": 29
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "build_tool",
+      "first": 40,
+      "last": 49,
+      "language": "python",
+      "nested": [],
+      "entry": 40,
+      "body": 41
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "output",
+      "first": 52,
+      "last": 56,
+      "language": "python",
+      "nested": [],
+      "entry": 52,
+      "body": 53
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify_signer",
+      "first": 59,
+      "last": 66,
+      "language": "python",
+      "nested": [],
+      "entry": 59,
+      "body": 60
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify_manifest",
+      "first": 69,
+      "last": 77,
+      "language": "python",
+      "nested": [],
+      "entry": 69,
+      "body": 70
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify",
+      "first": 80,
+      "last": 84,
+      "language": "python",
+      "nested": [],
+      "entry": 80,
+      "body": 81
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "main",
+      "first": 87,
+      "last": 95,
+      "language": "python",
+      "nested": [],
+      "entry": 87,
+      "body": 88
+    },
+    {
+      "file": "scripts/write-desktop-entry.sh",
+      "name": "desktop_argument",
+      "first": 6,
+      "last": 22,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    },
+    {
+      "file": "scripts/write-systemd-service.sh",
+      "name": "systemd_path",
+      "first": 4,
+      "last": 14,
+      "language": "shell",
+      "nested": [],
+      "entry": 0,
+      "body": 0
+    }
+  ]
+}

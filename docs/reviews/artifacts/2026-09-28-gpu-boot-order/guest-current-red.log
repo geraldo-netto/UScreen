@@ -1,0 +1,409 @@
+Starting systemd-udevd version 255.4-1ubuntu8.17
+total 0
+crw-------    1 root     root      226,   0 Sep 27 23:16 card0
+crw-------    1 root     root      226,   1 Sep 27 23:16 card1
+crw-------    1 root     root      226,   2 Sep 27 23:16 card2
+
+X.Org X Server 1.21.1.11
+X Protocol Version 11, Revision 0
+Current Operating System: Linux (none) 7.0.0-34-generic #34~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 15:38:29 UTC 2 x86_64
+Kernel command line: console=ttyS0 rdinit=/init loglevel=4 initrd=initrd
+xorg-server 2:21.1.12-1ubuntu1.8 (For technical support please see http://www.ubuntu.com/support)
+Current version of pixman: 0.42.2
+	Before reporting problems, check http://wiki.x.org
+	to make sure that you have the latest version.
+Markers: (--) probed, (**) from config file, (==) default setting,
+	(++) from command line, (!!) notice, (II) informational,
+	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
+(++) Log file: "/var/log/Xorg.log", Time: Sun Sep 27 23:16:55 2026
+(==) Using config file: "/etc/X11/xorg.conf"
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+MESA-LOADER: failed to retrieve device information
+T700 before-hotplug Xorg=0
+xf86: remove device 0 /sys/devices/pci0000:00/0000:00:01.0/simple-framebuffer.0/drm/card0
+failed to find screen to remove
+Xorg: ../../../../dix/privates.c:382: dixRegisterPrivateKey: Assertion `!global_keys[type].created' failed.
+(EE)
+(EE) Backtrace:
+(EE) 0: /usr/lib/xorg/Xorg (OsLookupColor+0x14c) [0x5dcca683319c]
+(EE) 1: /lib/x86_64-linux-gnu/libc.so.6 (__sigaction+0x50) [0x7f4ad9fbc330]
+(EE) 2: /lib/x86_64-linux-gnu/libc.so.6 (pthread_kill+0x11c) [0x7f4ada015c0c]
+(EE) 3: /lib/x86_64-linux-gnu/libc.so.6 (gsignal+0x1e) [0x7f4ad9fbc27e]
+(EE) 4: /lib/x86_64-linux-gnu/libc.so.6 (abort+0xdf) [0x7f4ad9f9f8ff]
+(EE) unw_get_proc_name failed: no unwind info found [-10]
+(EE) 5: /lib/x86_64-linux-gnu/libc.so.6 (?+0x0) [0x7f4ad9f9f81b]
+(EE) 6: /lib/x86_64-linux-gnu/libc.so.6 (__assert_fail+0x47) [0x7f4ad9fb2517]
+(EE) 7: /usr/lib/xorg/Xorg (dixRegisterPrivateKey+0x1e4) [0x5dcca66d5464]
+(EE) 8: /usr/lib/xorg/modules/libglamoregl.so (glamor_init+0xcb) [0x7f4ad97f570b]
+(EE) unw_get_proc_name failed: no unwind info found [-10]
+(EE) 9: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f4ad98357d8]
+(EE) unw_get_proc_name failed: no unwind info found [-10]
+(EE) 10: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f4ad982b35f]
+(EE) 11: /usr/lib/xorg/Xorg (AddGPUScreen+0x100) [0x5dcca66b3f30]
+(EE) 12: /usr/lib/xorg/Xorg (xf86PlatformMatchDriver+0xb20) [0x5dcca67139c0]
+(EE) 13: /usr/lib/xorg/Xorg (xf86PlatformDeviceCheckBusID+0x288) [0x5dcca6719ac8]
+(EE) 14: /usr/lib/xorg/Xorg (config_fini+0x1072) [0x5dcca6715d32]
+(EE) 15: /usr/lib/xorg/Xorg (config_fini+0x1650) [0x5dcca6716310]
+(EE) 16: /usr/lib/xorg/Xorg (OsCleanup+0x64a) [0x5dcca6833c6a]
+(EE) 17: /usr/lib/xorg/Xorg (WaitForSomething+0x185) [0x5dcca682c5c5]
+(EE) 18: /usr/lib/xorg/Xorg (SendErrorToClient+0x11a) [0x5dcca66b388a]
+(EE) 19: /usr/lib/xorg/Xorg (InitFonts+0x3ca) [0x5dcca66b7efa]
+(EE) 20: /lib/x86_64-linux-gnu/libc.so.6 (__libc_init_first+0x8a) [0x7f4ad9fa11ca]
+(EE) 21: /lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main+0x8b) [0x7f4ad9fa128b]
+(EE) 22: /usr/lib/xorg/Xorg (_start+0x25) [0x5dcca66a03b5]
+(EE)
+(EE)
+Fatal server error:
+(EE) Caught signal 6 (Aborted). Server aborting
+(EE)
+(EE)
+Please consult the The X.Org Foundation support
+	 at http://wiki.x.org
+ for help.
+(EE) Please also check the log file at "/var/log/Xorg.log" for additional information.
+(EE)
+(EE) Server terminated with error (1). Closing log file.
+T700 Xorg exited
+[     2.008] (WW) Failed to open protocol names file /usr/lib/xorg/protocol.txt
+[     2.008]
+X.Org X Server 1.21.1.11
+X Protocol Version 11, Revision 0
+[     2.010] Current Operating System: Linux (none) 7.0.0-34-generic #34~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 15:38:29 UTC 2 x86_64
+[     2.010] Kernel command line: console=ttyS0 rdinit=/init loglevel=4 initrd=initrd
+[     2.010] xorg-server 2:21.1.12-1ubuntu1.8 (For technical support please see http://www.ubuntu.com/support)
+[     2.010] Current version of pixman: 0.42.2
+[     2.010] 	Before reporting problems, check http://wiki.x.org
+	to make sure that you have the latest version.
+[     2.010] Markers: (--) probed, (**) from config file, (==) default setting,
+	(++) from command line, (!!) notice, (II) informational,
+	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
+[     2.010] (++) Log file: "/var/log/Xorg.log", Time: Sun Sep 27 23:16:55 2026
+[     2.010] (==) Using config file: "/etc/X11/xorg.conf"
+[     2.010] (==) No Layout section.  Using the first Screen section.
+[     2.010] (==) No screen section available. Using defaults.
+[     2.010] (**) |-->Screen "Default Screen Section" (0)
+[     2.010] (**) |   |-->Monitor "<default monitor>"
+[     2.010] (==) No monitor specified for screen "Default Screen Section".
+	Using a default monitor configuration.
+[     2.010] (**) Option "AutoAddDevices" "false"
+[     2.010] (**) Option "AutoAddGPU" "true"
+[     2.010] (**) Allowing byte-swapped clients
+[     2.010] (**) Not automatically adding devices
+[     2.010] (==) Automatically enabling devices
+[     2.010] (**) Automatically adding GPU devices
+[     2.010] (==) Automatically binding GPU devices
+[     2.010] (==) Max clients allowed: 256, resource mask: 0x1fffff
+[     2.010] (WW) The directory "/usr/share/fonts/X11/misc" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/cyrillic" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/100dpi/" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/75dpi/" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/Type1" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/100dpi" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (WW) The directory "/usr/share/fonts/X11/75dpi" does not exist.
+[     2.010] 	Entry deleted from font path.
+[     2.010] (==) FontPath set to:
+	built-ins
+[     2.010] (==) ModulePath set to "/usr/lib/xorg/modules"
+[     2.010] (==) |-->Input Device "<default pointer>"
+[     2.010] (==) |-->Input Device "<default keyboard>"
+[     2.010] (==) No Layout section. Using the default mouse configuration.
+[     2.010] (==) No Layout section. Using the default keyboard configuration.
+[     2.010] (II) Loader magic: 0x5dcca68b1020
+[     2.010] (II) Module ABI versions:
+[     2.010] 	X.Org ANSI C Emulation: 0.4
+[     2.010] 	X.Org Video Driver: 25.2
+[     2.010] 	X.Org XInput driver : 24.4
+[     2.010] 	X.Org Server Extension : 10.0
+[     2.010] (EE) dbus-core: error connecting to system bus: org.freedesktop.DBus.Error.FileNotFound (Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory)
+[     2.010] (--) using VT number 2
+
+[     2.010] (II) systemd-logind: logind integration requires -keeptty and -keeptty was not provided, disabling logind integration
+[     2.015] (II) xfree86: Adding drm device (/dev/dri/card0)
+[     2.015] (II) Platform probe for /sys/devices/pci0000:00/0000:00:01.0/simple-framebuffer.0/drm/card0
+[     2.018] (II) xfree86: Adding drm device (/dev/dri/card1)
+[     2.018] (II) Platform probe for /sys/devices/platform/evdi.0/drm/card1
+[     2.018] (II) xfree86: Adding drm device (/dev/dri/card2)
+[     2.018] (II) Platform probe for /sys/devices/platform/evdi.1/drm/card2
+[     2.019] (--) PCI:*(0@0:1:0) 1af4:1050:1af4:1100 rev 1, Mem @ 0x80000000/8388608, 0x380000000000/16384, 0x80811000/4096, BIOS @ 0x????????/131072
+[     2.019] (II) LoadModule: "glx"
+[     2.019] (II) Loading /usr/lib/xorg/modules/extensions/libglx.so
+[     2.019] (II) Module glx: vendor="X.Org Foundation"
+[     2.019] 	compiled for 1.21.1.11, module version = 1.0.0
+[     2.019] 	ABI class: X.Org Server Extension, version 10.0
+[     2.019] (==) Matched modesetting as autoconfigured driver 0
+[     2.019] (==) Matched fbdev as autoconfigured driver 1
+[     2.019] (==) Matched vesa as autoconfigured driver 2
+[     2.019] (==) Assigned the driver to the xf86ConfigLayout
+[     2.019] (II) LoadModule: "modesetting"
+[     2.019] (II) Loading /usr/lib/xorg/modules/drivers/modesetting_drv.so
+[     2.019] (II) Module modesetting: vendor="X.Org Foundation"
+[     2.019] 	compiled for 1.21.1.11, module version = 1.21.1
+[     2.019] 	Module class: X.Org Video Driver
+[     2.019] 	ABI class: X.Org Video Driver, version 25.2
+[     2.019] (II) LoadModule: "fbdev"
+[     2.019] (WW) Warning, couldn't open module fbdev
+[     2.019] (EE) Failed to load module "fbdev" (module does not exist, 0)
+[     2.019] (II) LoadModule: "vesa"
+[     2.019] (WW) Warning, couldn't open module vesa
+[     2.019] (EE) Failed to load module "vesa" (module does not exist, 0)
+[     2.019] (==) Matched modesetting as autoconfigured driver 0
+[     2.019] (==) Matched fbdev as autoconfigured driver 1
+[     2.019] (==) Matched vesa as autoconfigured driver 2
+[     2.019] (==) Assigned the driver to the xf86ConfigLayout
+[     2.019] (II) LoadModule: "modesetting"
+[     2.019] (II) Loading /usr/lib/xorg/modules/drivers/modesetting_drv.so
+[     2.019] (II) Module modesetting: vendor="X.Org Foundation"
+[     2.019] 	compiled for 1.21.1.11, module version = 1.21.1
+[     2.019] 	Module class: X.Org Video Driver
+[     2.019] 	ABI class: X.Org Video Driver, version 25.2
+[     2.019] (II) UnloadModule: "modesetting"
+[     2.019] (II) Unloading modesetting
+[     2.019] (II) Failed to load module "modesetting" (already loaded, 0)
+[     2.019] (II) LoadModule: "fbdev"
+[     2.019] (WW) Warning, couldn't open module fbdev
+[     2.019] (EE) Failed to load module "fbdev" (module does not exist, 0)
+[     2.019] (II) LoadModule: "vesa"
+[     2.019] (WW) Warning, couldn't open module vesa
+[     2.019] (EE) Failed to load module "vesa" (module does not exist, 0)
+[     2.019] (II) LoadModule: "mouse"
+[     2.020] (WW) Warning, couldn't open module mouse
+[     2.020] (EE) Failed to load module "mouse" (module does not exist, 0)
+[     2.020] (II) LoadModule: "kbd"
+[     2.020] (WW) Warning, couldn't open module kbd
+[     2.020] (EE) Failed to load module "kbd" (module does not exist, 0)
+[     2.020] (II) modesetting: Driver for Modesetting Kernel Drivers: kms
+[     2.020] (WW) xf86OpenConsole: setsid failed: Operation not permitted
+[     2.020] (II) modeset(0): using drv /dev/dri/card0
+[     2.020] (II) modeset(G0): using drv /dev/dri/card1
+[     2.020] (II) modeset(G1): using drv /dev/dri/card2
+[     2.020] (II) modeset(0): Creating default Display subsection in Screen section
+	"Default Screen Section" for depth/fbbpp 24/32
+[     2.020] (==) modeset(0): Depth 24, (==) framebuffer bpp 32
+[     2.020] (==) modeset(0): RGB weight 888
+[     2.020] (==) modeset(0): Default visual is TrueColor
+[     2.020] (II) Loading sub module "glamoregl"
+[     2.020] (II) LoadModule: "glamoregl"
+[     2.020] (II) Loading /usr/lib/xorg/modules/libglamoregl.so
+[     2.022] (II) Module glamoregl: vendor="X.Org Foundation"
+[     2.022] 	compiled for 1.21.1.11, module version = 1.0.1
+[     2.022] 	ABI class: X.Org ANSI C Emulation, version 0.4
+[     2.060] (II) modeset(0): Refusing to try glamor on llvmpipe
+[     2.061] (II) modeset(0): glamor initialization failed
+[     2.061] (II) modeset(0): ShadowFB: preferred NO, enabled NO
+[     2.061] (II) modeset(0): Output None-1 has no monitor section
+[     2.061] (II) modeset(0): EDID for output None-1
+[     2.061] (II) modeset(0): Printing probed modes for output None-1
+[     2.061] (II) modeset(0): Modeline "1280x800"x60.0   61.44  1280 1280 1280 1280  800 800 800 800 (48.0 kHz eP)
+[     2.061] (II) modeset(0): Output None-1 connected
+[     2.061] (II) modeset(0): Using exact sizes for initial modes
+[     2.061] (II) modeset(0): Output None-1 using initial mode 1280x800 +0+0
+[     2.061] (==) modeset(0): Using gamma correction (1.0, 1.0, 1.0)
+[     2.061] (==) modeset(0): DPI set to (96, 96)
+[     2.061] (II) Loading sub module "fb"
+[     2.061] (II) LoadModule: "fb"
+[     2.061] (II) Module "fb" already built-in
+[     2.061] (==) modeset(G0): Depth 24, (==) framebuffer bpp 32
+[     2.061] (==) modeset(G0): RGB weight 888
+[     2.061] (==) modeset(G0): Default visual is TrueColor
+[     2.061] (II) Loading sub module "glamoregl"
+[     2.061] (II) LoadModule: "glamoregl"
+[     2.061] (II) Loading /usr/lib/xorg/modules/libglamoregl.so
+[     2.061] (II) Module glamoregl: vendor="X.Org Foundation"
+[     2.061] 	compiled for 1.21.1.11, module version = 1.0.1
+[     2.061] 	ABI class: X.Org ANSI C Emulation, version 0.4
+[     2.070] (II) modeset(G0): Refusing to try glamor on llvmpipe
+[     2.070] (II) modeset(G0): glamor initialization failed
+[     2.070] (II) modeset(G0): ShadowFB: preferred NO, enabled NO
+[     2.070] (II) modeset(G0): Output DVI-I-1-1 has no monitor section
+[     2.070] (II) modeset(G0): EDID for output DVI-I-1-1
+[     2.070] (==) modeset(G0): Using gamma correction (1.0, 1.0, 1.0)
+[     2.070] (==) modeset(G0): DPI set to (96, 96)
+[     2.070] (II) Loading sub module "fb"
+[     2.070] (II) LoadModule: "fb"
+[     2.070] (II) Module "fb" already built-in
+[     2.070] (==) modeset(G1): Depth 24, (==) framebuffer bpp 32
+[     2.070] (==) modeset(G1): RGB weight 888
+[     2.070] (==) modeset(G1): Default visual is TrueColor
+[     2.070] (II) Loading sub module "glamoregl"
+[     2.070] (II) LoadModule: "glamoregl"
+[     2.070] (II) Loading /usr/lib/xorg/modules/libglamoregl.so
+[     2.070] (II) Module glamoregl: vendor="X.Org Foundation"
+[     2.070] 	compiled for 1.21.1.11, module version = 1.0.1
+[     2.070] 	ABI class: X.Org ANSI C Emulation, version 0.4
+[     2.083] (II) modeset(G1): Refusing to try glamor on llvmpipe
+[     2.084] (II) modeset(G1): glamor initialization failed
+[     2.084] (II) modeset(G1): ShadowFB: preferred NO, enabled NO
+[     2.084] (II) modeset(G1): Output DVI-I-2-2 has no monitor section
+[     2.084] (II) modeset(G1): EDID for output DVI-I-2-2
+[     2.084] (==) modeset(G1): Using gamma correction (1.0, 1.0, 1.0)
+[     2.084] (==) modeset(G1): DPI set to (96, 96)
+[     2.084] (II) Loading sub module "fb"
+[     2.084] (II) LoadModule: "fb"
+[     2.084] (II) Module "fb" already built-in
+[     2.084] (==) modeset(0): Backing store enabled
+[     2.084] (==) modeset(0): Silken mouse enabled
+[     2.084] (II) modeset(0): Initializing kms color map for depth 24, 8 bpc.
+[     2.084] (==) modeset(0): DPMS enabled
+[     2.084] (==) modeset(G0): Backing store enabled
+[     2.084] (==) modeset(G0): Silken mouse enabled
+[     2.084] (II) modeset(G0): Initializing kms color map for depth 24, 8 bpc.
+[     2.084] (==) modeset(G0): DPMS enabled
+[     2.084] (==) modeset(G1): Backing store enabled
+[     2.084] (==) modeset(G1): Silken mouse enabled
+[     2.084] (II) modeset(G1): Initializing kms color map for depth 24, 8 bpc.
+[     2.084] (==) modeset(G1): DPMS enabled
+[     2.084] (II) Initializing extension Generic Event Extension
+[     2.084] (II) Initializing extension SHAPE
+[     2.084] (II) Initializing extension MIT-SHM
+[     2.084] (II) Initializing extension XInputExtension
+[     2.084] (II) Initializing extension XTEST
+[     2.084] (II) Initializing extension BIG-REQUESTS
+[     2.084] (II) Initializing extension SYNC
+[     2.084] (II) Initializing extension XKEYBOARD
+[     2.084] (II) Initializing extension XC-MISC
+[     2.084] (II) Initializing extension SECURITY
+[     2.084] (II) Initializing extension XFIXES
+[     2.084] (II) Initializing extension RENDER
+[     2.084] (II) Initializing extension RANDR
+[     2.084] (II) Initializing extension COMPOSITE
+[     2.084] (II) Initializing extension DAMAGE
+[     2.084] (II) Initializing extension MIT-SCREEN-SAVER
+[     2.084] (II) Initializing extension DOUBLE-BUFFER
+[     2.084] (II) Initializing extension RECORD
+[     2.084] (II) Initializing extension DPMS
+[     2.084] (II) Initializing extension Present
+[     2.084] (II) Initializing extension DRI3
+[     2.084] (II) Initializing extension X-Resource
+[     2.084] (II) Initializing extension XVideo
+[     2.084] (II) Initializing extension XVideo-MotionCompensation
+[     2.084] (II) Initializing extension SELinux
+[     2.084] (II) SELinux: Disabled on system
+[     2.084] (II) Initializing extension GLX
+[     2.084] (II) AIGLX: Screen 0 is not DRI2 capable
+[     2.085] (II) IGLX: Loaded and initialized swrast
+[     2.085] (II) GLX: Initialized DRISWRAST GL provider for screen 0
+[     2.085] (II) Initializing extension XFree86-VidModeExtension
+[     2.085] (II) Initializing extension XFree86-DGA
+[     2.085] (II) Initializing extension XFree86-DRI
+[     2.085] (II) Initializing extension DRI2
+[     2.086] (II) modeset(G0): Damage tracking initialized
+[     2.086] (II) modeset(G1): Damage tracking initialized
+[     2.087] (II) modeset(0): Damage tracking initialized
+[     2.087] (II) modeset(0): Setting screen physical size to 338 x 211
+[     2.097] (II) LoadModule: "mouse"
+[     2.097] (WW) Warning, couldn't open module mouse
+[     2.097] (EE) Failed to load module "mouse" (module does not exist, 0)
+[     2.097] (EE) No input driver matching `mouse'
+[     2.097] (II) Falling back to input driver `libinput'
+[     2.097] (II) LoadModule: "libinput"
+[     2.097] (WW) Warning, couldn't open module libinput
+[     2.097] (EE) Failed to load module "libinput" (module does not exist, 0)
+[     2.097] (II) LoadModule: "kbd"
+[     2.097] (WW) Warning, couldn't open module kbd
+[     2.097] (EE) Failed to load module "kbd" (module does not exist, 0)
+[     2.097] (EE) No input driver matching `kbd'
+[     2.097] (II) Falling back to input driver `libinput'
+[     2.097] (II) LoadModule: "libinput"
+[     2.097] (WW) Warning, couldn't open module libinput
+[     2.097] (EE) Failed to load module "libinput" (module does not exist, 0)
+[     2.111] (EE) dbus-core: error connecting to system bus: org.freedesktop.DBus.Error.FileNotFound (Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory)
+[     6.022] (II) config/udev: removing GPU device /sys/devices/pci0000:00/0000:00:01.0/simple-framebuffer.0/drm/card0 /dev/dri/card0
+[     6.024] xf86: remove device 0 /sys/devices/pci0000:00/0000:00:01.0/simple-framebuffer.0/drm/card0
+[     6.046] failed to find screen to remove
+[     6.047] (II) config/udev: removing GPU device /sys/devices/pci0000:00/0000:00:01.0/drm/card3 /dev/dri/card3
+[     6.047] (II) config/udev: Adding drm device (/dev/dri/card3)
+[     6.047] (II) xfree86: Adding drm device (/dev/dri/card3)
+[     6.047] (II) Platform probe for /sys/devices/pci0000:00/0000:00:01.0/drm/card3
+[     6.062] (II) LoadModule: "modesetting"
+[     6.062] (II) Loading /usr/lib/xorg/modules/drivers/modesetting_drv.so
+[     6.062] (II) Module modesetting: vendor="X.Org Foundation"
+[     6.062] 	compiled for 1.21.1.11, module version = 1.21.1
+[     6.063] 	Module class: X.Org Video Driver
+[     6.063] 	ABI class: X.Org Video Driver, version 25.2
+[     6.063] (II) UnloadModule: "modesetting"
+[     6.063] (II) Unloading modesetting
+[     6.063] (II) Failed to load module "modesetting" (already loaded, 0)
+[     6.077] (II) modeset(G2): using drv /dev/dri/card3
+[     6.077] (==) modeset(G2): Depth 24, (==) framebuffer bpp 32
+[     6.077] (==) modeset(G2): RGB weight 888
+[     6.077] (==) modeset(G2): Default visual is TrueColor
+[     6.077] (II) Loading sub module "glamoregl"
+[     6.077] (II) LoadModule: "glamoregl"
+[     6.077] (II) Loading /usr/lib/xorg/modules/libglamoregl.so
+[     6.077] (II) Module glamoregl: vendor="X.Org Foundation"
+[     6.077] 	compiled for 1.21.1.11, module version = 1.0.1
+[     6.077] 	ABI class: X.Org ANSI C Emulation, version 0.4
+[     6.079] (II) modeset(G2): glamor X acceleration enabled on virgl (AMD Radeon RX 6600 XT (radeonsi, navi23, ACO, DRM 3....)
+[     6.079] (II) modeset(G2): glamor initialized
+[     6.079] (II) modeset(G2): Output Virtual-3-1 has no monitor section
+[     6.080] (==) modeset(G2): Using gamma correction (1.0, 1.0, 1.0)
+[     6.080] (==) modeset(G2): DPI set to (96, 96)
+[     6.080] (II) Loading sub module "fb"
+[     6.080] (II) LoadModule: "fb"
+[     6.080] (II) Module "fb" already built-in
+[     6.083] (EE)
+[     6.083] (EE) Backtrace:
+[     6.083] (EE) 0: /usr/lib/xorg/Xorg (OsLookupColor+0x14c) [0x5dcca683319c]
+[     6.084] (EE) 1: /lib/x86_64-linux-gnu/libc.so.6 (__sigaction+0x50) [0x7f4ad9fbc330]
+[     6.085] (EE) 2: /lib/x86_64-linux-gnu/libc.so.6 (pthread_kill+0x11c) [0x7f4ada015c0c]
+[     6.086] (EE) 3: /lib/x86_64-linux-gnu/libc.so.6 (gsignal+0x1e) [0x7f4ad9fbc27e]
+[     6.087] (EE) 4: /lib/x86_64-linux-gnu/libc.so.6 (abort+0xdf) [0x7f4ad9f9f8ff]
+[     6.088] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[     6.089] (EE) 5: /lib/x86_64-linux-gnu/libc.so.6 (?+0x0) [0x7f4ad9f9f81b]
+[     6.090] (EE) 6: /lib/x86_64-linux-gnu/libc.so.6 (__assert_fail+0x47) [0x7f4ad9fb2517]
+[     6.091] (EE) 7: /usr/lib/xorg/Xorg (dixRegisterPrivateKey+0x1e4) [0x5dcca66d5464]
+[     6.092] (EE) 8: /usr/lib/xorg/modules/libglamoregl.so (glamor_init+0xcb) [0x7f4ad97f570b]
+[     6.093] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[     6.093] (EE) 9: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f4ad98357d8]
+[     6.095] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[     6.095] (EE) 10: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f4ad982b35f]
+[     6.097] (EE) 11: /usr/lib/xorg/Xorg (AddGPUScreen+0x100) [0x5dcca66b3f30]
+[     6.098] (EE) 12: /usr/lib/xorg/Xorg (xf86PlatformMatchDriver+0xb20) [0x5dcca67139c0]
+[     6.099] (EE) 13: /usr/lib/xorg/Xorg (xf86PlatformDeviceCheckBusID+0x288) [0x5dcca6719ac8]
+[     6.100] (EE) 14: /usr/lib/xorg/Xorg (config_fini+0x1072) [0x5dcca6715d32]
+[     6.100] (EE) 15: /usr/lib/xorg/Xorg (config_fini+0x1650) [0x5dcca6716310]
+[     6.101] (EE) 16: /usr/lib/xorg/Xorg (OsCleanup+0x64a) [0x5dcca6833c6a]
+[     6.101] (EE) 17: /usr/lib/xorg/Xorg (WaitForSomething+0x185) [0x5dcca682c5c5]
+[     6.102] (EE) 18: /usr/lib/xorg/Xorg (SendErrorToClient+0x11a) [0x5dcca66b388a]
+[     6.103] (EE) 19: /usr/lib/xorg/Xorg (InitFonts+0x3ca) [0x5dcca66b7efa]
+[     6.105] (EE) 20: /lib/x86_64-linux-gnu/libc.so.6 (__libc_init_first+0x8a) [0x7f4ad9fa11ca]
+[     6.106] (EE) 21: /lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main+0x8b) [0x7f4ad9fa128b]
+[     6.106] (EE) 22: /usr/lib/xorg/Xorg (_start+0x25) [0x5dcca66a03b5]
+[     6.107] (EE)
+[     6.107] (EE)
+Fatal server error:
+[     6.108] (EE) Caught signal 6 (Aborted). Server aborting
+[     6.108] (EE)
+[     6.108] (EE)
+Please consult the The X.Org Foundation support
+	 at http://wiki.x.org
+ for help.
+[     6.110] (EE) Please also check the log file at "/var/log/Xorg.log" for additional information.
+[     6.110] (EE)
+[     6.111] (EE) Server terminated with error (1). Closing log file.
+name of display:    :0
+version number:    11.0
+vendor string:    The X.Org Foundation
+vendor release number:    12101011
+X.Org version: 21.1.11
+maximum request size:  16777212 bytes
+motion buffer size:  256
+bitmap unit, bit order, padding:    32, LSBFirst, 32
+image byte order:    LSBFirst
+number of supported pixmap formats:    7
+supported pixmap formats:
+    depth 1, bits_per_pixel 1, scanline_pad 32
+[    6.331633] reboot: Power down

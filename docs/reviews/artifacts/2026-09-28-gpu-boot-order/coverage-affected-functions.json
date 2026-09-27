@@ -1,0 +1,106 @@
+{
+  "scope": "T700 changed production functions",
+  "passes": true,
+  "functions": [
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage_metadata",
+      "line": 68,
+      "language": "python",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "name": "package",
+      "line": 29,
+      "language": "shell",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "name": "post_install",
+      "line": 2,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "warn",
+      "line": 5,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_module",
+      "line": 7,
+      "language": "shell",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_modules",
+      "line": 25,
+      "language": "shell",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "write_gpu_boot_order",
+      "line": 35,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "configure_gpu_boot_order",
+      "line": 49,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_boot_modules",
+      "line": 342,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

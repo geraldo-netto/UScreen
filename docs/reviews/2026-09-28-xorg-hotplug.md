@@ -2,6 +2,10 @@
 
 # T700: late AMD GPU initialization after simpledrm
 
+This is the diagnosis-stage record. The subsequent [boot reproduction and Blent
+mitigation](2026-09-28-gpu-boot-order.md) supersede the remaining-work list below;
+the captured core evidence remains unchanged.
+
 The September 26, 16:31:04 Xorg crash is a late glamor pixmap-key registration
 failure. The triggering device is the AMD GPU at PCI `0000:08:00.0`, arriving as
 `/dev/dri/card4` after Xorg had initialized its main screen on `simpledrm`.

@@ -1,0 +1,20 @@
+F
+======================================================================
+FAIL: test_t700_failed_write_does_not_publish_partial_boot_configuration (test_installer_gpu_order.InstallerGpuOrderTest.test_t700_failed_write_does_not_publish_partial_boot_configuration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_installer_gpu_order.py", line 96, in test_t700_failed_write_does_not_publish_partial_boot_configuration
+    self.assertEqual(list((root / 'etc/modprobe.d').iterdir()), [],
+AssertionError: Lists differ: [PosixPath('/tmp/tmpfwij8rb5/etc/modprobe.d/blent-gpu-order.conf')] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+PosixPath('/tmp/tmpfwij8rb5/etc/modprobe.d/blent-gpu-order.conf')
+
+- [PosixPath('/tmp/tmpfwij8rb5/etc/modprobe.d/blent-gpu-order.conf')]
++ [] : T700: failed write left a partial boot configuration
+
+----------------------------------------------------------------------
+Ran 1 test in 0.010s
+
+FAILED (failures=1)

@@ -1,0 +1,1700 @@
+{
+  "scopes": [
+    "essential installation, EVDI setup and packaging scripts"
+  ],
+  "minimum_percent": 80,
+  "passes": false,
+  "summary": {
+    "python": {
+      "functions": 61,
+      "passing": 37,
+      "below_80": 9,
+      "unmeasured": 15
+    },
+    "shell": {
+      "functions": 65,
+      "passing": 54,
+      "below_80": 11,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "copy",
+      "line": 16,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage",
+      "line": 23,
+      "language": "python",
+      "covered": 23,
+      "total": 23,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stock_paths",
+      "line": 51,
+      "language": "python",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage_stock",
+      "line": 56,
+      "language": "python",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "stage_metadata",
+      "line": 68,
+      "language": "python",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "build",
+      "line": 86,
+      "language": "python",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/build.py",
+      "name": "arguments",
+      "line": 111,
+      "language": "python",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "run",
+      "line": 17,
+      "language": "python",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "needed",
+      "line": 21,
+      "language": "python",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "library_index",
+      "line": 30,
+      "language": "python",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "verify_abi",
+      "line": 40,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "closure",
+      "line": 47,
+      "language": "python",
+      "covered": 13,
+      "total": 14,
+      "percent": 92.85714285714286,
+      "passes": true,
+      "missing": [
+        52
+      ],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "discover",
+      "line": 65,
+      "language": "python",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "set_app_rpath",
+      "line": 78,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "stock_wrapper",
+      "line": 87,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/elf.py",
+      "name": "check_loaded",
+      "line": 102,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "configuration",
+      "line": 28,
+      "language": "python",
+      "covered": 5,
+      "total": 6,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        31
+      ],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "validate_input",
+      "line": 37,
+      "language": "python",
+      "covered": 4,
+      "total": 7,
+      "percent": 57.142857142857146,
+      "passes": false,
+      "missing": [
+        39,
+        42,
+        45
+      ],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "archives",
+      "line": 48,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "extract",
+      "line": 59,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        67,
+        68
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "validate_member",
+      "line": 71,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "command",
+      "line": 79,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        80
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "compile_sources",
+      "line": 83,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "verify",
+      "line": 96,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "verify_encoders",
+      "line": 111,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        112,
+        113,
+        114,
+        115,
+        116
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "retain_sources",
+      "line": 119,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        130,
+        131,
+        134
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "prepare",
+      "line": 137,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        138,
+        139,
+        140,
+        141,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "isolate_codecs",
+      "line": 151,
+      "language": "python",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        156
+      ],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/ffmpeg_bundle.py",
+      "name": "corresponding_sources",
+      "line": 159,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "absolute_base",
+      "line": 8,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "check_stopped",
+      "line": 16,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_image",
+      "line": 25,
+      "language": "shell",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_extracted",
+      "line": 36,
+      "language": "shell",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_service",
+      "line": 52,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_desktop",
+      "line": 63,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "backup_gui_entry",
+      "line": 74,
+      "language": "shell",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "link_gui_entry",
+      "line": 83,
+      "language": "shell",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_gui_entry",
+      "line": 92,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "install_entry",
+      "line": 109,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "update_autostart",
+      "line": 126,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/install-appimage.sh",
+      "name": "check_destination",
+      "line": 140,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "package_for",
+      "line": 13,
+      "language": "python",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "package_info",
+      "line": 24,
+      "language": "python",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "debian_sources",
+      "line": 32,
+      "language": "python",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "download_debian_source",
+      "line": 46,
+      "language": "python",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "source_checksums",
+      "line": 58,
+      "language": "python",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "rust_sources",
+      "line": 74,
+      "language": "python",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "copy_crate",
+      "line": 85,
+      "language": "python",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "copy_crate_notices",
+      "line": 96,
+      "language": "python",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "runtime_sources",
+      "line": 106,
+      "language": "python",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "runtime_dependencies",
+      "line": 123,
+      "language": "python",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "verify_evdi",
+      "line": 141,
+      "language": "python",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/sources.py",
+      "name": "collect",
+      "line": 152,
+      "language": "python",
+      "covered": 16,
+      "total": 18,
+      "percent": 88.88888888888889,
+      "passes": true,
+      "missing": [
+        166,
+        167
+      ],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "digest",
+      "line": 10,
+      "language": "python",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "validate",
+      "line": 15,
+      "language": "python",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "download",
+      "line": 24,
+      "language": "python",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "fetch",
+      "line": 29,
+      "language": "python",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "transfer",
+      "line": 45,
+      "language": "python",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/appimage/tools.py",
+      "name": "prepare",
+      "line": 54,
+      "language": "python",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "name": "build",
+      "line": 18,
+      "language": "shell",
+      "covered": 0,
+      "total": 5,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        19,
+        20,
+        21,
+        24,
+        25
+      ]
+    },
+    {
+      "file": "packaging/arch/PKGBUILD",
+      "name": "package",
+      "line": 29,
+      "language": "shell",
+      "covered": 18,
+      "total": 18,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "name": "post_install",
+      "line": 2,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "packaging/arch/blent.install",
+      "name": "post_upgrade",
+      "line": 11,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/ci/verify-portability.py",
+      "name": "verify_abi",
+      "line": 9,
+      "language": "python",
+      "covered": 6,
+      "total": 8,
+      "percent": 75.0,
+      "passes": false,
+      "missing": [
+        14,
+        17
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/ci/verify-portability.py",
+      "name": "verify_bundle",
+      "line": 21,
+      "language": "python",
+      "covered": 6,
+      "total": 9,
+      "percent": 66.66666666666667,
+      "passes": false,
+      "missing": [
+        25,
+        28,
+        30
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "encode_manufacturer_id",
+      "line": 30,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "validate_dimensions",
+      "line": 50,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "make_edid",
+      "line": 59,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "scripts/gen-edid.py",
+      "name": "main",
+      "line": 240,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "warn",
+      "line": 5,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_module",
+      "line": 7,
+      "language": "shell",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "gpu_boot_modules",
+      "line": 25,
+      "language": "shell",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "write_gpu_boot_order",
+      "line": 35,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/gpu-boot-order.sh",
+      "name": "configure_gpu_boot_order",
+      "line": 49,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "xdg_base",
+      "line": 11,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "info",
+      "line": 22,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "warn",
+      "line": 23,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "error",
+      "line": 24,
+      "language": "shell",
+      "covered": 0,
+      "total": 1,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        24
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_prebuilt",
+      "line": 26,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "has_evdi_library",
+      "line": 28,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_evdi_library",
+      "line": 43,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "is_ostree_booted",
+      "line": 55,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_layered_deps",
+      "line": 59,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_rpm_runtime_deps",
+      "line": 65,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_rpm_evdi_module",
+      "line": 70,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "enable_fedora_rpmfusion",
+      "line": 76,
+      "language": "shell",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        85
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_fedora_deps",
+      "line": 88,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_enterprise_deps",
+      "line": 99,
+      "language": "shell",
+      "covered": 5,
+      "total": 6,
+      "percent": 83.33333333333333,
+      "passes": true,
+      "missing": [
+        103
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_debian_deps",
+      "line": 110,
+      "language": "shell",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_arch_deps",
+      "line": 123,
+      "language": "shell",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_suse_deps",
+      "line": 140,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_distro_deps",
+      "line": 156,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_deps",
+      "line": 169,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_deps",
+      "line": 178,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "check_path",
+      "line": 191,
+      "language": "shell",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "build_if_needed",
+      "line": 200,
+      "language": "shell",
+      "covered": 0,
+      "total": 4,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        202,
+        203,
+        207,
+        208
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "stage_install_binaries",
+      "line": 211,
+      "language": "shell",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_binaries",
+      "line": 230,
+      "language": "shell",
+      "covered": 9,
+      "total": 10,
+      "percent": 90.0,
+      "passes": true,
+      "missing": [
+        237
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_entry",
+      "line": 252,
+      "language": "shell",
+      "covered": 0,
+      "total": 3,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        255,
+        256,
+        257
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_icons",
+      "line": 260,
+      "language": "shell",
+      "covered": 0,
+      "total": 7,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        263,
+        264,
+        265,
+        266,
+        268,
+        269,
+        270
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_user_service",
+      "line": 274,
+      "language": "shell",
+      "covered": 0,
+      "total": 1,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        275
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "write_installed_user_service",
+      "line": 278,
+      "language": "shell",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        283
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_autostart_entry",
+      "line": 290,
+      "language": "shell",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        295
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_desktop_autostart",
+      "line": 301,
+      "language": "shell",
+      "covered": 0,
+      "total": 4,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        302,
+        303,
+        304,
+        306
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_managed_autostart",
+      "line": 309,
+      "language": "shell",
+      "covered": 0,
+      "total": 5,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        310,
+        311,
+        314,
+        315,
+        317
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_user_service",
+      "line": 320,
+      "language": "shell",
+      "covered": 0,
+      "total": 7,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        321,
+        324,
+        325,
+        326,
+        327,
+        328,
+        330
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "install_files",
+      "line": 334,
+      "language": "shell",
+      "covered": 0,
+      "total": 5,
+      "percent": 0.0,
+      "passes": false,
+      "missing": [
+        335,
+        336,
+        337,
+        338,
+        339
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_boot_modules",
+      "line": 342,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "configure_uinput",
+      "line": 367,
+      "language": "shell",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "activate_evdi",
+      "line": 382,
+      "language": "shell",
+      "covered": 1,
+      "total": 1,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "system_setup",
+      "line": 386,
+      "language": "shell",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/install.sh",
+      "name": "main",
+      "line": 393,
+      "language": "shell",
+      "covered": 14,
+      "total": 21,
+      "percent": 66.66666666666667,
+      "passes": false,
+      "missing": [
+        397,
+        398,
+        399,
+        403,
+        404,
+        405,
+        406
+      ]
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_setup_deferred",
+      "line": 4,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_device_count",
+      "line": 9,
+      "language": "shell",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_add_capacity",
+      "line": 15,
+      "language": "shell",
+      "covered": 2,
+      "total": 2,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/setup-evdi.sh",
+      "name": "evdi_setup",
+      "line": 20,
+      "language": "shell",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "certificate_digest",
+      "line": 17,
+      "language": "python",
+      "covered": 6,
+      "total": 8,
+      "percent": 75.0,
+      "passes": false,
+      "missing": [
+        21,
+        24
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "sdk_root",
+      "line": 28,
+      "language": "python",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "invoked": false,
+      "evidence": "no matching Python function invocation recorded"
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "build_tool",
+      "line": 40,
+      "language": "python",
+      "covered": 3,
+      "total": 9,
+      "percent": 33.333333333333336,
+      "passes": false,
+      "missing": [
+        44,
+        45,
+        46,
+        47,
+        48,
+        49
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "output",
+      "line": 52,
+      "language": "python",
+      "covered": 3,
+      "total": 4,
+      "percent": 75.0,
+      "passes": false,
+      "missing": [
+        55
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify_signer",
+      "line": 59,
+      "language": "python",
+      "covered": 4,
+      "total": 7,
+      "percent": 57.142857142857146,
+      "passes": false,
+      "missing": [
+        61,
+        64,
+        66
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify_manifest",
+      "line": 69,
+      "language": "python",
+      "covered": 5,
+      "total": 8,
+      "percent": 62.5,
+      "passes": false,
+      "missing": [
+        71,
+        75,
+        77
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "verify",
+      "line": 80,
+      "language": "python",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": [],
+      "invoked": true
+    },
+    {
+      "file": "scripts/verify-release-apk.py",
+      "name": "main",
+      "line": 87,
+      "language": "python",
+      "covered": 6,
+      "total": 8,
+      "percent": 75.0,
+      "passes": false,
+      "missing": [
+        93,
+        94
+      ],
+      "invoked": true
+    },
+    {
+      "file": "scripts/write-desktop-entry.sh",
+      "name": "desktop_argument",
+      "line": 6,
+      "language": "shell",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "scripts/write-systemd-service.sh",
+      "name": "systemd_path",
+      "line": 4,
+      "language": "shell",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

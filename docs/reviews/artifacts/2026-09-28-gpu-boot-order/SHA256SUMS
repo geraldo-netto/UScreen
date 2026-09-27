@@ -1,0 +1,5 @@
+cfc5cd4c6bbad00758a9ee5110408d2c0146460b77b6f6a7ff65ddd87636fd87  /backups/disk2/blent-work/t700-fix/kernel/boot/vmlinuz-7.0.0-34-generic
+4aa5299cfccd1b1ab1b4837288c16c2dc3a325b1f6a9147f4bf9d5017d108ea6  /backups/disk2/blent-work/t700-fix/guest/usr/lib/xorg/Xorg
+4a73677747bad5b9a228485660b9da341fdd12266675354c73ed88f16f3c70cf  /backups/disk2/blent-work/t700/old/usr/lib/xorg/Xorg
+83fdf872f107284b5c3c47067a1323061ff6ab23bde485baf91aba7522e538e4  /backups/disk2/blent-work/t700-fix/guest/gpu-boot-order.sh
+83fdf872f107284b5c3c47067a1323061ff6ab23bde485baf91aba7522e538e4  scripts/gpu-boot-order.sh

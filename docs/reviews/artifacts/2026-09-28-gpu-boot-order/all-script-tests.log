@@ -1,0 +1,27 @@
+........................................................{'scene': 'static', 'codec': 'avc', 'rate': 1, 'trials': 2, 'mean_current_ma': 360.0, 'per_trial_mean_current_ma': [360.0, 360.0], 'gauge_net_charge_mah': [1.5, 1.5], 'integrated_net_charge_mah': [1.5, 1.5]}
+{'presented_in_surface_history': 9}
+0 motion 60 libx264 2 ACKs
+....................................................................................................................usage: codec_host [-h] --corpus CORPUS --output OUTPUT
+                  [--encoder {h264_vaapi,hevc_vaapi,libx264,libx265,libvpx-vp9,libaom-av1}]
+                  [--quality QUALITY] [--vaapi-device VAAPI_DEVICE]
+codec_host: error: quality crop is defined for the 1280x800 NV12 corpus
+.............................invalid video packet: invalid video length: 0
+invalid video packet: invalid video length: 1
+invalid video packet: invalid video length: 8388610
+invalid video packet: frame has no payload
+invalid video packet: unknown video type: 7
+......../usr/lib/python3.12/tarfile.py:2301: DeprecationWarning: Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata. Use the filter argument to control this behavior.
+  warnings.warn(
+................................................................................s..........................................................
+----------------------------------------------------------------------
+Ran 348 tests in 163.416s
+
+OK (skipped=1)
+codec config: 5 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+codec config: 3 bytes
+fixture: glibc 2.36

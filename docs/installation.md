@@ -19,6 +19,37 @@ empty, invalid or externally managed configurations require manual review.
 `make setup-system` uses the same provisioning script. GUI setup also adds
 only missing devices, using its configured tablet count.
 
+## GPU ordering before EVDI (T700)
+
+The full source/tarball installer, `make setup-system`, and RPM/Arch installation
+hooks run `scripts/gpu-boot-order.sh` before EVDI provisioning. It creates
+`/etc/modprobe.d/blent-gpu-order.conf` with a `softdep evdi pre: ...` rule for the
+currently bound, loadable DRM drivers. Multiple modules are deduplicated;
+NVIDIA's module is mapped to `nvidia_drm`, and `virtio_pci` to `virtio_gpu`.
+EVDI, simpledrm, built-in drivers and vanished devices contribute no dependency.
+The helper warns when no loadable physical GPU is found; it cannot discover an
+unbound GPU or make unavailable drivers ready.
+
+The rule is published atomically. Existing files and managed symlinks are
+preserved, including empty configurations. Review the file after a GPU or driver
+change. The helper does not reload modules or restart the desktop; its rule
+applies to the next EVDI load. If EVDI is loaded in the initramfs, follow your
+distribution's procedure to include the rule and GPU modules there and regenerate
+the image. A root-filesystem rule alone does not change an existing initramfs.
+
+To configure ordering separately from a checkout, with the intended GPU drivers
+already bound:
+
+```sh
+sudo bash scripts/gpu-boot-order.sh
+```
+
+The AppImage includes this helper under `usr/share/blent/` in its extracted
+AppDir. Its user installer does not run privileged system setup; an administrator
+can run that helper explicitly. A `softdep` requests module ordering; it does not
+guarantee GPU readiness before Xorg on every boot arrangement or when a driver
+fails to load. See the [reproduction, tests and remaining native acceptance](reviews/2026-09-28-gpu-boot-order.md).
+
 ## Linux artifacts and prerequisites
 
 The portable packaging workflow targets **Linux x86-64, glibc 2.36 or newer**.

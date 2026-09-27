@@ -1,0 +1,94 @@
+warning: unused import: `blent::ffmpeg_args::TEE_OUTPUT`
+  --> host/src/framed_annex_b.rs:12:16
+   |
+12 | pub(crate) use blent::ffmpeg_args::TEE_OUTPUT;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `encoder_quality_args` is never used
+   --> host/src/capture/cli_encoder.rs:102:19
+    |
+ 30 | impl CliEncoder<'_> {
+    | ------------------- method in this implementation
+...
+102 |     pub(super) fn encoder_quality_args(
+    |                   ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `blent` (bin "blent") generated 2 warnings (run `cargo fix --bin "blent" -p blent` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running tests/tooling.rs (target/debug/deps/tooling-e9d500f59a2a1ff5)
+
+running 36 tests
+test t034_ci_propagates_helper_build_failure_and_ships_helper ... ok
+test t035_setup_installs_udev_rule_and_two_boot_devices ... ok
+test t073_install_does_not_require_unused_edid_or_python ... ok
+test t075_missing_notes_fail_before_build ... ok
+test t075_missing_tag_fails_before_build ... ok
+test t095_source_installs_rebuild_all_inputs_but_release_uses_shipped_files ... ok
+test t096_desktop_launches_installed_gui_with_stale_path ... ok
+test t097_make_setup_creates_missing_configuration_directories ... ok
+test t100_release_requires_matching_head_local_and_remote_tags ... ok
+test t101_package_failures_cannot_reuse_old_assets ... ok
+test t102_local_distribution_requires_apk_and_bundled_library ... ok
+test t103_t242_fake_tablet_handles_partial_io_and_runtime_paths ... ok
+test t117_release_stays_draft_until_all_assets_are_verified ... ok
+test t118_release_credentials_never_appear_in_command_arguments ... ok
+test t129_distributed_notices_and_readme_links_exist ... FAILED
+test t141_installers_launch_desktop_paths_with_reserved_characters ... ok
+test t214_installer_preserves_dependency_and_setup_commands ... ok
+test t220_make_shares_jobserver_without_executing_dry_runs ... ok
+test t225_project_links_and_release_requests_target_fork ... ok
+test t233_user_installers_share_xdg_paths ... ok
+test t250_official_android_release_checks_fork_certificate ... .........
+----------------------------------------------------------------------
+Ran 9 tests in 0.024s
+
+OK
+ok
+test t262_release_metadata_requires_literal_equality ... ok
+test t263_release_rejects_source_changes_during_build ... ok
+test t269_setup_preserves_live_devices_and_reports_missing_capacity ... ok
+test t277_release_metadata_validates_before_writing ... ok
+test t302_distribution_regressions_survive_release_version_bumps ... ok
+test t308_appimage_packaging_launch_and_invalid_inputs ... ok
+test t321_edid_tool_rejects_invalid_and_low_clock_modes ... ok
+test t336_source_workflows_consume_their_selected_build_outputs ... ok
+test t342_build_outputs_are_ignored_but_sources_are_visible ... ok
+test t350_release_metadata_prepares_unpublished_fork ... ok
+test t382_benchmark_units_and_window_statistics ... ok
+test t483_codec_validation_and_cache_regressions_run_in_normal_suite ... ok
+test t489_private_signing_and_local_outputs_stay_out_of_git ... ok
+test t500_rust_formatter_checks_included_supervisor_modules ... ok
+test t585_blent_identities_preserve_original_notices ... ok
+
+failures:
+
+---- t129_distributed_notices_and_readme_links_exist stdout ----
+
+thread 't129_distributed_notices_and_readme_links_exist' (1255986) panicked at host/tests/tooling.rs:699:5:
+F
+======================================================================
+FAIL: test_t129_tar_appimage_rpm_and_arch_include_notices (__main__.NoticeTest.test_t129_tar_appimage_rpm_and_arch_include_notices)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_notices.py", line 81, in test_t129_tar_appimage_rpm_and_arch_include_notices
+    self.assertEqual((root / 'arch/usr/share/blent/gpu-boot-order.sh').read_bytes(),
+AssertionError: b'#!/[790 chars]n    esac\n    [[ $module =~ ^[a-zA-Z0-9_][a-z[1769 chars]}"\n' != b'#!/[790 chars]n        virtio_pci) module=virtio_gpu ;;\n   [1811 chars]}"\n' : T700: Arch GPU ordering missing
+
+----------------------------------------------------------------------
+Ran 1 test in 19.368s
+
+FAILED (failures=1)
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    t129_distributed_notices_and_readme_links_exist
+
+test result: FAILED. 35 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 161.58s
+
+error: test failed, to rerun pass `-p blent --test tooling`
