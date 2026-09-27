@@ -1,0 +1,14 @@
+{
+  "checked": "2026-09-27",
+  "repository": "https://github.com/DisplayLink/evdi",
+  "revision": "33b7b3c9f7c77157c2b1b0c5a40cebe19b8ba110",
+  "path": "library/evdi_lib.c",
+  "sha256": "98f00baa06c9f7e24c052ed3936c91eca252c2539113f7f8215d1706bcce68aa",
+  "latest_release": "v1.15.0",
+  "observations": {
+    "wait_for_master": "51 possible process scans plus 50 sleeps; no wall-clock deadline",
+    "open_as_slave": "checks DRM master status, drops master and rechecks before accepting",
+    "public_api": "no caller scan budget or supported open-from-fd",
+    "attached_open": "still calls evdi_open"
+  }
+}

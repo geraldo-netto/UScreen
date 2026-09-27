@@ -31,7 +31,7 @@ The maintainer chose on 2026-09-21 to keep stock libevdi and document this
 behavior. No production code or dependency was changed. A future mitigation must preserve
 master acquisition, slave opening, exclusive helper leases, permission failures
 and shutdown behavior; merely skipping the wait or making the daemon privileged
-is not a validated fix. T558 is deferred by that decision. Reconsider only with
+is not a validated fix. T558 was deferred by that decision and was resumed on 2026-09-27 for [renewed upstream review](../../reviews/2026-09-27-evdi-acquisition.md). A dependency change still requires
 a suitable stock upstream release or an explicit revised dependency decision,
 permanent failing regressions and native ownership validation.
 
