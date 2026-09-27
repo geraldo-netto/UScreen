@@ -5,7 +5,7 @@ use std::time::Duration;
 
 const LIVE_TEST: &str = "tray::tests::t497_tray_actions_and_watch_updates_use_private_services";
 
-fn isolated_tray() {
+fn isolated_tray(test: &str) {
     use std::os::unix::fs::PermissionsExt;
     let directory = tempfile::Builder::new()
         .permissions(std::fs::Permissions::from_mode(0o700))
@@ -29,7 +29,7 @@ fn isolated_tray() {
         .arg(format!("--dbus-daemon={}", daemon.display()))
         .arg("--")
         .arg(executable)
-        .args(["--exact", LIVE_TEST, "--nocapture"])
+        .args(["--exact", test, "--nocapture"])
         .env("BLENT_T497_TRAY", "1")
         .env("HOME", directory.path())
         .env("PATH", tools)
@@ -257,7 +257,7 @@ async fn watched_state() {
 #[tokio::test]
 async fn t497_tray_actions_and_watch_updates_use_private_services() {
     if std::env::var_os("BLENT_T497_TRAY").is_none() {
-        isolated_tray();
+        isolated_tray(LIVE_TEST);
         return;
     }
     let root = std::path::PathBuf::from(std::env::var_os("HOME").unwrap());
@@ -348,4 +348,129 @@ fn t497_menu_uses_authoritative_mode_and_prevents_penless_transition() {
         .unwrap();
     (quit.activate)(&mut tray);
     assert!(*shutdown.borrow());
+}
+
+// T537: the independent ksni service must not outlive its owning supervisor.
+#[tokio::test]
+async fn t537_normal_and_cancelled_owners_retire_native_tray_services() {
+    const CASE: &str = "tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services";
+    if std::env::var_os("BLENT_T497_TRAY").is_none() {
+        isolated_tray(CASE);
+        return;
+    }
+    let (registered, mut registrations) = tokio::sync::mpsc::unbounded_channel();
+    let bus = zbus::connection::Builder::session()
+        .unwrap()
+        .name("org.kde.StatusNotifierWatcher")
+        .unwrap()
+        .serve_at("/StatusNotifierWatcher", Watcher(registered))
+        .unwrap()
+        .build()
+        .await
+        .unwrap();
+    for cause in 0..3 {
+        let destination = exited_owner(&bus, &mut registrations, cause).await;
+        retired_service(&bus, &destination).await;
+    }
+}
+
+async fn exited_owner(
+    bus: &zbus::Connection,
+    registrations: &mut tokio::sync::mpsc::UnboundedReceiver<String>,
+    cause: u8,
+) -> String {
+    let (mode, _) = watch::channel(false);
+    let (tablets, tablet_rx) = watch::channel(false);
+    let (shutdown, _) = watch::channel(false);
+    let (updates, update_rx) = watch::channel(None);
+    let task = tokio::spawn(run(mode, tablet_rx, shutdown, update_rx, false));
+    let destination = tokio::time::timeout(Duration::from_secs(3), registrations.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    // Wait for a supervisor-applied update, not only the spawn registration.
+    // This separates owned-task cancellation from cancellation during spawn.
+    let proxy = zbus::proxy::Builder::new(bus)
+        .destination(destination.as_str())
+        .unwrap()
+        .path("/StatusNotifierItem")
+        .unwrap()
+        .interface("org.kde.StatusNotifierItem")
+        .unwrap()
+        .cache_properties(zbus::proxy::CacheProperties::No)
+        .build()
+        .await
+        .unwrap();
+    tablets.send(true).unwrap();
+    tray_description(&proxy, "Second screen").await;
+    match cause {
+        0 => drop(updates),
+        1 => drop(tablets),
+        _ => task.abort(),
+    }
+    let result = tokio::time::timeout(Duration::from_secs(3), task)
+        .await
+        .unwrap();
+    assert_eq!(result.is_err_and(|error| error.is_cancelled()), cause == 2);
+    destination
+}
+
+async fn retired_service(bus: &zbus::Connection, destination: &str) {
+    let dbus = zbus::fdo::DBusProxy::new(bus).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(3), async {
+        while dbus
+            .name_has_owner(destination.try_into().unwrap())
+            .await
+            .unwrap()
+        {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("T537: retired owner leaked its native tray service");
+}
+
+// T537: closed handle + closed bus used to exhaust ksni's pattern-only select.
+#[tokio::test]
+async fn t537_owner_then_private_bus_exit_does_not_panic() {
+    const CASE: &str = "tray::tests::t537_owner_then_private_bus_exit_does_not_panic";
+    if std::env::var_os("BLENT_T497_TRAY").is_none() {
+        isolated_tray(CASE);
+        return;
+    }
+    let panics = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let observed = panics.clone();
+    let prior = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic| {
+        observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        prior(panic);
+    }));
+    let (registered, mut registrations) = tokio::sync::mpsc::unbounded_channel();
+    let bus = zbus::connection::Builder::session()
+        .unwrap()
+        .name("org.kde.StatusNotifierWatcher")
+        .unwrap()
+        .serve_at("/StatusNotifierWatcher", Watcher(registered))
+        .unwrap()
+        .build()
+        .await
+        .unwrap();
+    let dbus = zbus::fdo::DBusProxy::new(&bus).await.unwrap();
+    let pid = dbus
+        .get_connection_unix_process_id("org.freedesktop.DBus".try_into().unwrap())
+        .await
+        .unwrap();
+    exited_owner(&bus, &mut registrations, 0).await;
+    // This daemon belongs to isolated_tray's dbus-run-session, never the desktop.
+    assert!(pid > 1);
+    assert_eq!(
+        unsafe { libc::kill(pid.try_into().unwrap(), libc::SIGTERM) },
+        0
+    );
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        panics.load(std::sync::atomic::Ordering::SeqCst),
+        0,
+        "T537: an independently spawned tray service panicked after owner/bus exit"
+    );
 }

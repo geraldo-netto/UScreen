@@ -1,0 +1,40 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.17s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test tray::tests::t537_owner_then_private_bus_exit_does_not_panic ... 
+thread 'tray::tests::t537_owner_then_private_bus_exit_does_not_panic' (892936) panicked at host/src/tray_tests.rs:40:5:
+
+running 1 test
+test tray::tests::t537_owner_then_private_bus_exit_does_not_panic ... FAILED
+
+failures:
+
+failures:
+    tray::tests::t537_owner_then_private_bus_exit_does_not_panic
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 385 filtered out; finished in 0.22s
+
+
+thread '<unnamed>' (892944) panicked at /home/netto/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ksni-0.3.6/src/service.rs:134:13:
+all futures in select! were completed, but no `complete =>` handler was provided
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+dbus-run-session: dbus-daemon exited with code 0
+
+thread 'tray::tests::t537_owner_then_private_bus_exit_does_not_panic' (892940) panicked at host/src/tray_tests.rs:471:5:
+assertion `left == right` failed: T537: an independently spawned tray service panicked after owner/bus exit
+  left: 1
+ right: 0
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tray::tests::t537_owner_then_private_bus_exit_does_not_panic
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 385 filtered out; finished in 0.32s
+
+error: test failed, to rerun pass `-p blent --bin blent`

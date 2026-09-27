@@ -1,0 +1,34 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.61s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 1 test
+test tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services ... 
+thread 'tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services' (884210) panicked at host/src/tray_tests.rs:40:5:
+
+running 1 test
+test tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services ... FAILED
+
+failures:
+
+failures:
+    tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 384 filtered out; finished in 3.02s
+
+
+thread 'tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services' (884214) panicked at host/src/tray_tests.rs:406:14:
+T537: retired owner leaked its native tray service: Elapsed(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 384 filtered out; finished in 3.13s
+
+error: test failed, to rerun pass `-p blent --bin blent`

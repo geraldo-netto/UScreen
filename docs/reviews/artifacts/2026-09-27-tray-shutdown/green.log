@@ -1,0 +1,14 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.20s
+     Running unittests src/main.rs (target/debug/deps/blent-fe4d675ee06359fb)
+
+running 6 tests
+test tray::tests::t497_icons_and_tooltips_follow_connection_mode_and_update ... ok
+test tray::tests::t497_menu_uses_authoritative_mode_and_prevents_penless_transition ... ok
+test tray::tests::t497_tray_actions_and_watch_updates_use_private_services ... ok
+test tray::tests::t537_normal_and_cancelled_owners_retire_native_tray_services ... ok
+test tray::tests::t537_owner_then_private_bus_exit_does_not_panic ... ok
+test tray::tests::t550_appimage_tray_uses_updated_stable_launcher ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 380 filtered out; finished in 1.07s
+

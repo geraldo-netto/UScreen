@@ -215,6 +215,16 @@ fn settings_command() -> anyhow::Result<std::process::Command> {
     Ok(std::process::Command::new(program))
 }
 
+/// T537: ksni runs its service independently. Dropping Handle alone does not
+/// stop it; cancellation of our supervisor must still request native teardown.
+struct OwnedTray(Handle<BlentTray>);
+
+impl Drop for OwnedTray {
+    fn drop(&mut self) {
+        drop(self.0.shutdown());
+    }
+}
+
 /// Publish the tray icon and keep it in step with the daemon.
 ///
 /// Returns without an icon if no StatusNotifierWatcher answers — a desktop
@@ -248,6 +258,8 @@ pub async fn run(
         }
     };
 
+    let handle = OwnedTray(handle);
+
     // Follow both signals for the lifetime of the daemon. The menu is rebuilt
     // from this state on every open, so an update here is all it takes for the
     // icon, the tooltip and the checkmark to agree with reality.
@@ -256,18 +268,19 @@ pub async fn run(
             r = mode_rx.changed() => {
                 if r.is_err() { break; }
                 let pen_only = *mode_rx.borrow();
-                handle.update(move |t: &mut BlentTray| t.pen_only = pen_only).await;
+                handle.0.update(move |t: &mut BlentTray| t.pen_only = pen_only).await;
             }
             r = tablet_rx.changed() => {
                 if r.is_err() { break; }
                 let present = *tablet_rx.borrow();
-                handle.update(move |t: &mut BlentTray| t.tablet_present = present).await;
+                handle.0.update(move |t: &mut BlentTray| t.tablet_present = present).await;
             }
             r = update_rx.changed() => {
                 if r.is_err() { break; }
                 let v = update_rx.borrow().clone();
-                handle.update(move |t: &mut BlentTray| t.update = v).await;
+                handle.0.update(move |t: &mut BlentTray| t.update = v).await;
             }
         }
     }
+    handle.0.shutdown().await;
 }
