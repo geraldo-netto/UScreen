@@ -39,18 +39,58 @@ def failed_test(status):
             and status['Failure'] != 0)
 
 
+def command_signature(argv):
+    if not argv:
+        return None
+    packages = set()
+    arguments = []
+    for argument in argv:
+        if argument.startswith('--package='):
+            packages.add(argument.split('=', 1)[1].split('@', 1)[0])
+        else:
+            arguments.append(argument)
+    return arguments, sorted(packages)
+
+
+def phase_commands(row):
+    return {part['phase']: command_signature(part.get('argv'))
+            for part in row['phase_results']}
+
+
+def baseline_matches(outcomes):
+    baselines = [row for row in outcomes if row['scenario'] == 'Baseline']
+    if len(baselines) != 1:
+        return False
+    expected = phase_commands(baselines[0])
+    if set(expected) != {'Build', 'Test'} or not all(expected.values()):
+        return False
+    return all(commands_match(row, expected) for row in outcomes)
+
+
+def commands_match(row, expected):
+    actual = phase_commands(row)
+    return bool(actual) and all(command is not None and command == expected.get(phase)
+                                for phase, command in actual.items())
+
+
+def inventory_match(candidates, rows):
+    expected = [identity(row) for row in candidates]
+    actual = [identity(row['scenario']['Mutant']) for row in rows]
+    unique = len(set(expected)) == len(expected) and len(set(actual)) == len(actual)
+    return unique, bool(expected) and unique and set(actual) == set(expected)
+
+
 def summarize(directory, process):
     candidates = json.loads((directory / 'mutants.json').read_text())
     outcomes = json.loads((directory / 'outcomes.json').read_text())['outcomes']
-    expected = [identity(row) for row in candidates]
     rows = [row for row in outcomes if row['scenario'] != 'Baseline']
-    actual = [identity(row['scenario']['Mutant']) for row in rows]
-    unique = len(set(expected)) == len(expected) and len(set(actual)) == len(actual)
+    unique, complete = inventory_match(candidates, rows)
     counts = Counter(classify(row) for row in rows)
     baseline = baseline_passed(outcomes, directory)
-    complete = bool(expected) and unique and set(actual) == set(expected)
+    matching = baseline_matches(outcomes)
     valid_process = process['status'] == 'completed' and process.get('code') in {0, 2, 3, 4}
-    passed = baseline and complete and valid_process and counts['caught'] == len(expected)
-    return dict(baseline_passed=baseline, complete=complete, unique=unique,
-                candidates=len(expected), outcomes=dict(counts), passes=passed,
+    passed = baseline and matching and complete and valid_process and counts['caught'] == len(candidates)
+    return dict(baseline_passed=baseline, baseline_matches_mutants=matching,
+                complete=complete, unique=unique,
+                candidates=len(candidates), outcomes=dict(counts), passes=passed,
                 whole_project_mutation_score=None)

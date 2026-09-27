@@ -66,6 +66,10 @@ def command(selected, args, output):
               '--jobserver-tasks', str(args.build_jobs), '--cargo-arg=--locked', '--colors=never']
     for package in selected['packages']:
         result.extend(['--package', package])
+    for package in selected.get('test_packages', []):
+        result.extend(['--test-package', package])
+        # 27.1.0 applies --test-package only to mutants, not the baseline.
+        result.append('--cargo-arg=--package=' + package)
     for path in selected['files']:
         result.extend(['--file', path])
     result.extend('--cargo-arg=' + argument for argument in selected['cargo_args'])

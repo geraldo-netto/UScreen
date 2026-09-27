@@ -17,9 +17,10 @@ Use `linux-autostart` on Linux or `windows-autostart` on native Windows.
 `usb` supports both platforms; each execution records its actual platform.
 Windows execution must use an ordinary account. Tests use isolated registry keys,
 fake ADB processes and owned sockets; no physical device acceptance is implied.
-The Python orchestration command is validated on Linux. The retained Windows
-campaigns use the same native cargo-mutants selection through a PowerShell
-driver; native validation of the Python timeout/process adapter is still pending.
+The Python orchestration command is validated on Linux and native Windows under
+an ordinary account. Retained native tests exercise deadline handling and failure
+classification; the separate-process-group descendant test currently targets
+Linux. See the [native results](../../docs/reviews/2026-09-27-native-mutation-runner.md).
 
 Defaults: two workers, six compiler jobs, 60-second test timeout, 600-second build
 timeout and a two-hour campaign deadline. Adjust `--jobs`, `--build-jobs`,
@@ -55,6 +56,12 @@ in the normal suite: fail against the mutation, pass against original production
 code. Real behavioral fixes additionally require the maintainer's test-before-fix
 workflow. Never weaken assertions, mutate tests, hide survivors or count build
 failures as caught faults.
+
+T671: consumer packages must also be passed explicitly to Cargo during the
+baseline. Cargo-mutants 27.1.0's `--test-package` alone does not do this. The runner
+adds those arguments and the importer rejects different baseline/mutant phase
+commands. Missing command evidence fails closed. See the
+[regression evidence](../../docs/reviews/2026-09-27-mutation-baseline-scope.md).
 
 Review caught results too: T664 found a test-fixture failure reported as caught
 for a semantically identical edit. The JSON outcome is the engine's raw result,

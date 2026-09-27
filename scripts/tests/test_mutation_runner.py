@@ -21,13 +21,17 @@ def mutant():
 
 def outcome(summary='CaughtMutant', test=None):
     return dict(scenario={'Mutant': mutant()}, summary=summary, log_path='mutant.log',
-                phase_results=[{'phase': 'Build', 'process_status': 'Success'},
-                               {'phase': 'Test', 'process_status': test or {'Failure': 101}}])
+                phase_results=[{'phase': 'Build', 'process_status': 'Success',
+                                'argv': ['cargo', 'test', '--package=producer', '--no-run']},
+                               {'phase': 'Test', 'process_status': test or {'Failure': 101},
+                                'argv': ['cargo', 'test', '--package=producer']}])
 
 
 def artifacts(directory, row=None):
     baseline = dict(scenario='Baseline', summary='Success', log_path='baseline.log',
-                    phase_results=[{'phase': phase, 'process_status': 'Success'}
+                    phase_results=[{'phase': phase, 'process_status': 'Success',
+                                    'argv': ['cargo', 'test', '--package=producer'] +
+                                            (['--no-run'] if phase == 'Build' else [])}
                                    for phase in ['Build', 'Test']])
     mutation.write_json(directory / 'mutants.json', [mutant()])
     mutation.write_json(directory / 'outcomes.json', {'outcomes': [baseline, row or outcome()]})
@@ -90,6 +94,28 @@ class MutationEvidenceTest(unittest.TestCase):
         row['phase_results'][0]['process_status'] = {'Failure': 101}
         self.assertEqual(evidence.classify(row), 'tool_error')
 
+    def test_t671_different_or_missing_baseline_commands_never_pass(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for extra in ['--package=consumer', '--all-features', '--test=integration']:
+                changed = outcome()
+                changed['phase_results'][1]['argv'].append(extra)
+                artifacts(root, changed)
+                self.assertFalse(evidence.summarize(root, dict(status='completed', code=0))['passes'])
+            changed = outcome()
+            changed['phase_results'][0].pop('argv')
+            artifacts(root, changed)
+            self.assertFalse(evidence.summarize(root, dict(status='completed', code=0))['passes'])
+
+    def test_t671_package_order_versions_and_duplicates_are_equivalent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            changed = outcome()
+            changed['phase_results'][1]['argv'] = [
+                'cargo', 'test', '--package=producer@1.2.3', '--package=producer']
+            artifacts(root, changed)
+            self.assertTrue(evidence.summarize(root, dict(status='completed', code=0))['passes'])
+
     def test_t652_missing_artifacts_never_pass(self):
         with tempfile.TemporaryDirectory() as temp:
             report = mutation.collect(Path(temp), dict(status='completed', code=0))
@@ -141,6 +167,14 @@ class MutationIsolationTest(unittest.TestCase):
             mutation.profile('windows-autostart', 'linux')
         with self.assertRaises(ValueError):
             mutation.profile('linux-autostart', 'win32')
+
+    def test_t671_consumer_packages_are_explicit_baseline_arguments(self):
+        selected = dict(packages=['producer'], test_packages=['producer', 'consumer'],
+                        files=['source.rs'], cargo_args=['--lib'])
+        args = argparse.Namespace(test_timeout=60, build_timeout=600, jobs=2, build_jobs=6)
+        command = mutation.command(selected, args, Path('/tmp/evidence'))
+        for package in selected['test_packages']:
+            self.assertIn('--cargo-arg=--package=' + package, command)
 
     def test_t652_deadline_and_missing_executable_are_not_caught(self):
         with tempfile.TemporaryDirectory() as temp:

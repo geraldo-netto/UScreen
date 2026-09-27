@@ -1,0 +1,12 @@
+{
+  "baseline_passed": true,
+  "baseline_matches_mutants": true,
+  "complete": true,
+  "unique": true,
+  "candidates": 6,
+  "outcomes": {
+    "caught": 6
+  },
+  "passes": true,
+  "whole_project_mutation_score": null
+}
