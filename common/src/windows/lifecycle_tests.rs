@@ -135,3 +135,40 @@ fn t524_explicit_shutdown_preserves_replacement_state() {
     );
     stop(&path, Duration::ZERO).unwrap();
 }
+
+#[test]
+fn t525_session_status_requires_current_owner_and_bounded_snapshot() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("runtime");
+    assert_eq!(load_sessions(&path), None);
+    let session = Session::start(&path).unwrap();
+    assert_eq!(load_sessions(&path), None);
+    let tablets = vec![crate::tablets::TabletSession {
+        serial: "USB".into(),
+        instance: 0,
+        video_port: 8890,
+        input_port: 8891,
+    }];
+    session.publish_sessions(&tablets).unwrap();
+    assert_eq!(load_sessions(&path), Some(tablets.clone()));
+    for size in [0, 1, 64, 65536, 65537] {
+        std::fs::write(path.join("sessions.json"), vec![b'{'; size]).unwrap();
+        assert_eq!(load_sessions(&path), None);
+    }
+    let mut wrong = session.lease.identity().clone();
+    wrong.started += 1;
+    publish(
+        &path,
+        "sessions.json",
+        &Snapshot {
+            owner: wrong,
+            sessions: tablets.clone(),
+        },
+    )
+    .unwrap();
+    assert_eq!(load_sessions(&path), None);
+    session.publish_sessions(&tablets).unwrap();
+    std::fs::write(path.join("daemon.json"), b"replacement").unwrap();
+    assert!(session.publish_sessions(&[]).is_err());
+    assert_eq!(load_sessions(&path), None);
+}

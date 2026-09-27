@@ -1,0 +1,36 @@
+{
+  "issue": "T525",
+  "linux_tests": {
+    "default": 887,
+    "all_features": 757,
+    "supplemental_native_command": 1
+  },
+  "windows_tests": 244,
+  "windows_user": "BLENT-WIN11\\blentdev",
+  "windows_elevated": false,
+  "linux_functions": {
+    "passing": 1325,
+    "total": 1325
+  },
+  "combined_rust_functions": {
+    "passing": 1425,
+    "total": 1425
+  },
+  "windows_usb_native_scope": {
+    "passing": 130,
+    "total": 130
+  },
+  "physical_acceptance": "Blocked under T522",
+  "counter_provenance": {
+    "fresh_targets_per_collection": true,
+    "production_function_inventory_unchanged_for_supplement": true,
+    "changed_existing_test_files": [
+      "host/tests/windows_usb.rs"
+    ],
+    "added_test_files": [
+      "host/tests/portable_usb.rs",
+      "host/tests/support/usb_adb.rs"
+    ]
+  },
+  "windows_supplemental_tests": 2
+}

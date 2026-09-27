@@ -463,13 +463,7 @@ mod tests {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
-pub struct TabletSession {
-    pub serial: String,
-    pub instance: u32,
-    pub video_port: u16,
-    pub input_port: u16,
-}
+pub use crate::tablets::TabletSession;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct SessionSnapshot {

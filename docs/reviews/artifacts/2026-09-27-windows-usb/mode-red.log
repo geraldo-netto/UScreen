@@ -1,0 +1,24 @@
+   Compiling blent v1.2.3 (/backups/disk2/projects/blent/host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.77s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 1 test
+test usb::tests::t525_preview_rejects_unavailable_display_mode ... FAILED
+
+failures:
+
+---- usb::tests::t525_preview_rejects_unavailable_display_mode stdout ----
+
+thread 'usb::tests::t525_preview_rejects_unavailable_display_mode' (989889) panicked at host/src/usb/tests.rs:440:5:
+assertion `left == right` failed: T525: preview advertised unavailable display mode
+  left: String("mode")
+ right: "settings_rejected"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    usb::tests::t525_preview_rejects_unavailable_display_mode
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 192 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --lib`

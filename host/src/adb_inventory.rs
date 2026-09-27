@@ -2,7 +2,7 @@
 use blent_config::adb::{transport_of, Transport};
 use blent_config::commands::AsyncCommandExt;
 
-pub(crate) async fn query(adb: &str) -> Option<Vec<String>> {
+pub async fn query(adb: &str) -> Option<Vec<String>> {
     let output = tokio::process::Command::new(adb)
         .arg("devices")
         .output_bounded()
@@ -14,7 +14,7 @@ pub(crate) async fn query(adb: &str) -> Option<Vec<String>> {
     parse(std::str::from_utf8(&output.stdout).ok()?)
 }
 
-pub(crate) fn with_synthetic(
+pub fn with_synthetic(
     confirmed: Option<Vec<String>>,
     previous: &[String],
     synthetic: Vec<String>,
@@ -48,7 +48,7 @@ fn known_state(state: &str) -> bool {
         .contains(&state)
 }
 
-fn parse(text: &str) -> Option<Vec<String>> {
+pub fn parse(text: &str) -> Option<Vec<String>> {
     let mut lines = text.lines().map(str::trim).filter(|line| !line.is_empty());
     if lines.next()? != "List of devices attached" {
         return None;
@@ -66,6 +66,22 @@ fn parse(text: &str) -> Option<Vec<String>> {
     }
     ready.sort_by_key(|serial| transport_of(serial) != Transport::Usb);
     Some(ready)
+}
+
+pub fn package_presence(out: &std::process::Output) -> Option<bool> {
+    if !out.stderr.is_empty() {
+        return None;
+    }
+    let text = std::str::from_utf8(&out.stdout).ok()?.trim();
+    // Android PackageManagerShellCommand.displayPackageFilePath returns 1
+    // with empty output when absent. Older adapters also return 0/empty.
+    if text.is_empty() && matches!(out.status.code(), Some(0 | 1)) {
+        return Some(false);
+    }
+    if out.status.success() && text.lines().all(|line| line.starts_with("package:/")) {
+        return Some(true);
+    }
+    None
 }
 
 #[cfg(test)]

@@ -1,8 +1,9 @@
 # Windows integration plan
 
-Status: staged implementation, updated 2026-09-26. Linux remains the supported
-runtime for streaming. Windows daemon lifecycle is implemented; capture, input,
-connection integration and packaging remain unavailable.
+Status: staged implementation, updated 2026-09-27. Linux remains the supported
+runtime for streaming. Windows daemon lifecycle, optional autostart and an
+authenticated USB connection preview are implemented; capture, native input
+and packaging remain unavailable. Physical tablet acceptance remains T522.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
@@ -14,7 +15,7 @@ recorded GNU/MSVC failures at `63b332e`. The subsequent
 command-line diagnostics executable and passes MSVC target checking. Help and
 version work. That historical milestone rejected runtime commands; T524 now
 adds interactive daemon lifecycle. Windows remains a second-screen preview,
-with capture/input/connection commands explicitly unsupported.
+with capture, native input, camera and Wi-Fi setup still unsupported.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
@@ -52,7 +53,8 @@ See [build and native evidence](reviews/2026-09-26-windows-build-boundary.md).
 native Windows software encode/decode, partial-write retirement and shutdown
 regressions. Its 17 transport/process functions meet native coverage; FFmpeg
 arguments and framing are shared with Linux. Capture/ADB session integration
-still waits for T525/T528, so this does not enable Windows display support.
+uses T525’s shared connection ownership but still waits for T528 capture, so this
+does not enable Windows display support.
 
 [T524 lifecycle](reviews/2026-09-26-windows-lifecycle.md) runs a foreground daemon
 with `blent start` (also the default command), stops it through `blent stop`, and
@@ -65,6 +67,13 @@ token retirement. No Windows service, tray or display driver is installed.
 [T532 optional autostart](reviews/2026-09-27-windows-autostart.md) is available
 through the GUI preference and a single per-user Run registration. Repeated login
 retains the running daemon; normal startup does not require elevation.
+
+[T525 USB connection](reviews/2026-09-27-windows-usb.md) adds native executable
+invocation, per-slot listeners, owned reverse routes, credential delivery and
+reconnect/cleanup. The daemon publishes prepared USB assignments for CLI/GUI
+status. Native fixture tests exercise the real Windows daemon and existing
+Android wire contract; they do not substitute for T522 physical acceptance.
+Capture/input capabilities remain false, and display-mode requests are rejected.
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
@@ -128,7 +137,8 @@ credentials use stock `getrandom`; socket buffer hints use stock `socket2`.
 Private credential persistence and process lifecycle remain platform services.
 
 These interfaces compile for GNU and MSVC Windows targets, but the Windows
-preview does not start a session or enable backend capabilities. Windows native
+preview starts authenticated protocol sessions with unavailable capture/input
+adapters; it does not enable those native backend capabilities. Windows native
 display/capture/input adapters still need implementation and acceptance.
 Narrower `VirtualDisplay` and `FrameSource` interfaces remain design candidates
 for those adapters, not implemented cross-platform backends. Preserve existing

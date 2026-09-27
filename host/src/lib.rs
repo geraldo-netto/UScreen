@@ -4,6 +4,7 @@ pub mod camera;
 pub mod camera_control;
 
 // Shared wire/session state is built for every host target.
+pub mod adb_inventory;
 pub mod attachment;
 pub mod config;
 pub mod ffmpeg_args;
@@ -14,6 +15,7 @@ pub mod pipe_encoder;
 pub mod raw_transfer;
 #[path = "selection_types.rs"]
 pub mod selection;
+pub mod usb;
 pub mod video_queue;
 
 #[cfg(test)]

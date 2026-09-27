@@ -21,6 +21,7 @@ pub(super) struct SessionSettings<'a> {
     settings: &'a Option<watch::Sender<EncoderSettings>>,
     mode: &'a watch::Sender<bool>,
     pen_enabled: bool,
+    fixed_mode: Option<bool>,
     auto_resolution: fn() -> bool,
     rejection: std::sync::Mutex<Option<SettingsRejection>>,
 }
@@ -35,6 +36,7 @@ impl<'a> SessionSettings<'a> {
             settings,
             mode,
             pen_enabled,
+            fixed_mode: None,
             // Preserve live persistent-policy reads on resolution messages.
             auto_resolution: || crate::config::FileConfig::load().auto_resolution,
             rejection: Default::default(),
@@ -43,6 +45,11 @@ impl<'a> SessionSettings<'a> {
 }
 
 impl SessionSettings<'_> {
+    pub(super) fn with_fixed_mode(mut self, mode: Option<bool>) -> Self {
+        self.fixed_mode = mode;
+        self
+    }
+
     pub(super) fn rejection_reply(&self) -> Option<String> {
         let rejected = self.rejection.lock().unwrap().take()?;
         let current = self.settings.as_ref()?.borrow();
@@ -107,6 +114,13 @@ impl SettingsSink for SessionSettings<'_> {
         });
     }
     fn mode(&self, pen_only: bool) {
+        if self.fixed_mode.is_some_and(|fixed| fixed != pen_only) {
+            *self.rejection.lock().unwrap() = Some(SettingsRejection {
+                reason: "Display mode unavailable".into(),
+                requested: None,
+            });
+            return;
+        }
         apply_tablet_mode(self.mode, pen_only, self.pen_enabled);
     }
 }

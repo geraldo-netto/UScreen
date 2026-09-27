@@ -1,4 +1,6 @@
-mod adb_inventory;
+use blent::adb_inventory;
+use blent::adb_inventory::package_presence;
+use blent_config::android::{app_launch_command, token_delivery_command};
 #[cfg(test)]
 #[allow(dead_code)] // Shared counter helpers also serve library transport tests.
 mod allocation_probe;
@@ -2472,39 +2474,9 @@ impl TabletConnection<'_> {
 /// runs (/proc/<pid>/cmdline is world-readable), which would hand the token
 /// to a local process that must not receive it. Failed input authentication
 /// requests a protected broadcast, never an Activity launch.
-fn app_launch_command(token: Option<&str>) -> String {
-    use blent_config::android::Component;
-    let component = if token.is_some() {
-        Component::TokenActivity
-    } else {
-        Component::MainActivity
-    };
-    let mut cmd = format!("am start -n {}", component.adb_name());
-    if let Some(t) = token {
-        // Hex only, so no quoting is needed and nothing can break out.
-        cmd.push_str(" --es token ");
-        cmd.push_str(t);
-    }
-    cmd.push_str(" >/dev/null 2>&1; exit\n");
-
-    cmd
-}
 
 async fn launch_app_using(serial: &str, token: Option<&str>, adb: &str) {
     app_command_using(serial, app_launch_command(token), "launch", adb).await;
-}
-
-fn token_delivery_command(token: Option<&str>) -> String {
-    let mut command = format!(
-        "am broadcast -n {}",
-        blent_config::android::Component::TokenReceiver.adb_name()
-    );
-    if let Some(token) = token {
-        command.push_str(" --es token ");
-        command.push_str(token);
-    }
-    command.push_str(" >/dev/null 2>&1; exit\n");
-    command
 }
 
 async fn redeliver_token_using(serial: &str, token: Option<&str>, adb: &str) -> bool {
@@ -2672,22 +2644,6 @@ async fn app_presence_with(serial: &str, adb: &str) -> Option<bool> {
         .await
         .ok()?;
     package_presence(&out)
-}
-
-fn package_presence(out: &std::process::Output) -> Option<bool> {
-    if !out.stderr.is_empty() {
-        return None;
-    }
-    let text = std::str::from_utf8(&out.stdout).ok()?.trim();
-    // Android PackageManagerShellCommand.displayPackageFilePath returns 1
-    // with empty output when absent. Older adapters also return 0/empty.
-    if text.is_empty() && matches!(out.status.code(), Some(0 | 1)) {
-        return Some(false);
-    }
-    if out.status.success() && text.lines().all(|line| line.starts_with("package:/")) {
-        return Some(true);
-    }
-    None
 }
 
 async fn app_devices_with(devices: &[String], adb: &str) -> Vec<String> {

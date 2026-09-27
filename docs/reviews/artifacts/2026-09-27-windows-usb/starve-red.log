@@ -1,0 +1,24 @@
+    Blocking waiting for file lock on build directory
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.63s
+     Running unittests src/lib.rs (target/debug/deps/blent-859e44302dce7b99)
+
+running 1 test
+test usb::tests::t525_failed_device_does_not_starve_next_eligible_usb_device ... FAILED
+
+failures:
+
+---- usb::tests::t525_failed_device_does_not_starve_next_eligible_usb_device stdout ----
+
+thread 'usb::tests::t525_failed_device_does_not_starve_next_eligible_usb_device' (989892) panicked at host/src/usb/tests.rs:451:5:
+assertion `left == right` failed: T525: one failing device monopolized all attempts
+  left: None
+ right: Some("USB")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    usb::tests::t525_failed_device_does_not_starve_next_eligible_usb_device
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 192 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p blent --lib`

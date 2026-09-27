@@ -11,6 +11,9 @@ use std::{
     time::Duration,
 };
 
+/// One in-flight USB preparation plus four bounded route retirements.
+pub const STOP_TIMEOUT: Duration = Duration::from_secs(120);
+
 const STATE: [&str; 4] = ["ready.json", "stop.json", "sessions.json", "token"];
 
 pub struct Session {
@@ -25,6 +28,17 @@ impl Session {
         runtime::new_session_token(session.lease.private_directory())?;
         publish(path, "ready.json", session.lease.identity())?;
         Ok(session)
+    }
+    pub fn publish_sessions(&self, sessions: &[crate::tablets::TabletSession]) -> Result<()> {
+        anyhow::ensure!(self.owns_state(), "daemon state ownership changed");
+        publish(
+            self.lease.directory(),
+            "sessions.json",
+            &Snapshot {
+                owner: self.lease.identity().clone(),
+                sessions: sessions.to_vec(),
+            },
+        )
     }
     pub fn shutdown(self) -> Result<()> {
         anyhow::ensure!(self.owns_state(), "daemon state ownership changed");
@@ -72,7 +86,7 @@ fn read(path: &Path) -> Option<Identity> {
     }
     serde_json::from_slice(&bytes).ok()
 }
-fn publish(path: &Path, name: &str, identity: &Identity) -> Result<()> {
+fn publish(path: &Path, name: &str, identity: &impl serde::Serialize) -> Result<()> {
     let mut file = tempfile::NamedTempFile::new_in(path)?;
     super::security::set_file_owner(file.as_file())?;
     file.write_all(&serde_json::to_vec(identity)?)?;
@@ -174,3 +188,25 @@ pub fn launch(program: &Path, path: &Path, timeout: Duration) -> Result<()> {
 #[cfg(test)]
 #[path = "lifecycle_tests.rs"]
 mod tests;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Snapshot {
+    owner: Identity,
+    sessions: Vec<crate::tablets::TabletSession>,
+}
+/// Read only the live daemon's bounded snapshot, never a previous process's state.
+pub fn load_sessions(path: &Path) -> Option<Vec<crate::tablets::TabletSession>> {
+    let owner = status(path).ok()??;
+    let mut bytes = Vec::new();
+    std::fs::File::open(path.join("sessions.json"))
+        .ok()?
+        .take(65537)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    if bytes.len() > 65536 {
+        return None;
+    }
+    let snapshot: Snapshot = serde_json::from_slice(&bytes).ok()?;
+    (snapshot.owner == owner && status(path).ok().flatten().as_ref() == Some(&owner))
+        .then_some(snapshot.sessions)
+}

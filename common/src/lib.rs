@@ -12,6 +12,7 @@ pub mod negotiation;
 pub mod raw_frame;
 pub mod release;
 pub mod scheduling;
+pub mod tablets;
 pub mod version;
 pub mod video;
 pub use model::*;

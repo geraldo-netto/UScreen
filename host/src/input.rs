@@ -91,6 +91,7 @@ impl Drop for ControllerLease {
 }
 
 pub struct InputServer {
+    fixed_mode: Option<bool>,
     attachment: Option<crate::attachment::Attachment>,
     backend: Arc<dyn InputBackend>,
     config: InputConfig,
@@ -142,6 +143,7 @@ impl InputServer {
     ) -> Self {
         Self {
             attachment: None,
+            fixed_mode: None,
             backend,
             config,
             settings_tx,
@@ -150,6 +152,13 @@ impl InputServer {
             relaunch,
             tablet_rx,
         }
+    }
+
+    /// A backend without display switching can retain its supported protocol mode.
+    pub fn with_fixed_mode(mut self, pen_only: bool) -> Self {
+        self.fixed_mode = Some(pen_only);
+        self.mode_tx.send_replace(pen_only);
+        self
     }
 
     pub fn with_attachment(mut self, attachment: crate::attachment::Attachment) -> Self {
@@ -213,6 +222,7 @@ impl InputServer {
                 continue;
             };
             let mut incoming = PendingInput::new(socket);
+            incoming.fixed_mode = self.fixed_mode;
             incoming.attachment = self
                 .attachment
                 .as_ref()
@@ -238,6 +248,7 @@ impl InputServer {
 }
 
 struct PendingInput {
+    fixed_mode: Option<bool>,
     attachment: Option<crate::attachment::Lease>,
     stream: tokio::net::TcpStream,
     deadline: tokio::time::Instant,
@@ -246,6 +257,7 @@ impl PendingInput {
     fn new(stream: tokio::net::TcpStream) -> Self {
         Self {
             attachment: None,
+            fixed_mode: None,
             stream,
             deadline: tokio::time::Instant::now() + std::time::Duration::from_secs(3),
         }
@@ -288,7 +300,7 @@ async fn handle_connection(
         return Ok(());
     }
 
-    let channels = (settings_tx, mode_tx);
+    let channels = (settings_tx, mode_tx, incoming.fixed_mode);
     let attachment = incoming.attachment;
     let mut retirement = attachment
         .as_ref()
@@ -320,13 +332,18 @@ async fn serve_controller(
     mut ws_sender: futures_util::stream::SplitSink<InputSocket, Message>,
     mut ws_receiver: futures_util::stream::SplitStream<InputSocket>,
     config: InputConfig,
-    channels: (Option<watch::Sender<EncoderSettings>>, watch::Sender<bool>),
+    channels: (
+        Option<watch::Sender<EncoderSettings>>,
+        watch::Sender<bool>,
+        Option<bool>,
+    ),
     attachment: Option<&crate::attachment::Lease>,
     latency: crate::latency::LatencyTracker,
     controllers: Arc<Controllers>,
 ) -> Result<()> {
-    let (settings_tx, mode_tx) = channels;
-    let settings = SessionSettings::new(&settings_tx, &mode_tx, config.pen);
+    let (settings_tx, mode_tx, fixed_mode) = channels;
+    let settings =
+        SessionSettings::new(&settings_tx, &mode_tx, config.pen).with_fixed_mode(fixed_mode);
     let mut mode_rx = mode_tx.subscribe();
     let mut ownership = controllers.generation.subscribe();
     let Some(lease) = claim_controller(&controllers, attachment, &settings) else {

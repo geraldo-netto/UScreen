@@ -28,7 +28,7 @@ pub(crate) fn start_daemon() -> Result<(), String> {
 }
 pub(crate) fn stop_daemon() -> Result<(), String> {
     let path = runtime_path()?;
-    lifecycle::stop(&path, Duration::from_secs(5)).map_err(|error| error.to_string())
+    lifecycle::stop(&path, lifecycle::STOP_TIMEOUT).map_err(|error| error.to_string())
 }
 pub(crate) fn restart_daemon() -> Result<(), String> {
     blent_config::lifecycle::restart(stop_daemon, start_daemon)
