@@ -1,0 +1,43 @@
+name: Scoped mutation testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: Native campaign (not a whole-project mutation gate)
+        options: [usb, linux-autostart, windows-autostart]
+        default: usb
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ${{ inputs.profile == 'windows-autostart' && 'windows-2022' || 'ubuntu-latest' }}
+    timeout-minutes: 150
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Linux native dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-bin libssl-dev pkg-config
+      - name: Install pinned mutation engine
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+      - name: Verify runner failure handling
+        run: python -m unittest discover -s scripts/tests -p test_mutation_runner.py
+      - name: Run isolated native campaign with baseline
+        run: python scripts/mutation/run.py --profile '${{ inputs.profile }}' --output '${{ runner.temp }}/mutation'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-${{ inputs.profile }}-${{ runner.os }}
+          path: |
+            ${{ runner.temp }}/mutation/manifest.json
+            ${{ runner.temp }}/mutation/report.json
+            ${{ runner.temp }}/mutation/run.log
+            ${{ runner.temp }}/mutation/mutants.out

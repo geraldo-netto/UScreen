@@ -1,0 +1,26 @@
+{
+  "usb": {
+    "platforms": ["linux", "win32"],
+    "packages": ["blent"],
+    "files": ["host/src/adb_inventory.rs", "host/src/usb.rs", "host/src/usb/*.rs"],
+    "cargo_args": ["--lib", "--test=portable_usb"],
+    "test_args": ["--", "usb::", "adb_inventory::", "t525_native_adb_argv_stdin_bounds_and_owned_routes"],
+    "scope": "Shared USB policy, parser and native command transport; supervisor and GUI integration are separate."
+  },
+  "windows-autostart": {
+    "platforms": ["win32"],
+    "packages": ["blent-config"],
+    "files": ["common/src/windows/autostart.rs", "common/src/windows/registry.rs"],
+    "cargo_args": ["--lib"],
+    "test_args": ["--", "windows::autostart::", "windows::registry::"],
+    "scope": "Native per-user registration and bounded registry adapter; isolated test keys only."
+  },
+  "linux-autostart": {
+    "platforms": ["linux"],
+    "packages": ["blent-config"],
+    "files": ["common/src/linux/autostart.rs"],
+    "cargo_args": ["--lib", "--test=autostart", "--test=appimage"],
+    "test_args": ["--", "linux::autostart::", "t536_", "t653_", "t656_", "t308_"],
+    "scope": "Linux login registration adapter with isolated normal-suite fixtures."
+  }
+}
