@@ -1,5 +1,9 @@
 # Mutation testing checkpoint — T652
 
+Historical initial checkpoint. See the [post-reboot progress](2026-09-27-mutation-progress.md)
+for completed campaigns, fixes and current remaining work. Statements below describe
+the state at the original pause.
+
 Paused at the maintainer's request to save progress for a later session.
 Resume from this document and the open T652 row in `TODO.md`. No mutation
 campaign is still running. This checkpoint is not completion of T652.
