@@ -1,0 +1,102 @@
+{
+  "rust_platforms": [
+    "windows"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "common/src/windows/registry.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 7,
+      "passing": 7,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "drop",
+      "line": 7,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "checked",
+      "line": 12,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "open",
+      "line": 20,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "create",
+      "line": 31,
+      "language": "rust",
+      "covered": 13,
+      "total": 14,
+      "percent": 92.85714285714286,
+      "passes": true,
+      "missing": [
+        46
+      ]
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "read",
+      "line": 49,
+      "language": "rust",
+      "covered": 32,
+      "total": 33,
+      "percent": 96.96969696969697,
+      "passes": true,
+      "missing": [
+        82
+      ]
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "write",
+      "line": 90,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "common/src/windows/registry.rs",
+      "name": "remove",
+      "line": 109,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

@@ -68,6 +68,8 @@ impl Key {
             "Invalid autostart registry value"
         );
         let mut value = vec![0u16; size as usize / 2];
+        #[cfg(test)]
+        tests::replace_before_data_read(self);
         checked(unsafe {
             RegQueryValueExW(
                 self.0,

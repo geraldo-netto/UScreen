@@ -1,5 +1,44 @@
 use super::*;
 
+thread_local! {
+    static T663_REPLACEMENT: std::cell::RefCell<Option<Vec<u16>>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(super) fn replace_before_data_read(key: &Key) {
+    if let Some(value) = T663_REPLACEMENT.with(|value| value.borrow_mut().take()) {
+        key.write("t663", &value).unwrap();
+    }
+}
+
+#[test]
+fn t663_read_uses_actual_size_when_value_shrinks_after_probe() {
+    let path = format!(
+        "Software\\BlentTests\\T663-{}",
+        crate::credentials::random_token().unwrap()
+    );
+    let key = Key::create(&path).unwrap();
+    let mut observations = Vec::new();
+    for length in [0, 1, 2, 255, 1023, 2046] {
+        key.write("t663", &vec![65; 2047]).unwrap();
+        let expected = vec![0x03bb; length];
+        T663_REPLACEMENT.with(|value| *value.borrow_mut() = Some(expected.clone()));
+        observations.push((expected, key.read("t663")));
+    }
+    drop(key);
+    let path = super::super::native::wide(path.as_ref()).unwrap();
+    assert_eq!(
+        unsafe { RegDeleteTreeW(HKEY_CURRENT_USER, path.as_ptr()) },
+        0
+    );
+    for (expected, actual) in observations {
+        assert_eq!(
+            actual.unwrap(),
+            Some(expected),
+            "T663: shrink after size probe"
+        );
+    }
+}
+
 #[test]
 fn t659_registry_drop_child() {
     if std::env::var_os("BLENT_T659_CHILD").is_none() {
