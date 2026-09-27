@@ -3,12 +3,16 @@
 Status: staged implementation, updated 2026-09-27. Linux remains the supported
 runtime for streaming. Windows daemon lifecycle, optional autostart and an
 authenticated USB connection preview are implemented; capture, native input
-and packaging remain unavailable. Physical connection/pen acceptance remains
+and packaging remain unavailable. Physical USB/touch/mouse acceptance remains
 T522; extended-display acceptance is T674.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
 remain pending.
+
+On 2026-09-27 the maintainer declined stylus work while explicitly retaining
+touch and mouse support. T526 is `wont_fix`; existing Linux/Android pen code
+and permanent tests remain. Windows stylus support stays unavailable.
 
 The initial [cross-compilation review](reviews/2026-09-19-windows-cross-compilation.md)
 recorded GNU/MSVC failures at `63b332e`. The subsequent
@@ -94,7 +98,7 @@ connection, driver initialization or encoder compatibility. `doctor` now returns
 successful diagnostic execution while explicitly listing unsupported backends;
 that exit status does not mean streaming is supported.
 
-Delivery sequence: **Windows compilation → pen-only operation → extended
+Delivery sequence: **Windows compilation → touch/mouse operation → extended
 display → packaged release**. Each milestone has separate acceptance checks;
 a successful Windows build alone does not establish functional support.
 
@@ -102,7 +106,7 @@ The current [TODO ledger](../TODO.md) separates independently reviewable work:
 
 | Milestone | Implementation and prerequisites | Physical acceptance |
 | --- | --- | --- |
-| Pen-only | T672 monitor mapping + T526 native injection → T673 session integration; T525 USB is implemented | T522, without a virtual-display driver |
+| Touch/mouse | T672 monitor mapping + T689 native injection/non-stylus mouse contract → T673 session integration; T525 USB is implemented | T522, without a virtual-display driver or stylus |
 | Extended display | T527 driver/ownership decision and adapter → T675 modes + T528 frame acquisition → T676 recovery → T529 stream integration | T674 on the same PC/tablet |
 | Hardware encoding | T685 missing AMF/QSV recipes + T530 discovery/probes can start independently of capture; the current pipe adapter admits only libx264 | T677 real GPU/session validation, then T535 performance measurements |
 | Packaging | T534 reproducible contents → T678 install/upgrade/uninstall; format, dependency distribution and signing decisions remain pending | Accepted runtime milestones and native installation checks before release |
@@ -169,7 +173,7 @@ Android brightness/refresh preferences and Linux regressions during that work.
 |---|---|---|
 | EVDI discovery, EDID attachment and capture helper | `host/src/vdisplay.rs`, `host/src/capture.rs`, `host/src/edid.rs`, `host/evdi/` | Integrate a virtual monitor through an IDD and capture its output. Scope creation and removal to Blent-owned resources. |
 | Raw NV12 through native transfer adapters | `common/src/raw_frame.rs`, `host/src/encoder_shared.rs`, `host/src/raw_memory.rs`, `host/src/encoder_io.rs` | FIFO and the optional Linux sealed-memfd adapter implement input ownership and cancellation. Reuse the portable bounded descriptor contract and final-reference lease semantics; supply a Windows mapping/handle-transfer or framed pipe adapter. Linux memfd, Unix sockets and eventfd are not Windows implementations. |
-| uinput, KWin and X11 mapping | `host/src/input/linux.rs`, `host/src/input/mapping.rs`, `host/src/input/event_writer.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows pointer injection behind `InputBackend`/`InputSink`, display placement and monitor/DPI mapping. Evaluate on-screen keyboard behavior separately. |
+| uinput, KWin and X11 mapping | `host/src/input/linux.rs`, `host/src/input/mapping.rs`, `host/src/input/event_writer.rs`, `host/src/kwin.rs`, `host/src/kscreen.rs`, `host/src/osk.rs` | Windows touch/mouse injection through explicit input adapters, display placement and monitor/DPI mapping; stylus injection is declined. Evaluate on-screen keyboard behavior separately. |
 | Unix signals, `/proc`, UID checks and file permissions | `host/src/linux_main.rs`, `common/src/linux/mod.rs`, `common/src/linux/runtime.rs`, `host/src/runtime.rs` | Windows process handles/identity, controlled shutdown, per-user single-instance handling and private paths/ACLs. Shared transport no longer needs Unix socket calls or a Linux credential source. |
 | systemd, D-Bus tray and Linux setup/diagnostics | `gui/src/main.rs`, `host/src/tray.rs`, `host/src/doctor.rs` | Windows lifecycle, tray, optional autostart and diagnostics; normal operation in the interactive user session. |
 | VAAPI defaults and Linux build/packaging | `common/src/model.rs`, `host/src/capture.rs`, `host/src/encoder.rs`, `Makefile`, `scripts/`, `packaging/`, `.github/workflows/` | Windows encoder capability detection, build scripts, tests and installation artifacts. |
@@ -208,20 +212,25 @@ launches; configuration round-trips; lifecycle commands agree and retire
 owned children. Test Unicode paths and spaces. Report missing display/input
 capabilities accurately, and label artifacts as incomplete until validated.
 
-### 3. Support pen-only operation
+### 3. Support touch and mouse operation
 
-- Implement touch and pen through the Windows
-  [synthetic pointer API](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createsyntheticpointerdevice),
-  and mouse actions through the appropriate Windows API.
-- Map the selected monitor, including negative desktop coordinates, rotation
-  and mixed DPI. Preserve pressure, tilt, hover, eraser, button state,
-  contact lifetime and the enabled-device policy.
+- Implement native touch and mouse injection through explicit Windows adapters.
+  Preserve the shared enabled-device policy and owned contact/button cleanup.
+- Define a non-stylus mouse event/configuration path before session integration.
+  The existing `input_pointer` is a pen-derived virtual pointer, and
+  `InputConfig::any_device` considers only touch/pen. These existing contracts
+  do not establish independent mouse support; preserve current Linux behavior
+  and permanent regressions while adding the Windows path.
+- Map the selected monitor across negative desktop coordinates, rotation and
+  mixed DPI, with bounded coordinate/geometry validation.
 - Test session and privilege restrictions, including ordinary versus elevated
   target applications; expose restrictions accurately.
 
-Acceptance: the existing tablet connects over adb and draws on a selected
-Windows monitor; disconnect/reconnect leaves no held contacts or buttons.
-This milestone does not require a virtual-display driver.
+Acceptance: the existing tablet connects over ADB and delivers touch/mouse
+input to the selected Windows monitor; disconnect/reconnect leaves no held
+contacts or buttons. Windows stylus remains unavailable. No pen pressure,
+tilt, hover, eraser or physical-stylus acceptance is required. This milestone
+does not require a virtual-display driver.
 
 ### 4. Support the extended display and stream
 
@@ -234,7 +243,7 @@ This milestone does not require a virtual-display driver.
 - Handle mode changes, capture access loss, display removal and reconnects.
 
 Acceptance: Windows recognizes an extended desktop on the tablet; windows
-can move onto it and receive mapped input. Automated frame/protocol tests
+can move onto it and receive mapped touch/mouse input. Automated frame/protocol tests
 pass. Hardware checks cover attach/detach, resolution changes, sleep/resume,
 desktop locking and repeated reconnects. Cleanup removes only owned resources.
 

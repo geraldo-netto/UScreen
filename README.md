@@ -262,8 +262,9 @@ More in [docs/faq.md](docs/faq.md).
 ## Plans and proposals
 
 The [Windows integration plan](docs/windows-port.md) separates compilation,
-pen-only operation, extended-display support and packaging. It records pending
-OS/driver/testing decisions. The Windows preview provides lifecycle, USB preparation,
+touch/mouse operation, extended-display support and packaging. Windows stylus
+work is declined; existing Linux/Android pen code and tests remain. The plan
+records pending OS/driver/testing decisions. The Windows preview provides lifecycle, USB preparation,
 Settings and a tray; display streaming and input backends remain unsupported.
 
 Other proposals inherited from upstream are AOA transport to reduce reliance

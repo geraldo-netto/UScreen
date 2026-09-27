@@ -1,5 +1,9 @@
 # TODO dependency and scope review — T684
 
+Historical planning snapshot before the maintainer’s subsequent 2026-09-27 pen
+scope decision. See [TODO.md](../../TODO.md) and the [Windows plan](../windows-port.md)
+for current dispositions and prerequisites.
+
 Reviewed the 31 unresolved rows remaining after T531 (`3c5ef51`) and T652
 (`7ef089f`) against implementation, retained native evidence and maintainer
 choices. No unresolved original ID was removed. Nine broad items were split

@@ -1,6 +1,7 @@
 # Inputs needed for the reviewed TODO items
 
-Implementation/dependency map refreshed 2026-09-27 after T525, T531 and T652.
+Implementation/dependency map refreshed 2026-09-27 after T525, T531, T652 and
+the maintainer’s decision to retain touch/mouse while declining stylus work.
 Physical observations below retain their original dates; devices were not
 reprobed for this documentation review. [TODO.md](../../TODO.md) is the current
 work ledger; [the row review](2026-09-27-todo-review.md) records the decomposition.
@@ -65,9 +66,10 @@ service does not enable Blent display/input/camera sharing.
 | T538 | Exact hub and charger models, and which device/cable connects to each port; then a stable test below full battery. | Establish a working data/power arrangement and sustained net charging. Advertised current and brief near-full samples do not prove it. |
 | T493, T497 | Resolved; nothing needed. | Native foundation/lifecycle and the archived combined per-function gate passed. T645 subsequently fixed empty-sysfs native coverage reproducibility; [its evidence](artifacts/2026-09-27-sysfs-coverage/README.md) is separate from the still-unattributed T644 Xvfb stall. |
 | T520 | **Answered: Windows 11 x64 first.** | Resolved and removed from TODO; target encoded in the support/build plan. |
-| T522, T674 | One Windows 11 x64 PC/tester with the existing tablet, GPU/driver/USB details and a physical window; a stylus for pen attributes. | T522 covers connection/pen-only input after T672/T526/T673; T674 adds extended display after T527/T675/T528/T676/T529. Administrator access is only for the selected driver installation. VM/CI evidence is not physical acceptance. |
+| T522, T674 | One Windows 11 x64 PC/tester with the existing tablet, GPU/driver/USB details and a physical window; no stylus prerequisite. | T522 covers USB connection and, after T672/T689/T673, touch/mouse input. T674 adds extended display after T527/T675/T528/T676/T529. Administrator access is only for the selected driver installation. VM/CI evidence is not physical acceptance. |
 | T524 | Resolved; nothing needed. | Native start/stop/restart/status, single-instance ownership and cleanup acceptance pass. Capture/input remain unsupported. |
-| T672, T526, T673 | No virtual-display choice needed for pen-only implementation. | Mapping and native injection can proceed independently; T673 replaces unavailable preview sinks and integrates settings/session retirement. Physical acceptance remains T522. |
+| T672, T689, T673 | No virtual-display choice or stylus is needed for touch/mouse implementation; settle any missing non-stylus mouse source/gesture decision before dependent work. | T672 mapping and T689 native injection remain planned. T689 must supply an independent mouse contract because the existing virtual pointer is pen-derived; T673 integrates settings/session retirement. Physical acceptance remains T522. |
+| T526 | None; Windows stylus work was declined on 2026-09-27. | No stylus injection or pressure/tilt/hover/eraser acceptance is planned. Touch/mouse requirements remain in T672/T689/T673/T522; existing pen code/tests are preserved. |
 | T525 | No implementation choice remains; physical USB availability belongs to T522. | Authenticated USB preview, owned reverse routes, credentials, native fixtures and cleanup are implemented. Capture/input remain unavailable until their adapters and integration are accepted. See [USB results](2026-09-27-windows-usb.md). |
 | T527 | Driver strategy: validated upstream ownership extension/exclusive instance, or a Blent-owned IDD. An owned driver also needs an agreed signing/maintenance/distribution owner. | Current upstream VDD is a lab candidate only: its global count/reload interface cannot retire only Blent-owned outputs. Do not buy a certificate before deciding this route. |
 | T528, T676 | No independent preference after T527’s driver/control choice; native output compatibility must be demonstrated. | T528 acquires/converts frames; T676 adds bounded access-loss/lock/mode recovery, using T675 mode control. Native resource and cancellation tests accompany both. |
@@ -87,10 +89,12 @@ service does not enable Blent display/input/camera sharing.
 | T544 | Accept the camera milestone after T621/T540, then prioritize microphone sharing and define desktop backends and latency/echo needs. | T543 camera controls already exist. Microphone consent/foreground lifecycle and implementation remain deferred; further splitting needs the audio requirements. |
 | T545 | After camera acceptance T621/T540, prioritize and specify audio direction and desired OS device behavior. | Routing/buffering/backend design depends on that decision. T543 is implemented; this work remains deferred. |
 | T546 | After camera acceptance T621/T540, prioritize and choose NFC operations/use cases such as tag reading/writing versus card emulation. | Research tablet/Android/desktop limits before defining implementation or promising an OS NFC device. Remains deferred. |
-| T487, T682, T683 | Explicitly prioritize each after T388, with its own uninterrupted window and network/stylus/power prerequisites. | Network, pen interaction and alternative supply are distinct controlled experiments. All remain deferred; T538 identifies the current hub arrangement, not a comparative power result. |
+| T487, T683 | Explicitly prioritize each after T388, with its own uninterrupted window and network/power prerequisites. | Network and alternative supply remain deferred controlled experiments; T538 identifies the current hub arrangement, not a comparative power result. Pen experiment T682 was declined on 2026-09-27. |
 | T417 | Choose read-only decoder diagnostics or profile-selection controls. Read-only is the smaller first step. | Preserve current defaults; controls additionally need persistence and measured safe transitions. Still deferred. |
 
-T592 remains skipped/blocked for lack of a physical stylus, as already directed.
+T592 stylus investigation/acceptance and T682 pen power testing were declined by
+the maintainer on 2026-09-27. Existing code, regressions and historical evidence
+are retained; these dispositions do not establish physical pen validation.
 No additional tablet or broad large-machine campaign is required.
 
 ## One-time Linux camera prerequisite
