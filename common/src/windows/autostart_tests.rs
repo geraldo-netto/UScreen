@@ -35,6 +35,51 @@ impl Drop for Fixture {
 }
 
 #[test]
+fn t658_enable_creates_absent_registration_key() {
+    let fixture = Fixture::new();
+    let program = fixture.program("first install");
+    assert!(Key::open(&fixture.key, KEY_QUERY_VALUE).unwrap().is_none());
+    let registration = Registration::at(&fixture.key);
+    registration.set_enabled(true, Some(&program)).unwrap();
+    assert!(registration.enabled().unwrap());
+    let key = Key::open(&fixture.key, KEY_QUERY_VALUE).unwrap().unwrap();
+    assert_eq!(
+        owned_program(&key.read(VALUE).unwrap().unwrap()),
+        Some(program)
+    );
+    registration.set_enabled(false, None).unwrap();
+    assert!(!registration.enabled().unwrap());
+}
+
+#[test]
+fn t658_ownership_requires_absolute_blent_path_with_bounded_command() {
+    let template = "\"C:\\\\blent.exe\" --login";
+    for length in [259, 260, 261, 262, 512] {
+        let path = format!(
+            "\"C:\\{}\\blent.exe\" --login",
+            "x".repeat(length - template.len())
+        );
+        let value: Vec<_> = path.encode_utf16().collect();
+        assert_eq!(value.len(), length);
+        assert_eq!(
+            owned_program(&value).is_some(),
+            length <= 260,
+            "T658: {length}"
+        );
+    }
+    for path in [
+        "\"relative\\blent.exe\" --login",
+        "\"C:\\fixture\\foreign.exe\" --login",
+        "\"\\fixture\\blent.exe\" --login",
+    ] {
+        assert!(
+            owned_program(&path.encode_utf16().collect::<Vec<_>>()).is_none(),
+            "T658: {path}"
+        );
+    }
+}
+
+#[test]
 fn t532_enable_disable_upgrade_and_stale_path_preserve_other_entries() {
     let fixture = Fixture::new();
     let registration = Registration::at(&fixture.key);
