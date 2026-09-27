@@ -1,0 +1,6 @@
+Timestamp: Mon 2026-09-21 21:51:37 CEST (5 days ago)
+#7  0x00005db1c36f355c InitOutput (Xorg + 0xa855c)
+#8  0x00005db1c36b1ce0 n/a (Xorg + 0x66ce0)
+#9  0x000078ea4ee2a1ca __libc_start_call_main (libc.so.6 + 0x2a1ca)
+#10 0x000078ea4ee2a28b __libc_start_main_impl (libc.so.6 + 0x2a28b)
+#11 0x00005db1c369a395 _start (Xorg + 0x4f395)

@@ -1,0 +1,46 @@
+Sep 26 16:30:59 host kernel: evdi: loading out-of-tree module taints kernel.
+Sep 26 16:30:59 host kernel: evdi: [I] Initialising logging on level 4
+Sep 26 16:30:59 host kernel: evdi: [I] Atomic driver: yes
+Sep 26 16:30:59 host kernel: evdi: [I] Increasing device count to 2
+Sep 26 16:30:59 host kernel: [drm] Initialized evdi 1.14.15 for evdi.0 on minor 1
+Sep 26 16:30:59 host kernel: evdi: [I] Evdi platform_device create
+Sep 26 16:30:59 host kernel: [drm] Initialized evdi 1.14.15 for evdi.1 on minor 2
+Sep 26 16:30:59 host kernel: evdi: [I] Evdi platform_device create
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1552 (gpu-manager) of process 1552 (gpu-manager)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg.wrap) of process 1918 (Xorg.wrap)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card1) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:02 host kernel: evdi: [I] (card2) Closed by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:03 host kernel: evdi: [I] (card1) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:03 host kernel: evdi: [I] (card2) Opened by Task 1918 (Xorg) of process 1918 (Xorg)
+Sep 26 16:31:03 host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:03:00.0 on minor 3
+Sep 26 16:31:03 host kernel: [drm] Initialized amdgpu 3.64.0 for 0000:08:00.0 on minor 4
+Sep 26 16:31:04 host kernel: evdi: [I] (card2) Closed by Task 2378 (Xorg:cs0) of process 1918 (Xorg)
+Sep 26 16:31:04 host kernel: evdi: [I] (card1) Closed by Task 2378 (Xorg:cs0) of process 1918 (Xorg)

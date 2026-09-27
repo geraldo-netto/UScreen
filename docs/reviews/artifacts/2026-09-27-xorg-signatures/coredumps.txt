@@ -1,0 +1,8 @@
+TIME                          PID UID GID SIG     COREFILE     EXE                SIZE
+Thu 2026-09-17 01:52:44 CEST 2392   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Sun 2026-09-20 16:46:19 CEST 1986   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Mon 2026-09-21 21:51:37 CEST 1948   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Mon 2026-09-21 21:57:37 CEST 1954   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Tue 2026-09-22 00:20:57 CEST 2024   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Sat 2026-09-26 03:10:32 CEST 2000   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -
+Sat 2026-09-26 16:31:04 CEST 1918   0   0 SIGABRT inaccessible /usr/lib/xorg/Xorg    -

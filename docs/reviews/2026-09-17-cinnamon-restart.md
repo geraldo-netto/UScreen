@@ -7,7 +7,14 @@ attached an EVDI display. LightDM subsequently started another Cinnamon
 session. The crash preceded UScreen's corrective resolution switch.
 The exact Xorg failure trigger and a safe mitigation remain unverified (T222).
 
-## Current disposition (2026-09-21)
+## Current disposition (2026-09-27)
+
+The maintainer resumed investigation. [Fresh metadata review](2026-09-27-xorg-signatures.md)
+separates the original gamma crash from later boot/glamor assertions (T700).
+The original cause is still unverified; all available Xorg cores remain
+inaccessible. No crash fix or native acceptance is claimed.
+
+## Historical disposition (2026-09-21)
 
 The maintainer reports that T222 no longer occurs and accepts closing or
 deferring it. It is deferred, without claiming an identified root cause or
