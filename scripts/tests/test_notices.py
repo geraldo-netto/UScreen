@@ -9,7 +9,7 @@ import unittest
 import release_signing_fixture
 
 REPO = Path(__file__).resolve().parents[2]
-NOTICES = ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses/libevdi-LGPL-2.1.txt']
+NOTICES = ['LICENSE', 'COPYRIGHT.md', 'THIRD_PARTY_LICENSES.md', 'licenses/libevdi-LGPL-2.1.txt']
 
 
 class NoticeTest(unittest.TestCase):
@@ -77,7 +77,7 @@ class NoticeTest(unittest.TestCase):
             self.assertEqual((root / 'arch/usr/share/blent/setup-evdi.sh').read_bytes(), (REPO / 'scripts/setup-evdi.sh').read_bytes(), 'T269: Arch setup missing')
 
     def copy_sources(self, root):
-        for name in ['Makefile', 'README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',
+        for name in ['Makefile', 'README.md', 'LICENSE', 'COPYRIGHT.md', 'THIRD_PARTY_LICENSES.md', 'SECURITY.md',
                      'CHANGELOG.md', 'CONTRIBUTING.md', 'scripts', 'packaging', 'docs', 'licenses']:
             source = REPO / name
             if not source.exists():

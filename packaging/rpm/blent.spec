@@ -69,6 +69,7 @@ udevadm trigger --name-match=uinput 2>/dev/null || true
 %{_modulesloaddir}/blent.conf
 %{_udevrulesdir}/60-blent-uinput.rules
 %license %{_docdir}/blent/LICENSE
+%license %{_docdir}/blent/COPYRIGHT.md
 %license %{_docdir}/blent/THIRD_PARTY_LICENSES.md
 %license %{_docdir}/blent/licenses
 %doc %{_docdir}/blent/README.md

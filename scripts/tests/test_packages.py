@@ -159,7 +159,7 @@ exit 0
         for name in ['packaging/build-packages.sh', 'packaging/deb/control', 'packaging/deb/postinst',
                      'packaging/rpm/blent.spec', 'packaging/arch/PKGBUILD', 'packaging/arch/blent.install']:
             write(name, (REPO / name).read_text(), name.endswith('.sh'))
-        for name in ['README.md', 'LICENSE', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
+        for name in ['README.md', 'LICENSE', 'COPYRIGHT.md', 'THIRD_PARTY_LICENSES.md', 'licenses', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'docs']:
             source = REPO / name
             if source.is_dir(): shutil.copytree(source, root / name)
             else: shutil.copy(source, root / name)

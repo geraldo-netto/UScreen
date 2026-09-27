@@ -7,6 +7,8 @@ support.
 
 Blent is maintained at [geraldo-netto/UScreen](https://github.com/geraldo-netto/UScreen),
 Original UScreen copyright (c) 2026 majmichu1; retained under the MIT license.
+Original Blent contributions copyright (c) 2026 Geraldo Netto; see
+[COPYRIGHT.md](COPYRIGHT.md) for attribution and provenance.
 Historical benchmarks and compatibility reports describe upstream releases.
 As of 2026-09-17 this fork has no published release. The source still reports
 version 1.2.3; identify fork builds by their commit as well as that version.
