@@ -56,18 +56,25 @@ pub(crate) fn runtime_path() -> Result<std::path::PathBuf, String> {
 }
 
 #[cfg(test)]
+#[path = "registry_fixture.rs"]
+mod registry_fixture;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use blent_config::commands::SyncCommandExt;
     #[test]
     fn t532_gui_preference_tracks_registration_and_stale_executable() {
         if let Some(key) = std::env::var_os("BLENT_T532_GUI_KEY") {
-            TEST_AUTOSTART
-                .with(|value| *value.borrow_mut() = Some(key.to_string_lossy().into_owned()));
+            let key = key.to_string_lossy();
+            let _registry = registry_fixture::RegistryFixture::redirect(&key);
+            TEST_AUTOSTART.with(|value| *value.borrow_mut() = Some(key.to_string()));
             set_autostart(false).unwrap();
             assert!(!autostart_enabled());
             set_autostart(true).unwrap();
             assert!(autostart_enabled());
+            // T660: do not ask the mutated helper where it wrote registration.
+            assert!(autostart::Registration::at(&key).enabled().unwrap());
             let program = super::super::find_blent_bin().unwrap();
             std::fs::remove_file(program).unwrap();
             assert!(!autostart_enabled());

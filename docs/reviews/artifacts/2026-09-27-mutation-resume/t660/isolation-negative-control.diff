@@ -1,0 +1,5 @@
+--- gui/src/platform/registry_fixture.rs
++++ gui/src/platform/registry_fixture.rs
+@@ -26 +26 @@
+-        let status = unsafe { RegOverridePredefKey(HKEY_CURRENT_USER, key) };
++        let status = 0;
