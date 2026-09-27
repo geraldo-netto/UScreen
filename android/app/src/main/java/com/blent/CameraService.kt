@@ -8,6 +8,8 @@ import android.os.*
 /** Keeps an explicitly started camera alive while the Activity is hidden/locked. */
 class CameraService : Service() {
     private var wake: PowerManager.WakeLock? = null
+    private var run: String? = null
+    private var ready = false
 
     override fun onCreate() {
         super.onCreate()
@@ -23,8 +25,8 @@ class CameraService : Service() {
             if (Build.VERSION.SDK_INT >= 30) startForeground(2, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
             else startForeground(2, notification)
             acquireWake()
+            ready = true
         } catch (_: Exception) {
-            CameraOwner.serviceStopped()
             stopSelf()
         }
     }
@@ -38,13 +40,19 @@ class CameraService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent == null) stopSelf()
+        val requested = intent?.getStringExtra("camera_run")
+        if (CameraOwner.ownsService(requested)) {
+            run = requested
+            if (!ready) { CameraOwner.serviceStopped(run); stopSelf() }
+        } else if (!CameraOwner.ownsService(run)) {
+            stopSelf()
+        }
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         wake?.let { if (it.isHeld) it.release() }
-        CameraOwner.serviceStopped()
+        CameraOwner.serviceStopped(run)
         super.onDestroy()
     }
 

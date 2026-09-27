@@ -14,14 +14,16 @@ internal object CameraOwner {
         val app = context.applicationContext
         return binding ?: CameraBinding(app, {
             app.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: 0
-        }, { permissionRequest?.invoke() }, backgroundService = { enabled ->
-            val intent = Intent(app, CameraService::class.java)
-            if (enabled) app.startForegroundService(intent) else app.stopService(intent)
+        }, { permissionRequest?.invoke() }, backgroundService = { run ->
+            val intent = Intent(app, CameraService::class.java).putExtra("camera_run", run)
+            if (run != null) app.startForegroundService(intent) else app.stopService(intent)
         }).also { binding = it }
     }
 
-    fun serviceStopped() {
-        binding?.backgroundStopped()
+    fun ownsService(run: String?): Boolean = binding?.ownsBackground(run) == true
+
+    fun serviceStopped(run: String?) {
+        binding?.backgroundStopped(run)
     }
 
     fun reset() {

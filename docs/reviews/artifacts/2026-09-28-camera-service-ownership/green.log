@@ -1,0 +1,130 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.5/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+
+> Configure project :app
+WARNING: The option setting 'android.experimental.lint.version=8.3.2' is experimental.
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugProfileIdentity UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :app:generateDebugUnitTestConfig UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest
+
+com.blent.CameraContractTest > t539_captureRequiresForegroundConsentAndSwitchRetiresPrevious[27] STARTED
+
+com.blent.CameraContractTest > t539_resourcesCloseOnceInReverseOrderAndRejectLateStartup[27] STARTED
+
+com.blent.CameraContractTest > t618_adaptiveMinimumIsBounded[27] STARTED
+
+com.blent.CameraContractTest > t539_errorsStopCameraAndInvitationsNeverEnableCapture[27] STARTED
+
+com.blent.CameraContractTest > t539_wireAndBoundedInvalidInputPreserveSourceBuffer[27] STARTED
+
+com.blent.CameraContractTest > t539_invitationOnlyAdvertisesAndRejectsInvalidProfiles[27] STARTED
+
+com.blent.CameraContractTest > t539_frontAndRearRotationUsesSensorAndDisplay[27] STARTED
+
+com.blent.CameraContractTest > t539_socketHandshakeAndOwnershipClose[27] STARTED
+
+com.blent.CameraContractTest > t542_retiredDesktopEndpointExplainsHowToRestoreSharing[27] STARTED
+
+com.blent.CameraContractTest > t539_captureRequiresForegroundConsentAndSwitchRetiresPrevious STARTED
+
+com.blent.CameraContractTest > t539_resourcesCloseOnceInReverseOrderAndRejectLateStartup STARTED
+
+com.blent.CameraContractTest > t618_adaptiveMinimumIsBounded STARTED
+
+com.blent.CameraContractTest > t539_errorsStopCameraAndInvitationsNeverEnableCapture STARTED
+
+com.blent.CameraContractTest > t539_wireAndBoundedInvalidInputPreserveSourceBuffer STARTED
+
+com.blent.CameraContractTest > t539_invitationOnlyAdvertisesAndRejectsInvalidProfiles STARTED
+
+com.blent.CameraContractTest > t539_frontAndRearRotationUsesSensorAndDisplay STARTED
+
+com.blent.CameraContractTest > t539_socketHandshakeAndOwnershipClose STARTED
+
+com.blent.CameraContractTest > t542_retiredDesktopEndpointExplainsHowToRestoreSharing STARTED
+
+com.blent.CameraHostControlTest > t543_foregroundPolicyAndPermissionStillGateHostCommands[27] STARTED
+
+com.blent.CameraHostControlTest > t543_nativeOwnerStartsAndStopsOnlyCameraService[27] STARTED
+
+com.blent.CameraHostControlTest > t543_receiverValidatesHostLensAndBackgroundChoice[27] STARTED
+
+com.blent.CameraHostControlTest > t543_backgroundPromotionFailureNeverStartsCamera[27] STARTED
+
+com.blent.CameraHostControlTest > t543_hiddenPermissionLossRetiresBackgroundServiceWithoutPrompting[27] STARTED
+
+com.blent.CameraHostControlTest > t543_cameraForegroundServiceIsTypedNonStickyAndReleasesWakeLock[27] STARTED
+
+com.blent.CameraHostControlTest > t543_hostBackgroundPolicySurvivesActivityStopButRetiresOnHostStop[27] STARTED
+
+com.blent.CameraHostControlTest > t543_foregroundPolicyAndPermissionStillGateHostCommands STARTED
+
+com.blent.CameraHostControlTest > t543_nativeOwnerStartsAndStopsOnlyCameraService STARTED
+
+com.blent.CameraHostControlTest > t543_receiverValidatesHostLensAndBackgroundChoice STARTED
+
+com.blent.CameraHostControlTest > t543_backgroundPromotionFailureNeverStartsCamera STARTED
+
+com.blent.CameraHostControlTest > t543_hiddenPermissionLossRetiresBackgroundServiceWithoutPrompting STARTED
+
+com.blent.CameraHostControlTest > t543_cameraForegroundServiceIsTypedNonStickyAndReleasesWakeLock STARTED
+
+com.blent.CameraHostControlTest > t543_hostBackgroundPolicySurvivesActivityStopButRetiresOnHostStop STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_reusedServiceOwnsLatestStartAndIgnoresInvalidDeliveries[27] STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_destroyingOldServiceCannotStopReplacementBackgroundCapture[27] STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_failedPromotionRetiresOnlyTheDeliveredRun[27] STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_ownerResetCannotReuseServiceIdentity[27] STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_reusedServiceOwnsLatestStartAndIgnoresInvalidDeliveries STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_destroyingOldServiceCannotStopReplacementBackgroundCapture STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_failedPromotionRetiresOnlyTheDeliveredRun STARTED
+
+com.blent.CameraServiceOwnershipTest > t706_ownerResetCannotReuseServiceIdentity STARTED
+
+com.blent.ComposeOrderTest > t701_activityTestsCannotPoisonLaterSettingsComposition STARTED
+
+> Task :app:profileCoverage
+
+BUILD SUCCESSFUL in 17s
+28 actionable tasks: 4 executed, 24 up-to-date

@@ -17,13 +17,14 @@ internal class CameraBinding(
     private val capture: suspend (CameraEndpoint, CameraLens, Int, CameraResources) -> Unit = CameraCapture(context)::run,
     private val invitations: StateFlow<CameraEndpoint?> = CameraInvitations.endpoint,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + android.os.Handler(android.os.Looper.getMainLooper()).asCoroutineDispatcher()),
-    private val backgroundService: (Boolean) -> Unit = {},
+    private val backgroundService: (String?) -> Unit = {},
 ) {
     var endpoint by mutableStateOf<CameraEndpoint?>(null); private set
     var selected by mutableStateOf<CameraLens?>(null); private set
     var status by mutableStateOf("Start camera sharing on your computer."); private set
     private var active = false
-    private var backgroundRunning = false
+    private var backgroundRun: String? = null
+    private val backgroundRunning get() = backgroundRun != null
     private var pending: Pair<CameraEndpoint, CameraLens>? = null
     private var observer: Job? = null
     private var worker: Job? = null
@@ -114,8 +115,8 @@ internal class CameraBinding(
 
     private fun background(enabled: Boolean) {
         if (backgroundRunning == enabled) return
-        backgroundRunning = enabled
-        backgroundService(enabled)
+        backgroundRun = if (enabled) java.util.UUID.randomUUID().toString() else null
+        backgroundService(backgroundRun)
     }
 
     fun stop() {
@@ -125,8 +126,10 @@ internal class CameraBinding(
         shutdown()
     }
 
-    fun backgroundStopped() {
-        if (backgroundRunning) shutdown()
+    fun ownsBackground(run: String?): Boolean = run != null && backgroundRun == run
+
+    fun backgroundStopped(run: String?) {
+        if (ownsBackground(run)) shutdown()
     }
 
     fun shutdown() {

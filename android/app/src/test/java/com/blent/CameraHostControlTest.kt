@@ -23,9 +23,10 @@ class CameraHostControlTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val events = mutableListOf<String>()
         val services = mutableListOf<Boolean>()
+        var serviceRun: String? = null
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, {}, { true },
             { _, lens, _, resources -> events.add("open ${lens.label}"); resources.own { events.add("close ${lens.label}") }; awaitCancellation() },
-            commands, scope, { services.add(it) })
+            commands, scope, { serviceRun = it ?: serviceRun; services.add(it != null) })
         binding.start()
         val request = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000, CameraLens.FRONT, true)
         commands.value = request
@@ -40,15 +41,15 @@ class CameraHostControlTest {
         assertNull(binding.selected)
         assertEquals("close Rear", events.last())
         assertEquals(listOf(true, false), services)
-        binding.backgroundStopped() // delayed normal service teardown cannot stop a new foreground run
+        binding.backgroundStopped(serviceRun) // delayed normal service teardown cannot stop a new foreground run
         binding.start()
         commands.value = request.copy(background = false)
-        binding.backgroundStopped()
+        binding.backgroundStopped(serviceRun)
         assertEquals(CameraLens.FRONT, binding.selected)
         binding.stop()
         assertNull(binding.selected)
         binding.start(); commands.value = request
-        binding.backgroundStopped() // unexpected service death must release capture
+        binding.backgroundStopped(serviceRun) // unexpected service death must release capture
         assertNull(binding.selected)
         assertNull(binding.endpoint)
         binding.shutdown(); scope.cancel()
@@ -132,7 +133,7 @@ class CameraHostControlTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         var captures = 0
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, {}, { true },
-            { _, _, _, _ -> captures++ }, commands, scope, { enabled -> if (enabled) error("Background permission unavailable") })
+            { _, _, _, _ -> captures++ }, commands, scope, { enabled -> if (enabled != null) error("Background permission unavailable") })
         binding.start()
         commands.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000, CameraLens.FRONT, true)
         assertEquals(0, captures)
@@ -145,10 +146,11 @@ class CameraHostControlTest {
         val commands = MutableStateFlow<CameraEndpoint?>(null)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val services = mutableListOf<Boolean>()
+        var serviceRun: String? = null
         var allowed = true
         var prompts = 0
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, { prompts++ }, { allowed },
-            { _, _, _, _ -> awaitCancellation() }, commands, scope, { services.add(it) })
+            { _, _, _, _ -> awaitCancellation() }, commands, scope, { serviceRun = it ?: serviceRun; services.add(it != null) })
         binding.start()
         val request = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000, CameraLens.FRONT, true)
         commands.value = request
