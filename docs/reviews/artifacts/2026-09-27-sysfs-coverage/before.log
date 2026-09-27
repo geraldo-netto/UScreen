@@ -1,0 +1,10 @@
+{
+  "rust": {
+    "functions": 1283,
+    "passing": 1281,
+    "below_80": 2,
+    "unmeasured": 0
+  }
+}
+Non-Linux functions remain visible in all-platforms.json: 81
+Linux FAIL: uncovered or unmeasured functions remain

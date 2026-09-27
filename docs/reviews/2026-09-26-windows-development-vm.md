@@ -113,5 +113,6 @@ Automatic login is intentionally enabled for testing.
 This VM validates native Windows kernel/API and process/file ownership contracts.
 It does not establish physical GPU/display-driver/USB/tablet acceptance (T522),
 nor enable unfinished capture, input, camera or autostart backends.
-The separate remote Linux gate remains failing under T645; T644's earlier Xvfb
-startup stall remains unexplained. See the [coverage report](2026-09-26-function-coverage.md).
+The historical remote Linux failure was repaired with T645's isolated sysfs
+coverage fixture; a new remote run is pending. T644's earlier Xvfb startup stall
+remains unexplained. See the [coverage report](2026-09-26-function-coverage.md).

@@ -1,0 +1,10 @@
+{
+  "baseline_run": 36276441908,
+  "attempt": 2,
+  "revision": "9330d93a295cbe348c253f82caf105a16333775f",
+  "unchanged_source_files": 410,
+  "added_sources": [
+    "host/tests/vdisplay.rs"
+  ],
+  "production_source_changes": []
+}
