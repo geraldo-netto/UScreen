@@ -1,0 +1,8 @@
+{
+  "rust_format": true,
+  "diff_whitespace": true,
+  "todo_layout_status_and_unique_ids": true,
+  "todo_rows": 32,
+  "resolved_requested_and_review_rows_removed": true,
+  "retained_artifacts_reproduce_combined_report_exactly": true
+}

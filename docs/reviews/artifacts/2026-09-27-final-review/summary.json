@@ -1,0 +1,54 @@
+{
+  "reviewed_code_commit": "63b9627",
+  "passes": true,
+  "minimum_percent": 80,
+  "rust_platforms": [
+    "linux",
+    "windows"
+  ],
+  "summary": {
+    "c": {
+      "functions": 153,
+      "passing": 153,
+      "below_80": 0,
+      "unmeasured": 0
+    },
+    "kotlin": {
+      "functions": 593,
+      "passing": 593,
+      "below_80": 0,
+      "unmeasured": 0
+    },
+    "python": {
+      "functions": 61,
+      "passing": 61,
+      "below_80": 0,
+      "unmeasured": 0
+    },
+    "rust": {
+      "functions": 1426,
+      "passing": 1426,
+      "below_80": 0,
+      "unmeasured": 0
+    },
+    "shell": {
+      "functions": 60,
+      "passing": 60,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "excluded_platform_functions": [
+    {
+      "file": "common/src/scheduling/macos.rs",
+      "name": "apply_current",
+      "line": 6,
+      "language": "rust",
+      "covered": 0,
+      "total": 0,
+      "percent": null,
+      "passes": false,
+      "missing": []
+    }
+  ]
+}
