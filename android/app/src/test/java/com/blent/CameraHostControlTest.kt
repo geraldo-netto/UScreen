@@ -21,7 +21,7 @@ class CameraHostControlTest {
     @Test fun t543_hostBackgroundPolicySurvivesActivityStopButRetiresOnHostStop() = runBlocking {
         val commands = MutableStateFlow<CameraEndpoint?>(null)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val events = mutableListOf<String>()
+        val events = java.util.Collections.synchronizedList(mutableListOf<String>())
         val services = mutableListOf<Boolean>()
         var serviceRun: String? = null
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, {}, { true },
@@ -35,10 +35,12 @@ class CameraHostControlTest {
         assertEquals(CameraLens.FRONT, binding.selected)
         binding.start(); binding.stop() // reattachment must not duplicate capture
         commands.value = request.copy(requestedLens = CameraLens.REAR)
+        awaitCameraCondition { events == listOf("open Front", "close Front", "open Rear") }
         assertEquals(listOf("open Front", "close Front", "open Rear"), events)
         assertEquals(listOf(true), services)
         commands.value = null
         assertNull(binding.selected)
+        awaitCameraCondition { events.last() == "close Rear" }
         assertEquals("close Rear", events.last())
         assertEquals(listOf(true, false), services)
         binding.backgroundStopped(serviceRun) // delayed normal service teardown cannot stop a new foreground run

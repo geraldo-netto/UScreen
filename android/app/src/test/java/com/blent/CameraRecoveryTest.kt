@@ -10,6 +10,21 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class CameraRecoveryTest {
+    @Test fun t707_nativeFailureCannotBecomeATransportRetry() = runBlocking {
+        val owner = CameraResources()
+        var attempts = 0
+        val failure = runCatching {
+            CameraRecovery.run(owner) { owned ->
+                attempts++
+                owned.cancel(IllegalStateException("Camera disconnected"))
+                throw CameraTransportException("socket interrupted")
+            }
+        }.exceptionOrNull()
+        owner.close()
+        assertEquals(1, attempts)
+        assertEquals("Camera disconnected", failure?.message)
+    }
+
     @Test fun t617_retriesRetireEveryGenerationAndStopAtBound() = runBlocking {
         val owner = CameraResources()
         var attempts = 0

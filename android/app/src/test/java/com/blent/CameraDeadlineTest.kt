@@ -12,6 +12,38 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class CameraDeadlineTest {
+    @Test fun t707_stopInterruptsHandshakeBeforeNativeRetirement() {
+        val executor = Executors.newFixedThreadPool(2)
+        val resources = CameraResources()
+        val received = CountDownLatch(1)
+        var nativeCloses = 0
+        resources.own { nativeCloses++ }
+        ServerSocket(0).use { server ->
+            server.soTimeout = 2000
+            val peer = executor.submit {
+                server.accept().use { socket ->
+                    socket.soTimeout = 2000
+                    val input = java.io.DataInputStream(socket.getInputStream())
+                    input.readFully(ByteArray(74))
+                    received.countDown()
+                    assertEquals(-1, input.read())
+                }
+            }
+            try {
+                val endpoint = CameraEndpoint("a".repeat(64), server.localPort, 1280, 720, 30, 3000)
+                val connect = executor.submit<Throwable?> {
+                    runCatching { CameraWire.connect(endpoint, CameraLens.FRONT, 0, resources) }.exceptionOrNull()
+                }
+                assertTrue(received.await(2, TimeUnit.SECONDS))
+                resources.cancel()
+                assertNotNull("T707 Stop waited for handshake timeout", connect.get(500, TimeUnit.MILLISECONDS))
+                assertEquals("T707 cancellation destroyed native resources", 0, nativeCloses)
+                peer.get(2, TimeUnit.SECONDS)
+            } finally { resources.close(); executor.shutdownNow() }
+        }
+        assertEquals(1, nativeCloses)
+    }
+
     @Test fun t617_missingFeedbackRetiresConnectionWithinBudget() {
         val executor = Executors.newFixedThreadPool(2)
         val resources = CameraResources()

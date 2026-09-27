@@ -11,10 +11,12 @@ internal object CameraRecovery {
             currentCoroutineContext().ensureActive()
             val resources = CameraResources()
             owner.own { resources.close() }
+            owner.interrupt { resources.cancel() }
             try {
                 attempt(resources)
             } catch (error: CameraTransportException) {
                 currentCoroutineContext().ensureActive()
+                resources.checkActive()
                 if (retry == 2) throw error
                 android.util.Log.i("BlentCamera", "transportRetry=${retry + 1}")
             } finally { resources.close() }

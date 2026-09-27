@@ -11,8 +11,6 @@ import android.util.Range
 import android.util.Size
 import android.view.Surface
 import kotlinx.coroutines.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /** Camera2/MediaCodec resources belong to one foreground, explicitly selected run. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -20,7 +18,7 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     private val handler = Handler(Looper.getMainLooper())
 
-    suspend fun run(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing {
+    suspend fun run(endpoint: CameraEndpoint, lens: CameraLens, displayRotation: Int, resources: CameraResources): Nothing = withContext(Dispatchers.IO) {
         val rate = CameraRate(endpoint.bitrate, endpoint.minBitrate, endpoint.adaptiveBitrate, endpoint.freshnessMs * 1000L)
         CameraRecovery.run(resources) { owned ->
             try { stream(endpoint, lens, displayRotation, owned, rate) }
@@ -46,10 +44,10 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
             val surface = codec.createInputSurface()
             resources.own { surface.release() }
             codec.start()
-            val camera = withTimeout(5000) { open(id).also { device -> resources.own { device.close() } } }
-            val session = withTimeout(5000) { session(camera, surface).also { configured -> resources.own { configured.close() } } }
+            val camera = withTimeout(5000) { open(id, resources) }
+            val session = withTimeout(5000) { session(camera, surface, resources) }
             repeat(camera, session, surface, frameRate(metadata, endpoint.fps))
-            drain(codec, sink, endpoint.freshnessMs, rate)
+            drain(codec, sink, endpoint.freshnessMs, rate, resources)
         }
 
     private fun cameraId(lens: CameraLens): String {
@@ -88,20 +86,26 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
     }
 
     @android.annotation.SuppressLint("MissingPermission")
-    private suspend fun open(id: String): CameraDevice = suspendCancellableCoroutine { continuation ->
-        manager.openCamera(id, object : CameraDevice.StateCallback() {
-            override fun onOpened(camera: CameraDevice) { continuation.resume(camera) { camera.close() } }
-            override fun onDisconnected(camera: CameraDevice) { camera.close(); if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Camera disconnected")) }
-            override fun onError(camera: CameraDevice, error: Int) { camera.close(); if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Camera error $error")) }
-        }, handler)
+    private suspend fun open(id: String, resources: CameraResources): CameraDevice = suspendCancellableCoroutine { continuation ->
+        val startup = CameraStartup(resources, continuation, CameraDevice::close)
+        try {
+            manager.openCamera(id, object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) = startup.opened(camera)
+                override fun onDisconnected(camera: CameraDevice) = startup.failed(camera, "Camera disconnected")
+                override fun onError(camera: CameraDevice, error: Int) = startup.failed(camera, "Camera error $error")
+            }, handler)
+        } catch (error: Exception) { startup.abort(error) }
     }
 
     @Suppress("DEPRECATION")
-    private suspend fun session(camera: CameraDevice, surface: Surface): CameraCaptureSession = suspendCancellableCoroutine { continuation ->
-        camera.createCaptureSession(listOf(surface), object : CameraCaptureSession.StateCallback() {
-            override fun onConfigured(session: CameraCaptureSession) { continuation.resume(session) { session.close() } }
-            override fun onConfigureFailed(session: CameraCaptureSession) { session.close(); if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Camera session configuration failed")) }
-        }, handler)
+    private suspend fun session(camera: CameraDevice, surface: Surface, resources: CameraResources): CameraCaptureSession = suspendCancellableCoroutine { continuation ->
+        val startup = CameraStartup(resources, continuation, CameraCaptureSession::close)
+        try {
+            camera.createCaptureSession(listOf(surface), object : CameraCaptureSession.StateCallback() {
+                override fun onConfigured(session: CameraCaptureSession) = startup.opened(session)
+                override fun onConfigureFailed(session: CameraCaptureSession) = startup.failed(session, "Camera session configuration failed")
+            }, handler)
+        } catch (error: Exception) { startup.abort(error) }
     }
 
     private fun repeat(camera: CameraDevice, session: CameraCaptureSession, surface: Surface, fps: Range<Int>) {
@@ -112,13 +116,14 @@ internal class CameraCapture(context: Context, private val nowUs: () -> Long = {
         session.setRepeatingRequest(request, null, handler)
     }
 
-    private suspend fun drain(codec: MediaCodec, sink: CameraLink, freshnessMs: Int, rate: CameraRate): Nothing {
+    private suspend fun drain(codec: MediaCodec, sink: CameraLink, freshnessMs: Int, rate: CameraRate, resources: CameraResources): Nothing {
         val info = MediaCodec.BufferInfo()
         val clock = CameraFrameClock()
         val freshness = CameraFreshness(freshnessMs * 1000L)
         var progress = android.os.SystemClock.elapsedRealtime()
         while (true) {
             currentCoroutineContext().ensureActive()
+            resources.checkActive()
             val index = codec.dequeueOutputBuffer(info, 10_000)
             when {
                 index >= 0 -> { sendBuffer(codec, sink, info, index, clock, freshness, rate); progress = android.os.SystemClock.elapsedRealtime() }

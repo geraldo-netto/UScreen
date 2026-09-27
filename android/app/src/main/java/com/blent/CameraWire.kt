@@ -14,7 +14,7 @@ internal object CameraWire {
 
     fun connect(endpoint: CameraEndpoint, lens: CameraLens, rotation: Int, resources: CameraResources): CameraLink {
         val socket = Socket()
-        resources.own { socket.close() }
+        resources.interrupt { socket.close() }
         try {
             socket.connect(InetSocketAddress("127.0.0.1", endpoint.port), 3000)
         } catch (error: java.io.IOException) {

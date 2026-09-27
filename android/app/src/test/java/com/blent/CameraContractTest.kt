@@ -121,7 +121,7 @@ class CameraContractTest {
     @Test fun t539_captureRequiresForegroundConsentAndSwitchRetiresPrevious() = runBlocking {
         val invitations = MutableStateFlow<CameraEndpoint?>(endpoint())
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val events = mutableListOf<String>()
+        val events = java.util.Collections.synchronizedList(mutableListOf<String>())
         var allowed = false
         var prompts = 0
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 1 }, { prompts++ }, { allowed },
@@ -145,9 +145,11 @@ class CameraContractTest {
         binding.permissionResult(true)
         assertEquals(CameraLens.FRONT, binding.selected)
         binding.choose(CameraLens.REAR)
+        awaitCameraCondition { events == listOf("open Front", "close Front", "open Rear") }
         assertEquals(listOf("open Front", "close Front", "open Rear"), events)
         invitations.value = endpoint(12346)
         assertNull(binding.selected)
+        awaitCameraCondition { events.last() == "close Rear" }
         assertEquals("close Rear", events.last())
         binding.choose(CameraLens.REAR)
         binding.stop()

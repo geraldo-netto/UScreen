@@ -28,6 +28,8 @@ internal class CameraBinding(
     private var pending: Pair<CameraEndpoint, CameraLens>? = null
     private var observer: Job? = null
     private var worker: Job? = null
+    private val retirementScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var retirement: Job? = null
     private var resources: CameraResources? = null
     private var generation = 0L
 
@@ -97,8 +99,11 @@ internal class CameraBinding(
             } catch (error: Exception) {
                 if (generation == revision && error !is CancellationException) status = error.message ?: "Camera sharing failed."
             } finally {
-                owned.close()
-                if (generation == revision) { selected = null; background(false) }
+                try {
+                    if (generation == revision) { selected = null; background(false) }
+                } finally {
+                    withContext(NonCancellable + Dispatchers.IO) { owned.close() }
+                }
             }
         }
     }
@@ -106,11 +111,19 @@ internal class CameraBinding(
     private fun stopCapture(): Job? {
         generation++
         val previous = worker
-        previous?.cancel()
-        resources?.close()
+        val owned = resources
+        val earlier = retirement
+        worker = null
         resources = null
+        owned?.cancel()
+        previous?.cancel()
+        if (owned != null) retirement = retirementScope.launch {
+            earlier?.join()
+            previous?.join()
+            owned.close()
+        }
         selected = null
-        return previous
+        return retirement
     }
 
     private fun background(enabled: Boolean) {
