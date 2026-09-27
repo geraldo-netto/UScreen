@@ -63,7 +63,7 @@ restart requires successful stop. A private lease serializes startup, random tok
 rotate on startup, and graceful retirement removes owned token/session state.
 After forced termination, the next start or stop reclaims abandoned state under
 the same exclusive lease. Cleanup errors remain errors and cannot skip independent
-token retirement. No Windows service, tray or display driver is installed.
+token retirement. No Windows service or display driver is installed.
 [T532 optional autostart](reviews/2026-09-27-windows-autostart.md) is available
 through the GUI preference and a single per-user Run registration. Repeated login
 retains the running daemon; normal startup does not require elevation.
@@ -74,6 +74,13 @@ reconnect/cleanup. The daemon publishes prepared USB assignments for CLI/GUI
 status. Native fixture tests exercise the real Windows daemon and existing
 Android wire contract; they do not substitute for T522 physical acceptance.
 Capture/input capabilities remain false, and display-mode requests are rejected.
+
+[T531 notification-area tray](reviews/2026-09-27-windows-tray.md) consumes the same
+producer-owned USB assignment updates. It shows starting, unavailable, waiting,
+prepared and stopping states; prepared USB does not imply capture or input support.
+Settings opens the sibling GUI (or the discovered GUI on PATH), and Quit performs
+the normal owned-route and runtime cleanup. Explorer recreation restores the icon;
+headless startup reports an unavailable tray and retains CLI lifecycle control.
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,

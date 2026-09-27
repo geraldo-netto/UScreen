@@ -1,0 +1,116 @@
+--- before/host/src/windows_tray/window.rs
++++ after/host/src/windows_tray/window.rs
+@@ -2,7 +2,7 @@
+ use super::{resources::*, NativeActions, Target};
+ use crate::tray_state::{State, SETTINGS};
+ use anyhow::Result;
+-use std::sync::{mpsc::SyncSender, Mutex};
++use std::sync::{mpsc::SyncSender, Mutex, OnceLock};
+ use tokio::sync::watch;
+ use windows_sys::Win32::{
+     Foundation::*,
+@@ -16,8 +16,32 @@
+     actions: NativeActions,
+     shell_restart: u32,
+     target: Target,
++    notification: OnceLock<Notification>,
+ }
+ impl Core {
++    fn handle(&self, hwnd: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
++        if message == REFRESH || message == self.shell_restart {
++            self.refresh(message == self.shell_restart);
++            return true;
++        }
++        match message {
++            WM_COMMAND => self.dispatch(wparam),
++            EVENT => {
++                if let Err(error) = self.event(hwnd, lparam) {
++                    eprintln!("{error:#}");
++                }
++            }
++            _ => return false,
++        }
++        true
++    }
++    fn refresh(&self, add: bool) {
++        if let Some(notification) = self.notification.get() {
++            if let Err(error) = notification.update(self.state(), add) {
++                eprintln!("{error:#}");
++            }
++        }
++    }
+     fn state(&self) -> State {
+         *self.state.lock().unwrap().borrow()
+     }
+@@ -88,7 +112,8 @@
+     actions: NativeActions,
+     ready: &SyncSender<Result<Target>>,
+ ) -> Result<()> {
+-    let core = Core {
++    let mut core = Core {
++        notification: OnceLock::new(),
+         target: Target::default(),
+         state: Mutex::new(state),
+         actions,
+@@ -119,24 +144,18 @@
+     let notification = Notification::new(window.0)?;
+     notification.update(core.state(), true)?;
+     *core.target.0.lock().unwrap() = Some(window.0 as usize);
++    check(core.notification.set(notification).is_ok())?;
+     let _ = ready.send(Ok(core.target.clone()));
+-    messages(&core, &notification);
++    messages();
++    core.notification.take();
+     Ok(())
+ }
+-fn messages(core: &Core, notification: &Notification) {
++fn messages() {
+     let mut message = MSG::default();
+     while unsafe { GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) } > 0 {
+-        if message.message == REFRESH || message.message == core.shell_restart {
+-            if let Err(error) =
+-                notification.update(core.state(), message.message == core.shell_restart)
+-            {
+-                eprintln!("{error:#}");
+-            }
+-        } else {
+-            unsafe {
+-                TranslateMessage(&message);
+-                DispatchMessageW(&message);
+-            }
++        unsafe {
++            TranslateMessage(&message);
++            DispatchMessageW(&message);
+         }
+     }
+ }
+@@ -161,21 +180,18 @@
+         WM_DESTROY => {
+             PostQuitMessage(0);
+         }
+-        WM_COMMAND | EVENT => {
+-            let core = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *const Core;
+-            if let Some(core) = core.as_ref() {
+-                dispatch(core, hwnd, message, wparam, lparam);
++        _ => {
++            if route(hwnd, message, wparam, lparam) {
++                return 0;
+             }
+-            return 0;
+         }
+-        _ => {}
+     }
+     DefWindowProcW(hwnd, message, wparam, lparam)
+ }
+-unsafe fn dispatch(core: &Core, hwnd: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) {
+-    if message == WM_COMMAND {
+-        core.dispatch(wparam);
+-    } else if let Err(error) = core.event(hwnd, lparam) {
+-        eprintln!("{error:#}");
++unsafe fn route(hwnd: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
++    let core = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *const Core;
++    if let Some(core) = core.as_ref() {
++        return core.handle(hwnd, message, wparam, lparam);
+     }
++    false
+ }

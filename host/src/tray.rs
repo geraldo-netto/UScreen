@@ -57,13 +57,7 @@ struct BlentTray {
 
 impl BlentTray {
     fn state_line(&self) -> String {
-        if !self.tablet_present {
-            "No tablet connected".to_string()
-        } else if self.pen_only {
-            "Graphics tablet — the pen drives this screen".to_string()
-        } else {
-            "Second screen".to_string()
-        }
+        blent::tray_state::State::streaming(self.tablet_present, self.pen_only).line()
     }
 }
 

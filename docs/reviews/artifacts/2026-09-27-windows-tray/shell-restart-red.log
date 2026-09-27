@@ -1,0 +1,40 @@
+cargo.exe : info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+At C:\BlentSetup\run-native.ps1:8 char:5
++     & $command.Source @Arguments *> $Log
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (info: cargo-llv...no-cfg-coverage:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+   Compiling blent v1.2.3 (C:\Users\blentdev\AppData\Local\Temp\blent-t531\source\host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.19s
+     Running unittests src\lib.rs
+(C:\Users\blentdev\AppData\Local\Temp\blent-t531\coverage-target-v2\debug\deps\blent-0c19c409ff4fc861.exe)
+
+running 1 test
+warning: ignoring --out-dir flag due to -o flag
+
+warning: 1 warning emitted
+
+test windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement ... FAILED
+
+failures:
+
+---- windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement stdout ----
+Windows tray: Unspecified error (os error -2147467259)
+
+thread 'windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement' (4820) panicked at host\src\windows_tray\tests.rs:7:10:
+called `Result::unwrap()` on an `Err` value: daemon transition timed out
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    windows_tray::tests::t531_native_actions_latest_status_shell_restart_and_resource_retirement
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 92 filtered out; finished in 11.01s
+
+error: test failed, to rerun pass `-p blent --lib`
+error: process didn't exit successfully:
+`C:\Users\blentdev\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\cargo.exe test --manifest-path
+C:\Users\blentdev\AppData\Local\Temp\blent-t531\source\Cargo.toml --target-dir
+C:\Users\blentdev\AppData\Local\Temp\blent-t531\coverage-target-v2 --locked -p blent --lib --
+t531_native_actions_latest_status_shell_restart_and_resource_retirement` (exit code: 101)

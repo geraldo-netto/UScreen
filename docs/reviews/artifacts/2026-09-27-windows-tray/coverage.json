@@ -1,0 +1,692 @@
+{
+  "rust_platforms": [
+    "linux",
+    "windows"
+  ],
+  "excluded_platform_functions": [],
+  "minimum_percent": 80,
+  "scopes": [
+    "host/src/tray.rs",
+    "host/src/tray_state.rs",
+    "host/src/windows_tray",
+    "host/src/windows_main.rs"
+  ],
+  "passes": true,
+  "summary": {
+    "rust": {
+      "functions": 59,
+      "passing": 59,
+      "below_80": 0,
+      "unmeasured": 0
+    }
+  },
+  "functions": [
+    {
+      "file": "host/src/tray.rs",
+      "name": "pixmap",
+      "line": 34,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "state_line",
+      "line": 59,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "id",
+      "line": 65,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "title",
+      "line": 69,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "icon_name",
+      "line": 73,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "icon_pixmap",
+      "line": 81,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "status",
+      "line": 91,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "tool_tip",
+      "line": 95,
+      "language": "rust",
+      "covered": 12,
+      "total": 12,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "activate",
+      "line": 110,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "menu",
+      "line": 114,
+      "language": "rust",
+      "covered": 45,
+      "total": 45,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "open_release_page",
+      "line": 179,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "open_settings",
+      "line": 190,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "settings_command",
+      "line": 199,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray.rs",
+      "name": "run",
+      "line": 222,
+      "language": "rust",
+      "covered": 37,
+      "total": 37,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "name": "usb",
+      "line": 16,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "name": "streaming",
+      "line": 23,
+      "language": "rust",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "name": "line",
+      "line": 30,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "name": "preview_tooltip",
+      "line": 41,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/tray_state.rs",
+      "name": "dispatch",
+      "line": 44,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "run",
+      "line": 15,
+      "language": "rust",
+      "covered": 20,
+      "total": 23,
+      "percent": 86.95652173913044,
+      "passes": true,
+      "missing": [
+        23,
+        24,
+        27
+      ]
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "serve",
+      "line": 43,
+      "language": "rust",
+      "covered": 11,
+      "total": 11,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "serve_usb",
+      "line": 56,
+      "language": "rust",
+      "covered": 17,
+      "total": 17,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "wait_stop",
+      "line": 76,
+      "language": "rust",
+      "covered": 9,
+      "total": 9,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "usb_loop",
+      "line": 89,
+      "language": "rust",
+      "covered": 19,
+      "total": 19,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "poll_usb",
+      "line": 110,
+      "language": "rust",
+      "covered": 19,
+      "total": 20,
+      "percent": 95.0,
+      "passes": true,
+      "missing": [
+        126
+      ]
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "status",
+      "line": 134,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_main.rs",
+      "name": "diagnostics",
+      "line": 151,
+      "language": "rust",
+      "covered": 9,
+      "total": 10,
+      "percent": 90.0,
+      "passes": true,
+      "missing": [
+        155
+      ]
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "wide",
+      "line": 14,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "check",
+      "line": 17,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "new",
+      "line": 25,
+      "language": "rust",
+      "covered": 15,
+      "total": 15,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "drop",
+      "line": 43,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "new",
+      "line": 51,
+      "language": "rust",
+      "covered": 16,
+      "total": 16,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "drop",
+      "line": 71,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "new",
+      "line": 79,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "append",
+      "line": 94,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "drop",
+      "line": 99,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "new",
+      "line": 110,
+      "language": "rust",
+      "covered": 4,
+      "total": 4,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "data",
+      "line": 116,
+      "language": "rust",
+      "covered": 20,
+      "total": 20,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "update",
+      "line": 136,
+      "language": "rust",
+      "covered": 13,
+      "total": 13,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/resources.rs",
+      "name": "drop",
+      "line": 151,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "handle",
+      "line": 22,
+      "language": "rust",
+      "covered": 12,
+      "total": 13,
+      "percent": 92.3076923076923,
+      "passes": true,
+      "missing": [
+        31
+      ]
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "refresh",
+      "line": 38,
+      "language": "rust",
+      "covered": 6,
+      "total": 7,
+      "percent": 85.71428571428571,
+      "passes": true,
+      "missing": [
+        43
+      ]
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "state",
+      "line": 45,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "dispatch",
+      "line": 48,
+      "language": "rust",
+      "covered": 4,
+      "total": 5,
+      "percent": 80.0,
+      "passes": true,
+      "missing": [
+        50
+      ]
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "event",
+      "line": 53,
+      "language": "rust",
+      "covered": 9,
+      "total": 10,
+      "percent": 90.0,
+      "passes": true,
+      "missing": [
+        60
+      ]
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "menu",
+      "line": 64,
+      "language": "rust",
+      "covered": 27,
+      "total": 27,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "drop",
+      "line": 94,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "run",
+      "line": 100,
+      "language": "rust",
+      "covered": 10,
+      "total": 10,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "serve",
+      "line": 110,
+      "language": "rust",
+      "covered": 41,
+      "total": 41,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "messages",
+      "line": 153,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "callback",
+      "line": 162,
+      "language": "rust",
+      "covered": 24,
+      "total": 24,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray/window.rs",
+      "name": "route",
+      "line": 191,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "start",
+      "line": 23,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "start_at",
+      "line": 26,
+      "language": "rust",
+      "covered": 30,
+      "total": 30,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "drop",
+      "line": 60,
+      "language": "rust",
+      "covered": 8,
+      "total": 8,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "settings_program",
+      "line": 69,
+      "language": "rust",
+      "covered": 11,
+      "total": 12,
+      "percent": 91.66666666666667,
+      "passes": true,
+      "missing": [
+        74
+      ]
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "settings",
+      "line": 87,
+      "language": "rust",
+      "covered": 5,
+      "total": 5,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "quit",
+      "line": 92,
+      "language": "rust",
+      "covered": 3,
+      "total": 3,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    },
+    {
+      "file": "host/src/windows_tray.rs",
+      "name": "post",
+      "line": 100,
+      "language": "rust",
+      "covered": 7,
+      "total": 7,
+      "percent": 100.0,
+      "passes": true,
+      "missing": []
+    }
+  ]
+}

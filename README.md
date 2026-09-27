@@ -263,7 +263,8 @@ More in [docs/faq.md](docs/faq.md).
 
 The [Windows integration plan](docs/windows-port.md) separates compilation,
 pen-only operation, extended-display support and packaging. It records pending
-OS/driver/testing decisions; Windows host support is not implemented.
+OS/driver/testing decisions. The Windows preview provides lifecycle, USB preparation,
+Settings and a tray; display streaming and input backends remain unsupported.
 
 Other proposals inherited from upstream are AOA transport to reduce reliance
 on USB debugging, broader Wayland input mapping, and a PipeWire/dmabuf capture

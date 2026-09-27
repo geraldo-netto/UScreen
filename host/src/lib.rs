@@ -15,8 +15,11 @@ pub mod pipe_encoder;
 pub mod raw_transfer;
 #[path = "selection_types.rs"]
 pub mod selection;
+pub mod tray_state;
 pub mod usb;
 pub mod video_queue;
+#[cfg(windows)]
+pub mod windows_tray;
 
 #[cfg(test)]
 mod test_logging;

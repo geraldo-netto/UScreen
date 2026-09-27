@@ -18,6 +18,8 @@ fn wait(condition: impl Fn() -> bool) {
 #[path = "support/usb_adb.rs"]
 mod usb_fixture;
 use usb_fixture::fixture;
+#[path = "support/windows_tray.rs"]
+mod tray;
 #[tokio::test]
 async fn t525_native_daemon_discovers_usb_without_host_shell() {
     let root = tempfile::tempdir().unwrap();
@@ -54,6 +56,8 @@ async fn t525_native_daemon_discovers_usb_without_host_shell() {
         blent_config::windows::lifecycle::load_sessions(&runtime)
             .is_some_and(|sessions| sessions.len() == 1)
     });
+    tray::wait_status(daemon.0.id(), "USB prepared: 1");
+    assert!(tray::title(daemon.0.id()).contains("Display and input unavailable"));
     let sessions = blent_config::windows::lifecycle::load_sessions(&runtime).unwrap();
     assert_eq!((sessions[0].video_port, sessions[0].input_port), ports);
     assert_eq!(
@@ -91,6 +95,7 @@ async fn t525_native_daemon_discovers_usb_without_host_shell() {
         blent_config::windows::lifecycle::load_sessions(&runtime)
             .is_some_and(|sessions| sessions.is_empty())
     });
+    tray::wait_status(daemon.0.id(), "No tablet connected");
     assert!(std::fs::read_to_string(adb.join("routes"))
         .unwrap()
         .is_empty());
@@ -112,7 +117,7 @@ async fn t525_native_daemon_discovers_usb_without_host_shell() {
         response,
         Some(Ok(tokio_tungstenite::tungstenite::Message::Text(_)))
     ));
-    blent_config::windows::lifecycle::stop(&runtime, Duration::from_secs(10)).unwrap();
+    tray::quit(daemon.0.id());
     wait(|| !runtime.join("daemon.json").exists());
     assert!(daemon.0.wait().unwrap().success());
     assert!(std::fs::read_to_string(adb.join("routes"))
