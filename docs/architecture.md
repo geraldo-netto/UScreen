@@ -99,9 +99,14 @@ codec ownership at acknowledgement, including callbacks paused across replacemen
 Duplicate callbacks retain their ACK behavior but contribute at most one split
 diagnostic per arrival. Host ACK lookup uses an offset for contiguous sequences,
 including wrap, and the original search for discontinuous sequences. Reports
-sort outside the tracker lock and recycle their sample storage afterward.
-The [T404 replay](benchmarks/2026-09-17-timing.md) records correctness coverage,
-lookup tradeoffs and allocation counts; these are not display-latency gains.
+summarize outside the tracker lock and recycle their sample storage afterward.
+Windows of at most 64 samples are sorted; larger windows use sorted/reverse
+fast paths or select the p95 and p50 order statistics and scan the upper tail
+for the maximum. The [T597 measurements](reviews/2026-09-27-latency-summary.md)
+record exactness checks and distribution-dependent costs, without claiming a
+frame-latency improvement. The [T404 replay](benchmarks/2026-09-17-timing.md)
+records the earlier sort-based implementation, lookup tradeoffs and allocation
+counts as historical evidence.
 
 ## Processes and settings
 
