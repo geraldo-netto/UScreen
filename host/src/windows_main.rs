@@ -37,6 +37,17 @@ pub(super) fn run() -> Result<()> {
                 &path,
                 cli.connection_settings(blent_config::FileConfig::load())?,
             )),
+        Some(Commands::Wifi { off }) => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(setup_wifi(
+                *off,
+                blent_config::windows::programs::find_in(
+                    "adb",
+                    &std::env::var_os("PATH").unwrap_or_default(),
+                ),
+                &blent_config::storage::ConfigStore::default(),
+            )),
         Some(Commands::Stop) => lifecycle::stop(&path, lifecycle::STOP_TIMEOUT),
         Some(Commands::Status) => status(&path),
         Some(Commands::Doctor) => {
@@ -45,6 +56,25 @@ pub(super) fn run() -> Result<()> {
         }
         _ => bail!("Display, input, camera and connection backends are unsupported on Windows"),
     }
+}
+async fn setup_wifi(
+    off: bool,
+    adb: Option<std::path::PathBuf>,
+    store: &blent_config::storage::ConfigStore,
+) -> Result<()> {
+    anyhow::ensure!(
+        off || adb.is_some(),
+        "Wi-Fi setup unavailable: adb.exe missing from PATH"
+    );
+    let address = blent::wifi::setup(&Adb(adb.map(NativeCommands)), store, off).await?;
+    println!(
+        "{}",
+        address.map_or_else(
+            || "Wi-Fi off; saved address forgotten; tablet listener unchanged".into(),
+            |address| format!("Connected to {address}; USB remains preferred")
+        )
+    );
+    Ok(())
 }
 async fn serve(path: &Path, config: blent_config::FileConfig) -> Result<()> {
     anyhow::ensure!(
@@ -64,7 +94,7 @@ async fn serve_usb(session: &lifecycle::Session, config: blent_config::FileConfi
     let monitor = usb_loop(session, config, receiver.clone(), &status);
     tokio::pin!(monitor);
     println!(
-        "Blent daemon running; USB connection preview; display and input unsupported on Windows"
+        "Blent daemon running; USB/Wi-Fi connection preview; display and input unsupported on Windows"
     );
     let requested = tokio::select! {
         result=wait_stop(session, receiver) => result,
@@ -104,7 +134,8 @@ async fn usb_loop(
         let _ = stop.wait_for(|stop| *stop).await;
         return Ok(());
     };
-    let mut monitor = Monitor::new(Adb(NativeCommands(program)), config, stop.clone())?;
+    let mut monitor = Monitor::new(Adb(NativeCommands(program)), config, stop.clone())?
+        .with_network(blent_config::storage::ConfigStore::default());
     let result = poll_usb(session, &mut monitor, &mut stop, status).await;
     let cleanup = monitor.shutdown().await;
     result.and(cleanup)
@@ -123,7 +154,7 @@ async fn poll_usb(
         let sessions = monitor.sessions();
         if sessions != previous {
             session.publish_sessions(&sessions)?;
-            status.send_replace(State::usb(sessions.len()));
+            status.send_replace(State::connections(&sessions));
             previous = sessions;
         }
         tokio::select! {
@@ -144,8 +175,12 @@ fn status(path: &Path) -> Result<()> {
     let sessions = lifecycle::load_sessions(path).unwrap_or_default();
     for session in sessions {
         println!(
-            "USB prepared: {} (slot {}, ports {}/{})",
-            session.serial, session.instance, session.video_port, session.input_port
+            "{} prepared: {} (slot {}, ports {}/{})",
+            blent_config::adb::transport_of(&session.serial).label(),
+            session.serial,
+            session.instance,
+            session.video_port,
+            session.input_port
         );
     }
     Ok(())
@@ -161,3 +196,7 @@ fn diagnostics() {
         println!("{line}");
     }
 }
+
+#[cfg(test)]
+#[path = "windows_wifi_tests.rs"]
+mod wifi_tests;

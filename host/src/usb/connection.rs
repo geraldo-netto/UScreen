@@ -9,6 +9,7 @@ pub struct Connection {
     launch: bool,
     routes: Option<Routes>,
     ready: bool,
+    launch_ticket: Option<crate::launch_policy::Ticket>,
 }
 impl Connection {
     pub fn new(attachment: Attachment, ports: (u16, u16), launch: bool) -> Result<Self> {
@@ -19,6 +20,7 @@ impl Connection {
             launch,
             routes: None,
             ready: false,
+            launch_ticket: None,
         })
     }
     pub fn selected(&self) -> Option<&str> {
@@ -35,8 +37,34 @@ impl Connection {
             "Previous attachment still needs cleanup"
         );
         let routes = Routes::new(serial, self.ports)?;
+        self.connect_routes(adb, routes, format!("usb:{serial}"), Transport::Usb)
+            .await
+    }
+    pub(crate) async fn connect_network<C: Commands>(
+        &mut self,
+        adb: &Adb<C>,
+        serial: &str,
+        identity: String,
+        ticket: Option<crate::launch_policy::Ticket>,
+    ) -> Result<()> {
+        ensure!(
+            self.routes.is_none(),
+            "Previous attachment still needs cleanup"
+        );
+        let routes = Routes::for_transport(serial, self.ports)?;
+        self.launch_ticket = ticket;
+        self.connect_routes(adb, routes, identity, transport_of(serial))
+            .await
+    }
+    async fn connect_routes<C: Commands>(
+        &mut self,
+        adb: &Adb<C>,
+        routes: Routes,
+        identity: String,
+        transport: Transport,
+    ) -> Result<()> {
         self.attachment
-            .begin_with_transport(Some(format!("usb:{serial}")), Some(Transport::Usb));
+            .begin_with_transport(Some(identity), Some(transport));
         self.routes = Some(routes);
         if let Err(error) = self.prepare(adb).await {
             let cleanup = self.disconnect(adb).await;
@@ -57,7 +85,12 @@ impl Connection {
             .attachment
             .token()?
             .context("USB preview requires authentication")?;
-        adb.deliver(routes.serial(), &token, self.launch).await
+        let launch = self.launch
+            && self
+                .launch_ticket
+                .as_ref()
+                .is_none_or(|ticket| ticket.take());
+        adb.deliver(routes.serial(), &token, launch).await
     }
     pub async fn refresh<C: Commands>(&mut self, adb: &Adb<C>) -> Result<()> {
         ensure!(self.ready, "Attachment is not prepared");

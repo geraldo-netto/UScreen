@@ -20,7 +20,7 @@ recorded GNU/MSVC failures at `63b332e`. The subsequent
 command-line diagnostics executable and passes MSVC target checking. Help and
 version work. That historical milestone rejected runtime commands; T524 now
 adds interactive daemon lifecycle. Windows remains a second-screen preview,
-with capture, native input, camera and Wi-Fi setup still unsupported.
+with capture, integrated native input and camera still unsupported. Wi-Fi setup/reconnection now shares Linux policy and owned ADB adapters; physical acceptance remains T522.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
@@ -139,7 +139,7 @@ and declined stylus; macOS is not being reopened. Backend APIs and installation
 mechanisms may differ while user-visible behavior and ownership guarantees agree.
 
 The [source-backed parity audit](reviews/2026-09-27-windows-parity.md) maps existing
-milestones and additional gaps: Wi-Fi T691, camera interface/output T692/T693,
+milestones and additional gaps: camera interface/output T692/T693,
 adaptive idle T695, tray updates T696 and user-controlled
 capture capacity T697. These are planned requirements, not implemented support.
 A successful Windows build or one working streaming path does not close them.

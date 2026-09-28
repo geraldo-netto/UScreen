@@ -1,7 +1,11 @@
-use blent::annex_scan;
-use blent::ffmpeg_args;
 use blent::adb_inventory;
 use blent::adb_inventory::package_presence;
+use blent::annex_scan;
+use blent::ffmpeg_args;
+use blent::transport::{
+    attachment_identity, current_transport, parse_tablet_ip, select_device_transports,
+};
+use blent::wifi::{linux::setup as setup_wifi, Reconnect as WifiReconnect};
 use blent_config::android::{app_launch_command, token_delivery_command};
 #[cfg(test)]
 #[allow(dead_code)] // Shared counter helpers also serve library transport tests.
@@ -947,6 +951,24 @@ printf '%s\n' "$2" >> "$0.log"
             Some("TABLET_B")
         );
         assert_eq!(pick_device_with(&["PHONE".into()], None, adb).await, None);
+    }
+
+    #[tokio::test]
+    async fn t691_reconnect_rejects_disconnected_as_success() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let adb = root.path().join("adb");
+        std::fs::write(&adb, "#!/bin/sh\necho disconnected\n").unwrap();
+        std::fs::set_permissions(&adb, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = root.path().join("config.toml");
+        std::fs::write(&path, "wifi_address = \"192.0.2.1:5555\"\n").unwrap();
+        assert_eq!(
+            WifiReconnect::new(path, adb.to_str().unwrap().into())
+                .connect()
+                .await,
+            None,
+            "T691: disconnected must not authorize a network route"
+        );
     }
 
     #[tokio::test]
@@ -2263,165 +2285,6 @@ impl RelaunchBackoff {
     }
 }
 
-struct WifiReconnect {
-    path: PathBuf,
-    adb: String,
-}
-impl WifiReconnect {
-    fn new(path: PathBuf, adb: String) -> Self {
-        Self { path, adb }
-    }
-    async fn connect(&self) -> Option<String> {
-        let address = config::FileConfig::load_at(&self.path).wifi_address;
-        if address.is_empty() {
-            return None;
-        }
-        let output = tokio::process::Command::new(&self.adb)
-            .args(["connect", &address])
-            .output_bounded()
-            .await
-            .ok()?;
-        if config::FileConfig::load_at(&self.path).wifi_address != address {
-            // --off or a replacement address may arrive while adb is connecting.
-            let _ = tokio::process::Command::new(&self.adb)
-                .args(["disconnect", &address])
-                .output_bounded()
-                .await;
-            return None;
-        }
-        (output.status.success() && String::from_utf8_lossy(&output.stdout).contains("connected"))
-            .then_some(address)
-    }
-}
-
-/// Switch the tablet's adb to TCP and remember where it lives, so the daemon
-/// can pick it up over Wi-Fi on its own from then on.
-///
-/// This is deliberately the adb route rather than a port of our own. The
-/// host video and input ports stay on loopback. adb tcpip opens the tablet
-/// listener on port 5555; an authorized adb connection carries the tunnel.
-/// --off forgets/disconnects that address but does not disable the listener.
-async fn setup_wifi(off: bool) -> Result<()> {
-    let cfg = config::FileConfig::load();
-
-    if off {
-        config::FileConfig::update(|cfg| {
-            cfg.wifi_address.clear();
-            Ok(())
-        })?;
-        if !cfg.wifi_address.is_empty() {
-            let _ = tokio::process::Command::new("adb")
-                .args(["disconnect", &cfg.wifi_address])
-                .output_bounded()
-                .await;
-        }
-        println!("Wi-Fi off. Plug the cable in to use the tablet again.");
-        return Ok(());
-    }
-
-    let Some(serial) = wifi_device_with(&adb_devices().await, "adb").await else {
-        anyhow::bail!(
-            "No USB tablet with Blent installed. Install the app and plug the cable in for this one step — the tablet has to be told \
-             to listen on the network, and only the cable can tell it."
-        );
-    };
-
-    println!("Switching {} to Wi-Fi…", serial);
-    let out = tokio::process::Command::new("adb")
-        .args(["-s", &serial, "tcpip", "5555"])
-        .output_bounded()
-        .await?;
-    if !out.status.success() {
-        anyhow::bail!(
-            "adb tcpip failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-    }
-    // adbd restarts, taking the USB connection with it for a moment.
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-
-    let Some(ip) = tablet_ip(&serial).await else {
-        anyhow::bail!(
-            "The tablet is listening, but its address could not be read. Find it under \
-             Settings → About tablet → Status, then put `wifi_address = \"<ip>:5555\"` in \
-             ~/.config/blent/config.toml."
-        );
-    };
-    let address = format!("{}:5555", ip);
-
-    let out = tokio::process::Command::new("adb")
-        .args(["connect", &address])
-        .output_bounded()
-        .await?;
-    let said = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if !out.status.success() || !said.contains("connected") {
-        anyhow::bail!("adb connect {} did not take: {}", address, said);
-    }
-
-    config::FileConfig::update(|cfg| {
-        cfg.wifi_address = address.clone();
-        Ok(())
-    })?;
-    println!("Connected to {}. The cable can come out.", address);
-    println!(
-        "The daemon reconnects to this address by itself whenever the cable is not in, \
-         so this is a one-off — until the tablet reboots, which puts its adb back on USB \
-         and means running this once more.\n\
-         Wi-Fi is a fallback: a historical test with the radio lock had a median \
-         close to USB but multi-second outliers. Your network may differ. `blent wifi --off` forgets the address."
-    );
-    Ok(())
-}
-
-/// The tablet's own address on the wireless network.
-async fn tablet_ip(serial: &str) -> Option<String> {
-    // `ip route` is present on every Android that adb can reach, and the
-    // route to the default gateway carries the source address we want.
-    // Asked for wlan0 first, since a tablet on USB may also have a tethering
-    // interface whose address is useless here.
-    for args in [
-        vec![
-            "-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0",
-        ],
-        vec!["-s", serial, "shell", "ip", "route", "get", "1.1.1.1"],
-        vec!["-s", serial, "shell", "ip", "-f", "inet", "addr"],
-    ] {
-        let Ok(out) = tokio::process::Command::new("adb")
-            .args(&args)
-            .output_bounded()
-            .await
-        else {
-            continue;
-        };
-        if !out.status.success() {
-            continue;
-        }
-        let text = String::from_utf8_lossy(&out.stdout);
-        if let Some(ip) = parse_tablet_ip(&text) {
-            return Some(ip);
-        }
-    }
-    None
-}
-
-fn parse_tablet_ip(text: &str) -> Option<String> {
-    // "inet 192.168.1.42/24 …" or "… src 192.168.1.42 …"
-    let mut words = text.split_whitespace().peekable();
-    while let Some(w) = words.next() {
-        if w != "inet" && w != "src" {
-            continue;
-        }
-        let Some(value) = words.peek() else { continue };
-        let ip = value.split('/').next().unwrap_or(value);
-        if let Ok(address) = ip.parse::<std::net::Ipv4Addr>() {
-            if !address.is_loopback() {
-                return Some(address.to_string());
-            }
-        }
-    }
-    None
-}
-
 /// Historical upstream test (docs/benchmarks.md): median 32.0 ms without
 /// the radio lock, 22.8 ms with it, versus 22.0 ms over USB. Locked Wi-Fi
 /// still had a 78.6 ms p95 and multi-second outliers. Other networks differ.
@@ -2520,16 +2383,6 @@ fn is_fake_serial(serial: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn attachment_identity(
-    serial: &str,
-    identities: &std::collections::HashMap<String, String>,
-) -> String {
-    match identities.get(serial) {
-        Some(identity) => format!("device:{identity}"),
-        None => format!("transport:{serial}"),
-    }
-}
-
 /// Which of the attached devices to drive.
 ///
 /// Stay with the physical tablet already in use; current_transport resolves
@@ -2544,24 +2397,6 @@ fn attachment_identity(
 /// For a fresh pick, prefer USB over the network, and among USB devices the
 /// one that actually has the app installed: a phone charging next to the
 /// tablet normally does not, and it is almost never the one meant.
-fn current_transport(
-    devices: &[String],
-    current: Option<&str>,
-    identities: &std::collections::HashMap<String, String>,
-) -> Option<String> {
-    let current = current?;
-    if let Some(identity) = identities.get(current) {
-        devices
-            .iter()
-            .find(|device| identities.get(*device) == Some(identity))
-            .cloned()
-    } else {
-        devices
-            .iter()
-            .find(|device| device.as_str() == current)
-            .cloned()
-    }
-}
 
 async fn unique_devices(
     devices: &[String],
@@ -2598,36 +2433,6 @@ async fn probe_device_identity(serial: &str, adb: &str) -> Option<(String, Strin
     let id = String::from_utf8_lossy(&output.stdout).trim().to_string();
     (output.status.success() && !id.is_empty() && !id.eq_ignore_ascii_case("unknown"))
         .then(|| (serial.to_string(), id))
-}
-
-fn select_device_transports(
-    devices: &[String],
-    current: Option<&str>,
-    identities: &std::collections::HashMap<String, String>,
-) -> Vec<String> {
-    let mut selected: Vec<String> = Vec::new();
-    let mut groups = std::collections::HashMap::<String, usize>::new();
-    for serial in devices {
-        // Unknown identities remain distinct; never merge unrelated tablets on
-        // an empty or failed getprop response.
-        let identity = identities
-            .get(serial)
-            .map(|id| format!("device:{id}"))
-            .unwrap_or_else(|| format!("transport:{serial}"));
-        if let Some(&index) = groups.get(&identity) {
-            let existing = transport_of(&selected[index]);
-            let candidate = transport_of(serial);
-            if (candidate == Transport::Usb && existing == Transport::Network)
-                || (candidate == existing && Some(serial.as_str()) == current)
-            {
-                selected[index] = serial.clone();
-            }
-        } else {
-            groups.insert(identity, selected.len());
-            selected.push(serial.clone());
-        }
-    }
-    selected
 }
 
 /// Filter once before assigning any display slot. Explicit test serials do
@@ -2700,15 +2505,6 @@ fn select_tablet(devices: &[String], current: Option<&str>) -> Option<String> {
 
 async fn pick_device_with(devices: &[String], current: Option<&str>, adb: &str) -> Option<String> {
     select_tablet(&app_devices_with(devices, adb).await, current)
-}
-
-/// Every device in state "device", USB entries first.
-async fn adb_devices() -> Vec<String> {
-    adb_devices_using("adb").await
-}
-
-async fn adb_devices_using(adb: &str) -> Vec<String> {
-    adb_inventory::query(adb).await.unwrap_or_default()
 }
 
 /// The ports the tablet app dials on its own loopback. Fixed in the app

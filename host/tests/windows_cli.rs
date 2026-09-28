@@ -23,7 +23,7 @@ fn t494_help_and_version_are_available() {
 #[test]
 fn t494_windows_actions_report_unsupported_without_side_effects() {
     let root = tempfile::tempdir().unwrap();
-    for args in [vec!["list-displays"], vec!["wifi"], vec!["wifi", "--off"]] {
+    for args in [vec!["list-displays"]] {
         let result = Command::new(env!("CARGO_BIN_EXE_blent"))
             .args(args)
             .current_dir(root.path())
@@ -120,4 +120,26 @@ fn t694_connection_overrides_require_direct_start() {
         );
         assert!(String::from_utf8_lossy(&result.stderr).contains("direct daemon start"));
     }
+}
+
+#[test]
+fn t691_wifi_cli_admits_setup_and_parses_off_without_mutating_settings() {
+    let root = tempfile::tempdir().unwrap();
+    use clap::Parser;
+    let cli = blent_config::cli::Cli::try_parse_from(["blent", "wifi", "--off"]).unwrap();
+    assert!(matches!(
+        cli.command,
+        Some(blent_config::cli::Commands::Wifi { off: true })
+    ));
+    for args in [vec!["wifi"]] {
+        let out = Command::new(env!("CARGO_BIN_EXE_blent"))
+            .args(args)
+            .env("PATH", root.path())
+            .current_dir(root.path())
+            .output_timeout(Duration::from_secs(3))
+            .unwrap();
+        assert!(!out.status.success());
+        assert!(String::from_utf8_lossy(&out.stderr).contains("adb.exe missing from PATH"));
+    }
+    assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
 }

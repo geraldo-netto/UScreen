@@ -8,6 +8,7 @@ use std::{future::Future, path::PathBuf, pin::Pin, process::Output, time::Durati
 
 pub mod connection;
 pub mod monitor;
+mod network;
 mod preview;
 mod routes;
 pub use routes::Routes;
@@ -34,16 +35,31 @@ impl Commands for NativeCommands {
 pub struct Adb<C>(pub C);
 impl<C: Commands> Adb<C> {
     pub async fn inventory(&self) -> Option<Vec<String>> {
-        let output = self.0.execute(vec!["devices".into()], None).await.ok()?;
-        if !output.status.success() || output.stdout.len() > 65536 {
-            return None;
-        }
-        crate::adb_inventory::parse(std::str::from_utf8(&output.stdout).ok()?).map(|devices| {
+        self.all_devices().await.map(|devices| {
             devices
                 .into_iter()
                 .filter(|serial| transport_of(serial) == Transport::Usb)
                 .collect()
         })
+    }
+    pub async fn all_devices(&self) -> Option<Vec<String>> {
+        let output = self.0.execute(vec!["devices".into()], None).await.ok()?;
+        if !output.status.success() || output.stdout.len() > 65536 {
+            return None;
+        }
+        crate::adb_inventory::parse(std::str::from_utf8(&output.stdout).ok()?)
+    }
+    pub async fn identity(&self, serial: &str) -> Option<String> {
+        let bytes = self
+            .checked(args(serial, &["shell", "getprop", "ro.serialno"]), None)
+            .await
+            .ok()?;
+        let id = std::str::from_utf8(&bytes).ok()?.trim();
+        (!id.is_empty()
+            && id.len() <= 1024
+            && !id.chars().any(char::is_control)
+            && !id.eq_ignore_ascii_case("unknown"))
+        .then(|| id.to_string())
     }
     pub async fn installed(&self, serial: &str) -> Option<bool> {
         let output = self
@@ -110,3 +126,13 @@ fn valid_serial(serial: &str) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+/// A missing optional executable still permits local configuration retirement.
+impl<C: Commands> Commands for Option<C> {
+    fn execute(&self, arguments: Vec<String>, input: Option<Vec<u8>>) -> CommandFuture<'_> {
+        match self {
+            Some(commands) => commands.execute(arguments, input),
+            None => Box::pin(async { anyhow::bail!("ADB executable unavailable") }),
+        }
+    }
+}

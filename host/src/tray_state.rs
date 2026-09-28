@@ -8,6 +8,7 @@ pub enum State {
     Unavailable,
     Waiting,
     Prepared(u8),
+    Network(u8),
     Screen,
     Pen,
     Stopping,
@@ -18,6 +19,19 @@ impl State {
             0 => Self::Waiting,
             1..=4 => Self::Prepared(assignments as u8),
             _ => Self::Unavailable,
+        }
+    }
+    pub fn connections(sessions: &[blent_config::tablets::TabletSession]) -> Self {
+        match Self::usb(sessions.len()) {
+            Self::Prepared(count)
+                if sessions.iter().any(|s| {
+                    blent_config::adb::transport_of(&s.serial)
+                        == blent_config::adb::Transport::Network
+                }) =>
+            {
+                Self::Network(count)
+            }
+            state => state,
         }
     }
     pub fn streaming(present: bool, pen: bool) -> Self {
@@ -33,6 +47,7 @@ impl State {
             Self::Unavailable => "USB connection unavailable".into(),
             Self::Waiting => "No tablet connected".into(),
             Self::Prepared(count) => format!("USB prepared: {count} tablet(s)"),
+            Self::Network(count) => format!("Network ADB prepared: {count} tablet(s)"),
             Self::Screen => "Second screen".into(),
             Self::Pen => "Graphics tablet — the pen drives this screen".into(),
             Self::Stopping => "Stopping Blent".into(),
@@ -94,6 +109,7 @@ mod tests {
             State::Unavailable,
             State::Waiting,
             State::Prepared(4),
+            State::Network(4),
             State::Screen,
             State::Pen,
             State::Stopping,

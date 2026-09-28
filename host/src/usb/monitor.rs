@@ -8,6 +8,7 @@ struct Active {
     connection: Connection,
     runtime: Runtime,
     delivery: Instant,
+    identity: Option<String>,
 }
 pub struct Monitor<C> {
     adb: Adb<C>,
@@ -16,7 +17,8 @@ pub struct Monitor<C> {
     slots: Vec<Option<Active>>,
     stop: watch::Receiver<bool>,
     failed: std::collections::HashMap<String, Instant>,
-    pending: Vec<Routes>,
+    pending: Vec<(Routes, Option<String>)>,
+    network: Option<super::network::Network>,
 }
 impl<C: Commands> Monitor<C> {
     pub fn new(adb: Adb<C>, config: FileConfig, stop: watch::Receiver<bool>) -> Result<Self> {
@@ -35,7 +37,12 @@ impl<C: Commands> Monitor<C> {
             stop,
             failed: Default::default(),
             pending: Vec::new(),
+            network: None,
         })
+    }
+    pub fn with_network(mut self, store: blent_config::storage::ConfigStore) -> Self {
+        self.network = Some(super::network::Network::new(store));
+        self
     }
     pub fn sessions(&self) -> Vec<TabletSession> {
         self.slots
@@ -54,7 +61,25 @@ impl<C: Commands> Monitor<C> {
     }
     /// Unknown inventory is not a disconnect. One broken device cannot stop the others.
     pub async fn poll(&mut self) {
-        let Some(devices) = self.adb.inventory().await else {
+        let observed = if let Some(network) = self.network.as_mut() {
+            tokio::time::timeout(
+                Duration::from_secs(6),
+                network.devices(
+                    &self.adb,
+                    &self
+                        .slots
+                        .iter()
+                        .flatten()
+                        .filter_map(|a| a.connection.serial().map(str::to_string))
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .await
+            .unwrap_or(None)
+        } else {
+            self.adb.inventory().await
+        };
+        let Some(devices) = observed else {
             return;
         };
         self.failed.retain(|serial, _| devices.contains(serial));
@@ -74,7 +99,11 @@ impl<C: Commands> Monitor<C> {
                 .connection
                 .serial()
                 .is_some_and(|serial| devices.iter().any(|device| device == serial));
-            if present {
+            let identity_current = self.network.as_ref().is_none_or(|network| {
+                active.connection.serial().and_then(|s| network.identity(s))
+                    == active.identity.as_ref()
+            });
+            if present && identity_current {
                 return self.maintain(index).await;
             }
             self.retire(index).await;
@@ -101,7 +130,10 @@ impl<C: Commands> Monitor<C> {
             .get(serial)
             .is_some_and(|until| Instant::now() < *until)
             && !self.assigned(serial)
-            && !self.pending.iter().any(|routes| routes.serial() == serial)
+            && !self
+                .pending
+                .iter()
+                .any(|(routes, _)| routes.serial() == serial)
     }
     fn assigned(&self, serial: &str) -> bool {
         self.slots
@@ -122,13 +154,25 @@ impl<C: Commands> Monitor<C> {
             connection,
             runtime,
             delivery: Instant::now() + Duration::from_secs(5),
+            identity: self
+                .network
+                .as_ref()
+                .and_then(|n| n.identity(serial))
+                .cloned(),
         });
-        let result = self.slots[index]
-            .as_mut()
-            .unwrap()
-            .connection
-            .connect(&self.adb, serial)
-            .await;
+        let connection = &mut self.slots[index].as_mut().unwrap().connection;
+        let result = if let Some(network) = self.network.as_ref() {
+            connection
+                .connect_network(
+                    &self.adb,
+                    serial,
+                    network.attachment_identity(serial),
+                    network.ticket(serial),
+                )
+                .await
+        } else {
+            connection.connect(&self.adb, serial).await
+        };
         if result.is_err() {
             self.failed
                 .insert(serial.into(), Instant::now() + Duration::from_secs(5));
@@ -152,8 +196,16 @@ impl<C: Commands> Monitor<C> {
             let routes = active.connection.release_routes();
             active.runtime.stop().await;
             if let Some(mut routes) = routes {
-                if routes.retire(&self.adb).await.is_err() {
-                    self.pending.push(routes);
+                let safe = match self.network.as_ref() {
+                    Some(network) => {
+                        network
+                            .can_retire(&self.adb, &mut routes, active.identity.as_ref())
+                            .await
+                    }
+                    None => true,
+                };
+                if !safe || routes.retire(&self.adb).await.is_err() {
+                    self.pending.push((routes, active.identity));
                 }
             }
         }
@@ -162,10 +214,18 @@ impl<C: Commands> Monitor<C> {
     async fn retry_routes(&mut self, present: Option<&[String]>) {
         let mut index = 0;
         while index < self.pending.len() {
-            let routes = &mut self.pending[index];
+            let (routes, identity) = &mut self.pending[index];
+            let safe = match self.network.as_ref() {
+                Some(network) => {
+                    network
+                        .can_retire(&self.adb, routes, identity.as_ref())
+                        .await
+                }
+                None => true,
+            };
             let available =
                 present.is_none_or(|devices| devices.iter().any(|s| s == routes.serial()));
-            if available && routes.retire(&self.adb).await.is_ok() {
+            if safe && available && routes.retire(&self.adb).await.is_ok() {
                 self.pending.swap_remove(index);
             } else {
                 index += 1;

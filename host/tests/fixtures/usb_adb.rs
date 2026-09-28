@@ -8,8 +8,17 @@ fn main() {
         print!("{}", fs::read_to_string(root.join("inventory")).unwrap());
         return;
     }
-    assert_eq!(&args[..2], ["-s", "USB"]);
+    if args[0] == "connect" || args[0] == "disconnect" {
+        println!("{}ed to {}", args[0],args[1]); return;
+    }
+    assert_eq!(args[0], "-s");
+    device_command(&root,&args);
+}
+fn device_command(root:&Path,args:&[String]) {
     match args[2].as_str() {
+        "tcpip" => println!("restarting in TCP mode"),
+        "shell" if args[3] == "getprop" => println!("owned-tablet"),
+        "shell" if args[3] == "ip" => println!("inet 192.0.2.1/24"),
         "reverse" => reverse(&root, &args[3..]),
         "shell" if args[3] == "pm" => println!("package:/data/app/blent/base.apk"),
         "shell" => {

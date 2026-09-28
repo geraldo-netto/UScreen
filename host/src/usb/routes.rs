@@ -27,6 +27,13 @@ impl Routes {
             owned: Vec::new(),
         })
     }
+    /// Caller must prove both ADB aliases identify the same physical tablet.
+    /// Owned reverse routes belong to that tablet, not its transient transport.
+    pub(crate) fn retarget(&mut self, serial: &str) -> Result<()> {
+        let checked = Self::for_transport(serial, (self.expected[0].1, self.expected[1].1))?;
+        self.serial = checked.serial;
+        Ok(())
+    }
     pub fn serial(&self) -> &str {
         &self.serial
     }

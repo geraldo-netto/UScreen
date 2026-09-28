@@ -15,6 +15,7 @@ struct State {
     inventory_code: u32,
     fail: Option<String>,
     installed: bool,
+    identities: BTreeMap<String, String>,
 }
 #[derive(Clone, Default)]
 struct Fake(Arc<Mutex<State>>);
@@ -55,6 +56,16 @@ fn fake_reply(state: &mut State, args: &[String]) -> Output {
     if args == ["devices"] {
         return output(state.inventory_code, &state.inventory);
     }
+    if args[0] == "connect" {
+        state.inventory = format!("List of devices attached\n{}\tdevice\n", args[1]);
+        return output(0, &format!("connected to {}", args[1]));
+    }
+    if args[0] == "disconnect" {
+        return output(0, "");
+    }
+    fake_device_reply(state, args)
+}
+fn fake_device_reply(state: &mut State, args: &[String]) -> Output {
     match args[2].as_str() {
         "reverse" => reverse_for(state, &args[1], &args[3..]),
         "shell" if args[3] == "pm" => output(
@@ -65,12 +76,25 @@ fn fake_reply(state: &mut State, args: &[String]) -> Output {
                 ""
             },
         ),
+        "shell" if args[3] == "getprop" => output(
+            0,
+            state
+                .identities
+                .get(&args[1])
+                .map(String::as_str)
+                .unwrap_or(""),
+        ),
         "shell" => output(0, ""),
         _ => panic!("Unexpected fake ADB invocation: {args:?}"),
     }
 }
 fn reverse_for(state: &mut State, serial: &str, args: &[String]) -> Output {
-    if serial == "USB" {
+    if serial == "USB"
+        || state
+            .identities
+            .get(serial)
+            .is_some_and(|id| state.identities.get("USB") == Some(id))
+    {
         return reverse_reply(state, args);
     }
     let mut device = State {
@@ -742,4 +766,170 @@ async fn t650_malformed_serial_preserves_connected_attachment_and_credential() {
         );
     }
     monitor.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn t691_network_usb_migration_retires_routes_through_proven_alias() {
+    let root = tempfile::tempdir().unwrap();
+    let store = blent_config::storage::ConfigStore::new(root.path().join("config.toml"));
+    let (adb, monitor, _stop, _ports) = monitor_fixture().await;
+    let mut monitor = monitor.with_network(store);
+    {
+        let mut s = adb.0 .0.lock().unwrap();
+        s.inventory = "List of devices attached\n192.0.2.1:5555\tdevice\n".into();
+        s.identities.insert("USB".into(), "tablet".into());
+        s.identities
+            .insert("192.0.2.1:5555".into(), "tablet".into());
+    }
+    monitor.poll().await;
+    let first = delivered(&adb);
+    assert_eq!(monitor.sessions()[0].serial, "192.0.2.1:5555");
+    {
+        let mut s = adb.0 .0.lock().unwrap();
+        s.inventory = "List of devices attached\nUSB\tdevice\n".into();
+        s.fail = Some("-s 192.0.2.1:5555".into());
+    }
+    monitor.poll().await;
+    assert_eq!(monitor.sessions()[0].serial, "USB");
+    assert_ne!(delivered(&adb), first);
+    let launches = adb
+        .0
+         .0
+        .lock()
+        .unwrap()
+        .calls
+        .iter()
+        .filter(|(_, input)| {
+            input
+                .as_ref()
+                .is_some_and(|b| String::from_utf8_lossy(b).contains("am start"))
+        })
+        .count();
+    assert_eq!(
+        launches, 1,
+        "T691: transport migration must not relaunch the same tablet"
+    );
+    monitor
+        .shutdown()
+        .await
+        .expect("T691: proven USB alias must retire the same tablet's network route debt");
+    assert!(adb.0 .0.lock().unwrap().routes.is_empty());
+}
+
+#[tokio::test]
+async fn t691_replaced_physical_identity_does_not_remove_foreign_routes() {
+    let root = tempfile::tempdir().unwrap();
+    let store = blent_config::storage::ConfigStore::new(root.path().join("config.toml"));
+    let (adb, monitor, _stop, _ports) = monitor_fixture().await;
+    let mut monitor = monitor.with_network(store);
+    adb.0
+         .0
+        .lock()
+        .unwrap()
+        .identities
+        .insert("USB".into(), "old".into());
+    monitor.poll().await;
+    {
+        let mut s = adb.0 .0.lock().unwrap();
+        s.identities.insert("USB".into(), "replacement".into());
+        s.calls.clear();
+    }
+    monitor.poll().await;
+    assert!(
+        !adb.0
+             .0
+            .lock()
+            .unwrap()
+            .calls
+            .iter()
+            .any(|(args, _)| args.contains(&"--remove".into())),
+        "T691: a replaced physical tablet does not inherit old route ownership"
+    );
+    assert!(monitor.sessions().is_empty());
+    adb.0
+         .0
+        .lock()
+        .unwrap()
+        .identities
+        .insert("USB".into(), "old".into());
+    monitor.poll().await;
+    assert_eq!(monitor.sessions().len(), 1);
+    monitor.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn t691_network_reconnect_rereads_saved_address_and_bounds_inventory() {
+    let root = tempfile::tempdir().unwrap();
+    let store = blent_config::storage::ConfigStore::new(root.path().join("config.toml"));
+    store
+        .update(|c| {
+            c.wifi_address = "192.0.2.2:5555".into();
+            Ok(())
+        })
+        .unwrap();
+    let (adb, monitor, _stop, ports) = monitor_fixture().await;
+    adb.0 .0.lock().unwrap().inventory = "List of devices attached\n".into();
+    let mut monitor = monitor.with_network(store.clone());
+    monitor.poll().await;
+    assert_eq!(monitor.sessions()[0].serial, "192.0.2.2:5555");
+    assert!(adb
+        .0
+         .0
+        .lock()
+        .unwrap()
+        .calls
+        .iter()
+        .any(|(args, _)| args == &["connect", "192.0.2.2:5555"]));
+    use futures_util::StreamExt;
+    let mut socket = control(ports.1, &delivered(&adb)).await;
+    let hello = socket.next().await.unwrap().unwrap().into_text().unwrap();
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&hello).unwrap()["transport"],
+        "network"
+    );
+    adb.0 .0.lock().unwrap().inventory = format!(
+        "List of devices attached\n{}",
+        (0..257)
+            .map(|i| format!("device{i}\tdevice\n"))
+            .collect::<String>()
+    );
+    monitor.poll().await;
+    assert_eq!(monitor.sessions().len(), 1);
+    store
+        .update(|c| {
+            c.wifi_address.clear();
+            Ok(())
+        })
+        .unwrap();
+    adb.0 .0.lock().unwrap().inventory = "List of devices attached\n".into();
+    monitor.poll().await;
+    assert!(monitor.sessions().is_empty());
+    monitor.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn t691_absent_inventory_cleanup_requires_reconfirmed_identity() {
+    let root = tempfile::tempdir().unwrap();
+    let store = blent_config::storage::ConfigStore::new(root.path().join("config.toml"));
+    let (adb, monitor, _stop, _ports) = monitor_fixture().await;
+    let mut monitor = monitor.with_network(store);
+    adb.0
+         .0
+        .lock()
+        .unwrap()
+        .identities
+        .insert("USB".into(), "tablet".into());
+    monitor.poll().await;
+    {
+        let mut s = adb.0 .0.lock().unwrap();
+        s.inventory = "List of devices attached\n".into();
+        s.fail = Some("getprop".into());
+    }
+    monitor.poll().await;
+    assert!(monitor.sessions().is_empty());
+    assert!(!adb.0 .0.lock().unwrap().routes.is_empty());
+    assert!(monitor.shutdown().await.is_err());
+    adb.0 .0.lock().unwrap().fail = None;
+    monitor.shutdown().await.unwrap();
+    assert!(adb.0 .0.lock().unwrap().routes.is_empty());
 }
