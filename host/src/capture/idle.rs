@@ -2,6 +2,7 @@
 use super::CaptureConfig;
 use crate::latency::{EncoderEvidence, LatencyTracker};
 use anyhow::{Context, Result};
+use blent_config::idle::control::{Cadence, LEASE_US};
 use blent_config::idle::{Phase, Policy, Sample, COMPATIBLE_MS};
 use std::{
     collections::VecDeque,
@@ -214,7 +215,9 @@ impl Lease {
             _token: token,
         })
     }
+}
 
+impl Cadence for Lease {
     fn publish(&self, interval: u32) -> Result<()> {
         if interval == COMPATIBLE_MS {
             self.clear();
@@ -232,7 +235,8 @@ impl Lease {
             unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &mut clock) } == 0,
             "monotonic clock unavailable"
         );
-        let expires = clock.tv_sec as u64 * 1000 + clock.tv_nsec as u64 / 1_000_000 + 1500;
+        let expires =
+            clock.tv_sec as u64 * 1000 + clock.tv_nsec as u64 / 1_000_000 + LEASE_US / 1000;
         let mut file =
             tempfile::NamedTempFile::new_in(self.path.parent().context("idle control directory")?)?;
         writeln!(
@@ -244,6 +248,13 @@ impl Lease {
         Ok(())
     }
 
+    fn clear(&self) {
+        let _guard = LEASE_FILES.lock().unwrap();
+        self.clear_locked();
+    }
+}
+
+impl Lease {
     fn contents(&self) -> std::io::Result<String> {
         let file = std::fs::OpenOptions::new()
             .read(true)
@@ -257,11 +268,6 @@ impl Lease {
     fn retire(&self) {
         let _guard = LEASE_FILES.lock().unwrap();
         self.retired.store(true, Ordering::Relaxed);
-        self.clear_locked();
-    }
-
-    fn clear(&self) {
-        let _guard = LEASE_FILES.lock().unwrap();
         self.clear_locked();
     }
 

@@ -2,6 +2,8 @@
 //! Callers supply matched encoded timestamps and render ACKs on one host clock.
 //! A certificate is never persisted or transferred to another encoder epoch.
 
+pub mod control;
+
 pub const COMPATIBLE_MS: u32 = 200;
 pub const SPARSE_MS: u32 = 500;
 const WINDOW: usize = 16;
@@ -81,7 +83,7 @@ impl Policy {
         if self.interval_ms() == SPARSE_MS
             && self
                 .previous
-                .is_some_and(|frame| now_us.saturating_sub(frame.ack_us) > 1_500_000)
+                .is_some_and(|frame| now_us.saturating_sub(frame.ack_us) > control::LEASE_US)
         {
             self.reject();
         }
