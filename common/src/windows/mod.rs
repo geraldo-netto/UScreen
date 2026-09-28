@@ -1,4 +1,5 @@
 //! Native Windows adapters shared by the library, host and GUI.
+pub mod capture_capacity;
 pub mod direct_input;
 pub mod monitors;
 mod native;
