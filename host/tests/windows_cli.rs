@@ -65,3 +65,59 @@ fn t494_cli_rejects_malformed_and_out_of_bounds_values() {
         assert_eq!(invoke(&["--video-port", bad]).status.code(), Some(2));
     }
 }
+
+#[test]
+fn t694_windows_rejects_unavailable_overrides_before_starting() {
+    for args in [
+        vec!["--edid", "missing.bin"],
+        vec!["--helper", "missing.exe"],
+        vec!["--encoder", "libx264"],
+        vec!["--fps", "30"],
+        vec!["--bitrate", "10000"],
+        vec!["--width", "1280"],
+        vec!["--height", "720"],
+        vec!["--quality", "20"],
+        vec!["--stream-scale", "2"],
+        vec!["--conversion-threads", "1"],
+        vec!["--encoder-workers", "1"],
+        vec!["--pen-only"],
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        let runtime = root.path().join("runtime");
+        let result = Command::new(env!("CARGO_BIN_EXE_blent"))
+            .arg("--runtime-dir")
+            .arg(&runtime)
+            .args(&args)
+            .arg("start")
+            .output_timeout(Duration::from_secs(2))
+            .expect("T694: unsupported option must reject before daemon startup");
+        assert!(!result.status.success(), "T694: {args:?}");
+        let error = String::from_utf8_lossy(&result.stderr);
+        assert!(
+            error.contains(args[0]) && error.contains("unavailable"),
+            "T694: {error}"
+        );
+        assert!(
+            !runtime.exists(),
+            "T694: rejection must not create runtime state"
+        );
+    }
+}
+
+#[test]
+fn t694_connection_overrides_require_direct_start() {
+    for command in ["status", "stop", "doctor", "--login"] {
+        let root = tempfile::tempdir().unwrap();
+        let result = Command::new(env!("CARGO_BIN_EXE_blent"))
+            .arg("--runtime-dir")
+            .arg(root.path().join("runtime"))
+            .args(["--video-port", "19320", command])
+            .output_timeout(Duration::from_secs(2))
+            .unwrap();
+        assert!(
+            !result.status.success(),
+            "T694: {command} silently ignored port override"
+        );
+        assert!(String::from_utf8_lossy(&result.stderr).contains("direct daemon start"));
+    }
+}

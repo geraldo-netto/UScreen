@@ -80,6 +80,14 @@ status. Native fixture tests exercise the real Windows daemon and existing
 Android wire contract; they do not substitute for T522 physical connection acceptance.
 Capture/input capabilities remain false, and display-mode requests are rejected.
 
+T694 makes CLI overrides explicit: a direct `blent start` (or no subcommand)
+applies `--video-port` and `--input-port` to the saved connection settings.
+Control commands and the internal login launcher reject those overrides instead
+of losing them. Video, geometry, quality, scale, worker, Linux-helper/EDID and
+pen-mode overrides fail before creating runtime state while their backends are
+unavailable. Saved shared video/input preferences remain available for future
+backends; saving them does not enable Windows display/input support.
+
 [T531 notification-area tray](reviews/2026-09-27-windows-tray.md) consumes the same
 producer-owned USB assignment updates. It shows starting, unavailable, waiting,
 prepared and stopping states; prepared USB does not imply capture or input support.
@@ -125,7 +133,7 @@ mechanisms may differ while user-visible behavior and ownership guarantees agree
 
 The [source-backed parity audit](reviews/2026-09-27-windows-parity.md) maps existing
 milestones and additional gaps: Wi-Fi T691, camera interface/output T692/T693,
-CLI/configuration T694, adaptive idle T695, tray updates T696 and user-controlled
+adaptive idle T695, tray updates T696 and user-controlled
 capture capacity T697. These are planned requirements, not implemented support.
 A successful Windows build or one working streaming path does not close them.
 

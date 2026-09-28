@@ -2,6 +2,8 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+mod backend;
+
 #[derive(Parser)]
 #[command(
     name = "blent",

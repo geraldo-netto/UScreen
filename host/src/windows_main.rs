@@ -14,9 +14,12 @@ use tokio::sync::watch;
 
 pub(super) fn run() -> Result<()> {
     let cli = Cli::parse();
+    let direct_start = matches!(cli.command, None | Some(Commands::Start)) && !cli.login;
+    cli.validate_backend_options(blent_config::platform::capabilities(), direct_start)?;
     blent_config::scheduling::apply_configured();
     let path = cli
         .runtime_dir
+        .clone()
         .map(Ok)
         .unwrap_or_else(runtime::runtime_dir)?;
     if cli.login {
@@ -26,11 +29,14 @@ pub(super) fn run() -> Result<()> {
         );
         return lifecycle::launch(&std::env::current_exe()?, &path, Duration::from_secs(5));
     }
-    match cli.command {
+    match &cli.command {
         None | Some(Commands::Start) => tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(serve(&path, cli.video_port, cli.input_port)),
+            .block_on(serve(
+                &path,
+                cli.connection_settings(blent_config::FileConfig::load())?,
+            )),
         Some(Commands::Stop) => lifecycle::stop(&path, lifecycle::STOP_TIMEOUT),
         Some(Commands::Status) => status(&path),
         Some(Commands::Doctor) => {
@@ -40,11 +46,7 @@ pub(super) fn run() -> Result<()> {
         _ => bail!("Display, input, camera and connection backends are unsupported on Windows"),
     }
 }
-async fn serve(path: &Path, video: Option<u16>, input: Option<u16>) -> Result<()> {
-    let mut config = blent_config::FileConfig::load();
-    config.video_port = video.unwrap_or(config.video_port);
-    config.input_port = input.unwrap_or(config.input_port);
-    blent_config::slot_ports(config.video_port, config.input_port, config.max_tablets)?;
+async fn serve(path: &Path, config: blent_config::FileConfig) -> Result<()> {
     anyhow::ensure!(
         config.require_token,
         "Windows USB preview requires require_token = true"
