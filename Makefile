@@ -51,7 +51,9 @@ install: build
 setup-system:
 	sudo mkdir -p /etc/modprobe.d /etc/modules-load.d
 	sudo bash scripts/gpu-boot-order.sh
-	echo "options evdi initial_device_count=2" | sudo tee /etc/modprobe.d/blent-evdi.conf
+	sudo sh -c 'if [ ! -e "$$1" ] && [ ! -L "$$1" ]; then \
+		(set -C; printf "%s\n" "options evdi initial_device_count=2" > "$$1"); \
+		fi' sh /etc/modprobe.d/blent-evdi.conf
 	printf "evdi\nuinput\n" | sudo tee /etc/modules-load.d/blent.conf
 	sudo install -Dm644 packaging/60-blent-uinput.rules /etc/udev/rules.d/60-blent-uinput.rules
 	sudo udevadm control --reload

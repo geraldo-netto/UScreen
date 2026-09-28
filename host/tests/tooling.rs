@@ -549,9 +549,8 @@ fn t096_desktop_launches_installed_gui_with_stale_path() {
     );
 }
 
-#[test]
-fn t097_make_setup_creates_missing_configuration_directories() {
-    let sandbox = Sandbox::new("minimal-setup");
+fn system_setup_fixture(name: &str) -> Sandbox {
+    let sandbox = Sandbox::new(name);
     let makefile = std::fs::read_to_string(repo().join("Makefile"))
         .unwrap()
         .replace("/etc/", &format!("{}/etc/", sandbox.0.display()))
@@ -579,6 +578,10 @@ fn t097_make_setup_creates_missing_configuration_directories() {
     for name in ["modprobe", "udevadm"] {
         sandbox.script(&format!("bin/{name}"), "#!/bin/sh\nexit 0\n");
     }
+    sandbox
+}
+
+fn run_system_setup(sandbox: &Sandbox) {
     let output = Command::new("make")
         .arg("setup-system")
         .current_dir(&sandbox.0)
@@ -590,12 +593,85 @@ fn t097_make_setup_creates_missing_configuration_directories() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+#[test]
+fn t097_make_setup_creates_missing_configuration_directories() {
+    let sandbox = system_setup_fixture("minimal-setup");
+    run_system_setup(&sandbox);
+    assert_eq!(
+        std::fs::read_to_string(sandbox.0.join("etc/modprobe.d/blent-evdi.conf")).unwrap(),
+        "options evdi initial_device_count=2\n"
+    );
     assert!(sandbox.0.join("etc/modprobe.d/blent-evdi.conf").is_file());
     assert!(sandbox.0.join("etc/modules-load.d/blent.conf").is_file());
     assert!(sandbox
         .0
         .join("etc/udev/rules.d/60-blent-uinput.rules")
         .is_file());
+}
+
+#[test]
+fn t711_make_setup_preserves_existing_capacity_and_options() {
+    let counts = [
+        "1",
+        "2",
+        "3",
+        "4",
+        "0",
+        "5",
+        "-1",
+        "18446744073709551615",
+        "invalid",
+    ];
+    let mut contents: Vec<String> = counts
+        .iter()
+        .map(|count| {
+            format!(
+                "# administrator managed\noptions evdi initial_device_count={count} loglevel=3\n"
+            )
+        })
+        .collect();
+    contents.push(String::new());
+    for (index, before) in contents.iter().enumerate() {
+        let sandbox = system_setup_fixture(&format!("t711-capacity-{index}"));
+        let config = sandbox.write("etc/modprobe.d/blent-evdi.conf", before);
+        run_system_setup(&sandbox);
+        assert_eq!(
+            std::fs::read_to_string(config).unwrap(),
+            *before,
+            "T711: existing configuration overwritten"
+        );
+    }
+}
+
+#[test]
+fn t711_make_setup_preserves_managed_and_dangling_links() {
+    for present in [true, false] {
+        let sandbox = system_setup_fixture(&format!("t711-link-{present}"));
+        let config = sandbox.0.join("etc/modprobe.d/blent-evdi.conf");
+        std::fs::create_dir_all(config.parent().unwrap()).unwrap();
+        let target = sandbox.0.join("managed.conf");
+        let before = "# external manager\noptions evdi initial_device_count=4 loglevel=3\n";
+        if present {
+            std::fs::write(&target, before).unwrap();
+        }
+        std::os::unix::fs::symlink(&target, &config).unwrap();
+        run_system_setup(&sandbox);
+        assert_eq!(std::fs::read_link(config).unwrap(), target);
+        assert_eq!(
+            target.exists(),
+            present,
+            "T711: dangling managed link was followed"
+        );
+        if present {
+            assert_eq!(
+                std::fs::read_to_string(target).unwrap(),
+                before,
+                "T711: managed target overwritten"
+            );
+        }
+    }
 }
 
 fn release_tests(pattern: &str) {
