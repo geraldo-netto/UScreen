@@ -1,10 +1,10 @@
 # Windows integration plan
 
-Status: staged implementation, updated 2026-09-27. Linux remains the supported
+Status: staged implementation, updated 2026-09-29. Linux remains the supported
 runtime for streaming. Windows daemon lifecycle, optional autostart and an
-authenticated USB connection preview are implemented; capture, native input
-and packaging remain unavailable. Physical USB/touch/mouse acceptance remains
-T522; extended-display acceptance is T674.
+authenticated USB/Wi-Fi connection preview are implemented. Native touch/mouse
+adapters are implemented; capture, integrated input and packaging remain
+unavailable. Physical USB/touch/mouse acceptance remains T522; extended-display acceptance is T674.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
@@ -84,8 +84,10 @@ T672 supplies shared selected-monitor projection and a native read-only Windows
 inventory adapter. It uses physical desktop pixels, explicit output identities,
 rotation/scale metadata and stale-topology rejection. Per-function/native fixture
 evidence is [retained here](reviews/artifacts/2026-09-28-t672-mapping/README.md).
-Native input delivery and session/UI selection remain T689/T673; this adapter
-does not enable input capability or create a virtual display.
+[T689 native touch/direct-mouse adapters](reviews/2026-09-28-windows-direct-input.md)
+pass owned-window delivery fixtures. T673 still owns session/UI integration,
+including Android controls; input capability remains unavailable. These adapters
+do not create a virtual display.
 
 T694 makes CLI overrides explicit: a direct `blent start` (or no subcommand)
 applies `--video-port` and `--input-port` to the saved connection settings.
@@ -101,6 +103,9 @@ prepared and stopping states; prepared USB does not imply capture or input suppo
 Settings opens the sibling GUI (or the discovered GUI on PATH), and Quit performs
 the normal owned-route and runtime cleanup. Explorer recreation restores the icon;
 headless startup reports an unavailable tray and retains CLI lifecycle control.
+[T696 release notifications](reviews/2026-09-28-windows-tray-updates.md) honor
+`check_updates`, poll asynchronously with byte/time bounds and expose a fixed
+release-page action. Polling and native resources retire with the daemon.
 
 T533 shares dependency diagnostics between `blent doctor` and the GUI status
 worker. ADB and FFmpeg report the discovered executable path and parsed version,
@@ -121,13 +126,13 @@ The current [TODO ledger](../TODO.md) separates independently reviewable work:
 
 | Milestone | Implementation and prerequisites | Physical acceptance |
 | --- | --- | --- |
-| Touch/mouse | T672 monitor mapping + T689 native injection/non-stylus mouse contract → T673 session integration; T525 USB is implemented | T522, without a virtual-display driver or stylus |
+| Touch/mouse | T672 mapping and T689 touch/direct-mouse adapters are implemented; T673 session/Android-control integration remains; T525 USB and T691 Wi-Fi previews are implemented | T522, without a virtual-display driver or stylus |
 | Extended display | T527 driver/ownership decision and adapter → T675 modes + T528 frame acquisition → T676 recovery → T529 stream integration | T674 on the same PC/tablet |
-| Hardware encoding | T685 missing AMF/QSV recipes + T530 discovery/probes can start independently of capture; the current pipe adapter admits only libx264 | T677 real GPU/session validation, then T535 performance measurements |
+| Hardware encoding | T685 stock Windows recipes and T530 bounded discovery/probes are implemented; the current live pipe adapter admits only libx264 | T677 real GPU/session validation, then T535 performance measurements |
 | Packaging | T534 reproducible contents → T678 install/upgrade/uninstall; format, dependency distribution and signing decisions remain pending | Accepted runtime milestones and native installation checks before release |
 
-These are remaining tasks, not enabled capabilities. Each implementation retains
-its own permanent tests and per-function coverage; native fixtures and physical
+This table separates implemented building blocks from remaining integration and
+acceptance. Each implementation retains its own permanent tests and per-function coverage; native fixtures and physical
 acceptance remain separate evidence. The completed T531 tray is not pending work.
 
 ## Feature-parity gate
@@ -139,10 +144,13 @@ and declined stylus; macOS is not being reopened. Backend APIs and installation
 mechanisms may differ while user-visible behavior and ownership guarantees agree.
 
 The [source-backed parity audit](reviews/2026-09-27-windows-parity.md) maps existing
-milestones and additional gaps: camera interface/output T692/T693,
-adaptive idle T695, tray updates T696 and user-controlled
-capture capacity T697. These are planned requirements, not implemented support.
-A successful Windows build or one working streaming path does not close them.
+milestones and additional gaps as of that review date. T696 daemon tray updates
+are now implemented. [T695 idle control](reviews/2026-09-28-windows-idle-contract.md)
+and [T697 capacity policy/owned buffers](reviews/2026-09-28-windows-capture-capacity.md)
+are implemented preparation; T528/T529 must wire and validate them in capture.
+Their GUI/backend capabilities remain unavailable. Camera interface/distribution
+T692 and output T693 remain incomplete. A successful build or adapter fixture
+does not establish full Windows feature parity.
 
 ## Decisions and resources needed
 
