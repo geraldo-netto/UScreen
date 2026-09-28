@@ -2,6 +2,8 @@
 //! No FFmpeg dependency: adapters translate these values through stock public APIs.
 use anyhow::{Context, Result};
 
+pub mod windows;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
     Nvenc,
