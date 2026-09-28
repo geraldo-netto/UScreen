@@ -84,4 +84,11 @@ impl Connection {
         self.routes = None;
         Ok(())
     }
+
+    /// Retire authentication immediately; route debt needs no live session.
+    pub fn release_routes(&mut self) -> Option<Routes> {
+        self.ready = false;
+        let _ = self.attachment.send(false);
+        self.routes.take()
+    }
 }

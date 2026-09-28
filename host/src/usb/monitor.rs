@@ -16,6 +16,7 @@ pub struct Monitor<C> {
     slots: Vec<Option<Active>>,
     stop: watch::Receiver<bool>,
     failed: std::collections::HashMap<String, Instant>,
+    pending: Vec<Routes>,
 }
 impl<C: Commands> Monitor<C> {
     pub fn new(adb: Adb<C>, config: FileConfig, stop: watch::Receiver<bool>) -> Result<Self> {
@@ -33,6 +34,7 @@ impl<C: Commands> Monitor<C> {
             slots,
             stop,
             failed: Default::default(),
+            pending: Vec::new(),
         })
     }
     pub fn sessions(&self) -> Vec<TabletSession> {
@@ -56,6 +58,7 @@ impl<C: Commands> Monitor<C> {
             return;
         };
         self.failed.retain(|serial, _| devices.contains(serial));
+        self.retry_routes(Some(&devices)).await;
         for index in 0..self.slots.len() {
             if *self.stop.borrow() {
                 return;
@@ -74,7 +77,7 @@ impl<C: Commands> Monitor<C> {
             if present {
                 return self.maintain(index).await;
             }
-            self.retire(index).await?;
+            self.retire(index).await;
         }
         if let Some(serial) = self.candidate(devices).await {
             self.attach(index, &serial).await?;
@@ -98,6 +101,7 @@ impl<C: Commands> Monitor<C> {
             .get(serial)
             .is_some_and(|until| Instant::now() < *until)
             && !self.assigned(serial)
+            && !self.pending.iter().any(|routes| routes.serial() == serial)
     }
     fn assigned(&self, serial: &str) -> bool {
         self.slots
@@ -143,26 +147,41 @@ impl<C: Commands> Monitor<C> {
         }
         Ok(())
     }
-    async fn retire(&mut self, index: usize) -> Result<()> {
-        if let Some(active) = self.slots[index].as_mut() {
-            active.connection.disconnect(&self.adb).await?;
-        }
-        if let Some(active) = self.slots[index].take() {
+    async fn retire(&mut self, index: usize) {
+        if let Some(mut active) = self.slots[index].take() {
+            let routes = active.connection.release_routes();
             active.runtime.stop().await;
-        }
-        Ok(())
-    }
-    pub async fn shutdown(&mut self) -> Result<()> {
-        let mut errors = Vec::new();
-        for index in 0..self.slots.len() {
-            if let Err(error) = self.retire(index).await {
-                errors.push(format!("slot {index}: {error:#}"));
+            if let Some(mut routes) = routes {
+                if routes.retire(&self.adb).await.is_err() {
+                    self.pending.push(routes);
+                }
             }
         }
+    }
+
+    async fn retry_routes(&mut self, present: Option<&[String]>) {
+        let mut index = 0;
+        while index < self.pending.len() {
+            let routes = &mut self.pending[index];
+            let available =
+                present.is_none_or(|devices| devices.iter().any(|s| s == routes.serial()));
+            if available && routes.retire(&self.adb).await.is_ok() {
+                self.pending.swap_remove(index);
+            } else {
+                index += 1;
+            }
+        }
+    }
+
+    pub async fn shutdown(&mut self) -> Result<()> {
+        self.retry_routes(None).await;
+        for index in 0..self.slots.len() {
+            self.retire(index).await;
+        }
         ensure!(
-            errors.is_empty(),
-            "USB cleanup incomplete: {}",
-            errors.join("; ")
+            self.pending.is_empty(),
+            "USB cleanup incomplete: {} device route owners remain",
+            self.pending.len()
         );
         Ok(())
     }

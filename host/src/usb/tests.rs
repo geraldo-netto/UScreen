@@ -439,6 +439,85 @@ async fn t525_monitor_reconnect_uses_shared_authenticated_protocol_and_retires_o
         .await
         .unwrap();
 }
+#[tokio::test]
+async fn t702_offline_route_failure_releases_slot_and_preserves_cleanup_ownership() {
+    use futures_util::StreamExt;
+    let (adb, mut monitor, _stop, ports) = monitor_fixture().await;
+    monitor.poll().await;
+    let token = delivered(&adb);
+    let mut socket = control(ports.1, &token).await;
+    socket.next().await.unwrap().unwrap();
+    {
+        let mut state = adb.0 .0.lock().unwrap();
+        state.inventory = "List of devices attached\nUSB\toffline\nB\tdevice\n".into();
+        state.fail = Some("-s USB reverse --list".into());
+    }
+    tokio::time::timeout(Duration::from_secs(2), monitor.poll())
+        .await
+        .unwrap();
+    assert_eq!(
+        monitor
+            .sessions()
+            .iter()
+            .map(|s| s.serial.as_str())
+            .collect::<Vec<_>>(),
+        ["B"],
+        "T702: failed offline cleanup must not retain session capacity"
+    );
+    let closed = tokio::time::timeout(Duration::from_secs(2), socket.next())
+        .await
+        .unwrap();
+    assert!(!matches!(
+        closed,
+        Some(Ok(tokio_tungstenite::tungstenite::Message::Text(_)))
+    ));
+    assert_ne!(delivered(&adb), token);
+    let mut stale = control(ports.1, &token).await;
+    let response = tokio::time::timeout(Duration::from_secs(2), stale.next())
+        .await
+        .unwrap();
+    assert!(!matches!(
+        response,
+        Some(Ok(tokio_tungstenite::tungstenite::Message::Text(_)))
+    ));
+    {
+        let mut state = adb.0 .0.lock().unwrap();
+        state.fail = None;
+        state.inventory = "List of devices attached\nUSB\tdevice\nB\tdevice\n".into();
+        // A foreign owner replaced one old mapping while USB was unavailable.
+        state.routes.insert(8890, 12345);
+        state.routes.insert(9999, 12346);
+    }
+    monitor.poll().await;
+    assert_eq!(
+        adb.0 .0.lock().unwrap().routes,
+        BTreeMap::from([(8890, 12345), (9999, 12346)])
+    );
+    assert_eq!(monitor.sessions()[0].serial, "B");
+    monitor.shutdown().await.unwrap();
+    for port in [ports.0, ports.1] {
+        tokio::net::TcpListener::bind(("127.0.0.1", port))
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn t702_shutdown_failure_still_retires_listeners_and_can_retry() {
+    let (adb, mut monitor, _stop, ports) = monitor_fixture().await;
+    monitor.poll().await;
+    adb.0 .0.lock().unwrap().fail = Some("reverse --list".into());
+    assert!(monitor.shutdown().await.is_err());
+    assert!(monitor.sessions().is_empty());
+    for port in [ports.0, ports.1] {
+        tokio::net::TcpListener::bind(("127.0.0.1", port))
+            .await
+            .unwrap();
+    }
+    adb.0 .0.lock().unwrap().fail = None;
+    monitor.shutdown().await.unwrap();
+    assert!(adb.0 .0.lock().unwrap().routes.is_empty());
+}
 #[tokio::test(start_paused = true)]
 async fn t657_redelivery_waits_for_each_complete_interval() {
     let (adb, mut monitor, _stop, _) = monitor_fixture().await;
