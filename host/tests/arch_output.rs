@@ -40,6 +40,8 @@ fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
     }
     for name in [
         "scripts/setup-evdi.sh",
+        // T713: mirror the T700 helper installed by the production PKGBUILD.
+        "scripts/gpu-boot-order.sh",
         "host/evdi/evdi_helper",
         "scripts/blent.desktop",
         "packaging/icons/blent.svg",
