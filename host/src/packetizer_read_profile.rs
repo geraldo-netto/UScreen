@@ -40,17 +40,7 @@ fn run(codec: Codec, data: &[u8], chunk: usize, repeats: usize) -> usize {
     })
 }
 
-fn cpu_ns() -> u64 {
-    let mut clock = libc::timespec {
-        tv_sec: 0,
-        tv_nsec: 0,
-    };
-    assert_eq!(
-        unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut clock) },
-        0
-    );
-    clock.tv_sec as u64 * 1_000_000_000 + clock.tv_nsec as u64
-}
+use crate::allocation_probe::cpu_ns;
 
 fn session(
     codec: Codec,

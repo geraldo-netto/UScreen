@@ -85,3 +85,41 @@ pub(crate) async fn measure_async<T>(
     let counts = COUNTS.with(|c| c.replace(None).unwrap());
     (result, counts)
 }
+
+#[cfg(target_os = "linux")]
+pub(crate) fn cpu_ns() -> u64 {
+    let mut value = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    assert_eq!(
+        unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut value) },
+        0
+    );
+    value.tv_sec as u64 * 1_000_000_000 + value.tv_nsec as u64
+}
+#[cfg(windows)]
+pub(crate) fn cpu_ns() -> u64 {
+    use windows_sys::Win32::{
+        Foundation::FILETIME,
+        System::Threading::{GetCurrentThread, GetThreadTimes},
+    };
+    let mut created = FILETIME::default();
+    let mut exited = FILETIME::default();
+    let mut kernel = FILETIME::default();
+    let mut user = FILETIME::default();
+    assert_ne!(
+        unsafe {
+            GetThreadTimes(
+                GetCurrentThread(),
+                &mut created,
+                &mut exited,
+                &mut kernel,
+                &mut user,
+            )
+        },
+        0
+    );
+    let ticks = |v: FILETIME| (u64::from(v.dwHighDateTime) << 32) | u64::from(v.dwLowDateTime);
+    (ticks(kernel) + ticks(user)) * 100
+}

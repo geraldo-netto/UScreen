@@ -44,3 +44,10 @@ pub mod vdisplay;
 
 #[path = "session_core.rs"]
 pub mod session;
+
+mod annex_b;
+pub mod annex_scan;
+pub mod encoder_probe;
+mod framed_annex_b;
+#[path = "capture/probe_format.rs"]
+pub mod probe_format;

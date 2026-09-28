@@ -410,11 +410,12 @@ fn probe_config(base: &CaptureConfig, settings: &EncoderSettings, encoder: &str)
 
 fn rank(a: &Candidate, b: &Candidate, fps: u32) -> Ordering {
     let score = |candidate: &Candidate| {
-        (
-            candidate.measurement.fps < f64::from(fps),
-            !candidate.hardware,
+        blent_config::encoding::rank(
+            candidate.measurement.fps,
+            candidate.hardware,
             candidate.measurement.p95_us,
             candidate.measurement.first_us,
+            fps,
         )
     };
     score(a)

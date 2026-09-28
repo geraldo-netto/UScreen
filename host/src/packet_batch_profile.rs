@@ -70,17 +70,7 @@ async fn t416_dense_packets_publish_singly_before_slow_consumer_admission() {
     }
 }
 
-fn cpu_ns() -> u64 {
-    let mut value = libc::timespec {
-        tv_sec: 0,
-        tv_nsec: 0,
-    };
-    assert_eq!(
-        unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut value) },
-        0
-    );
-    value.tv_sec as u64 * 1_000_000_000 + value.tv_nsec as u64
-}
+use crate::allocation_probe::cpu_ns;
 
 fn sample(fixture: Arc<Fixture>, framed: bool, barrier: Arc<Barrier>) -> serde_json::Value {
     let runtime = tokio::runtime::Builder::new_current_thread()

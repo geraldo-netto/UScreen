@@ -9,7 +9,7 @@ use crate::{
 use anyhow::{ensure, Context, Result};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt};
 
-pub(crate) use blent::ffmpeg_args::TEE_OUTPUT;
+pub(crate) use crate::ffmpeg_args::TEE_OUTPUT;
 const MAX_LINE: usize = 512;
 const MAX_HEADERS: usize = 32;
 

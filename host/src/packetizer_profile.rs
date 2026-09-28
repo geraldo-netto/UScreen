@@ -104,7 +104,7 @@ fn t384_packetizer_profile() {
 
 fn mixed_prefixes(codec: Codec) -> Vec<u8> {
     let data = fixture(codec, 12, 129);
-    let starts = crate::encoder_io::annex_b_starts(&data);
+    let starts = crate::annex_scan::annex_b_starts(&data);
     let mut mixed = vec![0x55; 5];
     for (index, &(start, _)) in starts.iter().enumerate() {
         let end = starts.get(index + 1).map_or(data.len(), |&(next, _)| next);

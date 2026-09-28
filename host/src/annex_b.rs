@@ -103,12 +103,12 @@ impl AnnexBPacketizer {
             "Encoded packet exceeds limit"
         );
         ensure!(
-            crate::encoder_io::annex_b_prefix_len(input).is_some(),
+            crate::annex_scan::annex_b_prefix_len(input).is_some(),
             "Expected Annex B packet"
         );
         #[cfg(test)]
         crate::allocation_probe::scanned(input.len());
-        let mut starts = crate::encoder_io::annex_b_offsets(input).peekable();
+        let mut starts = crate::annex_scan::annex_b_offsets(input).peekable();
         let mut out = Vec::new();
         while let Some((start, header)) = starts.next() {
             let end = starts.peek().map_or(input.len(), |&(start, _)| start);
@@ -256,7 +256,7 @@ impl AnnexBPacketizer {
         #[cfg(test)]
         crate::allocation_probe::scanned(input.len() - offset);
         let mut checked_until = offset;
-        for (start, header) in crate::encoder_io::annex_b_offsets(&input[offset..]) {
+        for (start, header) in crate::annex_scan::annex_b_offsets(&input[offset..]) {
             let start = offset + start;
             // Preserve the streaming contract: a trailing three-byte prefix
             // waits for a header byte, while four bytes already identify it.
@@ -539,7 +539,7 @@ impl<'a> ExpGolombReader<'a> {
 }
 
 fn nal_header_offset(data: &[u8], start: usize) -> Option<usize> {
-    let header = start + crate::encoder_io::annex_b_prefix_len(data.get(start..)?)?;
+    let header = start + crate::annex_scan::annex_b_prefix_len(data.get(start..)?)?;
     (header < data.len()).then_some(header)
 }
 

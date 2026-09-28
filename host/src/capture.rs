@@ -13,7 +13,7 @@ mod placement;
 #[cfg(not(feature = "inproc-encoder"))]
 pub(crate) mod probe;
 #[cfg(not(feature = "inproc-encoder"))]
-mod probe_format;
+use blent::probe_format;
 #[cfg(not(feature = "inproc-encoder"))]
 mod probe_quality;
 mod process;

@@ -8,7 +8,7 @@ use tokio::{
     process::Command,
 };
 
-pub(super) async fn inspect(
+pub async fn inspect(
     codec: Codec,
     width: u32,
     height: u32,
@@ -23,9 +23,9 @@ pub(super) async fn inspect(
         .context("Format probe deadline")?
 }
 
-fn hevc_main_tier(bytes: &[u8]) -> bool {
+pub(crate) fn hevc_main_tier(bytes: &[u8]) -> bool {
     let mut seen = false;
-    for (_, offset) in crate::encoder_io::annex_b_offsets(bytes) {
+    for (_, offset) in crate::annex_scan::annex_b_offsets(bytes) {
         if bytes
             .get(offset)
             .is_none_or(|header| (header >> 1) & 63 != 33)
@@ -46,7 +46,7 @@ fn hevc_main_tier(bytes: &[u8]) -> bool {
     seen
 }
 
-pub(super) fn sample(codec: Codec, width: u32, height: u32, frame: &VideoPacket) -> Vec<u8> {
+pub fn sample(codec: Codec, width: u32, height: u32, frame: &VideoPacket) -> Vec<u8> {
     let mut bytes = if codec.framed() {
         let mut header = b"DKIF\0\0\x20\0".to_vec();
         header.extend_from_slice(if codec == Codec::Vp9 {
@@ -75,7 +75,21 @@ pub(super) fn sample(codec: Codec, width: u32, height: u32, frame: &VideoPacket)
 }
 
 async fn query(codec: Codec, width: u32, height: u32, bytes: &[u8]) -> Result<StreamProfile> {
-    let mut child = Command::new("ffprobe")
+    inspect_bytes(std::ffi::OsStr::new("ffprobe"), codec, width, height, bytes).await
+}
+
+pub(crate) async fn inspect_bytes(
+    program: &std::ffi::OsStr,
+    codec: Codec,
+    width: u32,
+    height: u32,
+    bytes: &[u8],
+) -> Result<StreamProfile> {
+    if codec == Codec::Hevc {
+        ensure!(hevc_main_tier(bytes), "Unknown or unsupported HEVC tier");
+    }
+    let mut command = Command::new(program);
+    command
         .args([
             "-v",
             "error",
@@ -90,10 +104,10 @@ async fn query(codec: Codec, width: u32, height: u32, bytes: &[u8]) -> Result<St
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
-        .kill_on_drop(true)
-        .spawn()?;
-    let mut input = child.stdin.take().unwrap();
-    let output = child.stdout.take().unwrap();
+        .kill_on_drop(true);
+    let mut child = blent_config::commands::OwnedChild::spawn(&mut command)?;
+    let mut input = child.take_stdin().unwrap();
+    let output = child.take_stdout().unwrap();
     let write = async {
         input.write_all(bytes).await?;
         input.shutdown().await?;
@@ -107,7 +121,10 @@ async fn query(codec: Codec, width: u32, height: u32, bytes: &[u8]) -> Result<St
         Ok::<_, anyhow::Error>(data)
     };
     let ((), data) = tokio::try_join!(write, read)?;
-    ensure!(child.wait().await?.success(), "Format probe failed");
+    ensure!(
+        child.finish(Duration::from_secs(2)).await?.success(),
+        "Format probe failed"
+    );
     parse(&data, codec, width, height)
 }
 
@@ -210,5 +227,49 @@ mod tests {
             assert!(parse(&serde_json::to_vec(&bad).unwrap(), Codec::H264, 640, 480).is_err());
         }
         assert!(parse(&serde_json::to_vec(&good).unwrap(), Codec::H264, 1280, 800).is_err());
+    }
+}
+
+#[cfg(test)]
+mod portable_tests {
+    use super::*;
+    #[test]
+    fn t530_native_profile_parser_rejects_unknown_and_mismatched_reports() {
+        for (codec, name, pixel, level, profile, depth) in [
+            (Codec::H264, "Baseline", "nv12", 31, "baseline", 8),
+            (Codec::Hevc, "Main", "yuv420p", 93, "main", 8),
+            (Codec::Hevc, "Main 10", "p010le", 153, "main10", 10),
+            (Codec::Vp9, "Profile 0", "yuv420p", 31, "profile0", 8),
+            (Codec::Vp9, "Profile 2", "yuv420p10le", 31, "profile2", 10),
+            (Codec::Av1, "Main", "yuv420p", 0, "main", 8),
+        ] {
+            let report = serde_json::json!({"streams":[{"codec_name":codec.wire_name(),"profile":name,"pix_fmt":pixel,"level":level,"width":64,"height":48}]});
+            let observed = parse(&serde_json::to_vec(&report).unwrap(), codec, 64, 48).unwrap();
+            assert_eq!(observed.format.profile, profile);
+            assert_eq!(observed.format.depth, depth);
+            for field in [
+                "codec_name",
+                "profile",
+                "pix_fmt",
+                "level",
+                "width",
+                "height",
+            ] {
+                let mut invalid = report.clone();
+                invalid["streams"][0][field] = serde_json::Value::Null;
+                assert!(parse(&serde_json::to_vec(&invalid).unwrap(), codec, 64, 48).is_err());
+            }
+        }
+        for data in [
+            b"invalid".as_slice(),
+            b"{}",
+            b"{\"streams\":[]}",
+            b"{\"streams\":[{},{}]}",
+        ] {
+            assert!(parse(data, Codec::H264, 64, 48).is_err());
+        }
+        assert!(level(Codec::Hevc, 1).is_none());
+        assert!(level(Codec::Av1, 24).is_none());
+        assert!(level(Codec::H264, u64::MAX).is_none());
     }
 }

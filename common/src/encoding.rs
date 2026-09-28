@@ -4,6 +4,18 @@ use anyhow::{Context, Result};
 
 pub mod windows;
 
+/// Same measured selection order on every platform. Hardware refers to the
+/// matched tablet decoder, not an advertised encoder name.
+pub fn rank(
+    fps: f64,
+    hardware: bool,
+    p95_us: u64,
+    first_us: u64,
+    required_fps: u32,
+) -> (bool, bool, u64, u64) {
+    (fps < f64::from(required_fps), !hardware, p95_us, first_us)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
     Nvenc,
