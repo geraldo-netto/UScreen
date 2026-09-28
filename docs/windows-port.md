@@ -80,6 +80,13 @@ status. Native fixture tests exercise the real Windows daemon and existing
 Android wire contract; they do not substitute for T522 physical connection acceptance.
 Capture/input capabilities remain false, and display-mode requests are rejected.
 
+T672 supplies shared selected-monitor projection and a native read-only Windows
+inventory adapter. It uses physical desktop pixels, explicit output identities,
+rotation/scale metadata and stale-topology rejection. Per-function/native fixture
+evidence is [retained here](reviews/artifacts/2026-09-28-t672-mapping/README.md).
+Native input delivery and session/UI selection remain T689/T673; this adapter
+does not enable input capability or create a virtual display.
+
 T694 makes CLI overrides explicit: a direct `blent start` (or no subcommand)
 applies `--video-port` and `--input-port` to the saved connection settings.
 Control commands and the internal login launcher reject those overrides instead

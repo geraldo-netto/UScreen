@@ -7,6 +7,7 @@ pub mod display;
 pub mod encoder_workers;
 pub mod encoding;
 pub mod idle;
+pub mod input_mapping;
 pub mod model;
 pub mod negotiation;
 pub mod raw_frame;

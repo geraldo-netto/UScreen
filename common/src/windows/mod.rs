@@ -1,4 +1,5 @@
 //! Native Windows adapters shared by the library, host and GUI.
+pub mod monitors;
 mod native;
 pub mod paths;
 pub mod private;
