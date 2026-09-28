@@ -40,3 +40,7 @@ pub fn roaming() -> Result<PathBuf> {
 pub fn local() -> Result<PathBuf> {
     known(&FOLDERID_LocalAppData).context("locate local application data")
 }
+
+pub fn system() -> Result<PathBuf> {
+    known(&FOLDERID_System).context("locate Windows system directory")
+}

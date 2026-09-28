@@ -50,7 +50,7 @@ use blent::stream;
 #[cfg(test)]
 mod test_logging;
 mod tray;
-mod update;
+use blent::update;
 use blent::vdisplay;
 use blent::video_queue;
 
@@ -1689,7 +1689,9 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     // the tray and by doctor; never installed from here.
     let (update_tx, update_rx) = watch::channel::<update::Available>(None);
     let update_handle = if file_cfg.check_updates {
-        Some(tokio::spawn(async move { update::run(update_tx).await }))
+        Some(tokio::spawn(async move {
+            update::run(update_tx, "curl".into()).await
+        }))
     } else {
         None
     };

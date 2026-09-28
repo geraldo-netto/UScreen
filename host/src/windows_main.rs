@@ -88,9 +88,30 @@ async fn serve(path: &Path, config: blent_config::FileConfig) -> Result<()> {
 async fn serve_usb(session: &lifecycle::Session, config: blent_config::FileConfig) -> Result<()> {
     let (stop, receiver) = watch::channel(false);
     let (status, state) = watch::channel(State::Starting);
-    let _tray = blent::windows_tray::Tray::start(state, stop.clone())
-        .map_err(|error| eprintln!("Tray unavailable: {error:#}"))
-        .ok();
+    let updates = blent::update::Subscription::start(
+        config.check_updates,
+        blent_config::windows::paths::system()?
+            .join("curl.exe")
+            .into(),
+    );
+    let _tray = blent::windows_tray::Tray::start_with_updates(
+        state,
+        stop.clone(),
+        updates.receiver.clone(),
+    )
+    .map_err(|error| eprintln!("Tray unavailable: {error:#}"))
+    .ok();
+    let result = run_usb(session, config, stop, receiver, status).await;
+    updates.shutdown().await;
+    result
+}
+async fn run_usb(
+    session: &lifecycle::Session,
+    config: blent_config::FileConfig,
+    stop: watch::Sender<bool>,
+    receiver: watch::Receiver<bool>,
+    status: watch::Sender<State>,
+) -> Result<()> {
     let monitor = usb_loop(session, config, receiver.clone(), &status);
     tokio::pin!(monitor);
     println!(

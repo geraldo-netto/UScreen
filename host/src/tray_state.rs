@@ -72,9 +72,37 @@ impl State {
 }
 pub const SETTINGS: usize = 1;
 pub const QUIT: usize = 2;
+pub const RELEASE: usize = 3;
+
+pub fn release_label(release: Option<&str>) -> Option<String> {
+    let release = release.filter(|value| value.len() <= 128)?;
+    blent_config::release::newer_tag(release, crate::update::current_version())
+        .map(|tag| format!("Update available: {tag}"))
+}
+pub fn tooltip(state: State, release: Option<&str>) -> String {
+    let mut text = state.preview_tooltip();
+    if let Some(label) = release_label(release) {
+        text.push_str(&format!("\n{label}"));
+    }
+    text
+}
+pub fn dispatch(
+    state: State,
+    release: Option<&str>,
+    id: usize,
+    actions: &impl Actions,
+) -> Result<()> {
+    if id == RELEASE && state != State::Stopping && release_label(release).is_some() {
+        actions.release()
+    } else {
+        state.dispatch(id, actions)
+    }
+}
+
 pub trait Actions {
     fn settings(&self) -> Result<()>;
     fn quit(&self);
+    fn release(&self) -> Result<()>;
 }
 
 #[cfg(test)]
@@ -85,11 +113,17 @@ mod tests {
         settings: Cell<usize>,
         quits: Cell<usize>,
         fail: bool,
+        releases: Cell<usize>,
     }
     impl Actions for Recorder {
         fn settings(&self) -> Result<()> {
             self.settings.set(self.settings.get() + 1);
             anyhow::ensure!(!self.fail, "T531 launch failed");
+            Ok(())
+        }
+        fn release(&self) -> Result<()> {
+            self.releases.set(self.releases.get() + 1);
+            anyhow::ensure!(!self.fail, "T696 launch failed");
             Ok(())
         }
         fn quit(&self) {
@@ -131,6 +165,7 @@ mod tests {
             settings: Cell::new(0),
             quits: Cell::new(0),
             fail: false,
+            releases: Cell::new(0),
         };
         for id in (0..=256).chain([usize::MAX, 65537, 65538]) {
             State::Waiting.dispatch(id, &actions).unwrap();
@@ -142,6 +177,31 @@ mod tests {
             ..actions
         };
         assert!(State::Waiting.dispatch(SETTINGS, &failing).is_err());
+    }
+    #[test]
+    fn t696_release_action_requires_valid_current_notification() {
+        let actions = Recorder {
+            settings: Cell::new(0),
+            quits: Cell::new(0),
+            releases: Cell::new(0),
+            fail: false,
+        };
+        for release in [None, Some("invalid"), Some("1.0.0"), Some("999.0.0")] {
+            for state in [State::Waiting, State::Stopping] {
+                dispatch(state, release, RELEASE, &actions).unwrap();
+                assert_eq!(
+                    tooltip(state, release).contains("Update available"),
+                    release == Some("999.0.0")
+                );
+            }
+        }
+        assert_eq!(actions.releases.get(), 1);
+        assert!(release_label(Some(&"9".repeat(129))).is_none());
+        let failed = Recorder {
+            fail: true,
+            ..actions
+        };
+        assert!(dispatch(State::Waiting, Some("999.0.0"), RELEASE, &failed).is_err());
     }
     #[tokio::test]
     async fn t531_watch_coalesces_stale_snapshots_and_reports_producer_exit() {

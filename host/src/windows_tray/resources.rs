@@ -1,5 +1,5 @@
 //! Owned Windows resources. Copyright (c) 2026 Geraldo Netto.
-use crate::tray_state::{State, QUIT, SETTINGS};
+use crate::tray_state::{self, State, QUIT, RELEASE, SETTINGS};
 use anyhow::Result;
 use std::{
     mem::size_of,
@@ -76,7 +76,7 @@ impl Drop for Icon {
 }
 pub(super) struct Menu(pub HMENU);
 impl Menu {
-    pub fn new(state: State) -> Result<Self> {
+    pub fn new(state: State, release: Option<&str>) -> Result<Self> {
         let menu = Self(unsafe { CreatePopupMenu() });
         check(!menu.0.is_null())?;
         menu.append(MF_GRAYED, 0, &state.line())?;
@@ -87,6 +87,9 @@ impl Menu {
         } else {
             MF_STRING
         };
+        if let Some(label) = tray_state::release_label(release) {
+            menu.append(flags, RELEASE, &label)?;
+        }
         menu.append(flags, SETTINGS, "Settings")?;
         menu.append(flags, QUIT, "Quit")?;
         Ok(menu)
@@ -113,7 +116,7 @@ impl Notification {
             icon: Icon::new()?,
         })
     }
-    pub fn data(&self, state: State) -> NOTIFYICONDATAW {
+    pub fn data(&self, state: State, release: Option<&str>) -> NOTIFYICONDATAW {
         let mut data = NOTIFYICONDATAW {
             cbSize: size_of::<NOTIFYICONDATAW>() as u32,
             hWnd: self.hwnd,
@@ -127,14 +130,14 @@ impl Notification {
             .szTip
             .iter_mut()
             .take(127)
-            .zip(state.preview_tooltip().encode_utf16())
+            .zip(tray_state::tooltip(state, release).encode_utf16())
         {
             *target = value;
         }
         data
     }
-    pub fn update(&self, state: State, add: bool) -> Result<()> {
-        let mut data = self.data(state);
+    pub fn update(&self, state: State, release: Option<&str>, add: bool) -> Result<()> {
+        let mut data = self.data(state, release);
         let operation = if add { NIM_ADD } else { NIM_MODIFY };
         check(unsafe { Shell_NotifyIconW(operation, &data) } != 0)?;
         if add {
@@ -142,7 +145,10 @@ impl Notification {
             check(unsafe { Shell_NotifyIconW(NIM_SETVERSION, &data) } != 0)?;
         }
         unsafe {
-            SetWindowTextW(self.hwnd, wide(&state.preview_tooltip()).as_ptr());
+            SetWindowTextW(
+                self.hwnd,
+                wide(&tray_state::tooltip(state, release)).as_ptr(),
+            );
         }
         Ok(())
     }
@@ -150,7 +156,7 @@ impl Notification {
 impl Drop for Notification {
     fn drop(&mut self) {
         unsafe {
-            Shell_NotifyIconW(NIM_DELETE, &self.data(State::Stopping));
+            Shell_NotifyIconW(NIM_DELETE, &self.data(State::Stopping, None));
         }
     }
 }

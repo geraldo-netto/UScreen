@@ -13,6 +13,7 @@ pub(super) const EVENT: u32 = WM_APP + 1;
 pub(super) const REFRESH: u32 = WM_APP + 2;
 struct Core {
     state: Mutex<watch::Receiver<State>>,
+    release: Mutex<watch::Receiver<crate::update::Available>>,
     actions: NativeActions,
     shell_restart: u32,
     target: Target,
@@ -37,7 +38,7 @@ impl Core {
     }
     fn refresh(&self, add: bool) {
         if let Some(notification) = self.notification.get() {
-            if let Err(error) = notification.update(self.state(), add) {
+            if let Err(error) = notification.update(self.state(), self.release().as_deref(), add) {
                 eprintln!("{error:#}");
             }
         }
@@ -45,8 +46,13 @@ impl Core {
     fn state(&self) -> State {
         *self.state.lock().unwrap().borrow()
     }
+    fn release(&self) -> crate::update::Available {
+        self.release.lock().unwrap().borrow().clone()
+    }
     fn dispatch(&self, id: usize) {
-        if let Err(error) = self.state().dispatch(id, &self.actions) {
+        if let Err(error) =
+            crate::tray_state::dispatch(self.state(), self.release().as_deref(), id, &self.actions)
+        {
             eprintln!("{error:#}");
         }
     }
@@ -62,7 +68,7 @@ impl Core {
         Ok(())
     }
     fn menu(&self, hwnd: HWND) -> Result<()> {
-        let menu = Menu::new(self.state())?;
+        let menu = Menu::new(self.state(), self.release().as_deref())?;
         let mut point = POINT::default();
         unsafe {
             GetCursorPos(&mut point);
@@ -99,16 +105,18 @@ impl Drop for Window {
 }
 pub(super) fn run(
     state: watch::Receiver<State>,
+    release: watch::Receiver<crate::update::Available>,
     actions: NativeActions,
     ready: SyncSender<Result<Target>>,
 ) {
-    let result = serve(state, actions, &ready);
+    let result = serve(state, release, actions, &ready);
     if let Err(error) = result {
         let _ = ready.send(Err(error));
     }
 }
 fn serve(
     state: watch::Receiver<State>,
+    release: watch::Receiver<crate::update::Available>,
     actions: NativeActions,
     ready: &SyncSender<Result<Target>>,
 ) -> Result<()> {
@@ -116,6 +124,7 @@ fn serve(
         notification: OnceLock::new(),
         target: Target::default(),
         state: Mutex::new(state),
+        release: Mutex::new(release),
         actions,
         shell_restart: unsafe { RegisterWindowMessageW(wide("TaskbarCreated").as_ptr()) },
     };
@@ -142,7 +151,7 @@ fn serve(
     });
     check(!window.0.is_null())?;
     let notification = Notification::new(window.0)?;
-    notification.update(core.state(), true)?;
+    notification.update(core.state(), core.release().as_deref(), true)?;
     *core.target.0.lock().unwrap() = Some(window.0 as usize);
     check(core.notification.set(notification).is_ok())?;
     let _ = ready.send(Ok(core.target.clone()));

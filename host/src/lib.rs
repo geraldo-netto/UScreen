@@ -56,3 +56,6 @@ pub mod probe_format;
 mod launch_policy;
 pub mod transport;
 pub mod wifi;
+
+mod command_output;
+pub mod update;

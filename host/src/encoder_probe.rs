@@ -10,7 +10,7 @@ use std::{
     process::Stdio,
     time::{Duration, Instant},
 };
-use tokio::{io::AsyncReadExt, process::Command};
+use tokio::process::Command;
 
 const DEADLINE: Duration = Duration::from_secs(8);
 const TOTAL: Duration = Duration::from_secs(45);
@@ -321,32 +321,9 @@ fn inventory(bytes: &[u8]) -> Result<Vec<String>> {
     Ok(names)
 }
 async fn bounded_output(program: &std::ffi::OsStr, args: &[&str], limit: usize) -> Result<Vec<u8>> {
-    let operation = async {
-        let mut command = Command::new(program);
-        command
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null());
-        let mut child = OwnedChild::spawn(&mut command)?;
-        let mut bytes = Vec::new();
-        child
-            .take_stdout()
-            .context("Missing command output")?
-            .take(limit as u64 + 1)
-            .read_to_end(&mut bytes)
-            .await?;
-        ensure!(bytes.len() <= limit, "Oversized command output");
-        ensure!(
-            child.finish(DEADLINE).await?.success(),
-            "Probe command failed"
-        );
-        Ok(bytes)
-    };
-    tokio::time::timeout(DEADLINE, operation)
-        .await
-        .context("Probe command deadline")?
+    crate::command_output::read(program, args, limit, DEADLINE).await
 }
+
 fn summarize(times: &[u64], stream: StreamProfile) -> Result<Measurement> {
     ensure!(times.len() == FRAMES, "Encoder probe lost frames");
     ensure!(

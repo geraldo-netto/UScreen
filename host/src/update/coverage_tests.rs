@@ -6,13 +6,13 @@ use std::path::Path;
 const TEST: &str =
     "update::coverage_tests::t497_polling_retains_last_release_during_network_failure";
 
-fn isolated() {
+fn isolated_case(test: &str) {
     let directory = tempfile::tempdir().unwrap();
     let tool = directory.path().join("curl");
     std::fs::write(&tool, "#!/bin/sh\n[ ! -f \"$BLENT_T497_UPDATE/fail\" ] || exit 42\n/bin/cat \"$BLENT_T497_UPDATE/reply\"\n").unwrap();
     std::fs::set_permissions(&tool, std::fs::Permissions::from_mode(0o700)).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", TEST, "--nocapture"])
+        .args(["--exact", test, "--nocapture"])
         .env("PATH", directory.path())
         .env("BLENT_T497_UPDATE", directory.path())
         .output()
@@ -59,14 +59,14 @@ async fn malformed(root: &Path) {
 #[tokio::test]
 async fn t497_polling_retains_last_release_during_network_failure() {
     let Ok(directory) = std::env::var("BLENT_T497_UPDATE") else {
-        isolated();
+        isolated_case(TEST);
         return;
     };
     let root = Path::new(&directory);
     malformed(root).await;
     std::fs::write(root.join("reply"), "{\"tag_name\":\"v999.0.0\"}").unwrap();
     let (tx, mut rx) = watch::channel(None);
-    let task = tokio::spawn(run(tx));
+    let task = tokio::spawn(run(tx, "curl".into()));
     advance(FIRST_CHECK).await;
     assert_eq!(receive(&mut rx).await.as_deref(), Some("999.0.0"));
     std::fs::write(root.join("fail"), "").unwrap();
@@ -87,4 +87,21 @@ async fn t497_polling_retains_last_release_during_network_failure() {
     assert_eq!(receive(&mut rx).await, None);
     task.abort();
     assert!(task.await.unwrap_err().is_cancelled());
+}
+
+#[tokio::test]
+async fn t696_oversized_valid_release_response_is_rejected() {
+    let Ok(directory) = std::env::var("BLENT_T497_UPDATE") else {
+        isolated_case("update::coverage_tests::t696_oversized_valid_release_response_is_rejected");
+        return;
+    };
+    let body = format!(
+        "{{\"tag_name\":\"v999.0.0\",\"body\":\"{}\"}}",
+        "x".repeat(1_048_577)
+    );
+    std::fs::write(Path::new(&directory).join("reply"), body).unwrap();
+    assert!(
+        latest_release_tag().await.is_none(),
+        "T696: oversized reply accepted"
+    );
 }

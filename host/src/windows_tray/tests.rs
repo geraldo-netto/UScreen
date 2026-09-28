@@ -1,6 +1,6 @@
 //! T531 native interactive contracts; run as an ordinary Windows user.
 use super::*;
-use crate::tray_state::{QUIT, SETTINGS};
+use crate::tray_state::{QUIT, RELEASE, SETTINGS};
 use windows_sys::Win32::{System::Threading::*, UI::Shell::*};
 fn wait(condition: impl Fn() -> bool) {
     blent_config::lifecycle::wait_until(std::time::Duration::from_secs(10), || Ok(condition()))
@@ -18,7 +18,7 @@ fn send(hwnd: usize, message: u32, w: usize, l: isize) {
 }
 fn fixture(root: &std::path::Path) -> PathBuf {
     let source = root.join("gui.rs");
-    std::fs::write(&source, r#"fn main() { std::fs::write(std::env::current_exe().unwrap().with_file_name("opened"), b"settings").unwrap(); }"#).unwrap();
+    std::fs::write(&source, r#"fn main() { std::fs::write(std::env::current_exe().unwrap().with_file_name("opened"), std::env::args().skip(1).collect::<Vec<_>>().join("\n")).unwrap(); }"#).unwrap();
     let exe = root.join("GUI café & spaces.exe");
     assert!(std::process::Command::new("rustc")
         .args(["--crate-name", "tray_gui", "--out-dir"])
@@ -47,7 +47,7 @@ async fn t531_native_actions_latest_status_shell_restart_and_resource_retirement
     assert!(Tray::start(stopping, watch::channel(false).0).is_err());
     let (state, receiver) = watch::channel(State::Starting);
     let (stop, stopped) = watch::channel(false);
-    let tray = Tray::start_at(receiver, stop, exe).unwrap();
+    let tray = Tray::start_at(receiver, stop, exe.clone(), watch::channel(None).1, exe).unwrap();
     let hwnd = tray.target.0.lock().unwrap().unwrap();
     assert!(title(hwnd).contains("Starting Blent"));
     state.send_replace(State::Prepared(4));
@@ -126,7 +126,7 @@ async fn cleanup_cycles() {
 #[test]
 fn t531_native_menu_bounds_failure_and_settings_failure() {
     for state in [State::Waiting, State::Stopping] {
-        let menu = resources::Menu::new(state).unwrap();
+        let menu = resources::Menu::new(state, None).unwrap();
         assert_eq!(unsafe { GetMenuItemCount(menu.0) }, 5);
         for id in [SETTINGS, QUIT] {
             let flags = unsafe { GetMenuState(menu.0, id as u32, MF_BYCOMMAND) };
@@ -138,14 +138,15 @@ fn t531_native_menu_bounds_failure_and_settings_failure() {
     let (stop, _) = watch::channel(false);
     assert!(NativeActions {
         stop,
-        settings: PathBuf::from("Z:\\blent-t531-missing\\gui.exe")
+        settings: PathBuf::from("Z:\\blent-t531-missing\\gui.exe"),
+        launcher: PathBuf::from("Z:\\blent-t696-missing\\url.exe")
     }
     .settings()
     .is_err());
     let notification = resources::Notification::new(std::ptr::null_mut()).unwrap();
-    assert!(notification.update(State::Waiting, false).is_err());
+    assert!(notification.update(State::Waiting, None, false).is_err());
     for state in [State::Prepared(0), State::Prepared(255), State::Pen] {
-        assert_eq!(notification.data(state).szTip[127], 0);
+        assert_eq!(notification.data(state, None).szTip[127], 0);
     }
 }
 
@@ -168,4 +169,73 @@ fn cancel_menu(hwnd: usize) {
     });
     send(hwnd, window::EVENT, 0, (1 << 16) | WM_CONTEXTMENU as isize);
     cancel.join().unwrap();
+}
+
+#[tokio::test]
+async fn t696_native_notification_action_and_menu_cleanup() {
+    let root = tempfile::tempdir().unwrap();
+    let exe = fixture(root.path());
+    let (state, receiver) = watch::channel(State::Waiting);
+    let (releases, release) = watch::channel(None);
+    let tray =
+        Tray::start_at(receiver, watch::channel(false).0, exe.clone(), release, exe).unwrap();
+    let hwnd = tray.target.0.lock().unwrap().unwrap();
+    releases.send_replace(Some("999.0.0".into()));
+    tokio::task::yield_now().await;
+    wait(|| title(hwnd).contains("Update available: 999.0.0"));
+    send(hwnd, WM_COMMAND, RELEASE, 0);
+    wait(|| root.path().join("opened").exists());
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("opened")).unwrap(),
+        format!(
+            "url.dll,FileProtocolHandler\n{}",
+            crate::update::RELEASES_PAGE
+        )
+    );
+    std::fs::remove_file(root.path().join("opened")).unwrap();
+    releases.send_replace(Some("invalid".into()));
+    send(hwnd, WM_COMMAND, RELEASE, 0);
+    releases.send_replace(Some("999.0.0".into()));
+    state.send_replace(State::Stopping);
+    send(hwnd, WM_COMMAND, RELEASE, 0);
+    assert!(!root.path().join("opened").exists());
+    drop(releases);
+    tokio::task::yield_now().await;
+    assert_ne!(unsafe { IsWindow(hwnd as HWND) }, 0);
+    drop(tray);
+    assert_eq!(unsafe { IsWindow(hwnd as HWND) }, 0);
+    for state in [State::Waiting, State::Stopping] {
+        let menu = resources::Menu::new(state, Some("999.0.0")).unwrap();
+        assert_eq!(unsafe { GetMenuItemCount(menu.0) }, 6);
+        assert_eq!(
+            unsafe { GetMenuState(menu.0, RELEASE as u32, MF_BYCOMMAND) } & MF_GRAYED != 0,
+            state == State::Stopping
+        );
+    }
+    let actions = NativeActions {
+        stop: watch::channel(false).0,
+        settings: PathBuf::new(),
+        launcher: root.path().join("missing.exe"),
+    };
+    assert!(actions.release().is_err());
+}
+
+#[tokio::test]
+async fn t696_native_failed_launches_preserve_tray_and_quit() {
+    let root = tempfile::tempdir().unwrap();
+    let (_state, receiver) = watch::channel(State::Waiting);
+    let (_updates, release) = watch::channel(Some("999.0.0".into()));
+    let (stop, stopped) = watch::channel(false);
+    let missing = root.path().join("missing.exe");
+    let tray = Tray::start_at(receiver, stop, missing.clone(), release, missing).unwrap();
+    let hwnd = tray.target.0.lock().unwrap().unwrap();
+    for id in [SETTINGS, RELEASE] {
+        send(hwnd, WM_COMMAND, id, 0);
+        assert_ne!(unsafe { IsWindow(hwnd as HWND) }, 0);
+        assert!(!*stopped.borrow());
+    }
+    send(hwnd, WM_COMMAND, QUIT, 0);
+    assert!(*stopped.borrow());
+    drop(tray);
+    assert_eq!(unsafe { IsWindow(hwnd as HWND) }, 0);
 }

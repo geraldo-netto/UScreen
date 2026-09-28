@@ -21,17 +21,38 @@ pub struct Tray {
 }
 impl Tray {
     pub fn start(state: watch::Receiver<State>, stop: watch::Sender<bool>) -> Result<Self> {
-        Self::start_at(state, stop, settings_program())
+        Self::start_with_updates(state, stop, watch::channel(None).1)
+    }
+    pub fn start_with_updates(
+        state: watch::Receiver<State>,
+        stop: watch::Sender<bool>,
+        release: watch::Receiver<crate::update::Available>,
+    ) -> Result<Self> {
+        let launcher = blent_config::windows::paths::system()?.join("rundll32.exe");
+        Self::start_at(state, stop, settings_program(), release, launcher)
     }
     fn start_at(
         state: watch::Receiver<State>,
         stop: watch::Sender<bool>,
         settings: PathBuf,
+        release: watch::Receiver<crate::update::Available>,
+        launcher: PathBuf,
     ) -> Result<Self> {
         let (ready, started) = std::sync::mpsc::sync_channel(1);
-        let mut updates = state.clone();
-        let thread =
-            thread::spawn(move || window::run(state, NativeActions { stop, settings }, ready));
+        let updates = state.clone();
+        let releases = release.clone();
+        let thread = thread::spawn(move || {
+            window::run(
+                state,
+                release,
+                NativeActions {
+                    stop,
+                    settings,
+                    launcher,
+                },
+                ready,
+            )
+        });
         let result = started
             .recv()
             .context("Tray thread exited during startup")?;
@@ -43,18 +64,33 @@ impl Tray {
             }
         };
         let updates_target = target.clone();
-        let updates = tokio::spawn(async move {
-            while updates.changed().await.is_ok() {
-                updates_target.post(window::REFRESH);
-            }
-            updates_target.post(WM_CLOSE);
-        });
+        let updates = tokio::spawn(forward(updates, releases, updates_target));
         Ok(Self {
             target,
             updates,
             thread: Some(thread),
         })
     }
+}
+async fn forward(
+    mut state: watch::Receiver<State>,
+    mut release: watch::Receiver<crate::update::Available>,
+    target: Target,
+) {
+    let mut release_open = true;
+    loop {
+        tokio::select! {
+            changed = state.changed() => {
+                if changed.is_err() { break; }
+                target.post(window::REFRESH);
+            }
+            changed = release.changed(), if release_open => {
+                release_open = changed.is_ok();
+                target.post(window::REFRESH);
+            }
+        }
+    }
+    target.post(WM_CLOSE);
 }
 impl Drop for Tray {
     fn drop(&mut self) {
@@ -82,12 +118,21 @@ fn settings_program() -> PathBuf {
 struct NativeActions {
     stop: watch::Sender<bool>,
     settings: PathBuf,
+    launcher: PathBuf,
 }
 impl Actions for NativeActions {
     fn settings(&self) -> Result<()> {
         blent_config::commands::spawn_reaped(&mut std::process::Command::new(&self.settings))
             .map(|_| ())
             .context("Open Blent Settings")
+    }
+    fn release(&self) -> Result<()> {
+        blent_config::commands::spawn_reaped(
+            std::process::Command::new(&self.launcher)
+                .args(["url.dll,FileProtocolHandler", crate::update::RELEASES_PAGE]),
+        )
+        .map(|_| ())
+        .context("Open Blent release page")
     }
     fn quit(&self) {
         self.stop.send_replace(true);

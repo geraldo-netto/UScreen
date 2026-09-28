@@ -7,10 +7,13 @@
 //! tag is, and the tray icon and `blent doctor` say so if it is newer.
 //!
 //! Uses curl rather than an HTTP client crate: one HTTPS GET a day is not
-//! worth a dependency tree, and curl is on every system this runs on.
+//! worth a dependency tree. Backends inject executable paths; missing curl is
+//! handled like an offline response. Output and execution time are bounded.
 
-use blent_config::commands::AsyncCommandExt;
-use std::time::Duration;
+use std::{
+    ffi::{OsStr, OsString},
+    time::Duration,
+};
 use tokio::sync::watch;
 use tracing::{debug, info};
 
@@ -31,9 +34,15 @@ pub fn current_version() -> &'static str {
 
 pub use blent_config::version::is_newer;
 
+#[cfg(target_os = "linux")]
 pub async fn latest_release_tag() -> Option<String> {
-    let out = tokio::process::Command::new("curl")
-        .args([
+    latest_using(OsStr::new("curl")).await
+}
+
+async fn latest_using(program: &OsStr) -> Option<String> {
+    let bytes = crate::command_output::read(
+        program,
+        &[
             "-sS",
             "--max-time",
             "4",
@@ -42,24 +51,49 @@ pub async fn latest_release_tag() -> Option<String> {
             "-H",
             &format!("User-Agent: blent/{}", current_version()),
             RELEASES_API,
-        ])
-        .output_bounded()
-        .await
-        .ok()?;
-    if !out.status.success() {
-        debug!("update check: curl exited {}", out.status);
-        return None;
+        ],
+        1_048_576,
+        Duration::from_secs(5),
+    )
+    .await
+    .ok()?;
+    tag_from_json(std::str::from_utf8(&bytes).ok()?)
+        .filter(|tag| tag.len() <= 128 && blent_config::version::is_valid(tag))
+}
+
+/// A daemon owns the polling task even when startup exits early.
+pub struct Subscription {
+    pub receiver: watch::Receiver<Available>,
+    task: Option<tokio::task::JoinHandle<()>>,
+}
+impl Subscription {
+    pub fn start(enabled: bool, program: OsString) -> Self {
+        let (sender, receiver) = watch::channel(None);
+        let task = enabled.then(|| tokio::spawn(run(sender, program)));
+        Self { receiver, task }
     }
-    tag_from_json(&String::from_utf8_lossy(&out.stdout))
+    pub async fn shutdown(mut self) {
+        if let Some(task) = self.task.take() {
+            task.abort();
+            let _ = task.await;
+        }
+    }
+}
+impl Drop for Subscription {
+    fn drop(&mut self) {
+        if let Some(task) = self.task.take() {
+            task.abort();
+        }
+    }
 }
 
 /// Runs for the life of the daemon, publishing the newer version (if any) on
 /// `tx`. Failures are silent at info level and below: no network is not an
 /// error condition for a second-screen daemon.
-pub async fn run(tx: watch::Sender<Available>) {
+pub async fn run(tx: watch::Sender<Available>, program: OsString) {
     tokio::time::sleep(FIRST_CHECK).await;
     loop {
-        if let Some(tag) = latest_release_tag().await {
+        if let Some(tag) = latest_using(&program).await {
             if let Some(latest) = newer_tag(&tag, current_version()) {
                 info!(
                     "A newer release is available: {} (running {}). {}",
@@ -77,8 +111,11 @@ pub async fn run(tx: watch::Sender<Available>) {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod coverage_tests;
+
+#[cfg(test)]
+mod polling_tests;
 
 #[cfg(test)]
 mod tests {

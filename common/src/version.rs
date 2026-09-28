@@ -11,6 +11,10 @@ fn parse(value: &str) -> Option<semver::Version> {
         .then_some(version)
 }
 
+pub fn is_valid(value: &str) -> bool {
+    parse(value).is_some()
+}
+
 pub fn is_newer(candidate: &str, current: &str) -> bool {
     match (parse(candidate), parse(current)) {
         (Some(candidate), Some(current)) => candidate.cmp_precedence(&current).is_gt(),
