@@ -1,0 +1,15 @@
+{
+  "source_base": "479782002f9af7160c5f0291517ac700b6c4acc4",
+  "patch": "T715 staged fix; final commit records exact source",
+  "hashes": {
+    "android/app/build/outputs/apk/release/app-release.apk": "4a16c786ebb723e01d7c74934dc803ff2ca41064aa87366f9e8792d4aeeb0bd0",
+    "/home/netto/.local/share/blent/appimage/Blent.AppDir/usr/bin/blent": "420effe0ba1405aedc35b5ae9643fae4e2b6113a4cdadcec5332296db91216d4",
+    "/home/netto/.local/share/blent/appimage/Blent.AppDir/usr/bin/blent-gui": "d742c9acaa28800dc544497a4d29881212a3f3ec369d9b4eda64f5e5ffcafeac",
+    "/home/netto/.local/share/blent/appimage/Blent.AppDir/usr/bin/evdi_helper": "b4ea811bea5f8bb0f3e08957ea4cc591227ba32130325ec81c9a93205561473a",
+    "/home/netto/.local/share/blent/appimage/Blent.AppDir/usr/bin/libevdi.so.1.15.0": "5ec8b7614074dd10dce5ba4b668203c70e77bf698da6614d839324955aead96a"
+  },
+  "installed_apk_matches": true,
+  "boot_id": "335820b3-7dc2-4d03-beae-d72c660aeb15",
+  "installation": "user AppDir; prior AppImage retained",
+  "autostart_changed": false
+}

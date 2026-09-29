@@ -175,8 +175,9 @@ optical display latency. Quantizer values are not equivalent across codecs.
 The result is the best tested compatible choice under these guards, not a
 universal winner or an inference that a newer codec improves UI performance.
 
-The selected candidate then needs three fresh render acknowledgements within
-six seconds. Matching encoder identity, dimensions/rate/quality and the complete
+The selected candidate allows up to 30 seconds for a matching native encoder
+to start, then needs three fresh render acknowledgements within six seconds.
+The render deadline does not restart if the encoder is replaced. Matching encoder identity, dimensions/rate/quality and the complete
 decoder request bind that evidence to the trial. A decoder-only change restarts
 the encoder generation while preserving the helper/display. Version 2 render
 ACKs carry a `decoder` receipt from the published Android codec configuration:
@@ -254,14 +255,16 @@ historical CPU/RSS observations do not establish current resource performance.
 Automatic mode calibrates an environment once, saves the successful encoder,
 named decoder, hints and worker budget, then reuses that profile on later
 connections and reboots. Reuse checks current decoder compatibility and requires
-three fresh matching render acknowledgements within six seconds; it skips both
+three fresh matching render acknowledgements within six seconds of matching
+encoder startup (separately bounded to 30 seconds); it skips both
 the offline encoder probe matrix and comparative live trials. Historical timing,
 quality and resource measurements remain labelled historical, not fastest now.
 
 During initial tuning, capable Android clients keep one **Optimizing display…**
 screen over the active video surface. Decoding and render receipts continue
 behind it so actual end-to-end trials can complete. The desktop appears after
-selection completes and video is ready. Ordinary trial reconnections do not
+selection completes and video is ready, with no exit fade through the waiting
+screen. Ordinary trial reconnections do not
 alternate the desktop with USB setup instructions. Authentication loss clears
 calibration state; pen-only mode retains its existing presentation. A two-minute
 presentation deadline reports a timeout, unaffected by repeated trial updates.

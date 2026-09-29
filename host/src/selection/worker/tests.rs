@@ -471,3 +471,58 @@ fn t612_legacy_peer_keeps_one_worker_and_manual_budget_is_fixed() {
     assert_eq!(probe_budgets(&base, &snapshot, "libx264"), [7]);
     assert_eq!(probe_budgets(&base, &snapshot, "h264_vaapi"), [0]);
 }
+
+#[tokio::test(start_paused = true)]
+async fn t715_startup_wait_rejects_missing_wrong_and_retired_evidence() {
+    for case in 0..6 {
+        let tracker = LatencyTracker::new();
+        let key = Key::new(&settings());
+        if case != 0 {
+            let mut format = key.format;
+            if case == 3 {
+                format.0 += 1;
+            }
+            let name = if case == 2 { "other" } else { "libx264" };
+            let workers = if case == 1 { u32::MAX } else { 2 };
+            let decoder = if case == 5 {
+                super::cache::tests::setup().1.decoder
+            } else {
+                None
+            };
+            let evidence =
+                tracker.encoder_started_with_budget(name, format, decoder, workers, None);
+            if case == 4 {
+                drop(tracker.encoder_activity(evidence));
+            }
+        }
+        let started = tokio::time::Instant::now();
+        assert!(!rendered(&tracker, &key, "libx264", None, 2).await);
+        assert_eq!(
+            started.elapsed(),
+            Duration::from_secs(30),
+            "T715 case {case}"
+        );
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn t715_matching_start_keeps_six_second_render_deadline() {
+    let tracker = LatencyTracker::new();
+    let key = Key::new(&settings());
+    let started = tokio::time::Instant::now();
+    let work = rendered(&tracker, &key, "libx264", None, 2);
+    let driver = async {
+        tokio::time::sleep(Duration::from_secs(13)).await;
+        let evidence = tracker.encoder_started_with_budget("libx264", key.format, None, 2, None);
+        // Two matching ACKs cannot verify; repeated generations must not extend the deadline.
+        for seq in 0..2 {
+            tracker.on_encoded_for(seq, &evidence);
+            tracker.on_rendered(seq, 100);
+        }
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        tracker.encoder_started_with_budget("libx264", key.format, None, 2, None);
+    };
+    let (result, _) = tokio::join!(work, driver);
+    assert!(!result);
+    assert_eq!(started.elapsed(), Duration::from_secs(19));
+}

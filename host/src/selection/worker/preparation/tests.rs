@@ -240,3 +240,33 @@ async fn t714_pending_and_terminal_states_follow_trial_outcomes() {
     tx.send_modify(|s| s.encoder = "libx264".into());
     assert!(!tx.borrow().calibrating());
 }
+
+#[tokio::test(start_paused = true)]
+async fn t715_saved_profile_waits_for_native_encoder_start_without_recalibrating() {
+    for delay in [0, 6, 13, 29] {
+        let (snapshot, row) = setup();
+        let dir = tempfile::tempdir().unwrap();
+        let cache = store(dir.path().join("cache"));
+        cache.save(cache::now(), &row).unwrap();
+        let probes = FakeProbes {
+            row: row.clone(),
+            calls: AtomicUsize::new(0),
+        };
+        let latency = LatencyTracker::new();
+        let (tx, mut updates) = watch::channel(snapshot.clone());
+        let work = prepare(&probes, &tx, &snapshot, &latency, Some(&cache));
+        let driver = async {
+            drop(updates.wait_for(|s| s.selection.is_some()).await.unwrap());
+            tokio::time::sleep(Duration::from_secs(delay)).await;
+            acknowledge(&latency, &snapshot, &row)
+        };
+        let (result, _evidence) = tokio::join!(work, driver);
+        assert!(
+            matches!(result, Some(Prepared::Cached(_))),
+            "T715: {delay}s native startup discarded a valid profile"
+        );
+        assert_eq!(probes.calls.load(Ordering::SeqCst), 0);
+        assert!(cache.load(cache::now(), &snapshot).is_some());
+        assert!(tx.borrow().selection.as_ref().unwrap().verified);
+    }
+}

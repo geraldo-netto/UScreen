@@ -1,0 +1,32 @@
+{
+  "ui-final-apk": {
+    "samples": 18,
+    "tuning_samples": 3,
+    "waiting_samples": 0,
+    "desktop_samples": 15
+  },
+  "ui-manual-recalibration": {
+    "samples": 18,
+    "tuning_samples": 11,
+    "waiting_samples": 0,
+    "desktop_samples": 7
+  },
+  "ui-invalid-profile": {
+    "samples": 18,
+    "tuning_samples": 11,
+    "waiting_samples": 0,
+    "desktop_samples": 7
+  },
+  "ui-final-restart": {
+    "samples": 18,
+    "tuning_samples": 5,
+    "waiting_samples": 0,
+    "desktop_samples": 13
+  },
+  "ui-app-reconnect": {
+    "samples": 18,
+    "tuning_samples": 0,
+    "waiting_samples": 0,
+    "desktop_samples": 18
+  }
+}

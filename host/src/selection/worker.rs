@@ -261,24 +261,32 @@ async fn rendered(
 ) -> bool {
     let mut updates = latency.activity_updates();
     let previous = latency.encoder_evidence().map(|e| (e.epoch, e.rendered()));
-    tokio::time::timeout(Duration::from_secs(6), async {
-        loop {
-            if matches_evidence(
-                latency.encoder_evidence().filter(|e| e.workers == workers),
-                key,
-                name,
-                previous,
-                decoder,
-            ) {
-                return true;
-            }
-            if updates.changed().await.is_err() {
-                return false;
-            }
+    // T715: native capture can start after the control session (EVDI device scan).
+    // Bound startup separately; only a matching encoder starts the ACK deadline.
+    let startup_deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut render_deadline = None;
+    loop {
+        let evidence = latency
+            .encoder_evidence()
+            .filter(|e| e.workers == workers && matches_profile(e, key, name, decoder));
+        if evidence.is_some() {
+            render_deadline
+                .get_or_insert_with(|| tokio::time::Instant::now() + Duration::from_secs(6));
         }
-    })
-    .await
-    .unwrap_or(false)
+        if matches_evidence(evidence, key, name, previous, decoder) {
+            return true;
+        }
+        if !matches!(
+            tokio::time::timeout_at(
+                render_deadline.unwrap_or(startup_deadline),
+                updates.changed(),
+            )
+            .await,
+            Ok(Ok(()))
+        ) {
+            return false;
+        }
+    }
 }
 fn matches_evidence(
     evidence: Option<Arc<crate::latency::EncoderEvidence>>,
@@ -292,12 +300,20 @@ fn matches_evidence(
             .filter(|&(epoch, _)| epoch == e.epoch)
             .map(|(_, count)| count)
             .unwrap_or(0);
-        e.active()
-            && e.name == name
-            && e.format == key.format
-            && e.decoder.as_ref() == decoder
-            && e.rendered().saturating_sub(before) >= 3
+        matches_profile(&e, key, name, decoder) && e.rendered().saturating_sub(before) >= 3
     })
+}
+
+fn matches_profile(
+    evidence: &crate::latency::EncoderEvidence,
+    key: &Key,
+    name: &str,
+    decoder: Option<&blent_config::negotiation::DecoderChoice>,
+) -> bool {
+    evidence.active()
+        && evidence.name == name
+        && evidence.format == key.format
+        && evidence.decoder.as_ref() == decoder
 }
 
 #[derive(Clone, Debug)]

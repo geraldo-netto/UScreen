@@ -182,7 +182,8 @@ private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, co
     AnimatedVisibility(
         visible = if (penOnly) !controlConnected else tuning || !isConnected,
         enter = fadeIn(),
-        exit = fadeOut(),
+        // T715: do not recompose a fading calibration overlay as a waiting screen.
+        exit = ExitTransition.None,
         modifier = Modifier.fillMaxSize()
     ) {
         ConnectionScreen(penOnly, tuning, expired)

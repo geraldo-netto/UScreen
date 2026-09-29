@@ -156,3 +156,10 @@ formatting, Android lint and APK assembly pass. The initial unrelated native
 Windows updater fixture timeout remains T716, with original and retry logs.
 No updater assertions were changed. Live host/tablet builds are unchanged;
 physical display acceptance is tracked separately as T715.
+
+## Subsequent installed acceptance
+
+[T715 native follow-up](2026-09-29-display-acceptance.md) installs matching builds,
+fixes the premature pre-encoder verification deadline and the Android overlay exit
+frame, and records current validation. The unchanged-installation statements above
+describe the original T714 investigation and implementation session.

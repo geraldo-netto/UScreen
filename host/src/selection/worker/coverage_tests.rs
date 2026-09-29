@@ -102,6 +102,7 @@ async fn wait_reason(updates: &mut watch::Receiver<EncoderSettings>, reason: &st
 }
 
 async fn cancellation_contract(base: CaptureConfig, snapshot: EncoderSettings) {
+    let latency = LatencyTracker::new();
     let (settings, mut updates) = watch::channel(snapshot);
     let (display, visible) = watch::channel(true);
     let (stop, stopped) = watch::channel(false);
@@ -111,7 +112,7 @@ async fn cancellation_contract(base: CaptureConfig, snapshot: EncoderSettings) {
         settings.clone(),
         visible,
         stopped,
-        LatencyTracker::new(),
+        latency.clone(),
         attachment,
     );
     wait_reason(&mut updates, "awaiting render ACKs").await;
@@ -120,6 +121,17 @@ async fn cancellation_contract(base: CaptureConfig, snapshot: EncoderSettings) {
     assert_eq!(settings.borrow().effective_encoder(), "libx264");
     display.send(true).unwrap();
     wait_reason(&mut updates, "awaiting render ACKs").await;
+    // T715: model a started encoder that never renders, rather than no native startup.
+    {
+        let current = settings.borrow();
+        latency.encoder_started_with_budget(
+            current.effective_encoder(),
+            Key::new(&current).format,
+            current.decoder_choice().cloned(),
+            current.selected_workers(),
+            None,
+        );
+    }
     wait_reason(&mut updates, "Preserved fallback").await;
     assert!(!settings.borrow().selection.as_ref().unwrap().verified);
     display.send(true).unwrap();

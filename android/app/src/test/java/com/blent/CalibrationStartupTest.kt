@@ -93,4 +93,21 @@ class CalibrationStartupTest {
         } finally { capture.disconnect() }
     }
 
+    @Test fun t715_calibrationCompletionNeverFadesThroughWaitingScreen() {
+        val sockets = mutableListOf<Socket>()
+        val capture = TouchCapture(WebSocket.Factory { _, listener -> Socket(listener).also { sockets.add(it) } })
+        val receiver = VideoReceiver { error("T715: no physical socket") }
+        capture.connect()
+        compose.setContent { BlentTheme { BlentMain({}, presentation = StreamPresentation(receiver, capture)) } }
+        try {
+            compose.runOnIdle { sockets.last().greet("\"calibrating\":true"); receiver.onConnected!!.invoke() }
+            compose.onNodeWithText("Optimizing display…").assertIsDisplayed()
+            compose.mainClock.autoAdvance = false
+            compose.runOnIdle { sockets.last().greet("\"calibrating\":false") }
+            compose.mainClock.advanceTimeByFrame()
+            compose.mainClock.advanceTimeByFrame()
+            compose.onNodeWithText("Waiting for your computer…").assertDoesNotExist()
+        } finally { compose.mainClock.autoAdvance = true; capture.disconnect(); receiver.stop() }
+    }
+
 }
