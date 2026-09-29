@@ -5,8 +5,11 @@
 Blent's Linux setup now requests the currently bound display drivers before
 EVDI through a separate modprobe soft dependency. This mitigates the reproduced
 startup ordering failure; it does not repair Xorg's general late-glamor handling.
-The affected AMD machine has not been reconfigured or rebooted. T700 remains
-blocked on that native acceptance and the other maintained driver arrangements.
+At the September 28 assessment, the affected AMD machine had not been
+reconfigured or rebooted for this mitigation. Its ordinary September 29 reboot
+[reproduced the startup assertion](2026-09-29-host-pointer-incident.md) with the
+mitigation still unapplied. T700 remains blocked on configured native acceptance
+and the other maintained driver arrangements.
 T222's original gamma fault remains separate.
 
 ## Behavior
