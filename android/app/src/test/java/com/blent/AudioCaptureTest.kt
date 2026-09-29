@@ -14,6 +14,57 @@ import java.util.concurrent.atomic.AtomicBoolean
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [27, 34])
 class AudioCaptureTest {
+    @Test fun t724_partialGrantCannotRestartReadinessDeadline() = runBlocking {
+        ServerSocket(0).use { server ->
+            val endpoint = AudioEndpoint("a".repeat(64), server.localPort, 1, 1, 40, false)
+            val started = AtomicBoolean(false)
+            val capture = AudioCapture(RuntimeEnvironment.getApplication()) { _, _ -> object : MicrophoneDevice {
+                override val capabilities = 5
+                override val aecEnabled = false
+                override fun start() { started.set(true) }
+                override suspend fun read(output: ShortArray) { error("T724 late grant reached capture") }
+                override fun close() {}
+            } }
+            val peer = async(Dispatchers.IO) { server.accept().use { socket ->
+                socket.getInputStream().readNBytes(76)
+                val hello = ByteBuffer.allocate(92).put("BLAUD001".toByteArray()).put("b".repeat(64).toByteArray())
+                    .putLong(1).put(1).put(1).putInt(48000).putShort(480).put(1).put(0).putShort(40).array()
+                for (part in (endpoint.token.toByteArray() + hello).toList().chunked(32)) {
+                    Thread.sleep(1100)
+                    if (runCatching { socket.getOutputStream().write(part.toByteArray()) }.isFailure) break
+                }
+            } }
+            try { capture.run(endpoint, AudioPreferences(), {}, {}); fail("partial grant must time out") }
+            catch (_: java.net.SocketTimeoutException) { assertFalse(started.get()) }
+            finally { peer.await() }
+        }
+    }
+
+    @Test fun t724_nativeReadinessMayUseTheAcceptedFiveSecondBudget() = runBlocking {
+        ServerSocket(0).use { server ->
+            val endpoint = AudioEndpoint("a".repeat(64), server.localPort, 1, 1, 40, false)
+            val closed = AtomicBoolean(false)
+            val capture = AudioCapture(RuntimeEnvironment.getApplication()) { _, _ -> object : MicrophoneDevice {
+                override val capabilities = 5
+                override val aecEnabled = false
+                override fun start() {}
+                override suspend fun read(output: ShortArray) { error("T724 reached capture") }
+                override fun close() { closed.set(true) }
+            } }
+            val peer = async(Dispatchers.IO) { server.accept().use { socket ->
+                assertEquals(76, socket.getInputStream().readNBytes(76).size)
+                Thread.sleep(2200)
+                val hello = ByteBuffer.allocate(92).put("BLAUD001".toByteArray()).put("b".repeat(64).toByteArray())
+                    .putLong(1).put(1).put(1).putInt(48000).putShort(480).put(1).put(0).putShort(40).array()
+                socket.getOutputStream().write(endpoint.token.toByteArray() + hello)
+            } }
+            try { capture.run(endpoint, AudioPreferences(), {}, {}); fail("capture fixture must stop") }
+            catch (error: IllegalStateException) { assertEquals("T724 reached capture", error.message) }
+            finally { peer.await() }
+            assertTrue(closed.get())
+        }
+    }
+
     @Test fun t718_permissionReadyGrantPrecedesCaptureAndDisconnectReleases() = runBlocking {
         val app = RuntimeEnvironment.getApplication()
         for (aec in listOf(false, true)) ServerSocket(0).use { server ->

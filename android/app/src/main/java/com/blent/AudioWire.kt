@@ -17,6 +17,12 @@ internal class AudioWire(private val endpoint: AudioEndpoint) {
             .writeByte(if (aec) 1 else 0).writeByte(endpoint.direction).writeByte(endpoint.processing).flush()
     }
     fun negotiate(source: BufferedSource) {
+        // T724: one native-readiness budget covers the nonce and complete grant.
+        source.timeout().timeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .deadline(5, java.util.concurrent.TimeUnit.SECONDS)
+        try { readGrant(source) } finally { source.timeout().clearDeadline() }
+    }
+    private fun readGrant(source: BufferedSource) {
         require(java.security.MessageDigest.isEqual(source.readByteArray(64), endpoint.token.toByteArray(Charsets.US_ASCII))) { "Audio host authentication failed" }
         val bytes = source.readByteArray(92)
         require(String(bytes, 0, 8, Charsets.US_ASCII) == "BLAUD001")

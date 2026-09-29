@@ -20,7 +20,7 @@ internal class AudioCapture(private val context: Context,
                 socket.connect(InetSocketAddress("127.0.0.1", endpoint.port), 2000)
                 socket.tcpNoDelay = true
                 val source = socket.source().buffer(); val sink = socket.sink().buffer()
-                source.timeout().timeout(2, TimeUnit.SECONDS); sink.timeout().timeout(250, TimeUnit.MILLISECONDS)
+                sink.timeout().timeout(250, TimeUnit.MILLISECONDS)
                 val wire = AudioWire(endpoint)
                 val device = try { open(endpoint, preferences) } catch (error: Exception) {
                     wire.request(sink, 0, false); throw error

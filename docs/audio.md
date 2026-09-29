@@ -164,6 +164,8 @@ credential (64 hex bytes), capability bits (speech/raw/background), AEC-enabled
 flag, direction and effective processing. Human consent has a separate 90-second
 budget; it does not consume native startup's five seconds. The host echoes the
 invitation credential followed by the 92-byte grant after PipeWire readiness.
+Android gives that complete nonce/grant one five-second deadline; partial reads
+cannot renew it ([T724 regression evidence](reviews/artifacts/2026-09-29-audio-grant-deadline/README.md)).
 Native microphone input preserves sequence-gap discontinuities; the callback uses
 only its bounded queue, expires old data and emits silence on underflow. It never
 waits on the transport.
