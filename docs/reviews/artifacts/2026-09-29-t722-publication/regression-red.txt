@@ -1,0 +1,71 @@
+EFEFFF
+======================================================================
+ERROR: test_t722_connect_failure_retains_owned_server_evidence (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_connect_failure_retains_owned_server_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 48, in test_t722_connect_failure_retains_owned_server_evidence
+    fixture.setUp()
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 257, in setUp
+    self.display = display.Display(name)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1134, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1138, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/mock.py", line 1193, in _execute_mock_call
+    raise effect
+ConnectionError: fixture refused
+
+======================================================================
+ERROR: test_t722_display_publication_rejects_incomplete_or_invalid_records (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_display_publication_rejects_incomplete_or_invalid_records) (chunks=[b'\xff\n'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 75, in test_t722_display_publication_rejects_incomplete_or_invalid_records
+    fixture.start_private_server()
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 246, in start_private_server
+    number = os.read(read_fd, 100).decode().strip()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+
+======================================================================
+FAIL: test_t722_display_publication_rejects_incomplete_or_invalid_records (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_display_publication_rejects_incomplete_or_invalid_records) (chunks=[b'42', b''])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 74, in test_t722_display_publication_rejects_incomplete_or_invalid_records
+    with self.assertRaisesRegex(AssertionError, 'T643'):
+AssertionError: AssertionError not raised
+
+======================================================================
+FAIL: test_t722_display_publication_rejects_incomplete_or_invalid_records (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_display_publication_rejects_incomplete_or_invalid_records) (chunks=[b'9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 74, in test_t722_display_publication_rejects_incomplete_or_invalid_records
+    with self.assertRaisesRegex(AssertionError, 'T643'):
+AssertionError: AssertionError not raised
+
+======================================================================
+FAIL: test_t722_display_publication_waits_for_newline (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_display_publication_waits_for_newline)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 58, in test_t722_display_publication_waits_for_newline
+    self.assertEqual(fixture.start_private_server(), ':42',
+AssertionError: ':4' != ':42'
+- :4
++ :42
+?   +
+ : T722: numeric prefix is not a completed publication
+
+======================================================================
+FAIL: test_t722_partial_publication_keeps_one_deadline (test_benchmark_visibility.VisibilityIntegrityTests.test_t722_partial_publication_keeps_one_deadline)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/backups/disk2/projects/blent/scripts/tests/test_benchmark_visibility.py", line 86, in test_t722_partial_publication_keeps_one_deadline
+    with self.assertRaisesRegex(AssertionError, 'T424.*timed out'):
+AssertionError: AssertionError not raised
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.010s
+
+FAILED (failures=4, errors=2)

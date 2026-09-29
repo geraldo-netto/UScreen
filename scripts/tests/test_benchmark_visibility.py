@@ -1,6 +1,7 @@
 """T424: obscured or interrupted workloads never become valid performance data."""
 import json
 import importlib.util
+import io
 import os
 from pathlib import Path
 import sys
@@ -34,7 +35,95 @@ def startup_diagnostics(server, error):
     return '; '.join(fields)
 
 
+def read_display_number(read_fd, timeout=5):
+    """T722: Xorg writes the number and its newline in separate syscalls."""
+    deadline = time.monotonic() + timeout
+    record = b''
+    while not record.endswith(b'\n'):
+        if len(record) >= 100:
+            raise ValueError('display publication is too long')
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not select.select([read_fd], [], [], remaining)[0]:
+            raise TimeoutError('display publication deadline expired')
+        chunk = os.read(read_fd, 100 - len(record))
+        if not chunk:
+            raise ValueError('display publication closed before newline')
+        record += chunk
+    if not record[:-1].isdigit():
+        raise ValueError('invalid display publication')
+    return ':' + record[:-1].decode('ascii')
+
+
 class VisibilityIntegrityTests(unittest.TestCase):
+    def test_t722_connect_failure_retains_owned_server_evidence(self):
+        fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+        fixture.server = MagicMock(pid=-1)
+        fixture.server.poll.return_value = 23
+        fixture.server_log = io.StringIO('T722 fixture server retired\n')
+        try:
+            with patch.object(fixture, 'start_private_server', return_value=':42'), \
+                 patch.object(display, 'Display', side_effect=ConnectionError('fixture refused')):
+                with self.assertRaisesRegex(AssertionError, r'T722.*:42.*pid=-1.*exit=23.*server retired'):
+                    fixture.setUp()
+        finally:
+            fixture.doCleanups()
+
+    def test_t722_display_publication_waits_for_newline(self):
+        fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+        try:
+            with patch('subprocess.Popen'), \
+                 patch('select.select', return_value=([1], [], [])), \
+                 patch('os.read', side_effect=[b'4', b'2', b'\n']) as read:
+                self.assertEqual(fixture.start_private_server(), ':42',
+                                 'T722: numeric prefix is not a completed publication')
+                self.assertEqual(read.call_count, 3)
+        finally:
+            fixture.doCleanups()
+
+    def test_t722_display_publication_rejects_incomplete_or_invalid_records(self):
+        records = [[b''], [b'\n'], [b'42', b''], [b'no\n'], [b'1\n2\n'],
+                   [b'\xff\n'], [b'9' * 100]]
+        for chunks in records:
+            with self.subTest(chunks=chunks):
+                fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+                try:
+                    with patch('subprocess.Popen'), \
+                         patch('select.select', return_value=([1], [], [])), \
+                         patch('os.read', side_effect=chunks):
+                        with self.assertRaisesRegex(AssertionError, 'T643'):
+                            fixture.start_private_server()
+                finally:
+                    fixture.doCleanups()
+
+    def test_t722_publication_boundaries_and_fragment_partitions(self):
+        for number in [b'0', b'9', b'10', b'42', b'59535', b'9' * 99]:
+            record = number + b'\n'
+            for split in range(1, len(record)):
+                with patch('select.select', return_value=([1], [], [])), \
+                     patch('os.read', side_effect=[record[:split], record[split:]]):
+                    self.assertEqual(read_display_number(1), ':' + number.decode())
+
+    def test_t722_publication_rejects_all_non_digit_prefix_bytes(self):
+        invalid = [value for value in range(256) if not bytes([value]).isdigit()]
+        for value in invalid:
+            with patch('select.select', return_value=([1], [], [])), \
+                 patch('os.read', return_value=bytes([value]) + b'\n'):
+                with self.assertRaises(ValueError):
+                    read_display_number(1)
+
+    def test_t722_partial_publication_keeps_one_deadline(self):
+        fixture = XVisibilityTests('test_t424_visible_window_and_focused_descendant')
+        try:
+            with patch('subprocess.Popen'), \
+                 patch('time.monotonic', side_effect=[10, 10, 14, 15]), \
+                 patch('select.select', return_value=([1], [], [])) as select_read, \
+                 patch('os.read', side_effect=[b'4', b'2']):
+                with self.assertRaisesRegex(AssertionError, 'T424.*timed out'):
+                    fixture.start_private_server()
+                self.assertEqual([call.args[3] for call in select_read.call_args_list], [5, 1])
+        finally:
+            fixture.doCleanups()
+
     def test_t644_readiness_timeout_retains_live_child_diagnostics(self):
         real_popen = subprocess.Popen
         def stalled_server(command, **kwargs):
@@ -181,18 +270,17 @@ class XVisibilityTests(unittest.TestCase):
             server = subprocess.Popen(['Xvfb', '-displayfd', str(write_fd), '-screen', '0', '1600x1000x24',
                                        '-nolisten', 'tcp', '-ac'], pass_fds=(write_fd,),
                                       stdout=subprocess.DEVNULL, stderr=log)
+            self.server, self.server_log = server, log
             self.addCleanup(self.stop_server, server)
             os.close(write_fd)
             write_fd = None
-            ready = select.select([read_fd], [], [], 5)[0]
-            log.seek(0)
-            error = log.read(65536)
-            if not ready:
-                self.fail('T424: private Xvfb startup timed out: ' + startup_diagnostics(server, error))
-            number = os.read(read_fd, 100).decode().strip()
-            self.assertTrue(number.isascii() and number.isdigit(),
-                            'T643: Xvfb did not publish a private display: ' + error)
-            return ':' + number
+            try:
+                return read_display_number(read_fd)
+            except TimeoutError:
+                self.fail('T424: private Xvfb startup timed out: ' + self.server_diagnostics())
+            except ValueError as error:
+                self.fail(f'T643: Xvfb did not publish a private display ({error}): ' +
+                          self.server_diagnostics())
         finally:
             os.close(read_fd)
             if write_fd is not None:
@@ -200,7 +288,11 @@ class XVisibilityTests(unittest.TestCase):
 
     def setUp(self):
         name = self.start_private_server()
-        self.display = display.Display(name)
+        try:
+            self.display = display.Display(name)
+        except Exception as error:
+            self.fail(f'T722: private Xvfb connection failed on {name} ({error}): ' +
+                      self.server_diagnostics())
         self.display_name = name
         self.addCleanup(self.display.close)
         self.root = self.display.screen().root
@@ -211,6 +303,10 @@ class XVisibilityTests(unittest.TestCase):
         self.display.sync()
         self.probe = XVisibility(self.window.id, '1280x800+100+100', name)
         self.addCleanup(self.probe.close)
+
+    def server_diagnostics(self):
+        self.server_log.seek(0)
+        return startup_diagnostics(self.server, self.server_log.read(65536))
 
     @staticmethod
     def stop_server(server):
