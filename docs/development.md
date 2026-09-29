@@ -80,8 +80,8 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 ```
 
 `make android-install` uses the same `-r -g` flags: replace the matching-signed
-app and grant its declared runtime permissions. This currently grants Camera;
-it does not start capture. Android still controls special access, USB consent
+app and grant its declared runtime permissions: Camera and Microphone.
+These grants do not start capture. Android still controls special access, USB consent
 and signature permissions. Manual APK installation uses Android's normal
 permission prompts; revoked permissions remain subject to the app's checks.
 
