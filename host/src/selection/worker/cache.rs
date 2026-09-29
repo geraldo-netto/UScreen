@@ -1,4 +1,4 @@
-//! One optional historical winner; fresh probes and render receipts remain mandatory.
+//! Durable environment tuning; current compatibility and render receipts remain mandatory.
 use super::{Candidate, EncoderSettings};
 use crate::selection::trial::Observation;
 use blent_config::negotiation::DecoderChoice;
@@ -12,7 +12,6 @@ mod context;
 #[cfg(test)]
 pub(super) mod tests;
 const MAX_BYTES: u64 = 65536;
-const MAX_AGE: u64 = 86400;
 
 pub(super) struct Cache {
     path: PathBuf,
@@ -31,6 +30,7 @@ struct Record {
     decoder: DecoderChoice,
     observation: Observation,
     quality_db: f64,
+    measurement: super::Measurement,
 }
 
 impl Cache {
@@ -66,12 +66,7 @@ impl Cache {
         serde_json::from_slice(&data).ok()
     }
 
-    pub fn load(
-        &self,
-        now: u64,
-        snapshot: &EncoderSettings,
-        fresh: &[Candidate],
-    ) -> Option<Candidate> {
+    pub fn load(&self, now: u64, snapshot: &EncoderSettings) -> Option<Candidate> {
         if !self.active() {
             return None;
         }
@@ -79,17 +74,13 @@ impl Cache {
         if record.fingerprint != self.fingerprint || !record.valid(now) {
             return None;
         }
-        let mut candidate = compatible(&record, snapshot, fresh)?;
-        candidate.decoder = Some(record.decoder);
-        candidate.observation = Some(record.observation);
-        candidate.cached = true;
-        Some(candidate)
+        compatible(&record, snapshot)
     }
 
     pub fn save(&self, now: u64, candidate: &Candidate) -> anyhow::Result<()> {
         anyhow::ensure!(self.active(), "retired cache context");
         let record = Record {
-            schema: 2,
+            schema: 3,
             workers: candidate.measurement.workers_requested,
             fingerprint: self.fingerprint.clone(),
             saved_at: now,
@@ -103,6 +94,7 @@ impl Cache {
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("missing measurement"))?,
             quality_db: candidate.measurement.quality_db.unwrap_or(f64::NAN),
+            measurement: candidate.measurement.clone(),
         };
         anyhow::ensure!(
             !candidate.cached && record.valid(now),
@@ -155,12 +147,35 @@ impl Record {
             && (self.workers <= 1 || self.observation.resources.is_some())
     }
 
+    fn measurement_valid(&self) -> bool {
+        let m = &self.measurement;
+        m.encoder == self.encoder
+            && blent_config::encoding::ENCODERS
+                .iter()
+                .any(|e| e.name == self.encoder)
+            && m.workers_requested == self.workers
+            && m.stream.as_ref() == Some(&self.decoder.stream)
+            && m.quality_db == Some(self.quality_db)
+            && self.measurement_bounds_valid()
+    }
+
+    fn measurement_bounds_valid(&self) -> bool {
+        let m = &self.measurement;
+        m.fps.is_finite()
+            && m.fps > 0.0
+            && m.fps <= 100_000.0
+            && m.first_us <= 8_000_000
+            && m.p95_us <= 8_000_000
+            && m.workers_effective.is_none_or(|n| (1..=128).contains(&n))
+            && crate::media::Codec::from_encoder(&m.encoder).wire_name()
+                == self.decoder.stream.codec
+    }
+
     fn valid(&self, now: u64) -> bool {
-        self.schema == 2
+        self.schema == 3
             && self.worker_evidence_valid()
-            && now
-                .checked_sub(self.saved_at)
-                .is_some_and(|age| age <= MAX_AGE)
+            && now >= self.saved_at
+            && self.measurement_valid()
             && self.decoder.stream.valid()
             && self.quality_db.is_finite()
             && (0.0..=200.0).contains(&self.quality_db)
@@ -180,29 +195,21 @@ fn observation_valid(value: &Observation) -> bool {
         && value.startup_us <= 6_000_000
 }
 
-fn compatible(
-    record: &Record,
-    snapshot: &EncoderSettings,
-    fresh: &[Candidate],
-) -> Option<Candidate> {
+fn compatible(record: &Record, snapshot: &EncoderSettings) -> Option<Candidate> {
     if snapshot.encoder != "auto" || !snapshot.geometry_ready {
         return None;
     }
     let caps = snapshot.decoders.as_ref()?;
-    let supported = supports_choice(caps, &record.decoder);
-    if !supported {
+    if !supports_choice(caps, &record.decoder) || record.measurement.fps < f64::from(snapshot.fps) {
         return None;
     }
-    let reference = super::measured::quality_reference(fresh)?;
-    fresh
-        .iter()
-        .find(|c| {
-            c.measurement.encoder == record.encoder
-                && c.measurement.workers_requested == record.workers
-                && c.measurement.stream.as_ref() == Some(&record.decoder.stream)
-                && super::measured::quality_capacity(c, reference, snapshot.fps)
-        })
-        .cloned()
+    Some(Candidate {
+        cached: true,
+        measurement: record.measurement.clone(),
+        hardware: false, // Historical activation is not a fresh decoder ranking.
+        decoder: Some(record.decoder.clone()),
+        observation: Some(record.observation.clone()),
+    })
 }
 
 pub(super) fn now() -> u64 {

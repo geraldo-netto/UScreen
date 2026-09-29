@@ -140,7 +140,7 @@ these offline probes, although resource contention can affect performance.
 
 Version 1 peers retain the host-capacity heuristic: requested FPS first, then
 advertised hardware decoder, packet-interval p95 and first output. Version 2
-adds bounded live comparisons:
+adds bounded live comparisons when this environment has no compatible saved tuning:
 
 - Admit only candidates meeting target host-probe FPS and a first-frame PSNR
   no more than 0.5 dB below the measured libx264 reference. Unknown fidelity or
@@ -202,14 +202,15 @@ policy, not a latency or throughput benchmark.
 Each measured combination is calibrated once, then reverified for activation.
 Recovery advances through the remaining successful combinations once. Exhaustion
 keeps H.264 without claiming it has rendered successfully, and does not repeatedly
-cycle through known failures. A settings/peer change permits fresh calibration;
+cycle through known failures. A relevant environment change permits fresh calibration;
 backgrounding and shutdown cancel monitoring and pending recovery. Explicit
 encoder choices retain their existing behavior.
 
 Settings changes, controller replacement, inactive display and shutdown cancel
 selection and retire its child process. Interrupted trials cannot become a
-rollback target. By default, results stay in the current process/peer/settings
-epoch. Explicit encoder preferences are never migrated. The GPU path and depth
+rollback target. Successful tuning is persisted per compatible environment and
+reverified on later sessions without repeating the probe/comparison matrix.
+Explicit encoder preferences are never migrated. The GPU path and depth
 are fixed for a daemon session. The optional in-process encoder build maps
 `auto` to `libx264`; these CLI measurements do not rank that adapter.
 
@@ -243,45 +244,61 @@ no privileged tracing. Futex counts remain attribution evidence only.
 
 The cache schema retains the chosen worker budget and historical resource
 observations; its context includes the requested budget. Old records are ignored.
-Fresh host probes and matching render receipts remain mandatory for reuse;
+Current decoder compatibility and matching render receipts remain mandatory for reuse;
 historical CPU/RSS observations do not establish current resource performance.
 
-### Optional historical profile cache
+<a id="optional-historical-profile-cache"></a>
 
-Linux **Video > Advanced video settings** exposes **Reuse a recent measured profile** (`profile_cache
-= true` in `config.toml`). It is off by default and affects only automatic
-selection with the normal FFmpeg CLI adapter. Manual encoder choices take
-precedence. An old peer without a software fingerprint always uses normal
-selection. This is a convenience feature, with no new latency or battery claim.
+### Durable environment tuning
 
-One recent successful measured profile is saved atomically as the owner-only
-`profile-cache.json` beside the host configuration. It stores the encoder,
-complete decoder choice, observation percentiles/rate/delivery/startup/sample
-count, first-frame quality score, timestamp and context digest. The digest
-includes proven physical tablet identity, USB versus network route, capabilities
-without the transient scope, Android firmware/app source-build fingerprint,
-host/FFmpeg/helper binaries, FFmpeg version report, kernel/boot identity, pipe
-request/limit, stream geometry/rate/bitrate/quality, GPU path, depth, scale,
-conversion threads, requested encoder-worker budget and EDID path. Credentials and raw tablet identities are
-not written to the cache. Rebooting conservatively invalidates the entry.
+Automatic mode calibrates an environment once, saves the successful encoder,
+named decoder, hints and worker budget, then reuses that profile on later
+connections and reboots. Reuse checks current decoder compatibility and requires
+three fresh matching render acknowledgements within six seconds; it skips both
+the offline encoder probe matrix and comparative live trials. Historical timing,
+quality and resource measurements remain labelled historical, not fastest now.
 
-Reuse requires an age of at most 24 hours, unchanged context, a **fresh host
-probe** meeting capacity and quality requirements, current advertised support
-for the exact decoder/profile/hints, and three fresh matching render receipts.
-Only the comparative live trials are skipped on a successful hit. The reason
-identifies historical ACK statistics and current host-probe quality; it does
-not label the result as best measured in this session. Runtime load, temperature,
-content and unreported driver behavior can still change; compatibility and
-fresh receipts do not prove the historical choice remains fastest.
+During initial tuning, capable Android clients keep one **Optimizing display…**
+screen over the active video surface. Decoding and render receipts continue
+behind it so actual end-to-end trials can complete. The desktop appears after
+selection completes and video is ready. Ordinary trial reconnections do not
+alternate the desktop with USB setup instructions. Authentication loss clears
+calibration state; pen-only mode retains its existing presentation. A two-minute
+presentation deadline reports a timeout, unaffected by repeated trial updates.
+Legacy hosts without `calibrating` metadata retain their existing behavior;
+legacy tablets ignore the added optional boolean and can still show trial flicker.
 
-Malformed, oversized, future-dated, incompatible or expired entries are ignored.
-Missing storage or write failure leaves ordinary selection available. An
-interrupted write preserves the previous complete record. Failed cache
-verification discards the entry before normal measurements. Lost render progress
-or attachment retirement discards an active cached result and resumes the
-measurement path. A reused entry never refreshes its own timestamp. Turning
-the setting off disables reads/writes; deleting the file discards its history.
-No physical or simulated multi-tablet campaign was used to validate this feature.
+Linux **Video > Advanced video settings > Recalibrate display**, followed by
+**Apply & restart**, requests new tuning. The equivalent configuration operation
+is incrementing `calibration_generation` before restarting. Manual encoder
+preferences take precedence. The old `profile_cache` boolean remains readable
+for configuration compatibility but no longer disables persistence or reuse.
+
+Profiles are written atomically, mode 0600, under `tuned-profiles/<digest>.json`
+beside the host configuration. Separate compatible environments retain separate
+profiles. The context includes proven tablet identity, USB/network route,
+capabilities excluding transient scope, Android firmware/app software identity,
+host/FFmpeg/helper binaries, FFmpeg version report, kernel release, available
+render-device identity/revision/kernel-driver version, pipe request/limit,
+encoded geometry/FPS/bitrate/quality, GPU path, depth, scale, conversion/encoder
+worker budgets, EDID path and explicit recalibration generation. Credentials and
+raw tablet identities are not persisted. Boot identity and elapsed age do not
+invalidate tuning. Context matching cannot detect every runtime load or
+unreported userspace-driver behavior change; it is not a permanent speed claim.
+
+Malformed, oversized, symlinked, future-dated or incompatible records are ignored.
+Historical encoder/decoder identities, measurements and worker bounds are checked
+before use. Only successful measured selections are saved; a failed/aborted
+calibration is not recorded as a tuned environment. The old single-file cache
+schema is not imported. Missing storage leaves bounded calibration available;
+write failure means subsequent starts cannot reuse that unsaved result.
+
+Failed render verification or lost progress discards the affected profile and
+uses bounded recovery/measurement. Ordinary attachment retirement, backgrounding
+and process shutdown preserve successful tuning for the next connection. Reuse
+does not refresh historical measurements. The normal FFmpeg CLI adapter owns
+this policy; the optional in-process build and unsupported platform video
+backends do not claim automatic tuning support.
 
 ## Framing
 

@@ -71,6 +71,10 @@ async fn prepare(
     latency: &LatencyTracker,
     cache: Option<&cache::Cache>,
 ) -> Option<Prepared> {
+    // T714: verify the saved winner before idle admission or expensive probes.
+    if let Some(candidate) = cached(settings, snapshot, latency, cache).await {
+        return Some(Prepared::Cached(Box::new(candidate)));
+    }
     let rich = snapshot.decoders.as_ref().is_some_and(|d| d.protocol == 2);
     let mut input = latency.interaction_updates();
     if rich && !super::super::trial::quiet(&mut input).await {
@@ -82,9 +86,6 @@ async fn prepare(
             .ok()?
             .ok()?;
         let candidates = probes.candidates(snapshot).await;
-        if let Some(candidate) = cached(settings, snapshot, latency, cache, &candidates).await {
-            return Some(Prepared::Cached(Box::new(candidate)));
-        }
         let candidates = if rich {
             measured::benchmark(settings, snapshot, latency, candidates).await
         } else {
@@ -106,16 +107,15 @@ async fn cached(
     snapshot: &EncoderSettings,
     latency: &LatencyTracker,
     cache: Option<&cache::Cache>,
-    candidates: &[Candidate],
 ) -> Option<Candidate> {
     let cache = cache?;
-    let candidate = cache.load(cache::now(), snapshot, candidates)?;
+    let candidate = cache.load(cache::now(), snapshot)?;
     let key = Key::new(snapshot);
     let choice = candidate.decoder.clone();
     let workers = candidate.measurement.workers_requested;
     let mut retirement = Box::pin(cache.retired());
     let result = tokio::select! {
-        _ = &mut retirement => None,
+        _ = &mut retirement => return None,
         result = choose(settings, &key, fallback_encoder(snapshot), vec![candidate], |name| {
             let key = &key; let choice = choice.as_ref();
             async move { rendered(latency, key, &name, choice, workers).await }
@@ -136,9 +136,8 @@ async fn watch_cached(
 ) {
     tokio::select! {
         _ = cache.retired() => {},
-        _ = super::super::health::failed(latency, key, &candidate.measurement.encoder, candidate.decoder.as_ref()) => {},
+        _ = super::super::health::failed(latency, key, &candidate.measurement.encoder, candidate.decoder.as_ref()) => cache.invalidate(),
     }
-    cache.invalidate();
 }
 
 #[cfg(test)]

@@ -10,7 +10,8 @@ use std::{
 };
 use tokio::{io::AsyncWriteExt, process::Command};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct Measurement {
     pub workers_requested: u32,
     pub workers_effective: Option<u32>,

@@ -48,6 +48,7 @@ fn t484_decoder_only_change_restarts_encoder_without_restarting_helper() {
         encoder: manager.config.encoder.clone(),
         reason: "T484 decoder-only trial".into(),
         verified: false,
+        calibrating: false,
         decoder: Some(decoder),
     });
     assert!(!manager.helper_settings_changed(&selected));
@@ -769,6 +770,7 @@ fn t612_budget_restarts_only_encoder_and_expires_with_geometry_or_peer() {
         encoder: manager.config.encoder.clone(),
         reason: "T612 worker trial".into(),
         verified: false,
+        calibrating: false,
         decoder: None,
     });
     assert_eq!(selected.selected_workers(), 2);

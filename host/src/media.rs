@@ -106,6 +106,23 @@ pub struct EncoderSettings {
 pub use blent_config::negotiation::DecoderCapabilities;
 
 impl EncoderSettings {
+    pub fn calibrating(&self) -> bool {
+        if self.encoder != "auto" || cfg!(feature = "inproc-encoder") {
+            return false;
+        }
+        if self
+            .decoders
+            .as_ref()
+            .is_some_and(|caps| caps.protocol != 2)
+        {
+            return false;
+        }
+        self.selection
+            .as_ref()
+            .filter(|s| s.key.matches(self))
+            .is_none_or(|s| s.calibrating)
+    }
+
     pub fn selected_workers(&self) -> u32 {
         self.selection
             .as_ref()

@@ -10,9 +10,6 @@ impl Cache {
         snapshot: &EncoderSettings,
         attachment: &Attachment,
     ) -> Option<std::sync::Arc<Self>> {
-        if !base.profile_cache {
-            return None;
-        }
         let lease = attachment.lease();
         let identity = lease.profile_identity()?;
         fingerprint(&identity, "", snapshot, base)?;
@@ -23,7 +20,8 @@ impl Cache {
             let fingerprint = fingerprint(&identity, &stamp, &snapshot, &base)?;
             let path = blent_config::config_path()
                 .ok()?
-                .with_file_name("profile-cache.json");
+                .with_file_name("tuned-profiles")
+                .join(format!("{fingerprint}.json"));
             Some(Self {
                 path,
                 fingerprint,
@@ -65,6 +63,7 @@ pub(super) fn fingerprint(
             base.stream_scale,
             base.conversion_threads,
             base.encoder_workers,
+            base.calibration_generation,
             &base.edid_path,
         ),
     ))
@@ -95,9 +94,12 @@ fn host_stamp(base: &CaptureConfig) -> Option<String> {
     ] {
         hash_file(&mut digest, &path)?;
     }
-    // A reboot conservatively invalidates driver/hardware assumptions.
-    digest.update(std::fs::read("/proc/sys/kernel/random/boot_id").ok()?);
-    digest.update(std::fs::read("/proc/sys/kernel/osrelease").ok()?);
+    // T714: reboot alone is not an environment change.
+    digest.update(platform_stamp(
+        Path::new("/proc"),
+        Path::new("/sys"),
+        &base.vaapi_device,
+    )?);
     let version = std::process::Command::new(ffmpeg)
         .arg("-version")
         .output_bounded()
@@ -111,6 +113,70 @@ fn host_stamp(base: &CaptureConfig) -> Option<String> {
             .pipe_capacity_mib
             .to_le_bytes(),
     );
-    digest.update(std::fs::read("/proc/sys/fs/pipe-max-size").ok()?);
     Some(format!("{:x}", digest.finalize()))
+}
+
+// Linux adapter: identify the render device and bound driver changes without boot IDs.
+fn device_stamp(sys: &Path, node: &str) -> Vec<u8> {
+    let Some(name) = Path::new(node).file_name() else {
+        return Vec::new();
+    };
+    let device = sys.join("class/drm").join(name).join("device");
+    ["uevent", "revision", "driver/module/version"]
+        .into_iter()
+        .flat_map(|field| std::fs::read(device.join(field)).unwrap_or_default())
+        .collect()
+}
+
+fn platform_stamp(proc: &Path, sys: &Path, node: &str) -> Option<Vec<u8>> {
+    let mut stamp = std::fs::read(proc.join("sys/kernel/osrelease")).ok()?;
+    stamp.extend(std::fs::read(proc.join("sys/fs/pipe-max-size")).ok()?);
+    stamp.extend(device_stamp(sys, node));
+    Some(stamp)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn t714_reboot_preserves_context_but_kernel_driver_and_gpu_changes_do_not() {
+        let root = tempfile::tempdir().unwrap();
+        let proc = root.path().join("proc");
+        let sys = root.path().join("sys");
+        assert!(platform_stamp(&proc, &sys, "/dev/dri/renderD128").is_none());
+        for (path, value) in [
+            ("proc/sys/kernel/osrelease", "6.1"),
+            ("proc/sys/kernel/random/boot_id", "boot one"),
+            ("proc/sys/fs/pipe-max-size", "1048576"),
+            ("sys/class/drm/renderD128/device/uevent", "DRIVER=amdgpu"),
+            ("sys/class/drm/renderD128/device/revision", "c1"),
+            ("sys/class/drm/renderD128/device/driver/module/version", "1"),
+        ] {
+            let path = root.path().join(path);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, value).unwrap();
+        }
+        let before = platform_stamp(&proc, &sys, "/dev/dri/renderD128").unwrap();
+        std::fs::write(proc.join("sys/kernel/random/boot_id"), "boot two").unwrap();
+        assert_eq!(
+            platform_stamp(&proc, &sys, "/dev/dri/renderD128").unwrap(),
+            before
+        );
+        for file in [
+            "proc/sys/kernel/osrelease",
+            "sys/class/drm/renderD128/device/uevent",
+            "sys/class/drm/renderD128/device/driver/module/version",
+        ] {
+            let path = root.path().join(file);
+            let saved = std::fs::read(&path).unwrap();
+            std::fs::write(&path, "changed").unwrap();
+            assert_ne!(
+                platform_stamp(&proc, &sys, "/dev/dri/renderD128").unwrap(),
+                before
+            );
+            std::fs::write(path, saved).unwrap();
+        }
+        assert!(device_stamp(&sys, "/").is_empty());
+        assert!(device_stamp(&sys, "/dev/dri/missing").is_empty());
+    }
 }

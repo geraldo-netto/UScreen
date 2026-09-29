@@ -1,0 +1,22 @@
+{
+  "collected_at": "2026-09-29T09:45:30.479227+02:00",
+  "source_revision": "8b7a5e47e1c1d2ad436ee5a5f5349cae3c9f6269",
+  "live_host_sha256": "fef1c07d7c8af855d856373d3e1527d6f88cf71b3cba6c225e0af57b0d1c96ce",
+  "live_host_pid": 6621,
+  "live_android_package": "io.github.geraldo_netto.blent",
+  "live_android_version": "1.2.3",
+  "live_android_version_code": 12,
+  "live_android_last_update": "2026-09-26 19:08:03",
+  "saved_config": {
+    "encoder": "auto",
+    "profile_cache": false
+  },
+  "profile_cache_file_exists": false,
+  "first_video_connection_local": "2026-09-29T08:50:28.208294+02:00",
+  "final_video_connection_local": "2026-09-29T08:50:49.141626+02:00",
+  "selection_publications": 7,
+  "ended_video_sessions": 6,
+  "video_connections": 7,
+  "android_startup_log_available": false,
+  "runtime_modified": false
+}

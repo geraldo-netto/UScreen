@@ -66,6 +66,7 @@ internal fun BlentMain(
     inputControls: @Composable () -> Unit = {},
 ) {
     val isConnected = presentation?.connected ?: false
+    val calibrating = presentation?.calibrating?.collectAsState()?.value ?: false
     var showSettings by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -86,7 +87,7 @@ internal fun BlentMain(
             .background(Color.Black)
     ) {
         StreamSurface(onSurfaceReady, onSurfaceDestroyed)
-        ConnectionLayers(penOnly, isConnected, controlConnected(presentation), settings.showStats, presentation?.fps ?: 0f, presentation?.mbps ?: 0f, presentation?.directInput?.collectAsState()?.value != null)
+        ConnectionLayers(penOnly, isConnected, controlConnected(presentation), settings.showStats, presentation?.fps ?: 0f, presentation?.mbps ?: 0f, presentation?.directInput?.collectAsState()?.value != null, calibrating)
 
         // Keep settings above the video surface so its taps stay on the tablet.
         Box(
@@ -104,7 +105,7 @@ internal fun BlentMain(
             Text("⚙", fontSize = 18.sp, color = Color.White)
         }
 
-        StreamNotices(showThanks, onDismissThanks, updateAvailable)
+        StreamNotices(showThanks && !calibrating, onDismissThanks, updateAvailable)
         Box(Modifier.align(Alignment.BottomStart)) { inputControls() }
 
         if (showSettings) {
@@ -164,7 +165,9 @@ private fun controlConnected(presentation: StreamPresentation?): Boolean =
     presentation?.controlConnected?.collectAsState()?.value ?: false
 
 @Composable
-private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, controlConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float, directInput: Boolean) {
+private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, controlConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float, directInput: Boolean, calibrating: Boolean) {
+    val tuning = calibrating && controlConnected && !penOnly
+    val expired = calibrationExpired(tuning)
     // Drawing is available only while the authenticated control channel is alive.
     AnimatedVisibility(
         visible = penOnly && controlConnected,
@@ -177,16 +180,16 @@ private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, co
 
     // Connection screen
     AnimatedVisibility(
-        visible = if (penOnly) !controlConnected else !isConnected,
+        visible = if (penOnly) !controlConnected else tuning || !isConnected,
         enter = fadeIn(),
         exit = fadeOut(),
         modifier = Modifier.fillMaxSize()
     ) {
-        ConnectionScreen(penOnly)
+        ConnectionScreen(penOnly, tuning, expired)
     }
 
     // Stats chip (top-left, only while streaming)
-    if (isConnected && showStats) {
+    if (isConnected && showStats && !tuning) {
         Surface(
             color = Color(0x99000000),
             shape = RoundedCornerShape(8.dp),
@@ -303,7 +306,7 @@ private fun PenOnlyScreen(directInput: Boolean) {
 }
 
 @Composable
-private fun ConnectionScreen(penOnly: Boolean) {
+private fun ConnectionScreen(penOnly: Boolean, tuning: Boolean = false, expired: Boolean = false) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -346,14 +349,14 @@ private fun ConnectionScreen(penOnly: Boolean) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (penOnly) "Reconnecting to your computer…" else "Waiting for your computer…",
+                        text = connectionTitle(penOnly, tuning, expired),
                         fontSize = 16.sp,
                         color = Warn,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "1. Connect the USB cable\n" +
+                        text = if (tuning) "Blent is tuning this setup. Your desktop opens when ready." else "1. Connect the USB cable\n" +
                             "2. Allow USB debugging if asked\n" +
                             "3. Open Blent on your computer and start sharing\n\n" +
                             "An already paired network connection reconnects automatically.",
@@ -366,4 +369,21 @@ private fun ConnectionScreen(penOnly: Boolean) {
             }
         }
     }
+}
+
+// T714: repeated trial metadata must not extend one calibration presentation forever.
+@Composable
+private fun calibrationExpired(active: Boolean): Boolean {
+    var expired by remember(active) { mutableStateOf(false) }
+    LaunchedEffect(active) {
+        if (active) { delay(120_000); expired = true }
+    }
+    return expired
+}
+
+internal fun connectionTitle(penOnly: Boolean, tuning: Boolean, expired: Boolean): String = when {
+    penOnly -> "Reconnecting to your computer…"
+    tuning && expired -> "Display optimization timed out. Reconnect to try again."
+    tuning -> "Optimizing display…"
+    else -> "Waiting for your computer…"
 }

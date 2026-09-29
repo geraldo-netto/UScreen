@@ -1,0 +1,1 @@
+All 127 Android source hashes identical between manifest.json and final-manifest.json. Android counters collected against manifest.json remain valid for unchanged Android sources.

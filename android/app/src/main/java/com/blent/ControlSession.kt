@@ -45,6 +45,8 @@ internal class ControlSession(
     private var connectionWanted = false
     private val statistics = ControlStatistics()
     @Volatile private var isConnected = false
+    private val calibration = MutableStateFlow(false)
+    val calibrating = calibration.asStateFlow()
     private val authenticatedControl = MutableStateFlow(false)
     val controlConnected = authenticatedControl.asStateFlow()
     private val connection = MutableStateFlow(ControlConnection())
@@ -126,6 +128,7 @@ internal class ControlSession(
                     applyInputGreeting(o)
                     // T673: negotiation can fail synchronously and retire this socket.
                     if (isStale(webSocket)) return
+                    if (o.has("calibrating")) calibration.value = o.opt("calibrating") == true
                     applyCapabilityGreeting(o)
                     applyDecoderGreeting(o)
                     requestDecoderCapabilities(webSocket, streamFormat.takeIf { encodedDimensionsKnown })
@@ -210,6 +213,7 @@ internal class ControlSession(
     }
 
     private fun resetGreeting() {
+        calibration.value = false
         input.setDirectInput(null)
         capabilityJob?.cancel()
         capabilityJob = null

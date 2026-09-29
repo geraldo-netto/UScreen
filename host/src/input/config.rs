@@ -69,6 +69,7 @@ impl InputConfig {
             requested_encoder,
             effective_encoder,
             selection_reason,
+            calibrating: calibration_field(settings.as_deref(), pen_only),
             decoder_protocol,
             decoder_scope,
             decoder_selection,
@@ -125,4 +126,8 @@ fn selection_fields(settings: Option<&EncoderSettings>) -> (String, String, Stri
         ),
         None => Default::default(),
     }
+}
+
+fn calibration_field(settings: Option<&EncoderSettings>, pen_only: bool) -> Option<bool> {
+    settings.map(|s| !pen_only && s.calibrating())
 }

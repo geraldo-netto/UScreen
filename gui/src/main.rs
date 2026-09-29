@@ -964,8 +964,11 @@ impl App {
 
     fn setting_profile_cache(&mut self, ui: &mut egui::Ui) {
         ui.label("Automatic profiles");
-        ui.checkbox(&mut self.cfg.profile_cache, "Reuse a recent measured profile")
-            .on_hover_text("Optional. Rechecks compatibility and rendering before reuse. Historical results may not be fastest now; manual encoder choices take precedence.");
+        if ui.button("Recalibrate display")
+            .on_hover_text("Tune automatic profiles again on next Apply & restart. Saved profiles otherwise survive reconnects and reboots. Manual encoder choices take precedence.")
+            .clicked() {
+            self.cfg.calibration_generation = self.cfg.calibration_generation.wrapping_add(1);
+        }
         ui.end_row();
     }
 
@@ -1231,13 +1234,13 @@ mod tests {
     }
 
     #[test]
-    fn t480_profile_cache_checkbox_is_opt_in_and_persists() {
+    fn t480_t714_recalibration_request_persists() {
         // T537: persistence checks must never write the developer's settings.
         let directory = tempfile::tempdir().unwrap();
         let mut app = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(directory.path().join("config.toml"));
         let ctx = egui::Context::default();
-        assert!(!app.cfg.profile_cache);
+        assert_eq!(app.cfg.calibration_generation, 0);
         fn frame(
             app: &mut App,
             ctx: &egui::Context,
@@ -1245,13 +1248,19 @@ mod tests {
         ) -> Vec<(String, egui::Rect)> {
             settings_test_frame(app, ctx, events, |app, ui| app.setting_profile_cache(ui))
         }
-        click_settings_text(&mut app, &ctx, "Reuse a recent measured profile", frame);
-        assert!(app.cfg.profile_cache);
+        click_settings_text(&mut app, &ctx, "Recalibrate display", frame);
+        assert_eq!(app.cfg.calibration_generation, 1);
         app.apply(false);
         wait_for_work(&mut app);
-        assert!(app.store.load().profile_cache);
-        click_settings_text(&mut app, &ctx, "Reuse a recent measured profile", frame);
-        assert!(!app.cfg.profile_cache);
+        assert_eq!(app.store.load().calibration_generation, 1);
+        click_settings_text(&mut app, &ctx, "Recalibrate display", frame);
+        assert_eq!(app.cfg.calibration_generation, 2);
+        app.cfg.calibration_generation = u32::MAX;
+        click_settings_text(&mut app, &ctx, "Recalibrate display", frame);
+        assert_eq!(app.cfg.calibration_generation, 0);
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.store.load().calibration_generation, 0);
     }
 
     #[test]

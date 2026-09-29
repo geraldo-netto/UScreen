@@ -185,6 +185,7 @@ async fn choose<F: Future<Output = bool>>(
                     encoder: candidate.measurement.encoder.clone(),
                     reason: verified.clone(),
                     verified: true,
+                    calibrating: false,
                     decoder: candidate.decoder.clone(),
                 });
                 true
@@ -208,7 +209,15 @@ fn publish(
     encoder: &str,
     reason: &str,
 ) -> bool {
-    publish_choice(settings, key, encoder, reason, None, 0)
+    let published = publish_choice(settings, key, encoder, reason, None, 0);
+    if published {
+        settings.send_modify(|current| {
+            if let Some(selected) = current.selection.as_mut().filter(|s| &s.key == key) {
+                selected.calibrating = false;
+            }
+        });
+    }
+    published
 }
 
 fn publish_choice(
@@ -229,6 +238,7 @@ fn publish_choice(
             encoder: encoder.into(),
             reason: reason.into(),
             verified: false,
+            calibrating: true,
             decoder: decoder.clone(),
         });
         tracing::info!(

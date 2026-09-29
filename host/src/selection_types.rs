@@ -48,5 +48,7 @@ pub struct Selected {
     pub encoder: String,
     pub reason: String,
     pub verified: bool,
+    /// Planned tuning/verification; hide intermediate desktop frames on capable clients.
+    pub calibrating: bool,
     pub decoder: Option<blent_config::negotiation::DecoderChoice>,
 }

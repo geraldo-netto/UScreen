@@ -14,5 +14,6 @@
   "selection_reason": "Explicit encoder preference",
   "decoder_protocol": 2,
   "decoder_scope": "0",
-  "decoder_selection": null
+  "decoder_selection": null,
+  "calibrating": false
 }

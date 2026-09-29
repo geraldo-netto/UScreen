@@ -236,7 +236,7 @@ pub(super) fn reason(candidate: &Candidate) -> Option<String> {
         "This-session"
     };
     let probe_scope = if candidate.cached {
-        "current host probe"
+        "historical host probe"
     } else {
         "first-frame probe"
     };

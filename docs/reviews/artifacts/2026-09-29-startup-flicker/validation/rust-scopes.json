@@ -1,0 +1,17 @@
+[
+  "common/src/model.rs",
+  "gui/src/main.rs",
+  "host/src/capture/config.rs",
+  "host/src/capture/probe.rs",
+  "host/src/input.rs",
+  "host/src/input/config.rs",
+  "host/src/input/wire.rs",
+  "host/src/linux_main.rs",
+  "host/src/media.rs",
+  "host/src/selection/worker.rs",
+  "host/src/selection/worker/cache.rs",
+  "host/src/selection/worker/cache/context.rs",
+  "host/src/selection/worker/measured.rs",
+  "host/src/selection/worker/preparation.rs",
+  "host/src/selection_types.rs"
+]

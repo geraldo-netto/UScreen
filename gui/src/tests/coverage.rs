@@ -11,7 +11,7 @@ fn t537_profile_cache_test_preserves_external_configuration() {
     let output = Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "tests::t480_profile_cache_checkbox_is_opt_in_and_persists",
+            "tests::t480_t714_recalibration_request_persists",
             "--nocapture",
         ])
         .env("HOME", root.path())

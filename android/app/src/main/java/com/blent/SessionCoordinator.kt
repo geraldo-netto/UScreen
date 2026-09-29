@@ -17,6 +17,7 @@ internal class StreamPresentation(private val receiver: VideoReceiver?, control:
     val decoderDiagnostics = receiver?.decoder?.diagnostics ?: MutableStateFlow(DecoderDiagnostics())
     val connectionState = control?.connectionState ?: MutableStateFlow(ControlConnection())
     val controlConnected: StateFlow<Boolean> = control?.controlConnected ?: MutableStateFlow(false)
+    val calibrating = control?.control?.calibrating ?: MutableStateFlow(false)
     val directInput = control?.motion?.direct?.state ?: MutableStateFlow<DirectControlsState?>(null)
     init {
         val ui = Handler(Looper.getMainLooper())

@@ -1826,6 +1826,7 @@ fi
                     encoder: "h264_vaapi".into(),
                     reason: "T472 concurrent selector".into(),
                     verified: true,
+                    calibrating: false,
                     decoder: None,
                 });
             });

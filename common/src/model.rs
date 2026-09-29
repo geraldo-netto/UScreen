@@ -88,8 +88,10 @@ pub struct FileConfig {
     /// Camera settings apply independently, without restarting the display.
     pub camera: crate::camera::CameraSettings,
     pub encoder: String,
-    /// Opt-in reuse of a historical measured profile, after fresh verification.
+    /// Legacy preference retained for configuration round trips; automatic tuning is durable.
     pub profile_cache: bool,
+    /// Increment to discard previously tuned automatic environments on next start.
+    pub calibration_generation: u32,
     /// Opt-in measured sparse cadence for the current encoder/decoder session.
     pub adaptive_idle: bool,
     /// Raw capture transport. Shared memory requires a validated native adapter.
@@ -185,6 +187,7 @@ impl Default for FileConfig {
             camera: Default::default(),
             encoder: "auto".into(),
             profile_cache: false,
+            calibration_generation: 0,
             adaptive_idle: false,
             raw_transport: Default::default(),
             raw_slots: 4,
