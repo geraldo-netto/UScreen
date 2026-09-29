@@ -167,7 +167,9 @@ support; the Windows preview disables camera Start.
 [September 29 acceptance (T621)](reviews/2026-09-29-camera-acceptance.md) verifies
 both named V4L2 outputs through real Chrome capture, black inactive/retired frames,
 rapid front/rear Stop/Start and final Android resource release on matching builds.
-Physical USB removal/replug remains a separate T540 requirement.
+[Physical USB acceptance (T540)](reviews/2026-09-29-usb-camera-readiness.md) also
+passes black output on unplug, camera-off reconnect, explicit restart and independent
+desktop recovery. Capture-helper startup still took about 12.4 seconds (T558).
 
 ## Historical standalone-helper validation (T539)
 

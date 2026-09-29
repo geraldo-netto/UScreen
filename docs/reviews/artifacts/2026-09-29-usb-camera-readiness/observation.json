@@ -1,0 +1,11 @@
+{
+  "operator_confirmation": "it takes a while but it recovers",
+  "ui_texts": [
+    "⚙"
+  ],
+  "surface_present": true,
+  "boot_id": "335820b3-7dc2-4d03-beae-d72c660aeb15",
+  "capture_ready_seconds_after_host_usb_detection": 12.405187,
+  "boundary": "Host USB-connected log to helper-connected log; not optical display latency",
+  "harness_exit_code": 0
+}

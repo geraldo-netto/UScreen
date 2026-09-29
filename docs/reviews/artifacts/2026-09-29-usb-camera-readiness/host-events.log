@@ -1,0 +1,61 @@
+2026-09-29T08:57:13.065790Z  INFO blent::latency: 407: Latency packet-ready→render-ACK (host clock): p50 11.1ms  p95 16.8ms  max 36.7ms  (247 samples, 1 in flight, 0 aged out)
+2026-09-29T08:57:13.065805Z  INFO blent::latency: 418: Latency tablet arrival→render-callback (tablet clock): p50 8.4ms  p95 13.6ms  (247 samples)
+2026-09-29T08:57:13.549566Z  INFO blent::capture::cli_encoder: 314: Encoder: 246 access units in 5.0s, 0.4 MB/s (3372 kbps)
+2026-09-29T08:57:14.958059Z  INFO blent::stream: 134: Client 127.0.0.1:45779 session ended
+2026-09-29T08:57:14.966430Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:14.982051Z  INFO blent::capture::process: 16: ffmpeg exited cleanly
+2026-09-29T08:57:14.982490Z  INFO blent::capture::encoding: 66: Encoder started (PID: 372276)
+2026-09-29T08:57:15.004526Z  INFO blent::capture::cli_encoder: 291: Extracted codec configuration: 40 bytes
+2026-09-29T08:57:16.516087Z  WARN blent::monitor::retirement: 30: Could not retire owned routes on 8002RH1010011900: ADB command failed (exit Some(1))
+2026-09-29T08:57:16.521553Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:16.545042Z  INFO blent::input::linux: 542: uinput device destroyed
+2026-09-29T08:57:16.561227Z  INFO blent::capture::process: 16: ffmpeg exited cleanly
+2026-09-29T08:57:16.561313Z  INFO blent::capture: 264: No tablet is a screen — disconnecting the virtual display
+2026-09-29T08:57:16.562391Z  INFO blent::capture::process: 16: evdi_helper exited cleanly
+2026-09-29T08:57:16.573017Z  INFO blent::input::linux: 542: uinput device destroyed
+2026-09-29T08:57:16.616012Z  INFO blent::input::linux: 542: uinput device destroyed
+2026-09-29T08:57:16.616043Z  INFO blent::input::linux: 628: Tablet detached — virtual input devices removed
+2026-09-29T08:57:30.688306Z  INFO blent: 2324: ADB forwarding ready for 8002RH1010011900 (8890, 8891)
+2026-09-29T08:57:30.839443Z  INFO blent::input: 231: Input client: 127.0.0.1:46477
+2026-09-29T08:57:30.849802Z  INFO blent::input::settings: 146: Tablet reports native resolution: 1280x800 (218x136 mm)
+2026-09-29T08:57:30.855866Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:30.861927Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:30.874214Z  INFO blent: 2371: Blent token delivery command completed on tablet
+2026-09-29T08:57:30.877774Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:30.994324Z  INFO blent: 2371: Blent launch command completed on tablet
+2026-09-29T08:57:30.994340Z  INFO blent::monitor: 411: Tablet 1 connected over USB (8002RH1010011900)
+2026-09-29T08:57:30.996042Z  INFO blent::input::linux::cursor: 38: Cinnamon mouse remains visible while Blent touch is attached
+2026-09-29T08:57:30.996250Z  INFO blent::input::linux: 265: uinput touchscreen 'Blent Touch' created
+2026-09-29T08:57:31.008390Z  INFO blent::selection::worker: 244: Automatic encoder selection encoder="libx264" workers=1 decoder=Some(DecoderChoice { name: "c2.unisoc.avc.decoder", stream: StreamProfile { codec: "h264", format: Profile { profile: "constrained-baseline", level: 40, depth: 8 } }, low_latency: false, operating_rate: Some(120) }) reason="Historical packet-ready→render-ACK p50/p95/p99 15.7/18.4/43.3 ms; 44.1 ACK FPS, 90 samples, 100.0% delivery; historical host probe PSNR 34.93 dB; awaiting render ACKs; workers requested 1, effective 1; encoder resources Some(Usage { cpu_us_per_frame: 2857.1428571428573, peak_rss_bytes: 45027328 })"
+2026-09-29T08:57:31.014664Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:31.067930Z  INFO blent::stream: 118: Client connected: 127.0.0.1:40307
+2026-09-29T08:57:31.196693Z  INFO blent::input::linux: 303: uinput pen tablet 'Blent Pen' created
+2026-09-29T08:57:31.397036Z  INFO blent::input::linux: 333: uinput pointer 'Blent Pointer' created
+2026-09-29T08:57:31.633756Z  WARN blent::kwin: 97: Cannot reach KWin over D-Bus: neither busctl nor qdbus answered. Touch and pen will address the whole desktop instead of the tablet's screen, and the on-screen keyboard will not be suppressed. On KDE this normally means systemd's busctl is missing.
+2026-09-29T08:57:31.633771Z  WARN blent::osk: 138: KWin's virtual keyboard mode is unavailable or unsupported — leaving it alone
+2026-09-29T08:57:36.069751Z  WARN blent::stream: 364: Codec config not available after 5s, starting stream without it
+2026-09-29T08:57:41.580262Z  INFO blent::stream: 134: Client 127.0.0.1:40307 session ended
+2026-09-29T08:57:41.582553Z  INFO blent::stream: 118: Client connected: 127.0.0.1:50579
+2026-09-29T08:57:42.151537Z  WARN blent::input::mapping: 256: X11 output or input devices not ready after 10s; check xrandr providers and xinput
+2026-09-29T08:57:43.399527Z  INFO blent::capture::helper: 292: Helper connected on card1
+2026-09-29T08:57:43.399641Z  INFO blent::input::linux: 641: Mode is now second screen — remapping input devices (card1)
+2026-09-29T08:57:43.477403Z  INFO blent::capture::helper: 363: Compositor negotiated 1280x800@60Hz on the virtual output
+2026-09-29T08:57:43.477642Z  INFO blent::capture::helper: 339: Helper emits 1280x800 frames to the encoder
+2026-09-29T08:57:43.478096Z  INFO blent::capture::encoding: 66: Encoder started (PID: 374873)
+2026-09-29T08:57:43.508813Z  INFO blent::capture::cli_encoder: 291: Extracted codec configuration: 40 bytes
+2026-09-29T08:57:43.508855Z  INFO blent::latency: 407: Latency packet-ready→render-ACK (host clock): p50 11.1ms  p95 16.8ms  max 17.7ms  (93 samples, 2 in flight, 0 aged out)
+2026-09-29T08:57:43.508865Z  INFO blent::latency: 418: Latency tablet arrival→render-callback (tablet clock): p50 8.5ms  p95 14.2ms  (93 samples)
+2026-09-29T08:57:43.508893Z  INFO blent::stream: 371: Sending codec config to client (40 bytes)
+2026-09-29T08:57:43.657379Z  INFO blent: 1916: Settings saved to Ok("/home/netto/.config/blent/config.toml")
+2026-09-29T08:57:43.818155Z  INFO blent::input::mapping::x11_cache: 49: Mapped 'Blent Touch' (X11 id 20) to DVI-I-2-1
+2026-09-29T08:57:43.842571Z  INFO blent::input::mapping::x11_cache: 49: Mapped 'Blent Pointer' (X11 id 22) to DVI-I-2-1
+2026-09-29T08:57:48.485043Z  INFO blent::capture::cli_encoder: 314: Encoder: 244 access units in 5.0s, 0.4 MB/s (3514 kbps)
+2026-09-29T08:57:48.525201Z  INFO blent::latency: 407: Latency packet-ready→render-ACK (host clock): p50 16.1ms  p95 18.1ms  max 32.0ms  (245 samples, 2 in flight, 0 aged out)
+2026-09-29T08:57:48.525215Z  INFO blent::latency: 418: Latency tablet arrival→render-callback (tablet clock): p50 11.8ms  p95 13.2ms  (245 samples)
+2026-09-29T08:57:53.485283Z  INFO blent::capture::cli_encoder: 314: Encoder: 250 access units in 5.0s, 0.4 MB/s (3472 kbps)
+2026-09-29T08:57:53.535095Z  INFO blent::latency: 407: Latency packet-ready→render-ACK (host clock): p50 16.0ms  p95 18.5ms  max 42.3ms  (250 samples, 1 in flight, 0 aged out)
+2026-09-29T08:57:53.535113Z  INFO blent::latency: 418: Latency tablet arrival→render-callback (tablet clock): p50 11.7ms  p95 13.0ms  (250 samples)
+2026-09-29T08:57:54.897354Z  WARN blent::input::mapping: 256: X11 output or input devices not ready after 10s; check xrandr providers and xinput
+2026-09-29T08:57:58.502214Z  INFO blent::capture::cli_encoder: 314: Encoder: 248 access units in 5.0s, 0.4 MB/s (3480 kbps)
+2026-09-29T08:57:58.535167Z  INFO blent::latency: 407: Latency packet-ready→render-ACK (host clock): p50 15.8ms  p95 17.7ms  max 43.1ms  (247 samples, 2 in flight, 0 aged out)
+2026-09-29T08:57:58.535182Z  INFO blent::latency: 418: Latency tablet arrival→render-callback (tablet clock): p50 11.5ms  p95 12.9ms  (247 samples)

@@ -4,8 +4,8 @@ Status: requirements research completed; audio is not implemented. On September
 29 the maintainer selected **Blent Microphone** and **Blent Speakers** as ordinary
 selectable computer devices, independent explicit Start/Stop, unchanged existing
 defaults, simultaneous operation, speech processing with optional raw mode.
-T621 native consumer acceptance has passed; physical USB acceptance T540 still
-gates implementation. T545 builds on the common
+T621 native consumer and [T540 physical USB acceptance](2026-09-29-usb-camera-readiness.md)
+have passed; shared implementation T717 is ready. T545 builds on the common
 contract below; display and camera transports retain independent ownership.
 
 ## Current implementation and local evidence
@@ -106,7 +106,7 @@ native verification. T545 defines the paired playback reference and duplex gate.
 ## Dependency-ordered implementation and acceptance
 
 1. T717: shared lifecycle, authenticated framing, bounded queues and adapter contracts;
-   requires remaining T540 camera acceptance. Permanent fake-clock/fake-device tests cover both
+   camera prerequisites T621/T540 passed. Permanent fake-clock/fake-device tests must cover both
    directions before native integration, including invalid values, truncation,
    overflow, replay, drift boundaries, cancellation and generation races.
 2. T718: Android microphone permission/lifecycle plus Linux selectable source and

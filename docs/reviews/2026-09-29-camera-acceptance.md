@@ -48,5 +48,5 @@ No camera implementation was changed, so no artificial new behavioral test was a
 
 Physical cable removal is separate T540 and is not established by these software
 Start/Stop checks. No meeting was joined, audio captured, lock forced or broad
-battery/performance campaign performed. T621 can be removed independently; audio
-implementation still requires completion of T540.
+battery/performance campaign performed. Subsequent [physical T540 acceptance](2026-09-29-usb-camera-readiness.md)
+passed separately; both camera prerequisites for audio implementation are complete.

@@ -1,0 +1,542 @@
+[
+  {
+    "stage": "before",
+    "at": 1790672175.0466251,
+    "display_pid": "358459"
+  },
+  {
+    "stage": "before-unplug",
+    "at": 1790672182.0992174,
+    "front": {
+      "label": "Blent Front",
+      "state": "live",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 63,
+      "values": [
+        {
+          "mean": 85.49551504629646,
+          "max": 255,
+          "nonblack": 2063
+        },
+        {
+          "mean": 85.64930555555563,
+          "max": 255,
+          "nonblack": 2065
+        },
+        {
+          "mean": 85.71166087962959,
+          "max": 255,
+          "nonblack": 2065
+        },
+        {
+          "mean": 85.53978587962968,
+          "max": 255,
+          "nonblack": 2067
+        },
+        {
+          "mean": 85.56684027777766,
+          "max": 255,
+          "nonblack": 2070
+        },
+        {
+          "mean": 85.37471064814798,
+          "max": 255,
+          "nonblack": 2069
+        },
+        {
+          "mean": 85.16956018518519,
+          "max": 255,
+          "nonblack": 2069
+        },
+        {
+          "mean": 85.30353009259282,
+          "max": 255,
+          "nonblack": 2074
+        },
+        {
+          "mean": 85.56785300925942,
+          "max": 255,
+          "nonblack": 2079
+        },
+        {
+          "mean": 85.82595486111114,
+          "max": 255,
+          "nonblack": 2085
+        }
+      ]
+    },
+    "rear": {
+      "label": "Blent Rear",
+      "state": "live",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 3,
+      "values": [
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        }
+      ]
+    }
+  },
+  {
+    "stage": "operator-ready",
+    "at": 1790672182.0994911
+  },
+  {
+    "stage": "adb-disconnected",
+    "at": 1790672235.233461
+  },
+  {
+    "stage": "unplugged-output",
+    "at": 1790672240.250337,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 1733,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 61,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "adb-reconnected",
+    "at": 1790672249.0571907
+  },
+  {
+    "stage": "reconnect-before-start",
+    "at": 1790672252.2189624,
+    "camera_clients": "[]",
+    "mappings": "UsbFfs tcp:8890 tcp:8890\nUsbFfs tcp:8891 tcp:8891\n\n"
+  },
+  {
+    "stage": "reconnected-output",
+    "at": 1790672253.2280962,
+    "front": {
+      "label": "Blent Front",
+      "state": "live",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 1747,
+      "values": [
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        }
+      ]
+    }
+  },
+  {
+    "stage": "explicit-restart",
+    "at": 1790672259.295092,
+    "front": {
+      "label": "Blent Front",
+      "state": "live",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 33,
+      "values": [
+        {
+          "mean": 85.20891203703715,
+          "max": 255,
+          "nonblack": 2011
+        },
+        {
+          "mean": 84.94632523148154,
+          "max": 255,
+          "nonblack": 2007
+        },
+        {
+          "mean": 84.75072337962969,
+          "max": 255,
+          "nonblack": 2011
+        },
+        {
+          "mean": 84.80208333333312,
+          "max": 255,
+          "nonblack": 2013
+        },
+        {
+          "mean": 85.13859953703692,
+          "max": 254.66666666666666,
+          "nonblack": 2021
+        },
+        {
+          "mean": 85.09042245370357,
+          "max": 254.66666666666666,
+          "nonblack": 2016
+        },
+        {
+          "mean": 85.28414351851853,
+          "max": 255,
+          "nonblack": 2023
+        },
+        {
+          "mean": 85.45196759259244,
+          "max": 255,
+          "nonblack": 2023
+        },
+        {
+          "mean": 85.64062500000011,
+          "max": 255,
+          "nonblack": 2025
+        },
+        {
+          "mean": 85.69299768518512,
+          "max": 255,
+          "nonblack": 2031
+        }
+      ]
+    },
+    "rear": {
+      "label": "Blent Rear",
+      "state": "live",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 3,
+      "values": [
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        }
+      ]
+    }
+  },
+  {
+    "stage": "final-output",
+    "at": 1790672261.3171232,
+    "front": {
+      "label": "Blent Front",
+      "state": "ended",
+      "muted": false,
+      "width": 1280,
+      "height": 720,
+      "frames": 66,
+      "values": [
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        },
+        {
+          "mean": 0,
+          "max": 0,
+          "nonblack": 0
+        }
+      ]
+    }
+  },
+  {
+    "stage": "final-resources",
+    "at": 1790672261.4476075,
+    "camera_clients": "[]",
+    "mappings": "UsbFfs tcp:8890 tcp:8890\nUsbFfs tcp:8891 tcp:8891\n\n"
+  },
+  {
+    "stage": "passed-camera-checks",
+    "at": 1790672261.4480329
+  },
+  {
+    "stage": "cleanup",
+    "at": 1790672261.4522512,
+    "display_state": "active"
+  }
+]
