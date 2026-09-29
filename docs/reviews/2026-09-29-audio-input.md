@@ -1,11 +1,12 @@
 # T544: tablet microphone and shared audio contract
 
-Status: requirements research completed; audio is not implemented. On September
+Status: requirements research completed; native audio is not implemented.
+[T717 shared foundation](../audio.md) now implements lifecycle, framing and queues. On September
 29 the maintainer selected **Blent Microphone** and **Blent Speakers** as ordinary
 selectable computer devices, independent explicit Start/Stop, unchanged existing
 defaults, simultaneous operation, speech processing with optional raw mode.
 T621 native consumer and [T540 physical USB acceptance](2026-09-29-usb-camera-readiness.md)
-have passed; shared implementation T717 is ready. T545 builds on the common
+have passed; shared implementation T717 is complete and microphone integration T718 is next. T545 builds on the common
 contract below; display and camera transports retain independent ownership.
 
 ## Current implementation and local evidence
@@ -15,7 +16,8 @@ session/backend pattern. `gui/src/camera_settings.rs` owns host configuration;
 Android's camera owner separates admission, cancellation and native retirement.
 Reuse these responsibilities, not camera H.264 framing or camera service types.
 `android/app/src/main/AndroidManifest.xml` has neither RECORD_AUDIO nor a microphone
-service. No Blent source/sink or audio transport exists.
+service. No native Blent source/sink or audio connection exists; T717 supplies the portable
+framing/session primitives.
 
 Read-only inspection found PipeWire 1.0.5 with its PulseAudio compatibility server
 (protocol 35), `pactl`, `pacat` and `pw-cat` on this Linux host. The tablet reports
@@ -105,10 +107,10 @@ native verification. T545 defines the paired playback reference and duplex gate.
 
 ## Dependency-ordered implementation and acceptance
 
-1. T717: shared lifecycle, authenticated framing, bounded queues and adapter contracts;
-   camera prerequisites T621/T540 passed. Permanent fake-clock/fake-device tests must cover both
-   directions before native integration, including invalid values, truncation,
-   overflow, replay, drift boundaries, cancellation and generation races.
+1. T717 completed: shared lifecycle, authenticated framing, bounded queues and adapter
+   contracts, with permanent fake-clock/fake-device tests for both directions, invalid
+   values, truncation, overflow, replay, drift, cancellation and generation races.
+   See [implemented contract](../audio.md); native integration remains below.
 2. T718: Android microphone permission/lifecycle plus Linux selectable source and
    host controls. Requires T717. Validate real desktop consumer enumeration,
    intentional speech, silence on Stop/loss, permission denial/revocation,
