@@ -62,12 +62,69 @@ test was isolated or that Blent did not contribute to the incident.
 
 ## Remaining diagnosis and required regression
 
-Prepare a bounded observation that records mouse-only event counts/timestamps,
-XInput delivery, pointer/button state, and compositor responsiveness without
-grabbing devices, injecting input, collecting keyboard input, or changing saved
-preferences. If failure recurs, collect it while keyboard control still works
-and compare physical receiver events with Blent virtual input state. A fast
-X query alone does not prove that mouse events reach clients or get rendered.
+The following bounded observation is prepared for a recurrence on this Linux
+X11 host. It uses installed `evtest`, `xinput`, and `timeout`; it does not grab
+devices, inject events, or change preferences. Device IDs can change on reboot.
+Before running either reader, verify the physical mouse identity:
+
+```sh
+POINTER_DEVICE=/dev/input/by-id/usb-Logitech_USB_Receiver-if01-event-mouse
+POINTER_ID=$(xinput list --id-only 'Logitech USB Receiver Mouse')
+readlink -f "$POINTER_DEVICE"
+udevadm info --query=property --name="$POINTER_DEVICE" | rg '^ID_INPUT|^DEVNAME'
+xinput list --short "$POINTER_ID"
+xinput list-props "$POINTER_ID" | rg 'Device Node|Device Enabled|Transformation|Accel Speed'
+test -r "$POINTER_DEVICE"
+```
+
+Proceed only with exactly one slave pointer whose `Device Node` matches the
+resolved path, `ID_INPUT_MOUSE=1`, and no `ID_INPUT_KEYBOARD=1`. Do not select a
+master pointer, keyboard, similarly named consumer-control device, or touchpad.
+An unreadable node is missing diagnostic access; do not change its permissions
+or the user's groups as part of capture.
+
+In separate terminals, run these two 15-second readers while making ordinary
+mouse movements. Both print only event categories/counts, never coordinates or
+key values. The timeout status 124 is expected when each observation completes;
+other failures must be retained, not interpreted as zero events.
+
+```sh
+set -o pipefail
+timeout --kill-after=1s 15s stdbuf -oL evtest "$POINTER_DEVICE" |
+  awk '/^Event: time/ { count[$6]++; if (!first) first=$3; last=$3 }
+       END { print "kernel_first=" first, "kernel_last=" last;
+             for (kind in count) print kind, count[kind] }'
+printf 'kernel_reader_status=%s\n' "$?"
+```
+
+```sh
+set -o pipefail
+timeout --kill-after=1s 15s stdbuf -oL xinput test "$POINTER_ID" |
+  awk '$1 == "motion" { motion++ }
+       $1 == "button" && $2 == "press" { press++ }
+       $1 == "button" && $2 == "release" { release++ }
+       END { print "xinput_motion=" motion+0, "press=" press+0, "release=" release+0 }'
+printf 'xinput_reader_status=%s\n' "$?"
+```
+
+Set the verified variables in each terminal. Capture these bounded state queries
+during the same failure, with a timestamp and whether keyboard shortcuts and
+ordinary window repaint still work:
+
+```sh
+date --iso-8601=seconds
+timeout --kill-after=1s 2s xinput query-state "$POINTER_ID"
+timeout --kill-after=1s 2s xinput list --short
+timeout --kill-after=1s 2s xinput query-state 'Blent Pointer'
+timeout --kill-after=1s 2s xinput query-state 'Blent Touch'
+```
+
+Physical kernel events without XInput events narrow the fault to delivery above
+the receiver. Both streams continuing with an immobile/unusable pointer require
+investigation of grabs, virtual input state, and the compositor. Neither pattern
+alone proves a Blent fault. A fast X query does not prove that mouse events reach
+ordinary clients or get rendered. Healthy-state observations cannot substitute
+for failure-time evidence, and the original incident remains unreproduced.
 
 After capture, isolate the input owner and test recovery in the smallest scope
 supported by that evidence. Do not restart the display manager or unload GPU/
