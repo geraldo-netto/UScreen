@@ -53,6 +53,21 @@ impl PcmQueue {
         self.blocks.len() * BLOCK_FRAMES - self.offset
     }
 
+    /// Transfer complete captured blocks without adding receiver prefill twice.
+    /// Do not mix this producer-side operation with partial rendering/resampling.
+    pub fn pop(&mut self, now_ms: u64) -> Result<Option<PcmBlock>> {
+        ensure!(
+            self.offset == 0 && self.phase == 0 && self.ppm == 0,
+            "cannot transfer partially rendered or resampled audio"
+        );
+        self.advance_clock(now_ms)?;
+        Ok(self.blocks.pop_front().map(|(_, mut block)| {
+            block.discontinuity |= self.discontinuity;
+            self.discontinuity = false;
+            block
+        }))
+    }
+
     fn advance_clock(&mut self, now_ms: u64) -> Result<()> {
         ensure!(now_ms >= self.last_time, "audio clock moved backwards");
         self.last_time = now_ms;

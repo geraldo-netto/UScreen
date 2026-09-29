@@ -1,5 +1,7 @@
 //! Audio preferences and explicit controls; native construction stays in factory().
-use blent_config::audio::{AudioController, AudioOptions, AudioState, AudioStatus, Processing};
+use blent_config::audio::{
+    AudioController, AudioOptions, AudioState, AudioStatus, Direction, Processing,
+};
 use eframe::egui;
 
 #[derive(Default)]
@@ -9,8 +11,14 @@ pub(super) struct Panel {
 }
 impl Panel {
     pub(super) fn show(&mut self, ui: &mut egui::Ui, options: &mut AudioOptions) {
-        ui.heading("Microphone sharing");
-        ui.label("Select Blent Microphone in your computer’s input selector. Existing defaults stay unchanged.");
+        let microphone = options.profile.direction == Direction::Microphone;
+        let (label, selector) = if microphone {
+            ("Microphone", "input")
+        } else {
+            ("Speakers", "output")
+        };
+        ui.heading(format!("{label} sharing"));
+        ui.label(format!("Select Blent {label} in your computer’s {selector} selector. Existing defaults stay unchanged."));
         let status = self
             .backend
             .as_ref()
@@ -20,27 +28,41 @@ impl Panel {
             ui.colored_label(egui::Color32::RED, error);
         }
         self.buttons(ui, options, status.state);
-        super::settings_grid(ui, "audio-microphone", |ui| preferences(ui, options));
+        super::settings_grid(
+            ui,
+            if microphone {
+                "audio-microphone"
+            } else {
+                "audio-speakers"
+            },
+            |ui| preferences(ui, options),
+        );
         ui.label("Start applies these settings. Apply saves preferences; it never starts audio or restarts display sharing.");
-        ui.label("Open Blent on the tablet for microphone permission and background consent. Raw mode may include acoustic echo.");
+        ui.label(if microphone { "Open Blent on the tablet for microphone permission and background consent. Raw mode may include acoustic echo." }
+            else { "Open Blent on the tablet for speaker controls and background consent. Other apps may pause playback through audio focus." });
     }
     fn buttons(&mut self, ui: &mut egui::Ui, options: &AudioOptions, state: AudioState) {
         let active = matches!(
             state,
             AudioState::Starting | AudioState::Streaming | AudioState::Stopping
         );
+        let label = if options.profile.direction == Direction::Microphone {
+            "microphone"
+        } else {
+            "speakers"
+        };
         ui.horizontal(|ui| {
             if ui
                 .add_enabled(
                     !active && cfg!(target_os = "linux"),
-                    egui::Button::new("Start microphone"),
+                    egui::Button::new(format!("Start {label}")),
                 )
                 .clicked()
             {
                 self.error = self.start(options.clone()).err();
             }
             if ui
-                .add_enabled(active, egui::Button::new("Stop microphone"))
+                .add_enabled(active, egui::Button::new(format!("Stop {label}")))
                 .clicked()
             {
                 if let Some(backend) = &self.backend {

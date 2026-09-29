@@ -10,7 +10,7 @@ mod session;
 mod wire;
 pub use buffer::{PcmQueue, RenderResult};
 pub use session::{AudioSession, AudioState};
-pub use wire::{AudioGrant, FrameReader, PcmBlock, FRAME_HEADER_BYTES, HELLO_BYTES};
+pub use wire::{AudioGrant, FrameReader, FrameWriter, PcmBlock, FRAME_HEADER_BYTES, HELLO_BYTES};
 
 pub const SAMPLE_RATE: u32 = 48_000;
 pub const BLOCK_FRAMES: usize = 480;

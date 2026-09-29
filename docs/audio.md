@@ -2,7 +2,8 @@
 
 T717 implements portable Rust audio policy in `blent_config::audio`. T718 adds
 Linux/Android microphone transport, native source and controls described below.
-Speaker integration remains T719; duplex/acoustic acceptance remains T720.
+T719 adds the selectable speaker sink and Android playback. Duplex/acoustic
+acceptance and native device-clock correction remain T720.
 Unimplemented backend capabilities remain unsupported. No system default device changes or automatic audio startup occur.
 
 The selected product contract is [microphone/shared audio](reviews/2026-09-29-audio-input.md)
@@ -27,7 +28,7 @@ Raw and background support are separate capabilities; neither is silently assume
 2. Deliver `AudioGrant::hello()` only over the existing authenticated control path.
    Start the adapter asynchronously; it owns devices, paths, permissions, task
    cancellation and IO deadlines. The trait enqueues work rather than waiting on
-   UI/native callback threads. T717 itself supplies no native adapters; the T718 integration is described below.
+   UI/native callback threads. T717 itself supplies no native adapters; the T718/T719 integrations are described below.
 3. A fixed handshake must match the grant before `connected` admits Streaming.
    The startup deadline is 5 seconds. Failed negotiation cannot acquire ownership
    or extend the deadline. Do not log grants/handshakes or persist credentials.
@@ -53,7 +54,7 @@ Raw and background support are separate capabilities; neither is silently assume
 IO workers must impose cancellable deadlines for handshake, header, payload and
 writes. Device callbacks must use adapter-owned rings, without socket IO or waiting.
 This domain layer performs no IO and cannot enforce an adapter's native shutdown.
-T718/T719 must test partial reads/writes, cancellation and native retirement.
+T718/T719 retain tests for partial reads/writes, cancellation and native retirement.
 
 ## Version 1 wire format
 
@@ -125,9 +126,11 @@ not a native device-clock estimate. This is not a fidelity or AEC effectiveness 
 
 [September 29 evidence](reviews/2026-09-29-audio-foundation.md) records permanent
 normal-suite tests, scoped per-function native Rust coverage and boundary findings.
-[T718 evidence](reviews/2026-09-29-audio-microphone.md) records permanent native source/transport regressions and bounded physical checks. Intentional speech, physical route/USB acceptance, sink enumeration,
-measured acoustic effectiveness, latency and simultaneous hardware operation
-remain under T719/T720.
+[T718 evidence](reviews/2026-09-29-audio-microphone.md) records native source/transport
+regressions and bounded physical checks. [T719 evidence](reviews/2026-09-29-audio-speakers.md)
+records private sink/transport tests and connected-tablet playback/lifecycle.
+Intentional speech remains T718; physical duplex, route/USB transitions, measured
+acoustic effectiveness and delay remain T720.
 
 ## Linux/Android microphone integration (T718)
 
@@ -173,4 +176,42 @@ waits on the transport.
 The shared drift-correction primitive is implemented. Native device-counter
 integration and measured duplex drift/latency remain T720; current microphone
 buffering bounds backlog but does not yet continuously correct device-clock drift.
-Speakers remain T719 until their native path and controls are implemented.
+
+## Linux/Android speaker integration (T719)
+
+Start **Speakers** in the host Audio tab or run `blent audio --direction speakers`.
+Select **Blent Speakers** in the desktop application's output selector. The owned
+PipeWire `Audio/Sink` appears only for this session. Blent leaves existing defaults
+and application routes unchanged; it does not mirror the current system mix.
+Microphone and speakers have separate controls, saved settings, authentication,
+transport, queues and failure ownership. Apply never starts either direction.
+
+Android provides processing override, volume 0–100% for this track, built-in speaker
+preference and explicit background consent. It needs no microphone permission for
+playback. Speech requests communication playback; Raw requests media playback.
+Neither establishes effective acoustic echo cancellation. Actual native route,
+buffer frames, played frames and underruns are reported separately from the
+application queue setting. An observed route change stops playback and requires
+explicit Start; a dead AudioTrack is recreated within its existing authorization,
+discarding the interrupted block. Native buffer minima can exceed the requested
+application buffering.
+
+Audio focus denial prevents playback. Transient loss, including duck requests,
+pauses and flushes sound; focus regain can resume only the same active session.
+Permanent focus loss stops it. Foreground-only playback stops when the app hides.
+Consented background playback owns its mediaPlayback foreground service and Stop
+notification independently of microphone, camera and display services. Changing
+tablet settings stops that direction. App launch or reconnection never resumes it.
+
+The PipeWire callback copies bounded stereo chunks into its queue without pipe IO
+or waiting for a mutex. It rejects corrupt/unknown chunk flags, treats EMPTY as
+silence, and honors SPA's modulo offsets and clamped sizes. Incomplete chunks
+expire after a 200 ms capture stall. A
+worker dequeues whole blocks without adding another prefill, emits silence on
+underflow, and paces transfer at 10 ms. Android validates each complete frame within
+one 250 ms deadline, keeps at most twenty blocks, and applies the requested prefill
+after Start/underflow. Gaps and overflow discard stale samples. AudioTrack short
+writes share one 250 ms complete-write budget; partial progress cannot renew it.
+Stop, transport loss or PipeWire server loss removes the owned sink and releases
+playback. These limits bound application backlog; they are not acoustic latency
+measurements or continuous native clock-drift correction.

@@ -29,9 +29,11 @@ internal class AudioBinding(private val context: Context,
     private val invitations: MutableStateFlow<AudioEndpoint?> = AudioInvitations.microphone,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + android.os.Handler(android.os.Looper.getMainLooper()).asCoroutineDispatcher()),
     private val service: (String?) -> Unit = {},
+    val direction: Int = 1,
 ) {
-    var preferences by mutableStateOf(AudioPreferences.load(context)); private set
-    var status by mutableStateOf("Start microphone on your computer."); private set
+    val label = if (direction == 1) "microphone" else "speakers"
+    var preferences by mutableStateOf(AudioPreferences.load(context, direction)); private set
+    var status by mutableStateOf("Start $label on your computer."); private set
     var sharing by mutableStateOf(false); private set
     var pending by mutableStateOf<AudioEndpoint?>(null); private set
     private var visible = false
@@ -53,7 +55,7 @@ internal class AudioBinding(private val context: Context,
     private fun invite(endpoint: AudioEndpoint) {
         stopSharing()
         if (!visible) return
-        if (!endpoint.valid()) { status = "Invalid audio request."; return }
+        if (!endpoint.valid() || endpoint.direction != direction) { status = "Invalid audio request."; return }
         pending = endpoint
         if (!permission()) { requestPermission(); return }
         accept()
@@ -81,7 +83,7 @@ internal class AudioBinding(private val context: Context,
             backgroundRun = java.util.UUID.randomUUID().toString()
             service(backgroundRun)
         }
-        sharing = true; status = "Starting microphone…"
+        sharing = true; status = "Starting $label…"
         worker = scope.launch {
             try {
                 earlier?.join()
@@ -89,7 +91,7 @@ internal class AudioBinding(private val context: Context,
                     scope.launch { if (revision == generation) status = text }
                 }
             } catch (error: Exception) {
-                if (revision == generation && error !is CancellationException) status = error.message ?: "Microphone stopped."
+                if (revision == generation && error !is CancellationException) status = error.message ?: "Audio stopped."
             } finally {
                 owned.cancel()
                 if (revision == generation) { sharing = false; stopBackground() }
@@ -107,11 +109,11 @@ internal class AudioBinding(private val context: Context,
         worker?.cancel()
         sharing = false
         stopBackground()
-        status = "Microphone sharing is off. Start again on your computer."
+        status = "${label.replaceFirstChar { it.uppercase() }} sharing is off. Start again on your computer."
     }
     fun configure(value: AudioPreferences) {
-        require(value.valid())
-        stopSharing(); value.save(context); preferences = value
+        require(value.valid(direction))
+        stopSharing(); value.save(context, direction); preferences = value
     }
     fun stop() {
         visible = false

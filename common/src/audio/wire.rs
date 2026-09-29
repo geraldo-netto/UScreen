@@ -123,6 +123,84 @@ pub struct FrameReader {
     previous: Option<(u64, u64)>,
 }
 
+/// Sender sequence ownership, including capture discontinuities and exhaustion.
+pub struct FrameWriter {
+    grant: AudioGrant,
+    next: u64,
+    previous_time: Option<u64>,
+}
+impl FrameWriter {
+    pub fn new(grant: AudioGrant) -> Self {
+        Self {
+            grant,
+            next: 0,
+            previous_time: None,
+        }
+    }
+    pub fn encode(&mut self, block: &PcmBlock, timestamp_us: u64) -> Result<Vec<u8>> {
+        ensure!(
+            self.previous_time.is_none_or(|last| timestamp_us > last),
+            "audio clock did not advance"
+        );
+        let sequence = if block.discontinuity && self.next != 0 {
+            self.next
+                .checked_add(1)
+                .ok_or_else(|| anyhow::anyhow!("audio sequence exhausted"))?
+        } else {
+            self.next
+        };
+        let bytes = self.grant.encode(sequence, timestamp_us, block.samples())?;
+        self.next = sequence + 1; // encode rejects u64::MAX before state changes.
+        self.previous_time = Some(timestamp_us);
+        Ok(bytes)
+    }
+}
+
+#[cfg(test)]
+mod writer_tests {
+    use super::*;
+    #[test]
+    fn t719_sender_preserves_first_sequence_gaps_and_atomic_rejection() {
+        let grant = AudioGrant::new(AudioProfile::new(Direction::Speakers), 1).unwrap();
+        let mut reader = grant.authenticate(&grant.hello()).unwrap();
+        let mut writer = FrameWriter::new(grant.clone());
+        let mut block = PcmBlock::from_le_bytes(Direction::Speakers, &[0; 1920]).unwrap();
+        block.discontinuity = true;
+        assert!(
+            !reader
+                .decode(&writer.encode(&block, 10).unwrap())
+                .unwrap()
+                .discontinuity
+        );
+        for time in [0, 9, 10] {
+            assert!(writer.encode(&block, time).is_err());
+        }
+        assert!(
+            reader
+                .decode(&writer.encode(&block, 11).unwrap())
+                .unwrap()
+                .discontinuity
+        );
+        block.discontinuity = false;
+        assert!(
+            !reader
+                .decode(&writer.encode(&block, 12).unwrap())
+                .unwrap()
+                .discontinuity
+        );
+        let mono = PcmBlock::from_le_bytes(Direction::Microphone, &[0; 960]).unwrap();
+        assert!(writer.encode(&mono, 13).is_err());
+        writer.next = u64::MAX - 1;
+        assert!(writer.encode(&block, 13).is_ok());
+        assert!(writer.encode(&block, 14).is_err());
+        block.discontinuity = true;
+        assert!(writer.encode(&block, 14).is_err());
+        let mut final_clock = FrameWriter::new(grant);
+        assert!(final_clock.encode(&block, u64::MAX).is_ok());
+        assert!(final_clock.encode(&block, u64::MAX).is_err());
+    }
+}
+
 impl FrameReader {
     /// Check the entire fixed header before allocating or waiting for payload.
     /// Adapter must use an exact, bounded read and retire the connection on error.

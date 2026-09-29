@@ -71,6 +71,7 @@ struct App {
     scheduling_status: String,
     camera: camera_settings::Panel,
     microphone: audio_settings::Panel,
+    speakers: audio_settings::Panel,
     _status_worker: Option<status_worker::StatusWorker>,
     store: ConfigStore,
     save: Option<settings::PendingSave>,
@@ -197,6 +198,7 @@ impl App {
             scheduling_status,
             camera: camera_settings::Panel::default(),
             microphone: audio_settings::Panel::default(),
+            speakers: audio_settings::Panel::default(),
             _status_worker: Some(worker),
             store: ConfigStore::default(),
             save: None,
@@ -1070,6 +1072,8 @@ impl App {
         }
         if self.tab == Tab::Audio {
             self.microphone.show(ui, &mut self.cfg.audio.microphone);
+            ui.separator();
+            self.speakers.show(ui, &mut self.cfg.audio.speakers);
             return;
         }
         if self.tab == Tab::Camera {
@@ -1354,6 +1358,7 @@ mod tests {
             scheduling_status: "This process: High priority active".into(),
             camera: camera_settings::Panel::default(),
             microphone: audio_settings::Panel::default(),
+            speakers: audio_settings::Panel::default(),
             _status_worker: None,
             store: ConfigStore::default(),
             save: None,
@@ -2870,7 +2875,28 @@ esac"#
 
     #[test]
     fn t718_audio_start_stop_and_apply_preserve_display_configuration() {
-        use blent_config::audio::{AudioController, AudioOptions, AudioState, AudioStatus};
+        check_audio_controls(blent_config::audio::Direction::Microphone);
+    }
+
+    fn speaker_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            ui.vertical(|ui| app.speakers.show(ui, &mut app.cfg.audio.speakers));
+        })
+    }
+
+    #[test]
+    fn t719_speaker_start_stop_and_apply_preserve_other_sessions() {
+        check_audio_controls(blent_config::audio::Direction::Speakers);
+    }
+
+    fn check_audio_controls(direction: blent_config::audio::Direction) {
+        use blent_config::audio::{
+            AudioController, AudioOptions, AudioState, AudioStatus, Direction,
+        };
         use std::{cell::RefCell, rc::Rc};
         struct Backend(Rc<RefCell<(AudioState, Vec<AudioOptions>)>>);
         impl AudioController for Backend {
@@ -2895,21 +2921,36 @@ esac"#
         app.cfg = app.saved_cfg.clone();
         app.store = ConfigStore::new(directory.path().join("config.toml"));
         let calls = Rc::new(RefCell::new((AudioState::Stopped, Vec::new())));
-        app.microphone.backend = Some(Box::new(Backend(calls.clone())));
+        let (frame, label) = if direction == Direction::Microphone {
+            app.microphone.backend = Some(Box::new(Backend(calls.clone())));
+            (
+                audio_test_frame
+                    as fn(&mut App, &egui::Context, Vec<egui::Event>) -> Vec<(String, egui::Rect)>,
+                "microphone",
+            )
+        } else {
+            app.speakers.backend = Some(Box::new(Backend(calls.clone())));
+            (
+                speaker_test_frame
+                    as fn(&mut App, &egui::Context, Vec<egui::Event>) -> Vec<(String, egui::Rect)>,
+                "speakers",
+            )
+        };
         let context = egui::Context::default();
         context.style_mut(|s| s.animation_time = 0.0);
-        click_settings_text(&mut app, &context, "Raw", audio_test_frame);
+        click_settings_text(&mut app, &context, "Raw", frame);
         click_settings_text(
             &mut app,
             &context,
             "Continue while hidden (requires tablet consent)",
-            audio_test_frame,
+            frame,
         );
         assert!(calls.borrow().1.is_empty());
-        click_settings_text(&mut app, &context, "Start microphone", audio_test_frame);
+        click_settings_text(&mut app, &context, &format!("Start {label}"), frame);
         assert_eq!(calls.borrow().1.len(), 1);
+        assert_eq!(calls.borrow().1[0].profile.direction, direction);
         assert!(calls.borrow().1[0].profile.background);
-        click_settings_text(&mut app, &context, "Stop microphone", audio_test_frame);
+        click_settings_text(&mut app, &context, &format!("Stop {label}"), frame);
         assert_eq!(calls.borrow().0, AudioState::Stopped);
         assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
         app.apply(false);

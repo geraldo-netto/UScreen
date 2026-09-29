@@ -22,10 +22,6 @@ pub async fn run(
     report: Report,
 ) -> Result<()> {
     options.profile.validate()?;
-    ensure!(
-        options.profile.direction == Direction::Microphone,
-        "Speaker backend not yet implemented"
-    );
     let adb = executable("adb")?;
     let helper = helper()?;
     let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -82,7 +78,7 @@ async fn invited(
     let stream = async {
         process::ready(&mut child)
             .await
-            .context("PipeWire unavailable or virtual microphone setup failed")?;
+            .context("PipeWire unavailable or virtual audio device setup failed")?;
         protocol::grant(&mut socket, &token, &grant).await?;
         session.connected(
             grant.generation(),
@@ -91,10 +87,15 @@ async fn invited(
         )?;
         report.update(
             AudioState::Streaming,
-            format!("Blent Microphone available. {processing}"),
+            format!("Blent {:?} available. {processing}", profile.direction),
         );
-        let mut reader = grant.authenticate(&grant.hello())?;
-        microphone(&mut socket, &mut child, &mut reader).await
+        match profile.direction {
+            Direction::Microphone => {
+                let mut reader = grant.authenticate(&grant.hello())?;
+                microphone(&mut socket, &mut child, &mut reader).await
+            }
+            Direction::Speakers => speakers(&mut socket, &mut child, grant).await,
+        }
     };
     let result = tokio::select! {
         result = stream => result,
@@ -134,6 +135,27 @@ async fn microphone(
             tokio::time::timeout(Duration::from_millis(250), protocol::packet(socket, reader))
                 .await??;
         tokio::time::timeout(Duration::from_millis(250), input.write_all(&packet)).await??;
+    }
+}
+
+async fn speakers(
+    socket: &mut TcpStream,
+    child: &mut tokio::process::Child,
+    grant: blent_config::audio::AudioGrant,
+) -> Result<()> {
+    use tokio::io::AsyncReadExt;
+    let output = child
+        .stdout
+        .as_mut()
+        .context("missing audio helper output")?;
+    let mut writer = blent_config::audio::FrameWriter::new(grant);
+    let epoch = std::time::Instant::now();
+    loop {
+        let mut bytes = [0; 1921];
+        tokio::time::timeout(Duration::from_millis(250), output.read_exact(&mut bytes)).await??;
+        let block = protocol::captured(&bytes)?;
+        let packet = writer.encode(&block, epoch.elapsed().as_micros() as u64)?;
+        tokio::time::timeout(Duration::from_millis(250), socket.write_all(&packet)).await??;
     }
 }
 

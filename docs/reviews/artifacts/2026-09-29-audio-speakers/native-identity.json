@@ -1,0 +1,9 @@
+{
+  "android_model": "RugKing Pad 2 Pro",
+  "android_api": 36,
+  "sha256": {
+    "signed_apk": "5258fb18f3733d1aed6cfeb5ed8d1954634a26700741f7ae17a9536c06bcbfc4",
+    "native_host": "452683f9e8ae57a7941e3b7ee8166067bef05a1fc84561ff8a5608ea12b36479",
+    "native_adapter": "e99ae9d95e1130b00a1f2d8efb5b2bfc6bd500c9f40333c3abbeec73d9137ab9"
+  }
+}

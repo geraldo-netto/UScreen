@@ -11,6 +11,7 @@ internal class AudioWire(private val endpoint: AudioEndpoint) {
     private var generation = 0L
     private var sequence = 0L
     private var lastTime = -1L
+    private var receiver: AudioPackets? = null
     fun request(sink: BufferedSink, capabilities: Int, aec: Boolean) {
         require(capabilities in 0..7)
         sink.writeUtf8("BLAUREQ1").writeUtf8(endpoint.token).writeByte(capabilities)
@@ -34,7 +35,9 @@ internal class AudioWire(private val endpoint: AudioEndpoint) {
         require(fields.int == 48000 && fields.short.toInt() == 480)
         require(fields.get().toInt() == endpoint.processing && fields.get().toInt() == if (endpoint.background) 1 else 0)
         require(fields.short.toInt() == endpoint.bufferMs)
+        receiver = AudioPackets(generation, endpoint.direction)
     }
+    fun receive(source: BufferedSource): AudioBlock = checkNotNull(receiver) { "Audio grant missing." }.read(source)
     fun send(sink: BufferedSink, pcm: ShortArray, timestampUs: Long, gain: Int) {
         require(generation != 0L && sequence < Long.MAX_VALUE)
         require(pcm.size == 480 * endpoint.direction && gain in 0..200)

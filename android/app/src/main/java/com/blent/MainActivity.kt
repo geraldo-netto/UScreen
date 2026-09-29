@@ -9,6 +9,7 @@ import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     internal lateinit var microphone: AudioBinding; private set
+    internal lateinit var speakers: AudioBinding; private set
     private val microphonePermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
         microphone.permissionResult(it)
     }
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
         val prefs = Prefs(this)
         cameras = CameraOwner.get(applicationContext)
         microphone = AudioOwner.get(applicationContext)
+        speakers = AudioOwner.get(applicationContext, 2)
         powerBinding = StreamingPowerBinding(this)
         windowPolicy = ActivityWindowPolicy(this, prefs)
         windowPolicy.applyDisplaySettings()
@@ -45,7 +47,7 @@ class MainActivity : ComponentActivity() {
                     onSurfaceDestroyed = session::surfaceDestroyed,
                     displayRefreshRates = windowPolicy.supportedDisplayModes().map { it.refreshRate },
                     onSettingsEvent = ::settingsEvent,
-                    cameraControls = { CameraControls(cameras); AudioControls(microphone) },
+                    cameraControls = { CameraControls(cameras); AudioControls(microphone); AudioControls(speakers) },
                     inputControls = { session.inputControls() },
                 )
             }
@@ -108,6 +110,7 @@ class MainActivity : ComponentActivity() {
         cameras.start()
         AudioOwner.permissionRequest = { microphonePermission.launch(android.Manifest.permission.RECORD_AUDIO) }
         microphone.start()
+        speakers.start()
         windowPolicy.start()
         powerBinding.start(session.powerNow(), session.powerUpdates())
         session.checkUpdate {
@@ -121,6 +124,7 @@ class MainActivity : ComponentActivity() {
         cameras.stop()
         AudioOwner.permissionRequest = null
         microphone.stop()
+        speakers.stop()
         super.onStop()
         windowPolicy.stop()
         powerBinding.stop()

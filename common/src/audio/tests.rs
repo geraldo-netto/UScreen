@@ -22,6 +22,35 @@ fn block(direction: Direction, value: i16) -> PcmBlock {
     }
 }
 
+#[test]
+fn t719_capture_transfer_bounds_age_overflow_and_partial_rendering() {
+    let profile = AudioProfile::new(Direction::Speakers);
+    let mut queue = PcmQueue::new(profile).unwrap();
+    assert!(queue.pop(0).unwrap().is_none());
+    for i in 0..21 {
+        queue.push(block(Direction::Speakers, i), i as u64).unwrap();
+    }
+    let next = queue.pop(21).unwrap().unwrap();
+    assert_eq!(next.samples()[0], 1);
+    assert!(next.discontinuity);
+    assert!(!queue.pop(22).unwrap().unwrap().discontinuity);
+    assert!(queue.pop(21).is_err());
+    assert!(queue.pop(221).unwrap().is_none());
+    queue.push(block(Direction::Speakers, 9), 222).unwrap();
+    assert!(queue.pop(222).unwrap().unwrap().discontinuity);
+    assert!(queue.push(block(Direction::Microphone, 1), 222).is_err());
+    for i in 0..4 {
+        queue.push(block(Direction::Speakers, 1), 222 + i).unwrap();
+    }
+    queue.adjust_drift(48048, 48000).unwrap();
+    queue.render(226, &mut [0; 960]).unwrap();
+    queue.adjust_drift(48000, 48000).unwrap();
+    assert!(queue.pop(226).is_err());
+    queue.clear();
+    queue.adjust_drift(48001, 48000).unwrap();
+    assert!(queue.pop(226).is_err());
+}
+
 fn streaming(direction: Direction) -> (AudioSession, AudioGrant) {
     let mut session = AudioSession::new(direction);
     let grant = session
@@ -624,8 +653,22 @@ fn t718_native_pcm_bounds_and_saved_preferences_are_passive() {
     changed.audio.microphone.profile.processing = Processing::Raw;
     changed.audio.microphone.profile.buffer_ms = 200;
     changed.audio.microphone.profile.background = true;
+    changed.audio.speakers.profile.processing = Processing::Raw;
+    changed.audio.speakers.profile.buffer_ms = 20;
+    changed.audio.speakers.profile.background = true;
     assert!(!changed.requires_restart_from(&baseline));
     let restored: FileConfig = toml::from_str(&toml::to_string(&changed).unwrap()).unwrap();
     assert_eq!(restored.audio, changed.audio);
     assert_eq!(AudioStatus::default().state, AudioState::Stopped);
+}
+
+#[test]
+fn t719_speaker_defaults_upgrade_old_settings_without_starting() {
+    let old = "[microphone.profile]\ndirection = 'microphone'\nprocessing = 'speech'\nbuffer_ms = 40\nbackground = false\n";
+    let settings: AudioSettings = toml::from_str(old).unwrap();
+    assert_eq!(settings.speakers, AudioOptions::new(Direction::Speakers));
+    assert_eq!(
+        settings.microphone,
+        AudioOptions::new(Direction::Microphone)
+    );
 }

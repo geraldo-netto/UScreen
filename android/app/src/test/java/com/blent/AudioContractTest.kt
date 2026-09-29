@@ -40,7 +40,11 @@ class AudioContractTest {
         for (value in 0..220) assertEquals(value in 20..200 && value % 10 == 0, endpoint().copy(bufferMs = value).valid())
         for (value in listOf(-1, 0, 1, 65535, 65536, Int.MAX_VALUE)) assertEquals(value in 1..65535, endpoint().copy(port = value).valid())
         for (length in 0..128) assertEquals(length == 64, endpoint().copy(token = "a".repeat(length)).valid())
-        receiver.onReceive(app, Intent()); receiver.onReceive(app, Intent(base).putExtra("direction", 2))
+        receiver.onReceive(app, Intent())
+        app.sendOrderedBroadcast(Intent(base).putExtra("direction", 2)
+            .setComponent(android.content.ComponentName(app, AudioReceiver::class.java)), null)
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertEquals(endpoint().copy(direction = 2), AudioInvitations.speakers.value)
         assertEquals(endpoint(), AudioInvitations.microphone.value)
     }
     @Test fun t718_preferencesNeverPersistSessionAndInvalidSettingsReject() {

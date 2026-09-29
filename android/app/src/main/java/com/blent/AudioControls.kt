@@ -12,27 +12,28 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AudioControls(binding: AudioBinding) {
-    SettingsSection("Microphone sharing")
+    SettingsSection("${binding.label.replaceFirstChar { it.uppercase() }} sharing")
     Text(binding.status, style = MaterialTheme.typography.bodySmall)
     Text("Computer Start requests a session. Changing tablet settings stops it.", style = MaterialTheme.typography.bodySmall)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = binding::accept, enabled = binding.pending != null) { Text("Allow microphone") }
-        OutlinedButton(onClick = binding::stopSharing, enabled = binding.sharing || binding.pending != null) { Text("Stop microphone") }
+        Button(onClick = binding::accept, enabled = binding.pending != null) { Text("Allow ${binding.label}") }
+        OutlinedButton(onClick = binding::stopSharing, enabled = binding.sharing || binding.pending != null) { Text("Stop ${binding.label}") }
     }
     AudioProcessing(binding)
     Row {
         Checkbox(binding.preferences.background, { binding.configure(binding.preferences.copy(background = it)) },
-            modifier = Modifier.semantics { contentDescription = "Allow background microphone" })
-        Text("Allow background microphone (notification includes Stop)")
+            modifier = Modifier.semantics { contentDescription = "Allow background ${binding.label}" })
+        Text("Allow background ${binding.label} (notification includes Stop)")
     }
     Row {
         Checkbox(binding.preferences.builtIn, { binding.configure(binding.preferences.copy(builtIn = it)) },
-            modifier = Modifier.semantics { contentDescription = "Use built-in microphone" })
-        Text("Use built-in microphone")
+            modifier = Modifier.semantics { contentDescription = "Use built-in ${binding.label}" })
+        Text("Use built-in ${binding.label}")
     }
-    Text("Microphone gain: ${binding.preferences.gain}%")
-    Slider(binding.preferences.gain.toFloat(), { binding.configure(binding.preferences.copy(gain = it.roundToInt())) }, valueRange = 0f..200f)
-    Text("Raw capture requires native support and can contain speaker echo. Speech requests AEC; availability does not prove echo removal.", style = MaterialTheme.typography.bodySmall)
+    Text("${if (binding.direction == 1) "Microphone gain" else "Speaker volume"}: ${binding.preferences.gain}%")
+    Slider(binding.preferences.gain.toFloat(), { binding.configure(binding.preferences.copy(gain = it.roundToInt())) }, valueRange = 0f..(if (binding.direction == 1) 200f else 100f))
+    Text(if (binding.direction == 1) "Raw capture requires native support and can contain speaker echo. Speech requests AEC; availability does not prove echo removal."
+        else "Speech uses communication playback; Raw uses media playback. Focus loss pauses or stops this session. System volume stays unchanged.", style = MaterialTheme.typography.bodySmall)
     Spacer(Modifier.height(20.dp))
 }
 @OptIn(ExperimentalLayoutApi::class)

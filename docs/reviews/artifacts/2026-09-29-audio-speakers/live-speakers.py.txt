@@ -1,0 +1,88 @@
+"""Bounded authorized quiet synthetic stereo; never save PCM or change defaults."""
+import array
+import json
+import math
+import os
+from pathlib import Path
+import re
+import signal
+import sys
+import subprocess
+import threading
+import time
+
+ROOT = Path('/backups/disk2/blent-work/t719')
+PKG = 'io.github.geraldo_netto.blent'
+SILENT = '--silent' in sys.argv
+
+def call(*args):
+    return subprocess.check_output(args, text=True, timeout=6).strip()
+
+def sinks():
+    return json.loads(call('pactl', '--format=json', 'list', 'sinks'))
+
+def defaults():
+    return [call('pactl', 'get-default-source'), call('pactl', 'get-default-sink')]
+
+def owned_tracks(uid):
+    raw = call('adb', 'shell', 'dumpsys', 'media.audio_flinger')
+    return [line.strip() for line in raw.splitlines() if re.search(r'\d+\s*/\s*'+str(uid)+r'\b', line) and not re.match(r'\d{2}-\d{2} ', line.strip())]
+
+def feed(player, errors):
+    try:
+        for block in range(160):
+            samples = array.array('h')
+            for frame in range(480):
+                # Two 300-ms tones, one per channel, with a silent gap/tail.
+                index = block * 480 + frame
+                left = 320 * math.sin(2 * math.pi * 440 * index / 48000) if block < 30 else 0
+                right = 320 * math.sin(2 * math.pi * 660 * index / 48000) if 50 <= block < 80 else 0
+                samples.extend((0, 0) if SILENT else (round(left), round(right)))
+            player.stdin.write(samples.tobytes()); player.stdin.flush(); time.sleep(.01)
+    except Exception as error:
+        errors.append(type(error).__name__ + ': ' + str(error))
+
+before = defaults(); existing = {s['name'] for s in sinks()}
+uid = int(re.search(r'uid:(\d+)', call('adb', 'shell', 'cmd', 'package', 'list', 'packages', '-U', PKG))[1])
+assert not owned_tracks(uid), 'another Blent track is active or awaiting release'
+call('adb', 'shell', 'am', 'start', '-n', PKG+'/com.blent.MainActivity')
+env = dict(os.environ, LLVM_PROFILE_FILE=str(ROOT/'llvm-native'/'live-speakers-%p-%m.profraw'))
+host = subprocess.Popen([str(ROOT/'llvm-native/debug/blent'), 'audio', '--direction', 'speakers'], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+player = None; worker = None; report = {'pcm_saved': False, 'peak_generated': 0 if SILENT else 320, 'tone_seconds_per_channel': 0 if SILENT else .3}
+started = time.monotonic()
+try:
+    name = None
+    while time.monotonic() - started < 12:
+        if host.poll() is not None:
+            raise RuntimeError(host.stderr.read().decode())
+        name = next((s['name'] for s in sinks() if s['name'] not in existing and s.get('description') == 'Blent Speakers'), None)
+        if name:
+            break
+        time.sleep(.05)
+    assert name, 'desktop did not enumerate Blent Speakers'
+    report['sink_ready_ms'] = round((time.monotonic()-started)*1000)
+    player = subprocess.Popen(['pacat', '--playback', '--device='+name, '--rate=48000', '--channels=2', '--format=s16le', '--raw', '--latency-msec=40', '--client-name=Blent-speaker-acceptance'], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    errors = []; worker = threading.Thread(target=feed, args=(player, errors)); worker.start()
+    time.sleep(.35); report['tracks_during_first_tone'] = owned_tracks(uid)
+    time.sleep(.7); report['tracks_after_tones'] = owned_tracks(uid)
+    worker.join(timeout=3); assert not worker.is_alive() and not errors, errors
+    player.stdin.close(); player.wait(timeout=3); assert player.returncode == 0
+    player = None
+    stopped = time.monotonic(); host.send_signal(signal.SIGINT); _, stderr = host.communicate(timeout=3)
+    assert host.returncode == 0, stderr.decode()
+    report['stop_ms'] = round((time.monotonic()-stopped)*1000)
+    time.sleep(.2)
+    report['tracks_after_stop'] = owned_tracks(uid)
+    report['sink_removed'] = not any(s['name'] == name for s in sinks())
+    report['defaults_unchanged'] = defaults() == before
+    assert report['tracks_during_first_tone'] and report['tracks_after_tones'], 'native playback counters missing'
+    assert report['sink_removed'] and report['defaults_unchanged']
+finally:
+    if player is not None:
+        player.terminate(); player.wait(timeout=2)
+    if worker is not None:
+        worker.join(timeout=3)
+    if host.poll() is None:
+        host.send_signal(signal.SIGINT); host.communicate(timeout=3)
+    (ROOT/'live-speakers.json').write_text(json.dumps(report, indent=2)+'\n')
+    print(json.dumps(report))

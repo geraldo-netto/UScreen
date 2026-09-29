@@ -21,11 +21,13 @@ impl AudioOptions {
 #[serde(default, deny_unknown_fields)]
 pub struct AudioSettings {
     pub microphone: AudioOptions,
+    pub speakers: AudioOptions,
 }
 impl Default for AudioSettings {
     fn default() -> Self {
         Self {
             microphone: AudioOptions::new(Direction::Microphone),
+            speakers: AudioOptions::new(Direction::Speakers),
         }
     }
 }

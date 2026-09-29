@@ -16,12 +16,15 @@ internal data class AudioEndpoint(val token: String, val port: Int, val directio
             intent.getBooleanExtra("background", false)).takeIf { it.valid() }
     }
 }
-internal object AudioInvitations { val microphone = MutableStateFlow<AudioEndpoint?>(null) }
+internal object AudioInvitations {
+    val microphone = MutableStateFlow<AudioEndpoint?>(null)
+    val speakers = MutableStateFlow<AudioEndpoint?>(null)
+}
 class AudioReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val endpoint = AudioEndpoint.read(intent) ?: return
-        if (endpoint.direction != 1) return
-        AudioInvitations.microphone.value = endpoint
+        if (endpoint.direction == 1) AudioInvitations.microphone.value = endpoint
+        else AudioInvitations.speakers.value = endpoint
         resultCode = 1
     }
 }

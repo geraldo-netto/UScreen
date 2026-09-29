@@ -195,3 +195,69 @@ async fn t718_sequence_gap_reaches_native_queue() {
     assert_eq!(native[0], 1, "T718 sequence gap must flush native queue");
     assert_eq!(native.len(), 961);
 }
+
+#[tokio::test]
+async fn t719_speaker_transport_preserves_stereo_and_native_gaps() {
+    use tokio::io::AsyncReadExt;
+    let (mut client, mut server) = sockets().await;
+    let grant = AudioSession::new(Direction::Speakers)
+        .start(
+            AudioProfile::new(Direction::Speakers),
+            AudioCapabilities {
+                speakers: true,
+                speech: true,
+                ..Default::default()
+            },
+            true,
+            0,
+        )
+        .unwrap();
+    let mut reader = grant.authenticate(&grant.hello()).unwrap();
+    let mut child = Command::new("/bin/cat")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()
+        .unwrap();
+    let mut input = child.stdin.take().unwrap();
+    for flag in [0, 1] {
+        let mut bytes = vec![flag];
+        for _ in 0..480 {
+            bytes.extend_from_slice(&[0xd2, 0x04, 0x1f, 0xef]);
+        }
+        input.write_all(&bytes).await.unwrap();
+    }
+    drop(input);
+    let send = speakers(&mut server, &mut child, grant);
+    let receive = async {
+        for discontinuity in [false, true] {
+            let mut bytes = [0; 1948];
+            client.read_exact(&mut bytes).await.unwrap();
+            let frame = reader.decode(&bytes).unwrap();
+            assert_eq!(frame.discontinuity, discontinuity);
+            assert!(frame
+                .samples()
+                .chunks_exact(2)
+                .all(|pair| pair == [1234, -4321]));
+        }
+    };
+    let (result, ()) = tokio::time::timeout(Duration::from_secs(2), async {
+        tokio::join!(send, receive)
+    })
+    .await
+    .unwrap();
+    assert!(result.is_err()); // EOF retires this session.
+    process::retire(&mut child).await;
+}
+
+#[test]
+fn t719_native_speaker_packets_reject_bounded_invalid_flags_and_sizes() {
+    for size in [0, 1, 1920, 1922, 4096] {
+        assert!(protocol::captured(&vec![0; size]).is_err());
+    }
+    for flag in 0..=255 {
+        let mut bytes = [0; 1921];
+        bytes[0] = flag;
+        assert_eq!(protocol::captured(&bytes).is_ok(), flag <= 1);
+    }
+}

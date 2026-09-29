@@ -119,10 +119,15 @@ where
     Fut: Future<Output = Result<()>>,
 {
     let (stop, stopped) = watch::channel(false);
-    report.update(
-        AudioState::Starting,
-        "Open Blent on the tablet and allow microphone access.",
-    );
+    let detail = match options.profile.direction {
+        blent_config::audio::Direction::Microphone => {
+            "Open Blent on the tablet and allow microphone access."
+        }
+        blent_config::audio::Direction::Speakers => {
+            "Open Blent on the tablet for speaker playback."
+        }
+    };
+    report.update(AudioState::Starting, detail);
     let work = run(options, stopped, report.clone());
     tokio::pin!(work);
     tokio::select! {

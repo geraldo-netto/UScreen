@@ -1,13 +1,18 @@
 use anyhow::{Context, Result};
-use blent_config::audio::AudioProfile;
+use blent_config::audio::{AudioProfile, Direction};
 use std::{path::Path, process::Stdio, time::Duration};
 use tokio::process::{Child, Command};
 
 pub(super) fn spawn(helper: &Path, profile: AudioProfile, token: &str) -> Result<Child> {
+    let direction = match profile.direction {
+        Direction::Microphone => "microphone",
+        Direction::Speakers => "speakers",
+    };
     let child = Command::new(helper)
         .args([
             profile.buffer_ms.to_string(),
-            format!("blent_microphone_{}", &token[..12]),
+            format!("blent_{direction}_{}", &token[..12]),
+            direction.to_owned(),
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -20,6 +25,11 @@ pub(super) fn spawn(helper: &Path, profile: AudioProfile, token: &str) -> Result
         // Minimize stale kernel backlog; child continuously drains into an age-bounded ring.
         unsafe {
             libc::fcntl(input.as_raw_fd(), libc::F_SETPIPE_SZ, 4096);
+        }
+    }
+    if let Some(output) = &child.stdout {
+        unsafe {
+            libc::fcntl(output.as_raw_fd(), libc::F_SETPIPE_SZ, 4096);
         }
     }
     Ok(child)

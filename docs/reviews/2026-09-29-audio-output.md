@@ -1,12 +1,14 @@
 # T545: computer output on tablet speakers
 
-Status: requirements research completed; playback is not implemented. The
+Status: requirements research completed; T719 now implements Linux/Android
+playback and independent controls. [Current behavior](../audio.md) distinguishes
+implemented behavior from the remaining physical and duplex acceptance below. The
 maintainer selected a **Blent Speakers** computer output, independent Start/Stop,
 unchanged existing defaults, and simultaneous use with **Blent Microphone**.
 This extends the [T544 shared contract](2026-09-29-audio-input.md); camera acceptance
 T621 and [physical USB acceptance T540](2026-09-29-usb-camera-readiness.md) have
-passed. [Shared audio T717](../audio.md) is complete; microphone integration T718
-remains the prerequisite before speaker integration T719.
+passed. Shared audio T717 and microphone integration T718 are implemented;
+T718 intentional-speech/physical-route acceptance remains outstanding.
 
 ## Routing and device behavior
 

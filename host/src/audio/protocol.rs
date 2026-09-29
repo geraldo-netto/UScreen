@@ -53,7 +53,9 @@ async fn request(
         raw: bytes[72] & 2 != 0,
         background: bytes[72] & 4 != 0,
     };
-    let detail = if bytes[73] != 0 {
+    let detail = if direction == Direction::Speakers {
+        "Speaker playback prepared; echo control belongs to the microphone session."
+    } else if bytes[73] != 0 {
         "Speech AEC enabled; acoustic effectiveness is device-dependent."
     } else {
         "AEC unavailable or raw processing selected."
@@ -68,6 +70,14 @@ async fn request(
         processing,
         format!("Effective {processing:?}. {detail}"),
     ))
+}
+
+pub(super) fn captured(bytes: &[u8]) -> Result<blent_config::audio::PcmBlock> {
+    ensure!(bytes.len() == 1921, "invalid native speaker packet length");
+    ensure!(bytes[0] <= 1, "invalid native speaker discontinuity");
+    let mut block = blent_config::audio::PcmBlock::from_le_bytes(Direction::Speakers, &bytes[1..])?;
+    block.discontinuity = bytes[0] != 0;
+    Ok(block)
 }
 pub(super) async fn grant(socket: &mut TcpStream, ticket: &str, grant: &AudioGrant) -> Result<()> {
     let bytes = [ticket.as_bytes(), grant.hello().as_slice()].concat();

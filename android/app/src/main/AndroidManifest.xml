@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
@@ -77,6 +78,7 @@
 
         <receiver android:name=".AudioReceiver" android:exported="true" android:permission="android.permission.DUMP" />
         <service android:name=".MicrophoneService" android:foregroundServiceType="microphone" android:exported="false" />
+        <service android:name=".SpeakerService" android:foregroundServiceType="mediaPlayback" android:exported="false" />
 
         <service android:name=".CameraService" android:foregroundServiceType="camera"
             android:exported="false" />
