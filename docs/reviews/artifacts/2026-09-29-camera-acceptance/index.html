@@ -1,0 +1,25 @@
+<!doctype html><title>Blent webcam acceptance</title><body>Local camera acceptance. Numeric statistics only.</body>
+<script>
+window.streams={}; window.videos={};
+window.openCamera=async(label)=>{
+ const devices=await navigator.mediaDevices.enumerateDevices();
+ const device=devices.find(d=>d.kind==='videoinput'&&d.label===label);
+ if(!device) throw Error('Missing '+label+': '+JSON.stringify(devices.map(d=>d.label)));
+ const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:device.deviceId},width:1280,height:720},audio:false});
+ const video=document.createElement('video');video.muted=true;video.srcObject=stream;await video.play();
+ streams[label]=stream;videos[label]=video;
+ return stream.getVideoTracks()[0].getSettings();
+};
+window.sampleCamera=async(label)=>{
+ const video=videos[label],track=streams[label].getVideoTracks()[0];
+ const c=document.createElement('canvas');c.width=64;c.height=36;const ctx=c.getContext('2d',{willReadFrequently:true});
+ let values=[];
+ for(let i=0;i<10;i++){
+  await new Promise(r=>setTimeout(r,100));ctx.drawImage(video,0,0,64,36);const p=ctx.getImageData(0,0,64,36).data;
+  let sum=0,max=0,nonblack=0;for(let j=0;j<p.length;j+=4){const v=(p[j]+p[j+1]+p[j+2])/3;sum+=v;max=Math.max(max,v);if(v>8)nonblack++;}
+  values.push({mean:sum/(64*36),max,nonblack});
+ }
+ return {label,state:track.readyState,muted:track.muted,width:video.videoWidth,height:video.videoHeight,frames:video.getVideoPlaybackQuality().totalVideoFrames,values};
+};
+window.closeCameras=()=>{for(const s of Object.values(streams))for(const t of s.getTracks())t.stop();streams={};videos={};return true;};
+</script>

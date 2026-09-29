@@ -162,6 +162,13 @@ of the host OS. Windows and macOS require their own virtual-camera output and
 lifecycle adapters plus native validation. An interface alone is not platform
 support; the Windows preview disables camera Start.
 
+## Current native consumer acceptance
+
+[September 29 acceptance (T621)](reviews/2026-09-29-camera-acceptance.md) verifies
+both named V4L2 outputs through real Chrome capture, black inactive/retired frames,
+rapid front/rear Stop/Start and final Android resource release on matching builds.
+Physical USB removal/replug remains a separate T540 requirement.
+
 ## Historical standalone-helper validation (T539)
 
 The [host integration validation](reviews/2026-09-20-camera-host.md) records the

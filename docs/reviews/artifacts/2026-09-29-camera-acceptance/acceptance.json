@@ -1,0 +1,930 @@
+[
+  {
+    "stage": "start",
+    "lens": "front",
+    "tag": "front",
+    "at": 1790671279.163243,
+    "pid": 359029
+  },
+  {
+    "stage": "open",
+    "label": "Blent Front",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "22dc3f79bd34e1deebf9e643c1529148b736dfc2aa9c272e23e76f8696bc3334",
+      "frameRate": 30,
+      "groupId": "f3680dca02c374dd059889b78a221126926b3d7e1ca8b356a426d2ecb8804b1d",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "open",
+    "label": "Blent Rear",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "864289a4d1b44fa6dab736970e3db63e18c740cd79cab4a53f58939bde5d8585",
+      "frameRate": 30,
+      "groupId": "c30a13f5cdf143a4c5b7ebe173961675acad486c17634d185465ccfaac71f8f8",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "front-active",
+    "at": 1790671288.2147036,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 124,
+        "values": [
+          {
+            "mean": 87.55772569444461,
+            "max": 255,
+            "nonblack": 2118
+          },
+          {
+            "mean": 86.99016203703702,
+            "max": 255,
+            "nonblack": 2112
+          },
+          {
+            "mean": 87.13006365740738,
+            "max": 255,
+            "nonblack": 2102
+          },
+          {
+            "mean": 87.34794560185179,
+            "max": 255,
+            "nonblack": 2102
+          },
+          {
+            "mean": 87.38845486111111,
+            "max": 255,
+            "nonblack": 2099
+          },
+          {
+            "mean": 87.0865162037037,
+            "max": 255,
+            "nonblack": 2086
+          },
+          {
+            "mean": 87.07711226851829,
+            "max": 255,
+            "nonblack": 2091
+          },
+          {
+            "mean": 87.05830439814808,
+            "max": 255,
+            "nonblack": 2091
+          },
+          {
+            "mean": 87.24291087962972,
+            "max": 255,
+            "nonblack": 2097
+          },
+          {
+            "mean": 87.60561342592591,
+            "max": 255,
+            "nonblack": 2094
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 5,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "stop",
+    "at": 1790671288.2303467,
+    "exit": 0
+  },
+  {
+    "stage": "front-stopped",
+    "at": 1790671290.7429907,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 157,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 7,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "start",
+    "lens": "rear",
+    "tag": "rear",
+    "at": 1790671290.7439883,
+    "pid": 359515
+  },
+  {
+    "stage": "open",
+    "label": "Blent Front",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "22dc3f79bd34e1deebf9e643c1529148b736dfc2aa9c272e23e76f8696bc3334",
+      "frameRate": 30,
+      "groupId": "f3680dca02c374dd059889b78a221126926b3d7e1ca8b356a426d2ecb8804b1d",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "open",
+    "label": "Blent Rear",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "864289a4d1b44fa6dab736970e3db63e18c740cd79cab4a53f58939bde5d8585",
+      "frameRate": 30,
+      "groupId": "c30a13f5cdf143a4c5b7ebe173961675acad486c17634d185465ccfaac71f8f8",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "rear-active",
+    "at": 1790671299.8039012,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 4,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 125,
+        "values": [
+          {
+            "mean": 139.84534143518547,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.83391203703687,
+            "max": 185.33333333333334,
+            "nonblack": 2304
+          },
+          {
+            "mean": 140.09664351851836,
+            "max": 185.33333333333334,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.8842592592594,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.90364583333331,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.93981481481515,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 140.08926504629633,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.81481481481472,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.95326967592592,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          },
+          {
+            "mean": 139.72771990740725,
+            "max": 184.66666666666666,
+            "nonblack": 2304
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "stop",
+    "at": 1790671299.8196666,
+    "exit": 0
+  },
+  {
+    "stage": "rear-stopped",
+    "at": 1790671302.3317928,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 7,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 128,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "start",
+    "lens": "front",
+    "tag": "rapid-0",
+    "at": 1790671302.333065,
+    "pid": 359674
+  },
+  {
+    "stage": "stop",
+    "at": 1790671302.9483945,
+    "exit": 0
+  },
+  {
+    "stage": "start",
+    "lens": "rear",
+    "tag": "rapid-1",
+    "at": 1790671302.9486747,
+    "pid": 359739
+  },
+  {
+    "stage": "stop",
+    "at": 1790671303.5640328,
+    "exit": 0
+  },
+  {
+    "stage": "start",
+    "lens": "front",
+    "tag": "rapid-2",
+    "at": 1790671303.5643778,
+    "pid": 359798
+  },
+  {
+    "stage": "stop",
+    "at": 1790671304.1797316,
+    "exit": 0
+  },
+  {
+    "stage": "start",
+    "lens": "rear",
+    "tag": "rapid-3",
+    "at": 1790671304.180071,
+    "pid": 359859
+  },
+  {
+    "stage": "stop",
+    "at": 1790671304.7954125,
+    "exit": 0
+  },
+  {
+    "stage": "start",
+    "lens": "front",
+    "tag": "after-rapid",
+    "at": 1790671305.795813,
+    "pid": 359961
+  },
+  {
+    "stage": "open",
+    "label": "Blent Front",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "22dc3f79bd34e1deebf9e643c1529148b736dfc2aa9c272e23e76f8696bc3334",
+      "frameRate": 30,
+      "groupId": "f3680dca02c374dd059889b78a221126926b3d7e1ca8b356a426d2ecb8804b1d",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "open",
+    "label": "Blent Rear",
+    "settings": {
+      "aspectRatio": 1.7777777777777777,
+      "deviceId": "864289a4d1b44fa6dab736970e3db63e18c740cd79cab4a53f58939bde5d8585",
+      "frameRate": 30,
+      "groupId": "c30a13f5cdf143a4c5b7ebe173961675acad486c17634d185465ccfaac71f8f8",
+      "height": 720,
+      "resizeMode": "none",
+      "width": 1280
+    }
+  },
+  {
+    "stage": "after-rapid-active",
+    "at": 1790671312.8442924,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 62,
+        "values": [
+          {
+            "mean": 86.22092013888881,
+            "max": 254.66666666666666,
+            "nonblack": 2069
+          },
+          {
+            "mean": 86.32957175925924,
+            "max": 254.66666666666666,
+            "nonblack": 2071
+          },
+          {
+            "mean": 86.24276620370367,
+            "max": 254.66666666666666,
+            "nonblack": 2080
+          },
+          {
+            "mean": 86.31452546296288,
+            "max": 254.66666666666666,
+            "nonblack": 2074
+          },
+          {
+            "mean": 85.34100115740755,
+            "max": 255,
+            "nonblack": 2059
+          },
+          {
+            "mean": 85.18721064814817,
+            "max": 255,
+            "nonblack": 2063
+          },
+          {
+            "mean": 85.29890046296285,
+            "max": 255,
+            "nonblack": 2059
+          },
+          {
+            "mean": 85.47207754629619,
+            "max": 255,
+            "nonblack": 2054
+          },
+          {
+            "mean": 85.28414351851833,
+            "max": 255,
+            "nonblack": 2054
+          },
+          {
+            "mean": 85.36140046296292,
+            "max": 255,
+            "nonblack": 2059
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "live",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 3,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "stop",
+    "at": 1790671312.860089,
+    "exit": 0
+  },
+  {
+    "stage": "after-rapid-stopped",
+    "at": 1790671315.3733943,
+    "outputs": {
+      "Blent Front": {
+        "label": "Blent Front",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 95,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      },
+      "Blent Rear": {
+        "label": "Blent Rear",
+        "state": "ended",
+        "muted": false,
+        "width": 1280,
+        "height": 720,
+        "frames": 5,
+        "values": [
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          },
+          {
+            "mean": 0,
+            "max": 0,
+            "nonblack": 0
+          }
+        ]
+      }
+    }
+  },
+  {
+    "stage": "final-camera-clients",
+    "value": "[]",
+    "at": 1790671315.520532
+  },
+  {
+    "stage": "reverse-mappings",
+    "value": "UsbFfs tcp:8890 tcp:8890\nUsbFfs tcp:8891 tcp:8891\n\n",
+    "at": 1790671315.524685
+  }
+]
