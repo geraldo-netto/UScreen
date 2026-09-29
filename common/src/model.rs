@@ -87,6 +87,8 @@ pub struct FileConfig {
     pub scheduling_priority: crate::scheduling::Priority,
     /// Camera settings apply independently, without restarting the display.
     pub camera: crate::camera::CameraSettings,
+    /// Saved audio preferences never restore an active session.
+    pub audio: crate::audio::AudioSettings,
     pub encoder: String,
     /// Legacy preference retained for configuration round trips; automatic tuning is durable.
     pub profile_cache: bool,
@@ -185,6 +187,7 @@ impl Default for FileConfig {
         Self {
             scheduling_priority: Default::default(),
             camera: Default::default(),
+            audio: Default::default(),
             encoder: "auto".into(),
             profile_cache: false,
             calibration_generation: 0,
@@ -280,6 +283,7 @@ impl FileConfig {
         let mut without_pipe_edit = self.clone();
         without_pipe_edit.pipe_capacity_mib = previous.pipe_capacity_mib;
         without_pipe_edit.camera = previous.camera.clone();
+        without_pipe_edit.audio = previous.audio.clone();
         without_pipe_edit != *previous
     }
 

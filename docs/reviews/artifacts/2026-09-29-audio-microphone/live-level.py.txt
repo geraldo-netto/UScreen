@@ -1,0 +1,44 @@
+"""Bounded authorized microphone check. Retain numbers only, never PCM."""
+import array,json,math,os,select,signal,subprocess,time
+from pathlib import Path
+root=Path('/backups/disk2/blent-work/t718')
+def call(*args): return subprocess.check_output(args,text=True,timeout=5).strip()
+def sources(): return json.loads(call('pactl','--format=json','list','sources'))
+def defaults(): return [call('pactl','get-default-source'),call('pactl','get-default-sink')]
+before=defaults(); existing={n['name'] for n in sources()}
+env=dict(os.environ,LLVM_PROFILE_FILE=str(root/'llvm-third'/'live-%p-%m.profraw'))
+host=subprocess.Popen([str(root/'llvm-third/debug/blent'),'audio'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+consumer=None; result={'pcm_saved':False}; start=time.monotonic()
+try:
+    name=None
+    while time.monotonic()-start<12:
+        if host.poll() is not None: raise RuntimeError(host.stderr.read().decode())
+        name=next((n['name'] for n in sources() if n['name'] not in existing and n.get('description')=='Blent Microphone'),None)
+        if name: break
+        time.sleep(.1)
+    assert name, 'Blent Microphone not visible to PulseAudio desktop consumer'
+    result['source_ready_ms']=round((time.monotonic()-start)*1000)
+    consumer=subprocess.Popen(['pacat','--record','--device='+name,'--rate=48000','--channels=1','--format=s16le','--raw','--latency-msec=40','--client-name=Blent-acceptance'],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    count=nonzero=peak=energy=0; deadline=time.monotonic()+8
+    while time.monotonic()<deadline:
+        if select.select([consumer.stdout],[],[],.1)[0]:
+            data=os.read(consumer.stdout.fileno(),9600)
+            if not data: break
+            samples=array.array('h'); samples.frombytes(data)
+            count+=len(samples); nonzero+=sum(v!=0 for v in samples)
+            peak=max(peak,max(map(abs,samples),default=0)); energy+=sum(v*v for v in samples)
+    result.update(samples=count,nonzero_samples=nonzero,peak=peak,rms=round(math.sqrt(energy/max(1,count)),2))
+    assert count>48000, 'desktop consumer received less than one second'
+    assert nonzero>0, 'native microphone delivered only silence'
+    consumer.terminate(); consumer.wait(timeout=2); consumer=None
+    stop=time.monotonic(); host.send_signal(signal.SIGINT); _,errors=host.communicate(timeout=3)
+    assert host.returncode==0, errors.decode()
+    result['stop_ms']=round((time.monotonic()-stop)*1000)
+    result['source_removed']=not any(n['name']==name for n in sources())
+    result['defaults_unchanged']=defaults()==before
+    assert result['source_removed'] and result['defaults_unchanged']
+finally:
+    if consumer is not None: consumer.terminate();consumer.wait(timeout=2)
+    if host.poll() is None: host.send_signal(signal.SIGINT);host.wait(timeout=5)
+    (root/'live-level.json').write_text(json.dumps(result,indent=2)+'\n')
+    print(json.dumps(result))

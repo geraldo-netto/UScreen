@@ -1,15 +1,17 @@
 # T544: tablet microphone and shared audio contract
 
-Status: requirements research completed; native audio is not implemented.
+Status: requirements research completed. This document records the research
+snapshot and accepted contract; [current implementation](../audio.md) now includes
+T718 microphone integration.
 [T717 shared foundation](../audio.md) now implements lifecycle, framing and queues. On September
 29 the maintainer selected **Blent Microphone** and **Blent Speakers** as ordinary
 selectable computer devices, independent explicit Start/Stop, unchanged existing
 defaults, simultaneous operation, speech processing with optional raw mode.
 T621 native consumer and [T540 physical USB acceptance](2026-09-29-usb-camera-readiness.md)
-have passed; shared implementation T717 is complete and microphone integration T718 is next. T545 builds on the common
+have passed; shared implementation T717 is complete. [T718 implementation and acceptance](2026-09-29-audio-microphone.md) records the microphone path and remaining physical checks. T545 builds on the common
 contract below; display and camera transports retain independent ownership.
 
-## Current implementation and local evidence
+## Research-time implementation and local evidence
 
 `common/src/camera.rs` and `host/src/camera_control.rs` provide a useful manual
 session/backend pattern. `gui/src/camera_settings.rs` owns host configuration;

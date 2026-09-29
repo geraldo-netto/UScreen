@@ -38,7 +38,7 @@ def fixture(root, selection, stale):
     write(root, 'android/app/build/outputs/apk/release/app-release.apk', 'fixture-apk')
     write(root, 'fixture.so', 'fixture-library')
     if stale:
-        for name in ['blent', 'blent-gui']:
+        for name in ['blent', 'blent-gui', 'blent-audio']:
             write(root, 'target/release/' + name, '#!/bin/sh\necho stale\n', True)
     env = dict(os.environ, HOME=str(root / 'home'), PATH=str(tools) + os.pathsep + os.environ['PATH'],
                BLENT_T336_CARGO_LOG=str(root / 'cargo.log'))
@@ -85,7 +85,7 @@ class BuildOutputTest(unittest.TestCase):
         return result.stdout
 
     def verify_installed(self, root, env, installed):
-        for name in ['blent', 'blent-gui']:
+        for name in ['blent', 'blent-gui', 'blent-audio']:
             output = self.run_command(root, env, str(installed / name), 'probe')
             self.assertEqual(output, f'fresh-{name} probe\n', 'T336: stale artifact installed')
         self.assertEqual(self.run_command(root, env, str(installed / 'evdi_helper')), 'fresh-helper\n')
@@ -116,7 +116,7 @@ class BuildOutputTest(unittest.TestCase):
                     self.assertIn(f'fresh-blent {argument}\n', output, 'T336: stale Make action')
                 self.run_command(root, env, 'make', 'dist-local', 'LIBEVDI=fixture.so')
                 with tarfile.open(root / f'dist/blent-{version}-linux-x86_64.tar.gz') as archive:
-                    for name in ['blent', 'blent-gui']:
+                    for name in ['blent', 'blent-gui', 'blent-audio']:
                         binary = archive.extractfile(f'blent-{version}/bin/{name}').read()
                         self.assertIn(f'fresh-{name}'.encode(), binary, 'T336: stale distribution')
                 self.run_command(root, env, 'make', 'clean')
@@ -126,7 +126,7 @@ class BuildOutputTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             env, _ = fixture(root, 'relative', True)
-            for name in ['blent', 'blent-gui', 'evdi_helper']:
+            for name in ['blent', 'blent-gui', 'blent-audio', 'evdi_helper']:
                 write(root, 'bin/' + name, '#!/bin/sh\necho prebuilt\n', True)
             installed = root / 'installed'
             self.run_command(root, env, 'bash', 'scripts/install.sh', '--binaries-only', str(installed))

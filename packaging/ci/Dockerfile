@@ -3,7 +3,7 @@ FROM rust:1.90-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f
 RUN sed -i "s/^Types: deb$/Types: deb deb-src/" /etc/apt/sources.list.d/debian.sources \
     && apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config git ca-certificates python3 python3-xlib python3-tk \
-    libdrm-dev libxkbcommon-dev libxkbcommon-x11-0 libegl1 libwayland-dev libxcb-render0-dev \
+    libpipewire-0.3-dev libclang-dev pipewire-bin libdrm-dev libxkbcommon-dev libxkbcommon-x11-0 libegl1 libwayland-dev libxcb-render0-dev \
     libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
     ffmpeg adb rpm fakeroot dpkg-dev binutils patchelf squashfs-tools file \
     nasm libx264-dev libx265-dev libvpx-dev libaom-dev libva-dev zlib1g-dev \

@@ -31,6 +31,7 @@ plain graphics tablet for the host's own screen.
 install -Dm755 scripts/gpu-boot-order.sh %{buildroot}%{_datadir}/blent/gpu-boot-order.sh
 install -Dm755 scripts/setup-evdi.sh %{buildroot}%{_datadir}/blent/setup-evdi.sh
 install -Dm755 bin/blent          %{buildroot}%{_bindir}/blent
+install -Dm755 bin/blent-audio    %{buildroot}%{_bindir}/blent-audio
 install -Dm755 bin/blent-gui      %{buildroot}%{_bindir}/blent-gui
 install -Dm755 bin/evdi_helper      %{buildroot}%{_libdir}/blent/evdi_helper
 install -Dm755 bin/libevdi.so.1.15.0 %{buildroot}%{_libdir}/blent/libevdi.so.1.15.0
@@ -61,6 +62,7 @@ udevadm trigger --name-match=uinput 2>/dev/null || true
 %{_datadir}/blent/gpu-boot-order.sh
 %{_bindir}/blent
 %{_bindir}/blent-gui
+%{_bindir}/blent-audio
 %{_libdir}/blent/evdi_helper
 %{_libdir}/blent/libevdi.so.1
 %{_libdir}/blent/libevdi.so.1.15.0

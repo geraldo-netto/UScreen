@@ -6,7 +6,7 @@ import subprocess
 
 # The host loader and its matching glibc must stay together. GPU implementations
 # remain on the host; generic userspace loaders may be bundled as fallbacks.
-SYSTEM = re.compile(r'^(?:ld-linux-x86-64\.so\.2|lib(?:c|m|dl|pthread|rt|util|resolv)\.so\.[0-9]+|libnss_[\w-]+\.so\.[0-9]+)$')
+SYSTEM = re.compile(r'^(?:ld-linux-x86-64\.so\.2|libpipewire-0\.3\.so\.0|lib(?:c|m|dl|pthread|rt|util|resolv)\.so\.[0-9]+|libnss_[\w-]+\.so\.[0-9]+)$')
 DRIVER = re.compile(r'^(?:libcuda|libnvidia|libGLX_nvidia|libEGL_nvidia)[\w.-]*\.so(?:\.[0-9]+)*$')
 HOST_DIRS = '/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/lib64:/usr/lib64:/lib:/usr/lib'
 DYNAMIC_GUI = ['libGL.so.1', 'libEGL.so.1', 'libX11.so.6', 'libXcursor.so.1', 'libXi.so.6', 'libXrandr.so.2',

@@ -39,7 +39,7 @@ build-helper:
 	@echo "✓ EVDI helper: host/evdi/evdi_helper"
 
 build: build-helper
-	$(recursive_prefix)$(CARGO) build --release --target-dir $(call quote,$(CURDIR)/target)
+	$(recursive_prefix)$(CARGO) build --release --features blent/native-audio --target-dir $(call quote,$(CURDIR)/target)
 	@printf '✓ Binaries: %s/blent and blent-gui\n' $(call quote,$(CURDIR)/target/release)
 
 install: export BLENT_INSTALL_BIN_DIR = $(BIN_DIR)

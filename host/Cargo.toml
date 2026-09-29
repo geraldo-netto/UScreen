@@ -1,10 +1,17 @@
 [package]
 name = "blent"
+default-run = "blent"
 version = "1.2.3"
 edition = "2021"
 description = "Low-latency USB display server - turns your Android tablet into a second monitor"
 
+[[bin]]
+name = "blent-audio"
+path = "src/bin/audio.rs"
+required-features = ["native-audio"]
+
 [features]
+native-audio = ["dep:pipewire"]
 # In-process encoding through libavcodec instead of piping raw frames into an
 # ffmpeg child process. Off by default on purpose: it needs the ffmpeg
 # development headers at build time, which not every distribution installs by
@@ -33,6 +40,7 @@ toml = "0.8"
 tempfile = "3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
+pipewire = { version = "0.8", optional = true }
 ffmpeg-next = { version = "9", optional = true }
 libc = "0.2"
 zbus = { version = "4", features = ["tokio"] }

@@ -4,6 +4,8 @@ use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 
 mod buffer;
+mod settings;
+pub use settings::{AudioController, AudioOptions, AudioSettings, AudioStatus};
 mod session;
 mod wire;
 pub use buffer::{PcmQueue, RenderResult};
@@ -17,6 +19,7 @@ pub const MAX_DRIFT_PPM: i32 = 1_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "platform", derive(clap::ValueEnum))]
 #[repr(u8)]
 pub enum Direction {
     Microphone = 1,
@@ -31,6 +34,7 @@ impl Direction {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "platform", derive(clap::ValueEnum))]
 #[repr(u8)]
 pub enum Processing {
     #[default]

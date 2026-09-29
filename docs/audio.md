@@ -1,10 +1,9 @@
 # Audio foundation
 
-T717 implements portable Rust audio policy in `blent_config::audio`. It is not a
-working microphone/speaker feature yet. Linux native devices, Android capture and
-playback, controls, permissions and foreground services remain T718/T719; native
-duplex/acoustic acceptance remains T720. All backend capabilities default to
-unsupported. No system default device changes or automatic audio startup occur.
+T717 implements portable Rust audio policy in `blent_config::audio`. T718 adds
+Linux/Android microphone transport, native source and controls described below.
+Speaker integration remains T719; duplex/acoustic acceptance remains T720.
+Unimplemented backend capabilities remain unsupported. No system default device changes or automatic audio startup occur.
 
 The selected product contract is [microphone/shared audio](reviews/2026-09-29-audio-input.md)
 and [tablet speakers](reviews/2026-09-29-audio-output.md). The following describes
@@ -28,7 +27,7 @@ Raw and background support are separate capabilities; neither is silently assume
 2. Deliver `AudioGrant::hello()` only over the existing authenticated control path.
    Start the adapter asynchronously; it owns devices, paths, permissions, task
    cancellation and IO deadlines. The trait enqueues work rather than waiting on
-   UI/native callback threads. No native adapters are supplied in T717.
+   UI/native callback threads. T717 itself supplies no native adapters; the T718 integration is described below.
 3. A fixed handshake must match the grant before `connected` admits Streaming.
    The startup deadline is 5 seconds. Failed negotiation cannot acquire ownership
    or extend the deadline. Do not log grants/handshakes or persist credentials.
@@ -126,5 +125,50 @@ not a native device-clock estimate. This is not a fidelity or AEC effectiveness 
 
 [September 29 evidence](reviews/2026-09-29-audio-foundation.md) records permanent
 normal-suite tests, scoped per-function native Rust coverage and boundary findings.
-Native source/sink enumeration, permission, actual acoustic processing, routing,
-latency and simultaneous hardware operation remain unvalidated under T718–T720.
+[T718 evidence](reviews/2026-09-29-audio-microphone.md) records permanent native source/transport regressions and bounded physical checks. Intentional speech, physical route/USB acceptance, sink enumeration,
+measured acoustic effectiveness, latency and simultaneous hardware operation
+remain under T719/T720.
+
+## Linux/Android microphone integration (T718)
+
+The implementation now includes microphone Start/Stop in the host **Audio** tab,
+`blent audio --direction microphone`, and Android settings. Select **Blent
+Microphone** in the desktop application's input chooser after Start. The source
+is owned by that session and removed at Stop. Existing default devices are not
+changed. Microphone capture starts only after Android permission and authenticated
+host readiness; app launch, Apply and reconnect never start audio.
+
+Host settings: speech/raw processing, application buffer 20–200 ms (default 40),
+optional tablet serial and background request. Apply saves preferences without
+restarting display sharing. Android settings: follow host/speech/raw override,
+gain 0–200% (100% default), built-in microphone preference and explicit background
+consent. Changing tablet settings ends the active session. Foreground-only capture
+stops when hidden; background capture uses a microphone foreground service with
+an ownership-bound Stop notification. Permission loss, native errors, Android
+silencing, an observed route change or transport loss end the session. Raw mode
+requires advertised native unprocessed support. Speech requests Android AEC and
+reports availability, without claiming effective acoustic echo removal.
+
+Linux uses an isolated `blent-audio` PipeWire adapter, built with
+`--features blent/native-audio`. Source builds need PipeWire/SPA development
+headers and libclang (`libpipewire-0.3-dev`, `libspa-0.2-dev`, `libclang-dev` on
+Debian-family systems). Packaged builds include the helper. Audio needs the host's
+PipeWire client library, SPA modules and running user server; the AppImage uses
+that native runtime to match its modules. Missing audio dependencies fail Start
+without preventing display sharing. PulseAudio-only, Windows and macOS audio
+backends remain unsupported.
+
+The DUMP-protected Android receiver admits an invitation over the authorized ADB
+connection. An authenticated 76-byte `BLAUREQ1` bootstrap carries the invitation
+credential (64 hex bytes), capability bits (speech/raw/background), AEC-enabled
+flag, direction and effective processing. Human consent has a separate 90-second
+budget; it does not consume native startup's five seconds. The host echoes the
+invitation credential followed by the 92-byte grant after PipeWire readiness.
+Native microphone input preserves sequence-gap discontinuities; the callback uses
+only its bounded queue, expires old data and emits silence on underflow. It never
+waits on the transport.
+
+The shared drift-correction primitive is implemented. Native device-counter
+integration and measured duplex drift/latency remain T720; current microphone
+buffering bounds backlog but does not yet continuously correct device-clock drift.
+Speakers remain T719 until their native path and controls are implemented.

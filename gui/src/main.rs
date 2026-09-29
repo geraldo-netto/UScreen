@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod audio_settings;
 mod camera_preview;
 mod camera_settings;
 mod conversion_settings;
@@ -69,6 +70,7 @@ fn dispatch_action(
 struct App {
     scheduling_status: String,
     camera: camera_settings::Panel,
+    microphone: audio_settings::Panel,
     _status_worker: Option<status_worker::StatusWorker>,
     store: ConfigStore,
     save: Option<settings::PendingSave>,
@@ -92,6 +94,7 @@ enum Tab {
     /// Security, updates, plug & play.
     General,
     Camera,
+    Audio,
 }
 
 use blent_config::release::{API as RELEASES_API, PAGE as RELEASES_PAGE};
@@ -193,6 +196,7 @@ impl App {
         Self {
             scheduling_status,
             camera: camera_settings::Panel::default(),
+            microphone: audio_settings::Panel::default(),
             _status_worker: Some(worker),
             store: ConfigStore::default(),
             save: None,
@@ -1054,6 +1058,7 @@ impl App {
                 (Tab::Display, "Display & input"),
                 (Tab::General, "General"),
                 (Tab::Camera, "Cameras"),
+                (Tab::Audio, "Audio"),
             ] {
                 ui.selectable_value(&mut self.tab, tab, name);
             }
@@ -1061,6 +1066,10 @@ impl App {
         ui.add_space(8.0);
         if self.tab == Tab::Video {
             self.show_video_settings(ui);
+            return;
+        }
+        if self.tab == Tab::Audio {
+            self.microphone.show(ui, &mut self.cfg.audio.microphone);
             return;
         }
         if self.tab == Tab::Camera {
@@ -1344,6 +1353,7 @@ mod tests {
         App {
             scheduling_status: "This process: High priority active".into(),
             camera: camera_settings::Panel::default(),
+            microphone: audio_settings::Panel::default(),
             _status_worker: None,
             store: ConfigStore::default(),
             save: None,
@@ -2098,6 +2108,7 @@ mod tests {
             (Tab::Display, "Input devices"),
             (Tab::General, "Security"),
             (Tab::Camera, "Camera sharing"),
+            (Tab::Audio, "Microphone sharing"),
         ] {
             for height in [560.0, 1800.0] {
                 let mut app = settings_test_app(tab);
@@ -2846,5 +2857,64 @@ esac"#
             });
             assert_eq!(bitrate, original);
         }
+    }
+    fn audio_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            ui.vertical(|ui| app.microphone.show(ui, &mut app.cfg.audio.microphone));
+        })
+    }
+
+    #[test]
+    fn t718_audio_start_stop_and_apply_preserve_display_configuration() {
+        use blent_config::audio::{AudioController, AudioOptions, AudioState, AudioStatus};
+        use std::{cell::RefCell, rc::Rc};
+        struct Backend(Rc<RefCell<(AudioState, Vec<AudioOptions>)>>);
+        impl AudioController for Backend {
+            fn start(&self, options: AudioOptions) -> blent_config::camera::BackendResult {
+                let mut calls = self.0.borrow_mut();
+                calls.0 = AudioState::Streaming;
+                calls.1.push(options);
+                Ok(())
+            }
+            fn stop(&self) {
+                self.0.borrow_mut().0 = AudioState::Stopped;
+            }
+            fn status(&self) -> AudioStatus {
+                AudioStatus {
+                    state: self.0.borrow().0,
+                    detail: "fixture".into(),
+                }
+            }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let mut app = settings_test_app(Tab::Audio);
+        app.cfg = app.saved_cfg.clone();
+        app.store = ConfigStore::new(directory.path().join("config.toml"));
+        let calls = Rc::new(RefCell::new((AudioState::Stopped, Vec::new())));
+        app.microphone.backend = Some(Box::new(Backend(calls.clone())));
+        let context = egui::Context::default();
+        context.style_mut(|s| s.animation_time = 0.0);
+        click_settings_text(&mut app, &context, "Raw", audio_test_frame);
+        click_settings_text(
+            &mut app,
+            &context,
+            "Continue while hidden (requires tablet consent)",
+            audio_test_frame,
+        );
+        assert!(calls.borrow().1.is_empty());
+        click_settings_text(&mut app, &context, "Start microphone", audio_test_frame);
+        assert_eq!(calls.borrow().1.len(), 1);
+        assert!(calls.borrow().1[0].profile.background);
+        click_settings_text(&mut app, &context, "Stop microphone", audio_test_frame);
+        assert_eq!(calls.borrow().0, AudioState::Stopped);
+        assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.message, "Settings saved");
+        assert_eq!(app.store.load().audio, app.cfg.audio);
     }
 }

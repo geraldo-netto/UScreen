@@ -1,7 +1,7 @@
 //! Host-owned webcam pipeline; independent of the display daemon/EVDI.
 use crate::camera_control::{self as control, Report};
 use blent_config::camera::CameraState as State;
-mod bridge;
+pub(crate) mod bridge;
 mod decoder;
 #[cfg(test)]
 mod native_tests;

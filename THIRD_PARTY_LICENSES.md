@@ -15,3 +15,9 @@
   asset contains the FFmpeg/header archives, build configuration and exact
   Debian sources for bundled external codec libraries. See
   [AppImage dependencies and source distribution](docs/appimage-plan.md).
+
+- The isolated audio helper uses `pipewire`, `pipewire-sys`, `libspa` and
+  `libspa-sys` from pipewire-rs 0.8, copyright The pipewire-rs Contributors,
+  under the [MIT license](licenses/pipewire-rs-MIT.txt). The PipeWire shared
+  library and SPA modules are supplied by the host system, including when
+  running the AppImage.

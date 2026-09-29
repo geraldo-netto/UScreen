@@ -12,7 +12,7 @@ mkdir -p "$BUILD/src"
 tar -xf "/artifacts/blent-$VERSION-linux-x86_64.tar.gz" -C "$BUILD/src"
 D="$BUILD/src/blent-$VERSION"
 mkdir -p "$D/target/release" "$D/host/evdi" "$BUILD/src/evdi-1.15.0/library"
-cp "$D/bin/blent" "$D/bin/blent-gui" "$D/target/release/"
+cp "$D/bin/blent" "$D/bin/blent-gui" "$D/bin/blent-audio" "$D/target/release/"
 cp "$D/bin/evdi_helper" "$D/host/evdi/"
 cp "$D/bin/libevdi.so.1.15.0" "$BUILD/src/evdi-1.15.0/library/"
 # Include the original distribution-docs manifest and copier for package().

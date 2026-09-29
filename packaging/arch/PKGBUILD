@@ -8,7 +8,8 @@ arch=('x86_64')
 url="https://github.com/geraldo-netto/blent"
 license=('MIT' 'LGPL-2.1-or-later')
 depends=('evdi-dkms' 'ffmpeg' 'android-tools' 'bash' 'coreutils' 'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11')
-makedepends=('cargo' 'gcc' 'pkgconf' 'libdrm')
+optdepends=('pipewire: microphone and speaker sharing')
+makedepends=('pipewire' 'clang' 'cargo' 'gcc' 'pkgconf' 'libdrm')
 install=blent.install
 _evdi=v1.15.0
 source=("$pkgname-$pkgver.tar.gz::https://github.com/geraldo-netto/blent/archive/refs/tags/v$pkgver.tar.gz"
@@ -17,7 +18,7 @@ sha256sums=('SKIP' 'SKIP')
 
 build() {
   cd "blent-$pkgver"
-  cargo build --release --locked --target-dir target --manifest-path host/Cargo.toml
+  cargo build --release --locked --target-dir target --manifest-path host/Cargo.toml --features native-audio
   cargo build --release --locked --target-dir target --manifest-path gui/Cargo.toml
   # libevdi built from upstream and shipped next to the helper (rpath $ORIGIN),
   # so the only thing the system must provide is the evdi kernel module.
@@ -32,6 +33,7 @@ package() {
   install -Dm755 scripts/setup-evdi.sh "$pkgdir/usr/share/blent/setup-evdi.sh"
   install -Dm755 target/release/blent     "$pkgdir/usr/bin/blent"
   install -Dm755 target/release/blent-gui "$pkgdir/usr/bin/blent-gui"
+  install -Dm755 target/release/blent-audio "$pkgdir/usr/bin/blent-audio"
   install -Dm755 host/evdi/evdi_helper      "$pkgdir/usr/lib/blent/evdi_helper"
   install -Dm755 "$srcdir/evdi-${_evdi#v}/library/libevdi.so.1.15.0" "$pkgdir/usr/lib/blent/libevdi.so.1.15.0"
   ln -sf libevdi.so.1.15.0 "$pkgdir/usr/lib/blent/libevdi.so.1"

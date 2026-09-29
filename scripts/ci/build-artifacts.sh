@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$PWD/target-portability}"
-cargo build --locked --release --workspace
+cargo build --locked --release --workspace --features blent/native-audio
 make build-helper
 VERSION=$(sed -n 's/^VERSION = //p' Makefile)
 D="dist/blent-$VERSION"

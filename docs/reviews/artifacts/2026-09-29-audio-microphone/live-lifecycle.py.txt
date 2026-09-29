@@ -1,0 +1,48 @@
+"""Bounded native T718 lifecycle acceptance; no audio consumer or recording."""
+import json,os,signal,subprocess,time
+from pathlib import Path
+root=Path('/backups/disk2/blent-work/t718');pkg='io.github.geraldo_netto.blent'
+def call(*args): return subprocess.check_output(args,text=True,timeout=5).strip()
+def names():
+    return {n['name'] for n in json.loads(call('pactl','--format=json','list','sources')) if n.get('description')=='Blent Microphone'}
+def app(*args): return call('adb','shell',*args)
+def launch(): app('am','start','-n',pkg+'/com.blent.MainActivity')
+initial=names(); processes=[]; results=[]
+permissions=app('cmd','appops','get',pkg,'RECORD_AUDIO')
+assert 'Uid mode: RECORD_AUDIO: foreground' in permissions
+baseline=[call('pactl','get-default-source'),call('pactl','get-default-sink')]
+def start():
+    before=names();p=subprocess.Popen([str(root/'llvm-third/debug/blent'),'audio'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=dict(os.environ,LLVM_PROFILE_FILE=str(root/'llvm-third'/'lifecycle-%p-%m.profraw')));processes.append(p)
+    deadline=time.monotonic()+5
+    while time.monotonic()<deadline:
+        current=names()-before
+        if current:return p,current
+        assert p.poll() is None, 'host failed during startup: '+p.stderr.read().decode()
+        time.sleep(.05)
+    raise AssertionError('source readiness timeout')
+def stopped(p,owned,begin):
+    p.communicate(timeout=3)
+    assert not names().intersection(owned), 'owned source leaked'
+    return round((time.monotonic()-begin)*1000)
+try:
+    for i in range(3):
+        p,owned=start();begin=time.monotonic();p.send_signal(signal.SIGINT)
+        results.append({'case':'explicit_stop','iteration':i,'retirement_ms':stopped(p,owned,begin),'exit':p.returncode})
+        assert p.returncode==0
+    p,owned=start();begin=time.monotonic()
+    app('am','start','-a','android.intent.action.MAIN','-c','android.intent.category.HOME')
+    results.append({'case':'foreground_loss','retirement_ms':stopped(p,owned,begin),'exit':p.returncode})
+    launch();time.sleep(.5);assert names()==initial, 'visibility restart resumed microphone'
+    p,owned=start();begin=time.monotonic()
+    app('cmd','appops','set','--uid',pkg,'RECORD_AUDIO','ignore')
+    results.append({'case':'os_silencing','retirement_ms':stopped(p,owned,begin),'exit':p.returncode})
+finally:
+    app('cmd','appops','set','--uid',pkg,'RECORD_AUDIO','foreground')
+    launch()
+    for p in processes:
+        if p.poll() is None:p.send_signal(signal.SIGINT);p.communicate(timeout=5)
+    restored='Uid mode: RECORD_AUDIO: foreground' in app('cmd','appops','get',pkg,'RECORD_AUDIO')
+    time.sleep(.3)
+    report={'cases':results,'appop_restored':restored,'no_automatic_restart':names()==initial,'defaults_unchanged':baseline==[call('pactl','get-default-source'),call('pactl','get-default-sink')],'pcm_saved':False}
+    (root/'live-lifecycle.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))
+    assert all(report[k] for k in ['appop_restored','no_automatic_restart','defaults_unchanged'])

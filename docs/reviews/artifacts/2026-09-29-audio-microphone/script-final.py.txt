@@ -1,0 +1,21 @@
+from pathlib import Path
+import json,sys,subprocess
+root=Path.cwd().resolve();sys.path.insert(0,str(root/'scripts/coverage'))
+import script_check,readers
+from calls import read_calls
+from report import collect,summary
+work=Path('/backups/disk2/blent-work/t718');d=work/'scripts-final';d.mkdir()
+manifest=script_check.snapshot(root);(d/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+env=script_check.environment(d,root)
+with (d/'tests.log').open('w') as log:
+ subprocess.run([sys.executable,'-m','unittest','discover','-s','scripts/tests','-p','test_portability_contracts.py'],env=env,check=True,stdout=log,stderr=subprocess.STDOUT)
+script_check.python_report(d,root,env)
+data={};readers.python_json(d/'python.json',root,data)
+rows=collect(manifest,data,([],{}),['scripts/ci/verify-portability.py'],read_calls(d/'calls'))
+old=json.loads((work/'scripts-coverage3/manifest.json').read_text());prior=json.loads((work/'scripts-coverage3/report.json').read_text())
+for row in prior['functions']:
+ if row['file']=='scripts/ci/verify-portability.py':continue
+ assert old['sources'][row['file']]==manifest['sources'][row['file']], row['file']
+ rows.append(row)
+report=dict(minimum_percent=80,passes=all(row['passes'] for row in rows),summary=summary(rows),functions=rows,provenance='Fresh portability counters; remaining production source SHA-256 matches scripts-coverage3 manifest.')
+(d/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report['summary']));assert report['passes']

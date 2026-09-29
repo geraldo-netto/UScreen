@@ -604,3 +604,28 @@ fn t717_fractional_excess_drift_is_rejected_before_rounding() {
         assert_eq!(queue.queued_frames(), 0);
     }
 }
+
+#[test]
+fn t718_native_pcm_bounds_and_saved_preferences_are_passive() {
+    use crate::FileConfig;
+    for direction in [Direction::Microphone, Direction::Speakers] {
+        let size = direction.channels() * BLOCK_FRAMES * 2;
+        for length in [0, 1, size - 1, size, size + 1, 4096] {
+            assert_eq!(
+                PcmBlock::from_le_bytes(direction, &vec![0; length]).is_ok(),
+                length == size
+            );
+        }
+        let native = PcmBlock::from_le_bytes(direction, &vec![255; size]).unwrap();
+        assert!(native.samples().iter().all(|sample| *sample == -1));
+    }
+    let baseline = FileConfig::default();
+    let mut changed = baseline.clone();
+    changed.audio.microphone.profile.processing = Processing::Raw;
+    changed.audio.microphone.profile.buffer_ms = 200;
+    changed.audio.microphone.profile.background = true;
+    assert!(!changed.requires_restart_from(&baseline));
+    let restored: FileConfig = toml::from_str(&toml::to_string(&changed).unwrap()).unwrap();
+    assert_eq!(restored.audio, changed.audio);
+    assert_eq!(AudioStatus::default().state, AudioState::Stopped);
+}

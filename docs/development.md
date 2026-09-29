@@ -9,7 +9,8 @@ identify its unreleased changes.
 
 Host build needs stable Rust/Cargo, a C/C++ compiler, make, pkg-config,
 libdrm headers, the **libevdi userspace development library** (including the
-unversioned `libevdi.so` linker name), and the GUI platform headers below.
+unversioned `libevdi.so` linker name), PipeWire/SPA headers and libclang for
+the isolated audio helper, and the GUI platform headers below.
 The evdi kernel module alone cannot satisfy the helper's `-levdi` link.
 
 On Debian 12 / Ubuntu, install the compiler and GUI prerequisites:
@@ -18,7 +19,8 @@ On Debian 12 / Ubuntu, install the compiler and GUI prerequisites:
 sudo apt-get update
 sudo apt-get install -y build-essential pkg-config git curl ca-certificates \
   libdrm-dev libxkbcommon-dev libwayland-dev libxcb-render0-dev \
-  libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev
+  libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev \
+  libpipewire-0.3-dev libspa-0.2-dev libclang-dev
 # Install stable Rust with rustup if cargo/rustc are not already available.
 ```
 
@@ -35,12 +37,14 @@ sudo ldconfig
 
 Runtime additionally needs `ffmpeg`, `adb`/`android-tools`, a compatible evdi
 kernel module, and the permissions installed by `make setup-system`.
+Microphone/speaker sharing additionally needs a running PipeWire user server;
+its client library and SPA modules remain native dependencies. See [audio](audio.md).
 KDE output placement needs `kscreen-doctor`; KWin input mapping uses `busctl`
 or a supported `qdbus` variant. X11 mapping needs
 `xinput` and `xrandr`. See [installation.md](installation.md).
 
 ```bash
-make build            # EVDI helper (C) + Rust daemon + GUI
+make build            # EVDI helper + Rust daemon, GUI and audio helper
 make install          # copies to ~/.local/bin, installs/reloads the user unit
 make setup-system     # modprobe.d / modules-load.d / udev rule (sudo)
 ```

@@ -208,14 +208,21 @@ build_if_needed() {
     make -C "$PROJECT_DIR" build
 }
 
+stage_optional_binaries() {
+    local name
+    for name in blent-gui blent-audio; do
+        if [ -f "$1/$name" ]; then
+            cp "$1/$name" "$2/$name" || return
+        else
+            warn "$name not found, skipping"
+        fi
+    done
+}
+
 stage_install_binaries() {
     local src_bin="$1" staged="$2" helper="$1/evdi_helper"
     cp "$src_bin/blent" "$staged/blent" || return
-    if [ -f "$src_bin/blent-gui" ]; then
-        cp "$src_bin/blent-gui" "$staged/blent-gui" || return
-    else
-        warn "blent-gui not found, skipping"
-    fi
+    stage_optional_binaries "$src_bin" "$staged" || return
     if [ ! -f "$helper" ]; then
         helper="$PROJECT_DIR/host/evdi/evdi_helper"
     fi

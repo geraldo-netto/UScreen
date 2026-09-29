@@ -95,6 +95,23 @@ pub struct PcmBlock {
 }
 
 impl PcmBlock {
+    /// Trusted native PCM still receives exact size/channel validation.
+    pub fn from_le_bytes(direction: Direction, bytes: &[u8]) -> Result<Self> {
+        ensure!(
+            bytes.len() == BLOCK_FRAMES * direction.channels() * 2,
+            "invalid PCM block length"
+        );
+        let mut block = Self {
+            samples: [0; MAX_SAMPLES],
+            channels: direction.channels(),
+            discontinuity: false,
+        };
+        for (sample, bytes) in block.samples.iter_mut().zip(bytes.chunks_exact(2)) {
+            *sample = i16::from_le_bytes([bytes[0], bytes[1]]);
+        }
+        Ok(block)
+    }
+
     pub fn samples(&self) -> &[i16] {
         &self.samples[..BLOCK_FRAMES * self.channels]
     }

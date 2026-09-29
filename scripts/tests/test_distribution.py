@@ -52,6 +52,7 @@ class DistributionTest(unittest.TestCase):
                     return path
                 write('target/release/blent', '#!/bin/sh\nexit 0\n', True)
                 write('target/release/blent-gui', '#!/bin/sh\nexit 0\n', True)
+                write('target/release/blent-audio', '#!/bin/sh\nexit 0\n', True)
                 write('library.c', 'int blent_distribution_probe(void) { return 0; }\n')
                 write('host/evdi/evdi_helper.c', 'extern int blent_distribution_probe(void); int main(void) { return blent_distribution_probe(); }\n')
                 # T380: stub the other C units too; this fixture checks loader

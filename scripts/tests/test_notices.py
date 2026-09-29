@@ -23,7 +23,7 @@ class NoticeTest(unittest.TestCase):
                 path.write_text(body)
                 if executable:
                     path.chmod(0o755)
-            for name in ['release/blent', 'release/blent-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
+            for name in ['release/blent', 'release/blent-gui', 'release/blent-audio', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
                 write('target-deb12/' + name, '#!/bin/sh\nexit 0\n', True)
             write('bin/distrobox', '#!/bin/bash\nif [ "$BLENT_TEST_BUILD" = portable ]; then touch target-deb12/.build-ok; else shift 3; shift 2; bash -c "$@"; fi\n', True)
             write('bin/objdump', '#!/bin/sh\necho GLIBC_2.36\n', True)
@@ -70,7 +70,7 @@ class NoticeTest(unittest.TestCase):
             shutil.copytree(docs, source)
             (source / 'target/release').mkdir(parents=True)
             (source / 'host/evdi').mkdir(parents=True)
-            for name in ['blent', 'blent-gui']:
+            for name in ['blent', 'blent-gui', 'blent-audio']:
                 shutil.copy(docs / 'bin' / name, source / 'target/release' / name)
             shutil.copy(docs / 'bin/evdi_helper', source / 'host/evdi/evdi_helper')
             (root / 'evdi-1.15.0/library').mkdir(parents=True)

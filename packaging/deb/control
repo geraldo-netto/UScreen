@@ -5,7 +5,7 @@ Priority: optional
 Architecture: amd64
 Depends: ffmpeg, adb | android-tools-adb, libdrm2,
  libx11-6, libx11-xcb1, libxcursor1, libxi6, libxkbcommon-x11-0
-Recommends: evdi-dkms
+Recommends: evdi-dkms, pipewire
 Maintainer: majmichu1 <157926347+majmichu1@users.noreply.github.com>
 Homepage: https://github.com/geraldo-netto/blent
 Description: Android tablet as a USB second display and graphics tablet

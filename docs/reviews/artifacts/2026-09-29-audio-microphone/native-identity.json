@@ -1,0 +1,11 @@
+{
+  "android_model": "RugKing Pad 2 Pro",
+  "android_api": "36",
+  "pipewire": "pipewire\nCompiled with libpipewire 1.0.5\nLinked with libpipewire 1.0.5",
+  "sha256": {
+    "signed_apk": "fc0517073543b535c62ff3f673f55c8a595c309e14031f94292486a299a2c203",
+    "live_host": "8df5695caa72be3ab78b9e1618fc1ac4262e743c8706d127f0827f53ca603980",
+    "live_adapter_before_callback_extraction": "f6753182cd4368db1bc12fe2165617ffbc92ef6fc39f98b4917b7bf9a0e5b3fd",
+    "adapter_after_extraction": "a3fe044e8c43bdc97c71e855753b55b3b44bc5018df4de1a899719826d113181"
+  }
+}

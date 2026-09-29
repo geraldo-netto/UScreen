@@ -85,11 +85,11 @@ publication verifies the staged APK before any release API writes.
 ## ADB-managed installation
 
 After verifying the signed APK, install with `adb -s SERIAL install -r -g blent.apk`.
-`-g` grants the runtime permissions declared by the APK (currently Camera);
+`-g` grants the runtime permissions declared by the APK (Camera and Microphone);
 it grants no new permission absent from the manifest and does not start capture.
 Normal permissions are handled by Android at installation. Special/signature
 permissions and USB authorization are separate platform controls. A manually
-installed APK still needs runtime permission prompts. Camera Start/Stop and
+installed APK still needs runtime permission prompts. Explicit camera/microphone Start/Stop and
 foreground/background consent remain required regardless of installation route.
 
 ## Fresh Blent installation

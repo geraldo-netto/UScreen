@@ -8,6 +8,10 @@ import androidx.activity.compose.setContent
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
+    internal lateinit var microphone: AudioBinding; private set
+    private val microphonePermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        microphone.permissionResult(it)
+    }
     internal lateinit var cameras: CameraBinding; private set
     private val cameraPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
         cameras.permissionResult(it)
@@ -21,6 +25,7 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val prefs = Prefs(this)
         cameras = CameraOwner.get(applicationContext)
+        microphone = AudioOwner.get(applicationContext)
         powerBinding = StreamingPowerBinding(this)
         windowPolicy = ActivityWindowPolicy(this, prefs)
         windowPolicy.applyDisplaySettings()
@@ -40,7 +45,7 @@ class MainActivity : ComponentActivity() {
                     onSurfaceDestroyed = session::surfaceDestroyed,
                     displayRefreshRates = windowPolicy.supportedDisplayModes().map { it.refreshRate },
                     onSettingsEvent = ::settingsEvent,
-                    cameraControls = { CameraControls(cameras) },
+                    cameraControls = { CameraControls(cameras); AudioControls(microphone) },
                     inputControls = { session.inputControls() },
                 )
             }
@@ -101,6 +106,8 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         CameraOwner.permissionRequest = { cameraPermission.launch(android.Manifest.permission.CAMERA) }
         cameras.start()
+        AudioOwner.permissionRequest = { microphonePermission.launch(android.Manifest.permission.RECORD_AUDIO) }
+        microphone.start()
         windowPolicy.start()
         powerBinding.start(session.powerNow(), session.powerUpdates())
         session.checkUpdate {
@@ -112,6 +119,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         CameraOwner.permissionRequest = null
         cameras.stop()
+        AudioOwner.permissionRequest = null
+        microphone.stop()
         super.onStop()
         windowPolicy.stop()
         powerBinding.stop()

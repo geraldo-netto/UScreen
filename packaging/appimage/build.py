@@ -26,10 +26,10 @@ def stage(repo, bundle, appdir, ffmpeg_prefix):
     binary.mkdir(parents=True)
     library = appdir / 'usr/lib'
     library.mkdir()
-    for name in ('blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0'):
+    for name in ('blent', 'blent-gui', 'blent-audio', 'evdi_helper', 'libevdi.so.1.15.0'):
         copy(bundle / 'bin' / name, binary / name)
     (binary / 'libevdi.so.1').symlink_to('libevdi.so.1.15.0')
-    programs = [binary / name for name in ('blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0')]
+    programs = [binary / name for name in ('blent', 'blent-gui', 'blent-audio', 'evdi_helper', 'libevdi.so.1.15.0')]
     stock = stage_stock(appdir, ffmpeg_prefix)
     copy(Path('/bin/bash'), binary / 'bash')
     programs.extend([binary / 'bash', *stock])
@@ -40,7 +40,7 @@ def stage(repo, bundle, appdir, ffmpeg_prefix):
     (library / 'libevdi.so.1').unlink(missing_ok=True)
     dependencies.pop('libevdi.so.1', None)
     ffmpeg_bundle.isolate_codecs(appdir, dependencies)
-    for name in ('blent', 'blent-gui', 'evdi_helper', 'bash'):
+    for name in ('blent', 'blent-gui', 'blent-audio', 'evdi_helper', 'bash'):
         elf.set_app_rpath(binary / name, helper=name == 'evdi_helper')
         elf.check_loaded(binary / name)
     stage_metadata(repo, appdir)

@@ -47,6 +47,7 @@ class ActivityUiContractTest {
 
         override fun before() {
             CameraOwner.reset()
+            AudioOwner.reset()
             previousTracer = ReflectionHelpers.getStaticField(Class.forName("androidx.compose.runtime.ComposerKt"), "compositionTracer")
             androidx.compose.runtime.Composer.setTracer(trace)
             prefs = Prefs(RuntimeEnvironment.getApplication()).apply { checkUpdates = false }
@@ -67,6 +68,7 @@ class ActivityUiContractTest {
             controller.pause().stop().destroy()
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
             CameraOwner.reset()
+            AudioOwner.reset()
             ReflectionHelpers.setStaticField(Class.forName("androidx.compose.runtime.ComposerKt"), "compositionTracer", previousTracer)
         }
 
@@ -141,5 +143,32 @@ class ActivityUiContractTest {
             fixture.stop()
         }
         assertNull(activity.cameras.endpoint)
+    }
+
+    @Test fun t718_microphoneSelectionUsesActivityPermissionAndDenialStopsSharing() {
+        val activity = compose.activity
+        org.robolectric.Shadows.shadowOf(RuntimeEnvironment.getApplication())
+            .denyPermissions(android.Manifest.permission.RECORD_AUDIO)
+        try {
+            compose.runOnIdle {
+                AudioInvitations.microphone.value = AudioEndpoint("a".repeat(64), 12345, 1, 1, 40, false)
+            }
+            compose.waitForIdle()
+            val permission = org.robolectric.Shadows.shadowOf(activity).nextStartedActivityForResult
+            assertNotNull("T718 microphone selection bypassed permission request", permission)
+            assertFalse(activity.microphone.sharing)
+            compose.runOnIdle {
+                activity.onRequestPermissionsResult(permission.requestCode,
+                    arrayOf(android.Manifest.permission.RECORD_AUDIO),
+                    intArrayOf(android.content.pm.PackageManager.PERMISSION_DENIED))
+            }
+            compose.waitForIdle()
+            assertFalse(activity.microphone.sharing)
+            assertTrue(activity.microphone.status.contains("permission", ignoreCase = true))
+        } finally {
+            AudioInvitations.microphone.value = null
+            fixture.stop()
+        }
+        assertNull(AudioOwner.permissionRequest)
     }
 }

@@ -27,9 +27,22 @@ class PortabilityContractsTest(unittest.TestCase):
             (root/'libevdi.so.1.15.0').touch()
             with patch.object(portability, 'verify_abi') as abi:
                 with self.assertRaisesRegex(ValueError, 'SONAME link'): portability.verify_bundle(root)
-                self.assertEqual(abi.call_count, 4)
+                self.assertEqual(abi.call_count, 5)
                 (root/'libevdi.so.1').symlink_to('libevdi.so.1.15.0')
                 self.check_dynamic(root)
+
+    def test_t718_audio_helper_must_meet_bundle_glibc_floor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'libevdi.so.1.15.0').touch()
+            (root / 'libevdi.so.1').symlink_to('libevdi.so.1.15.0')
+            def output(command, **kwargs):
+                if command[0] == 'readelf':
+                    return '(RUNPATH) [$ORIGIN]\n(NEEDED) [libevdi.so.1]'
+                return 'GLIBC_2.40' if Path(command[-1]).name == 'blent-audio' else 'GLIBC_2.36'
+            with patch.object(portability.subprocess, 'check_output', side_effect=output):
+                with self.assertRaisesRegex(ValueError, 'blent-audio.*exceeds 2.36'):
+                    portability.verify_bundle(root)
 
     def check_dynamic(self, root):
         needed = '(NEEDED) Shared library: [libevdi.so.1]'

@@ -490,7 +490,7 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
 
     def t497_bundle(self):
         bundle = self.root/'bundle'
-        for name in ['blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+        for name in ['blent', 'blent-gui', 'blent-audio', 'evdi_helper', 'libevdi.so.1.15.0']:
             self.write(bundle/'bin'/name, 'fixture binary')
         programs = [self.write(self.root/'pinned/bin'/name, 'fixture stock') for name in ['ffmpeg', 'ffprobe']]
         programs.append(self.write(self.root/'stock/adb', 'fixture stock'))
@@ -507,9 +507,9 @@ root.with_suffix('.gui').write_text(os.environ['APPDIR'])
                 patch.object(elf, 'set_app_rpath') as rpath, patch.object(elf, 'check_loaded') as loaded:
             paths = build.stage(REPO, bundle, target, self.root/'pinned')
         self.assertEqual(paths, [Path('/bin/bash'), stock[-1], dependency])
-        self.assertEqual(abi.call_count, 8)
-        self.assertEqual(rpath.call_count, 4)
-        self.assertEqual(loaded.call_count, 4)
+        self.assertEqual(abi.call_count, 9)
+        self.assertEqual(rpath.call_count, 5)
+        self.assertEqual(loaded.call_count, 5)
         self.assertTrue((target/'usr/bin/libevdi.so.1').is_symlink())
         self.assertNotIn('libevdi.so.1', dependencies)
         for program in stock:

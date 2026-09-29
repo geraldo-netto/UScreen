@@ -126,7 +126,7 @@ exit 0
         }
         for name in ['cargo', 'make', 'gcc']:
             files['bin/' + name] = '#!/bin/sh\nexit 0\n'
-        for name in ['release/blent', 'release/blent-gui', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
+        for name in ['release/blent', 'release/blent-gui', 'release/blent-audio', 'evdi_helper', 'evdi-src/library/libevdi.so.1.15.0']:
             files['target-deb12/' + name] = '#!/bin/sh\nexit 0\n'
         for name, text in files.items():
             path = root / name
@@ -166,7 +166,7 @@ exit 0
         write('scripts/copy-distribution-docs.sh', (REPO / 'scripts/copy-distribution-docs.sh').read_text(), True)
         write('packaging/distribution-docs.txt', (REPO / 'packaging/distribution-docs.txt').read_text())
         write('Makefile', 'VERSION = 1.2.3\n')
-        for name in ['blent', 'blent-gui', 'evdi_helper', 'libevdi.so.1.15.0']:
+        for name in ['blent', 'blent-gui', 'blent-audio', 'evdi_helper', 'libevdi.so.1.15.0']:
             write('dist/blent-1.2.3/bin/' + name, 'binary', True)
         for name in ['scripts/setup-evdi.sh', 'scripts/blent.desktop', 'packaging/icons/blent.svg', 'packaging/icons/blent-pen.svg',
                      'packaging/blent.service', 'packaging/blent-evdi.conf', 'packaging/blent-modules.conf',

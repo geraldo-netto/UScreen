@@ -88,6 +88,7 @@ async fn main() -> Result<()> {
         Some(Commands::Wifi { off }) => setup_wifi(*off).await?,
         Some(Commands::Doctor) => doctor::run().await?,
         Some(Commands::Cameras(options)) => camera::run(options).await?,
+        Some(Commands::Audio(options)) => blent::audio::run_cli(options.options()).await?,
     }
 
     Ok(())

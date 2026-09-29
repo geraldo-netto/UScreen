@@ -25,7 +25,7 @@ fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
         write(
             &source,
             &format!("{folder}/Cargo.toml"),
-            &format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"),
+            &format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[features]\nnative-audio = []\n"),
         );
         write(
             &source,
@@ -38,6 +38,11 @@ fn prepare(root: &Path, version: &str) -> std::path::PathBuf {
             "#!/bin/sh\necho stale\n",
         );
     }
+    write(
+        &source,
+        "host/src/bin/blent-audio.rs",
+        "fn main() { println!(\"fresh-blent-audio\"); }\n",
+    );
     for name in [
         "scripts/setup-evdi.sh",
         // T713: mirror the T700 helper installed by the production PKGBUILD.
@@ -123,7 +128,7 @@ fn builds_fresh_package(config_override: bool) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    for name in ["blent", "blent-gui"] {
+    for name in ["blent", "blent-gui", "blent-audio"] {
         let output = Command::new(package.join("usr/bin").join(name))
             .output()
             .unwrap();

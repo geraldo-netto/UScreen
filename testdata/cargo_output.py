@@ -29,7 +29,7 @@ def main():
         return
     output = target / 'release'
     output.mkdir(parents=True, exist_ok=True)
-    for name in ['blent', 'blent-gui']:
+    for name in ['blent', 'blent-gui', 'blent-audio']:
         program = output / name
         program.write_text('#!/bin/sh\nprintf \'fresh-' + name + ' %s\\n\' "${1:-}"\n')
         program.chmod(0o755)

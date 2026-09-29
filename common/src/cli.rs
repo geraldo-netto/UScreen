@@ -106,6 +106,35 @@ pub enum Commands {
     Doctor,
     /// Expose tablet front/rear cameras as Linux webcams (one active at a time).
     Cameras(crate::camera::CameraOptions),
+    /// Explicit tablet audio session; no default-device changes.
+    Audio(AudioArgs),
+}
+
+#[derive(clap::Args)]
+pub struct AudioArgs {
+    #[arg(long, value_enum, default_value = "microphone")]
+    pub direction: crate::audio::Direction,
+    #[arg(long, value_enum, default_value = "speech")]
+    pub processing: crate::audio::Processing,
+    #[arg(long, default_value_t = 40)]
+    pub buffer_ms: u16,
+    #[arg(long)]
+    pub background: bool,
+    #[arg(long)]
+    pub serial: Option<String>,
+}
+impl AudioArgs {
+    pub fn options(&self) -> crate::audio::AudioOptions {
+        crate::audio::AudioOptions {
+            profile: crate::audio::AudioProfile {
+                direction: self.direction,
+                processing: self.processing,
+                buffer_ms: self.buffer_ms,
+                background: self.background,
+            },
+            serial: self.serial.clone(),
+        }
+    }
 }
 
 #[cfg(test)]
