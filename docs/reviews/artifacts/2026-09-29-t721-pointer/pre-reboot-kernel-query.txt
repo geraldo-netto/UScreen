@@ -1,0 +1,4 @@
+Local timezone: Europe/Rome (CEST, UTC+02:00)
+['journalctl', '-b', '335820b37dc24d03beaed72c660aeb15', '-k', '--no-pager', '--since', '2026-09-29 12:45:00', '--until', '2026-09-29 13:03:00', '-g', 'usb|hid|input|amdgpu|oom|stall|blocked for|watchdog']
+exit=1
+-- No entries --

@@ -1,0 +1,40 @@
+Captured from /var/log/Xorg.0.log.old on 2026-09-29. Current boot 41061d5cf8aa4d9b9cc192065965132c; PID1907 per journal.
+	(WW) warning, (EE) error, (NI) not implemented, (??) unknown.
+[    14.816] (==) Log file: "/var/log/Xorg.0.log", Time: Tue Sep 29 13:03:35 2026
+[    17.434] (EE)
+[    17.434] (EE) Backtrace:
+[    17.434] (EE) 0: /usr/lib/xorg/Xorg (OsLookupColor+0x14c) [0x5c6aa3b0b19c]
+[    17.435] (EE) 1: /lib/x86_64-linux-gnu/libc.so.6 (__sigaction+0x50) [0x7f481d445330]
+[    17.435] (EE) 2: /lib/x86_64-linux-gnu/libc.so.6 (pthread_kill+0x11c) [0x7f481d49ec0c]
+[    17.435] (EE) 3: /lib/x86_64-linux-gnu/libc.so.6 (gsignal+0x1e) [0x7f481d44527e]
+[    17.435] (EE) 4: /lib/x86_64-linux-gnu/libc.so.6 (abort+0xdf) [0x7f481d4288ff]
+[    17.436] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[    17.436] (EE) 5: /lib/x86_64-linux-gnu/libc.so.6 (?+0x0) [0x7f481d42881b]
+[    17.436] (EE) 6: /lib/x86_64-linux-gnu/libc.so.6 (__assert_fail+0x47) [0x7f481d43b517]
+[    17.436] (EE) 7: /usr/lib/xorg/Xorg (dixRegisterPrivateKey+0x1e4) [0x5c6aa39ad464]
+[    17.436] (EE) 8: /usr/lib/xorg/modules/libglamoregl.so (glamor_init+0xcb) [0x7f481cc9d70b]
+[    17.437] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[    17.437] (EE) 9: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f481d0a87d8]
+[    17.437] (EE) unw_get_proc_name failed: no unwind info found [-10]
+[    17.437] (EE) 10: /usr/lib/xorg/modules/drivers/modesetting_drv.so (?+0x0) [0x7f481d09e35f]
+[    17.437] (EE) 11: /usr/lib/xorg/Xorg (AddGPUScreen+0x100) [0x5c6aa398bf30]
+[    17.437] (EE) 12: /usr/lib/xorg/Xorg (xf86PlatformMatchDriver+0xb20) [0x5c6aa39eb9c0]
+[    17.437] (EE) 13: /usr/lib/xorg/Xorg (xf86PlatformDeviceCheckBusID+0x288) [0x5c6aa39f1ac8]
+[    17.437] (EE) 14: /usr/lib/xorg/Xorg (config_fini+0x1072) [0x5c6aa39edd32]
+[    17.437] (EE) 15: /usr/lib/xorg/Xorg (config_fini+0x1650) [0x5c6aa39ee310]
+[    17.437] (EE) 16: /usr/lib/xorg/Xorg (OsCleanup+0x64a) [0x5c6aa3b0bc6a]
+[    17.437] (EE) 17: /usr/lib/xorg/Xorg (WaitForSomething+0x185) [0x5c6aa3b045c5]
+[    17.437] (EE) 18: /usr/lib/xorg/Xorg (SendErrorToClient+0x11a) [0x5c6aa398b88a]
+[    17.437] (EE) 19: /usr/lib/xorg/Xorg (InitFonts+0x3ca) [0x5c6aa398fefa]
+[    17.438] (EE) 20: /lib/x86_64-linux-gnu/libc.so.6 (__libc_init_first+0x8a) [0x7f481d42a1ca]
+[    17.438] (EE) 21: /lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main+0x8b) [0x7f481d42a28b]
+[    17.438] (EE) 22: /usr/lib/xorg/Xorg (_start+0x25) [0x5c6aa39783b5]
+[    17.438] (EE)
+[    17.438] (EE)
+Fatal server error:
+[    17.438] (EE) Caught signal 6 (Aborted). Server aborting
+[    17.438] (EE)
+[    17.438] (EE)
+[    17.438] (EE) Please also check the log file at "/var/log/Xorg.0.log" for additional information.
+[    17.438] (EE)
+[    17.442] (EE) Server terminated with error (1). Closing log file.

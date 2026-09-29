@@ -1,0 +1,6 @@
+Selected /home/netto/.xsession-errors.old lines; shutdown messages occur after initial pointer report.
+(cinnamon:3405): Clutter-WARNING **: 12:50:36.656: Attempting to remove actor of type 'StIcon' from group of class 'ClutterBox', but the container is not the actor's parent.
+(cinnamon:3405): Clutter-WARNING **: 12:50:47.391: Attempting to remove actor of type 'StIcon' from group of class 'ClutterBox', but the container is not the actor's parent.
+(cinnamon:3405): Clutter-WARNING **: 12:50:57.048: Attempting to remove actor of type 'StIcon' from group of class 'ClutterBox', but the container is not the actor's parent.
+X connection to :0 broken (explicit kill or server shutdown).
+(cinnamon:643374): muffin-WARNING **: 13:03:10.577: Failed to create backend: Unable to open display ':0'
