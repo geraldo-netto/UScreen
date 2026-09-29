@@ -1,0 +1,12 @@
+{
+  "rust_snapshot": "manifest.json.gz",
+  "rust_collection": "Fresh Linux and native Windows LLVM target directories; no reused instrumented binaries",
+  "android_sources_unchanged_between_collection_snapshot_and_final_manifest": true,
+  "only_changes_between_snapshots": [
+    "gui/src/direct_input_settings.rs",
+    "host/src/input/direct/tests.rs"
+  ],
+  "android_tests": 614,
+  "android_failures": 0,
+  "android_skipped": 0
+}

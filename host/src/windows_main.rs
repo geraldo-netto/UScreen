@@ -1,4 +1,4 @@
-//! Windows interactive daemon lifecycle; capture and input remain unsupported.
+//! Windows interactive daemon lifecycle; capture remains unsupported; direct input is an opt-in preview.
 use anyhow::{bail, Result};
 use blent::{
     tray_state::State,
@@ -115,7 +115,7 @@ async fn run_usb(
     let monitor = usb_loop(session, config, receiver.clone(), &status);
     tokio::pin!(monitor);
     println!(
-        "Blent daemon running; USB/Wi-Fi connection preview; display and input unsupported on Windows"
+        "Blent daemon running; USB/Wi-Fi connection preview; display/stylus unsupported; touch/mouse preview opt-in on Windows"
     );
     let requested = tokio::select! {
         result=wait_stop(session, receiver) => result,
@@ -188,10 +188,12 @@ async fn poll_usb(
 fn status(path: &Path) -> Result<()> {
     match lifecycle::status(path)? {
         Some(owner) => println!(
-            "Blent daemon running (PID {}); display and input unsupported",
+            "Blent daemon running (PID {}); display/stylus unsupported; touch/mouse preview opt-in",
             owner.pid
         ),
-        None => println!("Blent daemon stopped; display and input unsupported"),
+        None => {
+            println!("Blent daemon stopped; display/stylus unsupported; touch/mouse preview opt-in")
+        }
     }
     let sessions = lifecycle::load_sessions(path).unwrap_or_default();
     for session in sessions {
@@ -213,6 +215,7 @@ fn diagnostics() {
         Err(error) => println!("Configuration: unavailable ({error})"),
     }
     println!("Blent version: {}", env!("CARGO_PKG_VERSION"));
+    print_input_monitors();
     for line in blent_config::diagnostics::collect().lines() {
         println!("{line}");
     }
@@ -221,3 +224,15 @@ fn diagnostics() {
 #[cfg(test)]
 #[path = "windows_wifi_tests.rs"]
 mod wifi_tests;
+
+fn print_input_monitors() {
+    use blent_config::input_mapping::MonitorInventory;
+    match blent_config::windows::monitors::NativeInventory.snapshot() {
+        Ok(snapshot) => {
+            for monitor in snapshot.monitors() {
+                println!("Input monitor: {} ({})", monitor.id, monitor.name);
+            }
+        }
+        Err(error) => println!("Input monitors unavailable: {error}"),
+    }
+}

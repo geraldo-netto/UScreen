@@ -172,6 +172,10 @@ pub struct FileConfig {
     /// cursor where the pen last was, so it does not vanish when the pen
     /// lifts. Only exists together with `input_pen`.
     pub input_pointer: bool,
+    /// Explicit monitor/mode for non-stylus input; None keeps the preview disabled.
+    pub direct_input: Option<crate::direct_input::Config>,
+    /// Finger-driven mouse, independent of the legacy pen-derived pointer.
+    pub input_mouse: bool,
 }
 
 impl Default for FileConfig {
@@ -208,6 +212,8 @@ impl Default for FileConfig {
             input_touch: true,
             input_pen: true,
             input_pointer: true,
+            direct_input: None,
+            input_mouse: true,
         }
     }
 }
@@ -257,6 +263,9 @@ impl FileConfig {
     }
 
     pub fn validate_input_mode(&self) -> Result<()> {
+        if let Some(config) = &self.direct_input {
+            config.validate(self.input_touch, self.input_mouse)?;
+        }
         anyhow::ensure!(
             !self.pen_only || self.input_pen,
             "Graphics-tablet mode requires Pen. Enable Pen or use second-screen mode."

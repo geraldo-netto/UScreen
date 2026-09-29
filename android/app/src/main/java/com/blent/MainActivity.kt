@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
                     displayRefreshRates = windowPolicy.supportedDisplayModes().map { it.refreshRate },
                     onSettingsEvent = ::settingsEvent,
                     cameraControls = { CameraControls(cameras) },
+                    inputControls = { session.inputControls() },
                 )
             }
         }

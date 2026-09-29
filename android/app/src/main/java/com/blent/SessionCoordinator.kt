@@ -17,6 +17,7 @@ internal class StreamPresentation(private val receiver: VideoReceiver?, control:
     val decoderDiagnostics = receiver?.decoder?.diagnostics ?: MutableStateFlow(DecoderDiagnostics())
     val connectionState = control?.connectionState ?: MutableStateFlow(ControlConnection())
     val controlConnected: StateFlow<Boolean> = control?.controlConnected ?: MutableStateFlow(false)
+    val directInput = control?.motion?.direct?.state ?: MutableStateFlow<DirectControlsState?>(null)
     init {
         val ui = Handler(Looper.getMainLooper())
         // Always enqueue, preserving worker/UI callback ordering (T300/T329).
@@ -107,6 +108,7 @@ internal class SessionCoordinator(
     }
 
     fun dismissThanks() { showThanks = false }
+    @Composable fun inputControls() { DirectInputControls(touchCapture) }
     fun surfaceReady(view: android.view.SurfaceView) {
         videoReceiver?.setSurface(view)
         touchCapture?.setSurfaceView(view)

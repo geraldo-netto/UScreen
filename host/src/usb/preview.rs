@@ -1,4 +1,4 @@
-//! Protocol-only preview adapters. All native device capabilities remain false.
+//! Preview composition: unavailable capture and optional non-stylus native input.
 use crate::{
     input::{
         backend::{InputBackend, InputSink, PenSample},
@@ -14,6 +14,7 @@ pub(super) fn prepare(
     config: &blent_config::FileConfig,
     instance: u32,
     ports: (u16, u16),
+    store: &blent_config::storage::ConfigStore,
 ) -> anyhow::Result<Prepared> {
     let settings = EncoderSettings {
         encoder: "libx264".into(),
@@ -40,10 +41,27 @@ pub(super) fn prepare(
     .prepare(
         watch::channel(true).0,
         Box::new(Unavailable),
-        Arc::new(Unavailable),
+        input_backend(config, store)?,
     );
     prepared.input = prepared.input.with_fixed_mode(true);
     Ok(prepared)
+}
+
+fn input_backend(
+    config: &blent_config::FileConfig,
+    store: &blent_config::storage::ConfigStore,
+) -> anyhow::Result<Arc<dyn InputBackend>> {
+    #[cfg(windows)]
+    if let Some(direct) = &config.direct_input {
+        return Ok(Arc::new(crate::input::direct::native(
+            direct.clone(),
+            config.input_touch,
+            config.input_mouse,
+            store.clone(),
+        )?));
+    }
+    let _ = (config, store);
+    Ok(Arc::new(Unavailable))
 }
 struct Unavailable;
 impl CaptureBackend for Unavailable {
@@ -107,4 +125,23 @@ mod tests {
             sink.release_all();
         }
     }
+}
+
+#[cfg(all(test, windows))]
+#[test]
+fn t673_preview_wires_explicit_direct_input_and_keeps_pen_unavailable() {
+    let config = blent_config::FileConfig {
+        direct_input: Some(blent_config::direct_input::Config {
+            monitor: "test-monitor".into(),
+            mode: blent_config::direct_input::Mode::DirectMouse,
+        }),
+        ..Default::default()
+    };
+    let root = tempfile::tempdir().unwrap();
+    let store = blent_config::storage::ConfigStore::new(root.path().join("input.toml"));
+    let backend = input_backend(&config, &store).unwrap();
+    let status = backend.sink().direct_status().unwrap();
+    assert_eq!(status.monitor, "test-monitor");
+    assert!(status.touch && status.mouse);
+    assert!(!status.negotiated);
 }

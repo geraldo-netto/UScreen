@@ -57,7 +57,8 @@ async fn t525_native_daemon_discovers_usb_without_host_shell() {
             .is_some_and(|sessions| sessions.len() == 1)
     });
     tray::wait_status(daemon.0.id(), "USB prepared: 1");
-    assert!(tray::title(daemon.0.id()).contains("Display and input unavailable"));
+    assert!(tray::title(daemon.0.id())
+        .contains("Display/stylus unavailable; touch/mouse preview opt-in"));
     let sessions = blent_config::windows::lifecycle::load_sessions(&runtime).unwrap();
     assert_eq!((sessions[0].video_port, sessions[0].input_port), ports);
     assert_eq!(

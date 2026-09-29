@@ -71,6 +71,7 @@ mod tests {
             daemon: true,
             display: supported,
             input: supported,
+            direct_input: supported,
             system_setup: supported,
             autostart: true,
             pipe_capacity: supported,

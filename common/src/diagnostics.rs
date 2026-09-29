@@ -135,6 +135,10 @@ pub fn backend_lines(caps: Capabilities) -> Vec<String> {
     [
         ("Display", caps.display),
         ("Input", caps.input),
+        (
+            "Touch/mouse preview (physical acceptance pending)",
+            caps.direct_input,
+        ),
         ("Daemon lifecycle", caps.daemon),
         ("Cameras", caps.camera),
         ("Autostart", caps.autostart),

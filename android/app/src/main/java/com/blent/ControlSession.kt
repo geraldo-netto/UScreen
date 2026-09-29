@@ -21,6 +21,7 @@ internal interface ControlInputState {
     fun forgetTouches()
     fun setTouchEnabled(enabled: Boolean)
     fun setPenEnabled(enabled: Boolean)
+    fun setDirectInput(status: JSONObject?) {}
 }
 
 internal data class RejectedStreamSettings(val reason: String, val bitrate: Int, val fps: Int, val requestGeneration: Long)
@@ -123,6 +124,8 @@ internal class ControlSession(
                         return
                     }
                     applyInputGreeting(o)
+                    // T673: negotiation can fail synchronously and retire this socket.
+                    if (isStale(webSocket)) return
                     applyCapabilityGreeting(o)
                     applyDecoderGreeting(o)
                     requestDecoderCapabilities(webSocket, streamFormat.takeIf { encodedDimensionsKnown })
@@ -207,6 +210,7 @@ internal class ControlSession(
     }
 
     private fun resetGreeting() {
+        input.setDirectInput(null)
         capabilityJob?.cancel()
         capabilityJob = null
         capabilityRequest = null
@@ -225,10 +229,22 @@ internal class ControlSession(
     }
 
     private fun applyInputGreeting(o: JSONObject) {
+        if (o.has("direct_input")) {
+            applyDirectGreeting(o)
+            return
+        }
         if (o.has("touch")) {
             input.setTouchEnabled(o.getBoolean("touch"))
         }
         if (o.has("pen")) input.setPenEnabled(o.getBoolean("pen"))
+    }
+
+    private fun applyDirectGreeting(o: JSONObject) {
+        val direct = o.optJSONObject("direct_input")
+        input.setDirectInput(direct)
+        if (o.optString("status") == "connected" && direct?.optInt("protocol") == 1) {
+            enqueue(JSONObject().put("type", "direct_input").put("command", JSONObject().put("type", "negotiate").put("version", 1)))
+        }
     }
 
     private fun requestDecoderCapabilities(source: WebSocket, format: DecoderFormat?) {

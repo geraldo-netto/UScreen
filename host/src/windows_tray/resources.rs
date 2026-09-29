@@ -80,7 +80,11 @@ impl Menu {
         let menu = Self(unsafe { CreatePopupMenu() });
         check(!menu.0.is_null())?;
         menu.append(MF_GRAYED, 0, &state.line())?;
-        menu.append(MF_GRAYED, 0, "Display and input unavailable")?;
+        menu.append(
+            MF_GRAYED,
+            0,
+            "Display/stylus unavailable; touch/mouse preview opt-in",
+        )?;
         menu.append(MF_SEPARATOR, 0, "")?;
         let flags = if state == State::Stopping {
             MF_GRAYED

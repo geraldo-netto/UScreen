@@ -3,6 +3,8 @@
 mod camera_preview;
 mod camera_settings;
 mod conversion_settings;
+#[cfg(any(windows, test))]
+mod direct_input_settings;
 mod pipe_settings;
 mod platform;
 mod platform_diagnostics;
@@ -459,7 +461,7 @@ impl App {
 
     fn show_setup(&mut self, ui: &mut egui::Ui, status: &Status) {
         if !capabilities().system_setup {
-            ui.label("Windows preview: settings can be saved; streaming and input are not available yet.");
+            ui.label("Windows preview: touch/mouse input is opt-in; physical acceptance pending. Streaming and stylus unavailable.");
             ui.label(if status.daemon_binary {
                 "Host executable found"
             } else {
@@ -810,6 +812,11 @@ impl App {
     }
 
     fn setting_mode(&mut self, ui: &mut egui::Ui) {
+        if cfg!(windows) {
+            ui.label("Input preview uses the selected host monitor; no video.");
+            ui.end_row();
+            return;
+        }
         ui.label("Mode");
         ui.vertical(|ui| {
             ui.set_min_width(250.0);
@@ -841,6 +848,27 @@ impl App {
     }
 
     fn setting_input_devices(&mut self, ui: &mut egui::Ui) {
+        #[cfg(windows)]
+        {
+            use blent_config::input_mapping::MonitorInventory;
+            let snapshot = blent_config::windows::monitors::NativeInventory.snapshot();
+            direct_input_settings::show(
+                ui,
+                &mut self.cfg,
+                snapshot.as_ref().map(|s| s.monitors()).unwrap_or(&[]),
+            );
+            if let Err(error) = snapshot {
+                ui.label(format!("Monitor inventory unavailable: {error}"));
+            }
+            ui.end_row();
+            return;
+        }
+        #[cfg(not(windows))]
+        self.setting_legacy_input_devices(ui);
+    }
+
+    #[cfg(not(windows))]
+    fn setting_legacy_input_devices(&mut self, ui: &mut egui::Ui) {
         ui.label("Input devices");
         ui.vertical(|ui| {
             ui.checkbox(

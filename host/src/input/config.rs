@@ -51,6 +51,7 @@ impl InputConfig {
             .map(|s| (s.width, s.height))
             .unwrap_or((self.virtual_width, self.virtual_height));
         InputResponse {
+            direct_input: None,
             status: status.into(),
             transport: None,
             fps: settings.as_ref().map(|current| current.fps),

@@ -220,3 +220,37 @@ fn t689_denied_partial_creation_replacement_and_shutdown_release_ownership() {
     drop(replacement);
     assert_eq!(observed.lock().unwrap().retire, 2);
 }
+
+#[test]
+fn t673_preferences_validate_monitor_identity_modes_and_device_masks() {
+    for monitor in [
+        "".into(),
+        "screen".into(),
+        "x".repeat(1024),
+        "x".repeat(1025),
+        "screen\n".into(),
+        "screen\0".into(),
+    ] {
+        for mode in [Mode::Touch, Mode::DirectMouse] {
+            for (touch, mouse) in [(false, false), (true, false), (false, true), (true, true)] {
+                let config = Config {
+                    monitor: monitor.clone(),
+                    mode,
+                };
+                let identity = !monitor.is_empty()
+                    && monitor.len() <= 1024
+                    && !monitor.chars().any(char::is_control);
+                let enabled = if mode == Mode::Touch { touch } else { mouse };
+                assert_eq!(config.validate(touch, mouse).is_ok(), identity && enabled);
+                let file = crate::FileConfig {
+                    direct_input: Some(config),
+                    input_touch: touch,
+                    input_mouse: mouse,
+                    input_pen: false,
+                    ..Default::default()
+                };
+                assert_eq!(file.validate_input_mode().is_ok(), identity && enabled);
+            }
+        }
+    }
+}

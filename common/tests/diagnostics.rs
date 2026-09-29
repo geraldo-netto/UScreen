@@ -24,6 +24,7 @@ fn unsupported() -> blent_config::platform::Capabilities {
         daemon: false,
         display: false,
         input: false,
+        direct_input: false,
         system_setup: false,
         autostart: false,
         pipe_capacity: false,

@@ -15,6 +15,12 @@ pub trait InputSink: Send + Sync {
     fn release_all(&self);
     fn touch(&self, position: (f64, f64, f64), action: u8, slot: u8);
     fn pen(&self, sample: PenSample, enabled: bool);
+    fn direct(&self, _: super::direct::Command) -> anyhow::Result<()> {
+        anyhow::bail!("Direct input unavailable")
+    }
+    fn direct_status(&self) -> Option<super::direct::Status> {
+        None
+    }
 }
 
 impl<T: InputSink + ?Sized> InputSink for Arc<T> {
@@ -26,6 +32,12 @@ impl<T: InputSink + ?Sized> InputSink for Arc<T> {
     }
     fn pen(&self, sample: PenSample, enabled: bool) {
         self.as_ref().pen(sample, enabled);
+    }
+    fn direct(&self, command: super::direct::Command) -> anyhow::Result<()> {
+        self.as_ref().direct(command)
+    }
+    fn direct_status(&self) -> Option<super::direct::Status> {
+        self.as_ref().direct_status()
     }
 }
 

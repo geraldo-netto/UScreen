@@ -267,7 +267,10 @@ The [Windows integration plan](docs/windows-port.md) separates compilation,
 touch/mouse operation, extended-display support and packaging. Windows stylus
 work is declined; existing Linux/Android pen code and tests remain. The plan
 records pending OS/driver/testing decisions. The Windows preview provides lifecycle, USB preparation,
-Settings and a tray; display streaming and input backends remain unsupported.
+Settings, a tray, and an opt-in selected-monitor touch/mouse preview with Android
+tap, right-click and drag controls. Physical tablet acceptance remains pending;
+display streaming and stylus remain unavailable. See the
+[input preview setup](docs/reviews/2026-09-28-windows-direct-input.md#using-the-input-preview).
 
 Other proposals inherited from upstream are AOA transport to reduce reliance
 on USB debugging, broader Wayland input mapping, and a PipeWire/dmabuf capture

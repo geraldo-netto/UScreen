@@ -16,6 +16,7 @@ pub struct Capabilities {
     pub daemon: bool,
     pub display: bool,
     pub input: bool,
+    pub direct_input: bool,
     pub system_setup: bool,
     pub autostart: bool,
     pub pipe_capacity: bool,
@@ -29,6 +30,7 @@ pub const fn capabilities() -> Capabilities {
         daemon: linux || cfg!(windows),
         display: linux,
         input: linux,
+        direct_input: cfg!(windows),
         system_setup: linux,
         autostart: linux || cfg!(windows),
         pipe_capacity: linux,
@@ -65,6 +67,7 @@ mod tests {
         assert_eq!(caps.daemon, cfg!(any(target_os = "linux", windows)));
         assert_eq!(caps.display, cfg!(target_os = "linux"));
         assert_eq!(caps.input, cfg!(target_os = "linux"));
+        assert_eq!(caps.direct_input, cfg!(windows));
         assert_eq!(caps.system_setup, cfg!(target_os = "linux"));
         assert_eq!(caps.autostart, cfg!(any(target_os = "linux", windows)));
         assert_eq!(caps.pipe_capacity, cfg!(target_os = "linux"));

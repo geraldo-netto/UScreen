@@ -57,7 +57,7 @@ async fn t531_native_actions_latest_status_shell_restart_and_resource_retirement
         PostMessageW(hwnd as HWND, window::REFRESH, 0, 0);
     }
     wait(|| title(hwnd).contains("No tablet connected"));
-    assert!(title(hwnd).contains("Display and input unavailable"));
+    assert!(title(hwnd).contains("Display/stylus unavailable; touch/mouse preview opt-in"));
     for id in [0, 3, 65537, usize::MAX] {
         send(hwnd, WM_COMMAND, id, 0);
     }

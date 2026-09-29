@@ -48,6 +48,13 @@ class TouchCapture(factory: WebSocket.Factory = defaultControlClient()) {
     fun isControlConnected() = control.isControlConnected()
     fun sendConfig(bitrateKbps: Int, fps: Int) = control.sendConfig(bitrateKbps, fps)
     fun sendMode(penOnly: Boolean) = control.sendMode(penOnly)
+    @Synchronized fun selectDirect(mode: String) {
+        if (!isControlConnected()) return
+        motion.direct.select(mode)
+        if (motion.direct.state.value?.ready == false) motion.setTouchEnabled(false)
+    }
+    @Synchronized fun rightClick() { if (isControlConnected()) motion.direct.rightClick() }
+    @Synchronized fun toggleDrag() { if (isControlConnected()) motion.direct.toggleDrag() }
     fun sendRendered(seq: Int, decodeUs: Int, decoder: String? = null) = control.sendRendered(seq, decodeUs, decoder)
 
     // The surface only forwards touches to the host; there is no click to perform.

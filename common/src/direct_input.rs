@@ -9,11 +9,29 @@ pub enum Mode {
     Touch,
     DirectMouse,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub monitor: String,
     pub mode: Mode,
+}
+impl Config {
+    pub fn validate(&self, touch: bool, mouse: bool) -> Result<()> {
+        ensure!(
+            !self.monitor.is_empty()
+                && self.monitor.len() <= 1024
+                && !self.monitor.chars().any(char::is_control),
+            "Select a valid input monitor"
+        );
+        ensure!(
+            match self.mode {
+                Mode::Touch => touch,
+                Mode::DirectMouse => mouse,
+            },
+            "Selected input mode is disabled"
+        );
+        Ok(())
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

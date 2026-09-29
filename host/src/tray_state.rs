@@ -54,7 +54,10 @@ impl State {
         }
     }
     pub fn preview_tooltip(self) -> String {
-        format!("Blent: {}\nDisplay and input unavailable", self.line())
+        format!(
+            "Blent: {}\nDisplay/stylus unavailable; touch/mouse preview opt-in",
+            self.line()
+        )
     }
     pub fn dispatch(self, id: usize, actions: &impl Actions) -> Result<()> {
         if self == Self::Stopping {
@@ -151,7 +154,7 @@ mod tests {
             assert!(!state.line().is_empty());
             assert!(state
                 .preview_tooltip()
-                .contains("Display and input unavailable"));
+                .contains("Display/stylus unavailable; touch/mouse preview opt-in"));
         }
         assert_eq!(State::usb(2).line(), "USB prepared: 2 tablet(s)");
         assert_eq!(State::streaming(false, false), State::Waiting);

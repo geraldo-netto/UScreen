@@ -63,6 +63,7 @@ internal fun BlentMain(
     displayRefreshRates: List<Float> = listOf(Prefs.DEFAULT_DISPLAY_REFRESH_RATE),
     onSettingsEvent: (SettingsEvent) -> Unit = {},
     cameraControls: @Composable () -> Unit = {},
+    inputControls: @Composable () -> Unit = {},
 ) {
     val isConnected = presentation?.connected ?: false
     var showSettings by remember { mutableStateOf(false) }
@@ -85,7 +86,7 @@ internal fun BlentMain(
             .background(Color.Black)
     ) {
         StreamSurface(onSurfaceReady, onSurfaceDestroyed)
-        ConnectionLayers(penOnly, isConnected, controlConnected(presentation), settings.showStats, presentation?.fps ?: 0f, presentation?.mbps ?: 0f)
+        ConnectionLayers(penOnly, isConnected, controlConnected(presentation), settings.showStats, presentation?.fps ?: 0f, presentation?.mbps ?: 0f, presentation?.directInput?.collectAsState()?.value != null)
 
         // Keep settings above the video surface so its taps stay on the tablet.
         Box(
@@ -104,6 +105,7 @@ internal fun BlentMain(
         }
 
         StreamNotices(showThanks, onDismissThanks, updateAvailable)
+        Box(Modifier.align(Alignment.BottomStart)) { inputControls() }
 
         if (showSettings) {
             SettingsSheet(
@@ -162,7 +164,7 @@ private fun controlConnected(presentation: StreamPresentation?): Boolean =
     presentation?.controlConnected?.collectAsState()?.value ?: false
 
 @Composable
-private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, controlConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float) {
+private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, controlConnected: Boolean, showStats: Boolean, fps: Float, mbps: Float, directInput: Boolean) {
     // Drawing is available only while the authenticated control channel is alive.
     AnimatedVisibility(
         visible = penOnly && controlConnected,
@@ -170,7 +172,7 @@ private fun BoxScope.ConnectionLayers(penOnly: Boolean, isConnected: Boolean, co
         exit = fadeOut(),
         modifier = Modifier.fillMaxSize()
     ) {
-        PenOnlyScreen()
+        PenOnlyScreen(directInput)
     }
 
     // Connection screen
@@ -270,7 +272,7 @@ private fun BoxScope.StreamNotices(showThanks: Boolean, onDismissThanks: () -> U
 }
 
 @Composable
-private fun PenOnlyScreen() {
+private fun PenOnlyScreen(directInput: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -282,16 +284,16 @@ private fun PenOnlyScreen() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Graphics tablet", fontSize = 34.sp, fontWeight = FontWeight.Bold,
+            Text(if (directInput) "Touch / mouse" else "Graphics tablet", fontSize = 34.sp, fontWeight = FontWeight.Bold,
                 color = Color.White)
             Spacer(Modifier.height(10.dp))
             Text(
-                "Draw here — it goes to the screen on your computer.",
+                if (directInput) "Use this surface to control the selected computer monitor." else "Draw here — it goes to the screen on your computer.",
                 fontSize = 15.sp, color = AccentSoft, textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(28.dp))
             Text(
-                "Nothing is streamed to this screen in this mode, so there is no\n" +
+                if (directInput) "Input preview. Video and stylus unavailable.\nPhysical tablet acceptance pending." else "Nothing is streamed to this screen in this mode, so there is no\n" +
                     "display latency at all. Pressure, tilt and the eraser all work.",
                 fontSize = 13.sp, lineHeight = 22.sp, color = Color(0xFF9A9AAE),
                 textAlign = TextAlign.Center

@@ -8,21 +8,29 @@ import org.json.JSONObject
 
 /** Translates Android samples into ordered wire events; owns pointer-to-slot assignments. */
 internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) : ControlInputState {
+    val direct = DirectMotion(send)
     private companion object { const val TOOL_TYPE_PALM = 5 }
     private val touchSlots = mutableMapOf<Int, Int>()
     @Volatile private var touchEnabled = true
     @Volatile private var penEnabled = true
 
     override fun reset() {
+        direct.update(null)
         forgetTouches()
         touchEnabled = true
         penEnabled = true
     }
 
-    override fun forgetTouches() { touchSlots.clear() }
+    override fun forgetTouches() { touchSlots.clear(); direct.forget() }
+    override fun setDirectInput(status: JSONObject?) {
+        direct.update(status)
+        val value = direct.state.value ?: return
+        setTouchEnabled(value.ready && value.mode == "touch" && value.touch)
+        setPenEnabled(false)
+    }
     override fun setTouchEnabled(enabled: Boolean) {
         touchEnabled = enabled
-        if (!enabled) forgetTouches()
+        if (!enabled) touchSlots.clear()
     }
     override fun setPenEnabled(enabled: Boolean) { penEnabled = enabled }
 
@@ -80,6 +88,7 @@ internal class MotionTranslator(private val send: (JSONObject, Long?) -> Unit) :
     }
 
     fun handleMotionEvent(event: MotionEvent, width: Int, height: Int): Boolean {
+        if (direct.handle(event, width, height)) return true
         if (!touchEnabled && !penEnabled) return false
         val vw = width.coerceAtLeast(1).toFloat()
         val vh = height.coerceAtLeast(1).toFloat()

@@ -283,3 +283,27 @@ async fn t281_socket_accepted_before_replacement_cannot_authenticate_after_it() 
         "T281: retired socket claimed devices"
     );
 }
+
+#[test]
+fn t673_versioned_direct_input_wire_is_independent_of_pen() {
+    for command in [
+        serde_json::json!({"type":"negotiate","version":1}),
+        serde_json::json!({"type":"select","mode":"direct_mouse"}),
+        serde_json::json!({"type":"event","event":{"type":"mouse","x":0.5,"y":0.25,"button":null,"phase":"move"}}),
+    ] {
+        let wire = serde_json::json!({"type":"direct_input","command":command});
+        assert!(
+            serde_json::from_value::<InputEvent>(wire).is_ok(),
+            "T673: independent input protocol missing"
+        );
+    }
+}
+
+#[test]
+fn t673_legacy_backend_declines_direct_events_explicitly() {
+    let recorder = Arc::new(Recorder::default());
+    assert!(recorder
+        .direct(direct::Command::Negotiate { version: 1 })
+        .is_err());
+    assert!(recorder.direct_status().is_none());
+}

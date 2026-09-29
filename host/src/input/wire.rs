@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum InputEvent {
+    #[serde(rename = "direct_input")]
+    Direct { command: super::direct::Command },
     #[serde(rename = "touch")]
     Touch {
         x: f64,
@@ -81,6 +83,8 @@ pub enum InputEvent {
 
 #[derive(Serialize)]
 pub struct InputResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direct_input: Option<super::direct::Status>,
     pub status: String,
     /// Accepted ADB route, independent of loopback addresses and charging.
     #[serde(skip_serializing_if = "Option::is_none")]

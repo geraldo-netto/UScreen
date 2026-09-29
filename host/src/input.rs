@@ -8,6 +8,7 @@ mod batching_tests;
 mod config;
 #[cfg(test)]
 mod contracts;
+pub mod direct;
 #[cfg(target_os = "linux")]
 mod event_writer;
 #[cfg(target_os = "linux")]
@@ -365,6 +366,7 @@ async fn serve_controller(
     };
 
     let mut resp = config.response("connected", *mode_rx.borrow_and_update(), &settings_tx);
+    resp.direct_input = controllers.devices.direct_status();
     resp.transport = attachment.and_then(crate::attachment::Lease::transport);
 
     if !send_controller_message(
@@ -392,7 +394,8 @@ async fn serve_controller(
                 }
             } => {
                 if changed.is_err() { settings_rx = None; continue; }
-                let response = config.response("mode", *mode_rx.borrow(), &settings_tx);
+                let mut response = config.response("mode", *mode_rx.borrow(), &settings_tx);
+                response.direct_input = controllers.devices.direct_status();
                 if !send_controller_message(&mut ws_sender,
                     Message::Text(serde_json::to_string(&response)?), &mut ownership)
                     .await.unwrap_or(false) {
@@ -408,7 +411,8 @@ async fn serve_controller(
                     break;
                 }
                 let pen_only = *mode_rx.borrow();
-                let resp = config.response("mode", pen_only, &settings_tx);
+                let mut resp = config.response("mode", pen_only, &settings_tx);
+                resp.direct_input = controllers.devices.direct_status();
                 if !send_controller_message(&mut ws_sender,
                     Message::Text(serde_json::to_string(&resp)?), &mut ownership)
                     .await.unwrap_or(false)
@@ -441,6 +445,15 @@ async fn handle_controller_message(
             if !dispatch.text(&text) {
                 return Ok(false);
             }
+            if direct_reply_needed(&text) {
+                let reply = serde_json::json!({"status":"input", "direct_input":dispatch.controllers.devices.direct_status()});
+                return send_controller_message(
+                    sender,
+                    Message::Text(reply.to_string()),
+                    ownership,
+                )
+                .await;
+            }
             send_settings_rejection(settings, sender, ownership).await
         }
         Ok(Message::Close(_)) | Err(_) => Ok(false),
@@ -453,6 +466,15 @@ async fn handle_controller_message(
         }
         _ => Ok(true),
     }
+}
+
+fn direct_reply_needed(text: &str) -> bool {
+    matches!(
+        serde_json::from_str::<InputEvent>(text),
+        Ok(InputEvent::Direct {
+            command: direct::Command::Negotiate { .. } | direct::Command::Select { .. }
+        })
+    )
 }
 
 async fn send_settings_rejection(
@@ -531,11 +553,45 @@ fn dispatch_controller_text(
             if *generation != lease {
                 return false;
             }
-            handle_event(event, &controllers.devices, settings, latency, pen_enabled);
+            return dispatch_event(event, &controllers.devices, settings, latency, pen_enabled);
         }
         Err(e) => warn!("Invalid input: {} - {}", e, text),
     }
     true
+}
+
+fn dispatch_event(
+    event: InputEvent,
+    devices: &dyn InputSink,
+    settings: &dyn SettingsSink,
+    latency: &crate::latency::LatencyTracker,
+    pen_enabled: bool,
+) -> bool {
+    match event {
+        InputEvent::Touch {
+            x, y, action, slot, ..
+        } if devices.direct_status().is_some() => {
+            latency.note_interaction();
+            direct::legacy_touch(x, y, action, slot)
+                .and_then(|command| devices.direct(command))
+                .is_ok()
+        }
+        InputEvent::Direct { command } => {
+            latency.note_interaction();
+            match devices.direct(command) {
+                Ok(()) => true,
+                Err(error) => {
+                    warn!("Direct input rejected: {error}");
+                    false
+                }
+            }
+        }
+        InputEvent::Pen { .. } if devices.direct_status().is_some() => false,
+        event => {
+            handle_event(event, devices, settings, latency, pen_enabled);
+            true
+        }
+    }
 }
 
 type InputSocket = tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>;
@@ -659,7 +715,7 @@ fn handle_event(
             settings.configure(bitrate, fps, encoder);
         }
         // Already consumed by handle_connection; a second one is harmless.
-        InputEvent::Auth { .. } => {}
+        InputEvent::Auth { .. } | InputEvent::Direct { .. } => {}
         InputEvent::Mode { pen_only } => settings.mode(pen_only),
     }
 }

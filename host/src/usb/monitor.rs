@@ -19,6 +19,7 @@ pub struct Monitor<C> {
     failed: std::collections::HashMap<String, Instant>,
     pending: Vec<(Routes, Option<String>)>,
     network: Option<super::network::Network>,
+    store: blent_config::storage::ConfigStore,
 }
 impl<C: Commands> Monitor<C> {
     pub fn new(adb: Adb<C>, config: FileConfig, stop: watch::Receiver<bool>) -> Result<Self> {
@@ -38,9 +39,11 @@ impl<C: Commands> Monitor<C> {
             failed: Default::default(),
             pending: Vec::new(),
             network: None,
+            store: Default::default(),
         })
     }
     pub fn with_network(mut self, store: blent_config::storage::ConfigStore) -> Self {
+        self.store = store.clone();
         self.network = Some(super::network::Network::new(store));
         self
     }
@@ -142,9 +145,10 @@ impl<C: Commands> Monitor<C> {
             .any(|active| active.connection.selected() == Some(serial))
     }
     async fn attach(&mut self, index: usize, serial: &str) -> Result<()> {
-        let runtime = super::preview::prepare(&self.config, index as u32, self.ports[index])?
-            .start(self.stop.clone())
-            .await?;
+        let runtime =
+            super::preview::prepare(&self.config, index as u32, self.ports[index], &self.store)?
+                .start(self.stop.clone())
+                .await?;
         let connection = Connection::new(
             runtime.tablet_tx.clone(),
             self.ports[index],

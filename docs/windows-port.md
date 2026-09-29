@@ -3,8 +3,9 @@
 Status: staged implementation, updated 2026-09-29. Linux remains the supported
 runtime for streaming. Windows daemon lifecycle, optional autostart and an
 authenticated USB/Wi-Fi connection preview are implemented. Native touch/mouse
-adapters are implemented; capture, integrated input and packaging remain
-unavailable. Physical USB/touch/mouse acceptance remains T522; extended-display acceptance is T674.
+adapters and authenticated session/Android controls are integrated as an opt-in
+selected-monitor preview. Capture, stylus and packaging remain unavailable.
+Physical USB/touch/mouse acceptance remains T522; extended-display acceptance is T674.
 The first Windows release target is **Windows 11 x64**, selected by the maintainer
 on 2026-09-26. Windows 10 and ARM64 are outside this initial scope. This target
 decision does not enable runtime capabilities; driver and packaging choices
@@ -20,7 +21,9 @@ recorded GNU/MSVC failures at `63b332e`. The subsequent
 command-line diagnostics executable and passes MSVC target checking. Help and
 version work. That historical milestone rejected runtime commands; T524 now
 adds interactive daemon lifecycle. Windows remains a second-screen preview,
-with capture, integrated native input and camera still unsupported. Wi-Fi setup/reconnection now shares Linux policy and owned ADB adapters; physical acceptance remains T522.
+with capture and camera still unsupported. Touch/mouse integration is an opt-in
+preview. Wi-Fi setup/reconnection shares Linux policy and owned ADB adapters;
+physical acceptance remains T522.
 
 The subsequent [shared-service work](reviews/2026-09-19-windows-services.md)
 adds Windows paths, executable discovery, process jobs and private-state
@@ -32,7 +35,8 @@ these primitives do not enable a Windows application backend.
 The [T495 GUI boundary](reviews/2026-09-19-windows-gui.md) also builds for GNU
 and checks on MSVC. Its Windows preview saves shared settings and hides Linux
 setup/capacity controls. T524 enables daemon start/stop/restart and identity-based
-status, while keeping display/input unavailable. The original headless UI and
+status. That milestone kept display/input unavailable; T673 subsequently adds
+explicit input preferences and Android controls. The original headless UI and
 window checks used Wine; subsequent native MSVC suites cover the lifecycle adapters.
 
 T496 adds [native MSVC tests and GNU cross-build CI](../.github/workflows/windows.yml).
@@ -78,16 +82,18 @@ invocation, per-slot listeners, owned reverse routes, credential delivery and
 reconnect/cleanup. The daemon publishes prepared USB assignments for CLI/GUI
 status. Native fixture tests exercise the real Windows daemon and existing
 Android wire contract; they do not substitute for T522 physical connection acceptance.
-Capture/input capabilities remain false, and display-mode requests are rejected.
+Capture and full-input capabilities remain false, and display-mode requests are
+rejected. A separate capability advertises the opt-in touch/mouse preview.
 
 T672 supplies shared selected-monitor projection and a native read-only Windows
 inventory adapter. It uses physical desktop pixels, explicit output identities,
 rotation/scale metadata and stale-topology rejection. Per-function/native fixture
 evidence is [retained here](reviews/artifacts/2026-09-28-t672-mapping/README.md).
 [T689 native touch/direct-mouse adapters](reviews/2026-09-28-windows-direct-input.md)
-pass owned-window delivery fixtures. T673 still owns session/UI integration,
-including Android controls; input capability remains unavailable. These adapters
-do not create a virtual display.
+pass owned-window delivery fixtures. T673 adds negotiation, saved monitor/mode
+preferences, Android tap/right-click/drag controls and session retirement.
+See the [input setup and protocol](reviews/2026-09-28-windows-direct-input.md).
+Physical acceptance remains T522. These adapters do not create a virtual display.
 
 T694 makes CLI overrides explicit: a direct `blent start` (or no subcommand)
 applies `--video-port` and `--input-port` to the saved connection settings.
@@ -95,7 +101,8 @@ Control commands and the internal login launcher reject those overrides instead
 of losing them. Video, geometry, quality, scale, worker, Linux-helper/EDID and
 pen-mode overrides fail before creating runtime state while their backends are
 unavailable. Saved shared video/input preferences remain available for future
-backends; saving them does not enable Windows display/input support.
+backends; saving them does not enable Windows display support. Touch/mouse
+requires explicit preview enablement and a selected monitor.
 
 [T531 notification-area tray](reviews/2026-09-27-windows-tray.md) consumes the same
 producer-owned USB assignment updates. It shows starting, unavailable, waiting,
@@ -126,7 +133,7 @@ The current [TODO ledger](../TODO.md) separates independently reviewable work:
 
 | Milestone | Implementation and prerequisites | Physical acceptance |
 | --- | --- | --- |
-| Touch/mouse | T672 mapping and T689 touch/direct-mouse adapters are implemented; T673 session/Android-control integration remains; T525 USB and T691 Wi-Fi previews are implemented | T522, without a virtual-display driver or stylus |
+| Touch/mouse | T672 mapping, T689 adapters and T673 negotiated session/Android controls are implemented as an opt-in preview; T525 USB and T691 Wi-Fi previews are implemented | T522, without a virtual-display driver or stylus |
 | Extended display | T527 driver/ownership decision and adapter → T675 modes + T528 frame acquisition → T676 recovery → T529 stream integration | T674 on the same PC/tablet |
 | Hardware encoding | T685 stock Windows recipes and T530 bounded discovery/probes are implemented; the current live pipe adapter admits only libx264 | T677 real GPU/session validation, then T535 performance measurements |
 | Packaging | T534 reproducible contents → T678 install/upgrade/uninstall; format, dependency distribution and signing decisions remain pending | Accepted runtime milestones and native installation checks before release |
@@ -184,7 +191,8 @@ Work depending on an unanswered choice must wait for that choice.
 
 ## Architecture and reuse
 
-The Android app and authenticated TCP/WebSocket protocol remain unchanged.
+Linux retains its existing Android input protocol. T673 adds an independently
+negotiated direct-input capability and Android controls for Windows sessions.
 T523 exposes attachment ownership, credentials, control/video transport, bounded
 queues, latency accounting, selection data and session orchestration through the
 portable host library. Linux uses that same implementation. Real loopback-socket
