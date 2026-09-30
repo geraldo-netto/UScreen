@@ -45,8 +45,11 @@ bypass the tablet’s lock. Foreground-only mode stops when the
 Activity hides; reopening it can resume an outstanding host request while its
 session remains available. Background mode costs additional tablet power.
 
-Camera sharing does not include audio. Tablet microphone, audio output and NFC
-are future work tracked separately in `TODO.md`.
+Camera sharing carries video only. Optional [tablet microphone and speaker
+sessions](audio.md) are implemented separately on Linux/Android, with independent
+Start/Stop controls and permissions. Microphone physical acceptance and
+simultaneous duplex/AEC validation remain tracked in `TODO.md`; camera acceptance
+does not establish those results. NFC remains planned separately.
 
 ## Prepare the devices
 
