@@ -27,8 +27,10 @@ A cooperative deadline also cannot promise to preempt an arbitrarily blocked
 kernel filesystem operation.
 
 The September 21 decision requires stock libevdi; `packaging/appimage/sources.py`
-also requires the unmodified pinned source. The maintainer has been asked whether
-to revise that policy for a narrowly attributed patch. T558 stays unresolved until
-that decision and required ownership validation. No dependency, DRM device,
+also requires the unmodified pinned source. On 2026-09-30 the maintainer reaffirmed
+stock libevdi; the proposed local patch is not authorized. T558 remains blocked on
+a stock ownership-preserving bounded acquisition API, unless the maintainer later
+revises that dependency policy. Any implementation still needs ownership validation.
+No dependency, DRM device,
 privilege, live module or running helper was changed. The earlier timing is a
 historical observation, not a newly benchmarked result.
