@@ -4,10 +4,11 @@ version = "1.2.3"
 edition = "2021"
 
 [features]
-default = ["storage", "commands", "platform"]
+default = ["storage", "commands", "platform", "native-entropy"]
+native-entropy = ["dep:getrandom"]
 storage = ["dep:tempfile"]
 commands = ["dep:tempfile", "dep:tokio", "dep:libc"]
-platform = ["storage", "commands", "dep:libc", "dep:clap"]
+platform = ["storage", "commands", "native-entropy", "dep:libc", "dep:clap"]
 # Preserve explicit feature selections made before the Windows extraction.
 platform-linux = ["platform"]
 
@@ -27,7 +28,7 @@ windows-sys = { version = "0.61", features = [
 ] }
 
 [dependencies]
-getrandom = "0.3"
+getrandom = { version = "0.3", features = ["std"], optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 serde_json = "1"
 semver = "1"
@@ -39,4 +40,5 @@ tempfile = { version = "3", optional = true }
 tokio = { version = "1", optional = true, features = ["process", "time", "rt", "io-util", "macros"] }
 
 [dev-dependencies]
+getrandom = { version = "0.3", features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["fmt"] }

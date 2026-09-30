@@ -19,6 +19,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
+          targets: wasm32-unknown-unknown
 
       - name: Set up JDK for the source inventory
         uses: actions/setup-java@v4

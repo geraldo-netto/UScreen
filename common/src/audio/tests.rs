@@ -11,7 +11,12 @@ fn caps() -> AudioCapabilities {
 }
 
 fn grant(direction: Direction) -> AudioGrant {
-    AudioGrant::new(AudioProfile::new(direction), 1).unwrap()
+    AudioGrant::new(
+        AudioProfile::new(direction),
+        1,
+        crate::credentials::tests::entropy,
+    )
+    .unwrap()
 }
 
 fn block(direction: Direction, value: i16) -> PcmBlock {
@@ -52,7 +57,7 @@ fn t719_capture_transfer_bounds_age_overflow_and_partial_rendering() {
 }
 
 fn streaming(direction: Direction) -> (AudioSession, AudioGrant) {
-    let mut session = AudioSession::new(direction);
+    let mut session = AudioSession::with_entropy(direction, crate::credentials::tests::entropy);
     let grant = session
         .start(AudioProfile::new(direction), caps(), true, 0)
         .unwrap();
@@ -336,7 +341,7 @@ fn t717_resampling_preserves_channels_and_bounded_consumption() {
 fn t717_session_rejects_implicit_unauthenticated_and_unsupported_start() {
     let direction = Direction::Microphone;
     let profile = AudioProfile::new(direction);
-    let mut session = AudioSession::new(direction);
+    let mut session = AudioSession::with_entropy(direction, crate::credentials::tests::entropy);
     assert_eq!(session.state(), AudioState::Stopped);
     assert_eq!(session.stop(false), None);
     assert_eq!(session.tick(u64::MAX), None);
@@ -459,7 +464,8 @@ fn t717_stale_render_cannot_retire_replacement() {
 
 #[test]
 fn t717_handshake_cannot_move_clock_backwards() {
-    let mut session = AudioSession::new(Direction::Microphone);
+    let mut session =
+        AudioSession::with_entropy(Direction::Microphone, crate::credentials::tests::entropy);
     let grant = session
         .start(AudioProfile::new(Direction::Microphone), caps(), true, 100)
         .unwrap();
@@ -529,7 +535,12 @@ fn t717_buffer_preferences_control_prefill_and_wire_golden_fields() {
         profile.buffer_ms = ms;
         profile.processing = Processing::Raw;
         profile.background = true;
-        let grant = AudioGrant::new(profile, 0x0102030405060708).unwrap();
+        let grant = AudioGrant::new(
+            profile,
+            0x0102030405060708,
+            crate::credentials::tests::entropy,
+        )
+        .unwrap();
         let hello = grant.hello();
         assert_eq!(&hello[..8], b"BLAUD001");
         assert_eq!(
@@ -600,7 +611,8 @@ impl AudioBackend for FakeBackend {
 #[test]
 fn t717_fake_backend_obeys_owned_retirement_before_restart() {
     let mut backend = FakeBackend { current: None };
-    let mut session = AudioSession::new(Direction::Speakers);
+    let mut session =
+        AudioSession::with_entropy(Direction::Speakers, crate::credentials::tests::entropy);
     let grant = session
         .start(
             AudioProfile::new(Direction::Speakers),
@@ -671,4 +683,21 @@ fn t719_speaker_defaults_upgrade_old_settings_without_starting() {
         settings.microphone,
         AudioOptions::new(Direction::Microphone)
     );
+}
+
+#[test]
+fn t736_failed_entropy_never_admits_or_advances_a_session() {
+    let direction = Direction::Microphone;
+    let mut session = AudioSession::with_entropy(direction, |_| anyhow::bail!("entropy offline"));
+    for time in 0..32 {
+        assert!(session
+            .start(AudioProfile::new(direction), caps(), true, time)
+            .is_err());
+        assert_eq!(session.state(), AudioState::Stopped);
+        assert!(session.stop(false).is_none());
+    }
+    #[cfg(not(feature = "native-entropy"))]
+    assert!(AudioSession::new(direction)
+        .start(AudioProfile::new(direction), caps(), true, 0)
+        .is_err());
 }

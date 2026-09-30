@@ -1,6 +1,6 @@
 //! Bounded v1 PCM framing on a session-authenticated connection, not encryption.
 use super::{AudioProfile, Direction, BLOCK_FRAMES, MAX_SAMPLES, SAMPLE_RATE};
-use crate::credentials::{random_token, token_matches};
+use crate::credentials::{random_token_using, token_matches, Entropy};
 use anyhow::{ensure, Result};
 
 pub const HELLO_BYTES: usize = 92;
@@ -16,11 +16,11 @@ pub struct AudioGrant {
 }
 
 impl AudioGrant {
-    pub(super) fn new(profile: AudioProfile, generation: u64) -> Result<Self> {
+    pub(super) fn new(profile: AudioProfile, generation: u64, entropy: Entropy) -> Result<Self> {
         Ok(Self {
             profile,
             generation,
-            token: random_token()?,
+            token: random_token_using(entropy)?,
         })
     }
 
@@ -161,7 +161,12 @@ mod writer_tests {
     use super::*;
     #[test]
     fn t719_sender_preserves_first_sequence_gaps_and_atomic_rejection() {
-        let grant = AudioGrant::new(AudioProfile::new(Direction::Speakers), 1).unwrap();
+        let grant = AudioGrant::new(
+            AudioProfile::new(Direction::Speakers),
+            1,
+            crate::credentials::tests::entropy,
+        )
+        .unwrap();
         let mut reader = grant.authenticate(&grant.hello()).unwrap();
         let mut writer = FrameWriter::new(grant.clone());
         let mut block = PcmBlock::from_le_bytes(Direction::Speakers, &[0; 1920]).unwrap();

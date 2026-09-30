@@ -6,6 +6,14 @@ T719 adds the selectable speaker sink and Android playback. Duplex/acoustic
 acceptance and native device-clock correction remain T720.
 Unimplemented backend capabilities remain unsupported. No system default device changes or automatic audio startup occur.
 
+Native Rust applications enable the shared crate's `native-entropy` feature
+(included by default and by `platform`). A policy-only build compiles without
+OS randomness, including on `wasm32-unknown-unknown`; its default audio Start
+fails closed. A backend can supply a CSPRNG through `AudioSession::with_entropy`.
+That adapter must fill the complete credential buffer or return an error; a
+failed fill leaves session state and generation unchanged. Test adapters do not
+change the native applications' use of system randomness.
+
 The selected product contract is [microphone/shared audio](reviews/2026-09-29-audio-input.md)
 and [tablet speakers](reviews/2026-09-29-audio-output.md). The following describes
 implemented shared behavior; those reviews also contain planned native behavior.

@@ -1,0 +1,8 @@
+{
+  "issue": "T736",
+  "regression": "common/tests/portable_policy.rs::t736_policy_builds_without_native_entropy_on_webassembly",
+  "red": "normal-suite regression fails compiling getrandom for wasm32-unknown-unknown",
+  "green": "same compile regression passes; native common suite 185 passed; no-default-features suite 115 passed; host audio tests 10 passed",
+  "coverage": "47/47 functions in credentials.rs and audio submodules >=80%, measured with default and no-default-features builds",
+  "security": "No deterministic credential fallback. Existing entropy failure/freshness/mutation tests retained; failed adapter cannot admit or advance audio session."
+}

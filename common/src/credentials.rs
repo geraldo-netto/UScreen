@@ -1,12 +1,29 @@
-//! Portable attachment credentials. Native entropy comes from stock getrandom.
+//! Portable credentials with an explicitly selected native entropy adapter.
 use anyhow::Result;
+
+/// An adapter must fill the entire buffer with CSPRNG bytes or return an error.
+pub type Entropy = fn(&mut [u8]) -> Result<()>;
+
+/// Native callers opt in through `native-entropy`; policy-only builds fail closed.
+pub fn system_entropy(output: &mut [u8]) -> Result<()> {
+    #[cfg(feature = "native-entropy")]
+    {
+        getrandom::fill(output)?;
+        Ok(())
+    }
+    #[cfg(not(feature = "native-entropy"))]
+    {
+        let _ = output;
+        anyhow::bail!("native entropy adapter is disabled")
+    }
+}
 
 /// 64 hexadecimal characters from the operating system CSPRNG; never persisted here.
 pub fn random_token() -> Result<String> {
-    random_token_using(getrandom::fill)
+    random_token_using(system_entropy)
 }
 
-fn random_token_using(fill: fn(&mut [u8]) -> Result<(), getrandom::Error>) -> Result<String> {
+pub(crate) fn random_token_using(fill: Entropy) -> Result<String> {
     let mut raw = [0u8; 32];
     fill(&mut raw)
         .map_err(|error| anyhow::anyhow!("operating system entropy unavailable: {error}"))?;
@@ -30,12 +47,18 @@ pub fn token_matches(expected: &str, presented: &str) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+
+    // The policy suite injects real entropy without enabling production adapters.
+    pub(crate) fn entropy(output: &mut [u8]) -> Result<()> {
+        getrandom::fill(output)?;
+        Ok(())
+    }
 
     #[test]
     fn t523_entropy_failure_never_becomes_an_empty_credential() {
-        assert!(random_token_using(|_| Err(getrandom::Error::UNSUPPORTED)).is_err());
+        assert!(random_token_using(|_| anyhow::bail!("unavailable")).is_err());
         let token = random_token_using(|bytes| {
             bytes.fill(0xa5);
             Ok(())
@@ -46,6 +69,13 @@ mod tests {
             assert!(!token_matches(&token, &"x".repeat(length)));
         }
         assert!(token_matches(&token, &token));
+        assert_ne!(
+            random_token_using(entropy).unwrap(),
+            random_token_using(entropy).unwrap()
+        );
+        #[cfg(feature = "native-entropy")]
         assert_ne!(random_token().unwrap(), random_token().unwrap());
+        #[cfg(not(feature = "native-entropy"))]
+        assert!(random_token().is_err());
     }
 }

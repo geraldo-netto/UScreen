@@ -24,6 +24,7 @@ struct Active {
 }
 
 pub struct AudioSession {
+    entropy: crate::credentials::Entropy,
     direction: Direction,
     generation: u64,
     state: AudioState,
@@ -32,7 +33,13 @@ pub struct AudioSession {
 
 impl AudioSession {
     pub fn new(direction: Direction) -> Self {
+        Self::with_entropy(direction, crate::credentials::system_entropy)
+    }
+
+    /// Supply a CSPRNG adapter independently of platform IO and session policy.
+    pub fn with_entropy(direction: Direction, entropy: crate::credentials::Entropy) -> Self {
         Self {
+            entropy,
             direction,
             generation: 0,
             state: AudioState::Stopped,
@@ -67,7 +74,7 @@ impl AudioSession {
         let deadline = now_ms
             .checked_add(5_000)
             .ok_or_else(|| anyhow::anyhow!("invalid audio clock"))?;
-        let grant = AudioGrant::new(profile, generation)?;
+        let grant = AudioGrant::new(profile, generation, self.entropy)?;
         self.active = Some(Active {
             grant: grant.clone(),
             reader: None,
@@ -230,6 +237,31 @@ impl AudioSession {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t736_entropy_failure_preserves_generation_for_retry() {
+        let direction = Direction::Microphone;
+        let profile = AudioProfile::new(direction);
+        let capabilities = AudioCapabilities {
+            microphone: true,
+            speech: true,
+            ..Default::default()
+        };
+        let mut session =
+            AudioSession::with_entropy(direction, |_| anyhow::bail!("entropy offline"));
+        assert!(session.start(profile, capabilities, true, 0).is_err());
+        assert_eq!(session.generation, 0);
+        assert_eq!(session.state(), AudioState::Stopped);
+        assert!(session.active.is_none());
+        session.entropy = crate::credentials::tests::entropy;
+        assert_eq!(
+            session
+                .start(profile, capabilities, true, 0)
+                .unwrap()
+                .generation(),
+            1
+        );
+    }
 
     #[test]
     fn t717_generation_exhaustion_and_absent_owner_fail_closed() {

@@ -97,6 +97,7 @@ for reproducing the known Cinnamon crash on a working desktop.
 Normal automated checks (with their prerequisites installed):
 
 ```bash
+rustup target add wasm32-unknown-unknown # T736 portable-policy compile regression
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ./android/gradlew -p android testDebugUnitTest assembleDebug lintDebug
