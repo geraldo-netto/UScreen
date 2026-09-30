@@ -1,0 +1,11 @@
+{
+  "boot_started": "2026-09-30 09:09:41",
+  "service": [
+    "ActiveState=active",
+    "ActiveEnterTimestamp=Wed 2026-09-30 09:11:21 CEST"
+  ],
+  "saved_encoder": "h264_vaapi_baseline",
+  "saved_profile_cache_legacy_flag": false,
+  "gpu_order_configuration_present": false,
+  "acceptance": "Ordinary reboot occurred; saved manual h264_vaapi_baseline bypasses automatic profile selection. This boot cannot establish automatic durable-profile reuse. No settings or running session changed."
+}
