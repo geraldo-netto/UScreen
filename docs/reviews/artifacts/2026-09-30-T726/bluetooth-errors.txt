@@ -1,0 +1,9 @@
+2026-09-29T09:59:22+02:00 HOST wireplumber[3028]: (bluez_output.HEADSET.1-69) running -> error (Received error event)
+2026-09-29T09:59:22+02:00 HOST wireplumber[3028]: Failure in Bluetooth audio transport /org/bluez/hci1/dev_HEADSET/fd0
+2026-09-29T09:59:22+02:00 HOST pipewire[3025]: pw.node: (bluez_output.HEADSET.1-69) running -> error (Received error event)
+2026-09-29T17:14:53+02:00 HOST wireplumber[2990]: (bluez_output.HEADSET.1-54) running -> error (Received error event)
+2026-09-29T17:14:53+02:00 HOST wireplumber[2990]: Failure in Bluetooth audio transport /org/bluez/hci0/dev_HEADSET/fd1
+2026-09-29T17:14:53+02:00 HOST pipewire[2987]: pw.node: (bluez_output.HEADSET.1-54) running -> error (Received error event)
+2026-09-30T12:11:48+02:00 HOST wireplumber[3017]: (bluez_output.HEADSET.1-91) running -> error (Received error event)
+2026-09-30T12:11:48+02:00 HOST wireplumber[3017]: Failure in Bluetooth audio transport /org/bluez/hci1/dev_HEADSET/sep1/fd0
+2026-09-30T12:11:48+02:00 HOST pipewire[3014]: pw.node: (bluez_output.HEADSET.1-91) running -> error (Received error event)
