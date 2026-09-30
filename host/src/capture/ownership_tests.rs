@@ -262,3 +262,31 @@ async fn t498_encoder_restart_retires_reader_and_queued_frame_suffix() {
         manager.shutdown().await;
     }
 }
+
+#[tokio::test]
+async fn t727_live_encoder_updates_cannot_escape_the_selected_gpu_policy() {
+    for policy in [
+        blent_config::gpu::Policy::Software,
+        blent_config::gpu::Policy::Pinned(blent_config::encoding::Backend::Vaapi),
+    ] {
+        let mut manager = CaptureManager::new(CaptureConfig {
+            encoder: "libx264".into(),
+            gpu_policy: policy,
+            ..Default::default()
+        });
+        let mut run = restart_run(&manager);
+        let mut settings = run.settings_rx.borrow().clone();
+        settings.encoder = "h264_nvenc".into();
+        assert!(
+            !manager.helper_settings_changed(&settings),
+            "T727 rejected GPU request changed raw transport"
+        );
+        assert!(
+            !manager.stream_settings_changed(&settings),
+            "T727 rejected GPU request escaped software fallback"
+        );
+        run.settings_rx = watch::channel(settings).1;
+        manager.apply_stream_settings(&mut run).await;
+        assert_eq!(manager.config.encoder, "libx264");
+    }
+}

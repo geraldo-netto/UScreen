@@ -148,6 +148,11 @@ Host settings live in `~/.config/blent/config.toml`; edit them with
 sheet stores app preferences locally; **Apply** sends its shared streaming
 settings to the host. Brightness/refresh preferences take effect immediately.
 The desktop **Video** tab keeps encoder, frame rate and resolution visible;
+**Video → Encoding GPU** selects a stable Linux VAAPI adapter or CPU encoders.
+Automatic preserves existing device choices; requested and active devices appear
+separately. Apply & restart is required. Missing devices and unsupported codecs
+use software fallback; this does not move desktop composition.
+
 **Advanced video settings** contains quality, bitrate, calibration and worker/pipe
 capacity controls. The tablet groups display/input, video, camera and app controls;
 bitrate is under **Advanced video settings**, and update/statistics switches are

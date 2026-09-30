@@ -526,3 +526,32 @@ async fn t715_matching_start_keeps_six_second_render_deadline() {
     assert!(!result);
     assert_eq!(started.elapsed(), Duration::from_secs(19));
 }
+
+#[test]
+fn t727_automatic_trials_respect_gpu_policy_and_retain_software_fallback() {
+    for policy in [
+        blent_config::gpu::Policy::Automatic,
+        blent_config::gpu::Policy::Software,
+        blent_config::gpu::Policy::Pinned(blent_config::encoding::Backend::Vaapi),
+    ] {
+        let base = CaptureConfig {
+            gpu_policy: policy,
+            ..Default::default()
+        };
+        let candidates = allowed_encoders(&base);
+        assert_eq!(candidates[0].name, "libx264");
+        assert!(candidates.iter().all(|encoder| policy.allows(encoder.name)));
+        assert_eq!(
+            candidates
+                .iter()
+                .any(|encoder| encoder.name == "h264_nvenc"),
+            policy == blent_config::gpu::Policy::Automatic
+        );
+        assert_eq!(
+            candidates
+                .iter()
+                .any(|encoder| encoder.name == "h264_vaapi"),
+            policy != blent_config::gpu::Policy::Software
+        );
+    }
+}

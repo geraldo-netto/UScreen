@@ -6,6 +6,7 @@ mod camera_settings;
 mod conversion_settings;
 #[cfg(any(windows, test))]
 mod direct_input_settings;
+mod gpu_settings;
 mod pipe_settings;
 mod platform;
 mod platform_diagnostics;
@@ -30,6 +31,8 @@ use std::time::Duration;
 
 #[derive(Default, Clone, PartialEq, Eq)]
 struct Status {
+    gpus: blent_config::gpu::Catalog,
+    active_gpus: Vec<String>,
     daemon_running: bool,
     daemon_binary: bool,
     daemon_pid: u32,
@@ -988,6 +991,7 @@ impl App {
     fn show_video_settings(&mut self, ui: &mut egui::Ui) {
         settings_grid(ui, "video-basics", |ui| {
             self.setting_encoder(ui);
+            gpu_settings::show(ui, &mut self.cfg, &self.status.lock().unwrap());
             self.setting_frame_rate(ui);
             self.setting_resolution(ui);
         });
@@ -1701,6 +1705,89 @@ mod tests {
         assert_eq!(app.cfg, app.saved_cfg);
         assert!(!app.cfg.input_pen);
         assert!(app.cfg.input_pointer);
+    }
+
+    #[test]
+    fn t727_video_exposes_encoding_gpu_without_changing_existing_choice() {
+        let mut app = settings_test_app(Tab::Video);
+        app.cfg.vaapi_device = "/dev/dri/by-path/pci-existing-render".into();
+        let before = app.cfg.clone();
+        let labels = video_test_frame(&mut app, &egui::Context::default(), vec![]);
+        assert!(labels.iter().any(|(label, _)| label == "Encoding GPU"));
+        assert_eq!(app.cfg, before);
+    }
+
+    fn gpu_test_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> Vec<(String, egui::Rect)> {
+        settings_test_frame(app, ctx, events, |app, ui| {
+            gpu_settings::show(ui, &mut app.cfg, &app.status.lock().unwrap());
+        })
+    }
+
+    #[test]
+    fn t727_gpu_controls_preserve_save_apply_and_report_fallback() {
+        let mut app = settings_test_app(Tab::Video);
+        let ctx = egui::Context::default();
+        app.status.lock().unwrap().gpus = blent_config::gpu::Catalog {
+            supported: true,
+            adapters: vec![
+                blent_config::gpu::Adapter {
+                    id: "stable-one".into(),
+                    label: "First GPU".into(),
+                    backend: blent_config::encoding::Backend::Vaapi,
+                    accessible: true,
+                },
+                blent_config::gpu::Adapter {
+                    id: "denied".into(),
+                    label: "Denied GPU".into(),
+                    backend: blent_config::encoding::Backend::Vaapi,
+                    accessible: false,
+                },
+            ],
+        };
+        click_settings_text(
+            &mut app,
+            &ctx,
+            "Automatic / existing device setting",
+            gpu_test_frame,
+        );
+        click_settings_text(&mut app, &ctx, "First GPU", gpu_test_frame);
+        assert_eq!(app.cfg.encoding_gpu, "stable-one");
+        assert!(app.cfg.requires_restart_from(&app.saved_cfg));
+        app.apply(false);
+        wait_for_work(&mut app);
+        assert_eq!(app.store.load().encoding_gpu, "stable-one");
+        assert!(!app.cfg.requires_restart_from(&app.saved_cfg));
+        click_settings_text(&mut app, &ctx, "First GPU", gpu_test_frame);
+        click_settings_text(&mut app, &ctx, "CPU (software encoders)", gpu_test_frame);
+        assert_eq!(app.cfg.encoding_gpu, "software");
+        app.cfg.encoder = "h264_nvenc".into();
+        app.status.lock().unwrap().active_gpus =
+            vec!["Active encoder: libx264 · CPU / software".into()];
+        let labels = gpu_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels
+            .iter()
+            .any(|(label, _)| label.contains("H.264 software fallback")));
+        assert!(labels
+            .iter()
+            .any(|(label, _)| label.contains("hardware encoding is disabled")));
+        assert!(labels
+            .iter()
+            .any(|(label, _)| label.contains("Active encoder: libx264")));
+        app.cfg.encoding_gpu = "stale".into();
+        let labels = gpu_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels
+            .iter()
+            .any(|(label, _)| label.contains("Unavailable saved GPU: stale")));
+        assert_eq!(app.cfg.encoding_gpu, "stale");
+        app.status.lock().unwrap().gpus = Default::default();
+        let labels = gpu_test_frame(&mut app, &ctx, vec![]);
+        assert!(labels
+            .iter()
+            .any(|(label, _)| label.contains("Native GPU selection unavailable")));
     }
 
     fn video_test_frame(

@@ -1,0 +1,21 @@
+{
+  "item": "T727",
+  "feature": "Portable requested GPU identity and backend policy; Linux VAAPI discovery, native handle resolution, bounded manual codec probe, automatic candidate filtering, CPU fallback and separate live opened-device evidence.",
+  "native": [
+    "AMD PCI 0000:03:00.0 -> /dev/dri/renderD128: isolated H.264 VAAPI Baseline probe passed",
+    "AMD PCI 0000:08:00.0 -> /dev/dri/renderD129: isolated H.264 VAAPI Baseline probe passed"
+  ],
+  "regressions": "UI absence and live encoder policy escape both reproduced red; permanent tests pass after implementation. Saved choices, stale/invalid identity, denied access, unsupported codec/backend, merge/restart ordering and cache isolation retained.",
+  "coverage": "204/204 scoped maintained functions meet 80% executable-line coverage, combining fresh default and all-feature collections at the identical source revision.",
+  "limits": "No live installation or preference changes; no latency comparison. Native explicit selection is Linux VAAPI only. NVENC selectors and other OS backends remain unsupported; in-process builds use software for explicit GPU requests. Full display/capture composition is independent.",
+  "final-default": {
+    "passed": 1101,
+    "failed": 0,
+    "existing_ignored": 5
+  },
+  "final-all": {
+    "passed": 558,
+    "failed": 0,
+    "existing_ignored": 4
+  }
+}

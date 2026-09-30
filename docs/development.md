@@ -239,7 +239,8 @@ them. See the README for config paths and the app gear-menu controls.
 | Host setting | Default | Scope or limit |
 | --- | --- | --- |
 | `encoder` | `auto` | Bounded compatible-encoder probes with H.264 fallback; saved explicit choices remain |
-| `vaapi_device` | `/dev/dri/renderD128` | Used by VAAPI |
+| `encoding_gpu` | empty (Automatic) | Opaque stable identity selected in Video → Encoding GPU; `software` restricts trials to CPU. Linux VAAPI selector; missing/inaccessible selections fall back to software. Restart required. |
+| `vaapi_device` | `/dev/dri/renderD128` | Legacy VAAPI path retained when `encoding_gpu` is empty |
 | `fps` / `bitrate` / `quality` | 60 / 20000 kbps / 18 | Accepted ranges 10–90 / 1000–60000 / 12–32; encoder-specific rate control |
 | `width` / `height` | 2960 / 1848 | Fallback dimensions; `auto_resolution = true` follows tablet geometry |
 | `stream_scale` | 1 | Integer 1–4; divides stream dimensions, not capture dimensions |
@@ -315,8 +316,19 @@ and [instance-name parsing](https://android.googlesource.com/platform/packages/m
   The explicit baseline profile maps to stock H.264 VAAPI with Constrained Baseline/CAVLC;
   it reduced decoder delay on the tested tablet at higher bandwidth. Existing selections
   stay unchanged. See [codec measurements](benchmarks/2026-09-18-codecs.md).
-  Set `vaapi_device = "/dev/dri/renderD129"` in config.toml to select another GPU
-  (default: `/dev/dri/renderD128`). HEVC supports `ten_bit = true`.
+  Choose **Video → Encoding GPU** to persist a stable adapter identity. Automatic
+  preserves the legacy `vaapi_device` path (default `/dev/dri/renderD128`); changing
+  the new selector does not erase that path. HEVC supports `ten_bit = true`.
+  Pinned selections restrict automatic trials to that VAAPI device and software
+  encoders. Explicit incompatible codecs, missing devices and denied access use
+  H.264 software; a manual hardware codec receives a bounded isolated encode probe
+  before session startup. Unsupported native codecs also fall back to H.264.
+  The experimental in-process build supports no explicit GPU selector and uses
+  software for pinned requests. NVENC explicit device selection remains unsupported;
+  Automatic preserves its existing behavior. The GUI separately reports current
+  owned FFmpeg codec and opened render-device evidence; unobserved adapters remain
+  unknown, and process evidence does not establish tablet presentation. This setting
+  neither moves desktop composition nor enables cross-device capture (T578).
 - VP9: `libvpx-vp9` or `vp9_vaapi` on a GPU with encoding support. The CLI
   uses IVF framing and requires a current tablet capability report; see
   [codec compatibility and protocol](video-codecs.md).

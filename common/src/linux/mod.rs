@@ -3,6 +3,7 @@ pub mod appimage;
 pub mod autostart;
 pub mod cli;
 pub mod daemon;
+pub mod gpu;
 pub mod pipe;
 pub mod processes;
 pub mod programs;

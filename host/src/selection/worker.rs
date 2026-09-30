@@ -328,9 +328,7 @@ struct Candidate {
 async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Candidate> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let mut candidates = Vec::new();
-    let mut encoders = blent_config::encoding::ENCODERS;
-    encoders.sort_by_key(|encoder| probe_order(encoder.name));
-    'probes: for encoder in encoders {
+    'probes: for encoder in allowed_encoders(base) {
         let codec = crate::media::Codec::from_encoder(encoder.name);
         if !snapshot.decoder_supports(codec) {
             continue;
@@ -358,6 +356,15 @@ async fn calibrate(base: &CaptureConfig, snapshot: &EncoderSettings) -> Vec<Cand
     }
     candidates.sort_by(|a, b| rank(a, b, snapshot.fps));
     candidates
+}
+
+fn allowed_encoders(base: &CaptureConfig) -> Vec<blent_config::encoding::Encoder> {
+    let mut encoders = blent_config::encoding::ENCODERS;
+    encoders.sort_by_key(|encoder| probe_order(encoder.name));
+    encoders
+        .into_iter()
+        .filter(|encoder| base.gpu_policy.allows(encoder.name))
+        .collect()
 }
 
 fn probe_budgets(base: &CaptureConfig, settings: &EncoderSettings, name: &str) -> Vec<u32> {

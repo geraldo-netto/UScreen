@@ -365,12 +365,18 @@ mod tests {
             std::fs::write(&path, if fail { "invalid = [" } else { "" }).unwrap();
             let edited = FileConfig {
                 fps: 30,
+                encoding_gpu: "vaapi:stable-one".into(),
                 ..baseline.clone()
             };
             let counter = count.clone();
             let readback = store.clone();
             let restart: Restart = Box::new(move || {
                 assert_eq!(readback.load().fps, 30, "T378: restart precedes commit");
+                assert_eq!(
+                    readback.load().encoding_gpu,
+                    "vaapi:stable-one",
+                    "T727: GPU restart precedes saved selection"
+                );
                 counter.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             });

@@ -16,7 +16,7 @@ pub fn rank(
     (fps < f64::from(required_fps), !hardware, p95_us, first_us)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Backend {
     Nvenc,
     Vaapi,

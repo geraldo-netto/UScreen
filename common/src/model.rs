@@ -101,6 +101,8 @@ pub struct FileConfig {
     /// Bounded shared slots: more tolerate retained encoder frames, costing RAM.
     pub raw_slots: u32,
     /// DRM render node used by VA-API encoders.
+    /// Opaque native adapter identity; empty preserves legacy automatic/device choices.
+    pub encoding_gpu: String,
     pub vaapi_device: String,
     pub fps: u32,
     /// kbps
@@ -194,6 +196,7 @@ impl Default for FileConfig {
             adaptive_idle: false,
             raw_transport: Default::default(),
             raw_slots: 4,
+            encoding_gpu: String::new(),
             vaapi_device: "/dev/dri/renderD128".into(),
             fps: 60,
             bitrate: 20000,

@@ -1569,7 +1569,10 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let file_cfg = config::FileConfig::load();
     let effective = effective_config(&cli, &file_cfg);
     effective.validate()?;
-    config::validate_encoder_for_build(&effective.encoder)?;
+    config::validate_encoder_for_build(capture::initial_encoder(
+        &effective.encoder,
+        &file_cfg.encoding_gpu,
+    ))?;
 
     runtime::runtime_dir().context("validate private runtime directory")?;
     let helper_path = find_helper(cli.helper.as_deref())?;
@@ -1600,7 +1603,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
     let stream_scale = effective.stream_scale;
     let pen_only = effective.pen_only;
 
-    let cap_config = slot_capture_config(
+    let mut cap_config = slot_capture_config(
         capture::CaptureConfig {
             helper_path: helper_path.clone(),
             calibration_generation: file_cfg.calibration_generation,
@@ -1609,6 +1612,7 @@ async fn run_daemon(cli: Cli) -> Result<()> {
             raw_slots: file_cfg.raw_slots,
             edid_path: cli.edid.clone(),
             encoder: encoder.clone(),
+            gpu_policy: Default::default(),
             decoder: None,
             vaapi_device: file_cfg.vaapi_device.clone(),
             fps,
@@ -1631,6 +1635,8 @@ async fn run_daemon(cli: Cli) -> Result<()> {
         },
         0,
     );
+
+    capture::select_gpu(&mut cap_config, &file_cfg.encoding_gpu).await;
 
     let token = create_session_token(file_cfg.require_token)?;
     let token_dir = token.as_ref().map(|_| runtime::runtime_dir()).transpose()?;

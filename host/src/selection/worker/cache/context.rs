@@ -59,6 +59,7 @@ pub(super) fn fingerprint(
         super::super::super::Key::new(snapshot).format,
         (
             &base.vaapi_device,
+            base.gpu_policy,
             base.ten_bit,
             base.stream_scale,
             base.conversion_threads,

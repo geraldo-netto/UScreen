@@ -2,6 +2,8 @@
 #[cfg(not(feature = "inproc-encoder"))]
 mod cli_encoder;
 mod config;
+mod device_selection;
+pub(crate) use device_selection::{initial_encoder, select_gpu};
 mod encoding;
 mod fifo;
 #[cfg(not(feature = "inproc-encoder"))]
@@ -206,13 +208,16 @@ impl CaptureManager {
             || settings.width_mm != self.config.width_mm
             || settings.height_mm != self.config.height_mm
             || settings.stream_scale != self.config.stream_scale
-            || self.config.shared_raw() != self.config.shared_raw_for(settings.effective_encoder())
+            || self.config.shared_raw()
+                != self
+                    .config
+                    .shared_raw_for(self.config.gpu_policy.encoder(settings.effective_encoder()))
     }
 
     fn stream_settings_changed(&self, settings: &EncoderSettings) -> bool {
         !settings.geometry_ready
             || self.helper_settings_changed(settings)
-            || settings.effective_encoder() != self.config.encoder
+            || self.config.gpu_policy.encoder(settings.effective_encoder()) != self.config.encoder
             || settings.decoder_choice() != self.config.decoder.as_ref()
             || settings.selected_workers() != self.config.selected_workers
             || settings.bitrate != self.config.bitrate
@@ -227,7 +232,9 @@ impl CaptureManager {
             // fps is baked into the helper's pacing, and the
             // resolution into the EDID — restart with a fresh EDID
             info!(
-                shared_memory = self.config.shared_raw_for(s.effective_encoder()),
+                shared_memory = self
+                    .config
+                    .shared_raw_for(self.config.gpu_policy.encoder(s.effective_encoder())),
                 "Capture helper configuration change: {}x{}@{} → {}x{}@{}",
                 self.config.width,
                 self.config.height,
@@ -245,7 +252,11 @@ impl CaptureManager {
             )
             .await;
         }
-        self.config.encoder = s.effective_encoder().to_string();
+        self.config.encoder = self
+            .config
+            .gpu_policy
+            .encoder(s.effective_encoder())
+            .to_string();
         self.config.selected_workers = s.selected_workers();
         self.config.decoder = s.decoder_choice().cloned();
         self.config.fps = s.fps;

@@ -6,10 +6,12 @@ use std::process::Command;
 #[derive(Default)]
 pub(super) struct Platform {
     daemon: daemon::StatusProbe,
+    gpus: Vec<blent_config::linux::gpu::Device>,
 }
 
 impl Source for Platform {
     fn capabilities(&mut self) -> Capabilities {
+        self.gpus = blent_config::linux::gpu::discover();
         Capabilities {
             daemon_binary: crate::find_blent_bin().is_some(),
             ffmpeg: command_exists("ffmpeg"),
@@ -22,6 +24,7 @@ impl Source for Platform {
     fn dynamic(&mut self, capabilities: &Capabilities) -> Status {
         let pid = self.daemon.poll(Some(&pid_path()));
         let mut status = Status {
+            gpus: blent_config::linux::gpu::catalog(&self.gpus),
             daemon_binary: capabilities.daemon_binary,
             ffmpeg_ok: capabilities.ffmpeg,
             adb_ok: capabilities.adb,
@@ -53,6 +56,12 @@ impl Source for Platform {
                 (session.instance, capacity)
             })
             .collect();
+        let fifos: Vec<_> = sessions
+            .iter()
+            .filter_map(|session| runtime::fifo_path_for(session.instance).ok())
+            .collect();
+        status.active_gpus =
+            blent_config::linux::gpu::active(status.daemon_pid, &fifos, &self.gpus);
         query_tablets(&mut status, sessions, capabilities.adb, adb_devices);
         status
     }

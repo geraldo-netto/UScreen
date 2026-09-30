@@ -6,6 +6,7 @@ pub struct CaptureConfig {
     /// Explicit EDID override; None = generate one for the configured mode
     pub edid_path: Option<PathBuf>,
     pub encoder: String,
+    pub gpu_policy: blent_config::gpu::Policy,
     #[cfg_attr(feature = "inproc-encoder", allow(dead_code))]
     pub calibration_generation: u32,
     /// Opt-in, current-session sparse cadence; native backend must validate it.
@@ -72,6 +73,7 @@ impl Default for CaptureConfig {
             helper_path: PathBuf::from("host/evdi/evdi_helper"),
             edid_path: None,
             encoder: String::from("h264_nvenc"),
+            gpu_policy: Default::default(),
             calibration_generation: 0,
             adaptive_idle: false,
             raw_transport: Default::default(),

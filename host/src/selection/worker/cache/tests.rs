@@ -459,3 +459,19 @@ fn t714_historical_worker_bounds_reject_unknown_out_of_range_counts() {
         cache.save(100, &row).unwrap();
     }
 }
+
+#[test]
+fn t727_gpu_policy_changes_invalidate_saved_candidates() {
+    let (snapshot, _) = setup();
+    let identity = ("tablet".to_string(), "usb");
+    let mut base = CaptureConfig::default();
+    let automatic = context::fingerprint(&identity, "host", &snapshot, &base).unwrap();
+    base.gpu_policy = blent_config::gpu::Policy::Pinned(blent_config::encoding::Backend::Vaapi);
+    let pinned = context::fingerprint(&identity, "host", &snapshot, &base).unwrap();
+    assert_ne!(automatic, pinned);
+    base.gpu_policy = blent_config::gpu::Policy::Software;
+    assert_ne!(
+        context::fingerprint(&identity, "host", &snapshot, &base).unwrap(),
+        pinned
+    );
+}
