@@ -1,0 +1,7 @@
+{
+  "item": "T743",
+  "regression": "selection::worker::cache::context::tests::t743_stable_render_alias_retains_device_and_driver_identity",
+  "before": "Stable alias returned an empty fingerprint while direct DRM node included device and driver metadata.",
+  "after": "20 cache tests pass; all six context functions exceed 80% executable-line coverage.",
+  "scope": "Resolve stable device aliases before sysfs lookup; preserve legacy direct paths."
+}

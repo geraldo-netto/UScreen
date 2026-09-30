@@ -118,7 +118,8 @@ fn host_stamp(base: &CaptureConfig) -> Option<String> {
 
 // Linux adapter: identify the render device and bound driver changes without boot IDs.
 fn device_stamp(sys: &Path, node: &str) -> Vec<u8> {
-    let Some(name) = Path::new(node).file_name() else {
+    let resolved = std::fs::canonicalize(node).unwrap_or_else(|_| node.into());
+    let Some(name) = resolved.file_name() else {
         return Vec::new();
     };
     let device = sys.join("class/drm").join(name).join("device");
@@ -138,6 +139,24 @@ fn platform_stamp(proc: &Path, sys: &Path, node: &str) -> Option<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn t743_stable_render_alias_retains_device_and_driver_identity() {
+        let root = tempfile::tempdir().unwrap();
+        let node = root.path().join("renderD128");
+        let alias = root.path().join("pci-0000:03:00.0-render");
+        std::fs::write(&node, "").unwrap();
+        std::os::unix::fs::symlink(&node, &alias).unwrap();
+        let device = root.path().join("class/drm/renderD128/device");
+        std::fs::create_dir_all(device.join("driver/module")).unwrap();
+        std::fs::write(device.join("uevent"), "PCI_ID=1002:73FF").unwrap();
+        std::fs::write(device.join("driver/module/version"), "one").unwrap();
+        let before = device_stamp(root.path(), node.to_str().unwrap());
+        assert!(!before.is_empty());
+        assert_eq!(device_stamp(root.path(), alias.to_str().unwrap()), before);
+        std::fs::write(device.join("driver/module/version"), "two").unwrap();
+        assert_ne!(device_stamp(root.path(), alias.to_str().unwrap()), before);
+    }
+
     #[test]
     fn t714_reboot_preserves_context_but_kernel_driver_and_gpu_changes_do_not() {
         let root = tempfile::tempdir().unwrap();
