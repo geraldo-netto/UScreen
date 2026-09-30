@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-30",
+  "model": "RugKing Pad 2 Pro",
+  "android_api": 36,
+  "queries": [
+    "adb shell pm list features",
+    "adb shell service check nfc",
+    "adb shell getprop ro.build.version.sdk"
+  ],
+  "features": [
+    "android.hardware.nfc",
+    "android.hardware.nfc.any",
+    "android.hardware.nfc.hce",
+    "android.hardware.nfc.uicc"
+  ],
+  "service_check": "Service nfc: found",
+  "limits": "Read-only advertised capability query; no native tag read, setting change or capture."
+}
