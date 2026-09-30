@@ -11,6 +11,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[path = "clock.rs"]
+mod clock;
 #[path = "ring.rs"]
 mod ring;
 use ring::Render;
@@ -26,9 +28,11 @@ enum DeviceIo {
 pub fn run() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     ensure!(
-        (2..=3).contains(&args.len()),
+        (2..=4).contains(&args.len()),
         "Expected queue milliseconds, unique node name and optional direction"
     );
+    let clocked = args.get(3).map(String::as_str) == Some("clocked");
+    ensure!(args.len() < 4 || clocked, "Invalid native audio protocol");
     let direction = match args.get(2).map(String::as_str).unwrap_or("microphone") {
         "microphone" => Direction::Microphone,
         "speakers" => Direction::Speakers,
@@ -49,35 +53,74 @@ pub fn run() -> Result<()> {
     let epoch = Instant::now();
     let io = match direction {
         Direction::Microphone => {
-            input_worker(queue.clone(), epoch, running.clone());
-            DeviceIo::Microphone(Render::new(queue, epoch))
+            input_worker(queue.clone(), epoch, running.clone(), clocked);
+            DeviceIo::Microphone(Render::new(queue.clone(), epoch))
         }
         Direction::Speakers => {
-            capture::workers(queue.clone(), epoch, running.clone(), ready.clone());
-            DeviceIo::Speakers(Capture::new(queue, epoch))
+            capture::workers(
+                queue.clone(),
+                epoch,
+                running.clone(),
+                ready.clone(),
+                clocked,
+            );
+            DeviceIo::Speakers(Capture::new(queue.clone(), epoch))
         }
     };
+    let monitor = clock::monitor(
+        queue,
+        running.clone(),
+        clocked && direction == Direction::Microphone,
+    );
     let result = device(&args[1], direction, io, running.clone(), ready);
     running.store(false, Ordering::Release);
+    clock::retire_monitor(monitor);
     result
 }
 
-fn input_worker(queue: Arc<Mutex<PcmQueue>>, epoch: Instant, running: Arc<AtomicBool>) {
+fn input_worker(
+    queue: Arc<Mutex<PcmQueue>>,
+    epoch: Instant,
+    running: Arc<AtomicBool>,
+    clocked: bool,
+) {
     let input_queue = queue.clone();
     std::thread::spawn(move || {
-        let _ = input(&mut std::io::stdin().lock(), &input_queue, epoch);
+        let _ = input_with_clock(&mut std::io::stdin().lock(), &input_queue, epoch, clocked);
         running.store(false, Ordering::Release);
     });
 }
 
+#[cfg(test)]
 fn input(reader: &mut impl Read, queue: &Mutex<PcmQueue>, epoch: Instant) -> Result<()> {
-    let mut bytes = [0; 1 + BLOCK_FRAMES * 2];
+    input_with_clock(reader, queue, epoch, false)
+}
+
+fn input_with_clock(
+    reader: &mut impl Read,
+    queue: &Mutex<PcmQueue>,
+    epoch: Instant,
+    clocked: bool,
+) -> Result<()> {
+    let mut bytes = vec![
+        0;
+        1 + BLOCK_FRAMES * 2
+            + if clocked {
+                blent_config::audio::CLOCK_BYTES
+            } else {
+                0
+            }
+    ];
+    let pcm = bytes.len() - BLOCK_FRAMES * 2;
     loop {
         reader.read_exact(&mut bytes)?;
         ensure!(bytes[0] <= 1, "Invalid native discontinuity flag");
         let mut block =
-            blent_config::audio::PcmBlock::from_le_bytes(Direction::Microphone, &bytes[1..])?;
+            blent_config::audio::PcmBlock::from_le_bytes(Direction::Microphone, &bytes[pcm..])?;
         block.discontinuity = bytes[0] != 0;
+        if clocked {
+            block.clock = blent_config::audio::ClockSample::decode(&bytes[1..pcm])?;
+        }
         queue
             .lock()
             .map_err(|_| anyhow::anyhow!("audio queue poisoned"))?
@@ -173,10 +216,9 @@ fn stream_listener(
                 ready.store(true, Ordering::Release);
             }
         })
-        .io_changed(|_, io, id, pointer, size| {
-            if let DeviceIo::Microphone(render) = io {
-                render.position(id, pointer, size);
-            }
+        .io_changed(|_, io, id, pointer, size| match io {
+            DeviceIo::Microphone(render) => render.position(id, pointer, size),
+            DeviceIo::Speakers(capture) => capture.position(id, pointer, size),
         })
         .process(process)
         .register()?)
@@ -382,5 +424,41 @@ mod tests {
             assert!(input(&mut bad.as_slice(), &queue, epoch).is_err());
         }
         assert!(input(&mut [0; 400].as_slice(), &queue, epoch).is_err());
+    }
+}
+
+#[cfg(test)]
+mod clock_tests {
+    use super::*;
+    #[test]
+    fn t720_clocked_microphone_ipc_validates_counters_before_native_delivery() {
+        let epoch = Instant::now();
+        let queue = Mutex::new(PcmQueue::new(AudioProfile::new(Direction::Microphone)).unwrap());
+        let clock = blent_config::audio::ClockSample {
+            epoch: 1,
+            frames: 0,
+            nanos: 1,
+        };
+        let bytes = [
+            &[0][..],
+            &blent_config::audio::ClockSample::encode(Some(clock)).unwrap(),
+            &[1; 960],
+        ]
+        .concat();
+        assert!(input_with_clock(&mut bytes.as_slice(), &queue, epoch, true).is_err()); // EOF after one whole block.
+        assert_eq!(
+            queue
+                .lock()
+                .unwrap()
+                .pop(epoch.elapsed().as_millis() as u64)
+                .unwrap()
+                .unwrap()
+                .clock,
+            Some(clock)
+        );
+        let mut invalid = bytes.clone();
+        invalid[1..9].fill(0);
+        assert!(input_with_clock(&mut invalid.as_slice(), &queue, epoch, true).is_err());
+        assert_eq!(queue.lock().unwrap().queued_frames(), 0);
     }
 }

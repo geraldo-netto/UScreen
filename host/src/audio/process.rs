@@ -3,20 +3,34 @@ use blent_config::audio::{AudioProfile, Direction};
 use std::{path::Path, process::Stdio, time::Duration};
 use tokio::process::{Child, Command};
 
+#[cfg(test)]
 pub(super) fn spawn(helper: &Path, profile: AudioProfile, token: &str) -> Result<Child> {
+    spawn_with_clock(helper, profile, token, false)
+}
+
+pub(super) fn spawn_with_clock(
+    helper: &Path,
+    profile: AudioProfile,
+    token: &str,
+    clocked: bool,
+) -> Result<Child> {
     let direction = match profile.direction {
         Direction::Microphone => "microphone",
         Direction::Speakers => "speakers",
     };
-    let child = Command::new(helper)
-        .args([
-            profile.buffer_ms.to_string(),
-            format!("blent_{direction}_{}", &token[..12]),
-            direction.to_owned(),
-        ])
+    let mut command = Command::new(helper);
+    command.args([
+        profile.buffer_ms.to_string(),
+        format!("blent_{direction}_{}", &token[..12]),
+        direction.to_owned(),
+    ]);
+    if clocked {
+        command.arg("clocked");
+    }
+    let child = command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::inherit())
         .kill_on_drop(true)
         .spawn()
         .context("Start native PipeWire audio adapter")?;

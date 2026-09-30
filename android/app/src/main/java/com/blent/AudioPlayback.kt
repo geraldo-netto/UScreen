@@ -22,7 +22,7 @@ internal class AudioPlayback(private val context: Context,
                 socket.tcpNoDelay = true
                 val source = socket.source().buffer(); val sink = socket.sink().buffer()
                 sink.timeout().timeout(250, TimeUnit.MILLISECONDS)
-                val wire = AudioWire(endpoint)
+                val wire = AudioWire(endpoint, true)
                 val player = try { open(endpoint, preferences) } catch (error: Exception) { wire.request(sink, 0, false); throw error }
                 player.use {
                     wire.request(sink, 7, false); wire.negotiate(source)
@@ -64,7 +64,7 @@ internal class AudioPlayback(private val context: Context,
             if (previous != null && changed) queue.clear()
             val now = SystemClock.elapsedRealtime()
             if (changed || now >= reportAt) {
-                status(if (paused) "Speaker playback paused for another app." else "Speaker sharing · ${player.description()}")
+                status(if (paused) "Speaker playback paused for another app." else "Speaker sharing · ${player.description()} · ${queue.driftDescription()}")
                 reportAt = now + 1000
             }
             previous = paused
@@ -74,6 +74,7 @@ internal class AudioPlayback(private val context: Context,
     }
     private suspend fun renderFrame(socket: Socket, player: SpeakerDevice, queue: AudioPlaybackQueue, silence: ShortArray) {
         if (socket.isClosed) return
+        queue.nativeClock(player.clockSample())
         val chunk = queue.poll() ?: PlaybackChunk(silence, SystemClock.elapsedRealtime(), false)
         if (player.write(chunk) != SpeakerWrite.Written) queue.clear()
     }

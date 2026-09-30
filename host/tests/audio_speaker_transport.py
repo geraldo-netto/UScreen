@@ -11,7 +11,7 @@ import audio_speakers
 from audio_transport import ADB, nodes
 
 
-def tablet(root, received, errors):
+def tablet(root, received, errors, clocked=False):
     try:
         deadline = time.monotonic() + 5
         while not (root/'invitation').exists():
@@ -22,29 +22,41 @@ def tablet(root, received, errors):
         assert words[words.index('direction') + 1] == '2'
         port = int(words[words.index('port') + 1])
         with socket.create_connection(('127.0.0.1', port), timeout=3) as peer:
-            peer.sendall(b'BLAUREQ1' + token.encode() + bytes([7, 0, 2, 1]))
+            peer.sendall((b'BLAUREQ2' if clocked else b'BLAUREQ1') + token.encode() + bytes([7, 0, 2, 1]))
             stream = peer.makefile('rb')
             grant = stream.read(156)
             assert grant[:64] == token.encode() and grant[144:146] == bytes([2, 2])
+            assert grant[64:72] == (b'BLAUD002' if clocked else b'BLAUD001')
             generation = struct.unpack('>Q', grant[136:144])[0]
-            consume(stream, generation, received)
+            consume(stream, generation, received, clocked)
     except Exception as error:
         errors.append(error)
 
 
-def consume(stream, generation, received):
+def consume(stream, generation, received, clocked):
     previous = None
-    while packet := stream.read(1948):
-        assert len(packet) == 1948, 'partial speaker packet'
+    length = 1972 if clocked else 1948
+    while packet := stream.read(length):
+        assert len(packet) == length, 'partial speaker packet'
         gen, sequence, timestamp, size, channels, reserved = struct.unpack('>QQQHBB', packet[:28])
-        assert (gen, size, channels, reserved) == (generation, 1920, 2, 0)
+        assert (gen, size, channels, reserved) == (generation, length - 28, 2, 0)
         if previous is None:
             assert sequence == 0
         else:
             assert sequence > previous[0] and timestamp > previous[1]
         previous = sequence, timestamp
-        if struct.pack('<hh', 1234, -4321) in packet[28:]:
+        clock_ready = valid_clock(packet, clocked)
+        if clock_ready and struct.pack('<hh', 1234, -4321) in packet[52 if clocked else 28:]:
             received.set()
+
+
+def valid_clock(packet, clocked):
+    if not clocked:
+        return True
+    epoch, frames, nanos = struct.unpack('>QQQ', packet[28:52])
+    ready = epoch > 0 and nanos > 0
+    assert ready or (epoch, frames, nanos) == (0, 0, 0), 'T720 malformed native counter'
+    return ready
 
 
 def wait_sink(env):
@@ -58,13 +70,14 @@ def wait_sink(env):
     raise AssertionError('host did not publish speaker sink')
 
 
-def check(host, env, directory):
+def check(host, env, directory, clocked=False):
     root = Path(directory)
+    (root/'invitation').unlink(missing_ok=True)
     (root/'adb').write_text(ADB); (root/'adb').chmod(0o700)
     env = dict(env, PATH=str(root)+os.pathsep+env['PATH'], BLENT_AUDIO_FIXTURE=str(root))
     process = subprocess.Popen([host, 'audio', '--direction', 'speakers', '--serial', 'fixture'], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     received = threading.Event(); errors = []
-    worker = threading.Thread(target=tablet, args=(root, received, errors)); worker.start()
+    worker = threading.Thread(target=tablet, args=(root, received, errors, clocked)); worker.start()
     producer = None
     try:
         sink = wait_sink(env)

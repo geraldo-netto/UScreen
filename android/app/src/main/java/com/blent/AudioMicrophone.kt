@@ -13,6 +13,7 @@ internal interface MicrophoneDevice : AutoCloseable {
     val capabilities: Int
     val aecEnabled: Boolean
     fun start()
+    fun clockSample(): AudioClockSample? = null
     suspend fun read(output: ShortArray)
 }
 
@@ -45,6 +46,11 @@ internal class AudioMicrophone(private val context: Context, private val endpoin
         check(record!!.state == AudioRecord.STATE_INITIALIZED) { "Microphone initialization failed." }
         if (builtIn) preferBuiltIn()
         if (endpoint.processing == 1) enableAec()
+    }
+    override fun clockSample(): AudioClockSample? {
+        val stamp = AudioTimestamp()
+        if (checkNotNull(record).getTimestamp(stamp, AudioTimestamp.TIMEBASE_MONOTONIC) != AudioRecord.SUCCESS) return null
+        return AudioClockSample(1, stamp.framePosition, stamp.nanoTime).takeIf { it.valid() }
     }
     override fun start() {
         record!!.startRecording()

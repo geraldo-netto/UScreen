@@ -13,6 +13,8 @@ class AudioOutputTest {
     }
     private class Track : OutputTrack {
         var plays = 0; var flushes = 0; var closes = 0; var routeId: Int? = null
+        var stamp: AudioClockSample? = null
+        override fun clockSample() = stamp ?: super<OutputTrack>.clockSample()
         var closing: (() -> Unit)? = null
         var result: (Int) -> OutputWrite = { OutputWrite(minOf(it, 120)) }
         val data = ByteArrayOutputStream()
@@ -31,6 +33,22 @@ class AudioOutputTest {
         ShortArray(960) { if (it % 2 == 0) 1234 else -4321 }, at, gap)
     private suspend fun rejects(action: suspend () -> Unit) {
         try { action(); fail("T719 invalid playback accepted") } catch (_: IllegalArgumentException) {}
+    }
+    @Test fun t720_nativeEpochChangesOnFlushPauseAndRecreation() = runBlocking {
+        val focus = Focus(); val first = Track(); val second = Track(); var opens = 0
+        first.stamp = AudioClockSample(8, 480, 10_000_001); second.stamp = first.stamp
+        AudioOutput({ if (opens++ == 0) first else second }, focus) { 0 }.use { output ->
+            output.start(); val initial = output.clockSample()!!
+            assertEquals(1, initial.epoch); assertEquals(480, initial.frames)
+            assertEquals(SpeakerWrite.Written, output.write(chunk(gap = true)))
+            assertEquals(2, output.clockSample()!!.epoch)
+            focus.pause = true; assertEquals(SpeakerWrite.Paused, output.write(chunk()))
+            assertEquals(3, output.clockSample()!!.epoch)
+            focus.pause = false; first.result = { OutputWrite(0, true) }
+            assertEquals(SpeakerWrite.Reset, output.write(chunk()))
+            assertEquals(4, output.clockSample()!!.epoch)
+            second.stamp = null; assertNull(output.clockSample())
+        }
     }
     @Test fun t719_partialWritesRetainStereoAndFocusFlushesStaleSamples() = runBlocking {
         val focus = Focus(); val track = Track(); var now = 0L

@@ -14,6 +14,8 @@ pub struct RenderResult {
 
 pub struct PcmQueue {
     blocks: VecDeque<(u64, PcmBlock)>,
+    drift: super::clock::Drift,
+    measured: bool,
     channels: usize,
     target: usize,
     offset: usize,
@@ -29,6 +31,8 @@ impl PcmQueue {
         profile.validate()?;
         Ok(Self {
             blocks: VecDeque::with_capacity(CAPACITY),
+            drift: Default::default(),
+            measured: false,
             channels: profile.direction.channels(),
             target: profile.buffer_ms as usize / 10,
             offset: 0,
@@ -45,6 +49,8 @@ impl PcmQueue {
         self.offset = 0;
         self.phase = 0;
         self.ppm = 0;
+        self.drift = Default::default();
+        self.measured = false;
         self.primed = false;
         self.discontinuity = true;
     }
@@ -94,11 +100,35 @@ impl PcmQueue {
         if block.discontinuity {
             self.clear();
         }
+        if self.drift.source.observe(block.clock, now_ms) {
+            self.clear();
+            self.drift.source.observe(block.clock, now_ms);
+        }
         if self.blocks.len() == CAPACITY {
             self.drop_oldest();
         }
         self.blocks.push_back((now_ms, block));
         Ok(())
+    }
+
+    pub fn native_clock(&mut self, sample: Option<super::ClockSample>, now_ms: u64) {
+        if now_ms < self.last_time {
+            self.clear();
+            return;
+        }
+        if self.drift.destination.observe(sample, now_ms) {
+            self.clear();
+        }
+        self.measured = false;
+        self.ppm = 0;
+        if let Some((source, destination)) = self.drift.ratio(now_ms) {
+            self.measured = self.adjust_drift(source, destination).is_ok();
+        }
+    }
+
+    /// None means unavailable, warming up, reset, stale or rejected counters.
+    pub fn measured_drift(&self) -> Option<i32> {
+        self.measured.then_some(self.ppm)
     }
 
     /// Ratio of native source/destination frame-counter deltas over the same

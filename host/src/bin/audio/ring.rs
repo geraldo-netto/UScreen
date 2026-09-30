@@ -10,7 +10,7 @@ pub(super) struct Render {
     block: [i16; BLOCK_FRAMES],
     cursor: usize,
     at: u64,
-    clock: *const pipewire::spa::sys::spa_io_clock,
+    clock: super::clock::Clock,
 }
 impl Render {
     pub(super) fn new(queue: Arc<Mutex<PcmQueue>>, epoch: Instant) -> Self {
@@ -20,37 +20,14 @@ impl Render {
             block: [0; BLOCK_FRAMES],
             cursor: BLOCK_FRAMES,
             at: 0,
-            clock: std::ptr::null(),
+            clock: Default::default(),
         }
     }
     pub(super) fn position(&mut self, id: u32, pointer: *mut std::ffi::c_void, size: u32) {
-        if id != pipewire::spa::sys::SPA_IO_Position {
-            return;
-        }
-        let minimum = std::mem::offset_of!(pipewire::spa::sys::spa_io_clock, duration) + 8;
-        self.clock = if size as usize >= minimum {
-            pointer.cast()
-        } else {
-            std::ptr::null()
-        };
+        self.clock.position(id, pointer, size);
     }
     pub(super) fn quantum(&self, maximum: usize) -> usize {
-        if self.clock.is_null() {
-            return BLOCK_FRAMES.min(maximum / 2) * 2;
-        }
-        // PipeWire owns this IO area until io_changed clears/replaces it. Only
-        // the stable clock prefix is read; older libpipewire structs may be shorter.
-        let (duration, rate) = unsafe {
-            (
-                std::ptr::addr_of!((*self.clock).duration).read_unaligned(),
-                std::ptr::addr_of!((*self.clock).rate).read_unaligned(),
-            )
-        };
-        let frames = duration
-            .saturating_mul(48000)
-            .saturating_mul(rate.num as u64)
-            / u64::from(rate.denom.max(1));
-        (frames.min((maximum / 2) as u64) as usize) * 2
+        self.clock.quantum(maximum)
     }
     pub(super) fn fill(&mut self, output: &mut [u8]) {
         output.fill(0);
@@ -69,6 +46,7 @@ impl Render {
     fn next(&mut self, now: u64) {
         self.block.fill(0);
         if let Ok(mut queue) = self.queue.try_lock() {
+            queue.native_clock(self.clock.sample(), self.epoch.elapsed().as_millis() as u64);
             // Serialize the clock sample with queue updates, not callback entry.
             let _ = queue.render(self.epoch.elapsed().as_millis() as u64, &mut self.block);
         }

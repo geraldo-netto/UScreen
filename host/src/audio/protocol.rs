@@ -10,7 +10,7 @@ pub(super) async fn accept(
     listener: &TcpListener,
     token: &str,
     direction: Direction,
-) -> Result<(TcpStream, AudioCapabilities, Processing, String)> {
+) -> Result<(TcpStream, AudioCapabilities, Processing, String, bool)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     loop {
         let (mut socket, _) = tokio::time::timeout_at(deadline, listener.accept()).await??;
@@ -18,8 +18,8 @@ pub(super) async fn accept(
         let request_deadline = (tokio::time::Instant::now() + Duration::from_secs(2)).min(deadline);
         let result =
             tokio::time::timeout_at(request_deadline, request(&mut socket, token, direction)).await;
-        if let Ok(Ok((caps, mode, detail))) = result {
-            return Ok((socket, caps, mode, detail));
+        if let Ok(Ok((caps, mode, detail, clocked))) = result {
+            return Ok((socket, caps, mode, detail, clocked));
         }
         ensure!(
             tokio::time::Instant::now() < deadline,
@@ -31,10 +31,14 @@ async fn request(
     socket: &mut TcpStream,
     token: &str,
     direction: Direction,
-) -> Result<(AudioCapabilities, Processing, String)> {
+) -> Result<(AudioCapabilities, Processing, String, bool)> {
     let mut bytes = [0; 76];
     socket.read_exact(&mut bytes).await?;
-    ensure!(&bytes[..8] == b"BLAUREQ1", "Unknown audio request");
+    ensure!(
+        matches!(&bytes[..8], b"BLAUREQ1" | b"BLAUREQ2"),
+        "Unknown audio request"
+    );
+    let clocked = &bytes[..8] == b"BLAUREQ2";
     ensure!(
         blent_config::credentials::token_matches(token, std::str::from_utf8(&bytes[8..72])?),
         "Audio request authentication failed"
@@ -69,14 +73,23 @@ async fn request(
         capabilities,
         processing,
         format!("Effective {processing:?}. {detail}"),
+        clocked,
     ))
 }
 
 pub(super) fn captured(bytes: &[u8]) -> Result<blent_config::audio::PcmBlock> {
-    ensure!(bytes.len() == 1921, "invalid native speaker packet length");
+    ensure!(
+        matches!(bytes.len(), 1921 | 1945),
+        "invalid native speaker packet length"
+    );
     ensure!(bytes[0] <= 1, "invalid native speaker discontinuity");
-    let mut block = blent_config::audio::PcmBlock::from_le_bytes(Direction::Speakers, &bytes[1..])?;
+    let pcm = bytes.len() - 1920;
+    let mut block =
+        blent_config::audio::PcmBlock::from_le_bytes(Direction::Speakers, &bytes[pcm..])?;
     block.discontinuity = bytes[0] != 0;
+    if pcm > 1 {
+        block.clock = blent_config::audio::ClockSample::decode(&bytes[1..pcm])?;
+    }
     Ok(block)
 }
 pub(super) async fn grant(socket: &mut TcpStream, ticket: &str, grant: &AudioGrant) -> Result<()> {

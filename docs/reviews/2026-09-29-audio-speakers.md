@@ -32,6 +32,8 @@ retirement observations, not acoustic-delay measurements.
 Audio does not change system defaults, move unrelated streams or automatically
 route the microphone into the speaker sink. PipeWire dependencies are optional
 for display startup. PulseAudio-only, Windows and macOS audio remain unsupported.
-Native device-clock correction, simultaneous physical duplex acceptance, effective
-AEC and measured acoustic delay remain T720. Native frame counters and configured
+At this September 29 checkpoint, native device-clock correction and physical
+duplex/AEC acceptance remained T720. The [September 30 integration](2026-09-30-audio-clock.md)
+adds native counter correction; simultaneous physical duplex, effective AEC and
+measured acoustic delay still require acceptance. Native frame counters and configured
 buffer lengths alone do not establish acoustic latency or audible quality.

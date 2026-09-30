@@ -40,7 +40,8 @@ with tempfile.TemporaryDirectory(prefix='blent-pw-') as d:
   consumer.terminate();consumer.wait(timeout=2)
   import audio_transport
   audio_transport.check(sys.argv[2], env, d)
-  for args in [[], ['0','bad'], ['201','bad'], ['40','bad/name']]:
+  audio_transport.check(sys.argv[2], env, d, clocked=True)
+  for args in [[], ['0','bad'], ['201','bad'], ['40','bad/name'], ['40','valid','speakers','invalid'], ['40','valid','invalid']]:
    assert subprocess.run([sys.argv[1], *args], env=env, capture_output=True, timeout=2).returncode != 0
   failed=subprocess.Popen([sys.argv[1],'40','blent_microphone_failure'],env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE);clients.append(failed)
   assert select.select([failed.stdout],[],[],5)[0], 'failure fixture readiness timeout'

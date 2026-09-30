@@ -27,7 +27,7 @@ else: print('fixture')
 '''
 
 
-def tablet(root, stop, errors):
+def tablet(root, stop, errors, clocked=False):
     try:
         deadline = time.monotonic() + 5
         while not (root/'invitation').exists():
@@ -37,13 +37,16 @@ def tablet(root, stop, errors):
         token = words[words.index('token') + 1]
         port = int(words[words.index('port') + 1])
         with socket.create_connection(('127.0.0.1', port), timeout=2) as peer:
-            peer.sendall(b'BLAUREQ1' + token.encode() + bytes([7, 1, 1, 1]))
+            peer.sendall((b'BLAUREQ2' if clocked else b'BLAUREQ1') + token.encode() + bytes([7, 1, 1, 1]))
             grant = peer.makefile('rb').read(156)
             assert len(grant) == 156 and grant[:64] == token.encode()
+            assert grant[64:72] == (b'BLAUD002' if clocked else b'BLAUD001')
             generation = struct.unpack('>Q', grant[136:144])[0]
             sequence = 0
             while not stop.wait(.01):
                 pcm = struct.pack('<480h', *([2345] * 480))
+                if clocked:
+                    pcm = struct.pack('>QQQ', 1, sequence * 480, 1 + sequence * 10_000_000) + pcm
                 peer.sendall(struct.pack('>QQQHBB', generation, sequence, sequence * 10000, len(pcm), 1, 0) + pcm)
                 sequence += 1
     except Exception as error:
@@ -65,13 +68,14 @@ def configure(env, source):
     subprocess.run(['pw-link', source+':capture_MONO', 'pw-cat:input_MONO'], env=env, check=True)
 
 
-def check(host, env, directory):
+def check(host, env, directory, clocked=False):
     root = Path(directory)
+    (root/'invitation').unlink(missing_ok=True)
     (root/'adb').write_text(ADB); (root/'adb').chmod(0o700)
     env = dict(env, PATH=str(root)+os.pathsep+env['PATH'], BLENT_AUDIO_FIXTURE=str(root))
     process = subprocess.Popen([host, 'audio', '--serial', 'fixture'], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stop = threading.Event(); errors = []
-    worker = threading.Thread(target=tablet, args=(root, stop, errors)); worker.start()
+    worker = threading.Thread(target=tablet, args=(root, stop, errors, clocked)); worker.start()
     consumer = None
     try:
         deadline = time.monotonic() + 5

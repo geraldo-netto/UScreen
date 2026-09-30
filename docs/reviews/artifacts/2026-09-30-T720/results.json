@@ -1,0 +1,47 @@
+{
+  "item": "T720",
+  "rust": {
+    "passed": 1029,
+    "failed": 0,
+    "existing_ignored": 5,
+    "covered_functions": 114
+  },
+  "android": {
+    "tests": 728,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "covered_functions": 123
+  },
+  "complexity": {
+    "functions": 7371,
+    "above_nine": 0
+  },
+  "physical_acceptance": "Blocked: identified route and maintainer device window needed; no acoustic or duplex quality claim",
+  "commands": [
+    "PKG_CONFIG_PATH=<private-sdk>/pkgconfig cargo llvm-cov --locked -p blent-config -p blent --features blent/native-audio --lcov --output-path <fresh-target-report>",
+    "./android/gradlew -p android -I scripts/coverage/android.init.gradle profileCoverage lintDebug",
+    "cargo test --locked -p blent --features native-audio --test audio_native",
+    "python scripts/complexity/check.py"
+  ],
+  "artifacts": {
+    "rust.lcov.gz": "c1f1744c3df2beedd5d34f707dff720a885b2707b377322d82d7b52dabbdbf18",
+    "rust-coverage.json.gz": "f0ac36cc0080172f36c29938de98b605d4d9ee80ee54d34c938625f341c01af6",
+    "rust-tests.log.gz": "bb01988d5263ee595fe7ba051a8e13cb4f7438572099152e1a81cbab8b8a91aa",
+    "android-coverage.json.gz": "ef7be127017bb9f016c2874cdec535779a4ac2992b04356beb875850c9d49c32",
+    "android-tests-lint.log.gz": "4e0777c754099d161e7f02655a21e9533016c0ad9f73a16fd0f55ffad2c56ad7",
+    "jacoco.xml.gz": "44cc43926c5c2a2f00aabc9daba6e2a8202a8734895fe44bcec0fefd79fc9c25",
+    "source-manifest.json.gz": "0ade43344c1e9f92f9b95c680aaeff30a347e2783e9c02c65a23ca719beb2c8f",
+    "rust-collection-manifest.json.gz": "07c8e76a9015ae38676377a07ed6b0ccafb0b9678ee4e2ba41464b0ba63f9419",
+    "native-transports.log.gz": "3cfd65fed0b9d111add91ed85042ac370b0f5cb6b953eeabe48b0eb08d052ec1",
+    "complexity.log.gz": "a49b108e7d8277cd50dab505b78bb06ef6a41e4336068a8ab75327d18a2c118b",
+    "integration-check.log.gz": "c4bab779b3725f4be32dc69a8e2e4ee21d45d4657b5fd039268e10afce5df8d2",
+    "integration-complexity.log.gz": "3f839203d07df78f849449f0b6b048eeaffe42b79b8ed946ad8901ab2fb60a01"
+  },
+  "merged_integration": {
+    "workspace_all_features_check": "passed",
+    "audio_sources_and_tests": "byte-identical to the tested worktree",
+    "compared_files": 51,
+    "complexity": "7411 functions; 0 exceed cyclomatic complexity 9"
+  }
+}

@@ -77,6 +77,11 @@ internal class AndroidSpeakerTrack(context: Context, attributes: AudioAttributes
         check(preferred == null || actual == null || preferred == actual) { "Built-in speaker route was not honored." }
         return actual
     }
+    override fun clockSample(): AudioClockSample? {
+        val stamp = AudioTimestamp()
+        if (!checkNotNull(track).getTimestamp(stamp)) return null
+        return AudioClockSample(1, stamp.framePosition, stamp.nanoTime).takeIf { it.valid() }
+    }
     override fun description(): String {
         val native = checkNotNull(track)
         val route = native.routedDevice?.productName ?: "route pending"

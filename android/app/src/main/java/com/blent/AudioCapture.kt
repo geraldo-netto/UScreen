@@ -21,7 +21,7 @@ internal class AudioCapture(private val context: Context,
                 socket.tcpNoDelay = true
                 val source = socket.source().buffer(); val sink = socket.sink().buffer()
                 sink.timeout().timeout(250, TimeUnit.MILLISECONDS)
-                val wire = AudioWire(endpoint)
+                val wire = AudioWire(endpoint, true)
                 val device = try { open(endpoint, preferences) } catch (error: Exception) {
                     wire.request(sink, 0, false); throw error
                 }
@@ -33,7 +33,7 @@ internal class AudioCapture(private val context: Context,
                     val samples = ShortArray(480)
                     while (!socket.isClosed) {
                         microphone.read(samples)
-                        wire.send(sink, samples, android.os.SystemClock.elapsedRealtimeNanos() / 1000, preferences.gain)
+                        wire.send(sink, samples, android.os.SystemClock.elapsedRealtimeNanos() / 1000, preferences.gain, microphone.clockSample())
                     }
                 }
             } finally { connected(null) }

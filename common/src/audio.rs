@@ -4,6 +4,8 @@ use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 
 mod buffer;
+mod clock;
+pub use clock::{ClockSample, CLOCK_BYTES};
 mod settings;
 pub use settings::{AudioController, AudioOptions, AudioSettings, AudioStatus};
 mod session;

@@ -66,4 +66,6 @@ Coverage used a new target directory after the last production change, with matc
 source fingerprints. This is a scoped result, not a new whole-project coverage claim.
 Shared Rust behavior was tested on Linux; no native Windows, Android audio, PipeWire
 node, acoustic AEC, microphone permission or end-to-end latency acceptance is claimed.
-T718 is now implementable; T719 follows T718, and T720 retains native duplex acceptance.
+At this foundation checkpoint T718/T719 were the next integrations. Their
+implementations and T720 native clock integration are described in the
+[current contract](../audio.md); physical duplex acceptance remains T720.

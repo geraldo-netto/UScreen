@@ -2,8 +2,8 @@
 
 T717 implements portable Rust audio policy in `blent_config::audio`. T718 adds
 Linux/Android microphone transport, native source and controls described below.
-T719 adds the selectable speaker sink and Android playback. Duplex/acoustic
-acceptance and native device-clock correction remain T720.
+T719 adds the selectable speaker sink and Android playback. T720 integrates native
+device-clock correction; physical duplex/acoustic acceptance requires a device window.
 Unimplemented backend capabilities remain unsupported. No system default device changes or automatic audio startup occur.
 
 Native Rust applications enable the shared crate's `native-entropy` feature
@@ -64,16 +64,17 @@ writes. Device callbacks must use adapter-owned rings, without socket IO or wait
 This domain layer performs no IO and cannot enforce an adapter's native shutdown.
 T718/T719 retain tests for partial reads/writes, cancellation and native retirement.
 
-## Version 1 wire format
+## Versioned wire format
 
-Protocol version, PCM encoding and 10 ms block duration are fixed by `BLAUD001`.
+The grant selects `BLAUD001` (legacy PCM) or `BLAUD002` (PCM plus native counters).
+PCM encoding and 10 ms block duration are fixed in both versions.
 Integer metadata is big endian; PCM samples are signed **little-endian** 16-bit.
 Microphone uses direction 1/mono; speakers use direction 2/stereo, both 48,000 Hz.
 The 92-byte handshake must exactly match the authorized session:
 
 | Byte offset | Length | Value |
 | --- | ---: | --- |
-| 0 | 8 | `BLAUD001` |
+| 0 | 8 | `BLAUD001` or `BLAUD002`, matching the selected session |
 | 8 | 64 | Fresh credential, lowercase hexadecimal ASCII |
 | 72 | 8 | Nonzero session generation |
 | 80 | 1 | Direction: 1 microphone, 2 speakers |
@@ -91,17 +92,24 @@ Each packet starts with a 28-byte header:
 | 0 | 8 | Authorized generation |
 | 8 | 8 | Sequence: starts at zero, strictly increases, `u64::MAX` rejected |
 | 16 | 8 | Sender monotonic timestamp in microseconds |
-| 24 | 2 | PCM bytes: exactly 960 microphone or 1920 speakers |
+| 24 | 2 | Payload bytes: 960/1920 for v1, 984/1944 for v2 |
 | 26 | 1 | Authorized direction |
 | 27 | 1 | Reserved, must be zero |
-| 28 | 960/1920 | Exactly one interleaved PCM block |
+| 28 | 0/24 | Native clock prefix, present only in v2 |
+| 28/52 | 960/1920 | Exactly one interleaved PCM block |
+
+The v2 prefix contains three big-endian unsigned 64-bit values: native epoch,
+frame position normalized to 48 kHz, and native monotonic nanoseconds. All-zero
+bytes explicitly mean unavailable. Otherwise epoch/time must be positive and all
+three fields must fit a signed 64-bit value for the Android contract. Invalid
+counters reject the complete packet without advancing receiver sequence state.
 
 Timestamps strictly increase after the first frame. No subtraction of host and
 tablet absolute clocks is used. Replayed/reordered frames, changed direction or
 generation, unknown protocol, wrong format, malformed lengths, truncation and
 trailing data are rejected. A sequence gap is accepted with a discontinuity and
 flushes queued audio. Parsing uses fixed bounded storage; maximum packet size is
-1948 bytes. Authentication is a connection credential check, not encryption or a
+1972 bytes (1948 for v1). Authentication is a connection credential check, not encryption or a
 per-packet MAC. The wire is intended for the already-authorized ADB connection;
 other transport security requires an explicit adapter contract.
 
@@ -121,14 +129,32 @@ receiver's local clock are discarded. Underflow returns an entire silent block;
 it never repeats old speech. Stop clears pending samples immediately. Queue and
 render calls reject backwards clocks and incompatible sizes/channel layouts.
 
-`adjust_drift` accepts native source/destination frame-counter deltas measured over
-the same observation window. It bounds correction to ±1000 ppm, comparing the exact
-ratio before integer rounding. Zero windows are rejected; excess drift flushes the
-queue and reports an error/discontinuity. A fixed-point linear interpolator applies
-the accepted correction, preserving channels and phase across blocks. Rendering
-allocates no memory and performs no IO. Native adapters must collect meaningful
-counter windows, handle resets and measure real drift; packet arrival alone is
-not a native device-clock estimate. This is not a fidelity or AEC effectiveness claim.
+`adjust_drift` accepts native source/destination frame-counter deltas normalized
+to the same duration. Rust and Android form independent two-to-five-second native
+windows and compare `source_frames × destination_ns` against
+`destination_frames × source_ns`. They never subtract absolute endpoint clocks or
+estimate a native rate from packet arrivals. Completed windows expire after three
+seconds on the receiver's local clock; repeated timestamps cannot refresh them.
+
+PipeWire reads the graph driver's SPA position, rate and monotonic timestamp;
+Android reads AudioRecord/AudioTrack timestamps. These are native pipeline/graph
+observations, not guaranteed physical hardware oscillator measurements. Clock
+availability and accuracy depend on the route/backend. Epoch, frame/time reset,
+stalls, invalid windows and excess drift reset correction. Missing timestamps
+leave ordinary bounded playback at nominal rate and report drift as unmeasured.
+
+Correction is limited to ±1000 ppm using the exact ratio before integer rounding.
+A fixed-point linear interpolator preserves channels and fractional phase across
+blocks. The Rust render callback allocates no memory and performs no IO; Android
+interpolation uses bounded arrays on its IO worker. Focus flushes and AudioTrack
+replacement advance the playback epoch. Existing queue age, underflow and
+retirement bounds remain in force. Microphone correction/unavailable status is
+logged numerically outside the native callback; Android speaker status reports
+it alongside native buffer/route diagnostics. No speech or PCM content is logged.
+
+The [native integration evidence](reviews/2026-09-30-audio-clock.md) covers synthetic
+rates, adapters and private PipeWire graphs. This is not an acoustic latency,
+fidelity, physical duplex or AEC effectiveness claim.
 
 ## Validation
 
@@ -170,7 +196,8 @@ without preventing display sharing. PulseAudio-only, Windows and macOS audio
 backends remain unsupported.
 
 The DUMP-protected Android receiver admits an invitation over the authorized ADB
-connection. An authenticated 76-byte `BLAUREQ1` bootstrap carries the invitation
+connection. An authenticated 76-byte `BLAUREQ2` bootstrap requests the clocked
+protocol; the host still accepts legacy `BLAUREQ1`. The bootstrap carries the invitation
 credential (64 hex bytes), capability bits (speech/raw/background), AEC-enabled
 flag, direction and effective processing. Human consent has a separate 90-second
 budget; it does not consume native startup's five seconds. The host echoes the
@@ -181,9 +208,10 @@ Native microphone input preserves sequence-gap discontinuities; the callback use
 only its bounded queue, expires old data and emits silence on underflow. It never
 waits on the transport.
 
-The shared drift-correction primitive is implemented. Native device-counter
-integration and measured duplex drift/latency remain T720; current microphone
-buffering bounds backlog but does not yet continuously correct device-clock drift.
+Native device-counter integration is implemented for the clocked protocol. Legacy
+peers carry no native counters and remain unmeasured. Deploy matching host/Android
+builds for v2; an older host does not recognize the new request. Physical duplex
+drift/latency and route acceptance remain T720.
 
 ## Linux/Android speaker integration (T719)
 
@@ -221,5 +249,5 @@ one 250 ms deadline, keeps at most twenty blocks, and applies the requested pref
 after Start/underflow. Gaps and overflow discard stale samples. AudioTrack short
 writes share one 250 ms complete-write budget; partial progress cannot renew it.
 Stop, transport loss or PipeWire server loss removes the owned sink and releases
-playback. These limits bound application backlog; they are not acoustic latency
-measurements or continuous native clock-drift correction.
+playback. Native counter correction follows the policy above. These limits bound
+application backlog; they do not establish measured acoustic latency.

@@ -20,7 +20,7 @@ retirement timings do not establish acoustic delay. The live signal was quiet;
 intentional speech/intelligibility is not yet confirmed. Physical route/USB
 changes and duplex AEC/drift/latency acceptance also remain outstanding.
 
-The implementation does not continuously correct native device-clock drift yet;
-T720 must connect actual device counters to the existing shared correction policy.
-The current queue still bounds backlog, expires old PCM and emits silence on
-underflow. AEC-enabled status is capability evidence, not acoustic effectiveness.
+At this September 29 checkpoint, native counters were not yet connected to
+the shared drift policy. The [September 30 integration](2026-09-30-audio-clock.md)
+adds that correction; physical duplex/AEC acceptance remains T720. The queue
+continues to bound backlog, expire old PCM and emit silence on underflow. AEC-enabled status is capability evidence, not acoustic effectiveness.

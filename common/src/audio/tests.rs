@@ -21,6 +21,7 @@ fn grant(direction: Direction) -> AudioGrant {
 
 fn block(direction: Direction, value: i16) -> PcmBlock {
     PcmBlock {
+        clock: None,
         samples: [value; MAX_SAMPLES],
         channels: direction.channels(),
         discontinuity: false,

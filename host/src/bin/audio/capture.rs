@@ -18,6 +18,7 @@ pub(super) struct Capture {
     filled: usize,
     staged_at: Instant,
     discontinuity: bool,
+    clock: super::clock::Clock,
 }
 impl Capture {
     pub(super) fn new(queue: Arc<Mutex<PcmQueue>>, epoch: Instant) -> Self {
@@ -28,7 +29,11 @@ impl Capture {
             filled: 0,
             staged_at: epoch,
             discontinuity: false,
+            clock: Default::default(),
         }
+    }
+    pub(super) fn position(&mut self, id: u32, pointer: *mut std::ffi::c_void, size: u32) {
+        self.clock.position(id, pointer, size);
     }
     pub(super) fn chunk(&mut self, data: &[u8], offset: u32, size: u32, stride: i32) {
         let range = (offset as usize)
@@ -82,6 +87,7 @@ impl Capture {
     fn publish(&mut self) {
         let mut block = PcmBlock::from_le_bytes(Direction::Speakers, &self.bytes).unwrap();
         block.discontinuity = self.discontinuity;
+        block.clock = self.clock.sample();
         self.discontinuity = true;
         if let Ok(mut queue) = self.queue.try_lock() {
             if queue
@@ -99,6 +105,7 @@ pub(super) fn workers(
     epoch: Instant,
     running: Arc<AtomicBool>,
     ready: Arc<AtomicBool>,
+    clocked: bool,
 ) {
     let lifetime = running.clone();
     std::thread::spawn(move || {
@@ -110,27 +117,61 @@ pub(super) fn workers(
             std::thread::sleep(Duration::from_millis(2));
         }
         // READY is written before this worker may lock stdout.
-        let _ = output(&mut std::io::stdout().lock(), &queue, epoch, &running);
+        let _ = output_with_clock(
+            &mut std::io::stdout().lock(),
+            &queue,
+            epoch,
+            &running,
+            clocked,
+        );
         running.store(false, Ordering::Release);
     });
 }
 
+#[cfg(test)]
 fn output(
     writer: &mut impl Write,
     queue: &Mutex<PcmQueue>,
     epoch: Instant,
     running: &AtomicBool,
 ) -> Result<()> {
+    output_with_clock(writer, queue, epoch, running, false)
+}
+
+fn output_with_clock(
+    writer: &mut impl Write,
+    queue: &Mutex<PcmQueue>,
+    epoch: Instant,
+    running: &AtomicBool,
+    clocked: bool,
+) -> Result<()> {
     let mut due = Instant::now();
     while running.load(Ordering::Acquire) {
-        let mut packet = [0; 1 + BYTES];
+        let mut packet = vec![
+            0;
+            1 + BYTES
+                + if clocked {
+                    blent_config::audio::CLOCK_BYTES
+                } else {
+                    0
+                }
+        ];
+        let pcm = packet.len() - BYTES;
         if let Some(block) = queue
             .lock()
             .map_err(|_| anyhow::anyhow!("audio queue poisoned"))?
             .pop(epoch.elapsed().as_millis() as u64)?
         {
             packet[0] = u8::from(block.discontinuity);
-            for (sample, bytes) in block.samples().iter().zip(packet[1..].chunks_exact_mut(2)) {
+            if clocked {
+                packet[1..pcm]
+                    .copy_from_slice(&blent_config::audio::ClockSample::encode(block.clock)?);
+            }
+            for (sample, bytes) in block
+                .samples()
+                .iter()
+                .zip(packet[pcm..].chunks_exact_mut(2))
+            {
                 bytes.copy_from_slice(&sample.to_le_bytes());
             }
         }
@@ -228,5 +269,63 @@ mod tests {
             &AtomicBool::new(true)
         )
         .is_err());
+    }
+}
+
+#[cfg(test)]
+mod clock_tests {
+    use super::*;
+    #[test]
+    fn t720_capture_attaches_native_graph_clock_and_clocked_ipc_preserves_it() {
+        let queue = Arc::new(Mutex::new(
+            PcmQueue::new(blent_config::audio::AudioProfile::new(Direction::Speakers)).unwrap(),
+        ));
+        let epoch = Instant::now();
+        let mut capture = Capture::new(queue.clone(), epoch);
+        let mut clock: pipewire::spa::sys::spa_io_clock = unsafe { std::mem::zeroed() };
+        clock.rate.num = 1;
+        clock.rate.denom = 48000;
+        clock.position = 96000;
+        clock.nsec = 2_000_000_001;
+        capture.position(
+            pipewire::spa::sys::SPA_IO_Position,
+            std::ptr::from_mut(&mut clock).cast(),
+            std::mem::size_of_val(&clock) as u32,
+        );
+        capture.chunk(&[1; BYTES], 0, BYTES as u32, 4);
+        let block = queue
+            .lock()
+            .unwrap()
+            .pop(epoch.elapsed().as_millis() as u64)
+            .unwrap()
+            .unwrap();
+        assert_eq!(block.clock.unwrap().frames, 96000);
+        queue
+            .lock()
+            .unwrap()
+            .push(block, epoch.elapsed().as_millis() as u64)
+            .unwrap();
+        let mut buffer = [0; 1945];
+        assert!(output_with_clock(
+            &mut &mut buffer[..],
+            &queue,
+            epoch,
+            &AtomicBool::new(true),
+            true
+        )
+        .is_err());
+        let stamp = blent_config::audio::ClockSample::decode(&buffer[1..25])
+            .unwrap()
+            .unwrap();
+        assert_eq!(stamp.frames, 96000);
+        assert_eq!(&buffer[25..], &[1; BYTES]);
+        assert!(output_with_clock(
+            &mut std::io::sink(),
+            &queue,
+            epoch,
+            &AtomicBool::new(false),
+            true
+        )
+        .is_ok());
     }
 }

@@ -65,15 +65,15 @@ async fn invited(
         invite(bridge, &token, options).await?;
         protocol::accept(listener, &token, options.profile.direction).await
     };
-    let (mut socket, capabilities, mode, processing) = tokio::select! {
+    let (mut socket, capabilities, mode, processing, clocked) = tokio::select! {
         result = setup => result?,
         _ = cancelled(stop) => return Ok(()),
     };
     let mut session = AudioSession::new(options.profile.direction);
     let mut profile = options.profile;
     profile.processing = mode;
-    let grant = session.start(profile, capabilities, true, 0)?;
-    let mut child = process::spawn(helper, options.profile, &token)?;
+    let grant = session.start_with_clock(profile, capabilities, true, 0, clocked)?;
+    let mut child = process::spawn_with_clock(helper, options.profile, &token, clocked)?;
     let started = std::time::Instant::now();
     let stream = async {
         process::ready(&mut child)
@@ -94,7 +94,9 @@ async fn invited(
                 let mut reader = grant.authenticate(&grant.hello())?;
                 microphone(&mut socket, &mut child, &mut reader).await
             }
-            Direction::Speakers => speakers(&mut socket, &mut child, grant).await,
+            Direction::Speakers => {
+                speakers_with_clock(&mut socket, &mut child, grant, clocked).await
+            }
         }
     };
     let result = tokio::select! {
@@ -138,10 +140,20 @@ async fn microphone(
     }
 }
 
+#[cfg(test)]
 async fn speakers(
     socket: &mut TcpStream,
     child: &mut tokio::process::Child,
     grant: blent_config::audio::AudioGrant,
+) -> Result<()> {
+    speakers_with_clock(socket, child, grant, false).await
+}
+
+async fn speakers_with_clock(
+    socket: &mut TcpStream,
+    child: &mut tokio::process::Child,
+    grant: blent_config::audio::AudioGrant,
+    clocked: bool,
 ) -> Result<()> {
     use tokio::io::AsyncReadExt;
     let output = child
@@ -151,7 +163,7 @@ async fn speakers(
     let mut writer = blent_config::audio::FrameWriter::new(grant);
     let epoch = std::time::Instant::now();
     loop {
-        let mut bytes = [0; 1921];
+        let mut bytes = vec![0; if clocked { 1945 } else { 1921 }];
         tokio::time::timeout(Duration::from_millis(250), output.read_exact(&mut bytes)).await??;
         let block = protocol::captured(&bytes)?;
         let packet = writer.encode(&block, epoch.elapsed().as_micros() as u64)?;

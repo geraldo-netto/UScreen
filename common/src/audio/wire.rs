@@ -1,4 +1,4 @@
-//! Bounded v1 PCM framing on a session-authenticated connection, not encryption.
+//! Bounded v1/v2 PCM framing on a session-authenticated connection, not encryption.
 use super::{AudioProfile, Direction, BLOCK_FRAMES, MAX_SAMPLES, SAMPLE_RATE};
 use crate::credentials::{random_token_using, token_matches, Entropy};
 use anyhow::{ensure, Result};
@@ -6,6 +6,7 @@ use anyhow::{ensure, Result};
 pub const HELLO_BYTES: usize = 92;
 pub const FRAME_HEADER_BYTES: usize = 28;
 const MAGIC: &[u8; 8] = b"BLAUD001";
+const CLOCK_MAGIC: &[u8; 8] = b"BLAUD002";
 
 /// Secret-bearing grant. Never log, serialize into configuration or reuse it.
 #[derive(Clone)]
@@ -13,6 +14,7 @@ pub struct AudioGrant {
     pub(super) profile: AudioProfile,
     pub(super) generation: u64,
     token: String,
+    pub(super) clocked: bool,
 }
 
 impl AudioGrant {
@@ -21,6 +23,7 @@ impl AudioGrant {
             profile,
             generation,
             token: random_token_using(entropy)?,
+            clocked: false,
         })
     }
 
@@ -34,7 +37,7 @@ impl AudioGrant {
     /// Deliver only through the already-authenticated control connection.
     pub fn hello(&self) -> [u8; HELLO_BYTES] {
         let mut bytes = [0; HELLO_BYTES];
-        bytes[..8].copy_from_slice(MAGIC);
+        bytes[..8].copy_from_slice(if self.clocked { CLOCK_MAGIC } else { MAGIC });
         bytes[8..72].copy_from_slice(self.token.as_bytes());
         bytes[72..80].copy_from_slice(&self.generation.to_be_bytes());
         bytes[80] = self.profile.direction as u8;
@@ -64,23 +67,42 @@ impl AudioGrant {
             generation: self.generation,
             direction: self.profile.direction,
             previous: None,
+            clocked: self.clocked,
         })
     }
 
     /// Sequence starts at zero and cannot wrap. Timestamp is sender monotonic µs.
     pub fn encode(&self, sequence: u64, timestamp_us: u64, samples: &[i16]) -> Result<Vec<u8>> {
+        self.encode_with_clock(sequence, timestamp_us, samples, None)
+    }
+
+    pub fn encode_with_clock(
+        &self,
+        sequence: u64,
+        timestamp_us: u64,
+        samples: &[i16],
+        clock: Option<super::ClockSample>,
+    ) -> Result<Vec<u8>> {
         ensure!(sequence < u64::MAX, "audio sequence exhausted");
         ensure!(
             samples.len() == BLOCK_FRAMES * self.profile.direction.channels(),
             "invalid PCM block size"
         );
-        let mut bytes = vec![0; FRAME_HEADER_BYTES + samples.len() * 2];
+        let clock_bytes = if self.clocked { super::CLOCK_BYTES } else { 0 };
+        let size = samples.len() * 2 + clock_bytes;
+        let mut bytes = vec![0; FRAME_HEADER_BYTES + size];
+        if self.clocked {
+            bytes[28..52].copy_from_slice(&super::ClockSample::encode(clock)?);
+        }
         bytes[..8].copy_from_slice(&self.generation.to_be_bytes());
         bytes[8..16].copy_from_slice(&sequence.to_be_bytes());
         bytes[16..24].copy_from_slice(&timestamp_us.to_be_bytes());
-        bytes[24..26].copy_from_slice(&(samples.len() as u16 * 2).to_be_bytes());
+        bytes[24..26].copy_from_slice(&(size as u16).to_be_bytes());
         bytes[26] = self.profile.direction as u8;
-        for (sample, output) in samples.iter().zip(bytes[28..].chunks_exact_mut(2)) {
+        for (sample, output) in samples
+            .iter()
+            .zip(bytes[28 + clock_bytes..].chunks_exact_mut(2))
+        {
             output.copy_from_slice(&sample.to_le_bytes());
         }
         Ok(bytes)
@@ -92,6 +114,7 @@ pub struct PcmBlock {
     pub(super) samples: [i16; MAX_SAMPLES],
     pub(super) channels: usize,
     pub discontinuity: bool,
+    pub clock: Option<super::ClockSample>,
 }
 
 impl PcmBlock {
@@ -105,6 +128,7 @@ impl PcmBlock {
             samples: [0; MAX_SAMPLES],
             channels: direction.channels(),
             discontinuity: false,
+            clock: None,
         };
         for (sample, bytes) in block.samples.iter_mut().zip(bytes.chunks_exact(2)) {
             *sample = i16::from_le_bytes([bytes[0], bytes[1]]);
@@ -121,6 +145,7 @@ pub struct FrameReader {
     generation: u64,
     direction: Direction,
     previous: Option<(u64, u64)>,
+    clocked: bool,
 }
 
 /// Sender sequence ownership, including capture discontinuities and exhaustion.
@@ -149,7 +174,9 @@ impl FrameWriter {
         } else {
             self.next
         };
-        let bytes = self.grant.encode(sequence, timestamp_us, block.samples())?;
+        let bytes =
+            self.grant
+                .encode_with_clock(sequence, timestamp_us, block.samples(), block.clock)?;
         self.next = sequence + 1; // encode rejects u64::MAX before state changes.
         self.previous_time = Some(timestamp_us);
         Ok(bytes)
@@ -224,7 +251,8 @@ impl FrameReader {
         );
         let size = u16::from_be_bytes(header[24..26].try_into()?) as usize;
         ensure!(
-            size == BLOCK_FRAMES * self.direction.channels() * 2,
+            size == BLOCK_FRAMES * self.direction.channels() * 2
+                + if self.clocked { super::CLOCK_BYTES } else { 0 },
             "invalid audio payload size"
         );
         self.sequence(header)?;
@@ -261,8 +289,17 @@ impl FrameReader {
             samples: [0; MAX_SAMPLES],
             channels: self.direction.channels(),
             discontinuity,
+            clock: if self.clocked {
+                super::ClockSample::decode(&bytes[28..52])?
+            } else {
+                None
+            },
         };
-        for (output, input) in block.samples.iter_mut().zip(bytes[28..].chunks_exact(2)) {
+        for (output, input) in block
+            .samples
+            .iter_mut()
+            .zip(bytes[28 + if self.clocked { super::CLOCK_BYTES } else { 0 }..].chunks_exact(2))
+        {
             *output = i16::from_le_bytes([input[0], input[1]]);
         }
         self.previous = Some((sequence, timestamp));

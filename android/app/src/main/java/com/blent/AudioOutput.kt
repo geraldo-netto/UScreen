@@ -10,6 +10,7 @@ internal interface OutputTrack : AutoCloseable {
     fun flush()
     fun write(bytes: ByteArray, offset: Int, count: Int): OutputWrite
     fun route(): Int?
+    fun clockSample(): AudioClockSample? = null
     fun description(): String
 }
 internal interface OutputFocus : AutoCloseable { fun paused(): Boolean }
@@ -17,6 +18,7 @@ internal enum class SpeakerWrite { Written, Reset, Paused }
 internal interface SpeakerDevice : AutoCloseable {
     val paused: Boolean
     fun start()
+    fun clockSample(): AudioClockSample? = null
     fun description(): String
     suspend fun write(chunk: PlaybackChunk): SpeakerWrite
 }
@@ -33,10 +35,12 @@ internal class AudioOutput(private val open: () -> OutputTrack, private val focu
     override val paused get() = focus.paused()
     override fun start() { check(!closed); synchronizeFocus() }
     override fun description() = checkNotNull(track).description()
+    override fun clockSample() = checkNotNull(track).clockSample()?.copy(epoch = clockEpoch)
+    private var clockEpoch = 1L
     private fun synchronizeFocus(): Boolean {
         val pause = paused
         if (pause != nativePaused) {
-            if (pause) checkNotNull(track).flush() else checkNotNull(track).play()
+            if (pause) { checkNotNull(track).flush(); clockEpoch = clockEpoch % Long.MAX_VALUE + 1 } else checkNotNull(track).play()
             nativePaused = pause
         }
         return pause
@@ -77,6 +81,7 @@ internal class AudioOutput(private val open: () -> OutputTrack, private val focu
         check(now - began < 250) { "Speaker playback stalled." }
     }
     private fun flush() {
+        clockEpoch = clockEpoch % Long.MAX_VALUE + 1
         checkNotNull(track).flush()
         nativePaused = true
         synchronizeFocus()
@@ -84,6 +89,7 @@ internal class AudioOutput(private val open: () -> OutputTrack, private val focu
     private fun recreate(): SpeakerWrite {
         retireTrack()
         track = open(); route = AudioRoute(); nativePaused = true
+        clockEpoch = clockEpoch % Long.MAX_VALUE + 1
         synchronizeFocus()
         return SpeakerWrite.Reset
     }

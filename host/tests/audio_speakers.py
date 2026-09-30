@@ -21,9 +21,9 @@ def connect(env, name):
             continue
         direction = 'Input' if current == name else 'Output'
         config = '{ direction: '+direction+', mode: dsp, format: { mediaType: audio, mediaSubtype: raw, format: F32P, rate: 48000, channels: 2, position: [ FL FR ] } }'
-        subprocess.run(['pw-cli', 'set-param', str(node['id']), 'PortConfig', config], env=env, check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(['pw-cli', 'set-param', str(node['id']), 'PortConfig', config], env=env, check=True, stdout=subprocess.DEVNULL, timeout=3)
     for channel in ('FL', 'FR'):
-        subprocess.run(['pw-link', 'pw-cat:output_'+channel, name+':playback_'+channel], env=env, check=True)
+        subprocess.run(['pw-link', 'pw-cat:output_'+channel, name+':playback_'+channel], env=env, check=True, timeout=3)
 
 
 def feed(producer, errors):
@@ -37,9 +37,9 @@ def feed(producer, errors):
         errors.append(error)
 
 
-def check(helper, env, clients):
+def check(helper, env, clients, clocked=False):
     name = 'blent_speakers_t719_private'
-    sink = subprocess.Popen([helper, '40', name, 'speakers'], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    sink = subprocess.Popen([helper, '40', name, 'speakers'] + (['clocked'] if clocked else []), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     clients.append(sink)
     assert select.select([sink.stdout], [], [], 5)[0], 'sink readiness timeout'
     assert sink.stdout.readline() == b'READY\n', 'T719 helper did not publish a speaker sink'
@@ -57,13 +57,24 @@ def check(helper, env, clients):
             data.extend(os.read(sink.stdout.fileno(), 8192))
     worker.join(timeout=2)
     assert not worker.is_alive() and not errors, errors
-    blocks = [data[i:i+1921] for i in range(0, len(data)-1920, 1921)]
+    check_blocks(data, clocked)
+    sink.stdin.close(); sink.wait(timeout=2)
+    retire(producer)
+    assert not any(n.get('info', {}).get('props', {}).get('node.name') == name for n in nodes(env))
+
+
+def check_blocks(data, clocked):
+    size = 1945 if clocked else 1921
+    blocks = [data[i:i+size] for i in range(0, len(data)-size+1, size)]
+    if clocked:
+        counters = [struct.unpack('>QQQ', block[1:25]) for block in blocks]
+        valid = [counter for counter in counters if counter[0] > 0 and counter[2] > 0]
+        assert len(valid) > 20 and valid[-1][1] > valid[0][1], 'T720 native graph clock unavailable/stalled'
+        blocks = [block[:1] + block[25:] for block in blocks]
     assert len(blocks) > 80
     assert all(b[0] in (0, 1) for b in blocks)
     assert any(struct.pack('<hh', 1234, -4321) in b[1:] for b in blocks), 'stereo/channel order lost'
     assert set(blocks[-1][1:]) == {0}, 'native underflow repeated stale sound'
-    sink.stdin.close(); sink.wait(timeout=2)
-    assert not any(n.get('info', {}).get('props', {}).get('node.name') == name for n in nodes(env))
 
 
 def retire(client):
@@ -89,10 +100,12 @@ def main(helper, host):
                     break
                 time.sleep(.02)
             check(helper, env, clients)
+            check(helper, env, clients, clocked=True)
             for client in clients:
                 retire(client)
             import audio_speaker_transport
             audio_speaker_transport.check(host, env, directory)
+            audio_speaker_transport.check(host, env, directory, clocked=True)
             failed = subprocess.Popen([helper, '40', 'blent_speakers_server_loss', 'speakers'], env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             clients.append(failed)
             assert select.select([failed.stdout], [], [], 5)[0], 'server-loss readiness timeout'
