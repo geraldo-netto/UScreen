@@ -86,7 +86,9 @@ internal class AudioBinding(private val context: Context,
         sharing = true; status = "Starting $label…"
         worker = scope.launch {
             try {
-                earlier?.join()
+                // A cancelled waiter must retain the chain to older native owners.
+                withContext(NonCancellable) { earlier?.join() }
+                currentCoroutineContext().ensureActive()
                 capture(endpoint, settings, owned::attach) { text ->
                     scope.launch { if (revision == generation) status = text }
                 }

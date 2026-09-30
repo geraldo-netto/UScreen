@@ -1,0 +1,13 @@
+{
+  "issue": "T732",
+  "regression": "AudioRetirementTest: both directions, repeated replacements, Stop and shutdown, API27/API34",
+  "red": "12 permanent normal-suite cases fail before fix: expected 1 native open, observed 2 before original retirement",
+  "green": {
+    "tests": 719,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "coverage": "762/762 Android functions >=80%",
+  "fix": "Keep the earlier worker join noncancellable, then check cancellation before native capture. Cancelled replacements retain the entire retirement chain."
+}
