@@ -1,0 +1,19 @@
+{
+  "issue": "T731",
+  "regression": "AudioMicrophoneTest.t731_nativeOpenRejectsPermissionLostAfterConsent",
+  "red": "2 API27/API34 cases fail before the permission guard",
+  "green": {
+    "tests": 707,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": "lintDebug passes with analyzer-visible permission/API guards; no new suppression",
+  "coverage": "761/761 Android functions >=80%",
+  "service_api_levels": [
+    27,
+    29,
+    30,
+    34
+  ]
+}

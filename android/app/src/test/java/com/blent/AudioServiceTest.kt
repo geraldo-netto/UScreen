@@ -11,7 +11,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [27, 34])
+@Config(sdk = [27, 29, 30, 34])
 class AudioServiceTest {
     @Test fun t718_notificationStopCannotRetireReplacement() {
         checkService(1)
@@ -35,6 +35,14 @@ class AudioServiceTest {
         try {
             val old = runs.last()
             service.get().onStartCommand(Intent().putExtra("audio_run", old), 0, 1)
+            if (android.os.Build.VERSION.SDK_INT >= 29) {
+                val expected = when {
+                    direction == 2 -> android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                    android.os.Build.VERSION.SDK_INT >= 30 -> android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    else -> 0
+                }
+                assertEquals("T731 service type must match direction and API", expected, service.get().foregroundServiceType)
+            }
             assertNull(service.get().onBind(Intent()))
             invitations.value = endpoint.copy(port = 12346)
             val current = runs.last()

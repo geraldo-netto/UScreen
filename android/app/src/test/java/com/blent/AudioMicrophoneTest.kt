@@ -14,6 +14,14 @@ import org.robolectric.shadows.ShadowAudioRecord
 @Config(sdk = [27, 34])
 class AudioMicrophoneTest {
     private fun endpoint() = AudioEndpoint("a".repeat(64), 12345, 1, 1, 40, false)
+    @Test fun t731_nativeOpenRejectsPermissionLostAfterConsent() {
+        val app = RuntimeEnvironment.getApplication()
+        Shadows.shadowOf(app).denyPermissions(Manifest.permission.RECORD_AUDIO)
+        val error = assertThrows(SecurityException::class.java) {
+            AudioMicrophone(app, endpoint(), AudioPreferences(builtIn = false)).close()
+        }
+        assertEquals("Microphone permission denied.", error.message)
+    }
     @Test fun t718_nativeRecordPartialReadsPermissionAndRelease() = runBlocking {
         val app = RuntimeEnvironment.getApplication()
         Shadows.shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
@@ -35,6 +43,7 @@ class AudioMicrophoneTest {
             try { microphone.read(samples); fail("revoked permission") } catch (_: IllegalStateException) {}
         } finally { microphone.close(); microphone.close(); ShadowAudioRecord.clearSource() }
         try { AudioMicrophone(app, endpoint().copy(processing = 2), AudioPreferences()); fail("raw unavailable") } catch (_: IllegalArgumentException) {}
+        Shadows.shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         try { AudioMicrophone(app, endpoint(), AudioPreferences()); fail("missing built-in route") } catch (_: IllegalStateException) {}
     }
     @Test fun t718_nativeRecordErrorCloses() = runBlocking {

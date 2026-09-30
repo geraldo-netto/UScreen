@@ -32,6 +32,9 @@ internal class AudioMicrophone(private val context: Context, private val endpoin
         try { open(preferences.builtIn) } catch (error: Exception) { close(); throw error }
     }
     private fun open(builtIn: Boolean) {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            throw SecurityException("Microphone permission denied.")
+        }
         val minimum = AudioRecord.getMinBufferSize(48000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         require(minimum > 0) { "48 kHz microphone unavailable." }
         val source = if (endpoint.processing == 1) MediaRecorder.AudioSource.VOICE_COMMUNICATION else MediaRecorder.AudioSource.UNPROCESSED

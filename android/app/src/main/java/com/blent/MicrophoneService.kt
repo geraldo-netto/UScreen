@@ -36,9 +36,11 @@ open class AudioForegroundService(private val direction: Int) : Service() {
             .addAction(Notification.Action.Builder(null, "Stop $label", stop).build())
             .setContentIntent(PendingIntent.getActivity(this, notificationId, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
             .setOngoing(true).build()
-        val typed = if (direction == 1) Build.VERSION.SDK_INT >= 30 else Build.VERSION.SDK_INT >= 29
-        if (typed) startForeground(notificationId, notification, if (direction == 1) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        else startForeground(notificationId, notification)
+        if (direction == 1 && Build.VERSION.SDK_INT >= 30) {
+            startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else if (direction == 2 && Build.VERSION.SDK_INT >= 29) {
+            startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else startForeground(notificationId, notification)
     }
     @android.annotation.SuppressLint("WakelockTimeout")
     private fun acquireWake() {
