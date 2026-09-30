@@ -1,0 +1,12 @@
+{
+  "issue": "T725",
+  "regression": "CameraControlsTest.t539_webcamSelectionRequiresHostAndSwitchesOneCamera, with permanent per-lens retirement gates",
+  "red": "API27 and API34 both fail when native retirement is held beyond Compose idle",
+  "green": {
+    "tests": 719,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fix": "Thread-safe observation lists and explicit waits for each native retirement/open. Original front/rear ownership assertions retained and strengthened; production camera code unchanged."
+}

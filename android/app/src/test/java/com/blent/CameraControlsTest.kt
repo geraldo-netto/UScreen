@@ -79,28 +79,55 @@ class CameraControlsTest {
     @Test fun t539_webcamSelectionRequiresHostAndSwitchesOneCamera() {
         val invitations = MutableStateFlow<CameraEndpoint?>(null)
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-        val opened = mutableListOf<CameraLens>()
-        val closed = mutableListOf<CameraLens>()
+        val opened = java.util.Collections.synchronizedList(mutableListOf<CameraLens>())
+        val closed = java.util.Collections.synchronizedList(mutableListOf<CameraLens>())
+        // T725: Compose idle does not wait for native cleanup on Dispatchers.IO.
+        val frontRetired = CountDownLatch(1)
+        val rearRetired = CountDownLatch(1)
         val binding = CameraBinding(RuntimeEnvironment.getApplication(), { 0 }, {}, { true },
-            { _, lens, _, resources -> opened.add(lens); resources.own { closed.add(lens) }; awaitCancellation() }, invitations, scope)
-        binding.start()
-        compose.setContent { BlentTheme { CameraControls(binding) } }
-        compose.onNodeWithText("Front").assertDoesNotExist()
-        compose.onNodeWithText("Rear").assertDoesNotExist()
-        compose.runOnIdle { invitations.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000) }
-        compose.runOnIdle {
-            assertTrue(opened.isEmpty()) // T539 legacy invitations still cannot capture.
-            invitations.value = invitations.value!!.copy(requestedLens = CameraLens.FRONT)
-        }
-        compose.onNodeWithText("Front camera selected.").assertExists()
-        compose.runOnIdle { invitations.value = invitations.value!!.copy(requestedLens = CameraLens.REAR) }
-        compose.onNodeWithText("Rear camera selected.").assertExists()
-        compose.runOnIdle { invitations.value = null }
-        compose.onNodeWithText("Off").assertDoesNotExist()
-        compose.runOnIdle {
-            assertEquals(listOf(CameraLens.FRONT, CameraLens.REAR), opened)
-            assertEquals(opened, closed)
-            binding.stop(); scope.cancel()
+            { _, lens, _, resources ->
+                opened.add(lens)
+                resources.own {
+                    val gate = if (lens == CameraLens.FRONT) frontRetired else rearRetired
+                    check(gate.await(5, TimeUnit.SECONDS)); closed.add(lens)
+                }
+                awaitCancellation()
+            }, invitations, scope)
+        try {
+            binding.start()
+            compose.setContent { BlentTheme { CameraControls(binding) } }
+            compose.onNodeWithText("Front").assertDoesNotExist()
+            compose.onNodeWithText("Rear").assertDoesNotExist()
+            compose.runOnIdle { invitations.value = CameraEndpoint("a".repeat(64), 12345, 1280, 720, 30, 3000) }
+            compose.runOnIdle {
+                assertTrue(opened.isEmpty()) // T539 legacy invitations still cannot capture.
+                invitations.value = invitations.value!!.copy(requestedLens = CameraLens.FRONT)
+            }
+            compose.onNodeWithText("Front camera selected.").assertExists()
+            compose.waitUntil(5000) { opened.size == 1 }
+            compose.runOnIdle { invitations.value = invitations.value!!.copy(requestedLens = CameraLens.REAR) }
+            compose.onNodeWithText("Rear camera selected.").assertExists()
+            compose.runOnIdle {
+                assertEquals(listOf(CameraLens.FRONT), opened)
+                assertTrue("T725 close is still pending", closed.isEmpty())
+                frontRetired.countDown()
+            }
+            compose.waitUntil(5000) { opened.size == 2 }
+            compose.runOnIdle { invitations.value = null }
+            compose.onNodeWithText("Off").assertDoesNotExist()
+            compose.runOnIdle {
+                assertEquals(listOf(CameraLens.FRONT), closed)
+                rearRetired.countDown()
+            }
+            compose.waitUntil(5000) { closed.size == 2 }
+            compose.runOnIdle {
+                assertEquals("T725 fixture advanced before native retirement", listOf(CameraLens.FRONT, CameraLens.REAR), opened)
+                assertEquals(opened, closed)
+                binding.stop(); scope.cancel()
+            }
+        } finally {
+            frontRetired.countDown(); rearRetired.countDown()
+            compose.runOnIdle { binding.shutdown(); scope.cancel() }
         }
     }
 }
