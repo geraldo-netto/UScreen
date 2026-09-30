@@ -21,11 +21,9 @@ The UI consumes a read-only StateFlow, including codec/format replacement and
 retirement while Settings remains open. No profile, preference, decoder default,
 network contract or stream-setting transition is changed.
 
-The common diagnostic portion of T417 is implemented. The pending maintainer
-choice between read-only diagnostics and additional profile controls is still
-unanswered, so T417 remains in TODO.md. Profile controls were not silently
-selected or declined; they would also require measured policy, persistence and
-safe transitions. Existing T386 measurements do not justify changing defaults.
+The maintainer confirmed on 2026-09-30 that read-only diagnostics complete T417.
+The item is closed; additional profile-selection controls are outside this accepted
+feature. Existing T386 measurements do not justify changing decoder defaults.
 
 ## Validation boundary
 
