@@ -105,7 +105,7 @@ fn links_frame(
 
 #[test]
 fn t497_header_links_only_request_the_expected_fork_pages() {
-    let mut app = settings_test_app(Tab::General);
+    let (_settings_directory, mut app) = settings_test_app(Tab::General);
     *app.update.lock().unwrap() = Some("999.0.0".into());
     let ctx = egui::Context::default();
     for (label, expected) in [
@@ -126,7 +126,7 @@ fn t497_header_links_only_request_the_expected_fork_pages() {
 
 #[test]
 fn t497_display_dropdowns_change_only_the_requested_preference() {
-    let mut app = settings_test_app(Tab::Video);
+    let (_settings_directory, mut app) = settings_test_app(Tab::Video);
     let ctx = egui::Context::default();
     click_settings_text(&mut app, &ctx, "60 fps", fps_frame);
     click_settings_text(&mut app, &ctx, "30 fps", fps_frame);
@@ -148,7 +148,7 @@ fn t497_display_dropdowns_change_only_the_requested_preference() {
 
 #[test]
 fn t497_action_retirement_reports_failure_and_refreshes_status() {
-    let mut app = settings_test_app(Tab::Video);
+    let (_settings_directory, mut app) = settings_test_app(Tab::Video);
     let (tx, rx) = std::sync::mpsc::channel();
     app.action = Some(rx);
     app.run_action(|| panic!("T497 busy action must not dispatch"));
@@ -189,7 +189,7 @@ fn t497_setup_and_lifecycle_actions_use_private_stub_commands() {
         isolated_actions();
         return;
     }
-    let mut app = settings_test_app(Tab::General);
+    let (_settings_directory, mut app) = settings_test_app(Tab::General);
     let ctx = egui::Context::default();
     for count in [-1, 0, 4] {
         *app.status.lock().unwrap() = Status {

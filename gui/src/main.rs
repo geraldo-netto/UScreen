@@ -1254,7 +1254,7 @@ mod tests {
     fn t480_t714_recalibration_request_persists() {
         // T537: persistence checks must never write the developer's settings.
         let directory = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(directory.path().join("config.toml"));
         let ctx = egui::Context::default();
         assert_eq!(app.cfg.calibration_generation, 0);
@@ -1282,7 +1282,7 @@ mod tests {
 
     #[test]
     fn t415_linux_video_settings_show_pipe_capacity() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         let ctx = egui::Context::default();
         ctx.style_mut(|style| style.animation_time = 0.0);
         click_settings_text(&mut app, &ctx, "Advanced video settings", video_test_frame);
@@ -1295,7 +1295,7 @@ mod tests {
 
     #[test]
     fn t611_video_disclosure_keeps_basics_visible_and_preserves_drafts() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         let ctx = egui::Context::default();
         ctx.style_mut(|style| style.animation_time = 0.0);
         let before = app.cfg.clone();
@@ -1318,7 +1318,7 @@ mod tests {
     #[test]
     fn t611_narrow_settings_keep_labels_inside_window() {
         for tab in [Tab::Video, Tab::Display, Tab::General, Tab::Camera] {
-            let mut app = settings_test_app(tab);
+            let (_settings_directory, mut app) = settings_test_app(tab);
             let ctx = egui::Context::default();
             ctx.style_mut(|style| style.animation_time = 0.0);
             let frame = |app: &mut App, events| {
@@ -1352,40 +1352,45 @@ mod tests {
         }
     }
 
-    fn settings_test_app(tab: Tab) -> App {
+    fn settings_test_app(tab: Tab) -> (tempfile::TempDir, App) {
+        let directory = tempfile::tempdir().unwrap();
+        let store = ConfigStore::new(directory.path().join("config.toml"));
         let saved_cfg = FileConfig::default();
         let cfg = FileConfig {
             width: saved_cfg.width + 2,
             ..saved_cfg.clone()
         };
-        App {
-            scheduling_status: "This process: High priority active".into(),
-            camera: camera_settings::Panel::default(),
-            microphone: audio_settings::Panel::default(),
-            speakers: audio_settings::Panel::default(),
-            _status_worker: None,
-            store: ConfigStore::default(),
-            save: None,
-            cfg,
-            saved_cfg,
-            tab,
-            message: String::new(),
-            action: None,
-            status: Arc::new(Mutex::new(Status {
-                daemon_running: true,
-                ffmpeg_ok: true,
-                adb_ok: true,
-                evdi_count: 4,
-                uinput_ok: true,
-                ..Default::default()
-            })),
-            update: Arc::new(Mutex::new(None)),
-        }
+        (
+            directory,
+            App {
+                scheduling_status: "This process: High priority active".into(),
+                camera: camera_settings::Panel::default(),
+                microphone: audio_settings::Panel::default(),
+                speakers: audio_settings::Panel::default(),
+                _status_worker: None,
+                store,
+                save: None,
+                cfg,
+                saved_cfg,
+                tab,
+                message: String::new(),
+                action: None,
+                status: Arc::new(Mutex::new(Status {
+                    daemon_running: true,
+                    ffmpeg_ok: true,
+                    adb_ok: true,
+                    evdi_count: 4,
+                    uinput_ok: true,
+                    ..Default::default()
+                })),
+                update: Arc::new(Mutex::new(None)),
+            },
+        )
     }
 
     #[test]
     fn t409_idle_repaints_stop_while_action_completion_stays_visible() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         let ctx = egui::Context::default();
         let frame = |app: &mut App, time| {
             ctx.run(
@@ -1428,7 +1433,7 @@ mod tests {
             let _ = wait.recv_timeout(Duration::from_secs(2));
             drop(lock);
         });
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = store;
         app.cfg.fps = 30;
         let started = std::time::Instant::now();
@@ -1483,7 +1488,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         std::fs::write(&path, "invalid = [").unwrap();
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(path.clone());
         let baseline = app.saved_cfg.clone();
         app.cfg.fps = 30;
@@ -1577,7 +1582,7 @@ mod tests {
         for (width, height, fps, message) in
             [(3840, 2160, 90, "655.35 MHz"), (640, 480, 10, "25 Hz")]
         {
-            let mut app = settings_test_app(Tab::Video);
+            let (_settings_directory, mut app) = settings_test_app(Tab::Video);
             app.status.lock().unwrap().daemon_running = false;
             app.cfg.width = width;
             app.cfg.height = height;
@@ -1598,7 +1603,7 @@ mod tests {
 
     #[test]
     fn t288_pen_mode_dependency_holds_in_both_toggle_orders() {
-        let mut app = settings_test_app(Tab::Display);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Display);
         let ctx = egui::Context::default();
         let pen = "Pen tablet (stylus, pressure, tilt)";
         let mode = "Graphics tablet instead of a second screen";
@@ -1624,7 +1629,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         std::fs::write(&path, "pen_only = true\ninput_pen = false\n").unwrap();
-        let mut app = settings_test_app(Tab::Display);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Display);
         app.store = ConfigStore::new(path.clone());
         app.cfg = app.store.load();
         app.saved_cfg = app.cfg.clone();
@@ -1658,7 +1663,7 @@ mod tests {
     #[test]
     fn t344_idle_input_settings_preserve_dormant_pointer_preference() {
         for pointer in [false, true] {
-            let mut app = settings_test_app(Tab::Display);
+            let (_settings_directory, mut app) = settings_test_app(Tab::Display);
             app.cfg.input_pen = false;
             app.cfg.input_pointer = pointer;
             app.saved_cfg = app.cfg.clone();
@@ -1673,7 +1678,7 @@ mod tests {
     #[test]
     fn t344_pen_toggle_save_reload_and_discard_preserve_pointer() {
         let root = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Display);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Display);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         app.saved_cfg = app.cfg.clone();
         let ctx = egui::Context::default();
@@ -1707,9 +1712,46 @@ mod tests {
         assert!(app.cfg.input_pointer);
     }
 
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn t745_settings_fixture_never_writes_default_user_configuration() {
+        let root = tempfile::tempdir().unwrap();
+        let config = root.path().join("config/blent/config.toml");
+        std::fs::create_dir_all(config.parent().unwrap()).unwrap();
+        let sentinel = "width = 1280\nencoding_gpu = \"user-selected-adapter\"\n";
+        std::fs::write(&config, sentinel).unwrap();
+        let output = std::process::Command::new("timeout")
+            .arg("15")
+            .arg(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::t727_gpu_controls_preserve_save_apply_and_report_fallback",
+                "--nocapture",
+            ])
+            .env("HOME", root.path())
+            .env("XDG_CONFIG_HOME", root.path().join("config"))
+            .env("XDG_DATA_HOME", root.path().join("data"))
+            .env("XDG_STATE_HOME", root.path().join("state"))
+            .env("XDG_RUNTIME_DIR", root.path().join("runtime"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+        assert_eq!(
+            std::fs::read_to_string(config).unwrap(),
+            sentinel,
+            "T745: GUI persistence fixture wrote the default user configuration"
+        );
+    }
+
     #[test]
     fn t727_video_exposes_encoding_gpu_without_changing_existing_choice() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.cfg.vaapi_device = "/dev/dri/by-path/pci-existing-render".into();
         let before = app.cfg.clone();
         let labels = video_test_frame(&mut app, &egui::Context::default(), vec![]);
@@ -1729,7 +1771,7 @@ mod tests {
 
     #[test]
     fn t727_gpu_controls_preserve_save_apply_and_report_fallback() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         let ctx = egui::Context::default();
         app.status.lock().unwrap().gpus = blent_config::gpu::Catalog {
             supported: true,
@@ -1839,7 +1881,7 @@ mod tests {
     #[test]
     fn t582_general_settings_allow_normal_and_high_priority() {
         use blent_config::scheduling::Priority;
-        let mut app = settings_test_app(Tab::General);
+        let (_settings_directory, mut app) = settings_test_app(Tab::General);
         let ctx = egui::Context::default();
         assert_eq!(app.cfg.scheduling_priority, Priority::High);
         let labels = scheduling_test_frame(&mut app, &ctx, vec![]);
@@ -1862,7 +1904,7 @@ mod tests {
 
     #[test]
     fn t492_idle_option_is_explicit_and_keeps_motion_fps() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.cfg = app.saved_cfg.clone();
         let fps = app.cfg.fps;
         let ctx = egui::Context::default();
@@ -1897,7 +1939,7 @@ mod tests {
 
     #[test]
     fn t612_worker_control_preserves_manual_capacity_and_auto() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.cfg = app.saved_cfg.clone();
         let ctx = egui::Context::default();
         click_settings_text(&mut app, &ctx, "Auto", encoder_workers_test_frame);
@@ -1924,7 +1966,7 @@ mod tests {
 
     #[test]
     fn t474_conversion_control_switches_auto_manual_and_preserves_custom_capacity() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.cfg = app.saved_cfg.clone();
         let ctx = egui::Context::default();
         click_settings_text(&mut app, &ctx, "Auto", conversion_test_frame);
@@ -1992,7 +2034,7 @@ mod tests {
 
     #[test]
     fn t415_dropdown_has_exact_choices_and_shows_effective_per_tablet_capacity() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.cfg = app.saved_cfg.clone();
         {
             let mut status = app.status.lock().unwrap();
@@ -2032,7 +2074,7 @@ mod tests {
     #[test]
     fn t434_gui_persists_automatic_and_explicit_av1_choices() {
         let root = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         let ctx = egui::Context::default();
         assert_eq!(app.cfg.encoder, "auto");
@@ -2052,7 +2094,7 @@ mod tests {
     #[test]
     fn t400_gui_persists_explicit_low_latency_vaapi_selection() {
         let root = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         app.cfg.vaapi_device = "/dev/dri/renderD129".into();
         // Preserve this regression's explicit NVIDIA-to-VAAPI transition.
@@ -2072,7 +2114,7 @@ mod tests {
     #[test]
     fn t240_gui_selects_hevc_vaapi_and_preserves_depth_and_device() {
         let root = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         app.store = ConfigStore::new(root.path().join("config.toml"));
         app.cfg.vaapi_device = "/dev/dri/renderD129".into();
         // Preserve this regression's explicit NVIDIA-to-VAAPI transition.
@@ -2133,7 +2175,7 @@ mod tests {
             }
         }
         let directory = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Camera);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Camera);
         app.cfg = app.saved_cfg.clone();
         app.store = ConfigStore::new(directory.path().join("config.toml"));
         let calls = Rc::new(RefCell::new((CameraState::Stopped, Vec::new())));
@@ -2203,7 +2245,7 @@ mod tests {
             (Tab::Audio, "Microphone sharing"),
         ] {
             for height in [560.0, 1800.0] {
-                let mut app = settings_test_app(tab);
+                let (_settings_directory, mut app) = settings_test_app(tab);
                 let ctx = egui::Context::default();
                 let output = ctx.run(
                     egui::RawInput {
@@ -2879,7 +2921,7 @@ esac"#
 
     #[test]
     fn t259_vaapi_bitrate_is_dormant_and_other_backends_restore_editing() {
-        let mut app = settings_test_app(Tab::Video);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Video);
         for name in [
             "h264_vaapi",
             "h264_vaapi_baseline",
@@ -3004,7 +3046,7 @@ esac"#
             }
         }
         let directory = tempfile::tempdir().unwrap();
-        let mut app = settings_test_app(Tab::Audio);
+        let (_settings_directory, mut app) = settings_test_app(Tab::Audio);
         app.cfg = app.saved_cfg.clone();
         app.store = ConfigStore::new(directory.path().join("config.toml"));
         let calls = Rc::new(RefCell::new((AudioState::Stopped, Vec::new())));
