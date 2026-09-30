@@ -96,9 +96,9 @@ pub async fn backend() -> Option<Backend> {
         }
         warn!(
             "Cannot reach KWin over D-Bus: neither busctl nor qdbus answered. \
-                 Touch and pen will address the whole desktop instead of the tablet's \
-                 screen, and the on-screen keyboard will not be suppressed. \
-                 On KDE this normally means systemd's busctl is missing."
+                 KWin input mapping and keyboard suppression are unavailable. \
+                 X11 uses its own xinput mapping; check that backend's mapping result. \
+                 On KDE, check the session bus and busctl/qdbus installation."
         );
         None
     })

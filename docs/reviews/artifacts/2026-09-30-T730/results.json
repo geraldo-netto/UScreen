@@ -1,0 +1,11 @@
+{
+  "issue": "T730",
+  "regressions": [
+    "t730_missing_kwin_does_not_override_x11_mapping_results",
+    "t730_unavailable_x11_mapper_reports_its_own_failure"
+  ],
+  "red": "Both fail on the false whole-desktop warning with an isolated absent KWin backend",
+  "green": "Both pass; successful X11 mapping and unavailable xrandr retain their independent diagnostics; 5 existing KWin tests pass",
+  "coverage": "7/7 KWin functions >=80%",
+  "native_changes": "None; diagnostic-only correction"
+}

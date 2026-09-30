@@ -167,6 +167,80 @@ elif sys.argv[1] != 'list-props':
 }
 
 #[tokio::test]
+async fn t730_missing_kwin_does_not_override_x11_mapping_results() {
+    const NAME: &str =
+        "input::mapping::x11_tests::t730_missing_kwin_does_not_override_x11_mapping_results";
+    if crate::test_logging::isolated(NAME) {
+        return;
+    }
+    let root = tempfile::tempdir().unwrap();
+    std::env::set_var("PATH", root.path());
+    assert!(crate::kwin::backend().await.is_none());
+    let owned = connector(1, "DVI-I-1", 1280);
+    std::fs::write(
+        root.path().join("outputs"),
+        output("DVI-I-2-1", false, &owned.edid),
+    )
+    .unwrap();
+    let randr = tool(root.path(), "xrandr", "print((root/'outputs').read_text())");
+    map_devices_using(
+        false,
+        &DeviceIdentity::for_instance(0),
+        Some(1),
+        1,
+        "x11",
+        &input_tool(root.path(), 1),
+        &randr,
+        Some(&[owned]),
+    )
+    .await;
+    assert_eq!(
+        std::fs::read_to_string(root.path().join("mapped")).unwrap(),
+        "map-to-output 10 DVI-I-2-1\n"
+    );
+    let log = crate::test_logging::text();
+    assert!(log.contains("Mapped 'Blent Touch'"), "{log}");
+    assert!(
+        !log.contains("will address the whole desktop"),
+        "T730: {log}"
+    );
+    assert!(
+        log.contains("KWin input mapping and keyboard suppression are unavailable"),
+        "{log}"
+    );
+}
+
+#[tokio::test]
+async fn t730_unavailable_x11_mapper_reports_its_own_failure() {
+    const NAME: &str =
+        "input::mapping::x11_tests::t730_unavailable_x11_mapper_reports_its_own_failure";
+    if crate::test_logging::isolated(NAME) {
+        return;
+    }
+    let root = tempfile::tempdir().unwrap();
+    std::env::set_var("PATH", root.path());
+    assert!(crate::kwin::backend().await.is_none());
+    map_devices_using(
+        false,
+        &DeviceIdentity::for_instance(0),
+        Some(1),
+        1,
+        "x11",
+        "xinput",
+        "xrandr",
+        Some(&[]),
+    )
+    .await;
+    let log = crate::test_logging::text();
+    assert!(log.contains("xrandr"), "T730: {log}");
+    assert!(!log.contains("Mapped '"), "{log}");
+    assert!(
+        !log.contains("will address the whole desktop"),
+        "T730: {log}"
+    );
+}
+
+#[tokio::test]
 async fn t622_late_input_does_not_force_stable_output_probes() {
     let root = tempfile::tempdir().unwrap();
     let owned = connector(1, "DVI-I-1", 1280);
