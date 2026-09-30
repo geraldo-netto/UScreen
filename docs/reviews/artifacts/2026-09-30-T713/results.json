@@ -1,0 +1,8 @@
+{
+  "issue": "T713",
+  "regression": "annex_b::tests::t713_portable_packetizer_survives_every_encoder_feature",
+  "red": "all-features regression failed to compile with E0425/E0599 before gates removed",
+  "green": "default and all-features regression pass; all-features lib 288 passed/2 existing ignored; binary 257 passed/2 existing ignored; workspace all-features regression executables compile",
+  "coverage": "39/39 functions in media_storage.rs and annex_b.rs meet 80%",
+  "native_windows": "Not run; retained as T737 under Windows work excluded by maintainer"
+}

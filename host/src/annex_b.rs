@@ -547,6 +547,20 @@ fn nal_header_offset(data: &[u8], start: usize) -> Option<usize> {
 mod tests {
     use super::*;
     #[test]
+    fn t713_portable_packetizer_survives_every_encoder_feature() {
+        assert!(Bytes::new().is_empty());
+        assert!(Bytes::default().is_empty());
+        let frame = nal(NAL_TYPE_IDR, &[0x80, 0x11]);
+        let mut packetizer = AnnexBPacketizer::new(Codec::H264, Default::default());
+        assert!(packetizer.complete_packet(&[]).is_err());
+        let (packets, counts) =
+            crate::allocation_probe::measure(|| packetizer.complete_packet(&frame).unwrap());
+        assert_eq!(packets.len(), 1);
+        assert_eq!(packets[0].data.as_ref(), frame);
+        assert_eq!(counts.scanner_input_bytes, frame.len() as u64);
+    }
+
+    #[test]
     fn t080_next_picture_header_releases_complete_previous_picture() {
         for (codec, first, continuation, next, header_len) in [
             (

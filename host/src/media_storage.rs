@@ -75,7 +75,6 @@ pub struct MediaBytes {
     backing: Arc<Backing>,
 }
 
-#[cfg(not(feature = "inproc-encoder"))]
 impl Default for MediaBytes {
     fn default() -> Self {
         Self::owned(Bytes::new(), 0)
@@ -94,7 +93,6 @@ impl MediaBytes {
         }
     }
 
-    #[cfg(not(feature = "inproc-encoder"))]
     pub fn new() -> Self {
         Self::default()
     }

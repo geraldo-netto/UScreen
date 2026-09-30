@@ -57,7 +57,6 @@ unsafe impl GlobalAlloc for CountingAllocator {
 pub(crate) fn copied(bytes: usize) {
     update(|c| c.explicit_copy_bytes += bytes as u64);
 }
-#[cfg(not(feature = "inproc-encoder"))]
 pub(crate) fn scanned(bytes: usize) {
     update(|c| c.scanner_input_bytes += bytes as u64);
 }
