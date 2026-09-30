@@ -1,0 +1,626 @@
+{
+  "suites": [
+    {
+      "name": "com.blent.ActivityUiContractTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "17340b16f9a34660657734940e368d50c1b0d470e5bf2169f10990d65f4b5133"
+    },
+    {
+      "name": "com.blent.AudioBindingTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "abe1214d784dc2fb406aee34121444d69ed3fa99521455ef701d0c60ed462077"
+    },
+    {
+      "name": "com.blent.AudioCaptureTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0761459a20528a277acc0470d5f42e883a3d0c70b6e1dd72bd69035035781bf8"
+    },
+    {
+      "name": "com.blent.AudioContractTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "596378fe53ee4dc29ead35fc46d56182336cc548ee97a88efc5965797660627b"
+    },
+    {
+      "name": "com.blent.AudioControlsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9aa1d2f284958c2ff4da3844d3c50efb33e3a0fb67ca846f9c6c460ade3c2800"
+    },
+    {
+      "name": "com.blent.AudioMicrophoneTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1ba9f0c149a70ec9e4d7d96994617b1a48b3147eba0699cacce44ea06b167446"
+    },
+    {
+      "name": "com.blent.AudioOutputTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f8d54defea10c4a8773ba198686bb1535bb95c988eb324e2af750aefa1a1b53b"
+    },
+    {
+      "name": "com.blent.AudioOwnerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "708937c44ca53f33be02fe43dc8415e8c7c5284b4c3db612767c2b0426b0e1aa"
+    },
+    {
+      "name": "com.blent.AudioPacketsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f92e41998460c14a69405ed2bbf9c77041ab332921b4183768cec59e2cd972cd"
+    },
+    {
+      "name": "com.blent.AudioPlaybackTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "128e7a6348214d5df38410b105a24318e49a56a0bca40a4f951d18f3895bc2ee"
+    },
+    {
+      "name": "com.blent.AudioServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e64c058d666f9a2cc17b87f5a295aff7f7a85f245aab5d6e69cda66e39866cd5"
+    },
+    {
+      "name": "com.blent.AudioSpeakerOwnerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0d3f4d452cceb2ad2bc91563b106b08ebea5b1dc0a7875b218532106bc83434f"
+    },
+    {
+      "name": "com.blent.AudioSpeakerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ac9677de3668cafd497f2f52562f04545e94d5dc126e6c940825d65f24b4a5f1"
+    },
+    {
+      "name": "com.blent.BackupRulesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "38682360403ce067aa1ba2667f20dac6d774c78fb148709a6d7486395f401f33"
+    },
+    {
+      "name": "com.blent.CalibrationStartupTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "6612a845726382256030292ec8a470e51015ad535e25c0406db3a2b881e5b847"
+    },
+    {
+      "name": "com.blent.CallbackDecoderTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "da0aa86ecc93679a3fc41fce749f1982d635bf05612baee2e4c410e60fe99b80"
+    },
+    {
+      "name": "com.blent.CameraCaptureTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eafa77a8ab9e1c9bc4f433a08a9b7e4ba911e3d7942c4cfc7e75ca6bca00b626"
+    },
+    {
+      "name": "com.blent.CameraContractTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "82b0a4b7cc299ced982ace5c53c58c38029b9a4a922a2987ac3a66c576ab23a6"
+    },
+    {
+      "name": "com.blent.CameraControlsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a119f456cc1af9b6464e567a57bfe9467012380bd3a4d6c982ac2dfdb0bf2e70"
+    },
+    {
+      "name": "com.blent.CameraDeadlineTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ad7b9fa620decc3ed55fb27cb244d65703a38b10dce4dccbb856e0a32b4098e3"
+    },
+    {
+      "name": "com.blent.CameraFeedbackTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e7b077ff241c3c9901bbbadad334f7956e44a3d15a031506743be91fb5fd4931"
+    },
+    {
+      "name": "com.blent.CameraFreshnessTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e9951f3e8ddc97c627f200db030cf5072b95db7d4b20f03ebdac22a9c7591057"
+    },
+    {
+      "name": "com.blent.CameraHostControlTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ea060f6e74c079071665fa3804d53ba83f58fbee551bb13acfb19297a74d6973"
+    },
+    {
+      "name": "com.blent.CameraManifestTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eb40ee1b59716d1a2d58ffe11afb4982915ad17428050ff2423f7a53a1657bc2"
+    },
+    {
+      "name": "com.blent.CameraPacketBufferTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "67ea03876e02e1bad0ffaad3f291c9f27bc57a85b2946a63eed3abe5127d9173"
+    },
+    {
+      "name": "com.blent.CameraRateTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "04951ef82f9ea102103b76eaf02af14b455afa3be26930d35ab199f31d61c4d3"
+    },
+    {
+      "name": "com.blent.CameraRecoveryTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b1579fba9c67e0c3dfa93a97c3a236480c3a1ef21d9b062c816ab7d62b0ddfa4"
+    },
+    {
+      "name": "com.blent.CameraRetirementTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "bc9861be12041d51105281fedfba141eb999d4320c34e27b8cd98ed65e70baa3"
+    },
+    {
+      "name": "com.blent.CameraServiceOwnershipTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "f5ffba537bcbc952e8437070c13e7fed2de600d68fc982771708f9a5ce5d8e59"
+    },
+    {
+      "name": "com.blent.CameraStartupTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c873b5dc488a1e8c00c4fc79782854a9aae28499161f76600280c94ef4542545"
+    },
+    {
+      "name": "com.blent.ChannelPacketReaderTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fd29c203b3563e32fb148af19018be8c9dfd0698a0f7d09fcd61815296b3920b"
+    },
+    {
+      "name": "com.blent.CodecReportTest",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0b20611d4431f67e0f1b3e0eacad1dc642346185bf9fe425f348bd9b5a9af24e"
+    },
+    {
+      "name": "com.blent.ComposeOrderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "97099f868284a986febb2d7df1a2ff48eba3a02868d2d2071a0fab865e6fa81c"
+    },
+    {
+      "name": "com.blent.ControlBackpressureTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "176b5f926d2ecc69177c4865d022043e93cc286373a934e112ca4c088d6965b6"
+    },
+    {
+      "name": "com.blent.ControlLoadTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a7bc9ead8f17a04a2c08a1b28d8e2031f73ca863a8405991dcc286cfd4e577cb"
+    },
+    {
+      "name": "com.blent.DecodedOutputDrainerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "e766aa32fa2bf967a05cdf9444ad8e2c55ba33157d6dc45d19a5459b63e484ee"
+    },
+    {
+      "name": "com.blent.DecoderConfigurationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "16e2fc3454c26d2fb20a31330481e481778d062858eae2fd5f46ae3f6036d656"
+    },
+    {
+      "name": "com.blent.DecoderDiagnosticsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "17180c53957fde3cb2074d2fcfed8fd8036fea13b96b53c05bf3858d841ca118"
+    },
+    {
+      "name": "com.blent.DecoderDiagnosticsUiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4d3720b9443bfb4859b193c7d08c14fec3e21538a790556aa23e2346f8942ea7"
+    },
+    {
+      "name": "com.blent.DecoderNegotiationTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "571b15f375c45e4c3b42bd9e553848510c2f5f4f8bd7e01c353a2964a96e9462"
+    },
+    {
+      "name": "com.blent.DecoderSchedulingTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9a44721388ac59cc338d6ec112ebbdac64287fe10b4082b94d5b7f129ea053e9"
+    },
+    {
+      "name": "com.blent.DecoderSetupTest",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ee5c13c29755a1cc2f012de8ea3b7641882ea0188e2b017f23987cd2159d85ea"
+    },
+    {
+      "name": "com.blent.DecoderStartupTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a744370e39beef0e68f849ea807ae6de2859719d913574f4e301010ee2807133"
+    },
+    {
+      "name": "com.blent.DecoderWatchdogTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7da1efa9b826069067bc821c80c5b2977cdbc90c826ae9cfaded645f79c1a72d"
+    },
+    {
+      "name": "com.blent.DirectDecoderInputTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "1185254b4e640f0fbd49e7317496b474f6a87ca71066b80bd4f29bc3c6f1d9c2"
+    },
+    {
+      "name": "com.blent.DirectInputTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "eed859281594c15d7d536787b33d54a90af868854b8956947c567a473a90988e"
+    },
+    {
+      "name": "com.blent.DisplaySettingsTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "026c6020c936231ac9932a4f4bd197d471abbb2a4391cb6f585e2d51ae147dec"
+    },
+    {
+      "name": "com.blent.FormatBoundaryCorpusTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0b4c036935d036ca6d9cc27bd4f85515226988dcad87450d92cd3f939c7fc148"
+    },
+    {
+      "name": "com.blent.FrameTimingTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "21edc445d4aa8175be8f18bac13772ea4c84131a6fcd06771248a3fcab47d09e"
+    },
+    {
+      "name": "com.blent.FramedDecoderTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ab4aad68d38f8958685b18f92ea44f9631533421c5d10e032d14faa234955712"
+    },
+    {
+      "name": "com.blent.InputAccessorBoundsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ada67a971792ce5efc3234f67bd9928f7120372bc356d919a03ce0a42565ffcd"
+    },
+    {
+      "name": "com.blent.InputNumericBoundsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "17bec9e82d519459ecfd3e125c193b2f947104b1474dab99e92a9cb94d2b6ff4"
+    },
+    {
+      "name": "com.blent.InputWireTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "65cd0a5cd9a7ed90c2fcaf729fa833a34bff2b5aa12ebd573e924eee89348ce6"
+    },
+    {
+      "name": "com.blent.MediaProfilesTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8490aab03eb878145eb5e2258357141ffa33a4b4438d190a12eafb3071c8ee4c"
+    },
+    {
+      "name": "com.blent.NumericFormatBoundsTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5a547dcb44a64c8a77a0baec32629b26df953a6b51a394c9cb5b27112f46fe2c"
+    },
+    {
+      "name": "com.blent.OrientationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c473c7a772bb95ff2a8ee4fbf477365f7a244608dd9a5dd14d63c26162faf84e"
+    },
+    {
+      "name": "com.blent.PenLifecycleTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "578a2c77df238a1fc26c95d561ca0a72eff020a92dfccc3f19b131c61f1b2629"
+    },
+    {
+      "name": "com.blent.ProfileLauncherTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "01a2c76c33fd9e4ea43bd437d878539be102a7ef44680b7439615fbfbdc961c6"
+    },
+    {
+      "name": "com.blent.ProfileSoftwareTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5ed32e73cd4859b8696f5836d2737e5cf905755bdf1c9ba443439d7258307ec6"
+    },
+    {
+      "name": "com.blent.RegressionTest",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "140bb11d14e44b11297758b83095747f1f7d64701dee5a1593bf3e916cbb3d86"
+    },
+    {
+      "name": "com.blent.ReleaseCheckTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "0744cdb66ad09e47eb59291bbef8a3527c4e655ce049e1b6677f7e72a1246082"
+    },
+    {
+      "name": "com.blent.ReplayClipTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8f6ecfdb4a0924e3e773c796c1b0ae26cf23009c6c369d5f83fb89bda762aaaf"
+    },
+    {
+      "name": "com.blent.ReplayPacingTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c8ab19017347f7fe853c08a45cade64e83cb6b0de6d8d4a9458fb47430eba9bf"
+    },
+    {
+      "name": "com.blent.SessionSurfaceContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "b8b5e5adcb77d389ab86d75d45a88031bc1606e4829f6156d2c7be2cfdd472c1"
+    },
+    {
+      "name": "com.blent.SettingsAccessibilityTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a155a9a9a8cc0c218c1864b82fce01951059442f653fd6fdd8ea4d1b7f9b61d5"
+    },
+    {
+      "name": "com.blent.SettingsControlContractTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "48c5cc1641da7e11571092df2ef53a69e3009e25a1262eb4150c430fbd66f21d"
+    },
+    {
+      "name": "com.blent.SettingsLayoutTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "5159f98a00e693c6764fa7f4a47481e80fe84ebba85d342e1c2b81935de1f4b7"
+    },
+    {
+      "name": "com.blent.SocketReplayTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "d18791ee14bddb0d15dd83b48ca1ed49e53ce281318a4a98c5e9f71e8ff294a7"
+    },
+    {
+      "name": "com.blent.StreamFormatTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "35e4fb5f47683213e1e8eeea770ad1ec82e3327f93005f8c85f7cfa8376aea85"
+    },
+    {
+      "name": "com.blent.StreamingBindingTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "99d2c7f8a29a2903b79f9af05aab14ab9ee6242978b8af6e67951475170a864c"
+    },
+    {
+      "name": "com.blent.StreamingPowerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "c6d5cfd08371c3f97bbd5752c5fbc1d90d01d45c009fd6eede3d0f5c211da22f"
+    },
+    {
+      "name": "com.blent.SurfaceCallbackContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "32048552c4b140596ee86f77d9cc03b7147bdda8bb56ee01c96e7caa9faaccb6"
+    },
+    {
+      "name": "com.blent.TokenDeliveryTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "11e838d8655cc0f2db0625d11b2138a8646b957512ef0493180ba8b1894e51fb"
+    },
+    {
+      "name": "com.blent.VideoCodecTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "7b1a50bded6c6f3d6a792a52fea5e5cb4f7ee2549b34bb93b6a830de34c46f10"
+    },
+    {
+      "name": "com.blent.VideoConnectionBoundaryTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "50f560ee40fd767787012dfc2f618f796145988600166e7c2174987d820424cf"
+    },
+    {
+      "name": "com.blent.VideoPacketReaderTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "8c41d55788503369b9ef0e3e5b2a58e1e5fc8c1172f5c291d7c6d36b50d0e5e9"
+    },
+    {
+      "name": "com.blent.benchmark.UsbReplayTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "85f0babc96981789c145f1c6462ee130d19b680babbb96a0ee097e4d1fc5c3f0"
+    }
+  ],
+  "totals": {
+    "tests": 701,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

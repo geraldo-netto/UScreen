@@ -1,0 +1,7 @@
+allprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin('com.android.application')) {
+            project.android.sourceSets.getByName('test').java.srcDir('/tmp/blent-rescan-20260930/probes')
+        }
+    }
+}

@@ -1,0 +1,44 @@
+package com.blent
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+
+/** Review reproduction only; T732 requires permanent coverage with the fix. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [27, 34])
+class AudioBindingReviewProbe {
+    @Test fun microphoneThirdStartMustWaitForFirstRetirement() = checkRetirement(1)
+    @Test fun speakerThirdStartMustWaitForFirstRetirement() = checkRetirement(2)
+    private fun checkRetirement(direction: Int) = runBlocking {
+        val commands = MutableStateFlow<AudioEndpoint?>(null)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val retired = CompletableDeferred<Unit>()
+        var opens = 0
+        val binding = AudioBinding(RuntimeEnvironment.getApplication(), {}, { true },
+            { _, _, _, _ ->
+                opens++
+                try { awaitCancellation() }
+                finally { withContext(NonCancellable) { retired.await() } }
+            }, commands, scope, direction = direction)
+        try {
+            binding.start()
+            val endpoint = AudioEndpoint("a".repeat(64), 12345, direction, 1, 40, false)
+            commands.value = endpoint
+            assertEquals(1, opens)
+            commands.value = endpoint.copy(port = 12346)
+            assertEquals(1, opens)
+            commands.value = endpoint.copy(port = 12347)
+            assertEquals("T732: third request bypassed original retirement", 1, opens)
+        } finally {
+            retired.complete(Unit)
+            binding.shutdown()
+            scope.cancel()
+        }
+    }
+}

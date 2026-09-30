@@ -1,0 +1,198 @@
+{
+  "date": "2026-09-30",
+  "source_commit": "8e0d9daede95ffe4ad7259fe318fd835b4adf8c1",
+  "scope": "Repository-wide review: Rust host/shared policy/GUI, Android, C EVDI capture, scripts, packaging, workflows, documentation and TODO consistency. Generated code, dependencies, caches and build outputs excluded from source review.",
+  "mode": "Review only. No production fixes or permanent regressions added. The isolated T732 probe is reproduction evidence and does not replace the required permanent normal-suite regression with its fix.",
+  "ledger": {
+    "new": [
+      "T731",
+      "T732",
+      "T733",
+      "T734",
+      "T735",
+      "T736"
+    ],
+    "updated": [
+      "T713",
+      "T546",
+      "T677",
+      "T414"
+    ]
+  },
+  "checks": [
+    {
+      "command": "cargo fmt --all -- --check",
+      "result": "pass"
+    },
+    {
+      "command": "python scripts/complexity/check.py",
+      "result": "pass: 7279 functions; none exceed cyclomatic complexity 9",
+      "evidence": [
+        "complexity.log.gz",
+        "complexity-tests.log.gz"
+      ]
+    },
+    {
+      "command": "cargo test --locked --workspace",
+      "result": "Host suites passed except tooling T129/T302, which initially lacked rpmbuild. Shared-policy and GUI suites were run separately because the workspace run stopped at tooling. The tooling suite was subsequently rerun with a temporary RPM tool; see scripts coverage result. Existing ignored benchmark experiments retained.",
+      "evidence": [
+        "rust-default-tests.log.gz",
+        "common-gui-tests.log.gz"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p blent-config -p blent-gui",
+      "result": "pass",
+      "evidence": [
+        "common-gui-tests.log.gz"
+      ]
+    },
+    {
+      "command": "cargo test --locked --workspace --all-features",
+      "result": "fail: T713, MediaBytes::new and allocation_probe::scanned unavailable to annex_b under inproc-encoder",
+      "environment": "FFmpeg/PipeWire/SPA development SDKs extracted into a temporary directory; PKG_CONFIG_PATH points to the private SDK. Final failure is the project feature-gating error, not missing SDKs.",
+      "evidence": [
+        "rust-all-features.log.gz"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p blent --features native-audio --bin blent-audio --test audio_native",
+      "result": "pass: 7 helper unit tests and 2 native integration tests against a private isolated PipeWire instance",
+      "evidence": [
+        "native-audio.log.gz"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p blent-config --no-default-features; cargo check --locked -p blent-config --no-default-features --target wasm32-unknown-unknown",
+      "result": "113 native policy tests pass; WebAssembly check fails due to unconditional getrandom dependency (T736)",
+      "evidence": [
+        "portable-policy.log.gz",
+        "wasm-dependencies.log.gz"
+      ]
+    },
+    {
+      "command": "cargo check --locked --workspace --target x86_64-pc-windows-gnu",
+      "result": "pass; cross-compilation only, no native Windows runtime claim",
+      "evidence": [
+        "windows-default-check.log.gz"
+      ]
+    },
+    {
+      "command": "cargo check --locked -p blent --lib --all-features --target x86_64-pc-windows-gnu",
+      "result": "fail: T713, MediaBytes::new hidden by feature gate",
+      "evidence": [
+        "windows-all-features.log.gz"
+      ]
+    },
+    {
+      "command": "./android/gradlew -p android lintDebug",
+      "result": "fail: 2 errors (T731); 16 warnings retained in lint output. The errors are analyzer/build-gate failures; runtime permission denial and old-API crashes were not established.",
+      "evidence": [
+        "android-lint.log.gz"
+      ]
+    },
+    {
+      "command": "./android/gradlew -p android -I \"$PWD/scripts/coverage/android.init.gradle\" profileCoverage --rerun-tasks",
+      "result": "pass: 701 tests; no failures, errors or skips",
+      "evidence": [
+        "android-tests.log.gz",
+        "android-suite-summary.json"
+      ]
+    },
+    {
+      "command": "python scripts/coverage/report.py check --manifest MANIFEST --jacoco JACOCO_XML --scope android/app/src/main/ --output REPORT",
+      "result": "pass: all 761 measured Android functions/methods >=80% executable-line coverage",
+      "evidence": [
+        "source-manifest.json.gz",
+        "android-coverage.json.gz",
+        "android-coverage.log.gz"
+      ]
+    },
+    {
+      "command": "python scripts/coverage/capture_check.py NEW_OUTPUT_DIRECTORY",
+      "result": "pass: all 153 EVDI C functions >=80%; normal isolated capture regressions passed",
+      "evidence": [
+        "capture-coverage.json.gz",
+        "capture-coverage.log.gz",
+        "capture-tests.log.gz"
+      ]
+    },
+    {
+      "command": "./android/gradlew -p android -I /tmp/blent-rescan-20260930/probes.init.gradle testDebugUnitTest --tests com.blent.AudioBindingReviewProbe",
+      "result": "expected failure: four assertions reproduce T732 for microphone/speakers on API27/API34",
+      "reproduce": [
+        "Copy t732-probe.kt.txt to /tmp/blent-rescan-20260930/probes/AudioBindingReviewProbe.kt.",
+        "Copy t732-init.gradle.txt to /tmp/blent-rescan-20260930/probes.init.gradle; its source directory must match the first step.",
+        "Run the command above from the repository root. No native hardware or production edits are needed.",
+        "After the isolated probe, run ./android/gradlew -p android testDebugUnitTest without the init script to restore normal test outputs."
+      ],
+      "evidence": [
+        "t732-probe.kt.txt",
+        "t732-init.gradle.txt",
+        "t732-reproduction.log.gz",
+        "t732-junit.xml.gz"
+      ]
+    },
+    {
+      "command": "./android/gradlew -p android testDebugUnitTest",
+      "result": "pass after isolated probe: 701 normal-suite tests, no skips/failures/errors; no probe remains in normal test outputs",
+      "evidence": [
+        "android-restored-tests.log.gz",
+        "android-suite-summary.json"
+      ]
+    },
+    {
+      "command": "PATH=/tmp/blent-rescan-20260930/rpm/usr/bin:$PATH /tmp/blent-rescan-20260930/venv/bin/python scripts/coverage/script_check.py NEW_OUTPUT_DIRECTORY",
+      "result": "pass: all 61 Python and 66 shell functions >=80%; Rust tooling 38 passed, Python script suite 355 run (1 existing Windows-only skip), complexity tests 9 passed, coverage reporter tests 67 passed",
+      "environment": "Temporary RPM binary and its private RPM_CONFIGDIR supply the previously missing packaging prerequisite; test sources and assertions unchanged.",
+      "evidence": [
+        "scripts-coverage.json.gz",
+        "scripts-coverage.log.gz",
+        "scripts-tests.log.gz",
+        "scripts-source-manifest.json.gz"
+      ]
+    }
+  ],
+  "limitations": [
+    "Full Rust per-function coverage could not complete because all-features compilation fails (T713). A missing measurement is not a pass.",
+    "Native Windows execution and counters were unavailable. GNU cross-checks do not establish runtime support or native coverage. T734 records the additional feature-configuration gap in Windows audio coverage.",
+    "No physical tablet/display/audio-route acceptance, desktop device reconfiguration, benchmark campaign or saved media recordings were performed. Existing physical blockers and declined macOS/stylus/large-machine work remain unchanged.",
+    "C capture coverage uses the normal isolated fake-EVDI fixtures, not live display acceptance; Android coverage uses Robolectric.",
+    "Dependency update availability and inlined Android constants reported by lint are not treated as demonstrated behavior bugs. AudioOwner retains applicationContext, so the static-field warning alone does not establish an Activity leak."
+  ],
+  "environment_notes": [
+    "Python coverage/complexity dependencies were installed in a temporary virtual environment.",
+    "Initial packaging failures were caused by missing host rpmbuild. Both failing cases passed unchanged in the existing offline build container; a temporary extracted RPM binary/configuration then enabled the complete local script coverage run. No system packages or application configuration were changed."
+  ],
+  "artifact_sha256": {
+    "android-coverage.json.gz": "f402a6d2681cb7d5564848d4fc67af100e09c08faf4eacd2a9262f96a6f64af2",
+    "android-coverage.log.gz": "ff9f079246d4abdff7775b7e7da2cb1e6a0c499c20705411ccbe8cae44d184ef",
+    "android-lint.log.gz": "ab93d9fca59299b021128080dd9488c4e1d6f70e059e5cd0b4f83bd5d64cd6a1",
+    "android-restored-tests.log.gz": "b262ebf3c6fb7812863a85eede2877b7e9ac5890e24ed1f80f92d8076526d65a",
+    "android-suite-summary.json": "3945129dd22d85f3477151358d05c6474dc22aded80ca11870aa49033cb9fa09",
+    "android-tests.log.gz": "3f58cce75f2ab6ee3e365057b58bf70eaa46c6add54bdeba0570d1c65749e5d4",
+    "capture-coverage.json.gz": "30e6c6aa9bf4ed495c4e9573dc115d1cbec063084be7110a4fca91de326c7661",
+    "capture-coverage.log.gz": "53a30b10f5df75e775f2a1cffa18feae7e03abd5ef659b11ac0f76b75f7d75ef",
+    "capture-tests.log.gz": "04edf1edfa81bf720dc1836b48c65b1e3724f64e7b16dc5c375ac22f8330a50e",
+    "common-gui-tests.log.gz": "2b677e5ba27e730d6153c709e01cc219c855e486dd6b74ffeeedd38588b10bc3",
+    "complexity-tests.log.gz": "1792461e30ab971436748508b5db9ca51d61c60612af09c120ff4e60c75de32c",
+    "complexity.log.gz": "6a7d21f5323f57bf392d69053458965deb6cccc1cfca3a82b5dfd5616a545800",
+    "coverage-reporter-tests.log.gz": "4ddb2197a0a093044aa6c50ed7d7866345cf8c356bf0a418a5ac259b544f488d",
+    "native-audio.log.gz": "aa3ee0d70039ce7b19a5e35807f455bd2f4408ad918d6bb63a40d96e539f0115",
+    "portable-policy.log.gz": "3a508484a3853a8e4110d202f82baf36d9c5b509848019e21cb8ce818e72d1bb",
+    "rust-all-features.log.gz": "83abf14714a65d1473cd277542f70dfda8d9a5e0b4bc1112bb16472183a98a59",
+    "rust-default-tests.log.gz": "af2d7a96f76e2eaa746b594e0741cbb841b99c7e899a01d4f0c74cb8c6f0c3bc",
+    "scripts-coverage.json.gz": "9f3b2894a32a4c57579587f48a2fcfaf24246a8575a462f2d57b75c489df3ba4",
+    "scripts-coverage.log.gz": "ea708868b39586aa66b99fc1a2829c6fb1496394e44c0a5a34da0d9a153ace75",
+    "scripts-source-manifest.json.gz": "26b3f9ab39f4390fb162379df142751bcaee80ba7ff2da42e12400fe008451f1",
+    "scripts-tests.log.gz": "e83b5fe785ab6d87e7aef8ee119d3b06e3be8faecd05576ff5d96c4b30ced60e",
+    "source-manifest.json.gz": "3ebd688dc7bc1dcf83d084f207ac27cd4d03fbe31443c05b555bfee66a6a04c1",
+    "t732-init.gradle.txt": "8407ec72bd72075142e0b912cd12d4c35373a4e8f568d63a867e7b6694614b81",
+    "t732-junit.xml.gz": "bbebb88ad4b2033f7558064bcc2393289e35a9a7056bde82a18e75282d314968",
+    "t732-probe.kt.txt": "f442d5a095e070ee5d096d42218dd3637eb7bec6504b638d938b8591e9a118ad",
+    "t732-reproduction.log.gz": "733cbe12114547554113915917c280c37c9b8254980e03b3bf28f9be77168a14",
+    "wasm-dependencies.log.gz": "745c3800045be76c4e86fa5c3038bfa027d5927c992288c7037357fd3005ba60",
+    "windows-all-features.log.gz": "caea87cd25547b7eed04578a4846ab5996c2f32ce254644d295754d22c079820",
+    "windows-default-check.log.gz": "20ab09394da8ebcde048ea750fa9682f33139ff32805df6dd976dd986771b857"
+  }
+}
