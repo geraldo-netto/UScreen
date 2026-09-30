@@ -18,6 +18,10 @@ fn t736_policy_builds_without_native_entropy_on_webassembly() {
         .env("CARGO_TARGET_DIR", target.path())
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .env_remove("RUSTFLAGS")
+        // T744: cargo-llvm-cov 0.8 injects flags through its rustc wrapper too.
+        // This child verifies wasm compilation, not native runtime coverage.
+        .env_remove("RUSTC_WRAPPER")
+        .env_remove("RUSTC_WORKSPACE_WRAPPER")
         .env_remove("LLVM_PROFILE_FILE")
         .output()
         .unwrap();

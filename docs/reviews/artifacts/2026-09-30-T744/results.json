@@ -1,0 +1,7 @@
+{
+  "item": "T744",
+  "regression": "t736_policy_builds_without_native_entropy_on_webassembly",
+  "red": "Native coverage wrapper injected instrument-coverage into wasm child; E0463 profiler_builtins.",
+  "green": "The same permanent cross-target compile regression passes under cargo-llvm-cov after removing inherited rustc wrappers from only the compile-check child.",
+  "coverage": "Test-harness-only correction; no production coverage exclusions, test skips or weakened compile assertions."
+}
